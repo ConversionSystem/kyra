@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, User, Clock, BarChart3, LogOut } from 'lucide-react';
+import { ArrowLeft, User, Clock, BarChart3, LogOut, Calendar, Check, X, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import { useSearchParams } from 'next/navigation';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -20,6 +21,9 @@ export default function SettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [googleConnected, setGoogleConnected] = useState(false);
+  const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     async function loadUser() {
@@ -40,11 +44,32 @@ export default function SettingsPage() {
       setEmail(user.email || '');
       setName(profile?.name || user.user_metadata?.name || '');
       setTimezone(profile?.timezone || 'UTC');
+      
+      // Check Google Calendar connection
+      const { data: googleIntegration } = await supabase
+        .from('integrations')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('provider', 'google')
+        .single();
+      
+      setGoogleConnected(!!googleIntegration);
       setIsLoading(false);
+      
+      // Check for OAuth callback messages
+      const success = searchParams.get('success');
+      const error = searchParams.get('error');
+      
+      if (success === 'google_connected') {
+        setMessage({ type: 'success', text: 'Google Calendar connected successfully!' });
+        setGoogleConnected(true);
+      } else if (error === 'google_auth_failed') {
+        setMessage({ type: 'error', text: 'Failed to connect Google Calendar. Please try again.' });
+      }
     }
     
     loadUser();
-  }, [router, supabase]);
+  }, [router, supabase, searchParams]);
 
   const handleSave = async () => {
     if (!user) return;
@@ -163,6 +188,69 @@ export default function SettingsPage() {
                 <option value="Europe/Bratislava">Bratislava</option>
                 <option value="Asia/Tokyo">Tokyo</option>
               </select>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Integrations */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Integrations
+            </CardTitle>
+            <CardDescription>Connect external services</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between rounded-lg border border-zinc-700 bg-zinc-800/50 p-4">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-blue-500/10 p-2">
+                  <Calendar className="h-5 w-5 text-blue-400" />
+                </div>
+                <div>
+                  <p className="font-medium text-zinc-100">Google Calendar</p>
+                  <p className="text-xs text-zinc-500">
+                    {googleConnected ? 'Connected' : 'View and create events'}
+                  </p>
+                </div>
+              </div>
+              {googleConnected ? (
+                <div className="flex items-center gap-2">
+                  <span className="flex items-center gap-1 text-sm text-green-400">
+                    <Check className="h-4 w-4" />
+                    Connected
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={async () => {
+                      if (confirm('Disconnect Google Calendar?')) {
+                        await fetch('/api/calendar', { method: 'DELETE' });
+                        setGoogleConnected(false);
+                        setMessage({ type: 'success', text: 'Google Calendar disconnected' });
+                      }
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setIsConnectingGoogle(true);
+                    window.location.href = '/api/auth/google';
+                  }}
+                  disabled={isConnectingGoogle}
+                >
+                  {isConnectingGoogle ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    'Connect'
+                  )}
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>

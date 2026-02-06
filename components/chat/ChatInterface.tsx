@@ -6,8 +6,9 @@ import { MessageBubble, MessageSkeleton } from './MessageBubble';
 import { ChatInput } from './ChatInput';
 import { ConversationSidebar } from './ConversationSidebar';
 import { useRouter } from 'next/navigation';
-import { Sparkles, Brain, Settings } from 'lucide-react';
+import { Sparkles, Brain, Settings, Bell } from 'lucide-react';
 import Link from 'next/link';
+import { ReminderNotification } from '@/components/reminders/ReminderNotification';
 
 interface ChatInterfaceProps {
   initialConversation?: Conversation;
@@ -277,6 +278,9 @@ export function ChatInterface({
           </div>
         </div>
       </div>
+      
+      {/* Reminder notifications */}
+      <ReminderNotification />
     </div>
   );
 }

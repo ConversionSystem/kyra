@@ -6,7 +6,18 @@ export interface Reminder {
   due_at: string;
 }
 
-export function getSystemPrompt(memories: Memory[], reminders?: Reminder[]): string {
+export interface CalendarEvent {
+  summary: string;
+  start: Date;
+  end: Date;
+  location?: string;
+}
+
+export function getSystemPrompt(
+  memories: Memory[], 
+  reminders?: Reminder[],
+  calendarEvents?: CalendarEvent[]
+): string {
   const memoryContext = memories.length > 0 
     ? memories.map(m => `- [${m.type}] ${m.content}`).join('\n')
     : 'No memories stored yet.';
@@ -18,6 +29,22 @@ export function getSystemPrompt(memories: Memory[], reminders?: Reminder[]): str
         return `- "${r.content}" — ${relative}`;
       }).join('\n')
     : 'No pending reminders.';
+
+  const calendarContext = calendarEvents && calendarEvents.length > 0
+    ? calendarEvents.map(e => {
+        const startTime = e.start.toLocaleTimeString('en-US', { 
+          hour: 'numeric', 
+          minute: '2-digit',
+          hour12: true 
+        });
+        const endTime = e.end.toLocaleTimeString('en-US', { 
+          hour: 'numeric', 
+          minute: '2-digit',
+          hour12: true 
+        });
+        return `- ${startTime} - ${endTime}: ${e.summary}${e.location ? ` (at ${e.location})` : ''}`;
+      }).join('\n')
+    : 'No events today (or calendar not connected).';
 
   return `You are Kyra, a personal AI assistant. You are helpful, proactive, and you remember everything the user tells you. You can also set reminders.
 
@@ -46,6 +73,9 @@ ${memoryContext}
 
 ### Pending reminders:
 ${reminderContext}
+
+### Today's calendar:
+${calendarContext}
 
 ## Personality
 - Be conversational and warm, not robotic

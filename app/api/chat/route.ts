@@ -2,7 +2,8 @@ import { NextRequest } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { streamChat } from '@/lib/ai/claude';
 import { searchMemories, saveMemory } from '@/lib/ai/memory';
-import { getSystemPrompt, extractCommands, Reminder } from '@/lib/ai/prompts';
+import { getSystemPrompt, extractCommands, Reminder, CalendarEvent } from '@/lib/ai/prompts';
+import { isGoogleConnected, getTodayEvents } from '@/lib/integrations/google';
 import { generateConversationTitle } from '@/lib/utils';
 import { Message, Conversation, MemoryType, User } from '@/types';
 import { getPlanLimit, isWithinLimit, Plan } from '@/lib/billing/plans';
@@ -162,7 +163,24 @@ export async function POST(request: NextRequest) {
       due_at: r.due_at,
     }));
     
-    const systemPrompt = getSystemPrompt(memories, reminders);
+    // Get today's calendar events if Google is connected
+    let calendarEvents: CalendarEvent[] = [];
+    try {
+      const googleConnected = await isGoogleConnected(authUser.id);
+      if (googleConnected) {
+        const events = await getTodayEvents(authUser.id);
+        calendarEvents = events.map(e => ({
+          summary: e.summary,
+          start: e.start,
+          end: e.end,
+          location: e.location,
+        }));
+      }
+    } catch (calError) {
+      console.error('Failed to fetch calendar events:', calError);
+    }
+    
+    const systemPrompt = getSystemPrompt(memories, reminders, calendarEvents);
 
     // Increment usage count
     await serviceClient
