@@ -10,12 +10,14 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.72.1",
+    "@mozilla/readability": "^0.6.0",
     "@pinecone-database/pinecone": "^7.0.0",
     "@slack/web-api": "^7.0.0",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.94.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "jsdom": "^28.0.0",
     "lucide-react": "^0.563.0",
     "next": "14.2.35",
     "openai": "^6.17.0",
@@ -27,6 +29,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@types/jsdom": "^27.0.0",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",

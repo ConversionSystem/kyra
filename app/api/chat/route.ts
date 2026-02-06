@@ -4,6 +4,8 @@ import { streamChat } from '@/lib/ai/claude';
 import { searchMemories, saveMemory } from '@/lib/ai/memory';
 import { getSystemPrompt, extractCommands, Reminder, CalendarEvent } from '@/lib/ai/prompts';
 import { isGoogleConnected, getTodayEvents } from '@/lib/integrations/google';
+import { webSearch, formatSearchResults, needsWebSearch, extractSearchQuery } from '@/lib/tools/web-search';
+import { simpleFetch, formatFetchedContent, extractUrls } from '@/lib/tools/url-fetch';
 import { generateConversationTitle } from '@/lib/utils';
 import { Message, Conversation, MemoryType, User } from '@/types';
 import { getPlanLimit, isWithinLimit, Plan } from '@/lib/billing/plans';
@@ -180,6 +182,37 @@ export async function POST(request: NextRequest) {
       console.error('Failed to fetch calendar events:', calError);
     }
     
+    // Tool augmentation: Web Search and URL Fetching
+    let toolContext = '';
+    
+    // Check for URLs in the message and fetch content
+    const urls = extractUrls(message);
+    if (urls.length > 0) {
+      const fetchPromises = urls.slice(0, 3).map(url => simpleFetch(url, 8000));
+      const fetchedContents = await Promise.all(fetchPromises);
+      
+      for (const content of fetchedContents) {
+        if (!content.error) {
+          toolContext += '\n\n---\n' + formatFetchedContent(content);
+        }
+      }
+    }
+    
+    // Check if message needs web search (only if no URLs found)
+    if (urls.length === 0 && needsWebSearch(message)) {
+      const query = extractSearchQuery(message);
+      const searchResults = await webSearch(query, { count: 5 });
+      
+      if (searchResults.results.length > 0) {
+        toolContext += '\n\n---\n' + formatSearchResults(searchResults);
+      }
+    }
+    
+    // Build augmented message if we have tool results
+    const augmentedMessage = toolContext 
+      ? `${message}\n\n[CONTEXT FROM TOOLS]${toolContext}\n[/CONTEXT FROM TOOLS]`
+      : message;
+    
     const systemPrompt = getSystemPrompt(memories, reminders, calendarEvents);
 
     // Increment usage count
@@ -210,12 +243,12 @@ export async function POST(request: NextRequest) {
             })}\n\n`)
           );
 
-          // Build messages for Claude
+          // Build messages for Claude (use augmented message with tool context)
           const messagesForClaude = history.map(m => ({ 
             role: m.role as 'user' | 'assistant', 
             content: m.content 
           }));
-          messagesForClaude.push({ role: 'user', content: message });
+          messagesForClaude.push({ role: 'user', content: augmentedMessage });
 
           // Stream AI response
           let fullResponse = '';
