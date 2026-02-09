@@ -11,11 +11,11 @@ import { Message, Conversation, MemoryType, User } from '@/types';
 import { getPlanLimit, isWithinLimit, getCreditCost, Plan } from '@/lib/billing/plans';
 import { v4 as uuid } from 'uuid';
 import { features } from '@/lib/config/features';
-import { POST as openclawHandler } from './openclaw/route';
 
 export async function POST(request: NextRequest) {
-  // Route through OpenClaw Gateway when enabled
+  // Route through OpenClaw Gateway when enabled (dynamic import to avoid loading Node.js modules when disabled)
   if (features.useOpenClaw) {
+    const { POST: openclawHandler } = await import('./openclaw/route');
     return openclawHandler(request);
   }
   try {
