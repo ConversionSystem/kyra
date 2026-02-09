@@ -2,8 +2,25 @@
  * URL Fetching and Content Extraction
  */
 
-import { Readability } from '@mozilla/readability';
-import { JSDOM } from 'jsdom';
+// Dynamic imports to avoid cold-start crashes in serverless (jsdom is heavy)
+let _JSDOM: typeof import('jsdom').JSDOM | null = null;
+let _Readability: typeof import('@mozilla/readability').Readability | null = null;
+
+async function getJSDOM() {
+  if (!_JSDOM) {
+    const { JSDOM } = await import('jsdom');
+    _JSDOM = JSDOM;
+  }
+  return _JSDOM;
+}
+
+async function getReadability() {
+  if (!_Readability) {
+    const { Readability } = await import('@mozilla/readability');
+    _Readability = Readability;
+  }
+  return _Readability;
+}
 
 export interface FetchedContent {
   url: string;
@@ -82,6 +99,8 @@ export async function fetchUrl(url: string, maxChars?: number): Promise<FetchedC
     const html = await response.text();
     
     // Parse with JSDOM and extract with Readability
+    const JSDOM = await getJSDOM();
+    const Readability = await getReadability();
     const dom = new JSDOM(html, { url });
     const reader = new Readability(dom.window.document);
     const article = reader.parse();
