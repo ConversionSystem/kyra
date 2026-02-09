@@ -25,5 +25,4 @@ CREATE POLICY "Users can read own channels" ON user_channels
 CREATE POLICY "Users can manage own channels" ON user_channels
   FOR ALL USING (auth.uid() = user_id);
 
-CREATE POLICY "Service can manage channels" ON user_channels
-  FOR ALL WITH CHECK (true);
+-- Note: Service role bypasses RLS automatically in Supabase
