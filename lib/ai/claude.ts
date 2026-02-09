@@ -18,13 +18,14 @@ export interface ChatMessage {
 
 export async function* streamChat(
   messages: ChatMessage[],
-  systemPrompt: string
+  systemPrompt: string,
+  options?: { model?: string; maxTokens?: number }
 ): AsyncGenerator<string> {
   const anthropic = getAnthropic();
   
   const stream = await anthropic.messages.stream({
-    model: 'claude-sonnet-4-20250514',
-    max_tokens: 2048,
+    model: options?.model || 'claude-sonnet-4-20250514',
+    max_tokens: options?.maxTokens || 2048,
     system: systemPrompt,
     messages: messages,
   });

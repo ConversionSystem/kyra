@@ -10,6 +10,7 @@ import { generateConversationTitle } from '@/lib/utils';
 import { Message, Conversation, MemoryType, User } from '@/types';
 import { getPlanLimit, isWithinLimit, getCreditCost, Plan } from '@/lib/billing/plans';
 import { processMessageForGraph } from '@/lib/memory/graph';
+import { getModelForMessage } from '@/lib/ai/model-router';
 import { v4 as uuid } from 'uuid';
 import { features } from '@/lib/config/features';
 
@@ -235,6 +236,9 @@ export async function POST(request: NextRequest) {
       systemPrompt += `\n\n## Deep Memory Graph\n${graphContext}`;
     }
 
+    // Route to optimal model based on message complexity
+    const modelConfig = getModelForMessage(message, history.length);
+    
     // Determine action type and credit cost
     const hasWebSearch = urls.length === 0 && needsWebSearch(message);
     const hasUrls = urls.length > 0;
@@ -279,7 +283,10 @@ export async function POST(request: NextRequest) {
           // Stream AI response
           let fullResponse = '';
           
-          for await (const chunk of streamChat(messagesForClaude, systemPrompt)) {
+          for await (const chunk of streamChat(messagesForClaude, systemPrompt, {
+            model: modelConfig.id,
+            maxTokens: modelConfig.maxTokens,
+          })) {
             fullResponse += chunk;
             controller.enqueue(
               encoder.encode(`data: ${JSON.stringify({ type: 'content', content: chunk })}\n\n`)
@@ -358,7 +365,7 @@ export async function POST(request: NextRequest) {
               conversation_id: conversationId,
               role: 'assistant',
               content: cleanResponse,
-              metadata: { model: 'claude-sonnet-4' },
+              metadata: { model: modelConfig.id, tier: modelConfig.tier },
             })
             .select()
             .single();
