@@ -6,9 +6,10 @@ import { MessageBubble, MessageSkeleton } from './MessageBubble';
 import { ChatInput } from './ChatInput';
 import { ConversationSidebar } from './ConversationSidebar';
 import { useRouter } from 'next/navigation';
-import { Sparkles, Brain, Settings, Bell } from 'lucide-react';
+import { Sparkles, Brain, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { ReminderNotification } from '@/components/reminders/ReminderNotification';
+import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 
 interface ChatInterfaceProps {
   initialConversation?: Conversation;
@@ -207,6 +208,7 @@ export function ChatInterface({
             <span className="font-semibold text-zinc-100">Kyra</span>
           </div>
           <div className="flex items-center gap-2">
+            <NotificationCenter />
             <Link
               href="/memories"
               className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
