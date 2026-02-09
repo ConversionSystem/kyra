@@ -1,43 +1,165 @@
 /**
- * Kyra Plan Configuration
+ * Kyra Credits-Based Billing System
+ * 
+ * Credit costs per action:
+ *   - Simple chat: 1 credit
+ *   - Web search + response: 2 credits
+ *   - Deep research (sub-agent): 5 credits
+ *   - File analysis: 3 credits
+ *   - Calendar/reminder: 0 credits (free)
+ *   - Memory operations: 0 credits (free)
+ * 
+ * Margin targets: 70%+ on all paid plans
  */
 
-export type Plan = 'free' | 'starter' | 'business' | 'enterprise';
+export type Plan = 'free' | 'starter' | 'business' | 'max';
 
-export interface PlanLimits {
-  messagesPerMonth: number;
+export type CreditAction = 
+  | 'chat'           // 1 credit
+  | 'web_search'     // 2 credits
+  | 'deep_research'  // 5 credits
+  | 'file_analysis'  // 3 credits
+  | 'calendar'       // 0 credits
+  | 'reminder'       // 0 credits
+  | 'memory';        // 0 credits
+
+export interface PlanConfig {
+  name: string;
+  price: number;
+  creditsPerMonth: number;
   features: string[];
+  highlighted?: boolean;
+  cta: string;
+  href: string;
 }
 
-export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
+export const CREDIT_COSTS: Record<CreditAction, number> = {
+  chat: 1,
+  web_search: 2,
+  deep_research: 5,
+  file_analysis: 3,
+  calendar: 0,
+  reminder: 0,
+  memory: 0,
+};
+
+export const PLANS: Record<Plan, PlanConfig> = {
   free: {
-    messagesPerMonth: 100,
-    features: ['Web chat', 'Basic memory'],
+    name: 'Free',
+    price: 0,
+    creditsPerMonth: 50,
+    features: [
+      '50 credits/month',
+      'Basic chat',
+      'Web interface',
+      'Basic memory',
+    ],
+    cta: 'Get Started',
+    href: '/signup',
   },
   starter: {
-    messagesPerMonth: 1000,
-    features: ['Web chat', 'Slack', 'Full memory', 'Google Calendar'],
+    name: 'Starter',
+    price: 20,
+    creditsPerMonth: 500,
+    features: [
+      '500 credits/month',
+      'All chat features',
+      'Web search & research',
+      'WhatsApp + Telegram',
+      'Google Calendar',
+      'Full memory',
+    ],
+    highlighted: true,
+    cta: 'Start Free Trial',
+    href: '/signup?plan=starter',
   },
   business: {
-    messagesPerMonth: 5000,
-    features: ['Web chat', 'Slack', 'Email', 'Full memory', 'Google Calendar', 'Priority support'],
+    name: 'Business',
+    price: 100,
+    creditsPerMonth: 3000,
+    features: [
+      '3,000 credits/month',
+      'Everything in Starter',
+      'AI sub-agents for complex tasks',
+      'Priority response times',
+      'Email integration',
+      'Custom instructions',
+      'Priority support',
+    ],
+    cta: 'Start Free Trial',
+    href: '/signup?plan=business',
   },
-  enterprise: {
-    messagesPerMonth: 25000,
-    features: ['All integrations', 'Custom instructions', 'Dedicated support', 'SSO', 'SLA'],
+  max: {
+    name: 'Max',
+    price: 200,
+    creditsPerMonth: 8000,
+    features: [
+      '8,000 credits/month',
+      'Everything in Business',
+      'Unlimited memory',
+      'Dedicated AI workforce',
+      'API access',
+      'Custom integrations',
+      'Dedicated support + SLA',
+    ],
+    cta: 'Contact Sales',
+    href: '/signup?plan=max',
   },
 };
 
+/**
+ * Get credit limit for a plan
+ */
 export function getPlanLimit(plan: Plan): number {
-  return PLAN_LIMITS[plan]?.messagesPerMonth || PLAN_LIMITS.free.messagesPerMonth;
+  return PLANS[plan]?.creditsPerMonth || PLANS.free.creditsPerMonth;
 }
 
+/**
+ * Get the credit cost for an action
+ */
+export function getCreditCost(action: CreditAction): number {
+  return CREDIT_COSTS[action] ?? 1;
+}
+
+/**
+ * Check if user has enough credits for an action
+ */
+export function hasCreditsFor(plan: Plan, currentUsage: number, action: CreditAction): boolean {
+  const limit = getPlanLimit(plan);
+  const cost = getCreditCost(action);
+  return (currentUsage + cost) <= limit;
+}
+
+/**
+ * Legacy compatibility — checks if within overall credit limit
+ */
 export function isWithinLimit(plan: Plan, currentUsage: number): boolean {
   const limit = getPlanLimit(plan);
   return currentUsage < limit;
 }
 
+/**
+ * Get usage percentage
+ */
 export function getUsagePercentage(plan: Plan, currentUsage: number): number {
   const limit = getPlanLimit(plan);
   return Math.min(100, Math.round((currentUsage / limit) * 100));
+}
+
+/**
+ * Determine the credit action type from a chat message context
+ */
+export function classifyChatAction(opts: {
+  hasWebSearch?: boolean;
+  hasSubAgent?: boolean;
+  hasFileAnalysis?: boolean;
+  isCalendar?: boolean;
+  isReminder?: boolean;
+}): CreditAction {
+  if (opts.isCalendar) return 'calendar';
+  if (opts.isReminder) return 'reminder';
+  if (opts.hasSubAgent) return 'deep_research';
+  if (opts.hasFileAnalysis) return 'file_analysis';
+  if (opts.hasWebSearch) return 'web_search';
+  return 'chat';
 }

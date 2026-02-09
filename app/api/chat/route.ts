@@ -8,7 +8,7 @@ import { webSearch, formatSearchResults, needsWebSearch, extractSearchQuery } fr
 import { simpleFetch, formatFetchedContent, extractUrls } from '@/lib/tools/url-fetch';
 import { generateConversationTitle } from '@/lib/utils';
 import { Message, Conversation, MemoryType, User } from '@/types';
-import { getPlanLimit, isWithinLimit, Plan } from '@/lib/billing/plans';
+import { getPlanLimit, isWithinLimit, getCreditCost, Plan } from '@/lib/billing/plans';
 import { v4 as uuid } from 'uuid';
 import { features } from '@/lib/config/features';
 import { POST as openclawHandler } from './openclaw/route';
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
       user.usage_this_month = 0;
     }
 
-    // Check usage limits
+    // Check usage limits (credits-based)
     const plan = (user.plan || 'free') as Plan;
     const currentUsage = user.usage_this_month || 0;
     const limit = getPlanLimit(plan);
@@ -81,8 +81,8 @@ export async function POST(request: NextRequest) {
     if (!isWithinLimit(plan, currentUsage)) {
       return new Response(
         JSON.stringify({
-          error: 'Usage limit exceeded',
-          message: `You've used all ${limit} messages for this month. Upgrade your plan for more.`,
+          error: 'Credit limit exceeded',
+          message: `You've used all ${limit} credits for this month. Upgrade your plan for more.`,
           usage: currentUsage,
           limit,
           plan,
@@ -221,10 +221,15 @@ export async function POST(request: NextRequest) {
     
     const systemPrompt = getSystemPrompt(memories, reminders, calendarEvents);
 
-    // Increment usage count
+    // Determine action type and credit cost
+    const hasWebSearch = urls.length === 0 && needsWebSearch(message);
+    const hasUrls = urls.length > 0;
+    const creditCost = (hasWebSearch || hasUrls) ? getCreditCost('web_search') : getCreditCost('chat');
+
+    // Deduct credits
     await serviceClient
       .from('users')
-      .update({ usage_this_month: currentUsage + 1 })
+      .update({ usage_this_month: currentUsage + creditCost })
       .eq('id', authUser.id);
 
     // Create readable stream for response
@@ -243,9 +248,10 @@ export async function POST(request: NextRequest) {
           controller.enqueue(
             encoder.encode(`data: ${JSON.stringify({ 
               type: 'usage', 
-              usage: currentUsage + 1,
+              usage: currentUsage + creditCost,
               limit,
               plan,
+              creditCost,
             })}\n\n`)
           );
 

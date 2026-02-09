@@ -1,6 +1,6 @@
 // Database types matching Supabase schema
 
-export type Plan = 'free' | 'starter' | 'business' | 'enterprise';
+export type Plan = 'free' | 'starter' | 'business' | 'max';
 export type Channel = 'web' | 'slack' | 'whatsapp' | 'email';
 export type MessageRole = 'user' | 'assistant' | 'system';
 export type MemoryType = 'fact' | 'person' | 'decision' | 'event' | 'preference';
