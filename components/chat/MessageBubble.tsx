@@ -3,6 +3,7 @@
 import { Message } from '@/types';
 import { cn } from '@/lib/utils';
 import { User, Sparkles } from 'lucide-react';
+import { VoiceButton } from './VoiceButton';
 
 interface MessageBubbleProps {
   message: Message;
@@ -39,6 +40,11 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
             <span className="ml-1 inline-block h-4 w-1 animate-pulse bg-current" />
           )}
         </div>
+        {!isUser && !isStreaming && message.content.length > 20 && (
+          <div className="mt-1 flex justify-end">
+            <VoiceButton text={message.content} />
+          </div>
+        )}
       </div>
 
       {isUser && (
