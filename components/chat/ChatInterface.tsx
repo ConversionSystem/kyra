@@ -94,7 +94,9 @@ export function ChatInterface({
       });
 
       if (!response.ok) {
-        throw new Error('Failed to send message');
+        const errorText = await response.text().catch(() => '');
+        console.error('Chat API error:', response.status, errorText);
+        throw new Error(`Failed to send message (${response.status})`);
       }
 
       const reader = response.body?.getReader();
@@ -168,8 +170,16 @@ export function ChatInterface({
       }
     } catch (error) {
       console.error('Error sending message:', error);
-      // Remove optimistic message on error
-      setMessages((prev) => prev.filter((m) => m.id !== tempUserMessage.id));
+      // Keep user message but show error as assistant response
+      const errorMessage: Message = {
+        id: `error-${Date.now()}`,
+        conversation_id: currentConversation?.id || '',
+        role: 'assistant',
+        content: 'Sorry, something went wrong. Please try again.',
+        metadata: {},
+        created_at: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
       setStreamingContent('');
     } finally {
       setIsLoading(false);
