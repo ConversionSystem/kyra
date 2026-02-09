@@ -9,6 +9,7 @@ import { simpleFetch, formatFetchedContent, extractUrls } from '@/lib/tools/url-
 import { generateConversationTitle } from '@/lib/utils';
 import { Message, Conversation, MemoryType, User } from '@/types';
 import { getPlanLimit, isWithinLimit, getCreditCost, Plan } from '@/lib/billing/plans';
+import { processMessageForGraph } from '@/lib/memory/graph';
 import { v4 as uuid } from 'uuid';
 import { features } from '@/lib/config/features';
 
@@ -188,6 +189,14 @@ export async function POST(request: NextRequest) {
       console.error('Failed to fetch calendar events:', calError);
     }
     
+    // Memory graph context (entities, relationships, inferences)
+    let graphContext = '';
+    try {
+      graphContext = await processMessageForGraph(authUser.id, message);
+    } catch (graphError) {
+      console.error('Graph processing error:', graphError);
+    }
+    
     // Tool augmentation: Web Search and URL Fetching
     let toolContext = '';
     
@@ -219,7 +228,12 @@ export async function POST(request: NextRequest) {
       ? `${message}\n\n[CONTEXT FROM TOOLS]${toolContext}\n[/CONTEXT FROM TOOLS]`
       : message;
     
-    const systemPrompt = getSystemPrompt(memories, reminders, calendarEvents);
+    let systemPrompt = getSystemPrompt(memories, reminders, calendarEvents);
+    
+    // Inject memory graph context
+    if (graphContext) {
+      systemPrompt += `\n\n## Deep Memory Graph\n${graphContext}`;
+    }
 
     // Determine action type and credit cost
     const hasWebSearch = urls.length === 0 && needsWebSearch(message);
