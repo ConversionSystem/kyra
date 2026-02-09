@@ -55,7 +55,7 @@ export async function saveMemory(
       type,
       content,
       metadata,
-      pinecone_id: embeddingId,
+      embedding_id: embeddingId,
     })
     .select()
     .single();
@@ -128,10 +128,10 @@ export async function getUserMemories(userId: string): Promise<Memory[]> {
 export async function deleteMemory(memoryId: string, userId: string): Promise<boolean> {
   const supabase = await createServiceClient();
   
-  // Get the memory first to find pinecone_id
+  // Get the memory first to find embedding_id
   const { data: memory } = await supabase
     .from('memories')
-    .select('pinecone_id')
+    .select('embedding_id')
     .eq('id', memoryId)
     .eq('user_id', userId)
     .single();
@@ -141,8 +141,8 @@ export async function deleteMemory(memoryId: string, userId: string): Promise<bo
   }
   
   // Delete from Pinecone
-  if (memory.pinecone_id) {
-    await deleteVector(memory.pinecone_id);
+  if (memory.embedding_id) {
+    await deleteVector(memory.embedding_id);
   }
   
   // Delete from Supabase
@@ -177,8 +177,8 @@ export async function updateMemory(
   // Update embedding
   const embedding = await createEmbedding(content);
   
-  if (currentMemory.pinecone_id) {
-    await upsertVector(currentMemory.pinecone_id, embedding, {
+  if (currentMemory.embedding_id) {
+    await upsertVector(currentMemory.embedding_id, embedding, {
       user_id: userId,
       memory_id: memoryId,
       content,
