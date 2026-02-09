@@ -10,8 +10,14 @@ import { generateConversationTitle } from '@/lib/utils';
 import { Message, Conversation, MemoryType, User } from '@/types';
 import { getPlanLimit, isWithinLimit, Plan } from '@/lib/billing/plans';
 import { v4 as uuid } from 'uuid';
+import { features } from '@/lib/config/features';
+import { POST as openclawHandler } from './openclaw/route';
 
 export async function POST(request: NextRequest) {
+  // Route through OpenClaw Gateway when enabled
+  if (features.useOpenClaw) {
+    return openclawHandler(request);
+  }
   try {
     const supabase = await createClient();
     const serviceClient = await createServiceClient();

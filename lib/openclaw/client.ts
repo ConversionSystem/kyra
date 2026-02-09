@@ -5,8 +5,8 @@
  * Each user gets an isolated session via sessions_spawn/sessions_send.
  */
 
-const OPENCLAW_URL = process.env.OPENCLAW_GATEWAY_URL!;
-const OPENCLAW_API_KEY = process.env.OPENCLAW_API_KEY!;
+const OPENCLAW_URL = process.env.OPENCLAW_GATEWAY_URL || 'http://localhost:18789';
+const OPENCLAW_API_KEY = process.env.OPENCLAW_API_KEY || '';
 
 export interface OpenClawMessage {
   role: 'user' | 'assistant' | 'system';

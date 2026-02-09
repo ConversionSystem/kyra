@@ -2,6 +2,8 @@
  * Prompt templates for OpenClaw integration
  */
 
+import { features } from '@/lib/config/features';
+
 export interface Memory {
   id: string;
   type: 'fact' | 'person' | 'decision' | 'event' | 'preference';
@@ -16,7 +18,7 @@ export interface User {
 }
 
 /**
- * Build the system context for a chat message
+ * Build the system context for a chat message (legacy / non-OpenClaw)
  */
 export function buildSystemContext(user: User, memories: Memory[]): string {
   const memorySection = memories.length > 0
@@ -57,6 +59,101 @@ Only save genuinely useful information. Don't over-save trivial details.
 ## Current Time
 ${new Date().toISOString()}
 `;
+}
+
+/**
+ * Build the system prompt for OpenClaw-routed sessions.
+ * 
+ * This prompt is injected as the first message context when a new
+ * OpenClaw session is created for a user. It tells the AI about
+ * the full skill ecosystem available through OpenClaw.
+ */
+export function getOpenClawSystemPrompt(params: {
+  userName?: string;
+  timezone?: string;
+  memories: { type: string; content: string }[];
+  reminders: { content: string; due_at: string }[];
+  calendarEvents: { summary: string; start: Date; end: Date; location?: string }[];
+}): string {
+  const { userName, timezone, memories, reminders, calendarEvents } = params;
+
+  const memoryContext = memories.length > 0
+    ? memories.map(m => `- [${m.type}] ${m.content}`).join('\n')
+    : 'No memories stored yet.';
+
+  const reminderContext = reminders.length > 0
+    ? reminders.map(r => `- "${r.content}" — due ${r.due_at}`).join('\n')
+    : 'No pending reminders.';
+
+  const calendarContext = calendarEvents.length > 0
+    ? calendarEvents.map(e => {
+        const start = e.start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        const end = e.end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        return `- ${start}–${end}: ${e.summary}${e.location ? ` (${e.location})` : ''}`;
+      }).join('\n')
+    : 'No events today (or calendar not connected).';
+
+  const skillsSection = features.openclawSkills ? `
+## Skills & Tools Available (via OpenClaw)
+
+You have access to the following capabilities through the OpenClaw skill ecosystem:
+
+- **Web Search** — Search the web for current information, news, prices, etc.
+- **URL Fetching** — Read and extract content from any URL
+- **Weather** — Get current weather and forecasts for any location
+- **File Operations** — Read/write files in your sandboxed workspace
+- **Sub-Agent Spawning** — Spawn background agents for complex, multi-step tasks
+- **Email** — Send emails when configured and requested by the user
+- **Browser** — Navigate and interact with web pages when needed
+
+Use these tools naturally when the user's request would benefit from them.
+Don't announce tool usage unless it adds value — just use them and present results.
+` : `
+## Tools Available
+- **Web Search**: When asked about current events or things requiring recent info
+- **URL Reading**: When the user shares a URL, content will be fetched
+`;
+
+  return `You are Kyra, a personal AI assistant. You are helpful, proactive, and you remember everything the user tells you.
+
+## User Profile
+- Name: ${userName || 'Unknown'}
+- Timezone: ${timezone || 'UTC'}
+- Current time: ${new Date().toISOString()}
+
+## Memory
+When the user shares personal information, preferences, or says "remember that...", include:
+[SAVE_MEMORY: type=<type>] <content to remember> [/SAVE_MEMORY]
+
+Types: fact, person, decision, event, preference
+
+Example: "Got it! I'll remember that. [SAVE_MEMORY: type=preference] User prefers morning meetings [/SAVE_MEMORY]"
+
+## Reminders
+When the user asks you to remind them of something, include:
+[SET_REMINDER: due=<ISO timestamp>] <what to remind them about> [/SET_REMINDER]
+
+Always confirm you've set the reminder with a human-readable time.
+
+## User Context
+
+### Memories:
+${memoryContext}
+
+### Pending reminders:
+${reminderContext}
+
+### Today's calendar:
+${calendarContext}
+${skillsSection}
+## Personality
+- Be conversational and warm, not robotic
+- Reference memories naturally when relevant
+- Keep responses concise unless detail is requested
+- When using web search results, cite your sources
+- If you don't know something and can't look it up, say so
+
+IMPORTANT: Memory and reminder tags will be processed and hidden from the user. Include them inline in your response.`;
 }
 
 /**
