@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     
     // Normalize payload based on channel type
-    let inbound: ChannelMessage;
+    let inbound: ChannelMessage | null = null;
     
     switch (channelType) {
       case 'whatsapp':

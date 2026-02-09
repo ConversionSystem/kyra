@@ -132,7 +132,7 @@ export async function saveGraphData(
         .update({ 
           properties: mergedProps,
           updated_at: new Date().toISOString(),
-          source_memory_ids: supabase.rpc ? undefined : undefined, // TODO: append
+          // TODO: append source_memory_ids
         })
         .eq('id', existing.id);
       entityNameMap[entity.name!.toLowerCase()] = existing.id;
