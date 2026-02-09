@@ -33,6 +33,6 @@ CREATE POLICY "Users can read own notifications" ON notifications
 CREATE POLICY "Users can update own notifications" ON notifications
   FOR UPDATE USING (auth.uid() = user_id);
 
--- Service role can insert (proactive engine runs server-side)
-CREATE POLICY "Service can insert notifications" ON notifications
-  FOR INSERT WITH CHECK (true);
+-- Service role can manage (proactive engine runs server-side)
+CREATE POLICY "Service can manage notifications" ON notifications
+  FOR ALL WITH CHECK (true);
