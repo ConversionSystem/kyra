@@ -25,5 +25,8 @@ ALTER TABLE pipelines ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can read own pipelines" ON pipelines
   FOR SELECT USING (auth.uid() = user_id);
 
+CREATE POLICY "Users can manage own pipelines" ON pipelines
+  FOR ALL USING (auth.uid() = user_id);
+
 CREATE POLICY "Service can manage pipelines" ON pipelines
   FOR ALL WITH CHECK (true);
