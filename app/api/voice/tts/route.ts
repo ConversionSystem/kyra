@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
       speed,
     });
     
-    return new Response(audioBuffer, {
+    return new Response(new Uint8Array(audioBuffer), {
       headers: {
         'Content-Type': 'audio/mpeg',
         'Content-Length': String(audioBuffer.length),

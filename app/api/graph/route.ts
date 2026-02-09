@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     stats: {
       totalEntities: entities?.length || 0,
       totalRelationships: relationships?.length || 0,
-      entityTypes: [...new Set((entities || []).map(e => e.type))],
+      entityTypes: Array.from(new Set((entities || []).map(e => e.type))),
     },
   });
 }
