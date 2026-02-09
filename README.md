@@ -168,7 +168,7 @@ Create index named `kyra-memories`:
 npm run dev
 ```
 
-Open http://localhost:3001
+Local: http://localhost:3001 | Production: https://kyra.conversionsystem.com
 
 ## 💰 Pricing Tiers
 
