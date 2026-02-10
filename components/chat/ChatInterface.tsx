@@ -6,7 +6,7 @@ import { MessageBubble, MessageSkeleton } from './MessageBubble';
 import { ChatInput } from './ChatInput';
 import { ConversationSidebar } from './ConversationSidebar';
 import { useRouter } from 'next/navigation';
-import { Sparkles, Brain, Settings } from 'lucide-react';
+import { Sparkles, Brain, Settings, Search, CalendarDays, Lightbulb, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import { ReminderNotification } from '@/components/reminders/ReminderNotification';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
@@ -229,29 +229,82 @@ export function ChatInterface({
         <div className="flex-1 overflow-y-auto px-4">
           <div className="mx-auto max-w-3xl">
             {messages.length === 0 && !streamingContent ? (
-              <div className="flex h-full flex-col items-center justify-center py-12">
-                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-purple-600">
-                  <Sparkles className="h-8 w-8 text-white" />
+              <div className="flex h-full flex-col items-center justify-center py-12 px-4">
+                {/* Animated gradient orb */}
+                <div className="relative mb-6">
+                  <div className="absolute inset-0 animate-pulse rounded-full bg-violet-500/20 blur-xl" />
+                  <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 via-purple-500 to-fuchsia-500 shadow-lg shadow-violet-500/25">
+                    <Sparkles className="h-10 w-10 text-white" />
+                  </div>
                 </div>
-                <h1 className="mb-2 text-2xl font-semibold text-zinc-100">
-                  Hi, I'm Kyra
+
+                <h1 className="mb-1 text-3xl font-bold text-zinc-100">
+                  Hi, I&apos;m Kyra
                 </h1>
-                <p className="max-w-md text-center text-zinc-400">
-                  Your personal AI assistant. I remember everything you tell me,
-                  so just ask me to remember something important!
+                <p className="mb-8 max-w-lg text-center text-base text-zinc-400">
+                  Your personal AI assistant with memory. I learn about you over time 
+                  and work across all your platforms.
                 </p>
-                <div className="mt-6 flex flex-wrap justify-center gap-2">
+
+                {/* Capability cards */}
+                <div className="mb-8 grid w-full max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
                   <button
-                    onClick={() => handleSendMessage("What can you do?")}
-                    className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800"
+                    onClick={() => handleSendMessage("What can you help me with?")}
+                    className="group flex flex-col items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 text-center transition-all hover:border-violet-500/30 hover:bg-violet-500/5"
                   >
-                    What can you do?
+                    <div className="rounded-lg bg-violet-500/10 p-2 transition-colors group-hover:bg-violet-500/20">
+                      <MessageSquare className="h-5 w-5 text-violet-400" />
+                    </div>
+                    <span className="text-xs text-zinc-400 group-hover:text-zinc-300">Chat & Ask</span>
+                  </button>
+                  <button
+                    onClick={() => handleSendMessage("Search the web for the latest AI news")}
+                    className="group flex flex-col items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 text-center transition-all hover:border-violet-500/30 hover:bg-violet-500/5"
+                  >
+                    <div className="rounded-lg bg-blue-500/10 p-2 transition-colors group-hover:bg-blue-500/20">
+                      <Search className="h-5 w-5 text-blue-400" />
+                    </div>
+                    <span className="text-xs text-zinc-400 group-hover:text-zinc-300">Web Search</span>
+                  </button>
+                  <button
+                    onClick={() => handleSendMessage("What's on my calendar today?")}
+                    className="group flex flex-col items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 text-center transition-all hover:border-violet-500/30 hover:bg-violet-500/5"
+                  >
+                    <div className="rounded-lg bg-emerald-500/10 p-2 transition-colors group-hover:bg-emerald-500/20">
+                      <CalendarDays className="h-5 w-5 text-emerald-400" />
+                    </div>
+                    <span className="text-xs text-zinc-400 group-hover:text-zinc-300">Calendar</span>
                   </button>
                   <button
                     onClick={() => handleSendMessage("Remember that I prefer morning meetings")}
-                    className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800"
+                    className="group flex flex-col items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 text-center transition-all hover:border-violet-500/30 hover:bg-violet-500/5"
                   >
-                    Try: Remember that I prefer morning meetings
+                    <div className="rounded-lg bg-amber-500/10 p-2 transition-colors group-hover:bg-amber-500/20">
+                      <Lightbulb className="h-5 w-5 text-amber-400" />
+                    </div>
+                    <span className="text-xs text-zinc-400 group-hover:text-zinc-300">Remember</span>
+                  </button>
+                </div>
+
+                {/* Quick prompts */}
+                <div className="flex flex-wrap justify-center gap-2">
+                  <button
+                    onClick={() => handleSendMessage("Give me a summary of today's top news")}
+                    className="rounded-full border border-zinc-700/50 bg-zinc-900/50 px-4 py-2 text-sm text-zinc-400 transition-all hover:border-zinc-600 hover:bg-zinc-800 hover:text-zinc-200"
+                  >
+                    📰 Today&apos;s top news
+                  </button>
+                  <button
+                    onClick={() => handleSendMessage("Help me write a professional email")}
+                    className="rounded-full border border-zinc-700/50 bg-zinc-900/50 px-4 py-2 text-sm text-zinc-400 transition-all hover:border-zinc-600 hover:bg-zinc-800 hover:text-zinc-200"
+                  >
+                    ✉️ Write an email
+                  </button>
+                  <button
+                    onClick={() => handleSendMessage("Help me brainstorm ideas for my project")}
+                    className="rounded-full border border-zinc-700/50 bg-zinc-900/50 px-4 py-2 text-sm text-zinc-400 transition-all hover:border-zinc-600 hover:bg-zinc-800 hover:text-zinc-200"
+                  >
+                    💡 Brainstorm ideas
                   </button>
                 </div>
               </div>
