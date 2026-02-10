@@ -23,6 +23,8 @@ export default function SettingsPage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [googleConnected, setGoogleConnected] = useState(false);
   const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
+  const [usage, setUsage] = useState<any>(null);
+  const [isUpgrading, setIsUpgrading] = useState<string | null>(null);
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -56,6 +58,17 @@ export default function SettingsPage() {
       setGoogleConnected(!!googleIntegration);
       setIsLoading(false);
       
+      // Fetch usage data
+      try {
+        const usageRes = await fetch('/api/usage');
+        if (usageRes.ok) {
+          const usageData = await usageRes.json();
+          setUsage(usageData);
+        }
+      } catch (e) {
+        console.error('Failed to fetch usage:', e);
+      }
+
       // Check for OAuth callback messages
       const success = searchParams.get('success');
       const error = searchParams.get('error');
@@ -255,30 +268,161 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Usage */}
+        {/* Usage & Plan */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5" />
-              Usage
+              Usage & Plan
             </CardTitle>
-            <CardDescription>Your activity this month</CardDescription>
+            <CardDescription>Your current plan and credit usage</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-6">
+            {/* Current stats */}
             <div className="grid grid-cols-3 gap-4">
               <div className="rounded-lg border border-zinc-700 bg-zinc-800/50 p-4 text-center">
-                <p className="text-2xl font-bold text-zinc-100">-</p>
+                <p className="text-2xl font-bold text-zinc-100">{usage?.messageCount ?? '-'}</p>
                 <p className="text-xs text-zinc-500">Messages</p>
               </div>
               <div className="rounded-lg border border-zinc-700 bg-zinc-800/50 p-4 text-center">
-                <p className="text-2xl font-bold text-zinc-100">-</p>
+                <p className="text-2xl font-bold text-zinc-100">{usage?.memoryCount ?? '-'}</p>
                 <p className="text-xs text-zinc-500">Memories</p>
               </div>
               <div className="rounded-lg border border-zinc-700 bg-zinc-800/50 p-4 text-center">
-                <p className="text-2xl font-bold text-zinc-100">Free</p>
+                <p className="text-2xl font-bold text-violet-400 capitalize">{usage?.planName ?? 'Free'}</p>
                 <p className="text-xs text-zinc-500">Plan</p>
               </div>
             </div>
+
+            {/* Credits bar */}
+            {usage && (
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-zinc-400">Credits used</span>
+                  <span className="text-zinc-300">{usage.creditsUsed} / {usage.creditsLimit}</span>
+                </div>
+                <div className="h-2 rounded-full bg-zinc-800">
+                  <div
+                    className={`h-2 rounded-full transition-all ${
+                      usage.usagePercentage > 90 ? 'bg-red-500' :
+                      usage.usagePercentage > 70 ? 'bg-yellow-500' : 'bg-violet-500'
+                    }`}
+                    style={{ width: `${Math.min(100, usage.usagePercentage)}%` }}
+                  />
+                </div>
+                <p className="text-xs text-zinc-500">{usage.creditsRemaining} credits remaining</p>
+              </div>
+            )}
+
+            {/* Upgrade options */}
+            {(!usage || usage.plan === 'free' || usage.plan === 'starter') && (
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-zinc-300">Upgrade your plan</p>
+                <div className="grid gap-3">
+                  {usage?.plan !== 'starter' && (
+                    <div className="flex items-center justify-between rounded-lg border border-zinc-700 bg-zinc-800/50 p-4">
+                      <div>
+                        <p className="font-medium text-zinc-100">Starter — $20/mo</p>
+                        <p className="text-xs text-zinc-500">500 credits · WhatsApp + Telegram · Web search</p>
+                      </div>
+                      <Button
+                        size="sm"
+                        disabled={isUpgrading !== null}
+                        onClick={async () => {
+                          setIsUpgrading('starter');
+                          try {
+                            const res = await fetch('/api/billing/checkout', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ plan: 'starter' }),
+                            });
+                            const data = await res.json();
+                            if (data.url) window.location.href = data.url;
+                            else setMessage({ type: 'error', text: data.error || 'Failed to start checkout' });
+                          } catch { setMessage({ type: 'error', text: 'Failed to start checkout' }); }
+                          setIsUpgrading(null);
+                        }}
+                      >
+                        {isUpgrading === 'starter' ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Upgrade'}
+                      </Button>
+                    </div>
+                  )}
+                  {usage?.plan !== 'business' && (
+                    <div className="flex items-center justify-between rounded-lg border border-violet-500/30 bg-violet-500/5 p-4">
+                      <div>
+                        <p className="font-medium text-zinc-100">Business — $100/mo</p>
+                        <p className="text-xs text-zinc-500">3,000 credits · AI sub-agents · Priority support</p>
+                      </div>
+                      <Button
+                        size="sm"
+                        disabled={isUpgrading !== null}
+                        onClick={async () => {
+                          setIsUpgrading('business');
+                          try {
+                            const res = await fetch('/api/billing/checkout', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ plan: 'business' }),
+                            });
+                            const data = await res.json();
+                            if (data.url) window.location.href = data.url;
+                            else setMessage({ type: 'error', text: data.error || 'Failed to start checkout' });
+                          } catch { setMessage({ type: 'error', text: 'Failed to start checkout' }); }
+                          setIsUpgrading(null);
+                        }}
+                      >
+                        {isUpgrading === 'business' ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Upgrade'}
+                      </Button>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between rounded-lg border border-zinc-700 bg-zinc-800/50 p-4">
+                    <div>
+                      <p className="font-medium text-zinc-100">Max — $200/mo</p>
+                      <p className="text-xs text-zinc-500">8,000 credits · Unlimited memory · API access · SLA</p>
+                    </div>
+                    <Button
+                      size="sm"
+                      disabled={isUpgrading !== null}
+                      onClick={async () => {
+                        setIsUpgrading('max');
+                        try {
+                          const res = await fetch('/api/billing/checkout', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ plan: 'max' }),
+                          });
+                          const data = await res.json();
+                          if (data.url) window.location.href = data.url;
+                          else setMessage({ type: 'error', text: data.error || 'Failed to start checkout' });
+                        } catch { setMessage({ type: 'error', text: 'Failed to start checkout' }); }
+                        setIsUpgrading(null);
+                      }}
+                    >
+                      {isUpgrading === 'max' ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Upgrade'}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Manage subscription (for paid users) */}
+            {usage?.hasSubscription && (
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={async () => {
+                  try {
+                    const res = await fetch('/api/billing/portal', { method: 'POST' });
+                    const data = await res.json();
+                    if (data.url) window.location.href = data.url;
+                  } catch {
+                    setMessage({ type: 'error', text: 'Failed to open billing portal' });
+                  }
+                }}
+              >
+                Manage Subscription
+              </Button>
+            )}
           </CardContent>
         </Card>
 
