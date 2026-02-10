@@ -2,15 +2,31 @@
 
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Sparkles, Loader2, CheckCircle } from 'lucide-react';
 
-export default function SignupPage() {
+import { Suspense } from 'react';
+
+export default function SignupPageWrapper() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center bg-zinc-950">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
+      </div>
+    }>
+      <SignupPage />
+    </Suspense>
+  );
+}
+
+function SignupPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const selectedPlan = searchParams.get('plan'); // e.g. 'starter', 'business', 'max'
   
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -21,6 +37,31 @@ export default function SignupPage() {
   const [success, setSuccess] = useState(false);
 
   const supabase = createClient();
+
+  /**
+   * After signup/login, redirect to Stripe Checkout if a paid plan was selected,
+   * otherwise go straight to /chat.
+   */
+  const redirectAfterAuth = async () => {
+    if (selectedPlan && ['starter', 'business', 'max'].includes(selectedPlan)) {
+      try {
+        const res = await fetch('/api/billing/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ plan: selectedPlan }),
+        });
+        const data = await res.json();
+        if (data.url) {
+          window.location.href = data.url;
+          return;
+        }
+      } catch (err) {
+        console.error('Failed to create checkout session:', err);
+      }
+    }
+    router.push('/chat');
+    router.refresh();
+  };
 
   const handleEmailSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,9 +91,8 @@ export default function SignupPage() {
         return;
       }
 
-      // If auto-confirmed (for development)
-      router.push('/chat');
-      router.refresh();
+      // If auto-confirmed (for development) — redirect to Stripe or chat
+      await redirectAfterAuth();
     } catch (err) {
       setError('An unexpected error occurred');
     } finally {
@@ -65,10 +105,13 @@ export default function SignupPage() {
     setIsGoogleLoading(true);
 
     try {
+      const redirectTo = selectedPlan
+        ? `${window.location.origin}/api/auth/callback?redirect=/chat?plan=${selectedPlan}`
+        : `${window.location.origin}/api/auth/callback`;
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/api/auth/callback`,
+          redirectTo,
         },
       });
 
