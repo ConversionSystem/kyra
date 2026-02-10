@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       email: user.email!,
       plan: plan as 'starter' | 'business' | 'max',
       successUrl: `${origin}/chat?upgraded=true`,
-      cancelUrl: `${origin}/pricing?cancelled=true`,
+      cancelUrl: `${origin}/settings?cancelled=true`,
       customerId: profile?.stripe_customer_id || undefined,
     });
 
