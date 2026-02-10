@@ -15,7 +15,13 @@ import { v4 as uuid } from 'uuid';
 import { features } from '@/lib/config/features';
 
 export async function POST(request: NextRequest) {
-  // Route through OpenClaw Gateway when enabled (dynamic import to avoid loading Node.js modules when disabled)
+  // Route through Kyra Worker (multi-tenant) when enabled — takes priority
+  if (features.useWorker) {
+    const { POST: workerHandler } = await import('./worker/route');
+    return workerHandler(request);
+  }
+
+  // Route through OpenClaw Gateway (legacy Mac mini tunnel) when enabled
   if (features.useOpenClaw) {
     const { POST: openclawHandler } = await import('./openclaw/route');
     return openclawHandler(request);

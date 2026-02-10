@@ -6,7 +6,10 @@
  */
 
 export const features = {
-  /** Route chat through OpenClaw Gateway instead of direct Claude API */
+  /** Route chat through Kyra Worker (multi-tenant Cloudflare sandboxes) — default when configured */
+  useWorker: process.env.KYRA_USE_WORKER === 'true',
+
+  /** Route chat through OpenClaw Gateway on Mac mini (legacy tunnel approach) */
   useOpenClaw: process.env.KYRA_USE_OPENCLAW === 'true',
 
   /** Enable OpenClaw skill ecosystem (web search, file ops, sub-agents, etc.) */
