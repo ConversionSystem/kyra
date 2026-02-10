@@ -1,6 +1,8 @@
 import { ChatInterface } from '@/components/chat/ChatInterface';
+import { PlanRedirect } from '@/components/billing/PlanRedirect';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+import { Suspense } from 'react';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,9 +23,14 @@ export default async function ChatPage() {
     .order('updated_at', { ascending: false });
 
   return (
-    <ChatInterface
-      conversations={conversations || []}
-      userId={user.id}
-    />
+    <>
+      <Suspense fallback={null}>
+        <PlanRedirect />
+      </Suspense>
+      <ChatInterface
+        conversations={conversations || []}
+        userId={user.id}
+      />
+    </>
   );
 }
