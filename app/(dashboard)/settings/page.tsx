@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, User, Clock, BarChart3, LogOut, Calendar, Check, X, Loader2 } from 'lucide-react';
+import { ArrowLeft, User, Clock, BarChart3, LogOut, Calendar, Check, X, Loader2, MessageCircle, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useSearchParams } from 'next/navigation';
@@ -202,6 +202,28 @@ export default function SettingsPage() {
                 <option value="Asia/Tokyo">Tokyo</option>
               </select>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Channels */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MessageCircle className="h-5 w-5" />
+              Channels
+            </CardTitle>
+            <CardDescription>Connect Kyra to Telegram, WhatsApp, and more</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/settings/channels">
+              <div className="flex items-center justify-between rounded-lg border border-zinc-700 bg-zinc-800/50 p-4 hover:bg-zinc-800 transition-colors cursor-pointer">
+                <div>
+                  <p className="font-medium text-zinc-100">Manage Channels</p>
+                  <p className="text-xs text-zinc-500">Telegram, WhatsApp — connect your messaging apps</p>
+                </div>
+                <ChevronRight className="h-5 w-5 text-zinc-500" />
+              </div>
+            </Link>
           </CardContent>
         </Card>
 
