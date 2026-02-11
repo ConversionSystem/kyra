@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     if (text === '/start') {
       await sendTelegramMessage(chatId, 
         "👋 Hi! I'm Kyra, your AI assistant.\n\n" +
-        "To connect your account, go to kyra.conversationsystem.com → Settings → Channels, " +
+        "To connect your account, go to kyra.conversionsystem.com → Settings → Channels, " +
         "get your connection token, then send:\n\n" +
         "/connect YOUR_TOKEN"
       );
