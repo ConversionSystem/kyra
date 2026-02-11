@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 
+import { createClient } from '@supabase/supabase-js';
+
 function getSupabase() {
-  const { createClient } = require('@supabase/supabase-js');
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -193,9 +194,9 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('[telegram-webhook] CAUGHT ERROR:', error?.message, error?.stack);
     return NextResponse.json({ 
-      error: 'Processing failed', 
-      detail: error?.message,
-      stack: error?.stack?.split('\n').slice(0, 5),
+      error: 'KYRA_WEBHOOK_CAUGHT_ERROR', 
+      detail: String(error?.message || error),
+      stack: String(error?.stack || '').split('\n').slice(0, 5),
     }, { status: 500 });
   }
 }
