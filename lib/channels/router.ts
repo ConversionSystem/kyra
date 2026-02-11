@@ -51,7 +51,9 @@ export async function processChannelMessage(
   const supabase = await createServiceClient();
   
   // Resolve user
+  console.log('[channel-router] resolving user:', inbound.channelType, inbound.channelUserId);
   const user = await resolveUser(inbound.channelType, inbound.channelUserId);
+  console.log('[channel-router] resolved user:', user?.id, user?.email);
   
   if (!user) {
     return {
@@ -60,7 +62,8 @@ export async function processChannelMessage(
   }
   
   // Get or create conversation for this channel
-  const { data: existingConv } = await supabase
+  console.log('[channel-router] getting conversation for user:', user.id);
+  const { data: existingConv, error: convError } = await supabase
     .from('conversations')
     .select('id')
     .eq('user_id', user.id)
@@ -69,6 +72,7 @@ export async function processChannelMessage(
     .limit(1)
     .single();
   
+  console.log('[channel-router] existingConv:', existingConv, 'error:', convError);
   let conversationId: string;
   if (existingConv) {
     conversationId = existingConv.id;
@@ -95,7 +99,14 @@ export async function processChannelMessage(
     .limit(15);
   
   // Search memories
-  const memories = await searchMemories(user.id, inbound.text, 5);
+  console.log('[channel-router] searching memories for:', user.id);
+  let memories: any[] = [];
+  try {
+    memories = await searchMemories(user.id, inbound.text, 5);
+    console.log('[channel-router] memories found:', memories.length);
+  } catch (memErr) {
+    console.error('[channel-router] memory search failed:', memErr);
+  }
   
   // Get pending reminders
   const { data: reminders } = await supabase
@@ -120,7 +131,9 @@ export async function processChannelMessage(
   }));
   messages.push({ role: 'user', content: inbound.text });
   
+  console.log('[channel-router] calling Claude with', messages.length, 'messages');
   const result = await chat(messages, systemPrompt);
+  console.log('[channel-router] Claude responded, length:', result.content.length);
   
   // Extract commands
   const { cleanResponse, memories: memoriesToSave, reminders: remindersToSave } = extractCommands(result.content);
