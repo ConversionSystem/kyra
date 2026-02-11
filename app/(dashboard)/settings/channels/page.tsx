@@ -188,12 +188,18 @@ export default function ChannelsPage() {
             ) : (
               <div className="space-y-4">
                 <div className="rounded-lg border border-zinc-700 bg-zinc-800/50 p-4">
-                  <p className="text-sm text-zinc-300 mb-3">To connect Telegram:</p>
-                  <ol className="text-sm text-zinc-400 space-y-2 list-decimal list-inside">
-                    <li>Generate a connection token below</li>
-                    <li>Open <a href="https://t.me/KyraAIBot" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">@KyraAIBot</a> on Telegram</li>
-                    <li>Send the connect command to the bot</li>
+                  <p className="text-sm font-medium text-zinc-200 mb-3">How to connect Telegram</p>
+                  <ol className="text-sm text-zinc-400 space-y-3 list-decimal list-inside">
+                    <li>Click <strong className="text-zinc-200">&quot;Generate Connection Token&quot;</strong> below to get your unique code</li>
+                    <li>Open Telegram on your phone or desktop</li>
+                    <li>Search for <a href="https://t.me/KyraAIBot" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline font-medium">@KyraAIBot</a> or tap the link to open the bot</li>
+                    <li>Tap <strong className="text-zinc-200">&quot;Start&quot;</strong> if this is your first time opening the bot</li>
+                    <li>Copy the connect command below and send it to the bot (e.g. <code className="text-violet-300 bg-zinc-800 px-1.5 py-0.5 rounded text-xs">/connect abc123</code>)</li>
+                    <li>You&apos;ll get a confirmation message — Kyra is now connected!</li>
                   </ol>
+                  <div className="mt-3 rounded-md bg-blue-500/5 border border-blue-500/20 px-3 py-2">
+                    <p className="text-xs text-blue-300">💡 Once connected, you can message Kyra anytime on Telegram. She&apos;ll have the same memory and context as the web chat.</p>
+                  </div>
                 </div>
 
                 {telegramToken ? (
@@ -278,12 +284,18 @@ export default function ChannelsPage() {
                 </Button>
               </div>
             ) : (
-              <div className="rounded-lg border border-zinc-700 bg-zinc-800/50 p-4">
-                <p className="text-sm text-zinc-300 mb-3">WhatsApp integration coming soon!</p>
-                <p className="text-xs text-zinc-500">
-                  WhatsApp Business API connection will be available once configured. 
-                  You&apos;ll be able to message Kyra directly from WhatsApp.
-                </p>
+              <div className="rounded-lg border border-zinc-700 bg-zinc-800/50 p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-400">Coming Soon</span>
+                </div>
+                <p className="text-sm text-zinc-300">WhatsApp integration is being built and will be available soon.</p>
+                <p className="text-xs text-zinc-500">Once available, you&apos;ll be able to:</p>
+                <ul className="text-xs text-zinc-500 space-y-1 list-disc list-inside">
+                  <li>Message Kyra directly from WhatsApp</li>
+                  <li>Send voice messages, images, and files</li>
+                  <li>Get proactive notifications and reminders</li>
+                  <li>Same memory and context across all channels</li>
+                </ul>
               </div>
             )}
           </CardContent>
