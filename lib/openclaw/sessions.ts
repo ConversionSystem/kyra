@@ -5,7 +5,16 @@
  * timeout handling, and session reuse.
  */
 
-import { chatSend as gwChatSend, gatewayHealthCheck } from './gateway-ws';
+// Dynamic imports to avoid bundling Node.js-only gateway-ws in Edge runtime
+// OpenClaw gateway uses Node.js http/crypto/net which aren't available in Edge
+async function gwChatSend(sessionKey: string, message: string, timeoutMs: number) {
+  const { chatSend } = await import('./gateway-ws');
+  return chatSend(sessionKey, message, timeoutMs);
+}
+async function gatewayHealthCheck() {
+  const { gatewayHealthCheck: check } = await import('./gateway-ws');
+  return check();
+}
 
 interface SessionInfo {
   sessionKey: string;
