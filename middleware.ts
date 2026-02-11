@@ -2,9 +2,11 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
 
 export async function middleware(request: NextRequest) {
-  // Skip auth middleware for webhooks and billing callbacks (no cookies)
   const path = request.nextUrl.pathname;
-  if (path.startsWith('/api/channels/') || path.startsWith('/api/billing/')) {
+  console.log('[middleware]', request.method, path);
+  
+  // Skip auth middleware for ALL API routes (webhooks, billing, etc.)
+  if (path.startsWith('/api/')) {
     return NextResponse.next();
   }
   return await updateSession(request);
