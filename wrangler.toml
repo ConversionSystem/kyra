@@ -27,6 +27,10 @@ NEXT_PUBLIC_APP_URL = "https://kyra.conversionsystem.com/"
 NEXT_PUBLIC_SUPABASE_URL = "https://yaijdtsunxicuphrakcc.supabase.co"
 KYRA_USE_OPENCLAW = "false"
 KYRA_OPENCLAW_SKILLS = "false"
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY = "pk_live_O6KfQFjoTPr8xECnzSadOqgU"
+STRIPE_PRICE_STARTER = "price_1SzEfEDr3LPJOIaM4eRAwHn7"
+STRIPE_PRICE_BUSINESS = "price_1SzEfgDr3LPJOIaM41V1BT5D"
+STRIPE_PRICE_MAX = "price_1SzEgIDr3LPJOIaMn6fZLS6j"
 
 # Custom domain
 [[routes]]
