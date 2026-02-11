@@ -45,3 +45,6 @@ next-env.d.ts
 *.seed
 .env.local.dev
 .env.production
+
+# OpenNext build output
+.open-next/

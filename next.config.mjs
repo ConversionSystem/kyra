@@ -1,9 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Required for OpenClaw WS client (uses Node.js http, crypto, events)
+  // Note: serverExternalPackages may not fully work on Cloudflare Workers
+  // but OpenNext has better Node.js compat than next-on-pages
   serverExternalPackages: ['ws'],
-  
-  // Opt-in to dynamic rendering for auth and dashboard pages
+
   experimental: {
     // Prevent build errors from dynamic routes
   },
