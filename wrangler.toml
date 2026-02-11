@@ -1,0 +1,40 @@
+#:schema node_modules/wrangler/config-schema.json
+name = "kyra"
+main = ".open-next/worker.js"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+
+# Assets (static files)
+[assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
+
+# R2 bucket binding (uncomment if needed for direct access from frontend)
+# [[r2_buckets]]
+# binding = "R2"
+# bucket_name = "kyra-user-data"
+
+# Environment variables that are safe to commit (non-secret)
+[vars]
+NEXT_PUBLIC_APP_NAME = "Kyra"
+NEXT_PUBLIC_APP_URL = "https://kyra.conversionsystem.com/"
+NEXT_PUBLIC_SUPABASE_URL = "https://yaijdtsunxicuphrakcc.supabase.co"
+KYRA_USE_OPENCLAW = "false"
+KYRA_OPENCLAW_SKILLS = "false"
+
+# Custom domain
+[[routes]]
+pattern = "kyra.conversionsystem.com/*"
+zone_name = "conversionsystem.com"
+
+# Secrets (set via `wrangler secret put <NAME>`):
+# ANTHROPIC_API_KEY
+# BRAVE_API_KEY
+# OPENAI_API_KEY
+# PINECONE_API_KEY
+# PINECONE_INDEX
+# NEXT_PUBLIC_SUPABASE_ANON_KEY
+# SUPABASE_SERVICE_ROLE_KEY
+# STRIPE_SECRET_KEY (if used)
+# STRIPE_WEBHOOK_SECRET (if used)

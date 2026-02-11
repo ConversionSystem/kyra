@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { randomBytes } from 'crypto';
+// Use Web Crypto API for Cloudflare Workers compatibility
+function randomBytesHex(length: number): string {
+  const bytes = new Uint8Array(length);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 /**
  * POST /api/channels/telegram/connect
@@ -15,7 +20,7 @@ export async function POST() {
   }
 
   // Generate a short, user-friendly token (6 chars hex)
-  const token = randomBytes(3).toString('hex').toUpperCase();
+  const token = randomBytesHex(3).toUpperCase();
   const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 min
 
   // Upsert the channel record
