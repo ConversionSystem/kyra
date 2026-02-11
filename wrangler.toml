@@ -10,6 +10,11 @@ workers_dev = true
 directory = ".open-next/assets"
 binding = "ASSETS"
 
+# R2 bucket for Next.js incremental cache (required by OpenNext)
+[[r2_buckets]]
+binding = "NEXT_INC_CACHE_R2_BUCKET"
+bucket_name = "kyra-next-cache"
+
 # R2 bucket binding (uncomment if needed for direct access from frontend)
 # [[r2_buckets]]
 # binding = "R2"
