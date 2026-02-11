@@ -69,14 +69,19 @@ function SignupPage() {
     setIsLoading(true);
 
     try {
+      const emailRedirectTo = selectedPlan
+        ? `${window.location.origin}/api/auth/callback?redirect=${encodeURIComponent(`/chat?plan=${selectedPlan}`)}`
+        : `${window.location.origin}/api/auth/callback`;
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             name,
+            ...(selectedPlan ? { selected_plan: selectedPlan } : {}),
           },
-          emailRedirectTo: `${window.location.origin}/api/auth/callback`,
+          emailRedirectTo,
         },
       });
 
@@ -106,7 +111,7 @@ function SignupPage() {
 
     try {
       const redirectTo = selectedPlan
-        ? `${window.location.origin}/api/auth/callback?redirect=/chat?plan=${selectedPlan}`
+        ? `${window.location.origin}/api/auth/callback?redirect=${encodeURIComponent(`/chat?plan=${selectedPlan}`)}`
         : `${window.location.origin}/api/auth/callback`;
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',

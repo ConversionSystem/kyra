@@ -42,17 +42,32 @@ export async function POST(request: NextRequest) {
           break;
         }
 
-        await serviceClient
+        const creditsByPlan: Record<string, number> = {
+          starter: 500,
+          pro: 3000,
+          enterprise: 8000,
+        };
+        const credits = creditsByPlan[plan] ?? 0;
+
+        const { data: updatedRows, error: updateError } = await serviceClient
           .from('users')
           .update({
             plan,
+            credits,
             stripe_customer_id: session.customer as string,
             stripe_subscription_id: session.subscription as string,
             updated_at: new Date().toISOString(),
           })
-          .eq('id', userId);
+          .eq('id', userId)
+          .select();
 
-        console.log(`✅ User ${userId} upgraded to ${plan}`);
+        if (updateError) {
+          console.error(`Failed to update user ${userId}:`, updateError);
+        } else if (!updatedRows || updatedRows.length === 0) {
+          console.warn(`⚠️ No user row found for ${userId} — update affected 0 rows`);
+        } else {
+          console.log(`✅ User ${userId} upgraded to ${plan} with ${credits} credits`);
+        }
         break;
       }
 

@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
       .eq('id', authUser.id);
 
     // --- Forward to Kyra Worker ---
-    const workerResponse = await fetch(`${WORKER_URL}/api/kyra/chat`, {
+    const workerResponse = await fetch(`${WORKER_URL}/api/kyra/send`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
