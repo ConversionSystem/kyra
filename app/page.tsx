@@ -6,11 +6,17 @@ import {
   SmartphoneIcon, 
   ZapIcon, 
   SearchIcon, 
-  UsersIcon, 
+  MessageSquareIcon, 
   CalendarIcon,
   CheckIcon,
   ShieldCheckIcon,
   GlobeIcon,
+  LockIcon,
+  ClockIcon,
+  SendIcon,
+  BotIcon,
+  DatabaseIcon,
+  TrendingUpIcon,
 } from 'lucide-react';
 
 export default function LandingPage() {
@@ -21,13 +27,16 @@ export default function LandingPage() {
         <div className="flex items-center gap-2">
           <SparklesIcon className="h-8 w-8 text-purple-400" />
           <span className="text-2xl font-bold">Kyra</span>
+          <span className="ml-1 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
+            Beta
+          </span>
         </div>
         <nav className="hidden md:flex items-center gap-8">
           <Link href="#features" className="text-gray-300 hover:text-white transition text-sm">
             Features
           </Link>
-          <Link href="#how-it-works" className="text-gray-300 hover:text-white transition text-sm">
-            How It Works
+          <Link href="#channels" className="text-gray-300 hover:text-white transition text-sm">
+            Channels
           </Link>
           <Link href="#pricing" className="text-gray-300 hover:text-white transition text-sm">
             Pricing
@@ -41,7 +50,7 @@ export default function LandingPage() {
             href="/signup" 
             className="px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 transition font-medium text-sm"
           >
-            Get Started
+            Try Free
           </Link>
         </div>
       </header>
@@ -56,17 +65,17 @@ export default function LandingPage() {
             </div>
             
             <h1 className="text-5xl md:text-7xl font-bold leading-[1.1] mb-6 tracking-tight">
-              Your AI That
+              An AI That
               <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400">
-                Actually Knows You
+                Remembers Everything
               </span>
             </h1>
             
             <p className="text-xl text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
-              An AI assistant with persistent memory that works across WhatsApp, Telegram, 
-              Slack, and web. It remembers everything, searches the web, manages your calendar, 
-              and gets smarter every conversation.
+              Meet Kyra — your personal AI assistant that learns who you are, 
+              works across every platform you use, and gets smarter with every conversation. 
+              Not a chatbot. A partner.
             </p>
             
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -74,31 +83,78 @@ export default function LandingPage() {
                 href="/signup"
                 className="flex items-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 transition font-semibold text-lg shadow-lg shadow-purple-900/30"
               >
-                Start Free
+                Start Free — No Card Required
                 <ArrowRightIcon className="h-5 w-5" />
-              </Link>
-              <Link
-                href="#how-it-works"
-                className="flex items-center gap-2 px-8 py-4 rounded-xl bg-gray-800/80 hover:bg-gray-700/80 transition font-semibold text-lg border border-gray-700"
-              >
-                See How It Works
               </Link>
             </div>
             
             <p className="text-sm text-gray-500 mt-6">
-              50 free credits/month. No credit card required.
+              50 free credits/month · Set up in 30 seconds · Cancel anytime
             </p>
           </div>
         </section>
 
-        {/* Features */}
+        {/* Social proof bar */}
+        <section className="border-y border-gray-800/50 py-8 mb-8">
+          <div className="container mx-auto px-6">
+            <div className="flex flex-wrap items-center justify-center gap-8 md:gap-16 text-gray-400 text-sm">
+              <div className="flex items-center gap-2">
+                <BrainIcon className="h-4 w-4 text-purple-400" />
+                <span>Persistent Memory</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <SmartphoneIcon className="h-4 w-4 text-purple-400" />
+                <span>Multi-Platform</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <SearchIcon className="h-4 w-4 text-purple-400" />
+                <span>Real-Time Web Search</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <BotIcon className="h-4 w-4 text-purple-400" />
+                <span>AI Sub-Agents</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <LockIcon className="h-4 w-4 text-purple-400" />
+                <span>Your Data, Your Control</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Problem → Solution */}
+        <section className="container mx-auto px-6 py-20">
+          <div className="max-w-4xl mx-auto">
+            <div className="grid md:grid-cols-2 gap-12 items-center">
+              <div>
+                <h2 className="text-3xl font-bold mb-6">
+                  Every other AI forgets you exist
+                </h2>
+                <div className="space-y-4 text-gray-400">
+                  <p>ChatGPT doesn&apos;t know your name next Tuesday. Claude forgets your preferences every session. Every conversation starts from zero.</p>
+                  <p>You end up repeating yourself. Explaining your business. Re-teaching context. Over and over.</p>
+                  <p className="text-white font-medium">Kyra is different.</p>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <BenefitItem icon={<BrainIcon className="h-5 w-5" />} title="Remembers your name, your projects, your preferences" />
+                <BenefitItem icon={<TrendingUpIcon className="h-5 w-5" />} title="Gets smarter the more you use it" />
+                <BenefitItem icon={<MessageSquareIcon className="h-5 w-5" />} title="Same AI across web, Telegram, WhatsApp, Slack" />
+                <BenefitItem icon={<ClockIcon className="h-5 w-5" />} title="Works for you even when you don't ask" />
+                <BenefitItem icon={<DatabaseIcon className="h-5 w-5" />} title="Your data stays yours — never used for training" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Core Features */}
         <section id="features" className="container mx-auto px-6 py-24">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Not just another chatbot
+              Everything you need in one AI
             </h2>
             <p className="text-gray-400 max-w-2xl mx-auto text-lg">
-              Kyra is an AI that works for you — proactively, across platforms, with full context of who you are.
+              Kyra combines the best AI capabilities into one assistant that actually knows your context.
             </p>
           </div>
           
@@ -106,44 +162,73 @@ export default function LandingPage() {
             <FeatureCard
               icon={<BrainIcon className="h-7 w-7" />}
               title="Persistent Memory"
-              description="Remembers your preferences, your team, your projects. Every conversation makes Kyra smarter about you."
-            />
-            <FeatureCard
-              icon={<SmartphoneIcon className="h-7 w-7" />}
-              title="Works Everywhere"
-              description="Chat on web, WhatsApp, Telegram, Slack, or Discord. Kyra follows you across every platform seamlessly."
-            />
-            <FeatureCard
-              icon={<ZapIcon className="h-7 w-7" />}
-              title="Proactive Assistant"
-              description="Morning briefings, calendar reminders, email summaries. Kyra works for you even when you don't ask."
+              description="Kyra builds a knowledge graph of you — preferences, relationships, projects, decisions. Every conversation makes it smarter."
+              tag="Core"
             />
             <FeatureCard
               icon={<SearchIcon className="h-7 w-7" />}
-              title="Web Search & Research"
-              description="Real-time web search, URL reading, deep research on any topic. Always current, always accurate."
+              title="Live Web Search"
+              description="Real-time web search, URL reading, and deep research. Always current information, properly cited."
+              tag="Built-in"
             />
             <FeatureCard
-              icon={<UsersIcon className="h-7 w-7" />}
-              title="AI Workforce"
-              description="Complex tasks get delegated to specialized sub-agents. One request, an entire team of AI workers."
+              icon={<BotIcon className="h-7 w-7" />}
+              title="AI Sub-Agents"
+              description="Complex tasks get delegated to specialized AI workers. One request, a whole team on it."
+              tag="Powerful"
             />
             <FeatureCard
               icon={<CalendarIcon className="h-7 w-7" />}
               title="Google Calendar"
-              description="View your events, create meetings, set reminders. Your calendar, fully integrated and always accessible."
+              description="View events, create meetings, get reminders. Your schedule fully integrated and always accessible."
+              tag="Integrated"
+            />
+            <FeatureCard
+              icon={<ZapIcon className="h-7 w-7" />}
+              title="Proactive Briefings"
+              description="Morning updates, calendar reminders, email summaries. Kyra works in the background so you don't miss what matters."
+              tag="Proactive"
+            />
+            <FeatureCard
+              icon={<ShieldCheckIcon className="h-7 w-7" />}
+              title="Privacy First"
+              description="Your conversations and memories are encrypted and never used for AI training. You can delete everything anytime."
+              tag="Secure"
             />
           </div>
         </section>
 
+        {/* Channels */}
+        <section id="channels" className="container mx-auto px-6 py-24">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              One AI, every platform
+            </h2>
+            <p className="text-gray-400 max-w-2xl mx-auto text-lg">
+              Chat with Kyra wherever you already are. Same memory, same context, everywhere.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
+            <ChannelCard name="Web App" status="live" emoji="🌐" />
+            <ChannelCard name="Telegram" status="live" emoji="✈️" />
+            <ChannelCard name="WhatsApp" status="coming" emoji="💬" />
+            <ChannelCard name="Slack" status="coming" emoji="💼" />
+            <ChannelCard name="Discord" status="coming" emoji="🎮" />
+            <ChannelCard name="Email" status="coming" emoji="📧" />
+            <ChannelCard name="iMessage" status="planned" emoji="🍎" />
+            <ChannelCard name="Voice" status="planned" emoji="🎙️" />
+          </div>
+        </section>
+
         {/* How It Works */}
-        <section id="how-it-works" className="container mx-auto px-6 py-24">
+        <section className="container mx-auto px-6 py-24">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
               Up and running in 30 seconds
             </h2>
             <p className="text-gray-400 max-w-2xl mx-auto text-lg">
-              No complex setup. No API keys. Just sign up and start chatting.
+              No API keys. No complex setup. Just sign up and start talking.
             </p>
           </div>
 
@@ -151,17 +236,17 @@ export default function LandingPage() {
             <StepCard
               number="1"
               title="Create Your Account"
-              description="Sign up with email or Google. Takes 30 seconds, no credit card needed."
+              description="Sign up with email or Google. Free tier included — no credit card needed."
             />
             <StepCard
               number="2"
-              title="Tell Kyra About You"
-              description="Share your preferences, goals, and context. Kyra remembers everything from day one."
+              title="Start Talking"
+              description="Chat on the web or connect Telegram. Kyra learns your preferences, projects, and context automatically."
             />
             <StepCard
               number="3"
-              title="Let Kyra Handle It"
-              description="Ask questions, delegate tasks, get briefings. Kyra works across all your platforms."
+              title="Let Kyra Work For You"
+              description="Delegate research, get briefings, manage your calendar. Kyra becomes more useful every day."
             />
           </div>
         </section>
@@ -173,12 +258,11 @@ export default function LandingPage() {
               Simple, credits-based pricing
             </h2>
             <p className="text-gray-400 max-w-2xl mx-auto text-lg mb-4">
-              Pay for what you use. Every action costs credits — simple chat is 1 credit, 
-              web search is 2, deep research is 5. Calendar and reminders are always free.
+              Every action costs credits. Upgrade anytime as you need more.
             </p>
           </div>
 
-          {/* Credit costs mini-table */}
+          {/* Credit costs */}
           <div className="flex flex-wrap items-center justify-center gap-4 mb-16 text-sm">
             <CreditBadge action="Chat" cost="1" />
             <CreditBadge action="Web Search" cost="2" />
@@ -195,9 +279,9 @@ export default function LandingPage() {
               credits="50 credits"
               features={[
                 '50 credits/month',
-                'Basic chat',
-                'Web interface',
+                'Web chat interface',
                 'Basic memory',
+                'Community support',
               ]}
               cta="Get Started"
               href="/signup"
@@ -208,11 +292,12 @@ export default function LandingPage() {
               credits="500 credits"
               features={[
                 '500 credits/month',
-                'All chat features',
+                'All AI features',
                 'Web search & research',
-                'WhatsApp + Telegram',
+                'Telegram + WhatsApp',
                 'Google Calendar',
-                'Full memory',
+                'Full persistent memory',
+                'Email support',
               ]}
               cta="Start Free Trial"
               href="/signup?plan=starter"
@@ -227,8 +312,8 @@ export default function LandingPage() {
                 'Everything in Starter',
                 'AI sub-agents',
                 'Priority response times',
-                'Email integration',
-                'Custom instructions',
+                'All channel integrations',
+                'Custom AI instructions',
                 'Priority support',
               ]}
               cta="Start Free Trial"
@@ -253,12 +338,12 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Trust / Social Proof */}
+        {/* Trust */}
         <section className="container mx-auto px-6 py-16">
           <div className="flex flex-wrap items-center justify-center gap-8 md:gap-16 text-gray-500">
             <div className="flex items-center gap-2">
               <ShieldCheckIcon className="h-5 w-5 text-green-500" />
-              <span className="text-sm font-medium">SOC 2 Ready</span>
+              <span className="text-sm font-medium">End-to-End Encrypted</span>
             </div>
             <div className="flex items-center gap-2">
               <GlobeIcon className="h-5 w-5 text-blue-400" />
@@ -269,8 +354,8 @@ export default function LandingPage() {
               <span className="text-sm font-medium">Built on OpenClaw</span>
             </div>
             <div className="flex items-center gap-2">
-              <ShieldCheckIcon className="h-5 w-5 text-green-500" />
-              <span className="text-sm font-medium">Your Data, Your Control</span>
+              <LockIcon className="h-5 w-5 text-green-500" />
+              <span className="text-sm font-medium">Never Used for AI Training</span>
             </div>
           </div>
         </section>
@@ -282,16 +367,19 @@ export default function LandingPage() {
               Ready to meet your AI?
             </h2>
             <p className="text-gray-400 mb-8 max-w-xl mx-auto text-lg">
-              Start with 50 free credits. No credit card required. 
-              Your AI assistant is one click away.
+              Join the beta. 50 free credits, no credit card required. 
+              Your personal AI assistant is one click away.
             </p>
             <Link
               href="/signup"
               className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-white text-gray-900 hover:bg-gray-100 transition font-semibold text-lg shadow-lg"
             >
-              Start Free
+              Join the Beta — Free
               <ArrowRightIcon className="h-5 w-5" />
             </Link>
+            <p className="text-xs text-gray-500 mt-4">
+              Kyra is currently in public beta. We&apos;re actively building and improving based on user feedback.
+            </p>
           </div>
         </section>
       </main>
@@ -303,6 +391,9 @@ export default function LandingPage() {
             <div className="flex items-center gap-2">
               <SparklesIcon className="h-6 w-6 text-purple-400" />
               <span className="font-bold">Kyra</span>
+              <span className="ml-1 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded bg-amber-500/20 text-amber-400">
+                Beta
+              </span>
               <span className="text-gray-600 text-sm ml-2">by Conversion System</span>
             </div>
             <p className="text-sm text-gray-500">
@@ -322,16 +413,56 @@ export default function LandingPage() {
 
 // ── Components ────────────────────────────────────────────────────────────
 
-function FeatureCard({ icon, title, description }: { 
+function BenefitItem({ icon, title }: { icon: React.ReactNode; title: string }) {
+  return (
+    <div className="flex items-center gap-3 bg-gray-900/50 rounded-xl px-5 py-4 border border-gray-800">
+      <div className="text-purple-400 shrink-0">{icon}</div>
+      <span className="text-gray-200 font-medium">{title}</span>
+    </div>
+  );
+}
+
+function FeatureCard({ icon, title, description, tag }: { 
   icon: React.ReactNode; 
   title: string; 
   description: string;
+  tag?: string;
 }) {
   return (
     <div className="group bg-gray-900/50 rounded-2xl p-8 border border-gray-800 hover:border-purple-700/50 transition-all duration-300">
-      <div className="text-purple-400 mb-4 group-hover:scale-110 transition-transform">{icon}</div>
+      <div className="flex items-center justify-between mb-4">
+        <div className="text-purple-400 group-hover:scale-110 transition-transform">{icon}</div>
+        {tag && (
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-purple-400/70 bg-purple-900/30 px-2 py-0.5 rounded-full">
+            {tag}
+          </span>
+        )}
+      </div>
       <h3 className="text-xl font-semibold mb-3">{title}</h3>
       <p className="text-gray-400 leading-relaxed">{description}</p>
+    </div>
+  );
+}
+
+function ChannelCard({ name, status, emoji }: {
+  name: string;
+  status: 'live' | 'coming' | 'planned';
+  emoji: string;
+}) {
+  const statusConfig = {
+    live: { label: 'Live', color: 'text-green-400 bg-green-900/30 border-green-700/30' },
+    coming: { label: 'Coming Soon', color: 'text-amber-400 bg-amber-900/30 border-amber-700/30' },
+    planned: { label: 'Planned', color: 'text-gray-400 bg-gray-800/50 border-gray-700/30' },
+  };
+  const cfg = statusConfig[status];
+  
+  return (
+    <div className="bg-gray-900/50 rounded-xl p-5 border border-gray-800 text-center hover:border-gray-700 transition">
+      <div className="text-3xl mb-2">{emoji}</div>
+      <div className="font-medium mb-2">{name}</div>
+      <span className={`inline-block text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border ${cfg.color}`}>
+        {cfg.label}
+      </span>
     </div>
   );
 }
