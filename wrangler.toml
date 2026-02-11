@@ -23,7 +23,7 @@ bucket_name = "kyra-next-cache"
 # Environment variables that are safe to commit (non-secret)
 [vars]
 NEXT_PUBLIC_APP_NAME = "Kyra"
-NEXT_PUBLIC_APP_URL = "https://kyra.conversionsystem.com/"
+NEXT_PUBLIC_APP_URL = "https://kyra.conversionsystem.com"
 NEXT_PUBLIC_SUPABASE_URL = "https://yaijdtsunxicuphrakcc.supabase.co"
 KYRA_USE_OPENCLAW = "false"
 KYRA_OPENCLAW_SKILLS = "false"
