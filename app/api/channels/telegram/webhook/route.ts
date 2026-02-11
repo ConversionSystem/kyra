@@ -1,22 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
-import { chat } from '@/lib/ai/claude';
-import { getSystemPrompt, extractCommands, Reminder } from '@/lib/ai/prompts';
-const uuid = () => crypto.randomUUID();
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 
-/**
- * POST /api/channels/telegram/webhook
- * Self-contained webhook handler that doesn't depend on cookies().
- * Uses createServiceClientWithoutCookies for all DB operations.
- */
-export async function POST(request: NextRequest) {
-  const webhookSecret = request.headers.get('x-telegram-bot-api-secret-token');
-  if (process.env.TELEGRAM_WEBHOOK_SECRET && webhookSecret !== process.env.TELEGRAM_WEBHOOK_SECRET) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+function getSupabase() {
+  const { createClient } = require('@supabase/supabase-js');
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false, autoRefreshToken: false } }
+  );
+}
 
+export async function POST(request: NextRequest) {
+  console.log('[telegram-webhook] handler called');
+  
   try {
     const body = await request.json();
     const msg = body?.message;
@@ -29,27 +26,57 @@ export async function POST(request: NextRequest) {
     const telegramUserId = String(msg.from.id);
     const text = msg.text.trim();
 
-    const supabase = createServiceClientWithoutCookies();
+    console.log('[telegram-webhook] message from:', telegramUserId, 'text:', text);
+
+    const supabase = getSupabase();
 
     // Handle /connect <token> command
     if (text.startsWith('/connect ')) {
       const token = text.replace('/connect ', '').trim().toUpperCase();
-      return await handleConnect(supabase, chatId, telegramUserId, msg.from, token);
+      
+      const { data: channel } = await supabase
+        .from('user_channels')
+        .select('*')
+        .eq('channel_type', 'telegram')
+        .eq('connection_token', token)
+        .eq('status', 'pending')
+        .single();
+
+      if (!channel) {
+        await sendTelegramMessage(chatId, "❌ Invalid or expired token.");
+        return NextResponse.json({ ok: true });
+      }
+
+      if (channel.token_expires_at && new Date(channel.token_expires_at) < new Date()) {
+        await sendTelegramMessage(chatId, "⏰ Token expired. Generate a new one.");
+        return NextResponse.json({ ok: true });
+      }
+
+      await supabase.from('user_channels').update({
+        channel_user_id: telegramUserId,
+        status: 'connected',
+        verified: true,
+        connected_at: new Date().toISOString(),
+        connection_token: null,
+        token_expires_at: null,
+        metadata: { username: msg.from.username, firstName: msg.from.first_name, chatId },
+        updated_at: new Date().toISOString(),
+      }).eq('id', channel.id);
+
+      await sendTelegramMessage(chatId, "✅ Connected! You can now chat with Kyra here.");
+      return NextResponse.json({ ok: true });
     }
 
-    // Handle /start command
+    // Handle /start
     if (text === '/start') {
       await sendTelegramMessage(chatId,
-        "👋 Hi! I'm Kyra, your AI assistant.\n\n" +
-        "To connect your account, go to kyra.conversionsystem.com → Settings → Channels, " +
-        "get your connection token, then send:\n\n" +
-        "/connect YOUR_TOKEN"
+        "👋 Hi! I'm Kyra.\n\nTo connect: go to kyra.conversionsystem.com → Settings → Channels, get your token, then send:\n\n/connect YOUR_TOKEN"
       );
       return NextResponse.json({ ok: true });
     }
 
-    // Resolve user from channel link
-    console.log('[telegram-webhook] resolving user for telegram id:', telegramUserId);
+    // Resolve user
+    console.log('[telegram-webhook] looking up user channel');
     const { data: link } = await supabase
       .from('user_channels')
       .select('user_id')
@@ -59,31 +86,27 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (!link) {
-      console.log('[telegram-webhook] no linked user found');
       await sendTelegramMessage(chatId,
-        "Hi! I'm Kyra. I don't recognize your account yet. Please visit kyra.conversionsystem.com to sign up, then link your messaging account in Settings."
+        "I don't recognize your account. Visit kyra.conversionsystem.com to sign up, then link your Telegram in Settings → Channels."
       );
       return NextResponse.json({ ok: true });
     }
 
+    console.log('[telegram-webhook] found link, user_id:', link.user_id);
+
     const { data: user } = await supabase
       .from('users')
-      .select('*')
+      .select('id, email, name, plan, usage_this_month')
       .eq('id', link.user_id)
       .single();
 
     if (!user) {
-      console.log('[telegram-webhook] user not found in users table:', link.user_id);
-      await sendTelegramMessage(chatId, "Something went wrong finding your account. Please try again.");
+      await sendTelegramMessage(chatId, "Account error. Please try again.");
       return NextResponse.json({ ok: true });
     }
 
-    console.log('[telegram-webhook] user found:', user.id, user.email);
-    
-    // DEBUG: Return early to isolate the error
-    await sendTelegramMessage(chatId, `Debug: Found user ${user.email}. Conversation lookup next...`);
-    return NextResponse.json({ ok: true, debug: 'early-return' });
-    
+    console.log('[telegram-webhook] user:', user.id, user.email);
+
     // Get or create conversation
     const { data: existingConv } = await supabase
       .from('conversations')
@@ -98,17 +121,18 @@ export async function POST(request: NextRequest) {
     if (existingConv) {
       conversationId = existingConv.id;
     } else {
-      const newId = uuid();
+      conversationId = crypto.randomUUID();
       await supabase.from('conversations').insert({
-        id: newId,
+        id: conversationId,
         user_id: user.id,
         title: 'Telegram conversation',
         channel: 'telegram',
       });
-      conversationId = newId;
     }
 
-    // Get conversation history
+    console.log('[telegram-webhook] conversation:', conversationId);
+
+    // Get history
     const { data: history } = await supabase
       .from('messages')
       .select('role, content')
@@ -116,104 +140,79 @@ export async function POST(request: NextRequest) {
       .order('created_at', { ascending: true })
       .limit(15);
 
-    // Build system prompt (no memories/reminders for now to keep it simple and fast)
-    const systemPrompt = getSystemPrompt([], []);
-
-    // Call Claude
+    // Call Claude directly via API (no SDK to avoid Node.js module issues)
     const messages = (history || []).map((m: any) => ({
-      role: m.role as 'user' | 'assistant',
+      role: m.role,
       content: m.content,
     }));
     messages.push({ role: 'user', content: text });
 
-    console.log('[telegram-webhook] calling Claude with', messages.length, 'messages');
-    const result = await chat(messages, systemPrompt);
-    console.log('[telegram-webhook] Claude responded, length:', result.content.length);
+    console.log('[telegram-webhook] calling Claude API with', messages.length, 'messages');
 
-    const { cleanResponse } = extractCommands(result.content);
+    const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY!,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 2048,
+        system: `You are Kyra, a helpful personal AI assistant. You remember past conversations and help with anything the user needs. Be friendly, concise, and helpful. The user's name is ${user.name || 'there'}.`,
+        messages,
+      }),
+    });
+
+    if (!claudeResponse.ok) {
+      const err = await claudeResponse.text();
+      console.error('[telegram-webhook] Claude API error:', claudeResponse.status, err);
+      await sendTelegramMessage(chatId, "Sorry, I'm having trouble thinking right now. Please try again.");
+      return NextResponse.json({ ok: true });
+    }
+
+    const claudeData = await claudeResponse.json() as any;
+    const responseText = claudeData.content?.[0]?.text || "I couldn't generate a response.";
+
+    console.log('[telegram-webhook] Claude responded, length:', responseText.length);
 
     // Save messages
     await supabase.from('messages').insert([
-      { id: uuid(), conversation_id: conversationId, role: 'user', content: text, metadata: { channel: 'telegram' } },
-      { id: uuid(), conversation_id: conversationId, role: 'assistant', content: cleanResponse, metadata: { model: 'claude-sonnet-4', channel: 'telegram' } },
+      { id: crypto.randomUUID(), conversation_id: conversationId, role: 'user', content: text, metadata: { channel: 'telegram' } },
+      { id: crypto.randomUUID(), conversation_id: conversationId, role: 'assistant', content: responseText, metadata: { model: 'claude-sonnet-4', channel: 'telegram' } },
     ]);
 
-    // Update conversation timestamp
-    await supabase
-      .from('conversations')
+    await supabase.from('conversations')
       .update({ updated_at: new Date().toISOString() })
       .eq('id', conversationId);
 
     // Send response
-    await sendTelegramMessage(chatId, cleanResponse);
+    await sendTelegramMessage(chatId, responseText);
     return NextResponse.json({ ok: true });
+
   } catch (error: any) {
-    console.error('Telegram webhook error:', error?.message, error?.stack);
-    return NextResponse.json({ error: 'Processing failed', message: error?.message, stack: error?.stack?.split('\n').slice(0, 5) }, { status: 500 });
+    console.error('[telegram-webhook] CAUGHT ERROR:', error?.message, error?.stack);
+    return NextResponse.json({ 
+      error: 'Processing failed', 
+      detail: error?.message,
+      stack: error?.stack?.split('\n').slice(0, 5),
+    }, { status: 500 });
   }
-}
-
-async function handleConnect(supabase: any, chatId: number, telegramUserId: string, fromUser: any, token: string) {
-  const { data: channel } = await supabase
-    .from('user_channels')
-    .select('*')
-    .eq('channel_type', 'telegram')
-    .eq('connection_token', token)
-    .eq('status', 'pending')
-    .single();
-
-  if (!channel) {
-    await sendTelegramMessage(chatId, "❌ Invalid or expired token. Please generate a new one in Settings → Channels.");
-    return NextResponse.json({ ok: true });
-  }
-
-  if (channel.token_expires_at && new Date(channel.token_expires_at) < new Date()) {
-    await sendTelegramMessage(chatId, "⏰ This token has expired. Please generate a new one in Settings → Channels.");
-    return NextResponse.json({ ok: true });
-  }
-
-  const { error } = await supabase
-    .from('user_channels')
-    .update({
-      channel_user_id: telegramUserId,
-      status: 'connected',
-      verified: true,
-      connected_at: new Date().toISOString(),
-      connection_token: null,
-      token_expires_at: null,
-      metadata: {
-        username: fromUser.username,
-        firstName: fromUser.first_name,
-        lastName: fromUser.last_name,
-        chatId,
-      },
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', channel.id);
-
-  if (error) {
-    console.error('Failed to link Telegram account:', error);
-    await sendTelegramMessage(chatId, "❌ Something went wrong. Please try again.");
-    return NextResponse.json({ ok: true });
-  }
-
-  await sendTelegramMessage(chatId, "✅ Connected! You can now chat with Kyra right here on Telegram. Try saying hello!");
-  return NextResponse.json({ ok: true });
 }
 
 async function sendTelegramMessage(chatId: number, text: string) {
   if (!TELEGRAM_BOT_TOKEN) {
-    console.warn('TELEGRAM_BOT_TOKEN not set, skipping message send');
+    console.warn('[telegram-webhook] TELEGRAM_BOT_TOKEN not set');
     return;
   }
 
-  await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+  const resp = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text,
-      parse_mode: 'Markdown',
-    }),
+    body: JSON.stringify({ chat_id: chatId, text }),
   });
+
+  if (!resp.ok) {
+    console.error('[telegram-webhook] Telegram send failed:', resp.status, await resp.text());
+  }
 }
