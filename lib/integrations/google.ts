@@ -4,7 +4,7 @@
  * OAuth flow and calendar operations.
  */
 
-import { createServiceClient } from '@/lib/supabase/server';
+import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!;
@@ -113,7 +113,7 @@ export async function refreshAccessToken(refreshToken: string): Promise<GoogleTo
  * Save Google tokens to integrations table
  */
 export async function saveGoogleTokens(userId: string, tokens: GoogleTokens): Promise<void> {
-  const supabase = await createServiceClient();
+  const supabase = createServiceClientWithoutCookies();
   
   const { error } = await supabase
     .from('integrations')
@@ -138,7 +138,7 @@ export async function saveGoogleTokens(userId: string, tokens: GoogleTokens): Pr
  * Get valid access token for user (refreshes if needed)
  */
 export async function getValidAccessToken(userId: string): Promise<string | null> {
-  const supabase = await createServiceClient();
+  const supabase = createServiceClientWithoutCookies();
   
   const { data: integration } = await supabase
     .from('integrations')
@@ -185,7 +185,7 @@ export async function isGoogleConnected(userId: string): Promise<boolean> {
  * Disconnect Google Calendar
  */
 export async function disconnectGoogle(userId: string): Promise<void> {
-  const supabase = await createServiceClient();
+  const supabase = createServiceClientWithoutCookies();
   
   await supabase
     .from('integrations')
