@@ -161,48 +161,54 @@ export async function POST(request: NextRequest) {
     
     const history = (historyData || []) as Message[];
 
-    // Search relevant memories
-    const memories = await searchMemories(authUser.id, message, 5);
-    
-    // Get pending reminders
-    const { data: pendingReminders } = await serviceClient
-      .from('reminders')
-      .select('id, content, due_at')
-      .eq('user_id', authUser.id)
-      .eq('delivered', false)
-      .order('due_at', { ascending: true })
-      .limit(10);
-    
+    // Run context-gathering in parallel for speed
+    const [memories, { data: pendingReminders }, calendarResult, graphResult] = await Promise.all([
+      // Search relevant memories
+      searchMemories(authUser.id, message, 5).catch(err => {
+        console.error('Memory search error:', err);
+        return [];
+      }),
+      // Get pending reminders
+      serviceClient
+        .from('reminders')
+        .select('id, content, due_at')
+        .eq('user_id', authUser.id)
+        .eq('delivered', false)
+        .order('due_at', { ascending: true })
+        .limit(10),
+      // Get today's calendar events if Google is connected
+      (async () => {
+        try {
+          const googleConnected = await isGoogleConnected(authUser.id);
+          if (googleConnected) {
+            const events = await getTodayEvents(authUser.id);
+            return events.map(e => ({
+              summary: e.summary,
+              start: e.start,
+              end: e.end,
+              location: e.location,
+            }));
+          }
+        } catch (calError) {
+          console.error('Failed to fetch calendar events:', calError);
+        }
+        return [] as CalendarEvent[];
+      })(),
+      // Memory graph context
+      processMessageForGraph(authUser.id, message).catch(err => {
+        console.error('Graph processing error:', err);
+        return '';
+      }),
+    ]);
+
     const reminders: Reminder[] = (pendingReminders || []).map(r => ({
       id: r.id,
       content: r.content,
       due_at: r.due_at,
     }));
     
-    // Get today's calendar events if Google is connected
-    let calendarEvents: CalendarEvent[] = [];
-    try {
-      const googleConnected = await isGoogleConnected(authUser.id);
-      if (googleConnected) {
-        const events = await getTodayEvents(authUser.id);
-        calendarEvents = events.map(e => ({
-          summary: e.summary,
-          start: e.start,
-          end: e.end,
-          location: e.location,
-        }));
-      }
-    } catch (calError) {
-      console.error('Failed to fetch calendar events:', calError);
-    }
-    
-    // Memory graph context (entities, relationships, inferences)
-    let graphContext = '';
-    try {
-      graphContext = await processMessageForGraph(authUser.id, message);
-    } catch (graphError) {
-      console.error('Graph processing error:', graphError);
-    }
+    const calendarEvents: CalendarEvent[] = calendarResult;
+    const graphContext: string = graphResult;
     
     // Tool augmentation: Web Search and URL Fetching
     let toolContext = '';
