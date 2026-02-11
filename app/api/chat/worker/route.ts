@@ -136,15 +136,28 @@ export async function POST(request: NextRequest) {
       .eq('id', authUser.id);
 
     // --- Forward to Kyra Worker ---
-    const workerResponse = await fetch(`${WORKER_URL}/api/kyra/send`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${API_SECRET}`,
-        'X-Kyra-User-Id': authUser.id,
-      },
-      body: JSON.stringify({ message }),
-    });
+    let workerResponse: Response;
+    try {
+      workerResponse = await fetch(`${WORKER_URL}/api/kyra/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${API_SECRET}`,
+          'X-Kyra-User-Id': authUser.id,
+        },
+        body: JSON.stringify({ message }),
+        signal: AbortSignal.timeout(30_000),
+      });
+    } catch (fetchError) {
+      console.error('[worker-route] Worker unreachable:', fetchError);
+      return new Response(
+        JSON.stringify({
+          error: 'Worker unreachable',
+          message: 'Kyra\'s backend is temporarily unavailable. Please try again in a moment.',
+        }),
+        { status: 503, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
 
     if (!workerResponse.ok) {
       const errorText = await workerResponse.text();
