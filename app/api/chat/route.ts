@@ -8,7 +8,7 @@ import { webSearch, formatSearchResults, needsWebSearch, extractSearchQuery } fr
 import { simpleFetch, formatFetchedContent, extractUrls } from '@/lib/tools/url-fetch';
 import { generateConversationTitle } from '@/lib/utils';
 import { Message, Conversation, MemoryType, User } from '@/types';
-import { getPlanLimit, isWithinLimit, getCreditCost, Plan } from '@/lib/billing/plans';
+import { getPlanLimit, isWithinLimit, getCreditCost, classifyChatAction, Plan } from '@/lib/billing/plans';
 import { processMessageForGraph } from '@/lib/memory/graph';
 import { getModelForMessage } from '@/lib/ai/model-router';
 import { v4 as uuid } from 'uuid';
@@ -248,7 +248,14 @@ export async function POST(request: NextRequest) {
     // Determine action type and credit cost
     const hasWebSearch = urls.length === 0 && needsWebSearch(message);
     const hasUrls = urls.length > 0;
-    const creditCost = (hasWebSearch || hasUrls) ? getCreditCost('web_search') : getCreditCost('chat');
+    const hasFileAnalysis = /\b(analyze|analyse|review|summarize|summarise)\b.*\b(file|document|pdf|image|photo|attachment)\b/i.test(message);
+    const hasDeepResearch = /\b(deep research|in-depth research|thorough research|research report)\b/i.test(message);
+    const creditAction = classifyChatAction({
+      hasWebSearch: hasWebSearch || hasUrls,
+      hasSubAgent: hasDeepResearch,
+      hasFileAnalysis,
+    });
+    const creditCost = getCreditCost(creditAction);
 
     // Deduct credits
     await serviceClient
