@@ -143,9 +143,9 @@ export async function POST(request: NextRequest) {
     // Send response
     await sendTelegramMessage(chatId, cleanResponse);
     return NextResponse.json({ ok: true });
-  } catch (error) {
-    console.error('Telegram webhook error:', error);
-    return NextResponse.json({ error: 'Processing failed' }, { status: 500 });
+  } catch (error: any) {
+    console.error('Telegram webhook error:', error?.message, error?.stack);
+    return NextResponse.json({ error: 'Processing failed', message: error?.message, stack: error?.stack?.split('\n').slice(0, 5) }, { status: 500 });
   }
 }
 
