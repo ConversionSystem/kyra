@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { chat } from '@/lib/ai/claude';
 import { getSystemPrompt, extractCommands, Reminder } from '@/lib/ai/prompts';
-import { v4 as uuid } from 'uuid';
+const uuid = () => crypto.randomUUID();
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 
@@ -79,7 +79,11 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('[telegram-webhook] user found:', user.id, user.email);
-
+    
+    // DEBUG: Return early to isolate the error
+    await sendTelegramMessage(chatId, `Debug: Found user ${user.email}. Conversation lookup next...`);
+    return NextResponse.json({ ok: true, debug: 'early-return' });
+    
     // Get or create conversation
     const { data: existingConv } = await supabase
       .from('conversations')
