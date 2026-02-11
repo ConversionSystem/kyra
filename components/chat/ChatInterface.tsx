@@ -10,6 +10,7 @@ import { Sparkles, Brain, Settings, Search, CalendarDays, Lightbulb, MessageSqua
 import Link from 'next/link';
 import { ReminderNotification } from '@/components/reminders/ReminderNotification';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
+import { CreditBadge, CreditWarningBanner } from './CreditBadge';
 
 interface ChatInterfaceProps {
   initialConversation?: Conversation;
@@ -32,6 +33,19 @@ export function ChatInterface({
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [isLoading, setIsLoading] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
+  const [credits, setCredits] = useState<{ used: number; limit: number; plan: string } | null>(null);
+
+  // Fetch initial credit balance
+  useEffect(() => {
+    fetch('/api/usage')
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => {
+        if (data) {
+          setCredits({ used: data.creditsUsed, limit: data.creditsLimit, plan: data.plan });
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -67,8 +81,11 @@ export function ChatInterface({
     router.push('/chat');
   }, [router]);
 
+  const isOutOfCredits = credits !== null && credits.used >= credits.limit;
+
   const handleSendMessage = async (content: string) => {
     if (!content.trim()) return;
+    if (isOutOfCredits) return;
     
     setIsLoading(true);
     setStreamingContent('');
@@ -140,6 +157,12 @@ export function ChatInterface({
                 });
                 
                 setCurrentConversation(newConversation);
+              } else if (parsed.type === 'usage') {
+                setCredits({
+                  used: parsed.usage,
+                  limit: parsed.limit,
+                  plan: parsed.plan,
+                });
               } else if (parsed.type === 'content') {
                 fullContent += parsed.content;
                 setStreamingContent(fullContent);
@@ -208,6 +231,13 @@ export function ChatInterface({
             <span className="font-semibold text-zinc-100">Kyra</span>
           </div>
           <div className="flex items-center gap-2">
+            {credits && (
+              <CreditBadge
+                creditsUsed={credits.used}
+                creditsLimit={credits.limit}
+                plan={credits.plan}
+              />
+            )}
             <NotificationCenter />
             <Link
               href="/memories"
@@ -224,6 +254,11 @@ export function ChatInterface({
             </Link>
           </div>
         </header>
+
+        {/* Credit warning */}
+        {credits && (
+          <CreditWarningBanner creditsUsed={credits.used} creditsLimit={credits.limit} />
+        )}
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto px-4">
@@ -339,6 +374,7 @@ export function ChatInterface({
             <ChatInput
               onSend={handleSendMessage}
               isLoading={isLoading}
+              disabled={isOutOfCredits}
             />
           </div>
         </div>
