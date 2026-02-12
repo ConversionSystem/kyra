@@ -54,32 +54,22 @@ export default function LandingPage() {
       <main>
         {/* Hero — Stacked: Copy top, Chat widget below */}
         <section className="container mx-auto px-6 pt-12 pb-20">
-          <div className="max-w-4xl mx-auto text-center mb-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-900/40 border border-purple-700/40 mb-6">
-              <SparklesIcon className="h-3.5 w-3.5 text-purple-400" />
-              <span className="text-xs text-purple-300">Powered by OpenClaw</span>
-            </div>
-            
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.1] mb-6 tracking-tight">
-              The power of a{' '}
+          <div className="max-w-4xl mx-auto text-center mb-8">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.1] mb-4 tracking-tight">
+              Your{' '}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400">
                 personal AI
               </span>
-              <br />
-              without the setup
+              {' '}— no setup required
             </h1>
             
-            <p className="text-lg text-gray-400 mb-2 leading-relaxed max-w-2xl mx-auto">
-              AI assistants that remember you, manage your calendar, and work across every platform — that technology exists. But until now, you needed API keys, a server, and developer skills to use it.
-            </p>
-            
-            <p className="text-lg text-white/90 mb-6 leading-relaxed max-w-2xl mx-auto font-medium">
-              Kyra puts all of that in your hands. Try it right now 👇
+            <p className="text-base text-gray-400 leading-relaxed max-w-xl mx-auto">
+              Persistent memory, real-time tools, every platform. Try it 👇
             </p>
           </div>
 
-          {/* Full-width Chat Widget */}
-          <div className="max-w-3xl mx-auto">
+          {/* Wide rectangular Chat Widget */}
+          <div className="max-w-5xl mx-auto">
             <HeroChatWidget />
           </div>
 
