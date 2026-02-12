@@ -15,6 +15,17 @@ export default async function ChatPage() {
     redirect('/login');
   }
 
+  // Check onboarding
+  const { data: profile } = await supabase
+    .from('users')
+    .select('onboarding_complete')
+    .eq('id', user.id)
+    .single();
+
+  if (profile && !profile.onboarding_complete) {
+    redirect('/onboarding');
+  }
+
   // Get user's conversations
   const { data: conversations } = await supabase
     .from('conversations')
