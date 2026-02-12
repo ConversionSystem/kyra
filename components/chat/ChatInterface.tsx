@@ -246,16 +246,7 @@ export function ChatInterface({
         {/* Messages */}
         <div className="flex-1 overflow-y-auto">
           {showEmptyState ? (
-            <div className="flex h-full flex-col items-center justify-center px-4">
-              <div className="relative mb-6">
-                <div className="absolute inset-0 animate-pulse rounded-full bg-violet-500/20 blur-xl" />
-                <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 via-purple-500 to-fuchsia-500">
-                  <Sparkles className="h-8 w-8 text-white" />
-                </div>
-              </div>
-              <h1 className="mb-2 text-2xl font-semibold text-zinc-100">Hi, I&apos;m Kyra</h1>
-              <p className="text-sm text-zinc-500">How can I help you today?</p>
-            </div>
+            <div className="flex h-full flex-col items-center justify-center px-4" />
           ) : (
             <div className="divide-y divide-zinc-800/50">
               {messages.map((message) => (
@@ -280,9 +271,20 @@ export function ChatInterface({
           )}
         </div>
 
-        {/* Input */}
-        <div className="p-4 pb-6">
-          <div className="mx-auto max-w-3xl">
+        {/* Input — centered vertically when empty, bottom when chatting */}
+        <div className={showEmptyState ? 'flex flex-1 flex-col items-center justify-center px-4' : 'p-4 pb-6'}>
+          <div className={showEmptyState ? 'w-full max-w-3xl' : 'mx-auto max-w-3xl'}>
+            {showEmptyState && (
+              <div className="mb-6 text-center">
+                <div className="relative mb-4 inline-block">
+                  <div className="absolute inset-0 animate-pulse rounded-full bg-violet-500/20 blur-xl" />
+                  <div className="relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 via-purple-500 to-fuchsia-500">
+                    <Sparkles className="h-7 w-7 text-white" />
+                  </div>
+                </div>
+                <DynamicGreeting />
+              </div>
+            )}
             <ChatInput
               onSend={handleSendMessage}
               isLoading={isLoading}
@@ -294,5 +296,30 @@ export function ChatInterface({
 
       <ReminderNotification />
     </div>
+  );
+}
+
+function DynamicGreeting() {
+  const greetings = [
+    'What can I help you with today?',
+    'Ask me anything — I remember everything.',
+    'Need help researching something?',
+    'Let\'s get something done together.',
+    'What\'s on your mind?',
+    'I can search the web, manage your calendar, and more.',
+    'Tell me about your day — I\'ll remember it.',
+    'Ready when you are.',
+  ];
+
+  const [text, setText] = useState('');
+
+  useEffect(() => {
+    setText(greetings[Math.floor(Math.random() * greetings.length)]);
+  }, []);
+
+  if (!text) return null;
+
+  return (
+    <p className="text-base text-zinc-400">{text}</p>
   );
 }
