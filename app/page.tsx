@@ -12,11 +12,11 @@ import {
   GlobeIcon,
   LockIcon,
   ClockIcon,
-  SendIcon,
   BotIcon,
   DatabaseIcon,
   TrendingUpIcon,
 } from 'lucide-react';
+import HeroChatWidget from '@/components/landing/HeroChatWidget';
 
 export default function LandingPage() {
   return (
@@ -52,123 +52,135 @@ export default function LandingPage() {
       </header>
 
       <main>
-        {/* Hero */}
-        <section className="container mx-auto px-6 pt-16 pb-20">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-12">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-900/40 border border-purple-700/40 mb-8">
-                <SparklesIcon className="h-4 w-4 text-purple-400" />
-                <span className="text-sm text-purple-300">Your AI assistant that actually knows you</span>
+        {/* Hero — Split: Copy left, Live Chat right */}
+        <section className="container mx-auto px-6 pt-12 pb-20">
+          <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
+            {/* Left: Copy */}
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-900/40 border border-purple-700/40 mb-6">
+                <SparklesIcon className="h-3.5 w-3.5 text-purple-400" />
+                <span className="text-xs text-purple-300">Powered by OpenClaw</span>
               </div>
               
-              <h1 className="text-5xl md:text-7xl font-bold leading-[1.1] mb-6 tracking-tight">
-                The AI That
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.1] mb-6 tracking-tight">
+                The power of a
                 <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400">
-                  Never Forgets
+                  personal AI
                 </span>
+                <br />
+                without the setup
               </h1>
               
-              <p className="text-xl text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
-                Kyra is your personal AI with persistent memory, real-time tools, and multi-platform access. 
-                No technical setup, no API keys — just sign up and start chatting in 30 seconds.
+              <p className="text-lg text-gray-400 mb-4 leading-relaxed max-w-xl">
+                AI assistants that remember you, manage your calendar, search the web, and work across every platform you use — that technology exists. But until now, you needed API keys, a server, and developer skills to use it.
               </p>
               
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <p className="text-lg text-white/90 mb-8 leading-relaxed max-w-xl font-medium">
+                Kyra puts all of that in your hands. Sign up, start chatting. That&apos;s it.
+              </p>
+              
+              <div className="flex flex-col sm:flex-row items-start gap-4">
                 <Link
                   href="/signup"
-                  className="flex items-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 transition font-semibold text-lg shadow-lg shadow-purple-900/30"
+                  className="flex items-center gap-2 px-7 py-3.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 transition font-semibold text-base shadow-lg shadow-purple-900/30"
                 >
-                  Start Chatting — It&apos;s Free
-                  <ArrowRightIcon className="h-5 w-5" />
+                  Get Started Free
+                  <ArrowRightIcon className="h-4 w-4" />
                 </Link>
+                <span className="text-sm text-gray-500 self-center">
+                  100 free credits/month · No credit card
+                </span>
               </div>
-              
-              <p className="text-sm text-gray-500 mt-6">
-                100 free credits/month · No credit card · 30 second setup
+            </div>
+
+            {/* Right: Live Chat Widget */}
+            <div className="lg:pl-4">
+              <HeroChatWidget />
+            </div>
+          </div>
+        </section>
+
+        {/* What you get — value props */}
+        <section className="border-y border-gray-800/50 py-16">
+          <div className="container mx-auto px-6">
+            <div className="text-center mb-12">
+              <h2 className="text-2xl md:text-3xl font-bold mb-3">
+                Everything a personal AI should be
+              </h2>
+              <p className="text-gray-400 max-w-2xl mx-auto">
+                Most AI tools are stateless chatbots. Kyra is a full AI platform that knows who you are and works for you around the clock.
               </p>
             </div>
-
-            {/* Chat Demo */}
-            <div className="max-w-2xl mx-auto">
-              <ChatDemo />
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+              <KeyBenefit
+                icon={<BrainIcon className="h-7 w-7" />}
+                title="Remembers Everything"
+                description="Your preferences, projects, relationships, and decisions — persistent across every conversation, forever."
+              />
+              <KeyBenefit
+                icon={<GlobeIcon className="h-7 w-7" />}
+                title="Works Everywhere"
+                description="Web, Telegram, WhatsApp — same AI, same memory. Talk to Kyra wherever you already are."
+              />
+              <KeyBenefit
+                icon={<ZapIcon className="h-7 w-7" />}
+                title="Actually Does Things"
+                description="Web search, calendar management, reminders, file analysis, even delegating to sub-agents. Not just chat."
+              />
+              <KeyBenefit
+                icon={<LockIcon className="h-7 w-7" />}
+                title="Private by Default"
+                description="Encrypted, never used for AI training, deletable anytime. Your data belongs to you."
+              />
             </div>
           </div>
         </section>
 
-        {/* Key Benefits */}
+        {/* The problem Kyra solves */}
         <section className="container mx-auto px-6 py-20">
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-            <KeyBenefit
-              icon={<BrainIcon className="h-8 w-8" />}
-              title="Remembers Everything"
-              description="Persistent memory across all conversations. Your preferences, projects, and context — always there."
-            />
-            <KeyBenefit
-              icon={<GlobeIcon className="h-8 w-8" />}
-              title="Works Everywhere"
-              description="Web, Telegram, WhatsApp, and more coming. Same AI, same memory, every platform."
-            />
-            <KeyBenefit
-              icon={<ZapIcon className="h-8 w-8" />}
-              title="Does the Work"
-              description="Web search, calendar management, sub-agents, proactive briefings. Kyra acts, not just answers."
-            />
-            <KeyBenefit
-              icon={<LockIcon className="h-8 w-8" />}
-              title="Private by Default"
-              description="Your data is yours, encrypted, and never used for training. Delete everything anytime."
-            />
-          </div>
-        </section>
-
-        {/* Social proof bar */}
-        <section className="border-y border-gray-800/50 py-8 mb-8">
-          <div className="container mx-auto px-6">
-            <div className="flex flex-wrap items-center justify-center gap-8 md:gap-16 text-gray-400 text-sm">
-              <div className="flex items-center gap-2">
-                <BrainIcon className="h-4 w-4 text-purple-400" />
-                <span>Persistent Memory</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <SmartphoneIcon className="h-4 w-4 text-purple-400" />
-                <span>Multi-Platform</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <SearchIcon className="h-4 w-4 text-purple-400" />
-                <span>Real-Time Web Search</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <BotIcon className="h-4 w-4 text-purple-400" />
-                <span>AI Sub-Agents</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <LockIcon className="h-4 w-4 text-purple-400" />
-                <span>Your Data, Your Control</span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Problem → Solution */}
-        <section className="container mx-auto px-6 py-20">
-          <div className="max-w-4xl mx-auto">
-            <div className="grid md:grid-cols-2 gap-12 items-center">
+          <div className="max-w-5xl mx-auto">
+            <div className="grid md:grid-cols-2 gap-16 items-center">
               <div>
                 <h2 className="text-3xl font-bold mb-6">
-                  Every other AI forgets you exist
+                  Powerful AI shouldn&apos;t require a CS degree
                 </h2>
-                <div className="space-y-4 text-gray-400">
-                  <p>ChatGPT resets every session. Claude forgets your preferences. You repeat yourself constantly — re-explaining your business, your context, your needs.</p>
-                  <p className="text-white font-medium">Kyra is different.</p>
+                <div className="space-y-4 text-gray-400 leading-relaxed">
+                  <p>
+                    The best AI assistants — the ones that remember you, search the web, manage your schedule, 
+                    and work across Telegram, WhatsApp, and Slack — they exist. But they require API keys, 
+                    terminal commands, server management, and hours of configuration.
+                  </p>
+                  <p>
+                    That means 99% of people who&apos;d benefit from a persistent, intelligent AI 
+                    assistant simply can&apos;t access one.
+                  </p>
+                  <p className="text-white font-medium text-lg">
+                    Kyra changes that. Same power, zero setup. Just you and your AI.
+                  </p>
                 </div>
               </div>
               <div className="space-y-4">
-                <BenefitItem icon={<BrainIcon className="h-5 w-5" />} title="Remembers your name, your projects, your preferences" />
-                <BenefitItem icon={<TrendingUpIcon className="h-5 w-5" />} title="Gets smarter the more you use it" />
-                <BenefitItem icon={<MessageSquareIcon className="h-5 w-5" />} title="Same AI across web, Telegram, WhatsApp" />
-                <BenefitItem icon={<ClockIcon className="h-5 w-5" />} title="Works for you even when you don't ask" />
-                <BenefitItem icon={<DatabaseIcon className="h-5 w-5" />} title="Your data stays yours — never used for training" />
+                <CompareItem 
+                  before="Re-explain yourself every session" 
+                  after="Kyra remembers everything about you" 
+                />
+                <CompareItem 
+                  before="Copy-paste between ChatGPT tabs" 
+                  after="One AI across web, Telegram, WhatsApp" 
+                />
+                <CompareItem 
+                  before="Manage API keys and config files" 
+                  after="Sign up and start chatting in 30 seconds" 
+                />
+                <CompareItem 
+                  before="AI that only answers when asked" 
+                  after="Proactive briefings, reminders, and alerts" 
+                />
+                <CompareItem 
+                  before="Your data training someone else's model" 
+                  after="Encrypted, private, deletable anytime" 
+                />
               </div>
             </div>
           </div>
@@ -178,10 +190,10 @@ export default function LandingPage() {
         <section id="features" className="container mx-auto px-6 py-24">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Everything you need in one AI
+              Built for real life, not demos
             </h2>
             <p className="text-gray-400 max-w-2xl mx-auto text-lg">
-              Kyra combines the best AI capabilities into one assistant that actually knows your context.
+              Every feature works out of the box. No plugins to install, no integrations to configure.
             </p>
           </div>
           
@@ -201,7 +213,7 @@ export default function LandingPage() {
             <FeatureCard
               icon={<BotIcon className="h-7 w-7" />}
               title="AI Sub-Agents"
-              description="Complex tasks get delegated to specialized AI workers. One request, a whole team on it."
+              description="Complex tasks get delegated to specialized AI workers. One request, a whole team working on it."
               tag="Powerful"
             />
             <FeatureCard
@@ -219,7 +231,7 @@ export default function LandingPage() {
             <FeatureCard
               icon={<ShieldCheckIcon className="h-7 w-7" />}
               title="Privacy First"
-              description="Your conversations and memories are encrypted and never used for AI training. You can delete everything anytime."
+              description="Your conversations and memories are encrypted and never used for AI training. Delete everything anytime."
               tag="Secure"
             />
           </div>
@@ -255,7 +267,7 @@ export default function LandingPage() {
               Up and running in 30 seconds
             </h2>
             <p className="text-gray-400 max-w-2xl mx-auto text-lg">
-              No API keys. No complex setup. Just sign up and start talking.
+              No API keys. No server setup. No npm install. Just sign up and go.
             </p>
           </div>
 
@@ -268,12 +280,12 @@ export default function LandingPage() {
             <StepCard
               number="2"
               title="Start Talking"
-              description="Chat on the web or connect Telegram. Kyra learns your preferences, projects, and context automatically."
+              description="Chat on the web or connect Telegram/WhatsApp. Kyra learns who you are automatically."
             />
             <StepCard
               number="3"
               title="Let Kyra Work For You"
-              description="Delegate research, get briefings, manage your calendar. Kyra becomes more useful every day."
+              description="Delegate research, get proactive briefings, manage your calendar. It gets better every day."
             />
           </div>
         </section>
@@ -304,11 +316,11 @@ export default function LandingPage() {
         <section className="container mx-auto px-6 py-24">
           <div className="max-w-3xl mx-auto bg-gradient-to-br from-purple-900/40 to-pink-900/30 rounded-3xl p-12 md:p-16 border border-purple-800/40 text-center">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Ready to meet your AI?
+              Your AI is waiting
             </h2>
             <p className="text-gray-400 mb-8 max-w-xl mx-auto text-lg">
-              Join the beta. 100 free credits, no credit card required. 
-              Your personal AI assistant is one click away.
+              100 free credits. No credit card. No technical setup.
+              Just a personal AI that actually knows who you are.
             </p>
             <Link
               href="/signup"
@@ -351,76 +363,6 @@ export default function LandingPage() {
   );
 }
 
-// ── Chat Demo ─────────────────────────────────────────────────────────────
-
-function ChatDemo() {
-  return (
-    <div className="bg-gray-950 rounded-2xl border border-gray-800 shadow-2xl shadow-purple-900/10 overflow-hidden">
-      {/* Window bar */}
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-800/80 bg-gray-900/50">
-        <div className="flex gap-1.5">
-          <div className="w-3 h-3 rounded-full bg-gray-700" />
-          <div className="w-3 h-3 rounded-full bg-gray-700" />
-          <div className="w-3 h-3 rounded-full bg-gray-700" />
-        </div>
-        <div className="flex-1 text-center">
-          <span className="text-xs text-gray-500 font-medium flex items-center justify-center gap-1.5">
-            <SparklesIcon className="h-3 w-3 text-purple-400" />
-            Kyra
-          </span>
-        </div>
-        <div className="w-12" />
-      </div>
-
-      {/* Messages */}
-      <div className="p-4 md:p-6 space-y-4">
-        {/* User message */}
-        <div className="flex justify-end">
-          <div className="max-w-[80%] bg-purple-600 rounded-2xl rounded-br-md px-4 py-3 text-sm">
-            What&apos;s on my calendar today?
-          </div>
-        </div>
-
-        {/* Kyra response */}
-        <div className="flex justify-start">
-          <div className="max-w-[80%] bg-gray-800 rounded-2xl rounded-bl-md px-4 py-3 text-sm text-gray-200 space-y-2">
-            <p>You have 3 meetings today:</p>
-            <ul className="space-y-1 ml-1">
-              <li>• 10:00 AM — Team standup</li>
-              <li>• 2:00 PM — Client call with Sarah</li>
-              <li>• 4:30 PM — Design review</li>
-            </ul>
-            <p>Want me to prep notes for the client call?</p>
-          </div>
-        </div>
-
-        {/* User message */}
-        <div className="flex justify-end">
-          <div className="max-w-[80%] bg-purple-600 rounded-2xl rounded-br-md px-4 py-3 text-sm">
-            Yes, and remind me 15 minutes before
-          </div>
-        </div>
-
-        {/* Kyra response */}
-        <div className="flex justify-start">
-          <div className="max-w-[80%] bg-gray-800 rounded-2xl rounded-bl-md px-4 py-3 text-sm text-gray-200 space-y-2">
-            <p>Done! I&apos;ll send you a reminder at 1:45 PM with the prep notes.</p>
-            <p className="text-purple-300">I remember Sarah prefers data-driven presentations — I&apos;ll include the latest metrics. ✨</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Input bar */}
-      <div className="px-4 md:px-6 pb-4 md:pb-6">
-        <div className="flex items-center gap-3 bg-gray-800/60 rounded-xl border border-gray-700/50 px-4 py-3">
-          <span className="text-sm text-gray-500 flex-1">Message Kyra...</span>
-          <SendIcon className="h-4 w-4 text-gray-600" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ── Components ────────────────────────────────────────────────────────────
 
 function KeyBenefit({ icon, title, description }: {
@@ -439,11 +381,17 @@ function KeyBenefit({ icon, title, description }: {
   );
 }
 
-function BenefitItem({ icon, title }: { icon: React.ReactNode; title: string }) {
+function CompareItem({ before, after }: { before: string; after: string }) {
   return (
-    <div className="flex items-center gap-3 bg-gray-900/50 rounded-xl px-5 py-4 border border-gray-800">
-      <div className="text-purple-400 shrink-0">{icon}</div>
-      <span className="text-gray-200 font-medium">{title}</span>
+    <div className="bg-gray-900/50 rounded-xl px-5 py-4 border border-gray-800 space-y-2">
+      <div className="flex items-start gap-2 text-sm text-gray-500">
+        <span className="shrink-0 mt-0.5">✕</span>
+        <span className="line-through">{before}</span>
+      </div>
+      <div className="flex items-start gap-2 text-sm text-purple-300 font-medium">
+        <span className="shrink-0 mt-0.5">✓</span>
+        <span>{after}</span>
+      </div>
     </div>
   );
 }
