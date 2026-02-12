@@ -6,6 +6,8 @@
  *   - Web search + response: 2 credits
  *   - Deep research (sub-agent): 5 credits
  *   - File analysis: 3 credits
+ *   - Voice transcription: 2 credits
+ *   - Voice TTS response: 2 credits
  *   - Calendar/reminder: 0 credits (free)
  *   - Memory operations: 0 credits (free)
  * 
@@ -14,14 +16,16 @@
 
 export type Plan = 'free' | 'starter' | 'business' | 'max';
 
-export type CreditAction = 
-  | 'chat'           // 1 credit
-  | 'web_search'     // 2 credits
-  | 'deep_research'  // 5 credits
-  | 'file_analysis'  // 3 credits
-  | 'calendar'       // 0 credits
-  | 'reminder'       // 0 credits
-  | 'memory';        // 0 credits
+export type CreditAction =
+  | 'chat'              // 1 credit
+  | 'web_search'        // 2 credits
+  | 'deep_research'     // 5 credits
+  | 'file_analysis'     // 3 credits
+  | 'voice_transcribe'  // 2 credits
+  | 'voice_tts'         // 2 credits
+  | 'calendar'          // 0 credits
+  | 'reminder'          // 0 credits
+  | 'memory';           // 0 credits
 
 export interface PlanConfig {
   name: string;
@@ -38,6 +42,8 @@ export const CREDIT_COSTS: Record<CreditAction, number> = {
   web_search: 2,
   deep_research: 5,
   file_analysis: 3,
+  voice_transcribe: 2,
+  voice_tts: 2,
   calendar: 0,
   reminder: 0,
   memory: 0,
