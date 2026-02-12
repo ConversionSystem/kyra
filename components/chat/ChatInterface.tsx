@@ -72,13 +72,31 @@ export function ChatInterface({
         console.error('Error fetching conversations:', error);
       }
     };
-    const interval = setInterval(fetchConversations, 2000);
+    const interval = setInterval(fetchConversations, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  const handleSelectConversation = useCallback((id: string) => {
-    router.push(`/chat/${id}`);
-  }, [router]);
+  const handleSelectConversation = useCallback(async (id: string) => {
+    // Load conversation messages client-side (no full page reload)
+    try {
+      const res = await fetch(`/api/conversations?id=${id}&messages=true`);
+      if (!res.ok) {
+        router.push(`/chat/${id}`);
+        return;
+      }
+      const data = await res.json();
+      const conv = conversations.find(c => c.id === id);
+      if (conv) {
+        setCurrentConversation(conv);
+        setMessages(data.messages || []);
+        setStreamingContent('');
+        isNewChatRef.current = false;
+        window.history.replaceState(null, '', `/chat/${id}`);
+      }
+    } catch {
+      router.push(`/chat/${id}`);
+    }
+  }, [router, conversations]);
 
   const handleNewConversation = useCallback(() => {
     isNewChatRef.current = true;
