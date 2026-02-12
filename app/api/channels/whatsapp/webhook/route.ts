@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
   console.log('[whatsapp-webhook] handler called');
 
   try {
-    const body = await request.json();
+    const body = (await request.json()) as any;
 
     // WhatsApp Cloud API sends messages nested in entry[].changes[].value
     const entry = body?.entry?.[0];

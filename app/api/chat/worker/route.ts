@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { message, conversation_id } = await request.json();
+    const { message, conversation_id } = (await request.json()) as any;
     if (!message || typeof message !== 'string') {
       return new Response('Message is required', { status: 400 });
     }

@@ -72,7 +72,7 @@ export default function AdminDashboard() {
         return res.json();
       })
       .then((data) => {
-        if (data) setStats(data);
+        if (data) setStats(data as AdminStats);
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
@@ -107,7 +107,7 @@ export default function AdminDashboard() {
           <p className="text-zinc-400 text-sm mt-1">Real-time platform metrics</p>
         </div>
         <button
-          onClick={() => { setLoading(true); fetch('/api/admin/stats').then(r => r.json()).then(setStats).finally(() => setLoading(false)); }}
+          onClick={() => { setLoading(true); fetch('/api/admin/stats').then(r => r.json()).then((d) => setStats(d as AdminStats)).finally(() => setLoading(false)); }}
           className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm transition-colors"
         >
           ↻ Refresh

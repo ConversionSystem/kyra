@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
   console.log('[telegram-webhook] handler called');
   
   try {
-    const body = await request.json();
+    const body = (await request.json()) as any;
     const msg = body?.message;
 
     if (!msg?.text || !msg?.from?.id) {

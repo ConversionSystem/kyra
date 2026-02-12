@@ -57,7 +57,7 @@ export default function MemoriesPage() {
     try {
       const response = await fetch('/api/memories');
       if (response.ok) {
-        const data = await response.json();
+        const data = (await response.json()) as any;
         setMemories(Array.isArray(data) ? data : data.memories || []);
       }
     } catch (error) {

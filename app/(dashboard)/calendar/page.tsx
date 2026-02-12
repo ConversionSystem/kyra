@@ -36,7 +36,7 @@ export default function CalendarPage() {
     setLoading(true);
     try {
       const res = await fetch(`/api/calendar?range=${range}`);
-      const data = await res.json();
+      const data = (await res.json()) as any;
       if (res.ok) {
         setEvents(data.events || []);
         setConnected(true);

@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    const { content, due_at, channel = 'web' } = await request.json();
+    const { content, due_at, channel = 'web' } = (await request.json()) as any;
     
     if (!content || !due_at) {
       return NextResponse.json({ error: 'Content and due_at are required' }, { status: 400 });
@@ -133,7 +133,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    const { id, delivered } = await request.json();
+    const { id, delivered } = (await request.json()) as any;
     
     if (!id) {
       return NextResponse.json({ error: 'Reminder ID required' }, { status: 400 });

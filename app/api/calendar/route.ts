@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
     const err = await ensureConnected(user.id);
     if (err) return err;
 
-    const { summary, description, start, end, location, attendees } = await request.json();
+    const { summary, description, start, end, location, attendees } = (await request.json()) as any;
 
     if (!summary || !start || !end) {
       return NextResponse.json({ error: 'Missing required fields: summary, start, end' }, { status: 400 });
@@ -120,7 +120,7 @@ export async function PUT(request: NextRequest) {
     const err = await ensureConnected(user.id);
     if (err) return err;
 
-    const { eventId, summary, description, start, end, location, attendees } = await request.json();
+    const { eventId, summary, description, start, end, location, attendees } = (await request.json()) as any;
 
     if (!eventId) {
       return NextResponse.json({ error: 'Missing required field: eventId' }, { status: 400 });
