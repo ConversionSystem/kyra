@@ -5,10 +5,10 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
   Plus, MessageSquare, ChevronLeft, ChevronRight, Trash2,
-  Radio, Zap, Bot, Plug, Brain, Settings
+  Radio, Zap, Bot, Plug, Brain, Settings, Menu, X
 } from 'lucide-react';
 import Link from 'next/link';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 
 interface ConversationSidebarProps {
   conversations: Conversation[];
@@ -17,6 +17,8 @@ interface ConversationSidebarProps {
   onNewConversation: () => void;
   onDeleteConversation?: (id: string) => void;
   credits?: { used: number; limit: number; plan: string } | null;
+  mobileOpen?: boolean;
+  onMobileToggle?: () => void;
 }
 
 export function ConversationSidebar({
@@ -26,6 +28,8 @@ export function ConversationSidebar({
   onNewConversation,
   onDeleteConversation,
   credits,
+  mobileOpen,
+  onMobileToggle,
 }: ConversationSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -57,18 +61,15 @@ export function ConversationSidebar({
     }
   });
 
-  if (isCollapsed) {
-    return (
-      <div className="flex h-full w-12 flex-col items-center border-r border-zinc-800 bg-zinc-900 py-4">
-        <Button variant="ghost" size="icon" onClick={() => setIsCollapsed(false)} className="mb-4 text-zinc-400 hover:text-zinc-100">
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-        <Button variant="ghost" size="icon" onClick={onNewConversation} className="text-zinc-400 hover:text-zinc-100">
-          <Plus className="h-4 w-4" />
-        </Button>
-      </div>
-    );
-  }
+  const handleSelectConversation = (id: string) => {
+    onSelectConversation(id);
+    onMobileToggle?.(); // close mobile sidebar on selection
+  };
+
+  const handleNewConversation = () => {
+    onNewConversation();
+    onMobileToggle?.();
+  };
 
   const navLinks = [
     { href: '/settings/channels', icon: Radio, label: 'Channels' },
@@ -79,22 +80,42 @@ export function ConversationSidebar({
     { href: '/settings', icon: Settings, label: 'Settings' },
   ];
 
-  return (
+  // Desktop collapsed state
+  if (isCollapsed) {
+    return (
+      <div className="hidden md:flex h-full w-12 flex-col items-center border-r border-zinc-800 bg-zinc-900 py-4">
+        <Button variant="ghost" size="icon" onClick={() => setIsCollapsed(false)} className="mb-4 text-zinc-400 hover:text-zinc-100">
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+        <Button variant="ghost" size="icon" onClick={onNewConversation} className="text-zinc-400 hover:text-zinc-100">
+          <Plus className="h-4 w-4" />
+        </Button>
+      </div>
+    );
+  }
+
+  const sidebarContent = (
     <div className="flex h-full w-64 flex-col border-r border-zinc-800 bg-zinc-900">
       {/* Header with collapse */}
       <div className="flex items-center justify-between p-3 pb-0">
         <span className="text-sm font-semibold text-zinc-300">Kyra</span>
-        <Button variant="ghost" size="icon" onClick={() => setIsCollapsed(true)} className="h-7 w-7 text-zinc-500 hover:text-zinc-300">
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-1">
+          {/* Desktop: collapse. Mobile: close */}
+          <Button variant="ghost" size="icon" onClick={() => { setIsCollapsed(true); }} className="hidden md:flex h-7 w-7 text-zinc-500 hover:text-zinc-300">
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={onMobileToggle} className="md:hidden h-7 w-7 text-zinc-500 hover:text-zinc-300">
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       {/* New Chat */}
       <div className="p-3">
         <Button
-          onClick={onNewConversation}
+          onClick={handleNewConversation}
           variant="outline"
-          className="w-full justify-start gap-2 border-zinc-700 bg-transparent text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
+          className="w-full justify-start gap-2 border-zinc-700 bg-transparent text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100 min-h-[44px]"
         >
           <Plus className="h-4 w-4" />
           New Chat
@@ -103,10 +124,10 @@ export function ConversationSidebar({
 
       {/* Conversations */}
       <div className="flex-1 overflow-y-auto px-2 pb-2">
-        <ConversationGroup title="Today" conversations={groupedConversations.today} currentId={currentConversationId} onSelect={onSelectConversation} onDelete={onDeleteConversation} />
-        <ConversationGroup title="Yesterday" conversations={groupedConversations.yesterday} currentId={currentConversationId} onSelect={onSelectConversation} onDelete={onDeleteConversation} />
-        <ConversationGroup title="Previous 7 Days" conversations={groupedConversations.lastWeek} currentId={currentConversationId} onSelect={onSelectConversation} onDelete={onDeleteConversation} />
-        <ConversationGroup title="Older" conversations={groupedConversations.older} currentId={currentConversationId} onSelect={onSelectConversation} onDelete={onDeleteConversation} />
+        <ConversationGroup title="Today" conversations={groupedConversations.today} currentId={currentConversationId} onSelect={handleSelectConversation} onDelete={onDeleteConversation} />
+        <ConversationGroup title="Yesterday" conversations={groupedConversations.yesterday} currentId={currentConversationId} onSelect={handleSelectConversation} onDelete={onDeleteConversation} />
+        <ConversationGroup title="Previous 7 Days" conversations={groupedConversations.lastWeek} currentId={currentConversationId} onSelect={handleSelectConversation} onDelete={onDeleteConversation} />
+        <ConversationGroup title="Older" conversations={groupedConversations.older} currentId={currentConversationId} onSelect={handleSelectConversation} onDelete={onDeleteConversation} />
       </div>
 
       {/* Nav Links */}
@@ -115,7 +136,7 @@ export function ConversationSidebar({
           <Link
             key={link.label}
             href={link.href}
-            className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
+            className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200 min-h-[44px]"
           >
             <link.icon className="h-4 w-4" />
             {link.label}
@@ -128,6 +149,27 @@ export function ConversationSidebar({
         )}
       </div>
     </div>
+  );
+
+  return (
+    <>
+      {/* Desktop sidebar */}
+      <div className="hidden md:block">
+        {sidebarContent}
+      </div>
+
+      {/* Mobile overlay sidebar */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/60" onClick={onMobileToggle} />
+          {/* Sidebar panel */}
+          <div className="absolute inset-y-0 left-0 w-64 animate-in slide-in-from-left duration-200">
+            {sidebarContent}
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -162,7 +204,7 @@ function ConversationGroup({
           >
             <button
               onClick={() => onSelect(conv.id)}
-              className="flex min-w-0 flex-1 items-center gap-2 px-2 py-2 text-left"
+              className="flex min-w-0 flex-1 items-center gap-2 px-2 py-2.5 text-left min-h-[44px]"
             >
               <MessageSquare className="h-3.5 w-3.5 shrink-0 opacity-50" />
               <span className="truncate">{conv.title || 'New conversation'}</span>
@@ -170,7 +212,7 @@ function ConversationGroup({
             {onDelete && (
               <button
                 onClick={(e) => { e.stopPropagation(); onDelete(conv.id); }}
-                className="mr-1 rounded p-1 opacity-0 transition-opacity hover:bg-zinc-700 group-hover:opacity-100"
+                className="mr-1 rounded p-1.5 transition-opacity hover:bg-zinc-700 opacity-0 group-hover:opacity-100 md:opacity-0 md:group-hover:opacity-100 active:opacity-100 min-h-[44px] min-w-[44px] flex items-center justify-center"
                 title="Delete conversation"
               >
                 <Trash2 className="h-3.5 w-3.5 text-zinc-500 hover:text-red-400" />

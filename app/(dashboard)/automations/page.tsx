@@ -224,11 +224,11 @@ export default function AutomationsPage() {
 
               <div className="space-y-2">
                 <label className="text-sm font-medium text-zinc-300">Schedule</label>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <select
                     value={newScheduleType}
                     onChange={(e) => setNewScheduleType(e.target.value as any)}
-                    className="rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100"
+                    className="rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 min-h-[44px]"
                   >
                     <option value="daily">Daily</option>
                     <option value="weekdays">Weekdays</option>
@@ -238,7 +238,7 @@ export default function AutomationsPage() {
                     <select
                       value={newDow}
                       onChange={(e) => setNewDow(parseInt(e.target.value))}
-                      className="rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100"
+                      className="rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 min-h-[44px]"
                     >
                       <option value={1}>Monday</option>
                       <option value={2}>Tuesday</option>
@@ -250,25 +250,27 @@ export default function AutomationsPage() {
                     </select>
                   )}
                   <span className="text-zinc-500 self-center">at</span>
-                  <select
-                    value={newHour}
-                    onChange={(e) => setNewHour(parseInt(e.target.value))}
-                    className="rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100"
-                  >
-                    {Array.from({ length: 24 }, (_, i) => (
-                      <option key={i} value={i}>{i.toString().padStart(2, '0')}</option>
-                    ))}
-                  </select>
-                  <span className="text-zinc-500 self-center">:</span>
-                  <select
-                    value={newMinute}
-                    onChange={(e) => setNewMinute(parseInt(e.target.value))}
-                    className="rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100"
-                  >
-                    {[0, 15, 30, 45].map(m => (
-                      <option key={m} value={m}>{m.toString().padStart(2, '0')}</option>
-                    ))}
-                  </select>
+                  <div className="flex items-center gap-1">
+                    <select
+                      value={newHour}
+                      onChange={(e) => setNewHour(parseInt(e.target.value))}
+                      className="rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 min-h-[44px]"
+                    >
+                      {Array.from({ length: 24 }, (_, i) => (
+                        <option key={i} value={i}>{i.toString().padStart(2, '0')}</option>
+                      ))}
+                    </select>
+                    <span className="text-zinc-500">:</span>
+                    <select
+                      value={newMinute}
+                      onChange={(e) => setNewMinute(parseInt(e.target.value))}
+                      className="rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 min-h-[44px]"
+                    >
+                      {[0, 15, 30, 45].map(m => (
+                        <option key={m} value={m}>{m.toString().padStart(2, '0')}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
 
