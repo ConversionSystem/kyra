@@ -26,7 +26,7 @@ export default function HeroChatWidget() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }, [messages]);
 
   const sendMessage = async (text?: string) => {
@@ -103,7 +103,7 @@ export default function HeroChatWidget() {
   const showSuggestions = messages.length <= 1 && !isStreaming;
 
   return (
-    <div className="bg-gray-950 rounded-2xl border border-gray-800 shadow-2xl shadow-purple-900/20 overflow-hidden flex flex-col" style={{ height: '480px' }}>
+    <div className="bg-gray-950 rounded-2xl border border-gray-800 shadow-2xl shadow-purple-900/20 overflow-hidden flex flex-col h-[500px]">
       {/* Window bar */}
       <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-800/80 bg-gray-900/50 shrink-0">
         <div className="flex gap-1.5">

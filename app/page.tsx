@@ -52,52 +52,49 @@ export default function LandingPage() {
       </header>
 
       <main>
-        {/* Hero — Split: Copy left, Live Chat right */}
+        {/* Hero — Stacked: Copy top, Chat widget below */}
         <section className="container mx-auto px-6 pt-12 pb-20">
-          <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
-            {/* Left: Copy */}
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-900/40 border border-purple-700/40 mb-6">
-                <SparklesIcon className="h-3.5 w-3.5 text-purple-400" />
-                <span className="text-xs text-purple-300">Powered by OpenClaw</span>
-              </div>
-              
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.1] mb-6 tracking-tight">
-                The power of a
-                <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400">
-                  personal AI
-                </span>
-                <br />
-                without the setup
-              </h1>
-              
-              <p className="text-lg text-gray-400 mb-4 leading-relaxed max-w-xl">
-                AI assistants that remember you, manage your calendar, search the web, and work across every platform you use — that technology exists. But until now, you needed API keys, a server, and developer skills to use it.
-              </p>
-              
-              <p className="text-lg text-white/90 mb-8 leading-relaxed max-w-xl font-medium">
-                Kyra puts all of that in your hands. Sign up, start chatting. That&apos;s it.
-              </p>
-              
-              <div className="flex flex-col sm:flex-row items-start gap-4">
-                <Link
-                  href="/signup"
-                  className="flex items-center gap-2 px-7 py-3.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 transition font-semibold text-base shadow-lg shadow-purple-900/30"
-                >
-                  Get Started Free
-                  <ArrowRightIcon className="h-4 w-4" />
-                </Link>
-                <span className="text-sm text-gray-500 self-center">
-                  100 free credits/month · No credit card
-                </span>
-              </div>
+          <div className="max-w-4xl mx-auto text-center mb-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-900/40 border border-purple-700/40 mb-6">
+              <SparklesIcon className="h-3.5 w-3.5 text-purple-400" />
+              <span className="text-xs text-purple-300">Powered by OpenClaw</span>
             </div>
+            
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.1] mb-6 tracking-tight">
+              The power of a{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400">
+                personal AI
+              </span>
+              <br />
+              without the setup
+            </h1>
+            
+            <p className="text-lg text-gray-400 mb-2 leading-relaxed max-w-2xl mx-auto">
+              AI assistants that remember you, manage your calendar, and work across every platform — that technology exists. But until now, you needed API keys, a server, and developer skills to use it.
+            </p>
+            
+            <p className="text-lg text-white/90 mb-6 leading-relaxed max-w-2xl mx-auto font-medium">
+              Kyra puts all of that in your hands. Try it right now 👇
+            </p>
+          </div>
 
-            {/* Right: Live Chat Widget */}
-            <div className="lg:pl-4">
-              <HeroChatWidget />
-            </div>
+          {/* Full-width Chat Widget */}
+          <div className="max-w-3xl mx-auto">
+            <HeroChatWidget />
+          </div>
+
+          {/* CTA below chat */}
+          <div className="flex flex-col items-center gap-3 mt-8">
+            <Link
+              href="/signup"
+              className="flex items-center gap-2 px-7 py-3.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 transition font-semibold text-base shadow-lg shadow-purple-900/30"
+            >
+              Get Started Free
+              <ArrowRightIcon className="h-4 w-4" />
+            </Link>
+            <span className="text-sm text-gray-500">
+              100 free credits/month · No credit card · 30 second setup
+            </span>
           </div>
         </section>
 
