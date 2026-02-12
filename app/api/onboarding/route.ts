@@ -11,14 +11,32 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const body = (await request.json().catch(() => ({}))) as any;
+  const body = (await request.json().catch(() => ({}))) as {
+    name?: string;
+    role?: string;
+    timezone?: string;
+    tone?: string;
+  };
 
   const updates: Record<string, unknown> = {
     onboarding_complete: true,
+    updated_at: new Date().toISOString(),
   };
 
-  if (body.tone) {
-    updates.settings = { tone: body.tone };
+  if (body.name) {
+    updates.name = body.name;
+  }
+
+  if (body.timezone) {
+    updates.timezone = body.timezone;
+  }
+
+  // Store tone and role in settings JSONB
+  const settings: Record<string, string> = {};
+  if (body.tone) settings.tone = body.tone;
+  if (body.role) settings.role = body.role;
+  if (Object.keys(settings).length > 0) {
+    updates.settings = settings;
   }
 
   const { error } = await supabase

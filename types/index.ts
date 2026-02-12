@@ -27,6 +27,8 @@ export interface UserSettings {
   theme?: 'dark' | 'light';
   notifications?: boolean;
   preferred_model?: ModelPreference;
+  tone?: 'casual' | 'professional' | 'balanced';
+  role?: string;
 }
 
 export interface Conversation {
