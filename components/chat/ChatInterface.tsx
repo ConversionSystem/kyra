@@ -46,9 +46,10 @@ export function ChatInterface({
       .catch(() => {});
   }, []);
 
-  // Auto-load most recent conversation if none selected and conversations exist
+  // Auto-load most recent conversation on first mount (not after "New Chat")
+  const isNewChatRef = useRef(false);
   useEffect(() => {
-    if (!initialConversation && initialConversations.length > 0) {
+    if (!initialConversation && initialConversations.length > 0 && !isNewChatRef.current) {
       router.replace(`/chat/${initialConversations[0].id}`);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -80,10 +81,11 @@ export function ChatInterface({
   }, [router]);
 
   const handleNewConversation = useCallback(() => {
+    isNewChatRef.current = true;
     setCurrentConversation(undefined);
     setMessages([]);
-    router.push('/chat');
-  }, [router]);
+    setStreamingContent('');
+  }, []);
 
   const handleDeleteConversation = useCallback(async (id: string) => {
     try {
