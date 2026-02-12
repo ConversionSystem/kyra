@@ -220,7 +220,7 @@ export function ChatInterface({
     }
   };
 
-  const showEmptyState = messages.length === 0 && !streamingContent && !initialConversation;
+  const showEmptyState = messages.length === 0 && !streamingContent && !currentConversation;
 
   return (
     <div className="flex h-screen bg-zinc-950">
