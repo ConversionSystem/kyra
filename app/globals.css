@@ -60,6 +60,25 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Prevent horizontal overflow on mobile */
+html, body {
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Safe area insets for notched devices */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Touch-friendly: hide scrollbar on mobile but keep scroll */
+@media (max-width: 768px) {
+  ::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+}
+
 /* Focus outline */
 *:focus-visible {
   outline: 2px solid #a1a1aa;

@@ -181,7 +181,7 @@ export default function SkillsSettingsPage() {
                               </Badge>
                             )}
                           </div>
-                          <p className="text-xs text-zinc-500 truncate">{skill.description}</p>
+                          <p className="text-xs text-zinc-500 truncate sm:whitespace-normal">{skill.description}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0 ml-3">

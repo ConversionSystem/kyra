@@ -61,7 +61,7 @@ export default function UsagePage() {
   const strokeDashoffset = circumference - (usagePercent / 100) * circumference;
 
   return (
-    <div className="min-h-screen p-4 md:p-8 max-w-6xl mx-auto space-y-6">
+    <div className="min-h-screen p-4 md:p-8 max-w-6xl mx-auto space-y-4 md:space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Usage & Analytics</h1>
         <p className="text-zinc-400 text-sm mt-1">Your activity over the last 30 days</p>
