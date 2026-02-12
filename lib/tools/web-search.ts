@@ -108,18 +108,51 @@ export function formatSearchResults(response: SearchResponse): string {
 }
 
 /**
- * Check if a message looks like it needs a web search
+ * Check if a message looks like it needs a web search.
+ * Avoids false positives on conversational messages.
  */
 export function needsWebSearch(message: string): boolean {
-  const searchPatterns = [
-    /\b(search|google|look up|find|what is|who is|when did|latest|news|current)\b/i,
-    /\b(today|yesterday|this week|this month|2024|2025|2026)\b/i,
-    /\b(price of|stock|weather|score|result)\b/i,
-    /\?.*\b(happening|going on|update)\b/i,
+  const lower = message.toLowerCase().trim();
+
+  // Skip very short messages or greetings
+  if (lower.length < 10) return false;
+
+  // Conversational patterns that don't need search
+  const conversational = [
+    /^(hi|hey|hello|thanks|thank you|bye|goodbye|good morning|good night|how are you)/i,
+    /\b(your name|who are you|what can you do|help me with|tell me a joke)\b/i,
+    /^(what is|what's) (your|the meaning of life|love|happiness|a good)\b/i,
+    /\b(today|yesterday)\b.*\b(calendar|schedule|events|reminder|to-?do)\b/i,
+    /^(summarize|summarise|explain|translate|rewrite|rephrase)\b/i,
+    /^(write|create|generate|make|draft|compose)\b/i,
+    /^(can you|could you|please|would you)\b/i,
   ];
 
-  // Check for patterns that suggest needing current info
-  return searchPatterns.some(pattern => pattern.test(message));
+  if (conversational.some(p => p.test(lower))) return false;
+
+  // Strong signals: explicit search intent
+  const strong = [
+    /\b(search|google|look up|look this up)\b/i,
+    /\b(latest|recent|current|breaking)\s+(news|update|price|score|status|version|release)/i,
+    /\b(price of|stock price|weather in|weather for|forecast)\b/i,
+    /\b(who won|who is winning|score of|results? of|standings)\b/i,
+    /\b(news about|updates? on|what happened)\b/i,
+  ];
+
+  if (strong.some(p => p.test(lower))) return true;
+
+  // Medium signals: factual questions with temporal context
+  const temporal = [
+    /\b(who is|who was)\b.*\b(president|ceo|leader|prime minister|winner)\b/i,
+    /\b(when (did|does|will|is))\b.*\b(release|launch|start|open|happen|come out)\b/i,
+    /\b(how (much|many))\b.*\b(cost|worth|population|people)\b/i,
+    /\b(is .+ (still|yet|already))\b/i,
+    /\b(202[4-9]|2030)\b.*\b(election|event|release|launch|update|conference)\b/i,
+  ];
+
+  if (temporal.some(p => p.test(lower))) return true;
+
+  return false;
 }
 
 /**

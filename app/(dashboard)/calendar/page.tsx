@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { CalendarDays, Plus, Pencil, Trash2, Clock, MapPin, ChevronRight, Loader2, ExternalLink } from 'lucide-react';
-import Link from 'next/link';
+import { CalendarDays, Plus, Pencil, Trash2, Clock, MapPin, Loader2 } from 'lucide-react';
 
 interface CalendarEvent {
   id: string;
@@ -23,7 +22,6 @@ export default function CalendarPage() {
   const [connected, setConnected] = useState(true);
   const [connectUrl, setConnectUrl] = useState('');
 
-  // Quick-add form
   const [showForm, setShowForm] = useState(false);
   const [formSummary, setFormSummary] = useState('');
   const [formDate, setFormDate] = useState(new Date().toISOString().split('T')[0]);
@@ -31,7 +29,6 @@ export default function CalendarPage() {
   const [formDuration, setFormDuration] = useState('60');
   const [submitting, setSubmitting] = useState(false);
 
-  // Edit state
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editSummary, setEditSummary] = useState('');
 
@@ -60,10 +57,8 @@ export default function CalendarPage() {
     e.preventDefault();
     if (!formSummary.trim()) return;
     setSubmitting(true);
-
     const start = new Date(`${formDate}T${formTime}:00`);
     const end = new Date(start.getTime() + parseInt(formDuration) * 60 * 1000);
-
     try {
       const res = await fetch('/api/calendar', {
         method: 'POST',
@@ -99,15 +94,12 @@ export default function CalendarPage() {
     }
   };
 
-  const formatTime = (dateStr: string) => {
-    return new Date(dateStr).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-  };
+  const formatTime = (dateStr: string) =>
+    new Date(dateStr).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-  };
+  const formatDate = (dateStr: string) =>
+    new Date(dateStr).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
-  // Group events by day for week view
   const groupedEvents = events.reduce<Record<string, CalendarEvent[]>>((acc, event) => {
     const day = new Date(event.start).toDateString();
     if (!acc[day]) acc[day] = [];
@@ -139,14 +131,12 @@ export default function CalendarPage() {
   return (
     <div className="min-h-screen bg-zinc-950 px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-3xl">
-        {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
             <CalendarDays className="h-6 w-6 text-violet-400" />
             <h1 className="text-2xl font-bold text-zinc-100">Calendar</h1>
           </div>
           <div className="flex items-center gap-3">
-            {/* Range toggle */}
             <div className="flex rounded-lg bg-zinc-800 p-0.5">
               {(['today', 'week'] as const).map((r) => (
                 <button
@@ -170,7 +160,6 @@ export default function CalendarPage() {
           </div>
         </div>
 
-        {/* Quick-add form */}
         {showForm && (
           <form onSubmit={handleCreate} className="mb-6 rounded-xl border border-zinc-800 bg-zinc-900 p-4 space-y-3">
             <input
@@ -207,25 +196,16 @@ export default function CalendarPage() {
               </select>
             </div>
             <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowForm(false)}
-                className="rounded-lg px-3 py-1.5 text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
-              >
+              <button type="button" onClick={() => setShowForm(false)} className="rounded-lg px-3 py-1.5 text-sm text-zinc-400 hover:text-zinc-200 transition-colors">
                 Cancel
               </button>
-              <button
-                type="submit"
-                disabled={submitting || !formSummary.trim()}
-                className="rounded-lg bg-violet-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50 transition-colors"
-              >
+              <button type="submit" disabled={submitting || !formSummary.trim()} className="rounded-lg bg-violet-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50 transition-colors">
                 {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create'}
               </button>
             </div>
           </form>
         )}
 
-        {/* Events */}
         {loading ? (
           <div className="flex justify-center py-16">
             <Loader2 className="h-6 w-6 animate-spin text-zinc-500" />
@@ -233,9 +213,7 @@ export default function CalendarPage() {
         ) : events.length === 0 ? (
           <div className="text-center py-16">
             <CalendarDays className="h-10 w-10 text-zinc-700 mx-auto mb-3" />
-            <p className="text-zinc-500 text-sm">
-              {range === 'today' ? 'No events today' : 'No events this week'}
-            </p>
+            <p className="text-zinc-500 text-sm">{range === 'today' ? 'No events today' : 'No events this week'}</p>
           </div>
         ) : range === 'today' ? (
           <div className="space-y-2">
@@ -287,15 +265,7 @@ export default function CalendarPage() {
 }
 
 function EventCard({
-  event,
-  editingId,
-  editSummary,
-  onEdit,
-  onEditSave,
-  onEditCancel,
-  onEditSummaryChange,
-  onDelete,
-  formatTime,
+  event, editingId, editSummary, onEdit, onEditSave, onEditCancel, onEditSummaryChange, onDelete, formatTime,
 }: {
   event: CalendarEvent;
   editingId: string | null;
@@ -311,9 +281,7 @@ function EventCard({
 
   return (
     <div className="group flex items-start gap-3 rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 transition-colors hover:border-zinc-700">
-      {/* Time indicator */}
       <div className="flex-shrink-0 w-1 h-full min-h-[2.5rem] rounded-full bg-violet-500/40" />
-
       <div className="flex-1 min-w-0">
         {isEditing ? (
           <div className="flex items-center gap-2">
@@ -343,21 +311,11 @@ function EventCard({
           )}
         </div>
       </div>
-
-      {/* Actions */}
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button
-          onClick={() => onEdit(event.id, event.summary)}
-          className="rounded-md p-1.5 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300 transition-colors"
-          title="Edit"
-        >
+        <button onClick={() => onEdit(event.id, event.summary)} className="rounded-md p-1.5 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300 transition-colors" title="Edit">
           <Pencil className="h-3.5 w-3.5" />
         </button>
-        <button
-          onClick={() => onDelete(event.id)}
-          className="rounded-md p-1.5 text-zinc-500 hover:bg-red-900/30 hover:text-red-400 transition-colors"
-          title="Delete"
-        >
+        <button onClick={() => onDelete(event.id)} className="rounded-md p-1.5 text-zinc-500 hover:bg-red-900/30 hover:text-red-400 transition-colors" title="Delete">
           <Trash2 className="h-3.5 w-3.5" />
         </button>
       </div>
