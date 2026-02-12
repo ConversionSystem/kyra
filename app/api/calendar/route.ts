@@ -5,33 +5,39 @@ import {
   getTodayEvents, 
   getEventsInRange,
   createEvent,
+  updateEvent,
+  deleteEvent,
   disconnectGoogle 
 } from '@/lib/integrations/google';
 
+async function getAuthenticatedUser() {
+  const supabase = await createClient();
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) return null;
+  return user;
+}
+
+async function ensureConnected(userId: string) {
+  const connected = await isGoogleConnected(userId);
+  if (!connected) {
+    return NextResponse.json({ 
+      error: 'Google Calendar not connected',
+      connect_url: '/api/auth/google',
+    }, { status: 400 });
+  }
+  return null;
+}
+
 /**
  * GET /api/calendar
- * 
- * Get calendar events for the authenticated user.
- * Query params:
- * - range: 'today' | 'week' | 'month' (default: 'today')
  */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const user = await getAuthenticatedUser();
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const connected = await isGoogleConnected(user.id);
-    if (!connected) {
-      return NextResponse.json({ 
-        error: 'Google Calendar not connected',
-        connect_url: '/api/auth/google',
-      }, { status: 400 });
-    }
+    const err = await ensureConnected(user.id);
+    if (err) return err;
 
     const { searchParams } = new URL(request.url);
     const range = searchParams.get('range') || 'today';
@@ -42,7 +48,7 @@ export async function GET(request: NextRequest) {
     switch (range) {
       case 'week': {
         const startOfWeek = new Date(now);
-        startOfWeek.setDate(now.getDate() - now.getDay());
+        startOfWeek.setDate(now.getDate() - now.getDay() + 1); // Monday
         startOfWeek.setHours(0, 0, 0, 0);
         const endOfWeek = new Date(startOfWeek);
         endOfWeek.setDate(startOfWeek.getDate() + 7);
@@ -67,34 +73,20 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * POST /api/calendar
- * 
- * Create a new calendar event.
+ * POST /api/calendar — Create event
  */
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const user = await getAuthenticatedUser();
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const connected = await isGoogleConnected(user.id);
-    if (!connected) {
-      return NextResponse.json({ 
-        error: 'Google Calendar not connected',
-        connect_url: '/api/auth/google',
-      }, { status: 400 });
-    }
+    const err = await ensureConnected(user.id);
+    if (err) return err;
 
     const { summary, description, start, end, location, attendees } = await request.json();
 
     if (!summary || !start || !end) {
-      return NextResponse.json({ 
-        error: 'Missing required fields: summary, start, end' 
-      }, { status: 400 });
+      return NextResponse.json({ error: 'Missing required fields: summary, start, end' }, { status: 400 });
     }
 
     const event = await createEvent(user.id, {
@@ -118,25 +110,77 @@ export async function POST(request: NextRequest) {
 }
 
 /**
+ * PUT /api/calendar — Update event
+ */
+export async function PUT(request: NextRequest) {
+  try {
+    const user = await getAuthenticatedUser();
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const err = await ensureConnected(user.id);
+    if (err) return err;
+
+    const { eventId, summary, description, start, end, location, attendees } = await request.json();
+
+    if (!eventId) {
+      return NextResponse.json({ error: 'Missing required field: eventId' }, { status: 400 });
+    }
+
+    const event = await updateEvent(user.id, eventId, {
+      summary,
+      description,
+      start: start ? new Date(start) : undefined,
+      end: end ? new Date(end) : undefined,
+      location,
+      attendees,
+    });
+
+    if (!event) {
+      return NextResponse.json({ error: 'Failed to update event' }, { status: 500 });
+    }
+
+    return NextResponse.json({ event });
+  } catch (error) {
+    console.error('Calendar update error:', error);
+    return NextResponse.json({ error: 'Failed to update event' }, { status: 500 });
+  }
+}
+
+/**
  * DELETE /api/calendar
  * 
- * Disconnect Google Calendar integration.
+ * ?eventId=xxx  → delete specific event
+ * ?disconnect=true → disconnect Google Calendar
  */
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const user = await getAuthenticatedUser();
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const { searchParams } = new URL(request.url);
+    const eventId = searchParams.get('eventId');
+    const disconnect = searchParams.get('disconnect');
+
+    if (disconnect === 'true') {
+      await disconnectGoogle(user.id);
+      return NextResponse.json({ success: true });
     }
 
-    await disconnectGoogle(user.id);
+    if (!eventId) {
+      return NextResponse.json({ error: 'Missing eventId or disconnect param' }, { status: 400 });
+    }
+
+    const err = await ensureConnected(user.id);
+    if (err) return err;
+
+    const success = await deleteEvent(user.id, eventId);
+    if (!success) {
+      return NextResponse.json({ error: 'Failed to delete event' }, { status: 500 });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Calendar disconnect error:', error);
-    return NextResponse.json({ error: 'Failed to disconnect' }, { status: 500 });
+    console.error('Calendar delete error:', error);
+    return NextResponse.json({ error: 'Failed to delete event' }, { status: 500 });
   }
 }

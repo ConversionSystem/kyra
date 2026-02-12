@@ -1,185 +1,120 @@
-/**
- * Channel Router — Normalize inbound messages from any channel,
- * route through Kyra's brain, and format responses for each channel.
- * 
- * The key insight: the AI layer is channel-agnostic. 
- * Adapters handle the platform-specific translation.
- */
+import { createClient } from '@supabase/supabase-js';
+import type { ChannelType } from '@/types/channels';
 
-import { createServiceClient } from '@/lib/supabase/server';
-import { chat } from '@/lib/ai/claude';
-import { searchMemories, saveMemory } from '@/lib/ai/memory';
-import { getSystemPrompt, extractCommands, Reminder } from '@/lib/ai/prompts';
-import { ChannelMessage, ChannelResponse, ChannelType } from '@/types/channels';
-import { Memory, MemoryType, User } from '@/types';
-import { v4 as uuid } from 'uuid';
-
-/**
- * Look up a Kyra user from a channel identifier
- */
-export async function resolveUser(
-  channelType: ChannelType,
-  channelUserId: string
-): Promise<User | null> {
-  const supabase = await createServiceClient();
-  
-  const { data: link } = await supabase
-    .from('user_channels')
-    .select('user_id')
-    .eq('channel_type', channelType)
-    .eq('channel_user_id', channelUserId)
-    .eq('verified', true)
-    .single();
-  
-  if (!link) return null;
-  
-  const { data: user } = await supabase
-    .from('users')
-    .select('*')
-    .eq('id', link.user_id)
-    .single();
-  
-  return user as User | null;
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false, autoRefreshToken: false } }
+  );
 }
 
 /**
- * Process an inbound message from any channel
+ * Shared channel message processor.
+ * Both Telegram and WhatsApp webhooks route through here.
  */
 export async function processChannelMessage(
-  inbound: ChannelMessage
-): Promise<ChannelResponse> {
-  const supabase = await createServiceClient();
-  
-  // Resolve user
-  console.log('[channel-router] resolving user:', inbound.channelType, inbound.channelUserId);
-  const user = await resolveUser(inbound.channelType, inbound.channelUserId);
-  console.log('[channel-router] resolved user:', user?.id, user?.email);
-  
+  userId: string,
+  text: string,
+  channelType: ChannelType,
+  channelMessageId?: string
+): Promise<string> {
+  const supabase = getSupabase();
+
+  // Get user info
+  const { data: user } = await supabase
+    .from('users')
+    .select('id, email, name, plan, usage_this_month')
+    .eq('id', userId)
+    .single();
+
   if (!user) {
-    return {
-      text: "Hi! I'm Kyra. I don't recognize your account yet. Please visit kyra.conversionsystem.com to sign up, then link your messaging account in Settings.",
-    };
+    throw new Error('User not found');
   }
-  
-  // Get or create conversation for this channel
-  console.log('[channel-router] getting conversation for user:', user.id);
-  const { data: existingConv, error: convError } = await supabase
+
+  // Find or create conversation — use a single conversation per user across channels
+  const { data: existingConv } = await supabase
     .from('conversations')
     .select('id')
     .eq('user_id', user.id)
-    .eq('channel', inbound.channelType)
+    .in('channel', ['telegram', 'whatsapp', 'web'])
     .order('updated_at', { ascending: false })
     .limit(1)
     .single();
-  
-  console.log('[channel-router] existingConv:', existingConv, 'error:', convError);
+
   let conversationId: string;
   if (existingConv) {
     conversationId = existingConv.id;
   } else {
-    const { data: newConv } = await supabase
-      .from('conversations')
-      .insert({
-        id: uuid(),
-        user_id: user.id,
-        title: `${inbound.channelType} conversation`,
-        channel: inbound.channelType,
-      })
-      .select('id')
-      .single();
-    conversationId = newConv!.id;
+    conversationId = crypto.randomUUID();
+    await supabase.from('conversations').insert({
+      id: conversationId,
+      user_id: user.id,
+      title: `${channelType} conversation`,
+      channel: channelType,
+    });
   }
-  
-  // Get conversation history
+
+  // Get history
   const { data: history } = await supabase
     .from('messages')
     .select('role, content')
     .eq('conversation_id', conversationId)
     .order('created_at', { ascending: true })
     .limit(15);
-  
-  // Search memories
-  console.log('[channel-router] searching memories for:', user.id);
-  let memories: any[] = [];
-  try {
-    memories = await searchMemories(user.id, inbound.text, 5);
-    console.log('[channel-router] memories found:', memories.length);
-  } catch (memErr) {
-    console.error('[channel-router] memory search failed:', memErr);
-  }
-  
-  // Get pending reminders
-  const { data: reminders } = await supabase
-    .from('reminders')
-    .select('id, content, due_at')
-    .eq('user_id', user.id)
-    .eq('delivered', false)
-    .order('due_at', { ascending: true })
-    .limit(5);
-  
-  const reminderList: Reminder[] = (reminders || []).map(r => ({
-    id: r.id, content: r.content, due_at: r.due_at,
-  }));
-  
-  // Build system prompt
-  const systemPrompt = getSystemPrompt(memories, reminderList);
-  
-  // Call Claude (non-streaming for channel messages)
-  const messages = (history || []).map(m => ({
-    role: m.role as 'user' | 'assistant',
+
+  const messages = (history || []).map((m: any) => ({
+    role: m.role,
     content: m.content,
   }));
-  messages.push({ role: 'user', content: inbound.text });
-  
-  console.log('[channel-router] calling Claude with', messages.length, 'messages');
-  const result = await chat(messages, systemPrompt);
-  console.log('[channel-router] Claude responded, length:', result.content.length);
-  
-  // Extract commands
-  const { cleanResponse, memories: memoriesToSave, reminders: remindersToSave } = extractCommands(result.content);
-  
-  // Save memories
-  for (const mem of memoriesToSave) {
-    try {
-      await saveMemory(user.id, mem.type as MemoryType, mem.content);
-    } catch (e) {
-      console.error('Failed to save memory from channel:', e);
-    }
+  messages.push({ role: 'user', content: text });
+
+  // Call Claude
+  const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': process.env.ANTHROPIC_API_KEY!,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 2048,
+      system: `You are Kyra, a helpful personal AI assistant. You remember past conversations and help with anything the user needs. Be friendly, concise, and helpful. The user's name is ${user.name || 'there'}.`,
+      messages,
+    }),
+  });
+
+  if (!claudeResponse.ok) {
+    const err = await claudeResponse.text();
+    console.error(`[channel-router] Claude API error:`, claudeResponse.status, err);
+    throw new Error('AI response failed');
   }
-  
-  // Save reminders
-  for (const rem of remindersToSave) {
-    try {
-      await supabase.from('reminders').insert({
-        id: uuid(),
-        user_id: user.id,
-        content: rem.content,
-        due_at: rem.due_at,
-        channel: inbound.channelType,
-        metadata: {},
-      });
-    } catch (e) {
-      console.error('Failed to save reminder from channel:', e);
-    }
-  }
-  
-  // Save messages to conversation
+
+  const claudeData = await claudeResponse.json() as any;
+  const responseText = claudeData.content?.[0]?.text || "I couldn't generate a response.";
+
+  // Save messages
   await supabase.from('messages').insert([
-    { id: uuid(), conversation_id: conversationId, role: 'user', content: inbound.text, metadata: { channel: inbound.channelType } },
-    { id: uuid(), conversation_id: conversationId, role: 'assistant', content: cleanResponse, metadata: { model: 'claude-sonnet-4', channel: inbound.channelType } },
+    {
+      id: crypto.randomUUID(),
+      conversation_id: conversationId,
+      role: 'user',
+      content: text,
+      metadata: { channel: channelType, channelMessageId },
+    },
+    {
+      id: crypto.randomUUID(),
+      conversation_id: conversationId,
+      role: 'assistant',
+      content: responseText,
+      metadata: { model: 'claude-sonnet-4', channel: channelType },
+    },
   ]);
-  
-  // Update conversation timestamp
-  await supabase
-    .from('conversations')
+
+  await supabase.from('conversations')
     .update({ updated_at: new Date().toISOString() })
     .eq('id', conversationId);
-  
-  // Format response for channel (truncate for WhatsApp's 4096 char limit)
-  let responseText = cleanResponse;
-  if (inbound.channelType === 'whatsapp' && responseText.length > 4000) {
-    responseText = responseText.substring(0, 3990) + '...';
-  }
-  
-  return { text: responseText };
+
+  return responseText;
 }
