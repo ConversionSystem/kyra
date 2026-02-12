@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import type { ChannelType } from '@/types/channels';
+import { features } from '@/lib/config/features';
 
 function getSupabase() {
   return createClient(
@@ -69,7 +70,101 @@ export async function processChannelMessage(
   }));
   messages.push({ role: 'user', content: text });
 
-  // Call Claude
+  // Route through kyra-worker if enabled
+  if (features.useWorker) {
+    const WORKER_URL = process.env.KYRA_WORKER_URL;
+    const API_SECRET = process.env.KYRA_API_SECRET;
+
+    if (WORKER_URL && API_SECRET) {
+      try {
+        // Ensure workspace is initialized
+        try {
+          await fetch(`${WORKER_URL}/api/kyra/init`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${API_SECRET}`,
+              'X-Kyra-User-Id': userId,
+            },
+            body: JSON.stringify({ userName: user?.name }),
+            signal: AbortSignal.timeout(10_000),
+          });
+        } catch (e) {
+          console.error('[channel-router] Init error (non-fatal):', e);
+        }
+
+        // Build system context with history
+        const historyText = messages
+          .map((m: { role: string; content: string }) => `${m.role}: ${m.content}`)
+          .join('\n');
+        const systemContext = `You are Kyra, a helpful personal AI assistant. The user's name is ${user.name || 'there'}. Channel: ${channelType}.\n\nRecent conversation:\n${historyText}`;
+
+        const response = await fetch(`${WORKER_URL}/api/kyra/chat`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${API_SECRET}`,
+            'X-Kyra-User-Id': userId,
+          },
+          body: JSON.stringify({ message: text, systemContext }),
+          signal: AbortSignal.timeout(60_000),
+        });
+
+        if (response.ok) {
+          // Parse SSE response
+          const responseBody = await response.text();
+          let fullResponse = '';
+          for (const line of responseBody.split('\n')) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6).trim();
+              if (data === '[DONE]') continue;
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.choices?.[0]?.delta?.content) {
+                  fullResponse += parsed.choices[0].delta.content;
+                } else if (parsed.choices?.[0]?.message?.content) {
+                  fullResponse += parsed.choices[0].message.content;
+                }
+              } catch {}
+            }
+          }
+
+          if (fullResponse) {
+            // Save messages to DB
+            await supabase.from('messages').insert([
+              {
+                id: crypto.randomUUID(),
+                conversation_id: conversationId,
+                role: 'user',
+                content: text,
+                metadata: { channel: channelType, channelMessageId },
+              },
+              {
+                id: crypto.randomUUID(),
+                conversation_id: conversationId,
+                role: 'assistant',
+                content: fullResponse,
+                metadata: { model: 'worker', channel: channelType },
+              },
+            ]);
+
+            await supabase
+              .from('conversations')
+              .update({ updated_at: new Date().toISOString() })
+              .eq('id', conversationId);
+
+            return fullResponse;
+          }
+        }
+        // Fall through to Claude if worker failed
+        console.warn('[channel-router] Worker failed, falling back to Claude');
+      } catch (e) {
+        console.error('[channel-router] Worker error, falling back to Claude:', e);
+      }
+    }
+  }
+
+  // Call Claude (fallback)
   const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
