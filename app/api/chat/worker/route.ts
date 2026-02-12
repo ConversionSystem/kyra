@@ -15,7 +15,7 @@
 import { NextRequest } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { searchMemories, saveMemory } from '@/lib/ai/memory';
-import { extractCommands, Reminder, CalendarEvent } from '@/lib/ai/prompts';
+import { extractCommands, getSystemPrompt, Reminder, CalendarEvent } from '@/lib/ai/prompts';
 import { isGoogleConnected, getTodayEvents } from '@/lib/integrations/google';
 import { generateConversationTitle } from '@/lib/utils';
 import { Message, Conversation, MemoryType, User } from '@/types';
@@ -135,6 +135,26 @@ export async function POST(request: NextRequest) {
       .update({ usage_this_month: currentUsage + creditCost })
       .eq('id', authUser.id);
 
+    // --- Gather context for the OpenClaw container ---
+    let systemContext = '';
+    try {
+      const memories = await searchMemories(authUser.id, message, 5);
+
+      let calendarEvents: CalendarEvent[] = [];
+      const googleConnected = await isGoogleConnected(authUser.id);
+      if (googleConnected) {
+        try {
+          calendarEvents = await getTodayEvents(authUser.id);
+        } catch (e) {
+          console.error('[worker-route] Calendar fetch error:', e);
+        }
+      }
+
+      systemContext = getSystemPrompt(memories || [], undefined, calendarEvents);
+    } catch (e) {
+      console.error('[worker-route] Context gathering error:', e);
+    }
+
     // --- Forward to Kyra Worker ---
     let workerResponse: Response;
     try {
@@ -145,7 +165,7 @@ export async function POST(request: NextRequest) {
           'Authorization': `Bearer ${API_SECRET}`,
           'X-Kyra-User-Id': authUser.id,
         },
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({ message, systemContext }),
         signal: AbortSignal.timeout(30_000),
       });
     } catch (fetchError) {
@@ -204,25 +224,33 @@ export async function POST(request: NextRequest) {
 
               const chunk = decoder.decode(value, { stream: true });
               
-              // Forward SSE chunks to client
-              controller.enqueue(encoder.encode(chunk));
-              
-              // Parse SSE data to collect full response
+              // Parse and transform OpenAI SSE to Kyra SSE format
               const lines = chunk.split('\n');
               for (const line of lines) {
                 if (line.startsWith('data: ')) {
-                  const data = line.slice(6);
+                  const data = line.slice(6).trim();
                   if (data === '[DONE]') continue;
                   try {
                     const parsed = JSON.parse(data);
-                    if (parsed.type === 'content' && parsed.content) {
+                    // OpenAI format from /v1/chat/completions
+                    if (parsed.choices?.[0]?.delta?.content) {
+                      const content = parsed.choices[0].delta.content;
+                      fullResponse += content;
+                      controller.enqueue(
+                        encoder.encode(`data: ${JSON.stringify({ type: 'content', content })}\n\n`)
+                      );
+                    }
+                    // Legacy Kyra format
+                    else if (parsed.type === 'content' && parsed.content) {
                       fullResponse += parsed.content;
+                      controller.enqueue(encoder.encode(line + '\n'));
                     } else if (parsed.response) {
-                      // Some gateway formats return full response
                       fullResponse = parsed.response;
+                      controller.enqueue(encoder.encode(line + '\n'));
                     }
                   } catch {
-                    // Not JSON, might be raw content
+                    // Forward as-is if not parseable
+                    controller.enqueue(encoder.encode(line + '\n'));
                   }
                 }
               }
