@@ -153,4 +153,31 @@ STRIPE_WEBHOOK_SECRET=
 
 ---
 
-*Last Updated: February 6, 2026*
+---
+
+## Onboarding Upgrade (February 12, 2026)
+
+### Plan
+Redesign onboarding wizard from 4 steps to 5 meaningful steps that collect user info and write it to workspace files.
+
+### Tasks
+- [ ] Redesign `app/(dashboard)/onboarding/page.tsx` — 5-step wizard:
+  - Step 1: Welcome + "What should I call you?" (name input)
+  - Step 2: "What do you do?" (role/occupation free text)
+  - Step 3: Timezone (auto-detect + manual override)
+  - Step 4: Tone selection (casual/professional/balanced visual cards)
+  - Step 5: "Try it!" — sample prompts that start first message
+- [ ] Update `app/api/onboarding/route.ts` — save name, role, timezone, tone to user profile
+- [ ] Create `app/api/kyra/init/route.ts` — write personalized SOUL.md and USER.md to R2 workspace
+- [ ] Update `types/index.ts` — add role and tone to UserSettings
+- [ ] Enable R2 user-data bucket in `wrangler.toml`
+- [ ] Commit and push
+
+### Files to modify
+1. `app/(dashboard)/onboarding/page.tsx` — full rewrite
+2. `app/api/onboarding/route.ts` — save all fields
+3. `app/api/kyra/init/route.ts` — new file, writes workspace files
+4. `types/index.ts` — extend UserSettings
+5. `wrangler.toml` — uncomment R2 bucket
+
+*Last Updated: February 12, 2026*
