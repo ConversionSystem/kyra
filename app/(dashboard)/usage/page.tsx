@@ -30,7 +30,7 @@ export default function UsagePage() {
   useEffect(() => {
     fetch('/api/analytics')
       .then((r) => r.json())
-      .then(setData)
+      .then((d) => setData(d as AnalyticsData))
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);

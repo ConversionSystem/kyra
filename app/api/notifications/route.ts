@@ -68,7 +68,7 @@ export async function PATCH(request: NextRequest) {
   }
   
   const serviceClient = await createServiceClient();
-  const body = await request.json();
+  const body = (await request.json()) as any;
   const { id, ids, action } = body;
   
   // Mark all as read

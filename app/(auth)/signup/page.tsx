@@ -50,7 +50,7 @@ function SignupPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ plan: selectedPlan }),
         });
-        const data = await res.json();
+        const data = (await res.json()) as { url?: string };
         if (data.url) {
           window.location.href = data.url;
           return;
