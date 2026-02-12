@@ -350,6 +350,84 @@ export async function createEvent(
 }
 
 /**
+ * Update a calendar event
+ */
+export async function updateEvent(
+  userId: string,
+  eventId: string,
+  updates: {
+    summary?: string;
+    description?: string;
+    start?: Date;
+    end?: Date;
+    location?: string;
+    attendees?: string[];
+  }
+): Promise<CalendarEvent | null> {
+  const accessToken = await getValidAccessToken(userId);
+  if (!accessToken) return null;
+
+  const eventData: any = {};
+  if (updates.summary !== undefined) eventData.summary = updates.summary;
+  if (updates.description !== undefined) eventData.description = updates.description;
+  if (updates.start) eventData.start = { dateTime: updates.start.toISOString() };
+  if (updates.end) eventData.end = { dateTime: updates.end.toISOString() };
+  if (updates.location !== undefined) eventData.location = updates.location;
+  if (updates.attendees) eventData.attendees = updates.attendees.map(email => ({ email }));
+
+  const response = await fetch(
+    `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`,
+    {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(eventData),
+    }
+  );
+
+  if (!response.ok) {
+    console.error('Event update failed:', await response.text());
+    return null;
+  }
+
+  const data = await response.json();
+  return {
+    id: data.id,
+    summary: data.summary,
+    description: data.description,
+    start: new Date(data.start.dateTime || data.start.date),
+    end: new Date(data.end.dateTime || data.end.date),
+    location: data.location,
+    attendees: data.attendees?.map((a: any) => a.email),
+  };
+}
+
+/**
+ * Delete a calendar event
+ */
+export async function deleteEvent(userId: string, eventId: string): Promise<boolean> {
+  const accessToken = await getValidAccessToken(userId);
+  if (!accessToken) return false;
+
+  const response = await fetch(
+    `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`,
+    {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }
+  );
+
+  if (!response.ok && response.status !== 204) {
+    console.error('Event deletion failed:', await response.text());
+    return false;
+  }
+
+  return true;
+}
+
+/**
  * Format events for context injection
  */
 export function formatEventsForContext(events: CalendarEvent[]): string {
