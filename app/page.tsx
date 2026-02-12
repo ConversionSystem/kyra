@@ -22,10 +22,10 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-950 to-black text-white">
       {/* Header */}
-      <header className="container mx-auto px-6 py-6 flex items-center justify-between">
+      <header className="container mx-auto px-4 md:px-6 py-4 md:py-6 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <SparklesIcon className="h-8 w-8 text-purple-400" />
-          <span className="text-2xl font-bold">Kyra</span>
+          <SparklesIcon className="h-7 w-7 md:h-8 md:w-8 text-purple-400" />
+          <span className="text-xl md:text-2xl font-bold">Kyra</span>
           <span className="ml-1 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
             Beta
           </span>
@@ -53,7 +53,7 @@ export default function LandingPage() {
 
       <main>
         {/* Hero. Stacked: Copy top, Chat widget below */}
-        <section className="container mx-auto px-6 pt-12 pb-20">
+        <section className="container mx-auto px-4 md:px-6 pt-8 md:pt-12 pb-12 md:pb-20">
           <div className="max-w-4xl mx-auto text-center mb-8">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.1] mb-4 tracking-tight">
               Your{' '}
@@ -90,7 +90,7 @@ export default function LandingPage() {
 
         {/* What you get. value props */}
         <section className="border-y border-gray-800/50 py-16">
-          <div className="container mx-auto px-6">
+          <div className="container mx-auto px-4 md:px-6">
             <div className="text-center mb-12">
               <h2 className="text-2xl md:text-3xl font-bold mb-3">
                 OpenClaw&apos;s full power, ready to go
@@ -125,7 +125,7 @@ export default function LandingPage() {
         </section>
 
         {/* The problem Kyra solves */}
-        <section className="container mx-auto px-6 py-20">
+        <section className="container mx-auto px-4 md:px-6 py-20">
           <div className="max-w-5xl mx-auto">
             <div className="grid md:grid-cols-2 gap-16 items-center">
               <div>
@@ -173,7 +173,7 @@ export default function LandingPage() {
         </section>
 
         {/* Core Features */}
-        <section id="features" className="container mx-auto px-6 py-24">
+        <section id="features" className="container mx-auto px-4 md:px-6 py-24">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
               Everything OpenClaw can do, built in
@@ -224,7 +224,7 @@ export default function LandingPage() {
         </section>
 
         {/* Channels */}
-        <section id="channels" className="container mx-auto px-6 py-24">
+        <section id="channels" className="container mx-auto px-4 md:px-6 py-24">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
               One AI, every platform
@@ -247,7 +247,7 @@ export default function LandingPage() {
         </section>
 
         {/* How It Works */}
-        <section className="container mx-auto px-6 py-24">
+        <section className="container mx-auto px-4 md:px-6 py-24">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
               Up and running in 30 seconds
@@ -277,7 +277,7 @@ export default function LandingPage() {
         </section>
 
         {/* Trust */}
-        <section className="container mx-auto px-6 py-16">
+        <section className="container mx-auto px-4 md:px-6 py-16">
           <div className="flex flex-wrap items-center justify-center gap-8 md:gap-16 text-gray-500">
             <div className="flex items-center gap-2">
               <ShieldCheckIcon className="h-5 w-5 text-green-500" />
@@ -299,7 +299,7 @@ export default function LandingPage() {
         </section>
 
         {/* Final CTA */}
-        <section className="container mx-auto px-6 py-24">
+        <section className="container mx-auto px-4 md:px-6 py-24">
           <div className="max-w-3xl mx-auto bg-gradient-to-br from-purple-900/40 to-pink-900/30 rounded-3xl p-12 md:p-16 border border-purple-800/40 text-center">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
               Your AI is waiting
@@ -323,8 +323,8 @@ export default function LandingPage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-gray-800 py-12">
-        <div className="container mx-auto px-6">
+      <footer className="border-t border-gray-800 py-8 md:py-12">
+        <div className="container mx-auto px-4 md:px-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-2">
               <SparklesIcon className="h-6 w-6 text-purple-400" />
