@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Send, Loader2 } from 'lucide-react';
+import { ArrowUp, Loader2 } from 'lucide-react';
 
 interface ChatInputProps {
   onSend: (message: string) => void;
@@ -15,7 +15,6 @@ export function ChatInput({ onSend, isLoading, disabled }: ChatInputProps) {
   const [message, setMessage] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -43,7 +42,7 @@ export function ChatInput({ onSend, isLoading, disabled }: ChatInputProps) {
 
   return (
     <form onSubmit={handleSubmit} className="relative">
-      <div className="flex items-end gap-2 rounded-lg border border-zinc-700 bg-zinc-900 p-2">
+      <div className="flex items-end gap-2 rounded-2xl border border-zinc-700 bg-zinc-900 p-2 shadow-lg focus-within:border-zinc-600">
         <Textarea
           ref={textareaRef}
           value={message}
@@ -51,25 +50,22 @@ export function ChatInput({ onSend, isLoading, disabled }: ChatInputProps) {
           onKeyDown={handleKeyDown}
           placeholder="Message Kyra..."
           disabled={isLoading || disabled}
-          className="min-h-[44px] max-h-[200px] resize-none border-0 bg-transparent p-2 focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="min-h-[44px] max-h-[200px] resize-none border-0 bg-transparent p-2 text-zinc-100 placeholder:text-zinc-500 focus-visible:ring-0 focus-visible:ring-offset-0"
           rows={1}
         />
         <Button
           type="submit"
           size="icon"
           disabled={!message.trim() || isLoading || disabled}
-          className="shrink-0"
+          className="h-8 w-8 shrink-0 rounded-full bg-zinc-100 text-zinc-900 hover:bg-white disabled:opacity-30"
         >
           {isLoading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
-            <Send className="h-4 w-4" />
+            <ArrowUp className="h-4 w-4" />
           )}
         </Button>
       </div>
-      <p className="mt-2 text-center text-xs text-zinc-500">
-        Kyra can make mistakes. Check important info.
-      </p>
     </form>
   );
 }
