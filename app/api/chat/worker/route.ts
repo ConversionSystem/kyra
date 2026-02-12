@@ -135,6 +135,28 @@ export async function POST(request: NextRequest) {
       .update({ usage_this_month: currentUsage + creditCost })
       .eq('id', authUser.id);
 
+    // Initialize workspace for new users (before first chat)
+    try {
+      const initResponse = await fetch(`${WORKER_URL}/api/kyra/init`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${API_SECRET}`,
+          'X-Kyra-User-Id': authUser.id,
+        },
+        body: JSON.stringify({
+          userName: user.name || authUser.email?.split('@')[0] || 'there',
+          email: authUser.email,
+          plan: plan,
+        }),
+        signal: AbortSignal.timeout(10_000),
+      });
+      const initResult = await initResponse.json() as any;
+      console.log('[worker-route] Init result:', initResult.status);
+    } catch (e) {
+      console.error('[worker-route] Init error (non-fatal):', e);
+    }
+
     // --- Gather context for the OpenClaw container ---
     let systemContext = '';
     try {
