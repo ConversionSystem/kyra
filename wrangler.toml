@@ -15,10 +15,10 @@ binding = "ASSETS"
 binding = "NEXT_INC_CACHE_R2_BUCKET"
 bucket_name = "kyra-next-cache"
 
-# R2 bucket binding (uncomment if needed for direct access from frontend)
-# [[r2_buckets]]
-# binding = "R2"
-# bucket_name = "kyra-user-data"
+# R2 bucket for user workspace files (SOUL.md, USER.md, etc.)
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "kyra-user-data"
 
 # Environment variables that are safe to commit (non-secret)
 [vars]
