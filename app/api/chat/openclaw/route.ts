@@ -169,6 +169,15 @@ export async function POST(request: NextRequest) {
       console.error('Calendar fetch failed:', e);
     }
 
+    // --- Fetch user's enabled skills ---
+    const { data: userSkills } = await serviceClient
+      .from('user_skills')
+      .select('skill_id')
+      .eq('user_id', authUser.id)
+      .eq('enabled', true);
+
+    const enabledSkillIds = (userSkills || []).map((s: any) => s.skill_id);
+
     // --- OpenClaw session ---
     const { session, needsContext } = getOrCreateSession(authUser.id);
 
@@ -183,6 +192,7 @@ export async function POST(request: NextRequest) {
         memories: memories.map(m => ({ type: m.type, content: m.content })),
         reminders: reminders.map(r => ({ content: r.content, due_at: r.due_at })),
         calendarEvents,
+        enabledSkills: enabledSkillIds,
       });
 
       openclawMessage = `${systemPrompt}\n\n---\n\nUser message: ${message}`;

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, User, Clock, BarChart3, LogOut, Calendar, Check, X, Loader2, MessageCircle, ChevronRight } from 'lucide-react';
+import { ArrowLeft, User, Clock, BarChart3, LogOut, Calendar, Check, X, Loader2, MessageCircle, ChevronRight, Puzzle, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useSearchParams } from 'next/navigation';
@@ -220,6 +220,50 @@ export default function SettingsPage() {
                 <div>
                   <p className="font-medium text-zinc-100">Manage Channels</p>
                   <p className="text-xs text-zinc-500">Telegram, WhatsApp — connect your messaging apps</p>
+                </div>
+                <ChevronRight className="h-5 w-5 text-zinc-500" />
+              </div>
+            </Link>
+          </CardContent>
+        </Card>
+
+        {/* Skills */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Puzzle className="h-5 w-5" />
+              Skills
+            </CardTitle>
+            <CardDescription>Enable tools and integrations for your AI</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/settings/skills">
+              <div className="flex items-center justify-between rounded-lg border border-zinc-700 bg-zinc-800/50 p-4 hover:bg-zinc-800 transition-colors cursor-pointer">
+                <div>
+                  <p className="font-medium text-zinc-100">Manage Skills</p>
+                  <p className="text-xs text-zinc-500">Web search, GitHub, browser control, voice, and more</p>
+                </div>
+                <ChevronRight className="h-5 w-5 text-zinc-500" />
+              </div>
+            </Link>
+          </CardContent>
+        </Card>
+
+        {/* Automations */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Zap className="h-5 w-5" />
+              Automations
+            </CardTitle>
+            <CardDescription>Scheduled tasks your AI runs automatically</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/automations">
+              <div className="flex items-center justify-between rounded-lg border border-zinc-700 bg-zinc-800/50 p-4 hover:bg-zinc-800 transition-colors cursor-pointer">
+                <div>
+                  <p className="font-medium text-zinc-100">Manage Automations</p>
+                  <p className="text-xs text-zinc-500">Daily briefings, email digests, reminders, and more</p>
                 </div>
                 <ChevronRight className="h-5 w-5 text-zinc-500" />
               </div>
