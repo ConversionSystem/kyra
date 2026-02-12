@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { plan } = await request.json();
+    const { plan } = (await request.json()) as any;
 
     if (!['starter', 'business', 'max'].includes(plan)) {
       return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });

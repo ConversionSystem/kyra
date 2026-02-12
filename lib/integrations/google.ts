@@ -71,7 +71,7 @@ export async function exchangeCodeForTokens(code: string): Promise<GoogleTokens>
     throw new Error(`Token exchange failed: ${error}`);
   }
 
-  const data = await response.json();
+  const data = await response.json() as any;
   
   return {
     access_token: data.access_token,
@@ -100,7 +100,7 @@ export async function refreshAccessToken(refreshToken: string): Promise<GoogleTo
     throw new Error(`Token refresh failed: ${error}`);
   }
 
-  const data = await response.json();
+  const data = await response.json() as any;
   
   return {
     access_token: data.access_token,
@@ -226,7 +226,7 @@ export async function getTodayEvents(userId: string): Promise<CalendarEvent[]> {
     return [];
   }
 
-  const data = await response.json();
+  const data = await response.json() as any;
   
   return (data.items || []).map((event: any) => ({
     id: event.id,
@@ -272,7 +272,7 @@ export async function getEventsInRange(
     return [];
   }
 
-  const data = await response.json();
+  const data = await response.json() as any;
   
   return (data.items || []).map((event: any) => ({
     id: event.id,
@@ -336,7 +336,7 @@ export async function createEvent(
     return null;
   }
 
-  const data = await response.json();
+  const data = await response.json() as any;
   
   return {
     id: data.id,
@@ -392,7 +392,7 @@ export async function updateEvent(
     return null;
   }
 
-  const data = await response.json();
+  const data = await response.json() as any;
   return {
     id: data.id,
     summary: data.summary,

@@ -48,7 +48,7 @@ export async function sendMessage(
       return { success: false, error };
     }
 
-    const data = await response.json();
+    const data = await response.json() as any;
     return { success: true, content: data.response || data.content };
   } catch (error) {
     console.error('OpenClaw send error:', error);
@@ -89,7 +89,7 @@ export async function spawnSession(
       return { success: false, error };
     }
 
-    const data = await response.json();
+    const data = await response.json() as any;
     return { success: true, content: data.response };
   } catch (error) {
     console.error('OpenClaw spawn error:', error);

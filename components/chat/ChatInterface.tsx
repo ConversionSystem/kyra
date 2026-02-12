@@ -39,7 +39,7 @@ export function ChatInterface({
   useEffect(() => {
     fetch('/api/usage')
       .then((res) => res.ok ? res.json() : null)
-      .then((data) => {
+      .then((data: any) => {
         if (data) {
           setCredits({ used: data.creditsUsed, limit: data.creditsLimit, plan: data.plan });
         }
@@ -58,7 +58,7 @@ export function ChatInterface({
       try {
         const response = await fetch('/api/conversations');
         if (response.ok) {
-          const data = await response.json();
+          const data = await response.json() as Conversation[];
           setConversations(data);
         }
       } catch (error) {

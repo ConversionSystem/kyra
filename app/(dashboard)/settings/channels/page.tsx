@@ -38,7 +38,7 @@ export default function ChannelsPage() {
     try {
       const res = await fetch('/api/channels/status');
       if (res.ok) {
-        const data = await res.json();
+        const data = (await res.json()) as any;
         setChannels(data.channels);
       }
     } catch (e) {
@@ -62,7 +62,7 @@ export default function ChannelsPage() {
     setMessage(null);
     try {
       const res = await fetch('/api/channels/telegram/connect', { method: 'POST' });
-      const data = await res.json();
+      const data = (await res.json()) as any;
       if (res.ok) {
         setTelegramToken(data.token);
         setTokenExpiry(data.expiresAt);
@@ -101,7 +101,7 @@ export default function ChannelsPage() {
     setMessage(null);
     try {
       const res = await fetch('/api/channels/whatsapp/connect', { method: 'POST' });
-      const data = await res.json();
+      const data = (await res.json()) as any;
       if (res.ok) {
         setWhatsappToken(data.token);
         setWhatsappTokenExpiry(data.expiresAt);

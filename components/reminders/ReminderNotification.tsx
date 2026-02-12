@@ -19,7 +19,7 @@ export function ReminderNotification() {
     try {
       const response = await fetch('/api/reminders/due');
       if (response.ok) {
-        const data = await response.json();
+        const data = await response.json() as { reminders?: any[] };
         setReminders(data.reminders || []);
       }
     } catch (error) {

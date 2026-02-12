@@ -65,7 +65,7 @@ export function NotificationCenter() {
     try {
       const res = await fetch('/api/notifications?limit=15');
       if (res.ok) {
-        const data = await res.json();
+        const data = (await res.json()) as any;
         setNotifications(data.notifications || []);
         setUnreadCount(data.unreadCount || 0);
       }

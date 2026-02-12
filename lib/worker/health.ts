@@ -30,7 +30,7 @@ export async function checkSandboxHealth(): Promise<HealthStatus> {
       signal: AbortSignal.timeout(10_000),
     });
     const latencyMs = Date.now() - start;
-    const data = await res.json().catch(() => ({}));
+    const data = await res.json().catch(() => ({})) as any;
     return { reachable: res.ok, status: res.status, data, latencyMs };
   } catch (err) {
     return {
@@ -59,7 +59,7 @@ export async function checkWorkerHealth(userId = 'health-check'): Promise<Health
       signal: AbortSignal.timeout(10_000),
     });
     const latencyMs = Date.now() - start;
-    const data = await res.json().catch(() => ({}));
+    const data = await res.json().catch(() => ({})) as any;
     return { reachable: res.ok, status: res.status, data, latencyMs };
   } catch (err) {
     return {

@@ -71,7 +71,7 @@ export async function fetchUrl(url: string, maxChars?: number): Promise<FetchedC
     // Handle non-HTML content
     if (!contentType.includes('text/html') && !contentType.includes('application/xhtml')) {
       if (contentType.includes('application/json')) {
-        const json = await response.json();
+        const json = await response.json() as any;
         return {
           url,
           title: 'JSON Response',

@@ -358,7 +358,7 @@ export default function SettingsPage() {
                               headers: { 'Content-Type': 'application/json' },
                               body: JSON.stringify({ plan: 'starter' }),
                             });
-                            const data = await res.json();
+                            const data = (await res.json()) as any;
                             if (data.url) window.location.href = data.url;
                             else setMessage({ type: 'error', text: data.error || 'Failed to start checkout' });
                           } catch { setMessage({ type: 'error', text: 'Failed to start checkout' }); }
@@ -386,7 +386,7 @@ export default function SettingsPage() {
                               headers: { 'Content-Type': 'application/json' },
                               body: JSON.stringify({ plan: 'business' }),
                             });
-                            const data = await res.json();
+                            const data = (await res.json()) as any;
                             if (data.url) window.location.href = data.url;
                             else setMessage({ type: 'error', text: data.error || 'Failed to start checkout' });
                           } catch { setMessage({ type: 'error', text: 'Failed to start checkout' }); }
@@ -413,7 +413,7 @@ export default function SettingsPage() {
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ plan: 'max' }),
                           });
-                          const data = await res.json();
+                          const data = (await res.json()) as any;
                           if (data.url) window.location.href = data.url;
                           else setMessage({ type: 'error', text: data.error || 'Failed to start checkout' });
                         } catch { setMessage({ type: 'error', text: 'Failed to start checkout' }); }
@@ -435,7 +435,7 @@ export default function SettingsPage() {
                 onClick={async () => {
                   try {
                     const res = await fetch('/api/billing/portal', { method: 'POST' });
-                    const data = await res.json();
+                    const data = (await res.json()) as any;
                     if (data.url) window.location.href = data.url;
                   } catch {
                     setMessage({ type: 'error', text: 'Failed to open billing portal' });

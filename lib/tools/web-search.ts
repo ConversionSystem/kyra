@@ -68,7 +68,7 @@ export async function webSearch(
       };
     }
 
-    const data = await response.json();
+    const data = await response.json() as any;
     
     const results: SearchResult[] = (data.web?.results || []).map((r: any) => ({
       title: r.title,
