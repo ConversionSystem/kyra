@@ -21,9 +21,12 @@ export interface User {
   settings: UserSettings;
 }
 
+export type ModelPreference = 'auto' | 'claude-sonnet-4' | 'claude-haiku' | 'gpt-4o';
+
 export interface UserSettings {
   theme?: 'dark' | 'light';
   notifications?: boolean;
+  preferred_model?: ModelPreference;
 }
 
 export interface Conversation {

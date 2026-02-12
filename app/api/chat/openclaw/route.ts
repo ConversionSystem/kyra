@@ -393,6 +393,7 @@ async function handleDirectClaude(
   const { streamChat } = await import('@/lib/ai/claude');
   const { isGoogleConnected, getTodayEvents } = await import('@/lib/integrations/google');
   const { generateConversationTitle } = await import('@/lib/utils');
+  const { resolveModelPreference } = await import('@/lib/ai/model-router');
 
   let conversationId = conversation_id;
   let conversation: Conversation | null = null;
@@ -467,8 +468,14 @@ async function handleDirectClaude(
         const messagesForClaude = history.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content }));
         messagesForClaude.push({ role: 'user', content: message });
 
+        const userModelPref = (user as any).settings?.preferred_model;
+        const modelConfig = resolveModelPreference(userModelPref, message, history.length);
+
         let fullResponse = '';
-        for await (const chunk of streamChat(messagesForClaude, systemPrompt)) {
+        for await (const chunk of streamChat(messagesForClaude, systemPrompt, {
+          model: modelConfig.id,
+          maxTokens: modelConfig.maxTokens,
+        })) {
           fullResponse += chunk;
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'content', content: chunk })}\n\n`));
         }
@@ -494,7 +501,7 @@ async function handleDirectClaude(
         }
 
         const { data: userMessage } = await serviceClient.from('messages').insert({ id: uuid(), conversation_id: conversationId, role: 'user', content: message, metadata: {} }).select().single();
-        const { data: assistantMessage } = await serviceClient.from('messages').insert({ id: uuid(), conversation_id: conversationId, role: 'assistant', content: cleanResponse, metadata: { model: 'claude-sonnet-4', provider: 'direct' } }).select().single();
+        const { data: assistantMessage } = await serviceClient.from('messages').insert({ id: uuid(), conversation_id: conversationId, role: 'assistant', content: cleanResponse, metadata: { model: modelConfig.id, tier: modelConfig.tier, provider: 'direct' } }).select().single();
         await serviceClient.from('conversations').update({ updated_at: new Date().toISOString() }).eq('id', conversationId);
 
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'message', userMessage, assistantMessage })}\n\n`));
