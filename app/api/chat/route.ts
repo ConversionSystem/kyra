@@ -227,12 +227,18 @@ export async function POST(request: NextRequest) {
     }
     
     // Check if message needs web search (only if no URLs found)
+    let searchSourcesBlock = '';
     if (urls.length === 0 && needsWebSearch(message)) {
       const query = extractSearchQuery(message);
       const searchResults = await webSearch(query, { count: 5 });
       
       if (searchResults.results.length > 0) {
         toolContext += '\n\n---\n' + formatSearchResults(searchResults);
+        // Build sources block for the frontend to render
+        searchSourcesBlock = `\n[SEARCH_SOURCES]${JSON.stringify({
+          query: searchResults.query,
+          sources: searchResults.results.map(r => ({ title: r.title, url: r.url, description: r.description })),
+        })}[/SEARCH_SOURCES]`;
       }
     }
     
@@ -309,6 +315,14 @@ export async function POST(request: NextRequest) {
             fullResponse += chunk;
             controller.enqueue(
               encoder.encode(`data: ${JSON.stringify({ type: 'content', content: chunk })}\n\n`)
+            );
+          }
+
+          // Append search sources block if we did a web search
+          if (searchSourcesBlock) {
+            fullResponse += searchSourcesBlock;
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ type: 'content', content: searchSourcesBlock })}\n\n`)
             );
           }
 

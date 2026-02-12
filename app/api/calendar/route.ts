@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
     switch (range) {
       case 'week': {
         const startOfWeek = new Date(now);
-        startOfWeek.setDate(now.getDate() - now.getDay() + 1); // Monday
+        startOfWeek.setDate(now.getDate() - now.getDay() + 1);
         startOfWeek.setHours(0, 0, 0, 0);
         const endOfWeek = new Date(startOfWeek);
         endOfWeek.setDate(startOfWeek.getDate() + 7);
@@ -148,8 +148,7 @@ export async function PUT(request: NextRequest) {
 
 /**
  * DELETE /api/calendar
- * 
- * ?eventId=xxx  → delete specific event
+ * ?eventId=xxx → delete specific event
  * ?disconnect=true → disconnect Google Calendar
  */
 export async function DELETE(request: NextRequest) {

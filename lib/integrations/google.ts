@@ -365,9 +365,7 @@ export async function updateEvent(
   }
 ): Promise<CalendarEvent | null> {
   const accessToken = await getValidAccessToken(userId);
-  if (!accessToken) {
-    return null;
-  }
+  if (!accessToken) return null;
 
   const eventData: any = {};
   if (updates.summary !== undefined) eventData.summary = updates.summary;
@@ -395,7 +393,6 @@ export async function updateEvent(
   }
 
   const data = await response.json();
-
   return {
     id: data.id,
     summary: data.summary,
@@ -412,9 +409,7 @@ export async function updateEvent(
  */
 export async function deleteEvent(userId: string, eventId: string): Promise<boolean> {
   const accessToken = await getValidAccessToken(userId);
-  if (!accessToken) {
-    return false;
-  }
+  if (!accessToken) return false;
 
   const response = await fetch(
     `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`,

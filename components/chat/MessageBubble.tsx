@@ -4,9 +4,10 @@ import { Message } from '@/types';
 import { cn } from '@/lib/utils';
 import { User, Sparkles, Copy, Check } from 'lucide-react';
 import { VoiceButton } from './VoiceButton';
+import { SearchResults, parseSearchContext, stripSearchContext } from './SearchResults';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 
 interface MessageBubbleProps {
   message: Message;
@@ -17,11 +18,20 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
   const isUser = message.role === 'user';
   const [copied, setCopied] = useState(false);
 
+  const searchContext = useMemo(
+    () => (!isUser ? parseSearchContext(message.content) : null),
+    [isUser, message.content]
+  );
+  const displayContent = useMemo(
+    () => (searchContext ? stripSearchContext(message.content) : message.content),
+    [searchContext, message.content]
+  );
+
   const handleCopy = useCallback(() => {
-    navigator.clipboard.writeText(message.content);
+    navigator.clipboard.writeText(displayContent);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  }, [message.content]);
+  }, [displayContent]);
 
   if (isUser) {
     return (
@@ -45,6 +55,11 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
       </div>
 
       <div className="min-w-0 flex-1 max-w-[85%]">
+        {/* Search sources card */}
+        {searchContext && (
+          <SearchResults query={searchContext.query} sources={searchContext.sources} />
+        )}
+
         {/* Markdown content */}
         <div className="prose prose-invert prose-sm max-w-none
           prose-p:leading-relaxed prose-p:my-2
@@ -85,7 +100,7 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
               },
             }}
           >
-            {message.content}
+            {displayContent}
           </ReactMarkdown>
           {isStreaming && (
             <span className="ml-0.5 inline-block h-5 w-0.5 animate-pulse bg-violet-400" />
