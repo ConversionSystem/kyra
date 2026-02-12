@@ -3,6 +3,7 @@
  */
 
 import { features } from '@/lib/config/features';
+import { buildSkillsPrompt } from '@/lib/skills/registry';
 
 export interface Memory {
   id: string;
@@ -74,6 +75,7 @@ export function getOpenClawSystemPrompt(params: {
   memories: { type: string; content: string }[];
   reminders: { content: string; due_at: string }[];
   calendarEvents: { summary: string; start: Date; end: Date; location?: string }[];
+  enabledSkills?: string[];
 }): string {
   const { userName, timezone, memories, reminders, calendarEvents } = params;
 
@@ -93,21 +95,17 @@ export function getOpenClawSystemPrompt(params: {
       }).join('\n')
     : 'No events today (or calendar not connected).';
 
-  const skillsSection = features.openclawSkills ? `
+  const { enabledSkills } = params;
+  const skillsSection = enabledSkills && enabledSkills.length > 0
+    ? '\n' + buildSkillsPrompt(enabledSkills) + '\n'
+    : features.openclawSkills ? `
 ## Skills & Tools Available (via OpenClaw)
-
-You have access to the following capabilities through the OpenClaw skill ecosystem:
 
 - **Web Search** — Search the web for current information, news, prices, etc.
 - **URL Fetching** — Read and extract content from any URL
 - **Weather** — Get current weather and forecasts for any location
-- **File Operations** — Read/write files in your sandboxed workspace
-- **Sub-Agent Spawning** — Spawn background agents for complex, multi-step tasks
-- **Email** — Send emails when configured and requested by the user
-- **Browser** — Navigate and interact with web pages when needed
 
 Use these tools naturally when the user's request would benefit from them.
-Don't announce tool usage unless it adds value — just use them and present results.
 ` : `
 ## Tools Available
 - **Web Search**: When asked about current events or things requiring recent info
