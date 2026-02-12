@@ -115,6 +115,28 @@ export function getModelForMessage(
 }
 
 /**
+ * Resolve a user's model preference into a ModelConfig.
+ * If 'auto', falls back to smart routing based on the message.
+ */
+export function resolveModelPreference(
+  preference: string | undefined,
+  message: string,
+  conversationLength: number = 0
+): ModelConfig {
+  if (!preference || preference === 'auto') {
+    return getModelForMessage(message, conversationLength);
+  }
+  if (preference === 'claude-sonnet-4') {
+    return MODELS.balanced;
+  }
+  if (preference === 'claude-haiku') {
+    return MODELS.fast;
+  }
+  // Unknown preference — fall back to auto
+  return getModelForMessage(message, conversationLength);
+}
+
+/**
  * Estimate cost savings from routing
  */
 export function estimateSavings(routingHistory: ModelTier[]): {

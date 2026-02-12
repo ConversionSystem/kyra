@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, User, Clock, BarChart3, LogOut, Calendar, Check, X, Loader2, MessageCircle, ChevronRight, Puzzle, Zap } from 'lucide-react';
+import { ArrowLeft, User, Clock, BarChart3, LogOut, Calendar, Check, X, Loader2, MessageCircle, ChevronRight, Puzzle, Zap, Cpu } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useSearchParams } from 'next/navigation';
@@ -33,6 +33,8 @@ function SettingsContent() {
   const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
   const [usage, setUsage] = useState<any>(null);
   const [isUpgrading, setIsUpgrading] = useState<string | null>(null);
+  const [preferredModel, setPreferredModel] = useState('auto');
+  const [isSavingModel, setIsSavingModel] = useState(false);
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -64,6 +66,18 @@ function SettingsContent() {
         .single();
       
       setGoogleConnected(!!googleIntegration);
+
+      // Fetch model preference
+      try {
+        const modelRes = await fetch('/api/settings/model');
+        if (modelRes.ok) {
+          const modelData = await modelRes.json();
+          setPreferredModel(modelData.preferred_model || 'auto');
+        }
+      } catch (e) {
+        console.error('Failed to fetch model preference:', e);
+      }
+
       setIsLoading(false);
       
       // Fetch usage data
@@ -210,6 +224,72 @@ function SettingsContent() {
                 <option value="Asia/Tokyo">Tokyo</option>
               </select>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Model Preference */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Cpu className="h-5 w-5" />
+              Model Preference
+            </CardTitle>
+            <CardDescription>Choose which AI model powers your conversations</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-zinc-300">Model</label>
+              <select
+                value={preferredModel}
+                onChange={async (e) => {
+                  const value = e.target.value;
+                  setPreferredModel(value);
+                  setIsSavingModel(true);
+                  setMessage(null);
+                  try {
+                    const res = await fetch('/api/settings/model', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ preferred_model: value }),
+                    });
+                    if (res.ok) {
+                      setMessage({ type: 'success', text: 'Model preference saved!' });
+                    } else {
+                      setMessage({ type: 'error', text: 'Failed to save model preference' });
+                    }
+                  } catch {
+                    setMessage({ type: 'error', text: 'Failed to save model preference' });
+                  }
+                  setIsSavingModel(false);
+                }}
+                className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100"
+              >
+                <option value="auto">Auto (Smart Routing)</option>
+                <option value="claude-sonnet-4">Claude Sonnet 4</option>
+                <option value="claude-haiku">Claude Haiku</option>
+                <option value="gpt-4o" disabled>GPT-4o (Coming Soon)</option>
+              </select>
+            </div>
+            <div className="space-y-2 text-xs text-zinc-500">
+              {preferredModel === 'auto' && (
+                <p>Automatically picks the best model for each message — fast for simple queries, powerful for complex ones. Best balance of speed and cost.</p>
+              )}
+              {preferredModel === 'claude-sonnet-4' && (
+                <p>Always uses Claude Sonnet 4 — great balance of quality and speed. Ideal for most tasks.</p>
+              )}
+              {preferredModel === 'claude-haiku' && (
+                <p>Always uses Claude Haiku — fastest responses at lowest cost. Best for quick questions and simple tasks.</p>
+              )}
+              {preferredModel === 'gpt-4o' && (
+                <p>OpenAI GPT-4o — requires bringing your own API key. Coming soon.</p>
+              )}
+            </div>
+            {isSavingModel && (
+              <div className="flex items-center gap-2 text-xs text-zinc-400">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Saving...
+              </div>
+            )}
           </CardContent>
         </Card>
 

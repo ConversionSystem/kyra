@@ -10,7 +10,7 @@ import { generateConversationTitle } from '@/lib/utils';
 import { Message, Conversation, MemoryType, User } from '@/types';
 import { getPlanLimit, isWithinLimit, getCreditCost, classifyChatAction, Plan } from '@/lib/billing/plans';
 import { processMessageForGraph } from '@/lib/memory/graph';
-import { getModelForMessage } from '@/lib/ai/model-router';
+import { resolveModelPreference } from '@/lib/ai/model-router';
 import { v4 as uuid } from 'uuid';
 import { features } from '@/lib/config/features';
 
@@ -254,8 +254,9 @@ export async function POST(request: NextRequest) {
       systemPrompt += `\n\n## Deep Memory Graph\n${graphContext}`;
     }
 
-    // Route to optimal model based on message complexity
-    const modelConfig = getModelForMessage(message, history.length);
+    // Route to optimal model — respects user preference, falls back to smart routing
+    const userModelPref = (user as any).settings?.preferred_model;
+    const modelConfig = resolveModelPreference(userModelPref, message, history.length);
     
     // Determine action type and credit cost
     const hasWebSearch = urls.length === 0 && needsWebSearch(message);
