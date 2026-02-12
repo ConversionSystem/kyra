@@ -5,7 +5,7 @@ import { runProactiveCheckAll } from '@/lib/proactive/engine';
  * POST /api/proactive/check
  * 
  * Cron endpoint: runs proactive intelligence for all active users.
- * Should be called every 2-4 hours via Vercel Cron or external scheduler.
+ * Should be called every 2-4 hours via Cloudflare Cron Triggers or external scheduler.
  * 
  * Auth: API key required
  */

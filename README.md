@@ -211,12 +211,12 @@ Local: http://localhost:3001 | Production: https://kyra.conversionsystem.com
 
 ## 📋 Deployment Checklist
 
-- [ ] Deploy to Vercel
-- [ ] Set environment variables in Vercel
+- [ ] Deploy to Cloudflare (`npm run deploy`)
+- [ ] Set environment variables via `wrangler secret put`
 - [ ] Configure custom domain
 - [ ] Set up Stripe products/prices
 - [ ] Configure Google OAuth redirect URIs for production
-- [ ] Set up cron job for reminder delivery (Vercel Cron or external)
+- [ ] Set up cron job for reminder delivery (Cloudflare Cron Triggers or external)
 - [ ] Add Resend for email notifications
 
 ## 🏗 Architecture
