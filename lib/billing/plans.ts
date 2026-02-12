@@ -47,9 +47,9 @@ export const PLANS: Record<Plan, PlanConfig> = {
   free: {
     name: 'Free',
     price: 0,
-    creditsPerMonth: 50,
+    creditsPerMonth: 100,
     features: [
-      '50 credits/month',
+      '100 credits/month',
       'Basic chat',
       'Web interface',
       'Basic memory',
