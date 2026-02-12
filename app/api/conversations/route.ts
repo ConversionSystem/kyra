@@ -14,6 +14,21 @@ export async function GET(request: NextRequest) {
 
     const serviceClient = await createServiceClient();
     
+    const { searchParams } = new URL(request.url);
+    const convId = searchParams.get('id');
+    const wantMessages = searchParams.get('messages') === 'true';
+
+    // Single conversation with messages
+    if (convId && wantMessages) {
+      const { data: messages } = await serviceClient
+        .from('messages')
+        .select('*')
+        .eq('conversation_id', convId)
+        .order('created_at', { ascending: true });
+      
+      return Response.json({ messages: messages || [] });
+    }
+
     // Get user's conversations
     const { data: conversations, error } = await serviceClient
       .from('conversations')
