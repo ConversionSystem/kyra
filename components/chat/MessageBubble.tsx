@@ -2,7 +2,7 @@
 
 import { Message } from '@/types';
 import { cn } from '@/lib/utils';
-import { User, Sparkles, Copy, Check } from 'lucide-react';
+import { Sparkles, Copy, Check } from 'lucide-react';
 import { VoiceButton } from './VoiceButton';
 import { SearchResults, parseSearchContext, stripSearchContext } from './SearchResults';
 import ReactMarkdown from 'react-markdown';
@@ -35,32 +35,29 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
 
   if (isUser) {
     return (
-      <div className="flex gap-3 py-4 justify-end">
-        <div className="max-w-[80%] rounded-2xl bg-violet-600 px-4 py-2.5 text-white">
-          <div className="whitespace-pre-wrap break-words text-sm leading-relaxed">
+      <div className="group py-6">
+        <div className="mx-auto max-w-3xl">
+          <div className="mb-1 text-xs font-medium text-zinc-500">You</div>
+          <div className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-100">
             {message.content}
           </div>
-        </div>
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-700">
-          <User className="h-4 w-4 text-zinc-300" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="group flex gap-3 py-5">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-purple-600">
-        <Sparkles className="h-4 w-4 text-white" />
-      </div>
+    <div className="group py-6">
+      <div className="mx-auto max-w-3xl">
+        <div className="mb-1 flex items-center gap-1.5">
+          <Sparkles className="h-3.5 w-3.5 text-violet-400" />
+          <span className="text-xs font-medium text-zinc-500">Kyra</span>
+        </div>
 
-      <div className="min-w-0 flex-1 max-w-[85%]">
-        {/* Search sources card */}
         {searchContext && (
           <SearchResults query={searchContext.query} sources={searchContext.sources} />
         )}
 
-        {/* Markdown content */}
         <div className="prose prose-invert prose-sm max-w-none
           prose-p:leading-relaxed prose-p:my-2
           prose-headings:text-zinc-100 prose-headings:font-semibold
@@ -83,15 +80,9 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
             components={{
-              // Custom code block with copy button
               pre({ children }) {
-                return (
-                  <pre className="relative group/code">
-                    {children}
-                  </pre>
-                );
+                return <pre className="relative group/code">{children}</pre>;
               },
-              // Custom list rendering for cleaner look
               ul({ children }) {
                 return <ul className="space-y-1">{children}</ul>;
               },
@@ -107,24 +98,13 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
           )}
         </div>
 
-        {/* Action buttons - show on hover */}
         {!isStreaming && message.content.length > 10 && (
           <div className="mt-2 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
             <button
               onClick={handleCopy}
               className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300"
             >
-              {copied ? (
-                <>
-                  <Check className="h-3 w-3" />
-                  Copied
-                </>
-              ) : (
-                <>
-                  <Copy className="h-3 w-3" />
-                  Copy
-                </>
-              )}
+              {copied ? <><Check className="h-3 w-3" /> Copied</> : <><Copy className="h-3 w-3" /> Copy</>}
             </button>
             <VoiceButton text={message.content} />
           </div>
@@ -134,17 +114,19 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
   );
 }
 
-// Skeleton for loading state
 export function MessageSkeleton() {
   return (
-    <div className="flex gap-3 py-5">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-purple-600">
-        <Sparkles className="h-4 w-4 text-white" />
-      </div>
-      <div className="flex items-center gap-1 pt-2">
-        <span className="h-2 w-2 animate-bounce rounded-full bg-zinc-500 [animation-delay:-0.3s]" />
-        <span className="h-2 w-2 animate-bounce rounded-full bg-zinc-500 [animation-delay:-0.15s]" />
-        <span className="h-2 w-2 animate-bounce rounded-full bg-zinc-500" />
+    <div className="py-6">
+      <div className="mx-auto max-w-3xl">
+        <div className="mb-1 flex items-center gap-1.5">
+          <Sparkles className="h-3.5 w-3.5 text-violet-400" />
+          <span className="text-xs font-medium text-zinc-500">Kyra</span>
+        </div>
+        <div className="flex items-center gap-1 pt-1">
+          <span className="h-2 w-2 animate-bounce rounded-full bg-zinc-600 [animation-delay:-0.3s]" />
+          <span className="h-2 w-2 animate-bounce rounded-full bg-zinc-600 [animation-delay:-0.15s]" />
+          <span className="h-2 w-2 animate-bounce rounded-full bg-zinc-600" />
+        </div>
       </div>
     </div>
   );
