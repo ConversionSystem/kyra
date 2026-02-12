@@ -43,7 +43,7 @@ Kyra is a hosted AI assistant platform built on OpenClaw technology. It provides
                             │
                             ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                    FRONTEND (Vercel)                             │
+│               FRONTEND (Cloudflare Workers)                      │
 │  ┌─────────────────────────────────────────────────────────┐    │
 │  │                   Next.js 14 App                         │    │
 │  │  • Landing Page        • Chat Interface                  │    │
@@ -106,7 +106,7 @@ Kyra is a hosted AI assistant platform built on OpenClaw technology. It provides
 | Pinecone | Semantic memory search | Vector DB |
 | OpenClaw | AI processing, Claude API | Node.js gateway |
 | Stripe | Subscriptions, payments | Stripe SDK |
-| Vercel | Web hosting, edge functions | Vercel Platform |
+| Cloudflare | Web hosting, Workers, R2 | Cloudflare Workers via OpenNext |
 | Railway | OpenClaw hosting | Docker container |
 
 ---
