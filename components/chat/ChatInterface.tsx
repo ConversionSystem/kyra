@@ -240,6 +240,13 @@ export function ChatInterface({
             )}
             <NotificationCenter />
             <Link
+              href="/calendar"
+              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
+            >
+              <CalendarDays className="h-4 w-4" />
+              Calendar
+            </Link>
+            <Link
               href="/memories"
               className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
             >
