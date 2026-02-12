@@ -24,10 +24,14 @@ export default function ChannelsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [channels, setChannels] = useState<Record<string, ChannelStatus>>({});
   const [telegramToken, setTelegramToken] = useState<string | null>(null);
+  const [whatsappToken, setWhatsappToken] = useState<string | null>(null);
   const [tokenExpiry, setTokenExpiry] = useState<string | null>(null);
+  const [whatsappTokenExpiry, setWhatsappTokenExpiry] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isGeneratingWhatsapp, setIsGeneratingWhatsapp] = useState(false);
   const [isDisconnecting, setIsDisconnecting] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [copiedWhatsapp, setCopiedWhatsapp] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const fetchStatus = useCallback(async () => {
@@ -92,11 +96,37 @@ export default function ChannelsPage() {
     setIsDisconnecting(null);
   };
 
+  const generateWhatsappToken = async () => {
+    setIsGeneratingWhatsapp(true);
+    setMessage(null);
+    try {
+      const res = await fetch('/api/channels/whatsapp/connect', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        setWhatsappToken(data.token);
+        setWhatsappTokenExpiry(data.expiresAt);
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Failed to generate token' });
+      }
+    } catch {
+      setMessage({ type: 'error', text: 'Failed to generate token' });
+    }
+    setIsGeneratingWhatsapp(false);
+  };
+
   const copyToken = () => {
     if (telegramToken) {
       navigator.clipboard.writeText(`/connect ${telegramToken}`);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const copyWhatsappToken = () => {
+    if (whatsappToken) {
+      navigator.clipboard.writeText(`CONNECT ${whatsappToken}`);
+      setCopiedWhatsapp(true);
+      setTimeout(() => setCopiedWhatsapp(false), 2000);
     }
   };
 
@@ -265,6 +295,11 @@ export default function ChannelsPage() {
                       Connected: <span className="font-medium text-zinc-100">{whatsapp.metadata.phoneNumber}</span>
                     </p>
                   )}
+                  {whatsapp.metadata?.profileName && (
+                    <p className="text-sm text-zinc-300">
+                      Name: <span className="font-medium text-zinc-100">{whatsapp.metadata.profileName}</span>
+                    </p>
+                  )}
                   {whatsapp.connectedAt && (
                     <p className="text-xs text-zinc-500">Connected {formatDate(whatsapp.connectedAt)}</p>
                   )}
@@ -284,18 +319,56 @@ export default function ChannelsPage() {
                 </Button>
               </div>
             ) : (
-              <div className="rounded-lg border border-zinc-700 bg-zinc-800/50 p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-400">Coming Soon</span>
+              <div className="space-y-4">
+                <div className="rounded-lg border border-zinc-700 bg-zinc-800/50 p-4">
+                  <p className="text-sm font-medium text-zinc-200 mb-3">How to connect WhatsApp</p>
+                  <ol className="text-sm text-zinc-400 space-y-3 list-decimal list-inside">
+                    <li>Click <strong className="text-zinc-200">&quot;Generate Connection Token&quot;</strong> below</li>
+                    <li>Open WhatsApp on your phone</li>
+                    <li>Message Kyra&apos;s WhatsApp number (shown below)</li>
+                    <li>Send the connect command (e.g. <code className="text-violet-300 bg-zinc-800 px-1.5 py-0.5 rounded text-xs">CONNECT ABC123</code>)</li>
+                    <li>You&apos;ll get a confirmation — Kyra is now connected!</li>
+                  </ol>
+                  <div className="mt-3 rounded-md bg-green-500/5 border border-green-500/20 px-3 py-2">
+                    <p className="text-xs text-green-300">💡 Once connected, message Kyra anytime on WhatsApp. Same memory and context as web chat.</p>
+                  </div>
                 </div>
-                <p className="text-sm text-zinc-300">WhatsApp integration is being built and will be available soon.</p>
-                <p className="text-xs text-zinc-500">Once available, you&apos;ll be able to:</p>
-                <ul className="text-xs text-zinc-500 space-y-1 list-disc list-inside">
-                  <li>Message Kyra directly from WhatsApp</li>
-                  <li>Send voice messages, images, and files</li>
-                  <li>Get proactive notifications and reminders</li>
-                  <li>Same memory and context across all channels</li>
-                </ul>
+
+                {whatsappToken ? (
+                  <div className="space-y-3">
+                    <div className="rounded-lg border border-violet-500/30 bg-violet-500/5 p-4">
+                      <p className="text-xs text-zinc-500 mb-2">Send this to Kyra on WhatsApp:</p>
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 rounded bg-zinc-800 px-3 py-2 text-sm font-mono text-violet-300">
+                          CONNECT {whatsappToken}
+                        </code>
+                        <Button variant="ghost" size="icon" onClick={copyWhatsappToken}>
+                          {copiedWhatsapp ? <Check className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                      {whatsappTokenExpiry && (
+                        <p className="text-xs text-zinc-500 mt-2">
+                          Expires {formatDate(whatsappTokenExpiry)}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={generateWhatsappToken}>
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        New Token
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={fetchStatus}>
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Check Status
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Button onClick={generateWhatsappToken} disabled={isGeneratingWhatsapp}>
+                    {isGeneratingWhatsapp ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                    Generate Connection Token
+                  </Button>
+                )}
               </div>
             )}
           </CardContent>
