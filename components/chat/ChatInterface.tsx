@@ -6,7 +6,7 @@ import { MessageBubble, MessageSkeleton } from './MessageBubble';
 import { ChatInput } from './ChatInput';
 import { ConversationSidebar } from './ConversationSidebar';
 import { useRouter } from 'next/navigation';
-import { Sparkles, Brain, Settings, Search, CalendarDays, Lightbulb, MessageSquare } from 'lucide-react';
+import { Sparkles, Brain, Settings, Search, CalendarDays, Lightbulb, MessageSquare, BarChart3 } from 'lucide-react';
 import Link from 'next/link';
 import { ReminderNotification } from '@/components/reminders/ReminderNotification';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
@@ -240,11 +240,25 @@ export function ChatInterface({
             )}
             <NotificationCenter />
             <Link
+              href="/calendar"
+              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
+            >
+              <CalendarDays className="h-4 w-4" />
+              Calendar
+            </Link>
+            <Link
               href="/memories"
               className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
             >
               <Brain className="h-4 w-4" />
               Memories
+            </Link>
+            <Link
+              href="/usage"
+              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
+            >
+              <BarChart3 className="h-4 w-4" />
+              Usage
             </Link>
             <Link
               href="/settings"
