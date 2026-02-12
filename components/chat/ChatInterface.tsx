@@ -6,7 +6,7 @@ import { MessageBubble, MessageSkeleton } from './MessageBubble';
 import { ChatInput } from './ChatInput';
 import { ConversationSidebar } from './ConversationSidebar';
 import { useRouter } from 'next/navigation';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Menu } from 'lucide-react';
 import { ReminderNotification } from '@/components/reminders/ReminderNotification';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 import { CreditWarningBanner } from './CreditBadge';
@@ -33,6 +33,7 @@ export function ChatInterface({
   const [isLoading, setIsLoading] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
   const [credits, setCredits] = useState<{ used: number; limit: number; plan: string } | null>(null);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   // Fetch initial credit balance
   useEffect(() => {
@@ -77,7 +78,6 @@ export function ChatInterface({
   }, []);
 
   const handleSelectConversation = useCallback(async (id: string) => {
-    // Load conversation messages client-side (no full page reload)
     try {
       const res = await fetch(`/api/conversations?id=${id}&messages=true`);
       if (!res.ok) {
@@ -241,7 +241,7 @@ export function ChatInterface({
   const showEmptyState = messages.length === 0 && !streamingContent && !currentConversation;
 
   return (
-    <div className="flex h-screen bg-zinc-950">
+    <div className="flex h-[100dvh] bg-zinc-950">
       <ConversationSidebar
         conversations={conversations}
         currentConversationId={currentConversation?.id}
@@ -249,11 +249,20 @@ export function ChatInterface({
         onNewConversation={handleNewConversation}
         onDeleteConversation={handleDeleteConversation}
         credits={credits}
+        mobileOpen={mobileSidebarOpen}
+        onMobileToggle={() => setMobileSidebarOpen(!mobileSidebarOpen)}
       />
 
-      <div className="flex flex-1 flex-col">
-        {/* Subtle top bar: just notification center */}
-        <div className="flex items-center justify-end px-4 py-2">
+      <div className="flex flex-1 flex-col min-w-0">
+        {/* Top bar with hamburger on mobile */}
+        <div className="flex items-center justify-between px-3 py-2 md:justify-end">
+          <button
+            onClick={() => setMobileSidebarOpen(true)}
+            className="md:hidden flex items-center justify-center h-10 w-10 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"
+            aria-label="Open sidebar"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
           <NotificationCenter />
         </div>
 
@@ -290,7 +299,7 @@ export function ChatInterface({
         </div>
 
         {/* Input — centered vertically when empty, bottom when chatting */}
-        <div className={showEmptyState ? 'flex flex-1 flex-col items-center justify-center px-4' : 'p-4 pb-6'}>
+        <div className={showEmptyState ? 'flex flex-1 flex-col items-center justify-center px-4' : 'p-3 md:p-4 pb-safe'}>
           <div className={showEmptyState ? 'w-full max-w-3xl' : 'mx-auto max-w-3xl'}>
             {showEmptyState && (
               <div className="mb-6 text-center">
