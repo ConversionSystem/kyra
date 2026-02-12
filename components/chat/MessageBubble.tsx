@@ -35,8 +35,8 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
 
   if (isUser) {
     return (
-      <div className="group py-6">
-        <div className="mx-auto max-w-3xl">
+      <div className="group py-4 md:py-6">
+        <div className="mx-auto max-w-3xl px-4 md:px-0">
           <div className="mb-1 text-xs font-medium text-zinc-500">You</div>
           <div className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-100">
             {message.content}
@@ -47,8 +47,8 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
   }
 
   return (
-    <div className="group py-6">
-      <div className="mx-auto max-w-3xl">
+    <div className="group py-4 md:py-6">
+      <div className="mx-auto max-w-3xl px-4 md:px-0">
         <div className="mb-1 flex items-center gap-1.5">
           <Sparkles className="h-3.5 w-3.5 text-violet-400" />
           <span className="text-xs font-medium text-zinc-500">Kyra</span>
@@ -81,7 +81,10 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
             remarkPlugins={[remarkGfm]}
             components={{
               pre({ children }) {
-                return <pre className="relative group/code">{children}</pre>;
+                return <pre className="relative group/code overflow-x-auto">{children}</pre>;
+              },
+              table({ children }) {
+                return <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0"><table>{children}</table></div>;
               },
               ul({ children }) {
                 return <ul className="space-y-1">{children}</ul>;
@@ -99,10 +102,10 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
         </div>
 
         {!isStreaming && message.content.length > 10 && (
-          <div className="mt-2 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+          <div className="mt-2 flex items-center gap-1 md:opacity-0 md:transition-opacity md:group-hover:opacity-100">
             <button
               onClick={handleCopy}
-              className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300"
+              className="flex items-center gap-1 rounded-md px-2 py-1.5 text-xs text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300 min-h-[44px] md:min-h-0"
             >
               {copied ? <><Check className="h-3 w-3" /> Copied</> : <><Copy className="h-3 w-3" /> Copy</>}
             </button>
@@ -116,8 +119,8 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
 
 export function MessageSkeleton() {
   return (
-    <div className="py-6">
-      <div className="mx-auto max-w-3xl">
+    <div className="py-4 md:py-6">
+      <div className="mx-auto max-w-3xl px-4 md:px-0">
         <div className="mb-1 flex items-center gap-1.5">
           <Sparkles className="h-3.5 w-3.5 text-violet-400" />
           <span className="text-xs font-medium text-zinc-500">Kyra</span>

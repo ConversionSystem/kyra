@@ -353,17 +353,17 @@ function SettingsContent() {
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Current stats */}
-            <div className="grid grid-cols-3 gap-4">
-              <div className="rounded-lg border border-zinc-700 bg-zinc-800/50 p-4 text-center">
-                <p className="text-2xl font-bold text-zinc-100">{usage?.messageCount ?? '-'}</p>
+            <div className="grid grid-cols-3 gap-2 md:gap-4">
+              <div className="rounded-lg border border-zinc-700 bg-zinc-800/50 p-3 md:p-4 text-center">
+                <p className="text-xl md:text-2xl font-bold text-zinc-100">{usage?.messageCount ?? '-'}</p>
                 <p className="text-xs text-zinc-500">Messages</p>
               </div>
-              <div className="rounded-lg border border-zinc-700 bg-zinc-800/50 p-4 text-center">
-                <p className="text-2xl font-bold text-zinc-100">{usage?.memoryCount ?? '-'}</p>
+              <div className="rounded-lg border border-zinc-700 bg-zinc-800/50 p-3 md:p-4 text-center">
+                <p className="text-xl md:text-2xl font-bold text-zinc-100">{usage?.memoryCount ?? '-'}</p>
                 <p className="text-xs text-zinc-500">Memories</p>
               </div>
-              <div className="rounded-lg border border-zinc-700 bg-zinc-800/50 p-4 text-center">
-                <p className="text-2xl font-bold text-violet-400 capitalize">{usage?.planName ?? 'Free'}</p>
+              <div className="rounded-lg border border-zinc-700 bg-zinc-800/50 p-3 md:p-4 text-center">
+                <p className="text-xl md:text-2xl font-bold text-violet-400 capitalize">{usage?.planName ?? 'Free'}</p>
                 <p className="text-xs text-zinc-500">Plan</p>
               </div>
             </div>
@@ -394,7 +394,7 @@ function SettingsContent() {
                 <p className="text-sm font-medium text-zinc-300">Upgrade your plan</p>
                 <div className="grid gap-3">
                   {usage?.plan !== 'starter' && (
-                    <div className="flex items-center justify-between rounded-lg border border-zinc-700 bg-zinc-800/50 p-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-zinc-700 bg-zinc-800/50 p-4">
                       <div>
                         <p className="font-medium text-zinc-100">Starter — $20/mo</p>
                         <p className="text-xs text-zinc-500">500 credits · WhatsApp + Telegram · Web search</p>
@@ -422,7 +422,7 @@ function SettingsContent() {
                     </div>
                   )}
                   {usage?.plan !== 'business' && (
-                    <div className="flex items-center justify-between rounded-lg border border-violet-500/30 bg-violet-500/5 p-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-violet-500/30 bg-violet-500/5 p-4">
                       <div>
                         <p className="font-medium text-zinc-100">Business — $100/mo</p>
                         <p className="text-xs text-zinc-500">3,000 credits · AI sub-agents · Priority support</p>
@@ -449,7 +449,7 @@ function SettingsContent() {
                       </Button>
                     </div>
                   )}
-                  <div className="flex items-center justify-between rounded-lg border border-zinc-700 bg-zinc-800/50 p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-zinc-700 bg-zinc-800/50 p-4">
                     <div>
                       <p className="font-medium text-zinc-100">Max — $200/mo</p>
                       <p className="text-xs text-zinc-500">8,000 credits · Unlimited memory · API access · SLA</p>

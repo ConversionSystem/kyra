@@ -204,7 +204,7 @@ export default function MemoriesPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+                    className="shrink-0 md:opacity-0 md:transition-opacity md:group-hover:opacity-100 min-h-[44px] min-w-[44px]"
                     onClick={() => handleDelete(memory.id)}
                     disabled={deletingId === memory.id}
                   >

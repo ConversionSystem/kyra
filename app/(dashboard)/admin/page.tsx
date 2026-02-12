@@ -100,7 +100,7 @@ export default function AdminDashboard() {
   const planCredits: Record<string, number> = { free: 50, starter: 500, business: 3000, max: 8000 };
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 max-w-7xl mx-auto">
+    <div className="min-h-screen bg-black text-white p-4 md:p-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold">Kyra Admin</h1>
