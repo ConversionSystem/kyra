@@ -63,8 +63,8 @@ export default function LandingPage() {
               {' '}without the setup
             </h1>
             
-            <p className="text-base text-gray-400 leading-relaxed max-w-xl mx-auto">
-              Persistent memory, real-time tools, every platform. Try it 👇
+            <p className="text-base text-gray-400 leading-relaxed max-w-2xl mx-auto">
+              Built on OpenClaw, the most powerful open-source AI assistant framework. We host it so you don&apos;t have to. Try it 👇
             </p>
           </div>
 
@@ -93,10 +93,10 @@ export default function LandingPage() {
           <div className="container mx-auto px-6">
             <div className="text-center mb-12">
               <h2 className="text-2xl md:text-3xl font-bold mb-3">
-                Everything a personal AI should be
+                OpenClaw&apos;s full power, ready to go
               </h2>
               <p className="text-gray-400 max-w-2xl mx-auto">
-                Most AI tools are stateless chatbots. Kyra is a full AI platform that knows who you are and works for you around the clock.
+                OpenClaw gives AI persistent memory, multi-channel reach, and real autonomy. Kyra is the hosted version that gives you all of it without touching a terminal.
               </p>
             </div>
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
@@ -130,20 +130,19 @@ export default function LandingPage() {
             <div className="grid md:grid-cols-2 gap-16 items-center">
               <div>
                 <h2 className="text-3xl font-bold mb-6">
-                  Powerful AI shouldn&apos;t require a CS degree
+                  The best AI framework exists. Most people can&apos;t use it.
                 </h2>
                 <div className="space-y-4 text-gray-400 leading-relaxed">
                   <p>
-                    The best AI assistants. the ones that remember you, search the web, manage your schedule, 
-                    and work across Telegram, WhatsApp, and Slack. they exist. But they require API keys, 
-                    terminal commands, server management, and hours of configuration.
+                    OpenClaw is an incredible open-source AI assistant platform. Persistent memory, multi-channel messaging, 
+                    web search, sub-agents, proactive scheduling. It&apos;s the most capable personal AI framework out there.
                   </p>
                   <p>
-                    That means 99% of people who&apos;d benefit from a persistent, intelligent AI 
-                    assistant simply can&apos;t access one.
+                    But it requires your own API keys, server management, CLI comfort, and hours of setup. 
+                    Most people who&apos;d benefit from it will never run <code className="text-purple-400 bg-purple-900/30 px-1.5 py-0.5 rounded text-sm">npm install</code>.
                   </p>
                   <p className="text-white font-medium text-lg">
-                    Kyra changes that. Same power, zero setup. Just you and your AI.
+                    Kyra makes OpenClaw accessible to everyone. Same engine, zero configuration.
                   </p>
                 </div>
               </div>
@@ -177,10 +176,10 @@ export default function LandingPage() {
         <section id="features" className="container mx-auto px-6 py-24">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Built for real life, not demos
+              Everything OpenClaw can do, built in
             </h2>
             <p className="text-gray-400 max-w-2xl mx-auto text-lg">
-              Every feature works out of the box. No plugins to install, no integrations to configure.
+              Every feature works out of the box. No plugins to install, no config files to edit, no APIs to manage.
             </p>
           </div>
           
@@ -254,7 +253,7 @@ export default function LandingPage() {
               Up and running in 30 seconds
             </h2>
             <p className="text-gray-400 max-w-2xl mx-auto text-lg">
-              No API keys. No server setup. No npm install. Just sign up and go.
+              No API keys. No server setup. No terminal. We handle the OpenClaw infrastructure so you can just chat.
             </p>
           </div>
 
