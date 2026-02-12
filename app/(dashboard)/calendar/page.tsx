@@ -131,7 +131,7 @@ export default function CalendarPage() {
   return (
     <div className="min-h-screen bg-zinc-950 px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-3xl">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
           <div className="flex items-center gap-3">
             <CalendarDays className="h-6 w-6 text-violet-400" />
             <h1 className="text-2xl font-bold text-zinc-100">Calendar</h1>
@@ -170,23 +170,23 @@ export default function CalendarPage() {
               className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
               autoFocus
             />
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-2 sm:gap-3">
               <input
                 type="date"
                 value={formDate}
                 onChange={(e) => setFormDate(e.target.value)}
-                className="rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                className="rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-violet-500 min-h-[44px]"
               />
               <input
                 type="time"
                 value={formTime}
                 onChange={(e) => setFormTime(e.target.value)}
-                className="rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                className="rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-violet-500 min-h-[44px]"
               />
               <select
                 value={formDuration}
                 onChange={(e) => setFormDuration(e.target.value)}
-                className="rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                className="rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-violet-500 min-h-[44px]"
               >
                 <option value="15">15 min</option>
                 <option value="30">30 min</option>
@@ -311,11 +311,11 @@ function EventCard({
           )}
         </div>
       </div>
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button onClick={() => onEdit(event.id, event.summary)} className="rounded-md p-1.5 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300 transition-colors" title="Edit">
+      <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+        <button onClick={() => onEdit(event.id, event.summary)} className="rounded-md p-2 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center" title="Edit">
           <Pencil className="h-3.5 w-3.5" />
         </button>
-        <button onClick={() => onDelete(event.id)} className="rounded-md p-1.5 text-zinc-500 hover:bg-red-900/30 hover:text-red-400 transition-colors" title="Delete">
+        <button onClick={() => onDelete(event.id)} className="rounded-md p-2 text-zinc-500 hover:bg-red-900/30 hover:text-red-400 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center" title="Delete">
           <Trash2 className="h-3.5 w-3.5" />
         </button>
       </div>

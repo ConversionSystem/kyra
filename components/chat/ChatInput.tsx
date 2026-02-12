@@ -50,14 +50,14 @@ export function ChatInput({ onSend, isLoading, disabled }: ChatInputProps) {
           onKeyDown={handleKeyDown}
           placeholder="Message Kyra..."
           disabled={isLoading || disabled}
-          className="min-h-[44px] max-h-[200px] resize-none border-0 bg-transparent p-2 text-zinc-100 placeholder:text-zinc-500 focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="min-h-[44px] max-h-[200px] resize-none border-0 bg-transparent p-2 text-base md:text-sm text-zinc-100 placeholder:text-zinc-500 focus-visible:ring-0 focus-visible:ring-offset-0"
           rows={1}
         />
         <Button
           type="submit"
           size="icon"
           disabled={!message.trim() || isLoading || disabled}
-          className="h-8 w-8 shrink-0 rounded-full bg-zinc-100 text-zinc-900 hover:bg-white disabled:opacity-30"
+          className="h-10 w-10 shrink-0 rounded-full bg-zinc-100 text-zinc-900 hover:bg-white disabled:opacity-30"
         >
           {isLoading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
