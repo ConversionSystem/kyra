@@ -52,7 +52,7 @@ export default function LandingPage() {
       </header>
 
       <main>
-        {/* Hero — Stacked: Copy top, Chat widget below */}
+        {/* Hero. Stacked: Copy top, Chat widget below */}
         <section className="container mx-auto px-6 pt-12 pb-20">
           <div className="max-w-4xl mx-auto text-center mb-8">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.1] mb-4 tracking-tight">
@@ -60,7 +60,7 @@ export default function LandingPage() {
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400">
                 personal AI
               </span>
-              {' '}— no setup required
+              {' '}without the setup
             </h1>
             
             <p className="text-base text-gray-400 leading-relaxed max-w-xl mx-auto">
@@ -88,7 +88,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* What you get — value props */}
+        {/* What you get. value props */}
         <section className="border-y border-gray-800/50 py-16">
           <div className="container mx-auto px-6">
             <div className="text-center mb-12">
@@ -103,12 +103,12 @@ export default function LandingPage() {
               <KeyBenefit
                 icon={<BrainIcon className="h-7 w-7" />}
                 title="Remembers Everything"
-                description="Your preferences, projects, relationships, and decisions — persistent across every conversation, forever."
+                description="Your preferences, projects, relationships, and decisions. persistent across every conversation, forever."
               />
               <KeyBenefit
                 icon={<GlobeIcon className="h-7 w-7" />}
                 title="Works Everywhere"
-                description="Web, Telegram, WhatsApp — same AI, same memory. Talk to Kyra wherever you already are."
+                description="Web, Telegram, WhatsApp. same AI, same memory. Talk to Kyra wherever you already are."
               />
               <KeyBenefit
                 icon={<ZapIcon className="h-7 w-7" />}
@@ -134,8 +134,8 @@ export default function LandingPage() {
                 </h2>
                 <div className="space-y-4 text-gray-400 leading-relaxed">
                   <p>
-                    The best AI assistants — the ones that remember you, search the web, manage your schedule, 
-                    and work across Telegram, WhatsApp, and Slack — they exist. But they require API keys, 
+                    The best AI assistants. the ones that remember you, search the web, manage your schedule, 
+                    and work across Telegram, WhatsApp, and Slack. they exist. But they require API keys, 
                     terminal commands, server management, and hours of configuration.
                   </p>
                   <p>
@@ -188,7 +188,7 @@ export default function LandingPage() {
             <FeatureCard
               icon={<BrainIcon className="h-7 w-7" />}
               title="Persistent Memory"
-              description="Kyra builds a knowledge graph of you — preferences, relationships, projects, decisions. Every conversation makes it smarter."
+              description="Kyra builds a knowledge graph of you. preferences, relationships, projects, decisions. Every conversation makes it smarter."
               tag="Core"
             />
             <FeatureCard
@@ -262,7 +262,7 @@ export default function LandingPage() {
             <StepCard
               number="1"
               title="Create Your Account"
-              description="Sign up with email or Google. Free tier included — no credit card needed."
+              description="Sign up with email or Google. Free tier included. no credit card needed."
             />
             <StepCard
               number="2"
