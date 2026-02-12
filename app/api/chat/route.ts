@@ -1,11 +1,13 @@
 import { NextRequest } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
-import { streamChat } from '@/lib/ai/claude';
+import { streamChat, streamChatWithTools } from '@/lib/ai/claude';
 import { searchMemories, saveMemory } from '@/lib/ai/memory';
 import { getSystemPrompt, extractCommands, Reminder, CalendarEvent } from '@/lib/ai/prompts';
 import { isGoogleConnected, getTodayEvents } from '@/lib/integrations/google';
 import { webSearch, formatSearchResults, needsWebSearch, extractSearchQuery } from '@/lib/tools/web-search';
 import { simpleFetch, formatFetchedContent, extractUrls } from '@/lib/tools/url-fetch';
+import { getToolDefinitions, executeToolCall } from '@/lib/tools/definitions';
+import { buildSkillsPrompt } from '@/lib/skills/registry';
 import { generateConversationTitle } from '@/lib/utils';
 import { Message, Conversation, MemoryType, User } from '@/types';
 import { getPlanLimit, isWithinLimit, getCreditCost, classifyChatAction, Plan } from '@/lib/billing/plans';
@@ -162,7 +164,7 @@ export async function POST(request: NextRequest) {
     const history = (historyData || []) as Message[];
 
     // Run context-gathering in parallel for speed
-    const [memories, { data: pendingReminders }, calendarResult, graphResult] = await Promise.all([
+    const [memories, { data: pendingReminders }, calendarResult, graphResult, { data: userSkills }] = await Promise.all([
       // Search relevant memories
       searchMemories(authUser.id, message, 5).catch(err => {
         console.error('Memory search error:', err);
@@ -199,6 +201,12 @@ export async function POST(request: NextRequest) {
         console.error('Graph processing error:', err);
         return '';
       }),
+      // Fetch user's enabled skills
+      serviceClient
+        .from('user_skills')
+        .select('skill_id')
+        .eq('user_id', authUser.id)
+        .eq('enabled', true),
     ]);
 
     const reminders: Reminder[] = (pendingReminders || []).map(r => ({
@@ -206,49 +214,61 @@ export async function POST(request: NextRequest) {
       content: r.content,
       due_at: r.due_at,
     }));
-    
+
     const calendarEvents: CalendarEvent[] = calendarResult;
     const graphContext: string = graphResult;
-    
-    // Tool augmentation: Web Search and URL Fetching
+    const enabledSkillIds = (userSkills || []).map((s: any) => s.skill_id as string);
+
+    // Check if user has tool-capable skills enabled
+    const toolDefs = getToolDefinitions(enabledSkillIds);
+    const hasToolSkills = toolDefs.length > 0;
+
+    // Pre-flight tool augmentation (fallback when no tool skills enabled)
+    // When tool skills ARE enabled, Claude decides when to search via tool_use
     let toolContext = '';
-    
-    // Check for URLs in the message and fetch content
-    const urls = extractUrls(message);
-    if (urls.length > 0) {
-      const fetchPromises = urls.slice(0, 3).map(url => simpleFetch(url, 8000));
-      const fetchedContents = await Promise.all(fetchPromises);
-      
-      for (const content of fetchedContents) {
-        if (!content.error) {
-          toolContext += '\n\n---\n' + formatFetchedContent(content);
+    let searchSourcesBlock = '';
+
+    if (!hasToolSkills) {
+      // Check for URLs in the message and fetch content
+      const urls = extractUrls(message);
+      if (urls.length > 0) {
+        const fetchPromises = urls.slice(0, 3).map(url => simpleFetch(url, 8000));
+        const fetchedContents = await Promise.all(fetchPromises);
+
+        for (const content of fetchedContents) {
+          if (!content.error) {
+            toolContext += '\n\n---\n' + formatFetchedContent(content);
+          }
+        }
+      }
+
+      // Check if message needs web search (only if no URLs found)
+      if (urls.length === 0 && needsWebSearch(message)) {
+        const query = extractSearchQuery(message);
+        const searchResults = await webSearch(query, { count: 5 });
+
+        if (searchResults.results.length > 0) {
+          toolContext += '\n\n---\n' + formatSearchResults(searchResults);
+          searchSourcesBlock = `\n[SEARCH_SOURCES]${JSON.stringify({
+            query: searchResults.query,
+            sources: searchResults.results.map(r => ({ title: r.title, url: r.url, description: r.description })),
+          })}[/SEARCH_SOURCES]`;
         }
       }
     }
-    
-    // Check if message needs web search (only if no URLs found)
-    let searchSourcesBlock = '';
-    if (urls.length === 0 && needsWebSearch(message)) {
-      const query = extractSearchQuery(message);
-      const searchResults = await webSearch(query, { count: 5 });
-      
-      if (searchResults.results.length > 0) {
-        toolContext += '\n\n---\n' + formatSearchResults(searchResults);
-        // Build sources block for the frontend to render
-        searchSourcesBlock = `\n[SEARCH_SOURCES]${JSON.stringify({
-          query: searchResults.query,
-          sources: searchResults.results.map(r => ({ title: r.title, url: r.url, description: r.description })),
-        })}[/SEARCH_SOURCES]`;
-      }
-    }
-    
-    // Build augmented message if we have tool results
-    const augmentedMessage = toolContext 
+
+    // Build augmented message if we have pre-flight tool results
+    const augmentedMessage = toolContext
       ? `${message}\n\n[CONTEXT FROM TOOLS]${toolContext}\n[/CONTEXT FROM TOOLS]`
       : message;
-    
+
     let systemPrompt = getSystemPrompt(memories, reminders, calendarEvents);
-    
+
+    // Inject skills prompt when user has skills enabled
+    if (enabledSkillIds.length > 0) {
+      systemPrompt += '\n\n' + buildSkillsPrompt(enabledSkillIds);
+    }
+
     // Inject memory graph context
     if (graphContext) {
       systemPrompt += `\n\n## Deep Memory Graph\n${graphContext}`;
@@ -257,14 +277,16 @@ export async function POST(request: NextRequest) {
     // Route to optimal model — respects user preference, falls back to smart routing
     const userModelPref = (user as any).settings?.preferred_model;
     const modelConfig = resolveModelPreference(userModelPref, message, history.length);
-    
+
+
     // Determine action type and credit cost
-    const hasWebSearch = urls.length === 0 && needsWebSearch(message);
-    const hasUrls = urls.length > 0;
+    const messageUrls = extractUrls(message);
+    const hasWebSearch = messageUrls.length === 0 && needsWebSearch(message);
+    const hasUrls = messageUrls.length > 0;
     const hasFileAnalysis = /\b(analyze|analyse|review|summarize|summarise)\b.*\b(file|document|pdf|image|photo|attachment)\b/i.test(message);
     const hasDeepResearch = /\b(deep research|in-depth research|thorough research|research report)\b/i.test(message);
     const creditAction = classifyChatAction({
-      hasWebSearch: hasWebSearch || hasUrls,
+      hasWebSearch: hasWebSearch || hasUrls || hasToolSkills,
       hasSubAgent: hasDeepResearch,
       hasFileAnalysis,
     });
@@ -299,32 +321,53 @@ export async function POST(request: NextRequest) {
             })}\n\n`)
           );
 
-          // Build messages for Claude (use augmented message with tool context)
-          const messagesForClaude = history.map(m => ({ 
-            role: m.role as 'user' | 'assistant', 
-            content: m.content 
+          // Build messages for Claude
+          const messagesForClaude = history.map(m => ({
+            role: m.role as 'user' | 'assistant',
+            content: m.content
           }));
           messagesForClaude.push({ role: 'user', content: augmentedMessage });
 
-          // Stream AI response
+          // Stream AI response — use tool-use loop when skills are enabled
           let fullResponse = '';
-          
-          for await (const chunk of streamChat(messagesForClaude, systemPrompt, {
-            model: modelConfig.id,
-            maxTokens: modelConfig.maxTokens,
-          })) {
-            fullResponse += chunk;
-            controller.enqueue(
-              encoder.encode(`data: ${JSON.stringify({ type: 'content', content: chunk })}\n\n`)
-            );
-          }
 
-          // Append search sources block if we did a web search
-          if (searchSourcesBlock) {
-            fullResponse += searchSourcesBlock;
-            controller.enqueue(
-              encoder.encode(`data: ${JSON.stringify({ type: 'content', content: searchSourcesBlock })}\n\n`)
-            );
+          if (hasToolSkills) {
+            // Claude decides when to call tools; we execute and feed results back
+            for await (const event of streamChatWithTools(
+              messagesForClaude, systemPrompt, toolDefs, executeToolCall,
+              { model: modelConfig.id, maxTokens: modelConfig.maxTokens },
+            )) {
+              if (event.type === 'text') {
+                fullResponse += event.text;
+                controller.enqueue(
+                  encoder.encode(`data: ${JSON.stringify({ type: 'content', content: event.text })}\n\n`)
+                );
+              } else if (event.type === 'tool_use') {
+                // Notify frontend that a tool is being used (optional UX)
+                controller.enqueue(
+                  encoder.encode(`data: ${JSON.stringify({ type: 'tool_use', tool: event.name })}\n\n`)
+                );
+              }
+            }
+          } else {
+            // Plain streaming (pre-flight context already injected)
+            for await (const chunk of streamChat(messagesForClaude, systemPrompt, {
+              model: modelConfig.id,
+              maxTokens: modelConfig.maxTokens,
+            })) {
+              fullResponse += chunk;
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify({ type: 'content', content: chunk })}\n\n`)
+              );
+            }
+
+            // Append search sources block if we did a pre-flight web search
+            if (searchSourcesBlock) {
+              fullResponse += searchSourcesBlock;
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify({ type: 'content', content: searchSourcesBlock })}\n\n`)
+              );
+            }
           }
 
           // Extract and save any memories and reminders from the response
