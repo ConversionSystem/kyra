@@ -5,7 +5,7 @@
  * Channel adapters normalize inbound/outbound messages.
  */
 
-export type ChannelType = 'web' | 'whatsapp' | 'telegram' | 'voice' | 'email' | 'slack';
+export type ChannelType = 'web' | 'whatsapp' | 'telegram' | 'discord' | 'voice' | 'email' | 'slack';
 
 export interface ChannelMessage {
   channelType: ChannelType;
