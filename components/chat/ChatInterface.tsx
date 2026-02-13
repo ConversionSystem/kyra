@@ -123,8 +123,8 @@ export function ChatInterface({
 
   const isOutOfCredits = credits !== null && credits.used >= credits.limit;
 
-  const handleSendMessage = async (content: string) => {
-    if (!content.trim()) return;
+  const handleSendMessage = async (content: string, imageUrl?: string) => {
+    if (!content.trim() && !imageUrl) return;
     if (isOutOfCredits) return;
 
     setIsLoading(true);
@@ -135,7 +135,7 @@ export function ChatInterface({
       conversation_id: currentConversation?.id || '',
       role: 'user',
       content,
-      metadata: {},
+      metadata: imageUrl ? { image_url: imageUrl } : {},
       created_at: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, tempUserMessage]);
@@ -147,6 +147,7 @@ export function ChatInterface({
         body: JSON.stringify({
           message: content,
           conversation_id: currentConversation?.id,
+          ...(imageUrl && { image_url: imageUrl }),
         }),
       });
 

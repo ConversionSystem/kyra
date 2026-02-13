@@ -176,6 +176,21 @@ export const SKILLS_REGISTRY: SkillDefinition[] = [
     creditMultiplier: 2,
   },
 
+  // ── Vision ───────────────────────────────────────────────────
+  {
+    id: 'image_understanding',
+    name: 'Image Understanding',
+    description: 'Analyze and describe images using Claude Vision.',
+    icon: '👁️',
+    category: 'ai',
+    requiredPlan: ['starter', 'business', 'max'],
+    needsApiKey: false,
+    openclawTools: ['analyze_image'],
+    promptInstructions: 'You can analyze images using the analyze_image tool. When the user sends an image or asks about a photo, use this tool to describe, explain, or extract information from the image.',
+    hostedCompatible: true,
+    creditMultiplier: 3,
+  },
+
   // ── Browser ────────────────────────────────────────────────────
   {
     id: 'browser',

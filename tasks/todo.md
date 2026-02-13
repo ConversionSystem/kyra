@@ -181,3 +181,39 @@ Redesign onboarding wizard from 4 steps to 5 meaningful steps that collect user 
 5. `wrangler.toml` — uncomment R2 bucket
 
 *Last Updated: February 12, 2026*
+
+---
+
+## Feature 6.4: Image Understanding (February 13, 2026)
+
+### Plan
+Add image understanding via Claude Vision across web chat and Telegram.
+
+### Tasks
+- [x] `lib/tools/image-analysis.ts` — `analyzeImage(imageUrl, prompt?)` using Claude Vision
+- [x] `app/api/files/upload/route.ts` — POST multipart upload to Supabase Storage "chat-images" bucket
+- [x] `lib/billing/plans.ts` — add `image_analysis` credit action (3 credits)
+- [x] `lib/skills/registry.ts` — add `image_understanding` skill (starter+ plans)
+- [x] `lib/tools/definitions.ts` — add `analyze_image` tool schema + executor
+- [x] `app/api/chat/route.ts` — accept `image_url`, build vision content array for Claude
+- [x] `components/chat/ChatInput.tsx` — paperclip image upload button, preview, upload to /api/files/upload
+- [x] `components/chat/ChatInterface.tsx` — pass imageUrl through to API
+- [x] `components/chat/MessageBubble.tsx` — show image thumbnails on user messages via metadata.image_url
+- [x] `app/api/channels/telegram/webhook/route.ts` — handle photo messages, download via getFile, analyze with Vision
+
+### Review
+**Files created:**
+1. `lib/tools/image-analysis.ts` — Claude Vision wrapper
+2. `app/api/files/upload/route.ts` — image upload endpoint
+
+**Files modified:**
+1. `lib/billing/plans.ts` — added `image_analysis` CreditAction (3 credits) + `hasImageAnalysis` classifier
+2. `lib/skills/registry.ts` — added `image_understanding` skill definition
+3. `lib/tools/definitions.ts` — added `analyze_image` tool schema, OPENCLAW mapping, and executor case
+4. `app/api/chat/route.ts` — accepts `image_url` param, builds vision content array, stores image_url in message metadata
+5. `components/chat/ChatInput.tsx` — added paperclip upload button, file input, image preview with remove, upload flow
+6. `components/chat/ChatInterface.tsx` — `handleSendMessage` now accepts optional `imageUrl`, passes to API
+7. `components/chat/MessageBubble.tsx` — renders image thumbnail above user message text when metadata has image_url
+8. `app/api/channels/telegram/webhook/route.ts` — added `handlePhotoMessage` for Telegram photo messages with caption support
+
+*Last Updated: February 13, 2026*

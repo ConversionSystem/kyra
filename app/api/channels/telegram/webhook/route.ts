@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { processChannelMessage } from '@/lib/channels/router';
 import { transcribeAudio } from '@/lib/channels/whisper';
 import { textToSpeech } from '@/lib/channels/voice';
+import { analyzeImage } from '@/lib/tools/image-analysis';
 import { getCreditCost } from '@/lib/billing/plans';
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -33,6 +34,11 @@ export async function POST(request: NextRequest) {
     // Voice message handling
     if (msg.voice) {
       return handleVoiceMessage(msg, chatId, telegramUserId);
+    }
+
+    // Photo message handling
+    if (msg.photo && msg.photo.length > 0) {
+      return handlePhotoMessage(msg, chatId, telegramUserId);
     }
 
     // Text message handling — require text from here on
@@ -128,6 +134,83 @@ export async function POST(request: NextRequest) {
       stack: String(error?.stack || '').split('\n').slice(0, 5),
     }, { status: 500 });
   }
+}
+
+/**
+ * Handle incoming Telegram photo messages:
+ * 1. Download highest-resolution photo from Telegram
+ * 2. Build a temporary public URL for the file
+ * 3. Analyze with Claude Vision
+ * 4. Send description back to user
+ */
+async function handlePhotoMessage(msg: any, chatId: number, telegramUserId: string) {
+  const supabase = getSupabase();
+
+  // Resolve user
+  const { data: link } = await supabase
+    .from('user_channels')
+    .select('user_id')
+    .eq('channel_type', 'telegram')
+    .eq('channel_user_id', telegramUserId)
+    .eq('verified', true)
+    .single();
+
+  if (!link) {
+    await sendTelegramMessage(chatId,
+      "I don't recognize your account. Visit kyra.conversionsystem.com to sign up, then link your Telegram in Settings → Channels."
+    );
+    return NextResponse.json({ ok: true });
+  }
+
+  const userId = link.user_id;
+  console.log('[telegram-webhook] photo message from user:', userId);
+
+  // Deduct image analysis credits
+  const { data: user } = await supabase
+    .from('users')
+    .select('usage_this_month')
+    .eq('id', userId)
+    .single();
+
+  const currentUsage = user?.usage_this_month || 0;
+  const imageCost = getCreditCost('image_analysis');
+  await supabase
+    .from('users')
+    .update({ usage_this_month: currentUsage + imageCost })
+    .eq('id', userId);
+
+  // Get highest resolution photo (last in array)
+  const photo = msg.photo[msg.photo.length - 1];
+
+  // Build direct Telegram file URL for Claude to fetch
+  let fileUrl: string;
+  try {
+    if (!TELEGRAM_BOT_TOKEN) throw new Error('TELEGRAM_BOT_TOKEN not set');
+    const fileInfoResp = await fetch(
+      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getFile?file_id=${photo.file_id}`
+    );
+    if (!fileInfoResp.ok) throw new Error(`getFile failed: ${fileInfoResp.status}`);
+    const fileInfo = (await fileInfoResp.json()) as any;
+    const filePath = fileInfo.result?.file_path;
+    if (!filePath) throw new Error('No file_path in getFile response');
+    fileUrl = `https://api.telegram.org/file/bot${TELEGRAM_BOT_TOKEN}/${filePath}`;
+  } catch (err: any) {
+    console.error('[telegram-webhook] photo download failed:', err?.message);
+    await sendTelegramMessage(chatId, "Sorry, I couldn't download your photo. Please try again.");
+    return NextResponse.json({ ok: true });
+  }
+
+  // Analyze with Claude Vision
+  const caption = msg.caption?.trim() || undefined;
+  try {
+    const description = await analyzeImage(fileUrl, caption);
+    await sendTelegramMessage(chatId, description);
+  } catch (err: any) {
+    console.error('[telegram-webhook] image analysis failed:', err?.message);
+    await sendTelegramMessage(chatId, "Sorry, I couldn't analyze that image. Please try again.");
+  }
+
+  return NextResponse.json({ ok: true });
 }
 
 /**
