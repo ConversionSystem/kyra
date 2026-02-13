@@ -31,12 +31,18 @@ export async function POST(request: Request) {
     updates.timezone = body.timezone;
   }
 
-  // Store tone and role in settings JSONB
-  const settings: Record<string, string> = {};
-  if (body.tone) settings.tone = body.tone;
-  if (body.role) settings.role = body.role;
-  if (Object.keys(settings).length > 0) {
-    updates.settings = settings;
+  // Merge tone and role into existing settings JSONB (don't overwrite)
+  const newSettings: Record<string, string> = {};
+  if (body.tone) newSettings.tone = body.tone;
+  if (body.role) newSettings.role = body.role;
+  if (Object.keys(newSettings).length > 0) {
+    // Fetch existing settings to merge
+    const { data: existing } = await supabase
+      .from('users')
+      .select('settings')
+      .eq('id', user.id)
+      .single();
+    updates.settings = { ...(existing?.settings || {}), ...newSettings };
   }
 
   const { error } = await supabase
