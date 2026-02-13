@@ -20,6 +20,8 @@ import { isGoogleConnected, getTodayEvents } from '@/lib/integrations/google';
 import { generateConversationTitle } from '@/lib/utils';
 import { Message, Conversation, MemoryType, User } from '@/types';
 import { getPlanLimit, isWithinLimit, getCreditCost, Plan } from '@/lib/billing/plans';
+import { getSessionKeyForClient, getSessionKeyForUser, getSystemContextForClient, getSystemPromptForClient } from '@/lib/agency/container';
+import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
 import { v4 as uuid } from 'uuid';
 
 const WORKER_URL = process.env.KYRA_WORKER_URL;
@@ -96,9 +98,50 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { message, conversation_id } = (await request.json()) as any;
+    const body = (await request.json()) as any;
+    const { message, conversation_id } = body;
     if (!message || typeof message !== 'string') {
       return new Response('Message is required', { status: 400 });
+    }
+
+    // --- Agency client mode detection ---
+    // clientId can come from: body, query param, or header
+    const clientId = body.clientId
+      || request.nextUrl.searchParams.get('clientId')
+      || request.headers.get('x-kyra-client-id')
+      || null;
+
+    let agencySessionKey: string | null = null;
+    let agencySystemContext: string | null = null;
+
+    if (clientId) {
+      // Verify user is a member of the agency that owns this client
+      const { data: client, error: clientError } = await supabase
+        .from('agency_clients')
+        .select('*, template:agency_templates(*)')
+        .eq('id', clientId)
+        .single();
+
+      if (clientError || !client) {
+        return new Response('Client not found', { status: 404 });
+      }
+
+      const { data: membership, error: memberError } = await supabase
+        .from('agency_members')
+        .select('id, role')
+        .eq('user_id', authUser.id)
+        .eq('agency_id', client.agency_id)
+        .single();
+
+      if (memberError || !membership) {
+        return new Response('Forbidden: not a member of this agency', { status: 403 });
+      }
+
+      const typedClient = client as AgencyClient & { template?: AgencyTemplate | null };
+      agencySessionKey = getSessionKeyForClient(clientId);
+      const clientContext = getSystemContextForClient(typedClient, typedClient.template);
+      const clientPrompt = getSystemPromptForClient(typedClient, typedClient.template);
+      agencySystemContext = [clientPrompt, '', 'Client context: ' + JSON.stringify(clientContext)].join('\n');
     }
 
     // --- Conversation setup ---
@@ -159,6 +202,12 @@ export async function POST(request: NextRequest) {
     }
 
     // --- Forward to Kyra Gateway (Fly.io OpenClaw container) ---
+    // Use agency client session key if in client mode, otherwise user session key
+    const sessionKey = agencySessionKey || getSessionKeyForUser(authUser.id);
+    const finalSystemContext = agencySystemContext
+      ? agencySystemContext + '\n\n' + systemContext
+      : systemContext;
+
     let workerResponse: Response;
     try {
       workerResponse = await fetch(`${WORKER_URL}/chat`, {
@@ -168,8 +217,8 @@ export async function POST(request: NextRequest) {
         },
         body: JSON.stringify({
           message,
-          sessionKey: `agent:main:${authUser.id}`,
-          systemContext,
+          sessionKey,
+          systemContext: finalSystemContext,
         }),
         signal: AbortSignal.timeout(120_000), // Cold start can take ~60s
       });
