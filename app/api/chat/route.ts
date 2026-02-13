@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { message, conversation_id } = (await request.json()) as any;
+    const { message, conversation_id, image_url } = (await request.json()) as any;
 
     if (!message || typeof message !== 'string') {
       return new Response('Message is required', { status: 400 });
@@ -283,12 +283,14 @@ export async function POST(request: NextRequest) {
     const messageUrls = extractUrls(message);
     const hasWebSearch = messageUrls.length === 0 && needsWebSearch(message);
     const hasUrls = messageUrls.length > 0;
-    const hasFileAnalysis = /\b(analyze|analyse|review|summarize|summarise)\b.*\b(file|document|pdf|image|photo|attachment)\b/i.test(message);
+    const hasFileAnalysis = /\b(analyze|analyse|review|summarize|summarise)\b.*\b(file|document|pdf)\b/i.test(message);
+    const hasImageAnalysis = !!image_url;
     const hasDeepResearch = /\b(deep research|in-depth research|thorough research|research report)\b/i.test(message);
     const creditAction = classifyChatAction({
       hasWebSearch: hasWebSearch || hasUrls || hasToolSkills,
       hasSubAgent: hasDeepResearch,
       hasFileAnalysis,
+      hasImageAnalysis,
     });
     const creditCost = getCreditCost(creditAction);
 
@@ -326,7 +328,19 @@ export async function POST(request: NextRequest) {
             role: m.role as 'user' | 'assistant',
             content: m.content
           }));
-          messagesForClaude.push({ role: 'user', content: augmentedMessage });
+
+          // When an image is attached, build a vision content array
+          if (image_url) {
+            messagesForClaude.push({
+              role: 'user',
+              content: [
+                { type: 'image', source: { type: 'url', url: image_url } },
+                { type: 'text', text: augmentedMessage },
+              ] as any,
+            });
+          } else {
+            messagesForClaude.push({ role: 'user', content: augmentedMessage });
+          }
 
           // Stream AI response — use tool-use loop when skills are enabled
           let fullResponse = '';
@@ -429,7 +443,7 @@ export async function POST(request: NextRequest) {
               conversation_id: conversationId,
               role: 'user',
               content: message,
-              metadata: {},
+              metadata: image_url ? { image_url } : {},
             })
             .select()
             .single();
