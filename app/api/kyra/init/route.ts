@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     // In development / non-Cloudflare environments, we skip R2 writes
     const { getCloudflareContext } = await import('@opennextjs/cloudflare');
     const { env } = await getCloudflareContext({ async: true });
-    const bucket = (env as Record<string, unknown>).R2 as R2Bucket | undefined;
+    const bucket = (env as Record<string, unknown>).R2 as any;
 
     if (bucket) {
       await Promise.all([

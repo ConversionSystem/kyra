@@ -26,7 +26,7 @@ async function verifyDiscordSignature(
   try {
     const key = await crypto.subtle.importKey(
       'raw',
-      hexToUint8Array(publicKey),
+      hexToUint8Array(publicKey).buffer as ArrayBuffer,
       { name: 'Ed25519', namedCurve: 'Ed25519' },
       false,
       ['verify']
@@ -35,7 +35,7 @@ async function verifyDiscordSignature(
     const message = new TextEncoder().encode(timestamp + body);
     const sig = hexToUint8Array(signature);
 
-    return await crypto.subtle.verify('Ed25519', key, sig, message);
+    return await crypto.subtle.verify('Ed25519', key, sig.buffer as ArrayBuffer, message);
   } catch (err) {
     console.error('[discord-webhook] signature verification error:', err);
     return false;

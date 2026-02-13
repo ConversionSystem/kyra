@@ -29,7 +29,7 @@ export async function transcribeAudio(
 
   // Whisper expects a File-like object with a name
   const filename = options?.filename || 'audio.ogg';
-  const file = new File([audioBuffer], filename, {
+  const file = new File([new Uint8Array(audioBuffer)], filename, {
     type: getMimeType(filename),
   });
 

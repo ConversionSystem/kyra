@@ -83,7 +83,6 @@ export async function browseUrl(
  */
 async function tryScreenshot(url: string): Promise<string | null> {
   try {
-    // @ts-expect-error — BROWSER binding only exists on Cloudflare Workers
     const browser = (globalThis as any).env?.BROWSER;
     if (!browser) return null;
 
