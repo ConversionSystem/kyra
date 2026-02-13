@@ -21,7 +21,7 @@ export interface User {
 /**
  * Build the system context for a chat message (legacy / non-OpenClaw)
  */
-export function buildSystemContext(user: User, memories: Memory[]): string {
+export function buildSystemContext(user: User, memories: Memory[], customInstructions?: { knowledge?: string; style?: string }): string {
   const memorySection = memories.length > 0
     ? `## User Context (Memories)
 ${memories.map(m => `- [${m.type}] ${m.content}`).join('\n')}`
@@ -33,6 +33,11 @@ ${memories.map(m => `- [${m.type}] ${m.content}`).join('\n')}`
 - Timezone: ${user.timezone || 'UTC'}`
     : '';
 
+  const customSection = customInstructions?.knowledge || customInstructions?.style
+    ? `## User Custom Instructions
+${customInstructions.knowledge ? `### About You\n${customInstructions.knowledge}\n` : ''}${customInstructions.style ? `### Response Preferences\n${customInstructions.style}\n` : ''}`
+    : '';
+
   return `# Kyra AI Assistant
 
 You are Kyra, a helpful AI assistant that remembers everything important about your user.
@@ -41,7 +46,7 @@ ${userSection}
 
 ${memorySection}
 
-## Instructions
+${customSection}## Instructions
 
 1. Be helpful, concise, and friendly
 2. Use the memories above to personalize your responses
@@ -76,6 +81,7 @@ export function getOpenClawSystemPrompt(params: {
   reminders: { content: string; due_at: string }[];
   calendarEvents: { summary: string; start: Date; end: Date; location?: string }[];
   enabledSkills?: string[];
+  customInstructions?: { knowledge?: string; style?: string };
 }): string {
   const { userName, timezone, memories, reminders, calendarEvents } = params;
 
@@ -143,7 +149,9 @@ ${reminderContext}
 
 ### Today's calendar:
 ${calendarContext}
-${skillsSection}
+${skillsSection}${params.customInstructions?.knowledge || params.customInstructions?.style ? `
+## User Custom Instructions
+${params.customInstructions.knowledge ? `### About You\n${params.customInstructions.knowledge}\n` : ''}${params.customInstructions.style ? `### Response Preferences\n${params.customInstructions.style}\n` : ''}` : ''}
 ## Personality
 - Be conversational and warm, not robotic
 - Reference memories naturally when relevant
