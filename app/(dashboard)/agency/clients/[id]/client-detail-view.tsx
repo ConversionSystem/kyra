@@ -98,27 +98,86 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
     setIsSending(true);
 
     try {
-      const res = await fetch('/api/chat/worker', {
+      const res = await fetch(`/api/agency/clients/${initialClient.id}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: userMessage,
-          clientId: initialClient.id,
-          sessionKey: `agency-test-${initialClient.id}`,
-        }),
+        body: JSON.stringify({ message: userMessage }),
       });
 
-      if (res.ok) {
-        const data = await res.json();
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null);
+        const errorMsg = errorData?.message || errorData?.error || `Error ${res.status}`;
         setMessages((prev) => [
           ...prev,
-          { role: 'assistant', content: data.response || data.message || 'No response' },
+          { role: 'assistant', content: `⚠️ ${errorMsg}` },
         ]);
-      } else {
+        setIsSending(false);
+        return;
+      }
+
+      // Handle SSE streaming response
+      const reader = res.body?.getReader();
+      if (!reader) {
         setMessages((prev) => [
           ...prev,
-          { role: 'assistant', content: '⚠️ Failed to get a response. The worker endpoint may not be configured for this client yet.' },
+          { role: 'assistant', content: '⚠️ No response stream available.' },
         ]);
+        setIsSending(false);
+        return;
+      }
+
+      // Add empty assistant message that we'll stream into
+      setMessages((prev) => [...prev, { role: 'assistant', content: '' }]);
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        // Keep the last potentially incomplete line in the buffer
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const data = line.slice(6).trim();
+          if (data === '[DONE]') continue;
+
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.type === 'content' && parsed.content) {
+              // Append streamed content to the last assistant message
+              setMessages((prev) => {
+                const updated = [...prev];
+                const last = updated[updated.length - 1];
+                if (last && last.role === 'assistant') {
+                  updated[updated.length - 1] = {
+                    ...last,
+                    content: last.content + parsed.content,
+                  };
+                }
+                return updated;
+              });
+            } else if (parsed.type === 'error') {
+              setMessages((prev) => {
+                const updated = [...prev];
+                const last = updated[updated.length - 1];
+                if (last && last.role === 'assistant' && !last.content) {
+                  updated[updated.length - 1] = {
+                    ...last,
+                    content: `⚠️ ${parsed.message || 'Stream error'}`,
+                  };
+                }
+                return updated;
+              });
+            }
+          } catch {
+            // Skip unparseable lines
+          }
+        }
       }
     } catch {
       setMessages((prev) => [
