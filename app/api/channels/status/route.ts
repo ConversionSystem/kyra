@@ -27,6 +27,7 @@ export async function GET() {
   const channelMap: Record<string, any> = {
     telegram: { status: 'disconnected', verified: false },
     whatsapp: { status: 'disconnected', verified: false },
+    discord: { status: 'disconnected', verified: false },
   };
 
   for (const ch of channels || []) {
