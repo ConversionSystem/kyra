@@ -390,7 +390,7 @@ async function sendTelegramVoice(chatId: number, audio: Buffer) {
 
   const formData = new FormData();
   formData.append('chat_id', String(chatId));
-  formData.append('voice', new Blob([audio], { type: 'audio/mpeg' }), 'response.mp3');
+  formData.append('voice', new Blob([new Uint8Array(audio)], { type: 'audio/mpeg' }), 'response.mp3');
 
   const resp = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendVoice`, {
     method: 'POST',
