@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { v4 as uuid } from 'uuid';
 import { cronToHuman } from '@/lib/automations/types';
+import { syncAutomationToOpenClaw } from '@/lib/automations/executor';
 
 export async function GET() {
   const supabase = await createClient();
@@ -113,6 +114,25 @@ export async function POST(request: NextRequest) {
   if (insertError) {
     console.error('Failed to create automation:', insertError);
     return NextResponse.json({ error: 'Failed to create automation' }, { status: 500 });
+  }
+
+  // Sync to OpenClaw cron engine
+  try {
+    const jobId = await syncAutomationToOpenClaw({
+      name,
+      schedule,
+      timezone: tz,
+      prompt,
+    });
+
+    await serviceClient
+      .from('automations')
+      .update({ openclaw_job_id: jobId })
+      .eq('id', id);
+
+    automation.openclaw_job_id = jobId;
+  } catch (err) {
+    console.error('OpenClaw sync failed (automation created without job):', err);
   }
 
   return NextResponse.json({
