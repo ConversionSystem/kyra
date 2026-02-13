@@ -1,0 +1,143 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { requireAgencyMember } from '@/lib/agency/middleware';
+import { isValidSlug } from '@/lib/agency/utils';
+import type { CreateAgencyRequest, AgencyWithCounts } from '@/lib/agency/types';
+
+/**
+ * GET /api/agency
+ * Return the current user's agency data with member count and client count.
+ */
+export async function GET() {
+  const result = await requireAgencyMember();
+  if (result.error) {
+    return NextResponse.json({ error: result.error.message }, { status: result.error.status });
+  }
+
+  const { agency } = result.data;
+  const supabase = await createClient();
+
+  // Fetch counts in parallel
+  const [membersResult, clientsResult] = await Promise.all([
+    supabase
+      .from('agency_members')
+      .select('id', { count: 'exact', head: true })
+      .eq('agency_id', agency.id),
+    supabase
+      .from('agency_clients')
+      .select('id', { count: 'exact', head: true })
+      .eq('agency_id', agency.id),
+  ]);
+
+  const response: AgencyWithCounts = {
+    ...agency,
+    member_count: membersResult.count ?? 0,
+    client_count: clientsResult.count ?? 0,
+  };
+
+  return NextResponse.json(response);
+}
+
+/**
+ * POST /api/agency
+ * Create a new agency. Also creates an agency_member record for the user as owner.
+ * Uses service client to bypass RLS during initial creation.
+ */
+export async function POST(request: NextRequest) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // Parse body
+  let body: CreateAgencyRequest;
+  try {
+    body = (await request.json()) as CreateAgencyRequest;
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
+  const { name, slug, plan } = body;
+
+  // Validate required fields
+  if (!name || !slug || !plan) {
+    return NextResponse.json({ error: 'Missing required fields: name, slug, plan' }, { status: 400 });
+  }
+
+  // Validate plan
+  if (!['starter', 'pro', 'scale'].includes(plan)) {
+    return NextResponse.json({ error: 'Invalid plan. Must be: starter, pro, or scale' }, { status: 400 });
+  }
+
+  // Validate slug
+  if (!isValidSlug(slug)) {
+    return NextResponse.json(
+      { error: 'Invalid slug. Use lowercase letters, numbers, and hyphens only (2-48 chars).' },
+      { status: 400 }
+    );
+  }
+
+  const serviceClient = await createServiceClient();
+
+  // Check if user already has an agency
+  const { data: existingMembership } = await serviceClient
+    .from('agency_members')
+    .select('id')
+    .eq('user_id', user.id)
+    .limit(1)
+    .single();
+
+  if (existingMembership) {
+    return NextResponse.json({ error: 'You already belong to an agency' }, { status: 409 });
+  }
+
+  // Check slug uniqueness
+  const { data: existingAgency } = await serviceClient
+    .from('agencies')
+    .select('id')
+    .eq('slug', slug)
+    .limit(1)
+    .single();
+
+  if (existingAgency) {
+    return NextResponse.json({ error: 'This slug is already taken' }, { status: 409 });
+  }
+
+  // Create agency
+  const { data: agency, error: createError } = await serviceClient
+    .from('agencies')
+    .insert({
+      owner_id: user.id,
+      name,
+      slug,
+      plan,
+    })
+    .select()
+    .single();
+
+  if (createError || !agency) {
+    console.error('Failed to create agency:', createError);
+    return NextResponse.json({ error: 'Failed to create agency' }, { status: 500 });
+  }
+
+  // Create owner membership
+  const { error: memberError } = await serviceClient.from('agency_members').insert({
+    agency_id: agency.id,
+    user_id: user.id,
+    role: 'owner',
+  });
+
+  if (memberError) {
+    console.error('Failed to create agency member:', memberError);
+    // Rollback agency creation
+    await serviceClient.from('agencies').delete().eq('id', agency.id);
+    return NextResponse.json({ error: 'Failed to create agency membership' }, { status: 500 });
+  }
+
+  return NextResponse.json(agency, { status: 201 });
+}
