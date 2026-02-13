@@ -1,16 +1,16 @@
 /**
  * Browser Control API
- * 
- * Proxies browser actions to the user's OpenClaw session.
- * Uses Cloudflare Browser Rendering when available, falls back to web_fetch.
- * 
- * POST — Execute a browser action (navigate, screenshot, extract)
+ *
+ * Fetches and extracts web content using browseUrl.
+ * Uses Cloudflare Browser Rendering when available, falls back to Readability.
+ *
+ * POST — Execute a browser action (navigate, extract, summarize)
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { Plan } from '@/lib/billing/plans';
-import { sessionsSend, getOrCreateSession, markContextInjected } from '@/lib/openclaw/sessions';
+import { browseUrl } from '@/lib/tools/browser-tool';
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -49,41 +49,34 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { action, url, selector, instructions } = await request.json();
+  const { action, url, selector } = await request.json();
 
-  if (!action) {
-    return NextResponse.json({ error: 'action required' }, { status: 400 });
+  if (!url) {
+    return NextResponse.json({ error: 'url required' }, { status: 400 });
   }
 
-  // Route browser commands through OpenClaw session
-  const { session } = getOrCreateSession(user.id);
+  // Map API actions to browseUrl actions
+  const browseAction = action === 'navigate' || action === 'summarize'
+    ? 'read' as const
+    : (action as 'read' | 'screenshot' | 'extract') || 'read' as const;
 
-  let prompt: string;
-  switch (action) {
-    case 'navigate':
-      prompt = `Navigate to ${url} and summarize what you see on the page.`;
-      break;
-    case 'screenshot':
-      prompt = `Take a screenshot of ${url} and describe what's visible.`;
-      break;
-    case 'extract':
-      prompt = `Go to ${url} and extract the following: ${instructions || selector || 'main content'}`;
-      break;
-    case 'fill':
-      prompt = `Go to ${url} and ${instructions}`;
-      break;
-    default:
-      prompt = instructions || `Perform browser action: ${action} on ${url}`;
-  }
+  const result = await browseUrl(url, {
+    action: browseAction,
+    selector,
+    maxChars: 8000,
+  });
 
-  const result = await sessionsSend(session.sessionKey, prompt, 60);
-
-  if (!result.success) {
+  if (result.error) {
     return NextResponse.json(
-      { error: result.error || 'Browser action failed' },
-      { status: 500 }
+      { error: result.error },
+      { status: 502 }
     );
   }
 
-  return NextResponse.json({ result: result.content });
+  return NextResponse.json({
+    title: result.title,
+    content: result.content,
+    url: result.url,
+    screenshot: result.screenshot || null,
+  });
 }
