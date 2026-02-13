@@ -33,11 +33,23 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
     setTimeout(() => setCopied(false), 2000);
   }, [displayContent]);
 
+  const imageUrl = (message.metadata as any)?.image_url as string | undefined;
+
   if (isUser) {
     return (
       <div className="group py-4 md:py-6">
         <div className="mx-auto max-w-3xl px-4 md:px-0">
           <div className="mb-1 text-xs font-medium text-zinc-500">You</div>
+          {imageUrl && (
+            <div className="mb-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={imageUrl}
+                alt="Attached image"
+                className="max-h-64 rounded-lg border border-zinc-700 object-contain"
+              />
+            </div>
+          )}
           <div className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-100">
             {message.content}
           </div>

@@ -53,6 +53,7 @@ export interface MessageMetadata {
   tokens_used?: number;
   model?: string;
   memories_referenced?: string[];
+  image_url?: string;
 }
 
 export interface Memory {

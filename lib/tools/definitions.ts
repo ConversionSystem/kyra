@@ -11,6 +11,7 @@ import { getSkillById } from '@/lib/skills/registry';
 import { webSearch, formatSearchResults } from '@/lib/tools/web-search';
 import { simpleFetch, formatFetchedContent } from '@/lib/tools/url-fetch';
 import { browseUrl } from '@/lib/tools/browser-tool';
+import { analyzeImage } from '@/lib/tools/image-analysis';
 
 /** Claude tool schemas keyed by the skill ID that provides them */
 const TOOL_SCHEMAS: Record<string, ToolDefinition[]> = {
@@ -82,29 +83,47 @@ const TOOL_SCHEMAS: Record<string, ToolDefinition[]> = {
       },
     },
   ],
+  image_understanding: [
+    {
+      name: 'analyze_image',
+      description:
+        'Analyze an image from a URL. Returns a detailed description or answers a question about the image. Use this when the user sends a photo or asks about an image.',
+      input_schema: {
+        type: 'object' as const,
+        properties: {
+          image_url: {
+            type: 'string',
+            description: 'The URL of the image to analyze',
+          },
+          prompt: {
+            type: 'string',
+            description: 'What to analyze or ask about the image (default: describe in detail)',
+          },
+        },
+        required: ['image_url'],
+      },
+    },
+  ],
 };
 
 /**
  * Map from openclawTools tool name → our TOOL_SCHEMAS key.
- * Skills like "weather" declare openclawTools: ['web_fetch'],
- * meaning they need the web_fetch tool to work.
  */
 const OPENCLAW_TOOL_TO_SCHEMA: Record<string, string> = {
   web_search: 'web_search',
   web_fetch: 'web_fetch',
   browser: 'browser',
+  analyze_image: 'image_understanding',
 };
 
 /**
  * Get Claude tool definitions for a set of enabled skill IDs.
- * Includes tools that enabled skills need (via their openclawTools field).
  */
 export function getToolDefinitions(enabledSkillIds: string[]): ToolDefinition[] {
   const tools: ToolDefinition[] = [];
   const seen = new Set<string>();
 
   for (const skillId of enabledSkillIds) {
-    // Direct match: skill ID maps to a tool schema
     const directSchemas = TOOL_SCHEMAS[skillId];
     if (directSchemas) {
       for (const schema of directSchemas) {
@@ -115,7 +134,6 @@ export function getToolDefinitions(enabledSkillIds: string[]): ToolDefinition[] 
       }
     }
 
-    // Indirect: skill declares openclawTools it needs
     const skill = getSkillById(skillId);
     if (skill) {
       for (const toolName of skill.openclawTools) {
@@ -139,7 +157,7 @@ export function getToolDefinitions(enabledSkillIds: string[]): ToolDefinition[] 
 }
 
 /**
- * Execute a tool call by name. Returns the text result to feed back to Claude.
+ * Execute a tool call by name.
  */
 export const executeToolCall: ToolExecutor = async (name, input) => {
   switch (name) {
@@ -167,6 +185,12 @@ export const executeToolCall: ToolExecutor = async (name, input) => {
       let out = `**${result.title || result.url}**\n\n${result.content}\n\nSource: ${result.url}`;
       if (result.screenshot) out += '\n\n[Screenshot captured]';
       return out;
+    }
+
+    case 'analyze_image': {
+      const imageUrl = input.image_url as string;
+      const prompt = input.prompt as string | undefined;
+      return await analyzeImage(imageUrl, prompt);
     }
 
     default:
