@@ -38,7 +38,7 @@ export async function processChannelMessage(
     .from('conversations')
     .select('id')
     .eq('user_id', user.id)
-    .in('channel', ['telegram', 'whatsapp', 'web'])
+    .in('channel', ['telegram', 'whatsapp', 'discord', 'web'])
     .order('updated_at', { ascending: false })
     .limit(1)
     .single();
