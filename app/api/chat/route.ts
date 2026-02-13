@@ -283,7 +283,13 @@ export async function POST(request: NextRequest) {
       augmentedMessage += fileContext;
     }
 
-    let systemPrompt = getSystemPrompt(memories, reminders, calendarEvents);
+    // Build custom instructions from user profile
+    const customInstructions = {
+      knowledge: (user as any).custom_instructions_knowledge || (user as any).settings?.custom_instructions_knowledge || undefined,
+      style: (user as any).custom_instructions_style || (user as any).settings?.custom_instructions_style || undefined,
+    };
+
+    let systemPrompt = getSystemPrompt(memories, reminders, calendarEvents, customInstructions);
 
     // Inject skills prompt when user has skills enabled
     if (enabledSkillIds.length > 0) {
