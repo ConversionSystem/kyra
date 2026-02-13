@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, MessageCircle, Phone, Check, X, Loader2, Copy, RefreshCw } from 'lucide-react';
+import { ArrowLeft, MessageCircle, Phone, Gamepad2, Check, X, Loader2, Copy, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 
@@ -32,6 +32,11 @@ export default function ChannelsPage() {
   const [isDisconnecting, setIsDisconnecting] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [copiedWhatsapp, setCopiedWhatsapp] = useState(false);
+  const [discordToken, setDiscordToken] = useState<string | null>(null);
+  const [discordTokenExpiry, setDiscordTokenExpiry] = useState<string | null>(null);
+  const [discordInviteUrl, setDiscordInviteUrl] = useState<string | null>(null);
+  const [isGeneratingDiscord, setIsGeneratingDiscord] = useState(false);
+  const [copiedDiscord, setCopiedDiscord] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const fetchStatus = useCallback(async () => {
@@ -130,6 +135,33 @@ export default function ChannelsPage() {
     }
   };
 
+  const generateDiscordToken = async () => {
+    setIsGeneratingDiscord(true);
+    setMessage(null);
+    try {
+      const res = await fetch('/api/channels/discord/connect', { method: 'POST' });
+      const data = (await res.json()) as any;
+      if (res.ok) {
+        setDiscordToken(data.token);
+        setDiscordTokenExpiry(data.expiresAt);
+        setDiscordInviteUrl(data.inviteUrl);
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Failed to generate token' });
+      }
+    } catch {
+      setMessage({ type: 'error', text: 'Failed to generate token' });
+    }
+    setIsGeneratingDiscord(false);
+  };
+
+  const copyDiscordToken = () => {
+    if (discordToken) {
+      navigator.clipboard.writeText(`!connect ${discordToken}`);
+      setCopiedDiscord(true);
+      setTimeout(() => setCopiedDiscord(false), 2000);
+    }
+  };
+
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return null;
     return new Date(dateStr).toLocaleDateString(undefined, {
@@ -148,6 +180,7 @@ export default function ChannelsPage() {
 
   const telegram = channels.telegram || { status: 'disconnected', verified: false };
   const whatsapp = channels.whatsapp || { status: 'disconnected', verified: false };
+  const discord = channels.discord || { status: 'disconnected', verified: false };
 
   return (
     <div className="min-h-screen bg-zinc-950">
@@ -366,6 +399,113 @@ export default function ChannelsPage() {
                 ) : (
                   <Button onClick={generateWhatsappToken} disabled={isGeneratingWhatsapp}>
                     {isGeneratingWhatsapp ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                    Generate Connection Token
+                  </Button>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Discord */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <div className="rounded-lg bg-purple-500/10 p-2">
+                <Gamepad2 className="h-5 w-5 text-purple-400" />
+              </div>
+              Discord
+              <StatusBadge status={discord.status} />
+            </CardTitle>
+            <CardDescription>
+              Chat with Kyra in your Discord server
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {discord.status === 'connected' && discord.verified ? (
+              <div className="space-y-3">
+                <div className="rounded-lg border border-zinc-700 bg-zinc-800/50 p-4 space-y-2">
+                  {discord.metadata?.username && (
+                    <p className="text-sm text-zinc-300">
+                      Connected as <span className="font-medium text-zinc-100">{discord.metadata.username}</span>
+                    </p>
+                  )}
+                  {discord.connectedAt && (
+                    <p className="text-xs text-zinc-500">Connected {formatDate(discord.connectedAt)}</p>
+                  )}
+                  {discord.lastMessageAt && (
+                    <p className="text-xs text-zinc-500">Last message {formatDate(discord.lastMessageAt)}</p>
+                  )}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-red-400 hover:text-red-300"
+                  onClick={() => disconnectChannel('discord')}
+                  disabled={isDisconnecting === 'discord'}
+                >
+                  {isDisconnecting === 'discord' ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <X className="h-4 w-4 mr-2" />}
+                  Disconnect
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="rounded-lg border border-zinc-700 bg-zinc-800/50 p-4">
+                  <p className="text-sm font-medium text-zinc-200 mb-3">How to connect Discord</p>
+                  <ol className="text-sm text-zinc-400 space-y-3 list-decimal list-inside">
+                    <li>Click <strong className="text-zinc-200">&quot;Generate Connection Token&quot;</strong> below</li>
+                    <li>Add the Kyra bot to your Discord server using the invite link</li>
+                    <li>In any text channel, type the connect command (e.g. <code className="text-violet-300 bg-zinc-800 px-1.5 py-0.5 rounded text-xs">!connect ABC123</code>)</li>
+                    <li>You&apos;ll get a confirmation message — Kyra is now connected!</li>
+                  </ol>
+                  <div className="mt-3 rounded-md bg-purple-500/5 border border-purple-500/20 px-3 py-2">
+                    <p className="text-xs text-purple-300">Once connected, message Kyra anytime in Discord. Same memory and context as web chat.</p>
+                  </div>
+                </div>
+
+                {discordToken ? (
+                  <div className="space-y-3">
+                    {discordInviteUrl && (
+                      <a
+                        href={discordInviteUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-500 transition-colors"
+                      >
+                        <Gamepad2 className="h-4 w-4" />
+                        Add Kyra Bot to Server
+                      </a>
+                    )}
+                    <div className="rounded-lg border border-violet-500/30 bg-violet-500/5 p-4">
+                      <p className="text-xs text-zinc-500 mb-2">Send this in any channel:</p>
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 rounded bg-zinc-800 px-3 py-2 text-sm font-mono text-violet-300">
+                          !connect {discordToken}
+                        </code>
+                        <Button variant="ghost" size="icon" onClick={copyDiscordToken}>
+                          {copiedDiscord ? <Check className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                      {discordTokenExpiry && (
+                        <p className="text-xs text-zinc-500 mt-2">
+                          Expires {formatDate(discordTokenExpiry)}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={generateDiscordToken}>
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        New Token
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={fetchStatus}>
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Check Status
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Button onClick={generateDiscordToken} disabled={isGeneratingDiscord}>
+                    {isGeneratingDiscord ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                     Generate Connection Token
                   </Button>
                 )}
