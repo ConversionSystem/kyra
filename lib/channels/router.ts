@@ -1,6 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 import type { ChannelType } from '@/types/channels';
 import { features } from '@/lib/config/features';
+import { searchMemories } from '@/lib/ai/memory';
+import { getSystemPrompt, CalendarEvent } from '@/lib/ai/prompts';
+import { buildSkillsPrompt } from '@/lib/skills/registry';
+import { getToolDefinitions, executeToolCall } from '@/lib/tools/definitions';
+import { resolveModelPreference } from '@/lib/ai/model-router';
 
 function getSupabase() {
   return createClient(
@@ -164,7 +169,46 @@ export async function processChannelMessage(
     }
   }
 
-  // Call Claude (fallback)
+  // Build full context: memories, skills, custom instructions, model preference
+  const [memories, { data: userSkills }, { data: pendingReminders }] = await Promise.all([
+    searchMemories(userId, text, 5).catch(() => []),
+    supabase.from('user_skills').select('skill_id').eq('user_id', userId).eq('enabled', true),
+    supabase.from('reminders').select('id, content, due_at').eq('user_id', userId).eq('delivered', false).order('due_at', { ascending: true }).limit(5),
+  ]);
+
+  const enabledSkillIds = (userSkills || []).map((s: any) => s.skill_id);
+  const customInstructions = {
+    knowledge: (user as any).custom_instructions_knowledge || (user as any).settings?.custom_instructions_knowledge || undefined,
+    style: (user as any).custom_instructions_style || (user as any).settings?.custom_instructions_style || undefined,
+  };
+  const reminders = (pendingReminders || []).map((r: any) => ({ id: r.id, content: r.content, due_at: r.due_at }));
+
+  let systemPrompt = getSystemPrompt(memories, reminders, [] as CalendarEvent[], customInstructions);
+  if (enabledSkillIds.length > 0) {
+    systemPrompt += '\n\n' + buildSkillsPrompt(enabledSkillIds);
+  }
+  systemPrompt += `\n\nChannel: ${channelType}. Keep responses concise — this is a messaging app.`;
+
+  // Resolve model preference
+  const userModelPref = (user as any).settings?.preferred_model;
+  const modelConfig = resolveModelPreference(userModelPref, text, messages.length);
+
+  // Call Claude with full context + tools if skills enabled
+  const claudeBody: any = {
+    model: modelConfig.id || 'claude-sonnet-4-20250514',
+    max_tokens: 2048,
+    system: systemPrompt,
+    messages,
+  };
+
+  // Add tools if user has skills enabled
+  if (enabledSkillIds.length > 0) {
+    const tools = getToolDefinitions(enabledSkillIds);
+    if (tools.length > 0) {
+      claudeBody.tools = tools;
+    }
+  }
+
   const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -172,12 +216,7 @@ export async function processChannelMessage(
       'x-api-key': process.env.ANTHROPIC_API_KEY!,
       'anthropic-version': '2023-06-01',
     },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 2048,
-      system: `You are Kyra, a helpful personal AI assistant. You remember past conversations and help with anything the user needs. Be friendly, concise, and helpful. The user's name is ${user.name || 'there'}.`,
-      messages,
-    }),
+    body: JSON.stringify(claudeBody),
   });
 
   if (!claudeResponse.ok) {
@@ -187,7 +226,48 @@ export async function processChannelMessage(
   }
 
   const claudeData = await claudeResponse.json() as any;
-  const responseText = claudeData.content?.[0]?.text || "I couldn't generate a response.";
+
+  // Handle tool use responses (single round)
+  let responseText = '';
+  const contentBlocks = claudeData.content || [];
+
+  if (claudeData.stop_reason === 'tool_use') {
+    // Execute tool calls and send results back
+    const toolResults: any[] = [];
+    for (const block of contentBlocks) {
+      if (block.type === 'tool_use') {
+        try {
+          const result = await executeToolCall(block.name, block.input);
+          toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: typeof result === 'string' ? result : JSON.stringify(result) });
+        } catch (e: any) {
+          toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: `Error: ${e.message}`, is_error: true });
+        }
+      }
+    }
+
+    // Second call with tool results
+    const followUp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY!,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: modelConfig.id || 'claude-sonnet-4-20250514',
+        max_tokens: 2048,
+        system: systemPrompt,
+        messages: [...messages, { role: 'assistant', content: contentBlocks }, { role: 'user', content: toolResults }],
+      }),
+    });
+
+    if (followUp.ok) {
+      const followUpData = await followUp.json() as any;
+      responseText = followUpData.content?.find((b: any) => b.type === 'text')?.text || "I couldn't generate a response.";
+    }
+  } else {
+    responseText = contentBlocks.find((b: any) => b.type === 'text')?.text || "I couldn't generate a response.";
+  }
 
   // Save messages
   await supabase.from('messages').insert([
