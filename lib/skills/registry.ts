@@ -191,6 +191,21 @@ export const SKILLS_REGISTRY: SkillDefinition[] = [
     creditMultiplier: 3,
   },
 
+  // ── Files ─────────────────────────────────────────────────────
+  {
+    id: 'file_upload',
+    name: 'File Upload',
+    description: 'Upload and analyze files — text, CSV, Markdown, JSON, and PDF.',
+    icon: '📎',
+    category: 'utility',
+    requiredPlan: ['starter', 'business', 'max'],
+    needsApiKey: false,
+    openclawTools: ['read_file'],
+    promptInstructions: 'You can read uploaded files using the read_file tool. When the user uploads a file or references an attached file, use the tool to read its contents and help with analysis, summarization, or questions about the file.',
+    hostedCompatible: true,
+    creditMultiplier: 3,
+  },
+
   // ── Browser ────────────────────────────────────────────────────
   {
     id: 'browser',

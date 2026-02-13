@@ -54,6 +54,7 @@ export interface MessageMetadata {
   model?: string;
   memories_referenced?: string[];
   image_url?: string;
+  files?: UserFile[];
 }
 
 export interface Memory {
@@ -71,6 +72,16 @@ export interface MemoryMetadata {
   source?: string;
   confidence?: number;
   related_conversations?: string[];
+}
+
+export interface UserFile {
+  id: string;
+  user_id: string;
+  name: string;
+  size_bytes: number | null;
+  mime_type: string | null;
+  storage_path: string;
+  created_at: string;
 }
 
 // API Request/Response types
