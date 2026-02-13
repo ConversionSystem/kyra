@@ -35,31 +35,26 @@ export async function POST(request: Request) {
   const soulMd = buildSoulMd(tone, name);
   const userMd = buildUserMd(name, role, timezone);
 
-  // Write files to R2 workspace
+  // Write files to Supabase Storage workspace
   const prefix = `workspaces/${user.id}`;
+  const { createServiceClient } = await import('@/lib/supabase/server');
+  const serviceClient = await createServiceClient();
 
   try {
-    // Use getCloudflareContext to access R2 binding in production
-    // In development / non-Cloudflare environments, we skip R2 writes
-    const { getCloudflareContext } = await import('@opennextjs/cloudflare');
-    const { env } = await getCloudflareContext({ async: true });
-    const bucket = (env as Record<string, unknown>).R2 as any;
-
-    if (bucket) {
-      await Promise.all([
-        bucket.put(`${prefix}/SOUL.md`, soulMd, {
-          httpMetadata: { contentType: 'text/markdown' },
-        }),
-        bucket.put(`${prefix}/USER.md`, userMd, {
-          httpMetadata: { contentType: 'text/markdown' },
-        }),
-      ]);
-    } else {
-      console.warn('[kyra/init] R2 bucket not available — skipping workspace file writes');
-    }
+    await Promise.all([
+      serviceClient.storage.from('user-files').upload(
+        `${prefix}/SOUL.md`,
+        new Blob([soulMd], { type: 'text/markdown' }),
+        { upsert: true }
+      ),
+      serviceClient.storage.from('user-files').upload(
+        `${prefix}/USER.md`,
+        new Blob([userMd], { type: 'text/markdown' }),
+        { upsert: true }
+      ),
+    ]);
   } catch (e) {
-    // In local dev without Cloudflare runtime, getCloudflareContext may fail
-    console.warn('[kyra/init] Could not access R2 — running outside Cloudflare?', e);
+    console.warn('[kyra/init] Could not write workspace files:', e);
   }
 
   return NextResponse.json({ success: true, files: ['SOUL.md', 'USER.md'] });
