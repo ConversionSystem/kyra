@@ -12,6 +12,8 @@ import { webSearch, formatSearchResults } from '@/lib/tools/web-search';
 import { simpleFetch, formatFetchedContent } from '@/lib/tools/url-fetch';
 import { browseUrl } from '@/lib/tools/browser-tool';
 import { analyzeImage } from '@/lib/tools/image-analysis';
+import { extractTextFromFile } from '@/lib/tools/file-processor';
+import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 
 /** Claude tool schemas keyed by the skill ID that provides them */
 const TOOL_SCHEMAS: Record<string, ToolDefinition[]> = {
@@ -104,6 +106,23 @@ const TOOL_SCHEMAS: Record<string, ToolDefinition[]> = {
       },
     },
   ],
+  file_upload: [
+    {
+      name: 'read_file',
+      description:
+        'Read the contents of a file the user has uploaded. Returns the text content of the file. Use this when the user asks about an uploaded file or attaches a file to their message.',
+      input_schema: {
+        type: 'object' as const,
+        properties: {
+          fileId: {
+            type: 'string',
+            description: 'The UUID of the uploaded file to read',
+          },
+        },
+        required: ['fileId'],
+      },
+    },
+  ],
 };
 
 /**
@@ -114,6 +133,7 @@ const OPENCLAW_TOOL_TO_SCHEMA: Record<string, string> = {
   web_fetch: 'web_fetch',
   browser: 'browser',
   analyze_image: 'image_understanding',
+  read_file: 'file_upload',
 };
 
 /**
@@ -191,6 +211,33 @@ export const executeToolCall: ToolExecutor = async (name, input) => {
       const imageUrl = input.image_url as string;
       const prompt = input.prompt as string | undefined;
       return await analyzeImage(imageUrl, prompt);
+    }
+
+    case 'read_file': {
+      const fileId = input.fileId as string;
+      const supabase = createServiceClientWithoutCookies();
+
+      // Look up file in DB
+      const { data: file, error } = await supabase
+        .from('user_files')
+        .select('*')
+        .eq('id', fileId)
+        .single();
+
+      if (error || !file) {
+        return `Error: File not found (id: ${fileId})`;
+      }
+
+      // Get signed URL from storage
+      const { data: urlData, error: urlError } = await supabase.storage
+        .from('user-files')
+        .createSignedUrl(file.storage_path, 60);
+
+      if (urlError || !urlData?.signedUrl) {
+        return `Error: Could not access file in storage`;
+      }
+
+      return await extractTextFromFile(urlData.signedUrl, file.mime_type || 'text/plain');
     }
 
     default:
