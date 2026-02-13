@@ -37,6 +37,7 @@
   "exclude": [
     "node_modules",
     "kyra",
-    "openclaw"
+    "openclaw",
+    "kyra-worker"
   ]
 }
