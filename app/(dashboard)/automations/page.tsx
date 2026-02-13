@@ -36,6 +36,7 @@ export default function AutomationsPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [toggling, setToggling] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [running, setRunning] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Create form state
@@ -131,6 +132,23 @@ export default function AutomationsPage() {
       }
     } catch { /* ignore */ }
     setDeleting(null);
+  }
+
+  async function runNow(id: string) {
+    setRunning(id);
+    setMessage(null);
+    try {
+      const res = await fetch(`/api/automations/${id}/run`, { method: 'POST' });
+      if (res.ok) {
+        setMessage({ type: 'success', text: 'Automation triggered!' });
+      } else {
+        const data = await res.json();
+        setMessage({ type: 'error', text: data.error || 'Failed to trigger' });
+      }
+    } catch {
+      setMessage({ type: 'error', text: 'Network error' });
+    }
+    setRunning(null);
   }
 
   function applyTemplate(template: typeof AUTOMATION_TEMPLATES[0]) {
@@ -365,6 +383,16 @@ export default function AutomationsPage() {
                       )}
                     </div>
                     <div className="flex items-center gap-2 shrink-0 ml-4">
+                      <button
+                        onClick={() => runNow(auto.id)}
+                        disabled={running === auto.id}
+                        title="Run now"
+                        className="p-1 text-zinc-600 hover:text-violet-400 transition-colors"
+                      >
+                        {running === auto.id
+                          ? <Loader2 className="h-4 w-4 animate-spin" />
+                          : <Play className="h-4 w-4" />}
+                      </button>
                       <button
                         onClick={() => toggleAutomation(auto.id, !auto.enabled)}
                         disabled={toggling === auto.id}
