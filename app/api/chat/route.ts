@@ -104,9 +104,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { message, conversation_id, image_url } = (await request.json()) as any;
+    const { message, conversation_id, image_url, file_ids } = (await request.json()) as any;
 
-    if (!message || typeof message !== 'string') {
+    if ((!message || typeof message !== 'string') && (!file_ids || file_ids.length === 0)) {
       return new Response('Message is required', { status: 400 });
     }
 
@@ -257,10 +257,31 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Build augmented message if we have pre-flight tool results
-    const augmentedMessage = toolContext
-      ? `${message}\n\n[CONTEXT FROM TOOLS]${toolContext}\n[/CONTEXT FROM TOOLS]`
-      : message;
+    // Fetch attached file metadata for context injection
+    let fileContext = '';
+    if (Array.isArray(file_ids) && file_ids.length > 0) {
+      const { data: attachedFiles } = await serviceClient
+        .from('user_files')
+        .select('id, name, mime_type, size_bytes')
+        .in('id', file_ids)
+        .eq('user_id', authUser.id);
+
+      if (attachedFiles && attachedFiles.length > 0) {
+        const fileList = attachedFiles
+          .map(f => `- ${f.name} (id: ${f.id}, type: ${f.mime_type || 'unknown'}, ${f.size_bytes ? Math.round(f.size_bytes / 1024) + 'KB' : 'unknown size'})`)
+          .join('\n');
+        fileContext = `\n\n[ATTACHED FILES]\nThe user attached the following files. Use the read_file tool to read their contents when needed.\n${fileList}\n[/ATTACHED FILES]`;
+      }
+    }
+
+    // Build augmented message if we have pre-flight tool results or files
+    let augmentedMessage = message || '';
+    if (toolContext) {
+      augmentedMessage += `\n\n[CONTEXT FROM TOOLS]${toolContext}\n[/CONTEXT FROM TOOLS]`;
+    }
+    if (fileContext) {
+      augmentedMessage += fileContext;
+    }
 
     let systemPrompt = getSystemPrompt(memories, reminders, calendarEvents);
 
