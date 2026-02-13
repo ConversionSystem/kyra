@@ -5,7 +5,9 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, User, Clock, BarChart3, LogOut, Calendar, Check, X, Loader2, MessageCircle, ChevronRight, Puzzle, Zap, Cpu } from 'lucide-react';
+import { ArrowLeft, User, Clock, BarChart3, LogOut, Calendar, Check, X, Loader2, MessageCircle, ChevronRight, Puzzle, Zap, Cpu, Sparkles } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { INSTRUCTION_PRESETS } from '@/lib/instructions/presets';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useSearchParams } from 'next/navigation';
@@ -35,6 +37,9 @@ function SettingsContent() {
   const [isUpgrading, setIsUpgrading] = useState<string | null>(null);
   const [preferredModel, setPreferredModel] = useState('auto');
   const [isSavingModel, setIsSavingModel] = useState(false);
+  const [instructionsKnowledge, setInstructionsKnowledge] = useState('');
+  const [instructionsStyle, setInstructionsStyle] = useState('');
+  const [isSavingInstructions, setIsSavingInstructions] = useState(false);
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -78,8 +83,20 @@ function SettingsContent() {
         console.error('Failed to fetch model preference:', e);
       }
 
+      // Fetch custom instructions
+      try {
+        const instrRes = await fetch('/api/settings/instructions');
+        if (instrRes.ok) {
+          const instrData = await instrRes.json();
+          setInstructionsKnowledge(instrData.knowledge || '');
+          setInstructionsStyle(instrData.style || '');
+        }
+      } catch (e) {
+        console.error('Failed to fetch custom instructions:', e);
+      }
+
       setIsLoading(false);
-      
+
       // Fetch usage data
       try {
         const usageRes = await fetch('/api/usage');
@@ -290,6 +307,92 @@ function SettingsContent() {
                 Saving...
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Custom Instructions */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5" />
+              Custom Instructions
+            </CardTitle>
+            <CardDescription>Tell Kyra about yourself and how you'd like it to respond</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-zinc-300">What should Kyra know about you?</label>
+              <Textarea
+                value={instructionsKnowledge}
+                onChange={(e) => setInstructionsKnowledge(e.target.value)}
+                placeholder="e.g. I'm a software engineer based in NYC. I work on React and Node.js projects..."
+                rows={4}
+                maxLength={2000}
+                className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
+              />
+              <p className="text-xs text-zinc-500 text-right">{instructionsKnowledge.length}/2000</p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-zinc-300">How should Kyra respond?</label>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {INSTRUCTION_PRESETS.map((preset) => (
+                  <button
+                    key={preset.id}
+                    onClick={() => setInstructionsStyle(preset.content)}
+                    className="rounded-full border border-zinc-700 bg-zinc-800/50 px-3 py-1 text-xs text-zinc-300 hover:bg-zinc-700 hover:text-zinc-100 transition-colors"
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+              <Textarea
+                value={instructionsStyle}
+                onChange={(e) => setInstructionsStyle(e.target.value)}
+                placeholder="e.g. Be concise and use bullet points. Include code examples when relevant..."
+                rows={4}
+                maxLength={2000}
+                className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
+              />
+              <p className="text-xs text-zinc-500 text-right">{instructionsStyle.length}/2000</p>
+            </div>
+
+            <Button
+              onClick={async () => {
+                setIsSavingInstructions(true);
+                setMessage(null);
+                try {
+                  const res = await fetch('/api/settings/instructions', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      knowledge: instructionsKnowledge,
+                      style: instructionsStyle,
+                    }),
+                  });
+                  if (res.ok) {
+                    setMessage({ type: 'success', text: 'Custom instructions saved!' });
+                  } else {
+                    const data = await res.json();
+                    setMessage({ type: 'error', text: data.error || 'Failed to save instructions' });
+                  }
+                } catch {
+                  setMessage({ type: 'error', text: 'Failed to save instructions' });
+                }
+                setIsSavingInstructions(false);
+              }}
+              disabled={isSavingInstructions}
+              className="w-full"
+            >
+              {isSavingInstructions ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Saving...
+                </span>
+              ) : (
+                'Save Instructions'
+              )}
+            </Button>
           </CardContent>
         </Card>
 
