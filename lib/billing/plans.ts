@@ -21,6 +21,7 @@ export type CreditAction =
   | 'web_search'        // 2 credits
   | 'deep_research'     // 5 credits
   | 'file_analysis'     // 3 credits
+  | 'image_analysis'    // 3 credits
   | 'voice_transcribe'  // 2 credits
   | 'voice_tts'         // 2 credits
   | 'calendar'          // 0 credits
@@ -42,6 +43,7 @@ export const CREDIT_COSTS: Record<CreditAction, number> = {
   web_search: 2,
   deep_research: 5,
   file_analysis: 3,
+  image_analysis: 3,
   voice_transcribe: 2,
   voice_tts: 2,
   calendar: 0,
@@ -159,12 +161,14 @@ export function classifyChatAction(opts: {
   hasWebSearch?: boolean;
   hasSubAgent?: boolean;
   hasFileAnalysis?: boolean;
+  hasImageAnalysis?: boolean;
   isCalendar?: boolean;
   isReminder?: boolean;
 }): CreditAction {
   if (opts.isCalendar) return 'calendar';
   if (opts.isReminder) return 'reminder';
   if (opts.hasSubAgent) return 'deep_research';
+  if (opts.hasImageAnalysis) return 'image_analysis';
   if (opts.hasFileAnalysis) return 'file_analysis';
   if (opts.hasWebSearch) return 'web_search';
   return 'chat';
