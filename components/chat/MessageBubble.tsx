@@ -2,7 +2,7 @@
 
 import { Message } from '@/types';
 import { cn } from '@/lib/utils';
-import { Sparkles, Copy, Check } from 'lucide-react';
+import { Sparkles, Copy, Check, FileText } from 'lucide-react';
 import { VoiceButton } from './VoiceButton';
 import { SearchResults, parseSearchContext, stripSearchContext } from './SearchResults';
 import ReactMarkdown from 'react-markdown';
@@ -33,26 +33,32 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
     setTimeout(() => setCopied(false), 2000);
   }, [displayContent]);
 
-  const imageUrl = (message.metadata as any)?.image_url as string | undefined;
+  // Parse attached files from metadata
+  const attachedFiles = (message.metadata as any)?.files as Array<{ name: string }> | undefined;
 
   if (isUser) {
+    // Strip [Attached: ...] suffix from display
+    const textContent = message.content.replace(/\n?\[Attached: [^\]]+\]$/, '');
+
     return (
       <div className="group py-4 md:py-6">
         <div className="mx-auto max-w-3xl px-4 md:px-0">
           <div className="mb-1 text-xs font-medium text-zinc-500">You</div>
-          {imageUrl && (
-            <div className="mb-2">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={imageUrl}
-                alt="Attached image"
-                className="max-h-64 rounded-lg border border-zinc-700 object-contain"
-              />
+          {attachedFiles && attachedFiles.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {attachedFiles.map((f, i) => (
+                <span key={i} className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-800 px-2.5 py-1.5 text-xs text-zinc-300">
+                  <FileText className="h-3 w-3 text-violet-400" />
+                  <span className="max-w-[200px] truncate">{f.name}</span>
+                </span>
+              ))}
             </div>
           )}
-          <div className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-100">
-            {message.content}
-          </div>
+          {textContent && (
+            <div className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-100">
+              {textContent}
+            </div>
+          )}
         </div>
       </div>
     );

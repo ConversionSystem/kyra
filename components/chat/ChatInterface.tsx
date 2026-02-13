@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Message, Conversation } from '@/types';
+import { Message, Conversation, UserFile } from '@/types';
 import { MessageBubble, MessageSkeleton } from './MessageBubble';
 import { ChatInput } from './ChatInput';
 import { ConversationSidebar } from './ConversationSidebar';
@@ -123,19 +123,25 @@ export function ChatInterface({
 
   const isOutOfCredits = credits !== null && credits.used >= credits.limit;
 
-  const handleSendMessage = async (content: string, imageUrl?: string) => {
-    if (!content.trim() && !imageUrl) return;
+  const handleSendMessage = async (content: string, attachedFiles?: UserFile[]) => {
+    if (!content.trim() && (!attachedFiles || attachedFiles.length === 0)) return;
     if (isOutOfCredits) return;
 
     setIsLoading(true);
     setStreamingContent('');
 
+    // Build display content with file references
+    const fileNames = attachedFiles?.map(f => f.name) || [];
+    const displayContent = fileNames.length > 0
+      ? `${content}${content ? '\n' : ''}[Attached: ${fileNames.join(', ')}]`
+      : content;
+
     const tempUserMessage: Message = {
       id: `temp-${Date.now()}`,
       conversation_id: currentConversation?.id || '',
       role: 'user',
-      content,
-      metadata: imageUrl ? { image_url: imageUrl } : {},
+      content: displayContent,
+      metadata: attachedFiles ? { files: attachedFiles } : {},
       created_at: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, tempUserMessage]);
@@ -147,7 +153,7 @@ export function ChatInterface({
         body: JSON.stringify({
           message: content,
           conversation_id: currentConversation?.id,
-          ...(imageUrl && { image_url: imageUrl }),
+          file_ids: attachedFiles?.map(f => f.id),
         }),
       });
 
