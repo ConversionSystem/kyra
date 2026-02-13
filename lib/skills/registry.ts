@@ -186,7 +186,7 @@ export const SKILLS_REGISTRY: SkillDefinition[] = [
     requiredPlan: ['business', 'max'],
     needsApiKey: false,
     openclawTools: ['browser'],
-    promptInstructions: 'You can control a web browser: navigate to URLs, take screenshots, fill forms, click buttons, and extract structured data from websites. Use this for tasks that need interactive web access beyond simple URL fetching.',
+    promptInstructions: 'You have the browse_url tool for advanced web access. Use it to navigate to URLs and extract their content (action="read"), take screenshots when available (action="screenshot"), or extract specific elements via CSS selector (action="extract", with selector param). Prefer this over web_fetch when the user needs structured extraction or screenshots.',
     hostedCompatible: true,
     creditMultiplier: 3,
   },
