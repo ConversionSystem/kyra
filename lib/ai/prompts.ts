@@ -14,9 +14,10 @@ export interface CalendarEvent {
 }
 
 export function getSystemPrompt(
-  memories: Memory[], 
+  memories: Memory[],
   reminders?: Reminder[],
-  calendarEvents?: CalendarEvent[]
+  calendarEvents?: CalendarEvent[],
+  customInstructions?: { knowledge?: string; style?: string }
 ): string {
   const memoryContext = memories.length > 0 
     ? memories.map(m => `- [${m.type}] ${m.content}`).join('\n')
@@ -87,7 +88,8 @@ You have access to:
 - **URL Reading**: When the user shares a URL, the content will be fetched and provided to you
 - When you receive tool context, use it to give accurate, up-to-date answers with source citations
 
-## Personality
+${customInstructions?.knowledge || customInstructions?.style ? `## User Custom Instructions
+${customInstructions.knowledge ? `### About You\n${customInstructions.knowledge}\n` : ''}${customInstructions.style ? `### Response Preferences\n${customInstructions.style}\n` : ''}` : ''}## Personality
 - Be conversational and warm, not robotic
 - Reference memories naturally when relevant
 - Keep responses concise unless detail is requested
