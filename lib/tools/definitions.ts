@@ -10,6 +10,7 @@ import type { ToolDefinition, ToolExecutor } from '@/lib/ai/claude';
 import { getSkillById } from '@/lib/skills/registry';
 import { webSearch, formatSearchResults } from '@/lib/tools/web-search';
 import { simpleFetch, formatFetchedContent } from '@/lib/tools/url-fetch';
+import { browseUrl } from '@/lib/tools/browser-tool';
 
 /** Claude tool schemas keyed by the skill ID that provides them */
 const TOOL_SCHEMAS: Record<string, ToolDefinition[]> = {
@@ -55,6 +56,32 @@ const TOOL_SCHEMAS: Record<string, ToolDefinition[]> = {
       },
     },
   ],
+  browser: [
+    {
+      name: 'browse_url',
+      description:
+        'Navigate to a URL and extract its content. Can read the page, take a screenshot (when available), or extract specific elements via CSS selector.',
+      input_schema: {
+        type: 'object' as const,
+        properties: {
+          url: {
+            type: 'string',
+            description: 'The URL to navigate to',
+          },
+          action: {
+            type: 'string',
+            enum: ['read', 'screenshot', 'extract'],
+            description: 'Action to perform (default: read)',
+          },
+          selector: {
+            type: 'string',
+            description: 'CSS selector to extract specific content (used with action=extract)',
+          },
+        },
+        required: ['url'],
+      },
+    },
+  ],
 };
 
 /**
@@ -65,6 +92,7 @@ const TOOL_SCHEMAS: Record<string, ToolDefinition[]> = {
 const OPENCLAW_TOOL_TO_SCHEMA: Record<string, string> = {
   web_search: 'web_search',
   web_fetch: 'web_fetch',
+  browser: 'browser',
 };
 
 /**
@@ -127,6 +155,18 @@ export const executeToolCall: ToolExecutor = async (name, input) => {
       const maxChars = (input.max_chars as number) || 8000;
       const content = await simpleFetch(url, maxChars);
       return formatFetchedContent(content);
+    }
+
+    case 'browse_url': {
+      const result = await browseUrl(input.url as string, {
+        action: (input.action as 'read' | 'screenshot' | 'extract') || 'read',
+        selector: input.selector as string | undefined,
+        maxChars: 8000,
+      });
+      if (result.error) return `Failed to browse ${result.url}: ${result.error}`;
+      let out = `**${result.title || result.url}**\n\n${result.content}\n\nSource: ${result.url}`;
+      if (result.screenshot) out += '\n\n[Screenshot captured]';
+      return out;
     }
 
     default:
