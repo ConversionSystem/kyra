@@ -220,7 +220,7 @@ export async function POST(request: NextRequest) {
           sessionKey,
           systemContext: finalSystemContext,
         }),
-        signal: AbortSignal.timeout(120_000), // Cold start can take ~60s
+        signal: AbortSignal.timeout(180_000), // Cold start: bridge ~400ms, gateway first boot ~2-3min
       });
     } catch (fetchError) {
       console.error('[worker-route] Worker unreachable:', fetchError);
