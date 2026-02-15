@@ -1,0 +1,43 @@
+import Stripe from 'stripe';
+
+// ============================================================================
+// Stripe Client
+// ============================================================================
+
+if (!process.env.STRIPE_SECRET_KEY) {
+  throw new Error('STRIPE_SECRET_KEY environment variable is required');
+}
+
+export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: '2025-04-30.basil',
+  typescript: true,
+});
+
+// ============================================================================
+// Price IDs — set via env vars, created in Stripe Dashboard
+// ============================================================================
+
+export type StripePlan = 'starter' | 'pro' | 'scale';
+
+interface PriceConfig {
+  priceId: string;
+}
+
+export const STRIPE_PRICES: Record<StripePlan | 'per_client', PriceConfig> = {
+  starter: { priceId: process.env.STRIPE_STARTER_PRICE_ID ?? '' },
+  pro: { priceId: process.env.STRIPE_PRO_PRICE_ID ?? '' },
+  scale: { priceId: process.env.STRIPE_SCALE_PRICE_ID ?? '' },
+  per_client: { priceId: process.env.STRIPE_PER_CLIENT_PRICE_ID ?? '' }, // metered: $19/client/mo
+};
+
+/**
+ * Reverse-lookup: given a Stripe price ID, return the plan name.
+ */
+export function planFromPriceId(priceId: string): StripePlan | null {
+  for (const [plan, config] of Object.entries(STRIPE_PRICES)) {
+    if (plan !== 'per_client' && config.priceId === priceId) {
+      return plan as StripePlan;
+    }
+  }
+  return null;
+}
