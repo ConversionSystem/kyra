@@ -1,54 +1,53 @@
 // ============================================================================
 // POST /api/ghl/webhook
 //
-// Receives GHL webhooks (inbound messages, contact updates, etc.).
+// Receives GHL webhooks from:
+// 1. Marketplace app webhooks (when approved)
+// 2. GHL Workflow "Custom Webhook" actions (works immediately)
 //
-// Flow:
-// 1. Parse the webhook payload
-// 2. Identify which agency_client this belongs to (via ghl_location_id)
-// 3. For InboundMessage: fire-and-forget AI processing via waitUntil
-// 4. Respond 200 OK immediately (GHL retries on slow responses)
-//
-// The actual AI → reply logic lives in lib/ghl/webhook-handler.ts
+// GHL Workflow payloads have different field names than marketplace webhooks.
+// We normalize both formats and process InboundMessage events.
 // ============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { processInboundMessage } from '@/lib/ghl/webhook-handler';
-import type { GHLWebhookPayload, GHLWebhookEventType } from '@/lib/ghl/types';
+import type { GHLWebhookPayload } from '@/lib/ghl/types';
 import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
 
-// Events we care about
-const HANDLED_EVENTS: Set<GHLWebhookEventType> = new Set([
-  'InboundMessage',
-  'ContactCreate',
-  'ContactUpdate',
-  'ContactTagUpdate',
-  'OpportunityCreate',
-  'OpportunityStageUpdate',
-  'OpportunityStatusUpdate',
-  'AppointmentCreate',
-  'AppointmentUpdate',
-  'AppointmentDelete',
-]);
-
 export async function POST(request: NextRequest) {
-  let payload: GHLWebhookPayload;
+  let raw: Record<string, unknown>;
 
   try {
-    payload = (await request.json()) as GHLWebhookPayload;
+    raw = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  const { type, locationId } = payload;
+  // Log EVERYTHING for debugging
+  console.log('[ghl/webhook] Raw payload:', JSON.stringify(raw).substring(0, 2000));
 
-  if (!type || !locationId) {
-    console.warn('[ghl/webhook] Missing type or locationId:', { type, locationId });
-    return NextResponse.json({ received: true }, { status: 200 });
+  // ── Normalize the payload ─────────────────────────────────────────────
+  // GHL Workflow webhooks use different field names than marketplace webhooks.
+  // Normalize to our standard format.
+  const payload = normalizePayload(raw);
+
+  if (!payload.locationId) {
+    console.warn('[ghl/webhook] No locationId found in payload');
+    return NextResponse.json({ received: true, debug: 'no_location_id' }, { status: 200 });
   }
 
-  console.log(`[ghl/webhook] Received: ${type} for location ${locationId}`);
+  if (!payload.type) {
+    // If no type but we have a body/message, treat as InboundMessage
+    if (payload.body) {
+      payload.type = 'InboundMessage';
+    } else {
+      console.warn('[ghl/webhook] No event type and no message body');
+      return NextResponse.json({ received: true, debug: 'no_type_no_body' }, { status: 200 });
+    }
+  }
+
+  console.log(`[ghl/webhook] Normalized: type=${payload.type} location=${payload.locationId} contact=${payload.contactId} body="${(payload.body || '').substring(0, 80)}"`);
 
   // ── Look up the agency_client by GHL location ID ──────────────────────
   const supabase = createServiceClientWithoutCookies();
@@ -56,68 +55,96 @@ export async function POST(request: NextRequest) {
   const { data: agencyClient, error: lookupError } = await supabase
     .from('agency_clients')
     .select('*, agency_templates(*)')
-    .eq('ghl_location_id', locationId)
+    .eq('ghl_location_id', payload.locationId)
     .single();
 
   if (lookupError || !agencyClient) {
-    console.warn(
-      `[ghl/webhook] No agency_client found for location ${locationId}`,
-    );
+    console.warn(`[ghl/webhook] No client for location ${payload.locationId}`);
     return NextResponse.json({ received: true, matched: false }, { status: 200 });
   }
 
-  // Cast from Supabase response to our types
   const client = agencyClient as unknown as AgencyClient & {
     agency_templates?: AgencyTemplate | null;
   };
 
-  // Skip if client is paused or not active
-  if (client.status !== 'active') {
-    console.log(
-      `[ghl/webhook] Skipping — client ${client.id} is ${client.status}`,
-    );
+  // Skip inactive clients
+  if (client.status !== 'active' && client.status !== 'setup') {
+    console.log(`[ghl/webhook] Skipping — client ${client.id} is ${client.status}`);
     return NextResponse.json({ received: true, skipped: true }, { status: 200 });
   }
 
-  // ── Log the webhook event ─────────────────────────────────────────────
-  try {
-    await supabase.from('ghl_webhook_events').insert({
-      id: crypto.randomUUID(),
-      agency_client_id: client.id,
-      event_type: type,
-      location_id: locationId,
-      payload: payload as unknown as Record<string, unknown>,
-      processed: false,
-      created_at: new Date().toISOString(),
-    });
-  } catch (logError) {
-    console.error('[ghl/webhook] Failed to log event:', logError);
-  }
-
-  // ── Handle InboundMessage — the AI reply loop ─────────────────────────
-  if (type === 'InboundMessage') {
-    // Skip outbound messages that GHL sometimes echoes back
+  // ── Handle InboundMessage ─────────────────────────────────────────────
+  if (payload.type === 'InboundMessage') {
     if (payload.direction === 'outbound') {
-      return NextResponse.json({ received: true, skipped: true }, { status: 200 });
+      return NextResponse.json({ received: true, skipped: 'outbound' }, { status: 200 });
     }
 
-    // Attach template to client object for the handler
+    if (!payload.body || payload.body.trim().length === 0) {
+      console.log('[ghl/webhook] Empty message body, skipping');
+      return NextResponse.json({ received: true, skipped: 'empty_body' }, { status: 200 });
+    }
+
     const clientWithTemplate = {
       ...client,
       template: client.agency_templates ?? null,
     };
 
-    // Process the inbound message (call AI bridge → send reply via GHL).
-    // We await this before returning — GHL allows up to 20s for webhook responses,
-    // and the AI bridge typically responds in 5-15s. If this becomes too slow,
-    // we can move to a queue-based approach later.
-    await processInboundMessage(payload, clientWithTemplate).catch((err) => {
-      console.error(
-        `[ghl/webhook] Failed to process inbound message for client ${client.id}:`,
-        err,
-      );
+    console.log(`[ghl/webhook] Processing inbound for client "${client.name}" from ${payload.contactId}`);
+
+    await processInboundMessage(payload as GHLWebhookPayload, clientWithTemplate).catch((err) => {
+      console.error(`[ghl/webhook] Processing failed:`, err);
     });
   }
 
   return NextResponse.json({ received: true, matched: true }, { status: 200 });
+}
+
+// ── Payload Normalization ───────────────────────────────────────────────────
+
+function normalizePayload(raw: Record<string, unknown>): GHLWebhookPayload {
+  // Already in our format (marketplace webhook or manual test)
+  if (raw.type && raw.locationId) {
+    return raw as unknown as GHLWebhookPayload;
+  }
+
+  // GHL Workflow "Custom Webhook" format — try to extract fields
+  // GHL workflows send data with their own field naming conventions
+  const payload: Record<string, unknown> = {
+    type: raw.type || raw.event_type || raw.eventType || 'InboundMessage',
+    locationId: raw.locationId || raw.location_id || raw.locationID,
+    contactId: raw.contactId || raw.contact_id || raw.contactID,
+    conversationId: raw.conversationId || raw.conversation_id || raw.conversationID,
+    body: raw.body || raw.message || raw.message_body || raw.messageBody || raw.text || raw.content,
+    direction: raw.direction || 'inbound',
+    messageType: raw.messageType || raw.message_type || raw.channel || 'TYPE_SMS',
+    phone: raw.phone || raw.contact_phone || raw.from || raw.fromNumber,
+    email: raw.email || raw.contact_email,
+  };
+
+  // GHL workflow might nest contact data
+  if (raw.contact && typeof raw.contact === 'object') {
+    const contact = raw.contact as Record<string, unknown>;
+    payload.contactId = payload.contactId || contact.id || contact.contactId;
+    payload.phone = payload.phone || contact.phone;
+    payload.email = payload.email || contact.email;
+    payload.locationId = payload.locationId || contact.locationId || contact.location_id;
+  }
+
+  // GHL workflow might nest message data
+  if (raw.message && typeof raw.message === 'object') {
+    const msg = raw.message as Record<string, unknown>;
+    payload.body = payload.body || msg.body || msg.text || msg.content;
+    payload.direction = msg.direction || payload.direction;
+    payload.messageType = msg.messageType || msg.type || payload.messageType;
+    payload.conversationId = payload.conversationId || msg.conversationId;
+  }
+
+  // Last resort: check nested workflow data fields
+  if (raw.workflow_data && typeof raw.workflow_data === 'object') {
+    const wd = raw.workflow_data as Record<string, unknown>;
+    payload.body = payload.body || wd.message || wd.body;
+    payload.contactId = payload.contactId || wd.contactId || wd.contact_id;
+  }
+
+  return payload as unknown as GHLWebhookPayload;
 }
