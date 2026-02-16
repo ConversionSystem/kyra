@@ -64,15 +64,34 @@ export function getSystemContextForClient(
  * Build the system prompt prefix for an agency client.
  * This is injected before the normal system context to give
  * the AI identity and behavioral instructions for this client.
+ *
+ * Optionally includes GHL context (message channel, contact name)
+ * when called from the webhook handler.
  */
 export function getSystemPromptForClient(
   client: AgencyClient,
-  template?: AgencyTemplate | null
+  template?: AgencyTemplate | null,
+  ghlContext?: { messageType?: string; contactName?: string },
 ): string {
   const lines: string[] = [
     `You are an AI assistant for "${client.name}".`,
     `Industry: ${client.industry || 'General'}`,
   ];
+
+  if (ghlContext) {
+    if (ghlContext.messageType) {
+      lines.push(
+        `You are responding to customer messages via ${ghlContext.messageType} through GoHighLevel CRM.`,
+      );
+    }
+    if (ghlContext.contactName) {
+      lines.push(`The customer's identifier is: ${ghlContext.contactName}`);
+    }
+    lines.push(
+      'Keep responses helpful, professional, and concise.',
+      'When you don\'t know something specific about the business, be honest and offer to connect them with a team member.',
+    );
+  }
 
   if (template?.soul_template) {
     lines.push('', '--- Template Instructions ---', template.soul_template);

@@ -1,29 +1,25 @@
 // ============================================================================
 // POST /api/ghl/webhook
 //
-// Receives GHL webhooks (inbound messages, contact updates, opportunity
-// changes, appointment events, etc.).
+// Receives GHL webhooks (inbound messages, contact updates, etc.).
 //
 // Flow:
 // 1. Parse the webhook payload
 // 2. Identify which agency_client this belongs to (via ghl_location_id)
-// 3. Forward relevant events to the client's OpenClaw container
-// 4. Respond 200 OK quickly (GHL expects fast responses)
+// 3. For InboundMessage: fire-and-forget AI processing via waitUntil
+// 4. Respond 200 OK immediately (GHL retries on slow responses)
 //
-// Webhook types we handle:
-// - InboundMessage   → Forward to AI for response
-// - ContactCreate    → Log new contact
-// - ContactUpdate    → Update AI's context
-// - OpportunityStageUpdate → Notify AI of pipeline changes
-// - AppointmentCreate/Update → Calendar sync
+// The actual AI → reply logic lives in lib/ghl/webhook-handler.ts
 // ============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { processInboundMessage } from '@/lib/ghl/webhook-handler';
 import type { GHLWebhookPayload, GHLWebhookEventType } from '@/lib/ghl/types';
+import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
 
-// Events that should be forwarded to the AI container
-const FORWARDABLE_EVENTS: Set<GHLWebhookEventType> = new Set([
+// Events we care about
+const HANDLED_EVENTS: Set<GHLWebhookEventType> = new Set([
   'InboundMessage',
   'ContactCreate',
   'ContactUpdate',
@@ -59,7 +55,7 @@ export async function POST(request: NextRequest) {
 
   const { data: agencyClient, error: lookupError } = await supabase
     .from('agency_clients')
-    .select('id, agency_id, name, status, ghl_access_token')
+    .select('*, agency_templates(*)')
     .eq('ghl_location_id', locationId)
     .single();
 
@@ -67,14 +63,18 @@ export async function POST(request: NextRequest) {
     console.warn(
       `[ghl/webhook] No agency_client found for location ${locationId}`,
     );
-    // Still return 200 so GHL doesn't retry
     return NextResponse.json({ received: true, matched: false }, { status: 200 });
   }
 
-  // Skip if client is inactive
-  if (agencyClient.status === 'inactive' || agencyClient.status === 'suspended') {
+  // Cast from Supabase response to our types
+  const client = agencyClient as unknown as AgencyClient & {
+    agency_templates?: AgencyTemplate | null;
+  };
+
+  // Skip if client is paused or not active
+  if (client.status !== 'active') {
     console.log(
-      `[ghl/webhook] Skipping — client ${agencyClient.id} is ${agencyClient.status}`,
+      `[ghl/webhook] Skipping — client ${client.id} is ${client.status}`,
     );
     return NextResponse.json({ received: true, skipped: true }, { status: 200 });
   }
@@ -83,130 +83,41 @@ export async function POST(request: NextRequest) {
   try {
     await supabase.from('ghl_webhook_events').insert({
       id: crypto.randomUUID(),
-      agency_client_id: agencyClient.id,
+      agency_client_id: client.id,
       event_type: type,
       location_id: locationId,
-      payload: payload,
+      payload: payload as unknown as Record<string, unknown>,
       processed: false,
       created_at: new Date().toISOString(),
     });
   } catch (logError) {
-    // Non-fatal — don't block webhook processing
     console.error('[ghl/webhook] Failed to log event:', logError);
   }
 
-  // ── Forward to the client's OpenClaw container ────────────────────────
-  if (FORWARDABLE_EVENTS.has(type)) {
-    try {
-      await forwardToContainer(agencyClient.id, agencyClient.agency_id, payload);
-    } catch (forwardError) {
-      console.error(
-        `[ghl/webhook] Failed to forward to container for client ${agencyClient.id}:`,
-        forwardError,
-      );
-      // Still return 200 — we logged the event, we can retry later
+  // ── Handle InboundMessage — the AI reply loop ─────────────────────────
+  if (type === 'InboundMessage') {
+    // Skip outbound messages that GHL sometimes echoes back
+    if (payload.direction === 'outbound') {
+      return NextResponse.json({ received: true, skipped: true }, { status: 200 });
     }
+
+    // Attach template to client object for the handler
+    const clientWithTemplate = {
+      ...client,
+      template: client.agency_templates ?? null,
+    };
+
+    // Process the inbound message (call AI bridge → send reply via GHL).
+    // We await this before returning — GHL allows up to 20s for webhook responses,
+    // and the AI bridge typically responds in 5-15s. If this becomes too slow,
+    // we can move to a queue-based approach later.
+    await processInboundMessage(payload, clientWithTemplate).catch((err) => {
+      console.error(
+        `[ghl/webhook] Failed to process inbound message for client ${client.id}:`,
+        err,
+      );
+    });
   }
 
   return NextResponse.json({ received: true, matched: true }, { status: 200 });
-}
-
-// ── Forward to Container ──────────────────────────────────────────────────────
-
-async function forwardToContainer(
-  clientId: string,
-  agencyId: string,
-  payload: GHLWebhookPayload,
-): Promise<void> {
-  const workerUrl = process.env.KYRA_WORKER_URL;
-  const apiSecret = process.env.KYRA_API_SECRET;
-
-  if (!workerUrl || !apiSecret) {
-    console.warn(
-      '[ghl/webhook] Missing KYRA_WORKER_URL or KYRA_API_SECRET — cannot forward',
-    );
-    return;
-  }
-
-  // Build message context based on event type
-  let message: string;
-
-  switch (payload.type) {
-    case 'InboundMessage': {
-      const from = payload.phone || payload.email || 'unknown';
-      const channel = payload.messageType || 'unknown';
-      message = [
-        `[GHL Inbound Message]`,
-        `From: ${from}`,
-        `Channel: ${channel}`,
-        `Contact ID: ${payload.contactId || 'unknown'}`,
-        `Conversation ID: ${payload.conversationId || 'unknown'}`,
-        `Message: ${payload.body || '(no body)'}`,
-      ].join('\n');
-      break;
-    }
-
-    case 'ContactCreate':
-    case 'ContactUpdate':
-    case 'ContactTagUpdate':
-      message = [
-        `[GHL ${payload.type}]`,
-        `Contact ID: ${payload.contactId || payload.id || 'unknown'}`,
-        `Location: ${payload.locationId}`,
-        `Details: ${JSON.stringify(payload, null, 2)}`,
-      ].join('\n');
-      break;
-
-    case 'OpportunityCreate':
-    case 'OpportunityStageUpdate':
-    case 'OpportunityStatusUpdate':
-      message = [
-        `[GHL ${payload.type}]`,
-        `Opportunity ID: ${payload.id || 'unknown'}`,
-        `Contact ID: ${payload.contactId || 'unknown'}`,
-        `Details: ${JSON.stringify(payload, null, 2)}`,
-      ].join('\n');
-      break;
-
-    case 'AppointmentCreate':
-    case 'AppointmentUpdate':
-    case 'AppointmentDelete':
-      message = [
-        `[GHL ${payload.type}]`,
-        `Appointment ID: ${payload.id || 'unknown'}`,
-        `Contact ID: ${payload.contactId || 'unknown'}`,
-        `Details: ${JSON.stringify(payload, null, 2)}`,
-      ].join('\n');
-      break;
-
-    default:
-      message = `[GHL ${payload.type}] ${JSON.stringify(payload)}`;
-  }
-
-  // Forward to the worker which routes to the correct container
-  const res = await fetch(`${workerUrl}/api/ghl/inbound`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiSecret}`,
-      'X-Kyra-Agency-Id': agencyId,
-      'X-Kyra-Client-Id': clientId,
-    },
-    body: JSON.stringify({
-      clientId,
-      agencyId,
-      eventType: payload.type,
-      message,
-      contactId: payload.contactId || payload.id,
-      conversationId: payload.conversationId,
-      locationId: payload.locationId,
-      rawPayload: payload,
-    }),
-    signal: AbortSignal.timeout(10_000),
-  });
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`Worker returned ${res.status}: ${text}`);
-  }
 }
