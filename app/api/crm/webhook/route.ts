@@ -81,13 +81,13 @@ export async function POST(request: NextRequest) {
 
   // ── Log the webhook event ─────────────────────────────────────────────
   try {
-    await supabase.from('ghl_webhook_events').insert({
+    await supabase.from('ghl_webhook_logs').insert({
       id: crypto.randomUUID(),
-      agency_client_id: agencyClient.id,
+      client_id: agencyClient.id,
       event_type: type,
       location_id: locationId,
-      payload: payload,
-      processed: false,
+      payload_json: payload,
+      status: 'received',
       created_at: new Date().toISOString(),
     });
   } catch (logError) {
