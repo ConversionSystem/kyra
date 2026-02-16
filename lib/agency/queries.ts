@@ -52,14 +52,36 @@ export interface AgencyClient {
   template?: AgencyTemplate | null;
 }
 
+export interface SuggestedSkill {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export interface SampleResponse {
+  question: string;
+  answer: string;
+}
+
+export interface GhlTemplateConfig {
+  pipeline_stages?: string[];
+  custom_fields?: string[];
+  workflow_triggers?: Record<string, string>;
+}
+
 export interface AgencyTemplate {
   id: string;
   agency_id: string | null;
   name: string;
   description: string;
   industry: string;
+  icon: string;
   soul_template: string;
+  system_prompt_prefix: string;
   skills: string[];
+  suggested_skills: SuggestedSkill[];
+  sample_responses: SampleResponse[];
+  ghl_config: GhlTemplateConfig;
   cron_config: unknown[];
   is_public: boolean;
   created_at: string;

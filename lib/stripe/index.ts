@@ -9,7 +9,12 @@ export {
 export {
   createConnectAccount,
   createConnectOnboardingLink,
+  createExpressDashboardLink,
   getConnectAccountStatus,
+  createClientSubscription,
+  cancelClientSubscription,
+  updateClientBillingAmount,
+  syncConnectAccountStatus,
   createClientInvoice,
 } from './connect';
 export {
