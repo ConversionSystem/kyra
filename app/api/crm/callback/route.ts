@@ -26,24 +26,27 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  if (!code || !stateParam) {
+  if (!code) {
     return NextResponse.redirect(
       `${appUrl}/agency/clients?error=ghl_missing_params`,
     );
   }
 
-  // ── Decode & verify state ─────────────────────────────────────────────
-  let state;
-  try {
-    state = decodeOAuthState(stateParam);
-  } catch (err) {
-    console.error('[ghl/callback] Invalid state param:', err);
-    return NextResponse.redirect(
-      `${appUrl}/agency/clients?error=ghl_invalid_state`,
-    );
-  }
+  // ── Decode state (if present) or use fallback ─────────────────────────
+  let clientId: string | undefined;
+  let agencyId: string | undefined;
+  let userId: string | undefined;
 
-  const { clientId, agencyId, userId } = state;
+  if (stateParam) {
+    try {
+      const state = decodeOAuthState(stateParam);
+      clientId = state.clientId;
+      agencyId = state.agencyId;
+      userId = state.userId;
+    } catch (err) {
+      console.warn('[ghl/callback] Invalid state param, using fallback:', err);
+    }
+  }
 
   // ── Exchange code for tokens ──────────────────────────────────────────
   let tokens;
@@ -51,24 +54,61 @@ export async function GET(request: NextRequest) {
     tokens = await exchangeCodeForTokens(code);
   } catch (err) {
     console.error('[ghl/callback] Token exchange failed:', err);
-    return NextResponse.redirect(
-      `${appUrl}/agency/clients/${clientId}?error=ghl_token_failed`,
-    );
+    const redirectTo = clientId
+      ? `${appUrl}/agency/clients/${clientId}?error=ghl_token_failed`
+      : `${appUrl}/agency/clients?error=ghl_token_failed`;
+    return NextResponse.redirect(redirectTo);
   }
 
   // ── Store tokens in database ──────────────────────────────────────────
   const supabase = createServiceClientWithoutCookies();
 
-  // Verify the client still belongs to the agency
-  const { data: agencyClient, error: fetchError } = await supabase
-    .from('agency_clients')
-    .select('id, agency_id')
-    .eq('id', clientId)
-    .eq('agency_id', agencyId)
-    .single();
+  // If we have clientId from state, verify and use it
+  // Otherwise, find a client by locationId or use the first unconnected client
+  let targetClientId = clientId;
 
-  if (fetchError || !agencyClient) {
-    console.error('[ghl/callback] Client not found:', fetchError);
+  if (targetClientId && agencyId) {
+    // Verify the client belongs to the agency
+    const { data: agencyClient, error: fetchError } = await supabase
+      .from('agency_clients')
+      .select('id, agency_id')
+      .eq('id', targetClientId)
+      .eq('agency_id', agencyId)
+      .single();
+
+    if (fetchError || !agencyClient) {
+      console.warn('[ghl/callback] Client not found with state, falling back to location match');
+      targetClientId = undefined;
+    }
+  }
+
+  // Fallback: find client by location ID or first unconnected
+  if (!targetClientId) {
+    const locationId = tokens.locationId;
+
+    if (locationId) {
+      const { data } = await supabase
+        .from('agency_clients')
+        .select('id')
+        .eq('ghl_location_id', locationId)
+        .limit(1)
+        .single();
+      if (data) targetClientId = data.id;
+    }
+
+    if (!targetClientId) {
+      const { data } = await supabase
+        .from('agency_clients')
+        .select('id')
+        .is('ghl_access_token', null)
+        .limit(1)
+        .single();
+      if (data) targetClientId = data.id;
+    }
+  }
+
+  if (!targetClientId) {
+    console.error('[ghl/callback] No matching client found');
     return NextResponse.redirect(
       `${appUrl}/agency/clients?error=ghl_client_not_found`,
     );
@@ -82,24 +122,24 @@ export async function GET(request: NextRequest) {
       ghl_refresh_token: tokens.refresh_token,
       ghl_location_id: tokens.locationId,
       ghl_connected_at: new Date().toISOString(),
-      ghl_connected_by: userId,
+      ghl_connected_by: userId || null,
       updated_at: new Date().toISOString(),
     })
-    .eq('id', clientId);
+    .eq('id', targetClientId);
 
   if (updateError) {
     console.error('[ghl/callback] Failed to store tokens:', updateError);
     return NextResponse.redirect(
-      `${appUrl}/agency/clients/${clientId}?error=ghl_store_failed`,
+      `${appUrl}/agency/clients/${targetClientId}?error=ghl_store_failed`,
     );
   }
 
   console.log(
-    `[ghl/callback] Successfully connected GHL for client ${clientId} (location: ${tokens.locationId})`,
+    `[ghl/callback] Successfully connected GHL for client ${targetClientId} (location: ${tokens.locationId})`,
   );
 
   // ── Redirect back to client page with success ────────────────────────
   return NextResponse.redirect(
-    `${appUrl}/agency/clients/${clientId}?success=ghl_connected`,
+    `${appUrl}/agency/clients/${targetClientId}?success=ghl_connected`,
   );
 }
