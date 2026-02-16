@@ -2,21 +2,23 @@ import Link from 'next/link';
 import { 
   ArrowRightIcon, 
   SparklesIcon, 
-  BrainIcon, 
   SmartphoneIcon, 
   ZapIcon, 
-  SearchIcon, 
   MessageSquareIcon, 
-  CalendarIcon,
   ShieldCheckIcon,
-  GlobeIcon,
   LockIcon,
   ClockIcon,
-  BotIcon,
-  DatabaseIcon,
-  TrendingUpIcon,
+  UsersIcon,
+  BarChart3Icon,
+  BrainIcon,
+  SettingsIcon,
+  LayersIcon,
+  CheckCircle2Icon,
+  BuildingIcon,
+  CreditCardIcon,
+  GaugeIcon,
+  EyeIcon,
 } from 'lucide-react';
-import HeroChatWidget from '@/components/landing/HeroChatWidget';
 
 export default function LandingPage() {
   return (
@@ -26,16 +28,16 @@ export default function LandingPage() {
         <div className="flex items-center gap-2">
           <SparklesIcon className="h-7 w-7 md:h-8 md:w-8 text-purple-400" />
           <span className="text-xl md:text-2xl font-bold">Kyra</span>
-          <span className="ml-1 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
-            Beta
-          </span>
         </div>
         <nav className="hidden md:flex items-center gap-8">
+          <Link href="#how-it-works" className="text-gray-300 hover:text-white transition text-sm">
+            How It Works
+          </Link>
           <Link href="#features" className="text-gray-300 hover:text-white transition text-sm">
             Features
           </Link>
-          <Link href="#channels" className="text-gray-300 hover:text-white transition text-sm">
-            Channels
+          <Link href="#pricing" className="text-gray-300 hover:text-white transition text-sm">
+            Pricing
           </Link>
         </nav>
         <div className="flex items-center gap-3">
@@ -43,258 +45,330 @@ export default function LandingPage() {
             Sign In
           </Link>
           <Link 
-            href="/signup" 
+            href="/signup/agency" 
             className="px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 transition font-medium text-sm"
           >
-            Try Free
+            Start Free Trial
           </Link>
         </div>
       </header>
 
       <main>
-        {/* Hero. Stacked: Copy top, Chat widget below */}
-        <section className="container mx-auto px-4 md:px-6 pt-8 md:pt-12 pb-12 md:pb-20">
-          <div className="max-w-4xl mx-auto text-center mb-8">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.1] mb-4 tracking-tight">
-              Your{' '}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400">
-                personal AI
+        {/* Hero */}
+        <section className="container mx-auto px-4 md:px-6 pt-12 md:pt-20 pb-16 md:pb-24">
+          <div className="max-w-4xl mx-auto text-center">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 text-sm font-medium mb-6">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-400"></span>
               </span>
-              {' '}without the setup
+              SMS AI Loop — Live & Responding
+            </div>
+            
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.1] mb-6 tracking-tight">
+              Deploy{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400">
+                AI employees
+              </span>
+              {' '}for your clients in 5 minutes
             </h1>
             
-            <p className="text-base text-gray-400 leading-relaxed max-w-2xl mx-auto">
-              Built on OpenClaw, the most powerful open-source AI assistant framework. We host it so you don&apos;t have to. Try it 👇
+            <p className="text-lg md:text-xl text-gray-400 leading-relaxed max-w-2xl mx-auto mb-4">
+              Kyra connects to your clients&apos; GoHighLevel CRM. The AI reads contacts, replies to SMS, books appointments, and moves deals — while you bill for it.
+            </p>
+
+            <p className="text-sm text-gray-500 max-w-xl mx-auto mb-8">
+              Built for GHL agencies. White-label ready. Independent — your data stays with your agency, not Big Tech.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link
+                href="/signup/agency"
+                className="flex items-center gap-2 px-7 py-3.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 transition font-semibold text-base shadow-lg shadow-purple-900/30"
+              >
+                Start Free — 5 Clients Included
+                <ArrowRightIcon className="h-4 w-4" />
+              </Link>
+              <Link
+                href="#how-it-works"
+                className="flex items-center gap-2 px-6 py-3 rounded-xl border border-gray-700 hover:border-gray-600 transition font-medium text-sm text-gray-300"
+              >
+                See How It Works
+              </Link>
+            </div>
+
+            <p className="text-xs text-gray-600 mt-4">
+              14-day free trial · No credit card required · Cancel anytime
+            </p>
+          </div>
+        </section>
+
+        {/* Social Proof / Live Stats */}
+        <section className="border-y border-gray-800/50 py-8">
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="flex flex-wrap items-center justify-center gap-8 md:gap-16">
+              <Stat value="< 60s" label="AI Response Time" />
+              <Stat value="5 min" label="Setup to Live" />
+              <Stat value="10%" label="Platform Fee" />
+              <Stat value="100%" label="White-Label" />
+            </div>
+          </div>
+        </section>
+
+        {/* The Problem */}
+        <section className="container mx-auto px-4 md:px-6 py-20">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                Your clients want AI. GHL&apos;s built-in isn&apos;t enough.
+              </h2>
+              <p className="text-gray-400 max-w-2xl mx-auto text-lg">
+                GHL&apos;s Conversation AI is rule-based — it only does what you hardcode into workflows. Your clients need an AI that actually thinks.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4 max-w-3xl mx-auto">
+              <CompareItem 
+                before="Rule-based chatbots that break" 
+                after="AI that reasons, adapts, and learns" 
+              />
+              <CompareItem 
+                before="No memory between conversations" 
+                after="Remembers every customer interaction" 
+              />
+              <CompareItem 
+                before="Per-usage billing confusion" 
+                after="Predictable per-client pricing you control" 
+              />
+              <CompareItem 
+                before="Hire developers to build custom AI" 
+                after="Pick a template, connect GHL, go live" 
+              />
+              <CompareItem 
+                before="Same generic chatbot for everyone" 
+                after="Industry-specific AI personalities" 
+              />
+              <CompareItem 
+                before="No way to bill clients for AI" 
+                after="Stripe Connect — set your price, keep the margin" 
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* How It Works */}
+        <section id="how-it-works" className="container mx-auto px-4 md:px-6 py-20">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Live in 5 minutes. No code.
+            </h2>
+            <p className="text-gray-400 max-w-2xl mx-auto text-lg">
+              From signup to your client&apos;s first AI-powered SMS reply.
             </p>
           </div>
 
-          {/* Wide rectangular Chat Widget */}
-          <div className="max-w-5xl mx-auto">
-            <HeroChatWidget />
+          <div className="grid md:grid-cols-4 gap-6 max-w-5xl mx-auto">
+            <StepCard
+              number="1"
+              title="Pick a Template"
+              description="Choose from dental, real estate, home services, retail, or lead gen. Each comes with industry-specific AI behavior."
+            />
+            <StepCard
+              number="2"
+              title="Connect GHL"
+              description="One-click OAuth. Kyra connects to your client's sub-account and starts reading contacts, conversations, and pipeline."
+            />
+            <StepCard
+              number="3"
+              title="Set Permissions"
+              description="Start in read-only mode. When you're confident, unlock SMS replies, appointment booking, and pipeline updates."
+            />
+            <StepCard
+              number="4"
+              title="Bill Your Client"
+              description="Set your price through Stripe Connect. Your client pays you directly. Kyra takes a 10% platform fee."
+            />
           </div>
 
-          {/* CTA below chat */}
-          <div className="flex flex-col items-center gap-3 mt-8">
-            <Link
-              href="/signup"
-              className="flex items-center gap-2 px-7 py-3.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 transition font-semibold text-base shadow-lg shadow-purple-900/30"
-            >
-              Get Started Free
-              <ArrowRightIcon className="h-4 w-4" />
-            </Link>
-            <span className="text-sm text-gray-500">
-              100 free credits/month · No credit card · 30 second setup
-            </span>
-          </div>
-        </section>
-
-        {/* What you get. value props */}
-        <section className="border-y border-gray-800/50 py-16">
-          <div className="container mx-auto px-4 md:px-6">
-            <div className="text-center mb-12">
-              <h2 className="text-2xl md:text-3xl font-bold mb-3">
-                OpenClaw&apos;s full power, ready to go
-              </h2>
-              <p className="text-gray-400 max-w-2xl mx-auto">
-                OpenClaw gives AI persistent memory, multi-channel reach, and real autonomy. Kyra is the hosted version that gives you all of it without touching a terminal.
-              </p>
+          {/* Architecture Diagram */}
+          <div className="max-w-3xl mx-auto mt-16 p-6 md:p-8 rounded-2xl bg-gray-900/50 border border-gray-800">
+            <div className="text-center mb-6">
+              <p className="text-sm text-gray-500 uppercase tracking-wider font-medium">How the SMS AI Loop Works</p>
             </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-              <KeyBenefit
-                icon={<BrainIcon className="h-7 w-7" />}
-                title="Remembers Everything"
-                description="Your preferences, projects, relationships, and decisions. persistent across every conversation, forever."
-              />
-              <KeyBenefit
-                icon={<GlobeIcon className="h-7 w-7" />}
-                title="Works Everywhere"
-                description="Web, Telegram, WhatsApp. same AI, same memory. Talk to Kyra wherever you already are."
-              />
-              <KeyBenefit
-                icon={<ZapIcon className="h-7 w-7" />}
-                title="Actually Does Things"
-                description="Web search, calendar management, reminders, file analysis, even delegating to sub-agents. Not just chat."
-              />
-              <KeyBenefit
-                icon={<LockIcon className="h-7 w-7" />}
-                title="Private by Default"
-                description="Encrypted, never used for AI training, deletable anytime. Your data belongs to you."
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* The problem Kyra solves */}
-        <section className="container mx-auto px-4 md:px-6 py-20">
-          <div className="max-w-5xl mx-auto">
-            <div className="grid md:grid-cols-2 gap-16 items-center">
-              <div>
-                <h2 className="text-3xl font-bold mb-6">
-                  The best AI framework exists. Most people can&apos;t use it.
-                </h2>
-                <div className="space-y-4 text-gray-400 leading-relaxed">
-                  <p>
-                    OpenClaw is an incredible open-source AI assistant platform. Persistent memory, multi-channel messaging, 
-                    web search, sub-agents, proactive scheduling. It&apos;s the most capable personal AI framework out there.
-                  </p>
-                  <p>
-                    But it requires your own API keys, server management, CLI comfort, and hours of setup. 
-                    Most people who&apos;d benefit from it will never run <code className="text-purple-400 bg-purple-900/30 px-1.5 py-0.5 rounded text-sm">npm install</code>.
-                  </p>
-                  <p className="text-white font-medium text-lg">
-                    Kyra makes OpenClaw accessible to everyone. Same engine, zero configuration.
-                  </p>
-                </div>
-              </div>
-              <div className="space-y-4">
-                <CompareItem 
-                  before="Re-explain yourself every session" 
-                  after="Kyra remembers everything about you" 
-                />
-                <CompareItem 
-                  before="Copy-paste between ChatGPT tabs" 
-                  after="One AI across web, Telegram, WhatsApp" 
-                />
-                <CompareItem 
-                  before="Manage API keys and config files" 
-                  after="Sign up and start chatting in 30 seconds" 
-                />
-                <CompareItem 
-                  before="AI that only answers when asked" 
-                  after="Proactive briefings, reminders, and alerts" 
-                />
-                <CompareItem 
-                  before="Your data training someone else's model" 
-                  after="Encrypted, private, deletable anytime" 
-                />
-              </div>
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-center">
+              <FlowStep emoji="📱" label="Customer texts" sublabel="your GHL number" />
+              <FlowArrow />
+              <FlowStep emoji="🔍" label="Kyra reads" sublabel="CRM + history" />
+              <FlowArrow />
+              <FlowStep emoji="🧠" label="AI generates" sublabel="personalized reply" />
+              <FlowArrow />
+              <FlowStep emoji="💬" label="Customer gets" sublabel="SMS in < 60s" />
             </div>
           </div>
         </section>
 
         {/* Core Features */}
-        <section id="features" className="container mx-auto px-4 md:px-6 py-24">
+        <section id="features" className="border-y border-gray-800/50 py-24">
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                Everything your agency needs
+              </h2>
+              <p className="text-gray-400 max-w-2xl mx-auto text-lg">
+                Manage dozens of client AIs from one dashboard. Every feature built for scale.
+              </p>
+            </div>
+            
+            <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+              <FeatureCard
+                icon={<MessageSquareIcon className="h-6 w-6" />}
+                title="SMS AI Loop"
+                description="Customer texts → AI reads CRM → personalized reply in under 60 seconds. Live today, not a demo."
+              />
+              <FeatureCard
+                icon={<UsersIcon className="h-6 w-6" />}
+                title="Multi-Client Dashboard"
+                description="Add clients, connect GHL sub-accounts, customize AI personalities, monitor conversations — all from one screen."
+              />
+              <FeatureCard
+                icon={<LayersIcon className="h-6 w-6" />}
+                title="Industry Templates"
+                description="Dental, real estate, home services, retail, lead gen. Pre-built AI behavior for each vertical. Deploy in minutes."
+              />
+              <FeatureCard
+                icon={<CreditCardIcon className="h-6 w-6" />}
+                title="Stripe Connect Billing"
+                description="Set your own prices. Bill clients directly through your Stripe account. Keep the margin, we take 10%."
+              />
+              <FeatureCard
+                icon={<GaugeIcon className="h-6 w-6" />}
+                title="Smart Model Routing"
+                description="Simple messages use cheap AI. Complex sales conversations use premium AI. Automatic cost optimization per client."
+              />
+              <FeatureCard
+                icon={<EyeIcon className="h-6 w-6" />}
+                title="Read-Only → Autonomous"
+                description="Deploy in read-only mode first. Unlock SMS replies, then appointments, then pipeline. You control the pace."
+              />
+              <FeatureCard
+                icon={<BarChart3Icon className="h-6 w-6" />}
+                title="Usage & Cost Dashboard"
+                description="See exactly what each client costs in AI tokens. Per-client, per-day, per-channel breakdowns. Price your services with confidence."
+              />
+              <FeatureCard
+                icon={<SettingsIcon className="h-6 w-6" />}
+                title="Granular Permissions"
+                description="9 GHL capability toggles. Control exactly what each AI can do: read contacts ✓, book appointments ✗, move deals ✗."
+              />
+              <FeatureCard
+                icon={<BuildingIcon className="h-6 w-6" />}
+                title="White-Label Ready"
+                description="Your logo, your colors, your domain. Clients see your brand — zero mention of Kyra or Conversion System."
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* Independence / Trust */}
+        <section className="container mx-auto px-4 md:px-6 py-20">
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-gradient-to-br from-gray-900/80 to-gray-800/30 rounded-2xl p-8 md:p-12 border border-gray-800">
+              <div className="grid md:grid-cols-2 gap-8 items-center">
+                <div>
+                  <h2 className="text-2xl md:text-3xl font-bold mb-4">
+                    Your agency. Your data. Your platform.
+                  </h2>
+                  <p className="text-gray-400 leading-relaxed mb-6">
+                    The AI landscape shifts every week. Platforms get acquired. Data policies change overnight. Your agency can&apos;t afford that risk.
+                  </p>
+                  <p className="text-gray-300 leading-relaxed">
+                    Kyra is independently operated. We don&apos;t sell your data, we don&apos;t feed conversations into training sets, and we don&apos;t answer to OpenAI, Google, or anyone else. Your clients trust you — we built Kyra so you never have to break that trust.
+                  </p>
+                </div>
+                <div className="space-y-4">
+                  <TrustItem icon={<LockIcon className="h-5 w-5" />} text="Client data stays in YOUR Stripe account" />
+                  <TrustItem icon={<ShieldCheckIcon className="h-5 w-5" />} text="No vendor lock-in — export everything, anytime" />
+                  <TrustItem icon={<BrainIcon className="h-5 w-5" />} text="Model-agnostic — switch between Claude, GPT, Gemini" />
+                  <TrustItem icon={<SparklesIcon className="h-5 w-5" />} text="EU-hosted infrastructure (Frankfurt)" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Pricing */}
+        <section id="pricing" className="container mx-auto px-4 md:px-6 py-24">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Everything OpenClaw can do, built in
+              Simple pricing. Real margins.
             </h2>
             <p className="text-gray-400 max-w-2xl mx-auto text-lg">
-              Every feature works out of the box. No plugins to install, no config files to edit, no APIs to manage.
+              You set the price for your clients. The difference is your profit.
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            <FeatureCard
-              icon={<BrainIcon className="h-7 w-7" />}
-              title="Persistent Memory"
-              description="Kyra builds a knowledge graph of you. preferences, relationships, projects, decisions. Every conversation makes it smarter."
-              tag="Core"
+            <PricingCard
+              name="Starter"
+              price="$99"
+              period="/mo"
+              description="For agencies getting started with AI"
+              clients="5 clients included"
+              extra="$29/mo per extra client"
+              features={[
+                'GHL integration',
+                'Agency dashboard',
+                'Community templates',
+                'SMS AI replies',
+                'Email support',
+              ]}
+              cta="Start Free Trial"
+              href="/signup/agency"
             />
-            <FeatureCard
-              icon={<SearchIcon className="h-7 w-7" />}
-              title="Live Web Search"
-              description="Real-time web search, URL reading, and deep research. Always current information, properly cited."
-              tag="Built-in"
+            <PricingCard
+              name="Pro"
+              price="$249"
+              period="/mo"
+              description="For agencies scaling AI services"
+              clients="15 clients included"
+              extra="$25/mo per extra client"
+              features={[
+                'Everything in Starter',
+                'White-label branding',
+                'Stripe Connect billing',
+                'Create custom templates',
+                'Smart model routing',
+                'BYOK (your own API keys)',
+                'Priority support',
+              ]}
+              cta="Start Free Trial"
+              href="/signup/agency"
+              highlighted
             />
-            <FeatureCard
-              icon={<BotIcon className="h-7 w-7" />}
-              title="AI Sub-Agents"
-              description="Complex tasks get delegated to specialized AI workers. One request, a whole team working on it."
-              tag="Powerful"
-            />
-            <FeatureCard
-              icon={<CalendarIcon className="h-7 w-7" />}
-              title="Google Calendar"
-              description="View events, create meetings, get reminders. Your schedule fully integrated and always accessible."
-              tag="Integrated"
-            />
-            <FeatureCard
-              icon={<ZapIcon className="h-7 w-7" />}
-              title="Proactive Briefings"
-              description="Morning updates, calendar reminders, email summaries. Kyra works in the background so you don't miss what matters."
-              tag="Proactive"
-            />
-            <FeatureCard
-              icon={<ShieldCheckIcon className="h-7 w-7" />}
-              title="Privacy First"
-              description="Your conversations and memories are encrypted and never used for AI training. Delete everything anytime."
-              tag="Secure"
+            <PricingCard
+              name="Scale"
+              price="$499"
+              period="/mo"
+              description="For agencies at volume"
+              clients="50 clients included"
+              extra="$19/mo per extra client"
+              features={[
+                'Everything in Pro',
+                'Sell templates on marketplace',
+                'API access',
+                'Unlimited team members',
+                'Dedicated support',
+                'Custom integrations',
+              ]}
+              cta="Contact Us"
+              href="mailto:angel@conversionsystem.com"
             />
           </div>
-        </section>
 
-        {/* Channels */}
-        <section id="channels" className="container mx-auto px-4 md:px-6 py-24">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              One AI, every platform
-            </h2>
-            <p className="text-gray-400 max-w-2xl mx-auto text-lg">
-              Chat with Kyra wherever you already are. Same memory, same context, everywhere.
+          <div className="text-center mt-8">
+            <p className="text-sm text-gray-500">
+              All plans include a 14-day free trial. No credit card required. 10% platform fee on client billing via Stripe Connect.
             </p>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
-            <ChannelCard name="Web App" status="live" emoji="🌐" />
-            <ChannelCard name="Telegram" status="live" emoji="✈️" />
-            <ChannelCard name="WhatsApp" status="live" emoji="💬" />
-            <ChannelCard name="Slack" status="coming" emoji="💼" />
-            <ChannelCard name="Discord" status="coming" emoji="🎮" />
-            <ChannelCard name="Email" status="coming" emoji="📧" />
-            <ChannelCard name="iMessage" status="planned" emoji="🍎" />
-            <ChannelCard name="Voice" status="planned" emoji="🎙️" />
-          </div>
-        </section>
-
-        {/* How It Works */}
-        <section className="container mx-auto px-4 md:px-6 py-24">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Up and running in 30 seconds
-            </h2>
-            <p className="text-gray-400 max-w-2xl mx-auto text-lg">
-              No API keys. No server setup. No terminal. We handle the OpenClaw infrastructure so you can just chat.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            <StepCard
-              number="1"
-              title="Create Your Account"
-              description="Sign up with email or Google. Free tier included. no credit card needed."
-            />
-            <StepCard
-              number="2"
-              title="Start Talking"
-              description="Chat on the web or connect Telegram/WhatsApp. Kyra learns who you are automatically."
-            />
-            <StepCard
-              number="3"
-              title="Let Kyra Work For You"
-              description="Delegate research, get proactive briefings, manage your calendar. It gets better every day."
-            />
-          </div>
-        </section>
-
-        {/* Trust */}
-        <section className="container mx-auto px-4 md:px-6 py-16">
-          <div className="flex flex-wrap items-center justify-center gap-8 md:gap-16 text-gray-500">
-            <div className="flex items-center gap-2">
-              <ShieldCheckIcon className="h-5 w-5 text-green-500" />
-              <span className="text-sm font-medium">End-to-End Encrypted</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <GlobeIcon className="h-5 w-5 text-blue-400" />
-              <span className="text-sm font-medium">Powered by Claude AI</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <SparklesIcon className="h-5 w-5 text-purple-400" />
-              <span className="text-sm font-medium">Built on OpenClaw</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <LockIcon className="h-5 w-5 text-green-500" />
-              <span className="text-sm font-medium">Never Used for AI Training</span>
-            </div>
           </div>
         </section>
 
@@ -302,21 +376,20 @@ export default function LandingPage() {
         <section className="container mx-auto px-4 md:px-6 py-24">
           <div className="max-w-3xl mx-auto bg-gradient-to-br from-purple-900/40 to-pink-900/30 rounded-3xl p-12 md:p-16 border border-purple-800/40 text-center">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Your AI is waiting
+              Your clients are waiting for AI.
             </h2>
             <p className="text-gray-400 mb-8 max-w-xl mx-auto text-lg">
-              100 free credits. No credit card. No technical setup.
-              Just a personal AI that actually knows who you are.
+              5 minutes from now, your first client could have an AI employee answering their SMS, booking appointments, and moving deals.
             </p>
             <Link
-              href="/signup"
+              href="/signup/agency"
               className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-white text-gray-900 hover:bg-gray-100 transition font-semibold text-lg shadow-lg"
             >
-              Try Kyra Free
+              Deploy Your First AI Employee
               <ArrowRightIcon className="h-5 w-5" />
             </Link>
             <p className="text-xs text-gray-500 mt-4">
-              100 free credits/month · No credit card · 30 second setup
+              14-day free trial · 5 clients included · No credit card required
             </p>
           </div>
         </section>
@@ -329,9 +402,6 @@ export default function LandingPage() {
             <div className="flex items-center gap-2">
               <SparklesIcon className="h-6 w-6 text-purple-400" />
               <span className="font-bold">Kyra</span>
-              <span className="ml-1 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded bg-amber-500/20 text-amber-400">
-                Beta
-              </span>
               <span className="text-gray-600 text-sm ml-2">by Conversion System</span>
             </div>
             <p className="text-sm text-gray-500">
@@ -351,18 +421,11 @@ export default function LandingPage() {
 
 // ── Components ────────────────────────────────────────────────────────────
 
-function KeyBenefit({ icon, title, description }: {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-}) {
+function Stat({ value, label }: { value: string; label: string }) {
   return (
-    <div className="text-center p-6 rounded-2xl bg-gray-900/30 border border-gray-800/50 hover:border-purple-700/40 transition-all">
-      <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-purple-600/15 text-purple-400 mb-4">
-        {icon}
-      </div>
-      <h3 className="text-lg font-semibold mb-2">{title}</h3>
-      <p className="text-gray-400 text-sm leading-relaxed">{description}</p>
+    <div className="text-center">
+      <div className="text-2xl md:text-3xl font-bold text-white">{value}</div>
+      <div className="text-xs text-gray-500 uppercase tracking-wider mt-1">{label}</div>
     </div>
   );
 }
@@ -382,51 +445,6 @@ function CompareItem({ before, after }: { before: string; after: string }) {
   );
 }
 
-function FeatureCard({ icon, title, description, tag }: { 
-  icon: React.ReactNode; 
-  title: string; 
-  description: string;
-  tag?: string;
-}) {
-  return (
-    <div className="group bg-gray-900/50 rounded-2xl p-8 border border-gray-800 hover:border-purple-700/50 transition-all duration-300">
-      <div className="flex items-center justify-between mb-4">
-        <div className="text-purple-400 group-hover:scale-110 transition-transform">{icon}</div>
-        {tag && (
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-purple-400/70 bg-purple-900/30 px-2 py-0.5 rounded-full">
-            {tag}
-          </span>
-        )}
-      </div>
-      <h3 className="text-xl font-semibold mb-3">{title}</h3>
-      <p className="text-gray-400 leading-relaxed">{description}</p>
-    </div>
-  );
-}
-
-function ChannelCard({ name, status, emoji }: {
-  name: string;
-  status: 'live' | 'coming' | 'planned';
-  emoji: string;
-}) {
-  const statusConfig = {
-    live: { label: 'Live', color: 'text-green-400 bg-green-900/30 border-green-700/30' },
-    coming: { label: 'Coming Soon', color: 'text-amber-400 bg-amber-900/30 border-amber-700/30' },
-    planned: { label: 'Planned', color: 'text-gray-400 bg-gray-800/50 border-gray-700/30' },
-  };
-  const cfg = statusConfig[status];
-  
-  return (
-    <div className="bg-gray-900/50 rounded-xl p-5 border border-gray-800 text-center hover:border-gray-700 transition">
-      <div className="text-3xl mb-2">{emoji}</div>
-      <div className="font-medium mb-2">{name}</div>
-      <span className={`inline-block text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border ${cfg.color}`}>
-        {cfg.label}
-      </span>
-    </div>
-  );
-}
-
 function StepCard({ number, title, description }: {
   number: string;
   title: string;
@@ -438,7 +456,99 @@ function StepCard({ number, title, description }: {
         {number}
       </div>
       <h3 className="text-lg font-semibold mb-2">{title}</h3>
-      <p className="text-gray-400">{description}</p>
+      <p className="text-gray-400 text-sm leading-relaxed">{description}</p>
+    </div>
+  );
+}
+
+function FlowStep({ emoji, label, sublabel }: { emoji: string; label: string; sublabel: string }) {
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <span className="text-2xl">{emoji}</span>
+      <span className="text-sm font-medium text-white">{label}</span>
+      <span className="text-xs text-gray-500">{sublabel}</span>
+    </div>
+  );
+}
+
+function FlowArrow() {
+  return (
+    <div className="hidden md:block text-gray-600">
+      <ArrowRightIcon className="h-5 w-5" />
+    </div>
+  );
+}
+
+function FeatureCard({ icon, title, description }: { 
+  icon: React.ReactNode; 
+  title: string; 
+  description: string;
+}) {
+  return (
+    <div className="group bg-gray-900/50 rounded-2xl p-6 border border-gray-800 hover:border-purple-700/50 transition-all duration-300">
+      <div className="text-purple-400 mb-4 group-hover:scale-110 transition-transform">{icon}</div>
+      <h3 className="text-lg font-semibold mb-2">{title}</h3>
+      <p className="text-gray-400 text-sm leading-relaxed">{description}</p>
+    </div>
+  );
+}
+
+function TrustItem({ icon, text }: { icon: React.ReactNode; text: string }) {
+  return (
+    <div className="flex items-center gap-3 text-sm">
+      <div className="text-green-400 shrink-0">{icon}</div>
+      <span className="text-gray-300">{text}</span>
+    </div>
+  );
+}
+
+function PricingCard({ name, price, period, description, clients, extra, features, cta, href, highlighted }: {
+  name: string;
+  price: string;
+  period: string;
+  description: string;
+  clients: string;
+  extra: string;
+  features: string[];
+  cta: string;
+  href: string;
+  highlighted?: boolean;
+}) {
+  return (
+    <div className={`rounded-2xl p-8 border ${
+      highlighted 
+        ? 'bg-gradient-to-b from-purple-900/40 to-gray-900/80 border-purple-600/50 ring-1 ring-purple-500/20' 
+        : 'bg-gray-900/50 border-gray-800'
+    } flex flex-col`}>
+      {highlighted && (
+        <div className="text-xs font-semibold uppercase tracking-wider text-purple-400 mb-4">Most Popular</div>
+      )}
+      <h3 className="text-xl font-bold mb-1">{name}</h3>
+      <p className="text-gray-500 text-sm mb-4">{description}</p>
+      <div className="flex items-baseline gap-1 mb-1">
+        <span className="text-4xl font-bold">{price}</span>
+        <span className="text-gray-500">{period}</span>
+      </div>
+      <p className="text-sm text-purple-400 font-medium mb-1">{clients}</p>
+      <p className="text-xs text-gray-500 mb-6">{extra}</p>
+      <ul className="space-y-3 mb-8 flex-1">
+        {features.map((feature) => (
+          <li key={feature} className="flex items-start gap-2 text-sm text-gray-300">
+            <CheckCircle2Icon className="h-4 w-4 text-green-400 shrink-0 mt-0.5" />
+            {feature}
+          </li>
+        ))}
+      </ul>
+      <Link
+        href={href}
+        className={`block text-center py-3 rounded-lg font-medium transition ${
+          highlighted
+            ? 'bg-purple-600 hover:bg-purple-500 text-white'
+            : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
+        }`}
+      >
+        {cta}
+      </Link>
     </div>
   );
 }
