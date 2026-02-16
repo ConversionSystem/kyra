@@ -247,6 +247,7 @@ async function processConversation(
     return false;
   }
 
+  const processingStart = Date.now();
   console.log(
     `[ghl/poller] New inbound from ${conv.contactName || conv.phone}: "${latestInbound.body.substring(0, 80)}"`,
   );
@@ -312,12 +313,33 @@ async function processConversation(
     return false;
   }
 
-  console.log(`[ghl/poller] AI response (${aiResponse.length} chars), sending to ${contactName}`);
+  const processingTimeMs = Date.now() - processingStart;
+  console.log(`[ghl/poller] AI response (${aiResponse.length} chars, ${processingTimeMs}ms), sending to ${contactName}`);
 
   // ── Send reply back through GHL ─────────────────────────────────────
   await sendGHLMessage(client.id, token, conv.contactId, aiResponse, messageType);
 
-  console.log(`[ghl/poller] ✅ Reply sent to ${contactName} for "${client.name}"`);
+  // ── Log the interaction ─────────────────────────────────────────────
+  try {
+    const supabase = createServiceClientWithoutCookies();
+    await supabase.from('ghl_message_log').insert({
+      agency_client_id: client.id,
+      conversation_id: conv.id,
+      contact_id: conv.contactId,
+      contact_name: contactName,
+      contact_phone: conv.phone || contactInfo?.phone || null,
+      contact_email: contactInfo?.email || null,
+      inbound_message: latestInbound.body,
+      ai_response: aiResponse,
+      message_type: formatChannelName(messageType),
+      response_time_ms: processingTimeMs,
+    });
+  } catch (logErr) {
+    // Non-fatal — don't let logging failures stop the flow
+    console.warn('[ghl/poller] Failed to log message:', logErr);
+  }
+
+  console.log(`[ghl/poller] ✅ Reply sent to ${contactName} for "${client.name}" (${processingTimeMs}ms)`);
   return true;
 }
 

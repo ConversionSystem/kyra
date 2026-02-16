@@ -1,4 +1,4 @@
-import Stripe from 'stripe';
+import type Stripe from 'stripe';
 import { stripe, planFromPriceId } from './config';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 
@@ -135,35 +135,16 @@ export async function handleSubscriptionDeleted(
 
 /**
  * Handle `account.updated` (Connect) — update connect readiness on agency.
+ * Delegates to syncConnectAccountStatus in connect.ts for DRY logic.
  */
 export async function handleConnectAccountUpdated(
   account: Stripe.Account
 ): Promise<void> {
-  const supabase = createServiceClientWithoutCookies();
-
-  const { data: agency } = await supabase
-    .from('agencies')
-    .select('id, settings')
-    .eq('stripe_connect_account_id', account.id)
-    .single();
-
-  if (!agency) {
-    console.warn(`[stripe webhook] No agency found for connect account ${account.id}`);
-    return;
-  }
-
-  const agencyData = agency as { id: string; settings: Record<string, unknown> };
-
-  // Store connect status in agency settings
-  const updatedSettings = {
-    ...agencyData.settings,
-    stripe_connect_charges_enabled: account.charges_enabled ?? false,
-    stripe_connect_payouts_enabled: account.payouts_enabled ?? false,
-    stripe_connect_details_submitted: account.details_submitted ?? false,
-  };
-
-  await supabase
-    .from('agencies')
-    .update({ settings: updatedSettings, updated_at: new Date().toISOString() })
-    .eq('id', agencyData.id);
+  const { syncConnectAccountStatus } = await import('./connect');
+  await syncConnectAccountStatus({
+    id: account.id,
+    charges_enabled: account.charges_enabled,
+    payouts_enabled: account.payouts_enabled,
+    details_submitted: account.details_submitted,
+  });
 }

@@ -5,7 +5,7 @@
 // Each agency client gets its own isolated session via a unique sessionKey.
 // ============================================================================
 
-import { AgencyClient, AgencyTemplate } from './types';
+import type { AgencyClient, AgencyTemplate } from './types';
 
 /**
  * Get the OpenClaw session key for an agency client.
@@ -73,10 +73,17 @@ export function getSystemPromptForClient(
   template?: AgencyTemplate | null,
   ghlContext?: { messageType?: string; contactName?: string },
 ): string {
-  const lines: string[] = [
-    `You are an AI assistant for "${client.name}".`,
-    `Industry: ${client.industry || 'General'}`,
-  ];
+  const lines: string[] = [];
+
+  // Use system_prompt_prefix if available, otherwise fall back to generic intro
+  if (template?.system_prompt_prefix) {
+    lines.push(template.system_prompt_prefix);
+  } else {
+    lines.push(
+      `You are an AI assistant for "${client.name}".`,
+      `Industry: ${client.industry || 'General'}`,
+    );
+  }
 
   if (ghlContext) {
     if (ghlContext.messageType) {
