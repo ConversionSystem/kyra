@@ -136,3 +136,39 @@ export interface AgencyWithCounts extends Agency {
   member_count: number;
   client_count: number;
 }
+
+// ── Model Routing (Phase 6 — Feature F4) ──────────────────────────────────
+
+export type ModelTier = 'economy' | 'standard' | 'premium';
+
+export interface ModelRoutingConfig {
+  /** Default model tier for this client */
+  defaultTier: ModelTier;
+  /** Override: use premium for these message patterns */
+  premiumPatterns?: string[];
+  /** Override: force a specific model ID */
+  forceModel?: string;
+  /** Auto-routing enabled: simple→economy, complex→premium */
+  autoRoute: boolean;
+}
+
+export const MODEL_TIERS: Record<ModelTier, { model: string; label: string; costPer1kTokens: number; description: string }> = {
+  economy: {
+    model: 'claude-3-5-haiku-20241022',
+    label: 'Economy (Haiku)',
+    costPer1kTokens: 0.00125,
+    description: 'Fast, cheap. Great for FAQs, confirmations, simple replies.',
+  },
+  standard: {
+    model: 'claude-sonnet-4-20250514',
+    label: 'Standard (Sonnet)',
+    costPer1kTokens: 0.015,
+    description: 'Balanced. Best for most business conversations.',
+  },
+  premium: {
+    model: 'claude-opus-4-20250514',
+    label: 'Premium (Opus)',
+    costPer1kTokens: 0.075,
+    description: 'Most capable. For complex sales, negotiations, detailed analysis.',
+  },
+};
