@@ -76,13 +76,29 @@ export async function GET(request: NextRequest) {
   // or create a test record
   const supabase = createServiceClientWithoutCookies();
 
-  // Try to find an existing unconnected agency client
-  const { data: existingClient } = await supabase
-    .from('agency_clients')
-    .select('id, name')
-    .is('ghl_access_token', null)
-    .limit(1)
-    .single();
+  // Try to find agency client by location ID, or any unconnected client
+  const locationId = tokens.locationId;
+  let existingClient = null;
+  
+  if (locationId) {
+    const { data } = await supabase
+      .from('agency_clients')
+      .select('id, name')
+      .eq('ghl_location_id', locationId)
+      .limit(1)
+      .single();
+    existingClient = data;
+  }
+  
+  if (!existingClient) {
+    const { data } = await supabase
+      .from('agency_clients')
+      .select('id, name')
+      .is('ghl_access_token', null)
+      .limit(1)
+      .single();
+    existingClient = data;
+  }
 
   let savedTo = null;
 
