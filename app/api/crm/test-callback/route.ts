@@ -26,18 +26,30 @@ export async function GET(request: NextRequest) {
   const clientSecret = process.env.GHL_CLIENT_SECRET!;
   const redirectUri = process.env.GHL_REDIRECT_URI!;
 
+  // Debug: show what we're sending (redact secrets)
+  const debugInfo = {
+    client_id_length: clientId?.length,
+    client_id_preview: clientId ? `${clientId.substring(0, 10)}...${clientId.substring(clientId.length - 8)}` : 'MISSING',
+    client_secret_set: !!clientSecret,
+    redirect_uri: redirectUri,
+    code_length: code.length,
+    code_preview: `${code.substring(0, 10)}...`,
+  };
+
   let tokens;
   try {
+    const bodyParams = new URLSearchParams({
+      grant_type: 'authorization_code',
+      client_id: clientId,
+      client_secret: clientSecret,
+      code,
+      redirect_uri: redirectUri,
+    });
+
     const res = await fetch('https://services.leadconnectorhq.com/oauth/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        grant_type: 'authorization_code',
-        client_id: clientId,
-        client_secret: clientSecret,
-        code,
-        redirect_uri: redirectUri,
-      }),
+      body: bodyParams,
       signal: AbortSignal.timeout(15_000),
     });
 
@@ -47,6 +59,7 @@ export async function GET(request: NextRequest) {
         error: 'Token exchange failed',
         status: res.status,
         detail: text,
+        debug: debugInfo,
       }, { status: 500 });
     }
 
@@ -55,6 +68,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       error: 'Token exchange exception',
       detail: err.message,
+      debug: debugInfo,
     }, { status: 500 });
   }
 
