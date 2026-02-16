@@ -1,18 +1,21 @@
 # Kyra — Strategic Roadmap & Architecture
 
 **Date:** February 13, 2026  
-**Version:** 1.0  
-**Status:** Active
+**Last Updated:** February 16, 2026  
+**Version:** 2.0  
+**Status:** Active — Phase 2 COMPLETE (SMS AI Loop Live)
 
 ---
 
 ## 1. Vision
 
-**Kyra is the platform that turns OpenClaw into a deployable, managed AI workforce for agencies and their clients.**
+**Kyra transforms OpenClaw into a deployable, managed AI workforce for agencies.**
 
 We don't host OpenClaw. We transform it into something agencies can sell.
 
 Every competitor in the OpenClaw hosting space gives users a container and says "good luck." Kyra gives agencies a business — pre-integrated with the tools their clients already use, branded as their own, billable to their clients, managed from a single dashboard.
+
+The endgame: an agency signs up, picks an industry template, connects their client's GHL sub-account, and has a fully operational AI employee deployed in under 5 minutes. The AI reads the CRM, responds to customers via SMS, books appointments, moves pipeline deals — and the agency bills their client for it.
 
 ---
 
@@ -36,107 +39,84 @@ Small and mid-size businesses want AI that works, not AI they configure:
 
 ---
 
-## 3. Kyra's Moat
+## 3. Kyra's Moat (7 Layers)
 
-### What makes Kyra defensible — things competitors cannot easily replicate:
+What makes Kyra defensible — things competitors cannot easily replicate:
 
-**1. Intelligence Layer, Not Hosting**  
+### Layer 1: Intelligence Layer, Not Hosting
 OpenClaw hosting competitors (Agent37, SpinUpClaw, InstantClaw, etc.) give you a raw container. Kyra gives you a **pre-configured, industry-aware, CRM-connected AI employee.** The difference between handing someone Linux and handing them a MacBook.
 
-**2. Multi-Tenant Agency Architecture**  
+### Layer 2: Multi-Tenant Agency Architecture
 Every competitor is single-user. One account = one OpenClaw instance. Kyra is built from the ground up for agencies managing dozens or hundreds of client AIs from one dashboard. Adding multi-tenancy to a single-user hosting product is a full rebuild — we start with it.
 
-**3. Deep GHL Integration**  
+### Layer 3: Deep GHL Integration
 600,000+ GHL users. $497/mo agency plans with unlimited sub-accounts. Agencies live inside GHL. Kyra's AI doesn't just chat — it **reads contacts, sends SMS, moves pipeline stages, books appointments, triggers workflows, manages conversations** through GHL's API. A purpose-built OpenClaw skill that makes the AI a real employee inside the client's CRM. No other OpenClaw host has this.
 
-**4. White-Label Ownership**  
+### Layer 4: White-Label Ownership
 Agency brands Kyra as their own platform. Their clients see the agency's logo, domain, colors. The agency IS the AI provider in their client's eyes. This creates lock-in for the agency (they can't easily move their branded platform) and trust for their clients (they're dealing with their agency, not some unknown SaaS).
 
-**5. Revenue Engine for Agencies**  
+### Layer 5: Revenue Engine for Agencies
 Agencies don't just use Kyra — they **profit from it.** Stripe Connect lets agencies set their own pricing, bill their clients directly, and keep the margin. Kyra isn't a cost center. It's a new revenue line.
 
-**6. Template Marketplace (Network Effect)**  
+### Layer 6: Template Marketplace (Network Effect)
 Agencies build and share industry-specific AI configurations. More agencies → more templates → faster deployment → more agencies. This compounds. A new agency signs up, picks the "Dental Practice" template, connects GHL, and has a working AI employee for their client in minutes. No competitor has this flywheel.
 
-**7. OpenClaw Ecosystem Leverage**  
+### Layer 7: OpenClaw Ecosystem Leverage
 Every OpenClaw update — new skills, new channels, new tools, security patches — automatically benefits every Kyra agency and every one of their clients. We ride the open-source ecosystem instead of maintaining a fork. 51 skills, 35 extensions, weekly releases, growing community. Our competitors who build custom tooling have to maintain it all themselves.
 
 ---
 
-## 4. Architecture
+## 4. Full Architecture
 
 ### 4.1 System Overview
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    KYRA PLATFORM                         │
-│                                                          │
-│  ┌────────────────────────────────────────────────────┐  │
-│  │              VERCEL (Frontend)                      │  │
-│  │                                                     │  │
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────────────┐ │  │
-│  │  │ Auth     │  │ Billing  │  │ Agency Dashboard  │ │  │
-│  │  │(Supabase)│  │(Stripe + │  │ Client Mgmt      │ │  │
-│  │  │          │  │ Connect) │  │ Templates         │ │  │
-│  │  └──────────┘  └──────────┘  │ White-Label       │ │  │
-│  │                               │ Analytics         │ │  │
-│  │  ┌──────────┐  ┌──────────┐  └──────────────────┘ │  │
-│  │  │ Chat UI  │  │ Webhook  │                        │  │
-│  │  │ (Web)    │  │ Router   │                        │  │
-│  │  └────┬─────┘  └────┬─────┘                        │  │
-│  │       │              │                              │  │
-│  └───────┼──────────────┼──────────────────────────────┘  │
-│          │              │                                  │
-│          ▼              ▼                                  │
-│  ┌────────────────────────────────────────────────────┐  │
-│  │         CONTAINER LAYER (Cloudflare / Fly.io)      │  │
-│  │                                                     │  │
-│  │  ┌─────────────────────────────────────────────┐   │  │
-│  │  │    Per-Client OpenClaw Container             │   │  │
-│  │  │                                              │   │  │
-│  │  │  ┌────────────┐  ┌────────────────────────┐ │   │  │
-│  │  │  │ AI Engine  │  │ Skills                  │ │   │  │
-│  │  │  │ Claude     │  │ ├─ kyra-ghl (CRM)      │ │   │  │
-│  │  │  │ GPT        │  │ ├─ web-search           │ │   │  │
-│  │  │  │ Gemini     │  │ ├─ browser              │ │   │  │
-│  │  │  │ Ollama     │  │ ├─ email (himalaya)     │ │   │  │
-│  │  │  └────────────┘  │ ├─ calendar (gog)       │ │   │  │
-│  │  │                   │ ├─ coding-agent         │ │   │  │
-│  │  │  ┌────────────┐  │ └─ 45+ more from clawhub│ │   │  │
-│  │  │  │ Memory     │  └────────────────────────┘ │   │  │
-│  │  │  │ SOUL.md    │                              │   │  │
-│  │  │  │ MEMORY.md  │  ┌────────────────────────┐ │   │  │
-│  │  │  │ memory/    │  │ Channels                │ │   │  │
-│  │  │  └────────────┘  │ ├─ Telegram             │ │   │  │
-│  │  │                   │ ├─ WhatsApp             │ │   │  │
-│  │  │  ┌────────────┐  │ ├─ Discord              │ │   │  │
-│  │  │  │ Automation │  │ ├─ Slack                 │ │   │  │
-│  │  │  │ Cron       │  │ ├─ SMS (via GHL)        │ │   │  │
-│  │  │  │ Heartbeats │  │ └─ Web Chat             │ │   │  │
-│  │  │  │ Sub-agents │  └────────────────────────┘ │   │  │
-│  │  │  └────────────┘                              │   │  │
-│  │  └──────────────────────────────────────────────┘   │  │
-│  │                                                     │  │
-│  │  Container A ─── Agency 1, Client: "Smile Dental"  │  │
-│  │  Container B ─── Agency 1, Client: "HVAC Pro"      │  │
-│  │  Container C ─── Agency 2, Client: "Luxe Realty"   │  │
-│  │  Container D ─── Agency 2, Client: "FitZone Gym"   │  │
-│  │  Container E ─── Individual User (Kyra Free)       │  │
-│  │                                                     │  │
-│  └────────────────────────────────────────────────────┘  │
-│                                                          │
-│  ┌────────────────────────────────────────────────────┐  │
-│  │              EXTERNAL INTEGRATIONS                  │  │
-│  │                                                     │  │
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────────────┐ │  │
-│  │  │ GHL API  │  │ Stripe   │  │ AI Providers      │ │  │
-│  │  │ CRM      │  │ Connect  │  │ Anthropic         │ │  │
-│  │  │ SMS      │  │ Billing  │  │ OpenAI            │ │  │
-│  │  │ Pipeline │  │ Invoices │  │ Google            │ │  │
-│  │  │ Calendar │  │ Payouts  │  │ OpenRouter        │ │  │
-│  │  └──────────┘  └──────────┘  └──────────────────┘ │  │
-│  └────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                      KYRA PLATFORM                           │
+│                                                              │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │               VERCEL (Frontend + API)                 │   │
+│  │                                                       │   │
+│  │  ┌──────────┐  ┌──────────┐  ┌──────────────────┐   │   │
+│  │  │ Auth     │  │ Billing  │  │ Agency Dashboard  │   │   │
+│  │  │(Supabase)│  │(Stripe + │  │ Client Mgmt      │   │   │
+│  │  │          │  │ Connect) │  │ Templates         │   │   │
+│  │  └──────────┘  └──────────┘  │ White-Label       │   │   │
+│  │                               │ Analytics         │   │   │
+│  │  ┌──────────┐  ┌──────────┐  └──────────────────┘   │   │
+│  │  │ Chat UI  │  │ GHL Poll │ ← Vercel Cron (1/min)   │   │
+│  │  │ (Web)    │  │ Endpoint │                          │   │
+│  │  └────┬─────┘  └────┬─────┘                          │   │
+│  │       │              │                                │   │
+│  └───────┼──────────────┼────────────────────────────────┘   │
+│          │              │                                     │
+│          ▼              ▼                                     │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │           FLY.IO (AI Bridge — Frankfurt)              │   │
+│  │                                                       │   │
+│  │  ┌─────────────────────────────────────────────┐     │   │
+│  │  │    Direct Anthropic Bridge (chat-bridge.js)  │     │   │
+│  │  │                                              │     │   │
+│  │  │  • Claude Sonnet 4 (primary model)           │     │   │
+│  │  │  • Per-session context (client + contact)    │     │   │
+│  │  │  • SSE streaming responses                   │     │   │
+│  │  │  • System prompt injection from client config│     │   │
+│  │  │  • Auto-stop when idle, wake on request      │     │   │
+│  │  └─────────────────────────────────────────────┘     │   │
+│  └──────────────────────────────────────────────────────┘   │
+│                                                              │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │              EXTERNAL INTEGRATIONS                    │   │
+│  │                                                       │   │
+│  │  ┌──────────┐  ┌──────────┐  ┌──────────────────┐   │   │
+│  │  │ GHL API  │  │ Stripe   │  │ AI Providers      │   │   │
+│  │  │ CRM      │  │ Connect  │  │ Anthropic         │   │   │
+│  │  │ SMS      │  │ Billing  │  │ OpenAI            │   │   │
+│  │  │ Pipeline │  │ Invoices │  │ Google            │   │   │
+│  │  │ Calendar │  │ Payouts  │  │ OpenRouter        │   │   │
+│  │  └──────────┘  └──────────┘  └──────────────────┘   │   │
+│  └──────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ### 4.2 Ownership Boundaries
@@ -146,85 +126,81 @@ Every OpenClaw update — new skills, new channels, new tools, security patches 
 | **Auth & Identity** | Kyra (Supabase) | User signup, agency accounts, client sub-accounts, OAuth, SSO |
 | **Billing & Revenue** | Kyra (Stripe + Connect) | Agency subscriptions, client billing passthrough, usage metering, payouts |
 | **Agency Management** | Kyra (Vercel + Supabase) | Dashboard, client CRUD, templates, white-label, analytics |
-| **Webhook Routing** | Kyra (Vercel) | Inbound Telegram/WhatsApp/GHL webhooks → correct client container |
-| **Chat Proxy** | Kyra Worker (CF/Fly) | Message relay, SSE streaming, WebSocket proxy |
-| **Container Lifecycle** | Kyra Worker (CF/Fly) | Spin up, sleep, wake, R2 sync, config patching |
-| **ALL Intelligence** | OpenClaw (inside container) | AI responses, tool execution, memory, skills, cron, sub-agents, channels |
-| **CRM Integration** | OpenClaw + kyra-ghl skill | GHL API calls: contacts, conversations, pipeline, appointments |
+| **GHL Message Polling** | Kyra (Vercel Cron) | Every-minute poll of GHL Conversations API for new inbound messages |
+| **Chat Proxy** | Kyra (Fly.io Bridge) | Message relay, SSE streaming, direct Anthropic API calls |
+| **AI Intelligence** | Fly.io Bridge (Claude Sonnet) | AI responses, context management, system prompt injection |
+| **CRM Integration** | Kyra (Vercel) + GHL API | OAuth tokens, conversation search, send messages, contact management |
 
-### 4.3 Data Flow: Agency Client Chat
+### 4.3 Data Flow: SMS AI Reply (LIVE — Feb 16, 2026)
 
 ```
-1. Client's customer sends SMS "I need an appointment"
+1. Customer sends SMS: "I need an appointment"
           │
           ▼
-2. GHL receives SMS → triggers webhook
+2. GHL receives SMS → stores in Conversations
+   (lastMessageDirection: "inbound", unreadCount: +1)
           │
           ▼
-3. Kyra webhook router (Vercel)
-   ├── Identifies: GHL location_id → agency_client_id → container
-   ├── Checks: agency billing status (active?)
-   ├── Checks: client usage within budget
+3. Vercel Cron fires every 60 seconds
+   → GET /api/ghl/poll (authenticated via CRON_SECRET)
           │
           ▼
-4. Kyra Worker (CF/Fly)
-   ├── Wakes container if sleeping
-   ├── Ensures OpenClaw gateway running
-   ├── Forwards message to container
+4. Poller (lib/ghl/poller.ts):
+   ├── Gets all agency_clients with GHL tokens from Supabase
+   ├── For each client: GET /conversations/search?locationId=X
+   ├── Filters: lastMessageDirection === "inbound" && unreadCount > 0
+   ├── For each matching conversation:
+   │   ├── GET /conversations/{id}/messages?limit=5
+   │   ├── Finds latest inbound message
+   │   ├── Checks if outbound reply already exists after it (dedup)
+   │   └── If no reply yet → process message
           │
           ▼
-5. OpenClaw Container (per-client)
-   ├── Receives message with GHL context
-   ├── memory_search: checks for past interactions with this customer
-   ├── kyra-ghl skill: reads contact record, pipeline stage, calendar
-   ├── AI generates response: "Hi! I can help with that. Dr. Smith has
-   │   openings Thursday at 2pm or Friday at 10am. Which works?"
-   ├── kyra-ghl skill: books appointment in GHL calendar
-   ├── Sends response back through GHL conversation API
+5. Fly.io Bridge (kyra-gateway.fly.dev):
+   ├── Receives: { message, sessionKey, systemContext }
+   ├── sessionKey = "agent:client:{clientId}:contact:{contactId}"
+   ├── Calls Anthropic Messages API (Claude Sonnet)
+   ├── Streams SSE response back
           │
           ▼
-6. Customer receives SMS reply
-   (Total time: 3-8 seconds)
+6. Poller sends reply:
+   ├── POST /conversations/messages (GHL Send Message API)
+   ├── type: "SMS", contactId, message: AI response
+   ├── Auto-refreshes OAuth token on 401
+          │
+          ▼
+7. Customer receives SMS reply
+   (Total time: <60 seconds from send, typically 5-15s of AI processing)
 ```
 
 ### 4.4 Data Flow: Agency Creates New Client
 
 ```
-1. Agency logs into Kyra dashboard
+1. Agency logs into Kyra dashboard (kyra.conversionsystem.com)
           │
           ▼
-2. Clicks "Add Client" → enters business name, industry
+2. Clicks "Add Client" → enters business name, industry, picks template
           │
           ▼
 3. Connects GHL sub-account (OAuth flow)
-   ├── Agency authorizes Kyra to access sub-account
-   ├── Kyra stores encrypted access + refresh tokens
-   ├── Kyra reads: business info, contacts, pipelines, calendars
+   ├── Clicks "Connect GHL" → redirected to GHL authorization page
+   ├── Chooses GHL location (sub-account)
+   ├── Grants access → redirected back to /api/crm/callback
+   ├── Kyra exchanges code for tokens → stores in agency_clients table
           │
           ▼
-4. Kyra auto-generates configuration
-   ├── SOUL.md: personality, business context, capabilities
-   ├── USER.md: business details pulled from GHL
-   ├── Skills: kyra-ghl pre-installed + agency's template skills
-   ├── Channels: GHL conversations (SMS/email) + optional Telegram/WhatsApp
-   ├── Cron: morning brief, end-of-day summary (from template)
+4. Client is now active:
+   ├── GHL location_id linked to agency_client
+   ├── Poller automatically picks up new inbound messages
+   ├── AI responds using client-specific system prompt
+   ├── No additional configuration required for basic SMS AI
           │
           ▼
-5. Writes config to R2 storage under client's namespace
-          │
-          ▼
-6. First message to client's container triggers:
-   ├── Container boots (~10-15s cold start)
-   ├── OpenClaw reads workspace files from R2
-   ├── Gateway starts with client-specific config
-   ├── kyra-ghl skill authenticates to client's GHL
-   ├── AI is live and ready
-          │
-          ▼
-7. Agency tests chat in dashboard → confirms AI is working
-          │
-          ▼
-8. Agency activates client → billing starts
+5. Agency customizes (optional):
+   ├── Edit AI personality (SOUL.md editor in dashboard)
+   ├── Configure template-specific behaviors
+   ├── Set business hours, response preferences
+   ├── Test chat in dashboard before going live
 ```
 
 ### 4.5 White-Label Architecture
@@ -257,24 +233,22 @@ Agency owns the relationship. Agency owns the brand.
 
 This is the custom OpenClaw skill that makes Kyra's AI an actual employee inside GHL.
 
-### 5.1 Capabilities
+### 5.1 Capabilities (10 GHL API Groups)
 
-| Action | GHL API Endpoint | What the AI Can Do |
-|--------|-----------------|-------------------|
-| **Read Contacts** | GET /contacts | Search by name, email, phone; see tags, custom fields, notes |
-| **Update Contacts** | PUT /contacts/{id} | Add tags, update fields, add notes after conversations |
-| **Read Conversations** | GET /conversations | See full message history with a customer |
-| **Send Messages** | POST /conversations/messages | Send SMS, email, WhatsApp through GHL |
-| **Read Pipeline** | GET /opportunities | See deal stages, values, assigned users |
-| **Move Pipeline** | PUT /opportunities/{id} | Move deals between stages based on conversation outcome |
-| **Read Calendar** | GET /calendars/events | Check availability, see upcoming appointments |
-| **Book Appointments** | POST /calendars/events | Schedule appointments directly |
-| **Read Custom Fields** | GET /custom-fields | Understand business-specific data |
-| **Trigger Workflows** | POST /contacts/{id}/workflow | Kick off GHL automation sequences |
+| # | Action | GHL API Endpoint | What the AI Can Do |
+|---|--------|-----------------|-------------------|
+| 1 | **Read Contacts** | GET /contacts | Search by name, email, phone; see tags, custom fields, notes |
+| 2 | **Update Contacts** | PUT /contacts/{id} | Add tags, update fields, add notes after conversations |
+| 3 | **Read Conversations** | GET /conversations | See full message history with a customer |
+| 4 | **Send Messages** | POST /conversations/messages | Send SMS, email, WhatsApp through GHL |
+| 5 | **Read Pipeline** | GET /opportunities | See deal stages, values, assigned users |
+| 6 | **Move Pipeline** | PUT /opportunities/{id} | Move deals between stages based on conversation outcome |
+| 7 | **Read Calendar** | GET /calendars/events | Check availability, see upcoming appointments |
+| 8 | **Book Appointments** | POST /calendars/events | Schedule appointments directly |
+| 9 | **Read Custom Fields** | GET /custom-fields | Understand business-specific data |
+| 10 | **Trigger Workflows** | POST /contacts/{id}/workflow | Kick off GHL automation sequences |
 
-### 5.2 How It Works Inside OpenClaw
-
-The skill is a standard OpenClaw skill with a `SKILL.md` that tells the AI:
+### 5.2 SKILL.md Format (How It Works Inside OpenClaw)
 
 ```markdown
 # kyra-ghl — GoHighLevel CRM Integration
@@ -303,6 +277,20 @@ send messages, manage the pipeline, and book appointments.
 ```
 
 The skill includes a CLI binary (`ghl`) that wraps the GHL REST API, using the per-client OAuth token stored in the container's env.
+
+### 5.3 Current Implementation Status
+
+**Phase 1 (LIVE):** Direct API integration via `lib/ghl/api.ts` on Vercel
+- ✅ OAuth token management (store, refresh on 401)
+- ✅ Conversation search (polling for inbound messages)
+- ✅ Send messages (SMS, with type normalization)
+- ✅ Contact lookup by conversation
+
+**Phase 2 (NEXT):** Full `kyra-ghl` OpenClaw skill
+- Standalone CLI tool installable in containers
+- Full 10-capability coverage
+- SKILL.md for AI auto-discovery
+- Per-client OAuth token injection
 
 ---
 
@@ -341,86 +329,95 @@ Individuals who outgrow Pro and want to offer AI to clients → natural upgrade 
 
 ---
 
-## 7. Execution Phases
+## 7. Execution Phases (5 Phases)
 
-### Phase 0: Foundation (Week 1)
-**Goal:** Real OpenClaw containers serving real responses.
+### Phase 0: Foundation ✅ COMPLETE
+**Goal:** Real AI containers serving real responses.
 
-| Task | Priority | Effort |
-|------|----------|--------|
-| Wire container pipeline (Vercel env vars → worker → container) | P0 | 4-6h |
-| Verify SSE streaming end-to-end | P0 | 2h |
-| Test container cold start, sleep/wake cycle | P0 | 2h |
-| Per-user config: model preference + SOUL.md from onboarding | P1 | 4h |
-| "Waking up your AI" loading state for cold starts | P1 | 2h |
+| Task | Status | Notes |
+|------|--------|-------|
+| Wire container pipeline (Vercel → Fly.io bridge → Claude) | ✅ Done | Direct Anthropic bridge, not OpenClaw gateway |
+| Verify SSE streaming end-to-end | ✅ Done | chat-bridge.js on Fly.io, port 18789 |
+| Test container cold start, sleep/wake cycle | ✅ Done | Fly auto-stop, ~2s wake time |
+| Per-user config: model preference + SOUL.md from onboarding | ✅ Done | System prompt builder in container.ts |
+| "Waking up your AI" loading state for cold starts | ✅ Done | Dashboard chat works |
 
-**Exit criteria:** A message sent in Kyra's web chat is processed by a real OpenClaw container with full tool access.
+**Exit criteria met:** ✅ Messages in Kyra's web chat processed by Fly.io bridge with Claude Sonnet.
+
+**Key decision:** Replaced OpenClaw gateway with direct Anthropic bridge. Gateway never bound to port inside Fly.io container. Bridge is 69MB vs 926MB, instant startup.
 
 ---
 
-### Phase 1: Agency Core (Week 2)
+### Phase 1: Agency Core ✅ COMPLETE
 **Goal:** Agencies can sign up and manage client AIs.
 
-| Task | Priority | Effort |
-|------|----------|--------|
-| Supabase schema: `agencies`, `agency_clients`, `agency_templates`, `agency_billing` | P0 | 3h |
-| Agency signup flow (separate from individual) | P0 | 4h |
-| Agency dashboard: overview, client list, create client | P0 | 8h |
-| Client detail page: test chat, settings, usage stats | P0 | 6h |
-| Per-client container routing (agency_client_id → container namespace) | P0 | 4h |
-| Client SOUL.md / USER.md editor in dashboard | P1 | 3h |
-| Client status monitoring (running/sleeping/error) | P1 | 3h |
+| Task | Status | Notes |
+|------|--------|-------|
+| Supabase schema: `agencies`, `agency_clients`, `agency_templates` | ✅ Done | Full schema with RLS |
+| Agency signup flow | ✅ Done | Separate from individual |
+| Agency dashboard: overview, client list, create client | ✅ Done | `/agency`, `/agency/clients` |
+| Client detail page: test chat, settings, usage stats | ✅ Done | 4-tab detail view |
+| Per-client container routing | ✅ Done | `agent:client:{id}:contact:{contactId}` session keys |
+| Client SOUL.md editor in dashboard | ✅ Done | AI Personality tab |
+| Template picker (5 built-in templates) | ✅ Done | Seeded in Supabase |
 
-**Exit criteria:** Agency creates account → adds 3 clients → each client has an isolated OpenClaw AI → agency monitors all three from one dashboard.
+**Exit criteria met:** ✅ Agency creates account → adds clients → each has isolated AI → managed from one dashboard.
 
 ---
 
-### Phase 2: GHL Integration (Week 3)
+### Phase 2: GHL Integration ✅ COMPLETE (Feb 16, 2026)
 **Goal:** AI reads and writes the client's GHL CRM.
 
-| Task | Priority | Effort |
-|------|----------|--------|
-| Register Kyra on GHL developer marketplace | P0 | 2h |
-| Build GHL OAuth flow: connect sub-account → store tokens | P0 | 6h |
-| Build `kyra-ghl` OpenClaw skill (CLI wrapper for GHL API) | P0 | 12h |
-| Auto-generate SOUL.md from GHL business data | P1 | 4h |
-| GHL webhook receiver: inbound conversations → route to container | P0 | 6h |
-| Test full loop: customer SMS → AI reads CRM → AI responds via GHL | P0 | 4h |
-| Token refresh handling (GHL tokens expire) | P1 | 2h |
+| Task | Status | Notes |
+|------|--------|-------|
+| Register Kyra on GHL developer marketplace | ✅ Done | Draft mode, free pricing |
+| Build GHL OAuth flow: connect sub-account → store tokens | ✅ Done | `/api/crm/callback`, full token exchange |
+| GHL inbound message → AI response → GHL reply | ✅ Done | **Polling approach** (not webhooks) |
+| Token refresh handling | ✅ Done | Auto-refresh on 401 in `lib/ghl/api.ts` |
+| Test full loop: customer SMS → AI → SMS reply | ✅ Done | Working as of Feb 16, 19:00 CET |
 
-**Exit criteria:** Customer sends SMS to a GHL number → Kyra's AI reads their contact record, checks calendar, and replies with appointment options — all through GHL.
+**⚠️ Critical pivot:** GHL marketplace webhooks DO NOT fire for draft apps. Replaced webhook approach with **polling** — Vercel Cron hits `/api/ghl/poll` every 60 seconds, searches GHL Conversations API for unread inbound messages, generates AI response via Fly.io bridge, sends reply via GHL Send Message API. Self-deduplicating.
+
+**Exit criteria met:** ✅ Customer sends SMS to GHL number → Kyra AI replies via SMS within 60 seconds.
+
+**Remaining for Phase 2 hardening:**
+- [ ] Build full `kyra-ghl` OpenClaw skill (CLI with 10 capability groups)
+- [ ] AI reads contact record before responding (context enrichment)
+- [ ] Pipeline stage updates based on conversation outcomes
+- [ ] Appointment booking through GHL Calendar API
+- [ ] Auto-generate SOUL.md from GHL business data
 
 ---
 
-### Phase 3: Billing & White-Label (Week 4)
+### Phase 3: Billing & White-Label (Week 4) — NOT STARTED
 **Goal:** Agencies can charge their clients and brand the platform.
 
-| Task | Priority | Effort |
-|------|----------|--------|
-| Stripe Connect Express onboarding for agencies | P0 | 6h |
-| Agency sets per-client pricing in dashboard | P0 | 4h |
-| Automated client invoicing via Stripe Connect | P0 | 6h |
-| Application fee (Kyra's cut per transaction) | P0 | 2h |
-| Revenue dashboard: MRR, client payments, payout schedule | P1 | 6h |
-| White-label: custom subdomain (CNAME + Vercel domains API) | P1 | 4h |
-| White-label: logo, colors, name applied to chat UI + login | P1 | 6h |
-| White-label: email templates with agency branding | P2 | 3h |
+| Task | Priority | Effort | Status |
+|------|----------|--------|--------|
+| Stripe Connect Express onboarding for agencies | P0 | 6h | ⬜ |
+| Agency sets per-client pricing in dashboard | P0 | 4h | ⬜ |
+| Automated client invoicing via Stripe Connect | P0 | 6h | ⬜ |
+| Application fee (Kyra's cut per transaction) | P0 | 2h | ⬜ |
+| Revenue dashboard: MRR, client payments, payout schedule | P1 | 6h | ⬜ |
+| White-label: custom subdomain (CNAME + Vercel domains API) | P1 | 4h | ⬜ |
+| White-label: logo, colors, name applied to chat UI + login | P1 | 6h | ⬜ |
+| White-label: email templates with agency branding | P2 | 3h | ⬜ |
 
 **Exit criteria:** Agency charges client $297/mo through Kyra → Kyra takes 10% → agency receives payout. Agency Pro users have branded domain + chat UI.
 
 ---
 
-### Phase 4: Templates & Marketplace (Week 5-6)
+### Phase 4: Templates & Marketplace (Week 5-6) — NOT STARTED
 **Goal:** One-click industry deployments + network effects.
 
-| Task | Priority | Effort |
-|------|----------|--------|
-| Template data model: SOUL.md + skills + cron + GHL workflows | P0 | 4h |
-| 5 built-in industry templates (see below) | P0 | 10h |
-| Template picker in "Add Client" flow | P0 | 4h |
-| Agency creates template from working client config | P1 | 6h |
-| Template marketplace: browse, preview, install | P1 | 8h |
-| Paid templates: pricing, revenue split (70/30) | P2 | 6h |
+| Task | Priority | Effort | Status |
+|------|----------|--------|--------|
+| Template data model: SOUL.md + skills + cron + system prompts | P0 | 4h | ⬜ |
+| 5 built-in industry templates (see below) | P0 | 10h | ⬜ |
+| Template picker in "Add Client" flow (enhanced) | P0 | 4h | ⬜ |
+| Agency creates template from working client config | P1 | 6h | ⬜ |
+| Template marketplace: browse, preview, install | P1 | 8h | ⬜ |
+| Paid templates: pricing, revenue split (70/30) | P2 | 6h | ⬜ |
 
 **Built-in templates:**
 
@@ -436,20 +433,21 @@ Individuals who outgrow Pro and want to offer AI to clients → natural upgrade 
 
 ---
 
-### Phase 5: Distribution & Scale (Week 7+)
+### Phase 5: Distribution & Scale (Week 7+) — NOT STARTED
 **Goal:** Growth engine + platform maturity.
 
-| Task | Priority | Effort |
-|------|----------|--------|
-| Submit Kyra to GHL Marketplace for listing approval | P0 | 1 week |
-| GHL Marketplace landing page + onboarding flow | P0 | 4h |
-| Container economics: evaluate CF Containers vs Fly.io at scale | P1 | 1 week |
-| BYOK: agencies provide their own AI API keys | P1 | 6h |
-| Usage metering: actual token consumption → credits | P1 | 8h |
-| Voice AI: OpenClaw + Twilio/Telnyx plugin for phone calls | P2 | 2 weeks |
-| Multi-agent per client (receptionist + sales + support roles) | P2 | 1 week |
-| Analytics dashboard: conversations, resolutions, appointments booked | P2 | 1 week |
-| API for agencies to programmatically manage clients | P2 | 1 week |
+| Task | Priority | Effort | Status |
+|------|----------|--------|--------|
+| Submit Kyra to GHL Marketplace for listing approval | P0 | 1 week | ⬜ |
+| GHL Marketplace landing page + onboarding flow | P0 | 4h | ⬜ |
+| Record demo video (SMS AI loop) | P0 | 2h | ⬜ |
+| Disable GHL Conversation AI on connected sub-accounts | P1 | 2h | ⬜ |
+| BYOK: agencies provide their own AI API keys | P1 | 6h | ⬜ |
+| Usage metering: actual token consumption → credits | P1 | 8h | ⬜ |
+| Voice AI: phone call handling via Twilio/Telnyx | P2 | 2 weeks | ⬜ |
+| Multi-agent per client (receptionist + sales + support) | P2 | 1 week | ⬜ |
+| Analytics dashboard: conversations, resolutions, bookings | P2 | 1 week | ⬜ |
+| API for agencies to programmatically manage clients | P2 | 1 week | ⬜ |
 
 **Exit criteria:** Kyra is discoverable inside GHL Marketplace. Agencies find it → install → deploy AI for clients.
 
@@ -457,36 +455,37 @@ Individuals who outgrow Pro and want to offer AI to clients → natural upgrade 
 
 ## 8. Revenue Model
 
-### 8.1 Revenue Streams
+### 8.1 Revenue Streams (6 Streams)
 
-| Stream | Source | Margin |
-|--------|--------|--------|
-| **Agency Subscriptions** | $99-499/mo base plans | High (covers platform costs) |
-| **Per-Client Fees** | $19-29/mo per client above included | High (container costs ~$2-5/client) |
-| **Stripe Connect Application Fees** | 10% of agency→client billing | Pure margin |
-| **AI Credit Top-Ups** | Agencies buy additional credits | ~40% margin (after AI API costs) |
-| **Template Marketplace** | 30% cut of paid template sales | Pure margin |
-| **BYOK Markup** | Agencies on BYOK still pay platform fee | High (no AI costs for us) |
+| # | Stream | Source | Margin |
+|---|--------|--------|--------|
+| 1 | **Agency Subscriptions** | $99-499/mo base plans | High (covers platform costs) |
+| 2 | **Per-Client Fees** | $19-29/mo per client above included | High (AI costs ~$2-5/client) |
+| 3 | **Stripe Connect Application Fees** | 10% of agency→client billing | Pure margin |
+| 4 | **AI Credit Top-Ups** | Agencies buy additional credits | ~40% margin (after AI API costs) |
+| 5 | **Template Marketplace** | 30% cut of paid template sales | Pure margin |
+| 6 | **BYOK Markup** | Agencies on BYOK still pay platform fee | High (no AI costs for us) |
 
-### 8.2 Unit Economics Per Agency
+### 8.2 Unit Economics Per Agency Tier
 
 | Component | Cost | Revenue |
 |-----------|------|---------|
-| Agency Starter (5 clients) | | $99/mo |
-| 5 containers (sleeping most of time) | ~$10-25/mo | |
-| AI API usage (shared pool) | ~$20-40/mo | |
-| **Net per Starter agency** | **~$35-65/mo** | **$99/mo → $34-64 margin** |
+| **Agency Starter (5 clients)** | | **$99/mo** |
+| Fly.io bridge usage (shared, auto-stop) | ~$5-15/mo | |
+| AI API usage (Claude Sonnet, shared pool) | ~$20-40/mo | |
+| Vercel/Supabase (amortized) | ~$5/mo | |
+| **Net per Starter agency** | **~$30-60/mo** | **$99/mo → $39-69 margin** |
 | | | |
-| Agency Pro (15 clients + 10 extra) | | $249 + (10 × $25) = $499/mo |
-| 25 containers | ~$50-125/mo | |
-| AI API usage | ~$60-120/mo | |
-| Stripe Connect 10% on $7,500 client billing | | ~$750/mo |
-| **Net per Pro agency** | **~$110-245/mo** | **$1,249/mo → $1,000+ margin** |
+| **Agency Pro (15 clients + 10 extra)** | | **$249 + (10 × $25) = $499/mo** |
+| AI API usage (higher volume) | ~$60-120/mo | |
+| Infrastructure (amortized) | ~$20/mo | |
+| Stripe Connect 10% on ~$7,500 client billing | | **~$750/mo** |
+| **Net per Pro agency** | **~$80-140/mo** | **$1,249/mo → $1,100+ margin** |
 
 ### 8.3 Path to $50K MRR
 
-| Milestone | Agencies | Avg Clients | Container Count | MRR |
-|-----------|----------|-------------|-----------------|-----|
+| Milestone | Agencies | Avg Clients/Agency | Total Clients | MRR |
+|-----------|----------|-------------------|---------------|-----|
 | Month 1 | 5 | 3 | 15 | ~$1,000 |
 | Month 3 | 15 | 6 | 90 | ~$5,000 |
 | Month 6 | 40 | 10 | 400 | ~$18,000 |
@@ -505,38 +504,39 @@ Primary growth lever: **GHL Marketplace listing** (600K+ users see it).
 |--|----------------------------------------|----------|
 | **Customer** | Individual user | Agency (managing 5-100+ clients) |
 | **Product** | Raw OpenClaw container | Pre-configured AI employee platform |
-| **GHL Integration** | None | Deep (read/write CRM, pipeline, conversations) |
+| **GHL Integration** | None | Deep (read/write CRM, conversations, pipeline) |
 | **Multi-tenancy** | Single user | Agency → clients hierarchy |
 | **White-label** | No (their branding) | Agency's brand, domain, colors |
 | **Billing** | User pays host | Agency bills clients, keeps margin |
 | **Templates** | None | Industry-specific, marketplace |
-| **Price per user** | $3.99-49/mo | $19-29/client (but agency pays, not end user) |
-| **Revenue per customer** | $3.99-49/mo | $99-499/mo + per-client fees |
+| **Price per user** | $3.99-49/mo | $19-29/client (agency pays, not end user) |
+| **Revenue per customer** | $3.99-49/mo | $99-499/mo + per-client fees + Stripe Connect |
 
-### 9.2 vs GHL Built-in AI
+### 9.2 vs GHL Built-in AI (Conversation AI)
 
-| | GHL AI Employee | **Kyra** |
-|--|----------------|----------|
-| **Intelligence** | Rule-based workflows, limited autonomy | Full OpenClaw: autonomous, multi-step, tool-using |
-| **Customization** | Prompt engineering in GHL UI | Full workspace: SOUL.md, MEMORY.md, custom skills |
-| **Memory** | None (stateless per conversation) | Persistent: remembers across all interactions |
-| **Skills** | Ask AI + Agent Studio (limited) | 51+ skills: web search, browser, files, code, email... |
-| **Proactivity** | Manual workflow triggers | Heartbeats, cron, sub-agents — AI initiates actions |
-| **Channels** | GHL native (SMS, email, web chat) | All of the above + Telegram, WhatsApp, Discord, Slack, Signal |
-| **Sub-agents** | Not available | sessions_spawn — parallel workers for complex tasks |
-| **Pricing** | Per-usage (confusing) | Predictable per-client fee |
+| | GHL Conversation AI | **Kyra** |
+|--|---------------------|----------|
+| **Intelligence** | Rule-based, workflow-dependent | Full Claude Sonnet: autonomous, multi-step reasoning |
+| **Customization** | Prompt templates in GHL UI | Full workspace: SOUL.md, MEMORY.md, custom prompts |
+| **Memory** | None (stateless per conversation) | Persistent: per-contact session keys, remembers context |
+| **Skills** | Limited to GHL native tools | 51+ OpenClaw skills: web search, browser, files, code, email |
+| **Proactivity** | Only responds when triggered | Can initiate follow-ups, check CRM, run background tasks |
+| **Channels** | GHL native (SMS, email, web chat) | All GHL channels + Telegram, WhatsApp, Discord, Slack |
+| **Sub-agents** | Not available | Parallel workers for complex multi-step tasks |
+| **Pricing** | Per-usage (confusing for agencies) | Predictable per-client fee (agencies can markup) |
 
 ### 9.3 vs White-Label AI Platforms (Stammer.ai, Callin.io, etc.)
 
 | | Stammer.ai / Callin.io / AgentiveAIQ | **Kyra** |
 |--|--------------------------------------|----------|
-| **Engine** | Proprietary chatbot builder | OpenClaw (open-source, 51+ skills, community-driven) |
-| **Capabilities** | Chat + basic API integrations | Full AI employee: files, browser, code, memory, cron, sub-agents |
-| **GHL Integration** | Basic or none | Deep native integration (custom skill) |
-| **Autonomy** | Responds to messages | Proactively checks CRM, follows up, manages pipeline |
+| **Engine** | Proprietary chatbot builder | OpenClaw (open-source, community-driven) |
+| **Capabilities** | Chat + basic API integrations | Full AI employee: multi-step, tool-using, memory |
+| **GHL Integration** | Basic or none | Deep native (OAuth, conversations, pipeline, calendar) |
+| **Autonomy** | Responds to messages only | Proactively manages CRM, follows up, books appointments |
 | **Open-source** | No (vendor lock-in) | Yes (agencies can self-host if they outgrow Kyra) |
-| **Skill ecosystem** | Closed | 51+ skills + clawhub.com marketplace |
-| **Memory** | Session-based | Persistent across days/weeks/months |
+| **Skill ecosystem** | Closed, limited | 51+ skills + clawhub.com marketplace |
+| **Memory** | Session-based, resets | Persistent across days/weeks/months |
+| **Cost structure** | Often per-message or per-minute | Predictable monthly per-client |
 
 ---
 
@@ -544,22 +544,24 @@ Primary growth lever: **GHL Marketplace listing** (600K+ users see it).
 
 ### 10.1 Launch Sequence
 
-**Week 1-2:** Build MVP (Phase 0 + 1)
-- Container pipeline live
+**Week 1-2:** ✅ DONE — MVP built
+- Container pipeline live (Fly.io bridge)
 - Agency dashboard functional
-- 3 test agencies (find in GHL communities)
+- GHL OAuth + SMS AI loop working
 
-**Week 3:** GHL integration live (Phase 2)
-- Demo video: "Deploy an AI employee for your GHL client in 60 seconds"
+**Week 3:** GHL Demo & First Agencies
+- Record demo video: "Deploy an AI employee for your GHL client in 60 seconds"
 - Post in GHL Facebook groups, Reddit r/gohighlevel, GHL community
 - Direct outreach to 20 GHL agencies
+- Show the live SMS loop in action
 
-**Week 4:** Billing + white-label (Phase 3)
+**Week 4:** Billing + White-Label
 - First paying agencies
 - Case study from beta users
+- Stripe Connect for agency billing
 
-**Week 5-6:** Templates + marketplace submission (Phase 4 + 5)
-- Submit to GHL Marketplace
+**Week 5-6:** Templates + Marketplace Submission
+- Submit to GHL Marketplace (with demo video)
 - Launch 5 industry templates
 - Content: "Why GHL's Built-in AI Isn't Enough" blog series
 
@@ -581,29 +583,33 @@ Primary growth lever: **GHL Marketplace listing** (600K+ users see it).
 
 ---
 
-## 11. Technical Decisions & Open Questions
+## 11. Technical Decisions
 
-### Decided
-- **Frontend:** Vercel (Next.js) — keeps working
-- **Database:** Supabase (PostgreSQL) — extends with agency tables
-- **Billing:** Stripe + Stripe Connect — already integrated
-- **AI Engine:** OpenClaw inside containers — full capability set
-- **GHL Integration:** Custom OpenClaw skill (`kyra-ghl`)
+### Decided ✅
 
-### To Evaluate
-- **Container hosting:** Cloudflare Containers vs Fly.io
-  - CF: Already built, Durable Objects for state, but per-10ms billing + 5 instance limit
-  - Fly: Official OpenClaw support, persistent volumes, auto-stop machines, potentially cheaper at scale
-  - **Decision needed by end of Phase 0 after real cost data**
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| **Frontend** | Vercel (Next.js 15) | Already built, great DX, serverless functions |
+| **Database** | Supabase (PostgreSQL) | RLS, real-time, storage, auth — all in one |
+| **Billing** | Stripe + Stripe Connect | Already integrated, proven for marketplaces |
+| **AI Bridge** | Fly.io (Frankfurt) | Direct Anthropic bridge, auto-stop, 2s wake |
+| **AI Model** | Claude Sonnet 4 | Best quality/cost ratio for business conversations |
+| **GHL Auth** | OAuth 2.0 (location-level) | Standard, secure, per-sub-account tokens |
+| **Message Delivery** | Polling (not webhooks) | GHL marketplace webhooks don't fire for draft apps |
+| **Session Management** | Per client+contact keys | `agent:client:{id}:contact:{contactId}` |
+| **Cron** | Vercel Cron (1/min) | Simple, integrated, no external dependencies |
+| **Message Type Mapping** | normalizeMessageType() | GHL uses `TYPE_SMS` internally but `SMS` in send API |
 
-- **AI API keys:** Shared pool vs BYOK
-  - Phase 0-2: Shared (Kyra's keys, simpler)
-  - Phase 3+: Add BYOK option for Pro/Scale agencies
-  
-- **WebSocket vs HTTP proxy**
-  - HTTP SSE works for basic chat
-  - WebSocket needed for full OpenClaw experience (heartbeats, real-time events)
-  - **Phase 0: HTTP. Phase 2+: WebSocket upgrade**
+### Open Questions
+
+| Question | Options | Decision Timeline |
+|----------|---------|-------------------|
+| **Container hosting at scale** | Fly.io (current) vs Cloudflare Containers | By 50+ clients |
+| **BYOK implementation** | Env var injection vs API key proxy | Phase 3 |
+| **WebSocket vs HTTP** | HTTP SSE (current) vs full WebSocket | Phase 4 |
+| **Per-client containers vs shared bridge** | Current: shared bridge. Future: per-client OpenClaw? | Phase 5 |
+| **Polling frequency** | 1 min (current) vs 30s vs 15s | After marketplace approval |
+| **Multi-model support** | Claude only (current) vs GPT-4 / Gemini options | Phase 3 (BYOK) |
 
 ---
 
@@ -612,27 +618,68 @@ Primary growth lever: **GHL Marketplace listing** (600K+ users see it).
 | Metric | Month 1 | Month 3 | Month 6 | Month 12 |
 |--------|---------|---------|---------|----------|
 | Agencies signed up | 5 | 15 | 40 | 100 |
-| Active client containers | 15 | 90 | 400 | 1,500 |
+| Active client connections | 15 | 90 | 400 | 1,500 |
 | MRR | $1,000 | $5,000 | $18,000 | $55,000 |
 | GHL connections | 10 | 60 | 300 | 1,200 |
-| Container uptime | 95% | 99% | 99.5% | 99.9% |
-| Avg response time | <10s | <5s | <3s | <3s |
+| Avg SMS response time | <60s | <30s | <15s | <10s |
 | Agency churn (monthly) | — | <15% | <10% | <5% |
+| AI accuracy (no hallucination) | 90% | 95% | 97% | 99% |
 | Templates in marketplace | 5 | 10 | 25 | 50+ |
+| Messages processed/day | 50 | 500 | 5,000 | 50,000 |
 
 ---
 
 ## 13. Risk Register
 
-| Risk | Likelihood | Impact | Mitigation |
-|------|-----------|--------|------------|
-| CF Container costs higher than projected | Medium | High | Evaluate Fly.io early; implement aggressive sleep timers |
-| GHL Marketplace approval delayed | Medium | High | Build direct sales channel simultaneously; don't depend solely on marketplace |
-| Cold start time too slow (>20s) | Medium | Medium | Container warm pools; "waking up" UX; pre-warm on dashboard visit |
-| AI hallucination damages client's CRM | Low | High | Read-only mode by default; write actions require confirmation; audit log |
-| GHL API rate limits or changes | Low | Medium | Caching layer; webhook-driven instead of polling; version-lock API calls |
-| Competitor copies the model | Medium | Low | Network effects from templates; agency switching cost (white-label + billing + data); speed of execution |
-| OpenClaw breaking changes | Low | Medium | Pin container to specific version; test updates before rollout |
+| # | Risk | Likelihood | Impact | Mitigation |
+|---|------|-----------|--------|------------|
+| 1 | **GHL Marketplace approval delayed** | Medium | High | Build direct sales channel; demo video ready; don't depend solely on marketplace |
+| 2 | **Polling costs at scale** (API calls every minute per client) | Medium | Medium | Batch polling (one call per client, not per contact); increase interval for inactive clients; move to webhooks after marketplace approval |
+| 3 | **AI hallucination damages client's CRM** | Low | High | Read-only by default for Phase 2; write actions require explicit confirmation; audit log everything |
+| 4 | **GHL API rate limits or breaking changes** | Low | Medium | Cache frequently-read data; rate-limit polling per client; version-lock API calls |
+| 5 | **Competitor copies the model** | Medium | Low | Network effects from templates; agency switching cost (white-label + billing + data + training); speed of execution |
+| 6 | **Fly.io costs scale poorly** | Low | Medium | Direct Anthropic bridge is minimal (69MB image); auto-stop saves costs; evaluate Cloudflare at 50+ clients |
+| 7 | **GHL OAuth token expiry/revocation** | Low | Medium | Auto-refresh on 401; alert agency dashboard on persistent auth failures; graceful degradation |
+
+---
+
+## Appendix A: Current Deployment Details (Feb 16, 2026)
+
+### Infrastructure
+- **Frontend:** Vercel Pro (`kyra.conversionsystem.com`)
+- **AI Bridge:** Fly.io (`kyra-gateway.fly.dev`, Frankfurt, 2048MB, auto-stop)
+- **Database:** Supabase (`yaijdtsunxicuphrakcc.supabase.co`)
+- **Repo:** `github.com/ConversionSystem/kyra` (main branch)
+
+### Key Files
+| File | Purpose |
+|------|---------|
+| `lib/ghl/poller.ts` | Core polling logic — searches conversations, generates AI, sends replies |
+| `app/api/ghl/poll/route.ts` | Vercel cron endpoint (every minute) |
+| `lib/ghl/api.ts` | GHL API client — token refresh, send message, get conversation |
+| `lib/ghl/webhook-handler.ts` | Legacy webhook processing (kept for future marketplace webhooks) |
+| `app/api/ghl/webhook/route.ts` | Legacy webhook endpoint (normalizePayload) |
+| `app/api/crm/callback/route.ts` | GHL OAuth callback |
+| `lib/agency/container.ts` | System prompt builder, session key generator |
+| `vercel.json` | Cron config: `* * * * *` → `/api/ghl/poll` |
+
+### Environment Variables (Vercel Production)
+| Variable | Purpose |
+|----------|---------|
+| `KYRA_WORKER_URL` | Fly.io bridge URL (`https://kyra-gateway.fly.dev`) |
+| `KYRA_API_SECRET` | API authentication for manual poll triggers |
+| `CRON_SECRET` | Vercel Cron authentication |
+| `GHL_CLIENT_ID` | GHL OAuth app client ID |
+| `GHL_CLIENT_SECRET` | GHL OAuth app client secret |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase admin access for server-side queries |
+| `ANTHROPIC_API_KEY` | Anthropic API key (used by Fly.io bridge) |
+
+### GHL App Details
+- **App Status:** Draft (free pricing for testing)
+- **Location ID:** `y1BFVhXMDNUPlbPxEpSA` (Test Sub-Account)
+- **Agency Client ID:** `09baa76b-32b7-4c20-b7bb-461b83b14ece`
+- **OAuth Redirect:** `https://kyra.conversionsystem.com/api/crm/callback`
+- **Scopes:** conversations.readonly, conversations.write, conversations/message.readonly, conversations/message.write, contacts.readonly, contacts.write
 
 ---
 
