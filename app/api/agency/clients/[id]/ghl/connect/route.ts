@@ -7,7 +7,7 @@
 // Required environment variables:
 //   GHL_CLIENT_ID       — GHL Marketplace app client ID
 //   GHL_CLIENT_SECRET   — GHL Marketplace app client secret
-//   GHL_REDIRECT_URI    — OAuth callback URL (e.g. https://kyra.app/api/ghl/callback)
+//   GHL_REDIRECT_URI    — OAuth callback URL (e.g. https://kyra.app/api/crm/callback)
 //   NEXT_PUBLIC_APP_URL — Base URL for redirects
 // ============================================================================
 
