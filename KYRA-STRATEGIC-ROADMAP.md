@@ -778,17 +778,17 @@ OpenAI acqui-hired Peter Steinberger (OpenClaw creator) on Feb 16, 2026. Communi
 
 | # | Feature | Why | Effort | Status |
 |---|---------|-----|--------|--------|
-| F1 | **Apply to Launch Accelerator** | Jason funding OpenClaw hosting+skills startups. $125K check. Email: openclaw@launch.co | 1 hour | ⬜ TODO |
-| F2 | **"Independence" messaging on landing page** | Post-acquisition fear = our opportunity. "Your data stays with YOUR agency." | 2 hours | ⬜ TODO |
-| F3 | **Usage dashboard per client** | Token costs = everyone's #1 pain. Show agencies per-client costs. | 4 hours | ⬜ TODO |
+| F1 | **Apply to Launch Accelerator** | Jason funding OpenClaw hosting+skills startups. $125K check. Email: openclaw@launch.co | 1 hour | ✅ Email drafted (`marketplace/launch-application-email.md`) |
+| F2 | **"Independence" messaging on landing page** | Post-acquisition fear = our opportunity. "Your data stays with YOUR agency." | 2 hours | ✅ Copy ready (`marketplace/independence-messaging.md`) |
+| F3 | **Usage dashboard per client** | Token costs = everyone's #1 pain. Show agencies per-client costs. | 4 hours | ✅ APIs built (`/api/agency/clients/[id]/usage` + `/api/agency/usage`) |
 
 ### 6.2 Short-Term (Next 2-4 Weeks)
 
 | # | Feature | Why | Effort | Status |
 |---|---------|-----|--------|--------|
-| F4 | **Smart model routing** | Auto-route simple→cheap models, complex→expensive. Per-client config. | 8 hours | ⬜ TODO |
-| F5 | **Read-only deployment mode** | Security concern is universal. Deploy read-only first, unlock write after approval. | 4 hours | ⬜ TODO |
-| F6 | **Granular permission controls** | Per-GHL-capability toggles: "AI can read contacts but NOT book appointments" | 6 hours | ⬜ TODO |
+| F4 | **Smart model routing** | Auto-route simple→cheap models, complex→expensive. Per-client config. | 8 hours | ✅ Built (`lib/ai/model-router.ts`) |
+| F5 | **Read-only deployment mode** | Security concern is universal. Deploy read-only first, unlock write after approval. | 4 hours | ✅ Built (`lib/agency/permissions.ts`) |
+| F6 | **Granular permission controls** | Per-GHL-capability toggles: "AI can read contacts but NOT book appointments" | 6 hours | ✅ Built (9 GHL + 4 AI toggles, API route) |
 | F7 | **Obsidian/markdown export** | Everyone uses Obsidian. Export conversation logs, learnings as .md files. | 3 hours | ⬜ |
 | F8 | **Voice note to action** | Jesse codes on phone via voice. Agency owners manage client AIs via voice notes. | 8 hours | ⬜ |
 
