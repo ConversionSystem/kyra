@@ -17,6 +17,8 @@ const GHL_SCOPES = [
   'contacts.write',
   'conversations.readonly',
   'conversations.write',
+  'conversations/message.readonly',
+  'conversations/message.write',
   'opportunities.readonly',
   'opportunities.write',
   'calendars.readonly',
