@@ -17,14 +17,17 @@ export const maxDuration = 60; // Allow up to 60s for processing
 export async function GET(request: NextRequest) {
   // ── Auth: Vercel Cron or API secret ─────────────────────────────────
   const authHeader = request.headers.get('authorization');
-  const cronSecret = request.headers.get('x-vercel-cron-secret');
   const apiSecret = process.env.KYRA_API_SECRET;
+  const cronSecret = process.env.CRON_SECRET;
 
-  // Allow Vercel Cron (CRON_SECRET header), or Bearer token match
-  const isVercelCron = cronSecret && cronSecret === process.env.CRON_SECRET;
-  const isBearerAuth = authHeader === `Bearer ${apiSecret}`;
+  // Vercel Cron sends Authorization: Bearer <CRON_SECRET>
+  // Manual calls use Authorization: Bearer <KYRA_API_SECRET>
+  const bearerToken = authHeader?.replace('Bearer ', '');
+  const isAuthorized =
+    (bearerToken && apiSecret && bearerToken === apiSecret) ||
+    (bearerToken && cronSecret && bearerToken === cronSecret);
 
-  if (!isVercelCron && !isBearerAuth) {
+  if (!isAuthorized) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
