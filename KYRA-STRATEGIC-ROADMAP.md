@@ -1,9 +1,9 @@
 # Kyra — Strategic Roadmap & Architecture
 
 **Date:** February 13, 2026  
-**Last Updated:** February 16, 2026  
-**Version:** 2.0  
-**Status:** Active — Phase 2 COMPLETE (SMS AI Loop Live)
+**Last Updated:** February 16, 2026 (23:10 CET — Phase 6 features + market intel added)  
+**Version:** 2.2  
+**Status:** Active — Phase 3 IN PROGRESS (~85% built), Phase 6 features queued from video analysis
 
 ---
 
@@ -389,35 +389,51 @@ Individuals who outgrow Pro and want to offer AI to clients → natural upgrade 
 
 ---
 
-### Phase 3: Billing & White-Label (Week 4) — NOT STARTED
+### Phase 3: Billing & White-Label (Week 4) — ~85% COMPLETE
 **Goal:** Agencies can charge their clients and brand the platform.
 
-| Task | Priority | Effort | Status |
-|------|----------|--------|--------|
-| Stripe Connect Express onboarding for agencies | P0 | 6h | ⬜ |
-| Agency sets per-client pricing in dashboard | P0 | 4h | ⬜ |
-| Automated client invoicing via Stripe Connect | P0 | 6h | ⬜ |
-| Application fee (Kyra's cut per transaction) | P0 | 2h | ⬜ |
-| Revenue dashboard: MRR, client payments, payout schedule | P1 | 6h | ⬜ |
-| White-label: custom subdomain (CNAME + Vercel domains API) | P1 | 4h | ⬜ |
-| White-label: logo, colors, name applied to chat UI + login | P1 | 6h | ⬜ |
-| White-label: email templates with agency branding | P2 | 3h | ⬜ |
+| Task | Priority | Effort | Status | Notes |
+|------|----------|--------|--------|-------|
+| Stripe Connect Express onboarding for agencies | P0 | 6h | ✅ Done | `lib/stripe/connect.ts`: createConnectAccount, onboardingLink, dashboardLink, statusCheck |
+| Agency sets per-client pricing in dashboard | P0 | 4h | ✅ Done | `/agency/billing` page: default pricing editor + per-client billing table |
+| Automated client invoicing via Stripe Connect | P0 | 6h | ✅ Done | `createClientSubscription()` with per-client recurring billing on connected accounts |
+| Application fee (Kyra's cut per transaction) | P0 | 2h | ✅ Done | 10% `application_fee_percent` on all subscriptions |
+| Revenue dashboard: MRR, client payments, payout schedule | P1 | 6h | ✅ Done | Billing dashboard: gross MRR, platform fee, net revenue, billing history table |
+| Stripe webhook handlers (invoice.paid, sub updates, account.updated) | P0 | 4h | ✅ Done | `lib/stripe/webhooks.ts`: 4 event handlers + signature verification |
+| Agency subscription management (create, upgrade, cancel, status) | P0 | 4h | ✅ Done | `lib/stripe/subscriptions.ts`: full plan lifecycle |
+| Subscription cancellation + billing amount changes | P1 | 3h | ✅ Done | `cancelClientSubscription()`, `updateClientBillingAmount()` with prorations |
+| One-time invoices for manual billing | P2 | 2h | ✅ Done | `createClientInvoice()` with application fee |
+| Database migration: Stripe Connect billing fields | P0 | 1h | ✅ Done | `20260216001_stripe_connect_billing.sql` applied |
+| API routes for Connect (onboard, status, dashboard) | P0 | 3h | ✅ Done | `/api/stripe/connect/{onboard,status,dashboard}` |
+| White-label: settings stored (logo, colors, domain, company name) | P1 | 2h | ✅ Done | `AgencySettings` type + settings form in `/agency/settings` |
+| **Create Stripe products/prices in Stripe Dashboard** | P0 | 30min | ⬜ TODO | Need price IDs for starter/pro/scale + per_client |
+| **Set Stripe env vars on Vercel** | P0 | 15min | ⬜ TODO | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, 4 price IDs |
+| **Configure Stripe webhook endpoint** | P0 | 15min | ⬜ TODO | Point to `kyra.conversionsystem.com/api/stripe/webhooks` |
+| **End-to-end billing test** | P0 | 2h | ⬜ TODO | Full flow: agency signup → Connect → activate client billing |
+| White-label: apply settings to chat UI + login page | P1 | 4h | ⬜ TODO | Settings are stored but not rendered into UI yet |
+| White-label: custom subdomain (CNAME + Vercel domains API) | P1 | 4h | ⬜ TODO | |
+| White-label: email templates with agency branding | P2 | 3h | ⬜ TODO | |
+
+**What's built (backend):** Complete Stripe Connect Express flow — account creation, onboarding, dashboard access, per-client subscriptions with 10% application fee, cancellation, price updates, one-time invoices, webhook handlers for all billing events. Full agency subscription lifecycle (create/upgrade/downgrade/cancel). Billing dashboard with revenue metrics, client billing table, and transaction history.
+
+**What's remaining:** Stripe configuration (products, prices, env vars — ~1 hour of setup), end-to-end testing (~2 hours), and white-label rendering (~8 hours total for UI + custom domains + email).
 
 **Exit criteria:** Agency charges client $297/mo through Kyra → Kyra takes 10% → agency receives payout. Agency Pro users have branded domain + chat UI.
 
 ---
 
-### Phase 4: Templates & Marketplace (Week 5-6) — NOT STARTED
+### Phase 4: Templates & Marketplace (Week 5-6) — PARTIALLY COMPLETE
 **Goal:** One-click industry deployments + network effects.
 
-| Task | Priority | Effort | Status |
-|------|----------|--------|--------|
-| Template data model: SOUL.md + skills + cron + system prompts | P0 | 4h | ⬜ |
-| 5 built-in industry templates (see below) | P0 | 10h | ⬜ |
-| Template picker in "Add Client" flow (enhanced) | P0 | 4h | ⬜ |
-| Agency creates template from working client config | P1 | 6h | ⬜ |
-| Template marketplace: browse, preview, install | P1 | 8h | ⬜ |
-| Paid templates: pricing, revenue split (70/30) | P2 | 6h | ⬜ |
+| Task | Priority | Effort | Status | Notes |
+|------|----------|--------|--------|-------|
+| Template data model: SOUL.md + skills + cron + system prompts | P0 | 4h | ✅ Done | `agency_templates` table with soul_template, skills[], cron_config, ghl_config |
+| 5 built-in industry templates (see below) | P0 | 10h | ✅ Done | Seeded in migration: LeadPilot, DentalAssist, PropertyPro, ServicePro, RetailAssist |
+| Enhanced template schema (suggested_skills, sample_responses, ghl_config) | P1 | 3h | ✅ Done | `20260216001_enhanced_templates.sql` migration |
+| Template picker in "Add Client" flow (enhanced) | P0 | 4h | ⬜ | Basic picker exists; needs richer preview |
+| Agency creates template from working client config | P1 | 6h | ⬜ | |
+| Template marketplace: browse, preview, install | P1 | 8h | ⬜ | |
+| Paid templates: pricing, revenue split (70/30) | P2 | 6h | ⬜ | |
 
 **Built-in templates:**
 
@@ -433,21 +449,27 @@ Individuals who outgrow Pro and want to offer AI to clients → natural upgrade 
 
 ---
 
-### Phase 5: Distribution & Scale (Week 7+) — NOT STARTED
+### Phase 5: Distribution & Scale (Week 7+) — PREP WORK COMPLETE
 **Goal:** Growth engine + platform maturity.
 
-| Task | Priority | Effort | Status |
-|------|----------|--------|--------|
-| Submit Kyra to GHL Marketplace for listing approval | P0 | 1 week | ⬜ |
-| GHL Marketplace landing page + onboarding flow | P0 | 4h | ⬜ |
-| Record demo video (SMS AI loop) | P0 | 2h | ⬜ |
-| Disable GHL Conversation AI on connected sub-accounts | P1 | 2h | ⬜ |
-| BYOK: agencies provide their own AI API keys | P1 | 6h | ⬜ |
-| Usage metering: actual token consumption → credits | P1 | 8h | ⬜ |
-| Voice AI: phone call handling via Twilio/Telnyx | P2 | 2 weeks | ⬜ |
-| Multi-agent per client (receptionist + sales + support) | P2 | 1 week | ⬜ |
-| Analytics dashboard: conversations, resolutions, bookings | P2 | 1 week | ⬜ |
-| API for agencies to programmatically manage clients | P2 | 1 week | ⬜ |
+| Task | Priority | Effort | Status | Notes |
+|------|----------|--------|--------|-------|
+| GHL Marketplace listing copy | P0 | 4h | ✅ Done | `marketplace/ghl-app-listing.md` — full listing with features, use cases, FAQ, pricing |
+| Demo video script + storyboard | P0 | 3h | ✅ Done | `marketplace/demo-video-script.md` — 2:30 script + 60s social cut |
+| Launch posts (GHL FB, Reddit, LinkedIn, X) | P0 | 3h | ✅ Done | `marketplace/launch-posts.md` — platform-specific copy ready to post |
+| Cold outreach email sequence (3 emails) | P0 | 2h | ✅ Done | `marketplace/outreach-email.md` — first touch + 2 follow-ups |
+| **Record demo video** | P0 | 2h | ⬜ TODO | Script ready — needs screen recording + voiceover |
+| **Take 8 marketplace screenshots** | P0 | 30min | ⬜ TODO | Listed in ghl-app-listing.md |
+| **Submit Kyra to GHL Marketplace** | P0 | 30min | ⬜ TODO | Listing copy ready to paste; needs video + screenshots first |
+| GHL Marketplace landing page + onboarding flow | P0 | 4h | ⬜ | |
+| Disable GHL Conversation AI on connected sub-accounts | P1 | 2h | ⬜ | |
+| BYOK: agencies provide their own AI API keys | P1 | 6h | ⬜ | |
+| Usage metering: actual token consumption → credits | P1 | 8h | ⬜ | |
+| Voice AI: phone call handling via Twilio/Telnyx | P2 | 2 weeks | ⬜ | |
+| Multi-agent per client (receptionist + sales + support) | P2 | 1 week | ⬜ | |
+| Analytics dashboard: conversations, resolutions, bookings | P2 | 1 week | ⬜ | |
+| API for agencies to programmatically manage clients | P2 | 1 week | ⬜ | |
+| **First outreach to 10-20 GHL agencies** | P0 | 2h | ⬜ TODO | Email templates ready; needs target list |
 
 **Exit criteria:** Kyra is discoverable inside GHL Marketplace. Agencies find it → install → deploy AI for clients.
 
@@ -549,24 +571,34 @@ Primary growth lever: **GHL Marketplace listing** (600K+ users see it).
 - Agency dashboard functional
 - GHL OAuth + SMS AI loop working
 
-**Week 3:** GHL Demo & First Agencies
-- Record demo video: "Deploy an AI employee for your GHL client in 60 seconds"
-- Post in GHL Facebook groups, Reddit r/gohighlevel, GHL community
-- Direct outreach to 20 GHL agencies
-- Show the live SMS loop in action
+**Week 2-3:** ✅ MOSTLY DONE — Billing backend + GTM materials built
+- Stripe Connect Express integration complete (backend + dashboard UI)
+- Per-client subscription billing with 10% application fee
+- Webhook handlers for all billing events
+- Marketplace listing copy, demo video script, launch posts, outreach emails — all written
+- 5 industry templates seeded (LeadPilot, DentalAssist, PropertyPro, ServicePro, RetailAssist)
 
-**Week 4:** Billing + White-Label
+**Week 3 (NOW):** Activate Billing + Submit Marketplace
+- Create Stripe products/prices + set env vars (~1 hour)
+- End-to-end billing test
+- Record demo video (script at `marketplace/demo-video-script.md`)
+- Take 8 marketplace screenshots
+- Submit to GHL Marketplace
+- First outreach emails to 10-20 GHL agencies
+
+**Week 4:** White-Label + First Agencies
+- Apply white-label settings to chat UI + login
+- Custom domain support (CNAME + Vercel Domains API)
 - First paying agencies
 - Case study from beta users
-- Stripe Connect for agency billing
 
-**Week 5-6:** Templates + Marketplace Submission
-- Submit to GHL Marketplace (with demo video)
-- Launch 5 industry templates
+**Week 5-6:** Marketplace Approval + Scale
+- GHL Marketplace review completes → listing goes live
 - Content: "Why GHL's Built-in AI Isn't Enough" blog series
+- Template marketplace enhancements
 
 **Week 7+:** Scale
-- GHL Marketplace goes live → inbound begins
+- GHL Marketplace inbound begins
 - Webinar: "How to Add $5K/mo Revenue Selling AI Employees to Your Clients"
 - Partner with GHL agencies for co-marketing
 
@@ -599,6 +631,10 @@ Primary growth lever: **GHL Marketplace listing** (600K+ users see it).
 | **Session Management** | Per client+contact keys | `agent:client:{id}:contact:{contactId}` |
 | **Cron** | Vercel Cron (1/min) | Simple, integrated, no external dependencies |
 | **Message Type Mapping** | normalizeMessageType() | GHL uses `TYPE_SMS` internally but `SMS` in send API |
+| **Agency Billing** | Stripe Connect Express | Per-client subscriptions on connected accounts, 10% application fee |
+| **Billing Architecture** | Subscriptions on connected accounts | Agency owns the Stripe relationship with their client |
+| **Platform Fee** | 10% application_fee_percent | Applied to all client subscriptions automatically |
+| **Industry Templates** | DB-seeded, 5 built-in | LeadPilot, DentalAssist, PropertyPro, ServicePro, RetailAssist |
 
 ### Open Questions
 
@@ -654,25 +690,50 @@ Primary growth lever: **GHL Marketplace listing** (600K+ users see it).
 ### Key Files
 | File | Purpose |
 |------|---------|
+| **GHL Integration** | |
 | `lib/ghl/poller.ts` | Core polling logic — searches conversations, generates AI, sends replies |
-| `app/api/ghl/poll/route.ts` | Vercel cron endpoint (every minute) |
 | `lib/ghl/api.ts` | GHL API client — token refresh, send message, get conversation |
-| `lib/ghl/webhook-handler.ts` | Legacy webhook processing (kept for future marketplace webhooks) |
-| `app/api/ghl/webhook/route.ts` | Legacy webhook endpoint (normalizePayload) |
+| `app/api/ghl/poll/route.ts` | Vercel cron endpoint (every minute) |
 | `app/api/crm/callback/route.ts` | GHL OAuth callback |
+| `lib/ghl/webhook-handler.ts` | Legacy webhook processing (kept for future marketplace webhooks) |
+| **Stripe Billing** | |
+| `lib/stripe/connect.ts` | Stripe Connect Express — account creation, onboarding, client subscriptions, invoices |
+| `lib/stripe/subscriptions.ts` | Agency subscription management — create, upgrade, cancel, status |
+| `lib/stripe/webhooks.ts` | Webhook handlers — invoice.paid, sub updates, account.updated |
+| `lib/stripe/config.ts` | Stripe client + price IDs config |
+| `app/api/stripe/connect/{onboard,status,dashboard}` | Connect API routes |
+| `app/api/stripe/webhooks/route.ts` | Stripe webhook endpoint |
+| `app/api/agency/billing/settings/route.ts` | Agency default pricing API |
+| `app/api/agency/clients/[id]/billing/route.ts` | Per-client billing activation/cancellation |
+| **Agency Platform** | |
 | `lib/agency/container.ts` | System prompt builder, session key generator |
+| `lib/agency/types.ts` | Agency, AgencyClient, AgencySettings, AgencyTemplate types |
+| `app/(dashboard)/agency/billing/billing-client.tsx` | Full billing dashboard UI |
+| `app/(dashboard)/agency/settings/settings-form.tsx` | Agency settings + white-label inputs |
+| **Marketplace Materials** | |
+| `marketplace/ghl-app-listing.md` | Complete GHL Marketplace listing copy |
+| `marketplace/demo-video-script.md` | 2:30 demo video script + 60s social cut |
+| `marketplace/launch-posts.md` | Launch posts for GHL FB, Reddit, LinkedIn, X |
+| `marketplace/outreach-email.md` | 3-email cold outreach sequence |
+| **Config** | |
 | `vercel.json` | Cron config: `* * * * *` → `/api/ghl/poll` |
 
 ### Environment Variables (Vercel Production)
-| Variable | Purpose |
-|----------|---------|
-| `KYRA_WORKER_URL` | Fly.io bridge URL (`https://kyra-gateway.fly.dev`) |
-| `KYRA_API_SECRET` | API authentication for manual poll triggers |
-| `CRON_SECRET` | Vercel Cron authentication |
-| `GHL_CLIENT_ID` | GHL OAuth app client ID |
-| `GHL_CLIENT_SECRET` | GHL OAuth app client secret |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase admin access for server-side queries |
-| `ANTHROPIC_API_KEY` | Anthropic API key (used by Fly.io bridge) |
+| Variable | Purpose | Status |
+|----------|---------|--------|
+| `KYRA_WORKER_URL` | Fly.io bridge URL (`https://kyra-gateway.fly.dev`) | ✅ Set |
+| `KYRA_API_SECRET` | API authentication for manual poll triggers | ✅ Set |
+| `CRON_SECRET` | Vercel Cron authentication | ✅ Set |
+| `GHL_CLIENT_ID` | GHL OAuth app client ID | ✅ Set |
+| `GHL_CLIENT_SECRET` | GHL OAuth app client secret | ✅ Set |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase admin access for server-side queries | ✅ Set |
+| `ANTHROPIC_API_KEY` | Anthropic API key (used by Fly.io bridge) | ✅ Set |
+| `STRIPE_SECRET_KEY` | Stripe API secret key | ⬜ **TODO** |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret | ⬜ **TODO** |
+| `STRIPE_STARTER_PRICE_ID` | Stripe price ID for Starter plan ($99/mo) | ⬜ **TODO** |
+| `STRIPE_PRO_PRICE_ID` | Stripe price ID for Pro plan ($249/mo) | ⬜ **TODO** |
+| `STRIPE_SCALE_PRICE_ID` | Stripe price ID for Scale plan ($499/mo) | ⬜ **TODO** |
+| `STRIPE_PER_CLIENT_PRICE_ID` | Stripe price ID for per-client metered fee | ⬜ **TODO** |
 
 ### GHL App Details
 - **App Status:** Draft (free pricing for testing)
@@ -680,6 +741,110 @@ Primary growth lever: **GHL Marketplace listing** (600K+ users see it).
 - **Agency Client ID:** `09baa76b-32b7-4c20-b7bb-461b83b14ece`
 - **OAuth Redirect:** `https://kyra.conversionsystem.com/api/crm/callback`
 - **Scopes:** conversations.readonly, conversations.write, conversations/message.readonly, conversations/message.write, contacts.readonly, contacts.write
+
+---
+
+## Appendix B: Critical Path to First Revenue (Added Feb 16, 2026)
+
+Everything below must happen before Kyra generates its first dollar. Ordered by dependency.
+
+| # | Task | Blocked By | Effort | Owner |
+|---|------|-----------|--------|-------|
+| 1 | Create Stripe products + prices in Stripe Dashboard | — | 30 min | Angel |
+| 2 | Set 6 Stripe env vars on Vercel | #1 | 15 min | Angel |
+| 3 | Configure Stripe webhook endpoint → `/api/stripe/webhooks` | #1 | 15 min | Angel |
+| 4 | End-to-end billing test (signup → Connect → activate client) | #1, #2, #3 | 2 hours | Steve + Angel |
+| 5 | Record demo video (script ready at `marketplace/demo-video-script.md`) | — | 1-2 hours | Angel |
+| 6 | Take 8 marketplace screenshots (listed in `marketplace/ghl-app-listing.md`) | — | 30 min | Angel |
+| 7 | Submit to GHL Marketplace (listing copy ready to paste) | #5, #6 | 30 min | Angel |
+| 8 | First outreach to 10-20 GHL agencies (templates at `marketplace/outreach-email.md`) | #4 | 2 hours | Angel |
+| 9 | GHL Marketplace approval | #7 | 1-2 weeks | GHL (external) |
+
+**Tasks 1-4 unlock billing. Tasks 5-8 can run in parallel. Task 9 is external.**
+
+**Estimated time to first revenue: 1-2 days of focused work (tasks 1-4 + 8), then organic pipeline from outreach.**
+
+---
+
+## Phase 6: Growth & Intelligence Features (Video Analysis — Feb 16, 2026)
+
+**Source:** Deep analysis of TWIST (Jason Calacanis) + Alex Finn live streams on OpenAI/OpenClaw acquisition.
+**Full analysis:** `projects/kyra/video-analysis-complete.md` + `projects/kyra/video-analysis-2.md`
+
+### Context
+OpenAI acqui-hired Peter Steinberger (OpenClaw creator) on Feb 16, 2026. Community is rattled. Jason Calacanis going all-in on OpenClaw startups — funding hosting, skills, security, ease of use. **Kyra is exactly what he described wanting to fund.**
+
+### 6.1 Immediate (This Week)
+
+| # | Feature | Why | Effort | Status |
+|---|---------|-----|--------|--------|
+| F1 | **Apply to Launch Accelerator** | Jason funding OpenClaw hosting+skills startups. $125K check. Email: openclaw@launch.co | 1 hour | ⬜ TODO |
+| F2 | **"Independence" messaging on landing page** | Post-acquisition fear = our opportunity. "Your data stays with YOUR agency." | 2 hours | ⬜ TODO |
+| F3 | **Usage dashboard per client** | Token costs = everyone's #1 pain. Show agencies per-client costs. | 4 hours | ⬜ TODO |
+
+### 6.2 Short-Term (Next 2-4 Weeks)
+
+| # | Feature | Why | Effort | Status |
+|---|---------|-----|--------|--------|
+| F4 | **Smart model routing** | Auto-route simple→cheap models, complex→expensive. Per-client config. | 8 hours | ⬜ TODO |
+| F5 | **Read-only deployment mode** | Security concern is universal. Deploy read-only first, unlock write after approval. | 4 hours | ⬜ TODO |
+| F6 | **Granular permission controls** | Per-GHL-capability toggles: "AI can read contacts but NOT book appointments" | 6 hours | ⬜ TODO |
+| F7 | **Obsidian/markdown export** | Everyone uses Obsidian. Export conversation logs, learnings as .md files. | 3 hours | ⬜ |
+| F8 | **Voice note to action** | Jesse codes on phone via voice. Agency owners manage client AIs via voice notes. | 8 hours | ⬜ |
+
+### 6.3 Medium-Term (1-3 Months)
+
+| # | Feature | Why | Effort | Status |
+|---|---------|-----|--------|--------|
+| F9 | **Multi-agent per client** | Receptionist + sales + support agents per client. Hiten runs 10-15 bots. | 2 weeks | ⬜ |
+| F10 | **Skill builder** | Upload client FAQ/docs → auto-generate custom skill. Hiten's recursive builder. | 2 weeks | ⬜ |
+| F11 | **Agent-built dashboards** | Client AIs generate their own reporting dashboards. | 1 week | ⬜ |
+| F12 | **Shared workspace between agents** | Multi-agent setups share knowledge (Hiten's shared GitHub pattern). | 1 week | ⬜ |
+| F13 | **Content curation engine** | AI curates/filters content for specific audiences. Jesse's YouTube app. | 1 week | ⬜ |
+| F14 | **Local model support (BYOK+)** | Route to local inference (Ollama, vLLM). Cut API costs to near-zero. | 2 weeks | ⬜ |
+| F15 | **"Personal CRM" template** | LinkedIn+Gmail import, AI scoring, outreach. Hiten built in 30 min. | 4 hours | ⬜ |
+
+### 6.4 Strategic (3+ Months)
+
+| # | Feature | Why | Effort | Status |
+|---|---------|-----|--------|--------|
+| F16 | **Education vertical template** | "Homeschool AI Assistant" — lesson planning, curriculum tracking. Jesse proves demand. | 2 weeks | ⬜ |
+| F17 | **AI personality clone platform** | Brand personalities for clients. Restaurant AI = the chef, gym AI = the trainer. | 4 weeks | ⬜ |
+| F18 | **Agent marketplace** | Agencies sell agent configs to other agencies. Kyra takes a cut. Network effects. | 4 weeks | ⬜ |
+| F19 | **Competitive intelligence template** | Automated competitive research, weekly reports. Hiten is literally building this. | 1 week | ⬜ |
+| F20 | **Pair prompting workspace** | Shared space where agency + AI + client collaborate in real-time. | 2 weeks | ⬜ |
+
+### Priority Matrix
+
+| Impact | Quick Win (< 1 day) | Medium (1-2 weeks) | Big Bet (1+ month) |
+|--------|---------------------|--------------------|--------------------|
+| **Revenue** | F1 Apply to Launch, F2 Independence msg | F4 Model routing, F10 Skill builder | F18 Agent marketplace |
+| **Retention** | F3 Usage dashboard, F5 Read-only mode | F6 Permissions, F9 Multi-agent | F14 Local models |
+| **Differentiation** | F15 CRM template | F11 Agent dashboards, F20 Pair prompting | F17 AI personalities |
+
+---
+
+## Appendix C: Market Intelligence — OpenAI/OpenClaw Acquisition (Feb 16, 2026)
+
+### The Deal
+- OpenAI acqui-hired Peter Steinberger (OpenClaw creator)
+- OpenClaw goes to foundation under Dave Morren
+- Estimated: $250M-$500M+ (Jason Calacanis)
+- OpenClaw remains open-source
+
+### Strategic Implications for Kyra
+1. **Community trust vacuum** — agencies want independence assurance
+2. **Anthropic backlash** — banning Claude Max/OpenClaw users, "Betamax vs VHS" comparison
+3. **GPT-5.3 Codex rising** — community shifting toward OpenAI models
+4. **Jason Calacanis funding** — Launch Accelerator ($125K), Founder University ($25K), openclaw@launch.co
+5. **"Apps are dead"** — validates our SMS-first, agent-IS-the-product approach
+6. **Token costs universal pain** — model routing + usage dashboards = competitive advantage
+
+### Competitor Updates
+- **Agent Zero** — competing AI agent platform
+- **Manus** — Meta potentially integrating
+- **Kimi K2.5** — budget alternative ($39/mo)
+- **GPT-5.3 Codex** — strong new competitor to Claude for OpenClaw
 
 ---
 
