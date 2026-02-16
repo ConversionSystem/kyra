@@ -12,6 +12,8 @@ export interface Agency {
   plan: 'starter' | 'pro' | 'scale';
   stripe_customer_id: string | null;
   stripe_connect_account_id: string | null;
+  stripe_onboarding_complete: boolean;
+  default_client_price_cents: number;
   ghl_agency_id: string | null;
   settings: Record<string, unknown>;
   created_at: string;
@@ -41,6 +43,9 @@ export interface AgencyClient {
   container_config: Record<string, unknown>;
   template_id: string | null;
   billing_amount_cents: number;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  billing_status: 'none' | 'active' | 'past_due' | 'canceled' | 'trialing';
   usage_this_month: number;
   created_at: string;
   updated_at: string;
