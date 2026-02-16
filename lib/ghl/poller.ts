@@ -1,0 +1,353 @@
+// ============================================================================
+// GHL Message Poller — Replaces webhook dependency entirely
+//
+// Polls the GHL Conversations API for new inbound messages.
+// No webhooks needed. Works with draft marketplace apps.
+//
+// Logic:
+// 1. Get all active agency_clients with GHL tokens
+// 2. For each client, search conversations with inbound unread messages
+// 3. For each conversation, get messages and find new inbound ones
+// 4. Skip if we already replied (outbound message is newer than latest inbound)
+// 5. Process through AI bridge and send reply via GHL API
+// ============================================================================
+
+import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { getSystemPromptForClient, getSessionKeyForClient } from '@/lib/agency/container';
+import { sendGHLMessage, getValidToken, refreshGHLToken } from './api';
+import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
+
+const GHL_API_BASE = 'https://services.leadconnectorhq.com';
+const GHL_API_VERSION = '2021-04-15';
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+interface GHLConversationSearchItem {
+  id: string;
+  locationId: string;
+  contactId: string;
+  lastMessageBody: string;
+  lastMessageDate: number;
+  lastMessageType: string;
+  lastMessageDirection: 'inbound' | 'outbound';
+  unreadCount: number;
+  fullName?: string;
+  contactName?: string;
+  phone?: string;
+  email?: string;
+}
+
+interface GHLMessageItem {
+  id: string;
+  direction: 'inbound' | 'outbound';
+  body: string;
+  contactId: string;
+  conversationId: string;
+  locationId: string;
+  dateAdded: string;
+  messageType: string;
+  from?: string;
+  to?: string;
+  status?: string;
+}
+
+interface PollResult {
+  clientId: string;
+  clientName: string;
+  conversationsChecked: number;
+  messagesProcessed: number;
+  errors: string[];
+}
+
+// ── Main Poll Function ────────────────────────────────────────────────────────
+
+export async function pollAllClients(): Promise<PollResult[]> {
+  const supabase = createServiceClientWithoutCookies();
+
+  // Get all clients with GHL tokens
+  const { data: clients, error } = await supabase
+    .from('agency_clients')
+    .select('*, agency_templates(*)')
+    .not('ghl_access_token', 'is', null)
+    .in('status', ['active', 'setup']);
+
+  if (error || !clients || clients.length === 0) {
+    console.log('[ghl/poller] No active GHL-connected clients found');
+    return [];
+  }
+
+  const results: PollResult[] = [];
+
+  for (const client of clients) {
+    const result = await pollClient(
+      client as AgencyClient & { agency_templates?: AgencyTemplate | null },
+    ).catch((err) => ({
+      clientId: client.id,
+      clientName: client.name,
+      conversationsChecked: 0,
+      messagesProcessed: 0,
+      errors: [String(err)],
+    }));
+    results.push(result);
+  }
+
+  return results;
+}
+
+// ── Per-Client Polling ────────────────────────────────────────────────────────
+
+async function pollClient(
+  client: AgencyClient & { agency_templates?: AgencyTemplate | null },
+): Promise<PollResult> {
+  const result: PollResult = {
+    clientId: client.id,
+    clientName: client.name,
+    conversationsChecked: 0,
+    messagesProcessed: 0,
+    errors: [],
+  };
+
+  let accessToken: string;
+  try {
+    accessToken = await getValidToken(client.id);
+  } catch (err) {
+    result.errors.push(`Token error: ${err}`);
+    return result;
+  }
+
+  // Search for conversations with unread inbound messages
+  let conversations: GHLConversationSearchItem[];
+  try {
+    conversations = await searchInboundConversations(accessToken, client.ghl_location_id!);
+  } catch (err: unknown) {
+    // If 401, try refreshing token once
+    if (err instanceof Error && err.message.includes('401')) {
+      try {
+        const supabase = createServiceClientWithoutCookies();
+        const { data: clientData } = await supabase
+          .from('agency_clients')
+          .select('ghl_refresh_token')
+          .eq('id', client.id)
+          .single();
+        if (clientData?.ghl_refresh_token) {
+          const tokens = await refreshGHLToken(client.id, clientData.ghl_refresh_token);
+          accessToken = tokens.access_token;
+          conversations = await searchInboundConversations(accessToken, client.ghl_location_id!);
+        } else {
+          result.errors.push('No refresh token available');
+          return result;
+        }
+      } catch (refreshErr) {
+        result.errors.push(`Token refresh failed: ${refreshErr}`);
+        return result;
+      }
+    } else {
+      result.errors.push(`Search error: ${err}`);
+      return result;
+    }
+  }
+
+  result.conversationsChecked = conversations.length;
+
+  for (const conv of conversations) {
+    try {
+      const processed = await processConversation(accessToken, conv, client);
+      if (processed) {
+        result.messagesProcessed++;
+      }
+    } catch (err) {
+      result.errors.push(`Conv ${conv.id}: ${err}`);
+    }
+  }
+
+  return result;
+}
+
+// ── Search Conversations ──────────────────────────────────────────────────────
+
+async function searchInboundConversations(
+  token: string,
+  locationId: string,
+): Promise<GHLConversationSearchItem[]> {
+  const res = await fetch(
+    `${GHL_API_BASE}/conversations/search?locationId=${locationId}&sortBy=last_message_date&sortOrder=desc&limit=20`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Version: GHL_API_VERSION,
+      },
+      signal: AbortSignal.timeout(15_000),
+    },
+  );
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`GHL search failed (${res.status}): ${text}`);
+  }
+
+  const data = await res.json();
+  const allConversations: GHLConversationSearchItem[] = data.conversations || [];
+
+  // Only process conversations where:
+  // 1. Last message was inbound (customer sent something)
+  // 2. There are unread messages
+  // 3. Message type is SMS, WhatsApp, etc. (not calls or no-show)
+  return allConversations.filter(
+    (c) =>
+      c.lastMessageDirection === 'inbound' &&
+      c.unreadCount > 0 &&
+      c.lastMessageType !== 'TYPE_NO_SHOW' &&
+      c.lastMessageType !== 'TYPE_CALL',
+  );
+}
+
+// ── Process Single Conversation ───────────────────────────────────────────────
+
+async function processConversation(
+  token: string,
+  conv: GHLConversationSearchItem,
+  client: AgencyClient & { agency_templates?: AgencyTemplate | null },
+): Promise<boolean> {
+  // Get recent messages to check if we already replied
+  const res = await fetch(
+    `${GHL_API_BASE}/conversations/${conv.id}/messages?limit=5`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Version: GHL_API_VERSION,
+      },
+      signal: AbortSignal.timeout(15_000),
+    },
+  );
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Get messages failed (${res.status}): ${text}`);
+  }
+
+  const data = await res.json();
+  const messages: GHLMessageItem[] = data.messages?.messages || [];
+
+  if (messages.length === 0) return false;
+
+  // Messages are sorted newest first. Find the latest inbound message.
+  const latestInbound = messages.find((m) => m.direction === 'inbound');
+  if (!latestInbound || !latestInbound.body?.trim()) return false;
+
+  // Check if there's already an outbound reply AFTER this inbound message
+  const latestInboundTime = new Date(latestInbound.dateAdded).getTime();
+  const hasReply = messages.some(
+    (m) =>
+      m.direction === 'outbound' &&
+      new Date(m.dateAdded).getTime() > latestInboundTime,
+  );
+
+  if (hasReply) {
+    // Already replied, skip
+    return false;
+  }
+
+  console.log(
+    `[ghl/poller] New inbound from ${conv.contactName || conv.phone}: "${latestInbound.body.substring(0, 80)}"`,
+  );
+
+  // ── Generate AI response ────────────────────────────────────────────
+  const contactName = conv.fullName || conv.contactName || conv.phone || conv.email || 'Customer';
+  const messageType = (latestInbound.messageType || conv.lastMessageType || 'TYPE_SMS') as
+    | 'TYPE_SMS'
+    | 'TYPE_EMAIL'
+    | 'TYPE_WHATSAPP'
+    | 'TYPE_FB_MESSENGER'
+    | 'TYPE_INSTAGRAM'
+    | 'TYPE_LIVE_CHAT'
+    | 'TYPE_CALL';
+
+  const systemContext = getSystemPromptForClient(client, client.agency_templates, {
+    messageType: formatChannelName(messageType),
+    contactName,
+  });
+
+  const sessionKey = `${getSessionKeyForClient(client.id)}:contact:${conv.contactId}`;
+
+  const bridgeUrl = process.env.KYRA_WORKER_URL;
+  if (!bridgeUrl) {
+    throw new Error('Missing KYRA_WORKER_URL env var');
+  }
+
+  // Call the Fly bridge for AI response
+  const bridgeRes = await fetch(`${bridgeUrl}/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      message: latestInbound.body,
+      sessionKey,
+      systemContext,
+    }),
+    signal: AbortSignal.timeout(120_000),
+  });
+
+  if (!bridgeRes.ok) {
+    const text = await bridgeRes.text().catch(() => '');
+    throw new Error(`Bridge error (${bridgeRes.status}): ${text}`);
+  }
+
+  const sseBody = await bridgeRes.text();
+  const aiResponse = parseSSEResponse(sseBody);
+
+  if (!aiResponse?.trim()) {
+    console.warn('[ghl/poller] Empty AI response, skipping');
+    return false;
+  }
+
+  console.log(`[ghl/poller] AI response (${aiResponse.length} chars), sending to ${contactName}`);
+
+  // ── Send reply back through GHL ─────────────────────────────────────
+  await sendGHLMessage(client.id, token, conv.contactId, aiResponse, messageType);
+
+  console.log(`[ghl/poller] ✅ Reply sent to ${contactName} for "${client.name}"`);
+  return true;
+}
+
+// ── SSE Parser (same as webhook-handler) ──────────────────────────────────────
+
+function parseSSEResponse(sseBody: string): string {
+  const chunks: string[] = [];
+
+  for (const line of sseBody.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith('data:')) continue;
+
+    const jsonStr = trimmed.slice(5).trim();
+    if (!jsonStr || jsonStr === '[DONE]') continue;
+
+    try {
+      const event = JSON.parse(jsonStr);
+      if (event.type === 'content' && (event.content || event.text)) {
+        chunks.push(event.content || event.text);
+      }
+      if (event.type === 'done' && event.fullResponse) {
+        return event.fullResponse;
+      }
+      if (event.type === 'done') break;
+    } catch {
+      // Skip malformed
+    }
+  }
+
+  return chunks.join('');
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function formatChannelName(channel: string): string {
+  const map: Record<string, string> = {
+    TYPE_SMS: 'SMS',
+    TYPE_EMAIL: 'Email',
+    TYPE_WHATSAPP: 'WhatsApp',
+    TYPE_FB_MESSENGER: 'Facebook Messenger',
+    TYPE_INSTAGRAM: 'Instagram DM',
+    TYPE_LIVE_CHAT: 'Live Chat',
+    TYPE_CALL: 'Phone Call',
+  };
+  return map[channel] || channel;
+}
