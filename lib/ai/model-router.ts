@@ -1,28 +1,180 @@
+// ============================================================================
+// Model Router — Smart routing between cheap and expensive models
+//
+// Analyzes message complexity to decide which model to use.
+// Simple messages (greetings, confirmations, FAQs) → Haiku (economy)
+// Standard conversations → Sonnet (standard)  
+// Complex queries (sales objections, multi-step, detailed analysis) → Opus (premium)
+// ============================================================================
+
+import type { ModelTier, ModelRoutingConfig } from '@/lib/agency/types';
+import { MODEL_TIERS } from '@/lib/agency/types';
+
+// Simple patterns that should use economy tier
+const ECONOMY_PATTERNS = [
+  // Greetings
+  /^(hi|hello|hey|good morning|good afternoon|good evening|yo|sup)\b/i,
+  // Simple confirmations  
+  /^(yes|no|ok|okay|sure|thanks|thank you|got it|sounds good|perfect|great)\b/i,
+  // Single word or very short
+  /^.{1,20}$/,
+  // Time/availability checks
+  /^(what time|when are you|are you open|hours|schedule)\b/i,
+  // Simple questions
+  /^(where are you|what's your address|location|directions)\b/i,
+  // Status checks
+  /^(status|update|tracking|order status)\b/i,
+];
+
+// Complex patterns that should use premium tier
+const PREMIUM_PATTERNS = [
+  // Price negotiations
+  /\b(discount|negotiate|too expensive|lower price|best price|budget|afford|deal)\b/i,
+  // Complaints/escalations
+  /\b(complaint|unhappy|frustrated|terrible|awful|worst|manager|refund|cancel|lawyer|sue)\b/i,
+  // Multi-part questions (contains "and" with question marks)
+  /\?.*\band\b.*\?/i,
+  // Long detailed messages (200+ chars with questions)
+  /^.{200,}.*\?/,
+  // Comparison shopping
+  /\b(compare|vs|versus|difference between|which is better|competitor)\b/i,
+  // Technical complexity
+  /\b(integrate|API|technical|specification|requirements|custom|enterprise)\b/i,
+  // High-value signals
+  /\b(contract|annual|volume|bulk|fleet|franchise|multiple locations)\b/i,
+];
+
 /**
- * Multi-Model Router — Invisible intelligence routing
- * 
- * Fast for simple queries (Haiku), smart for complex ones (Sonnet/Opus).
- * 70% cost reduction while maintaining quality where it matters.
- * 
- * The user never knows. They just experience Kyra being fast AND smart.
+ * Determine the appropriate model tier based on message content and client config.
  */
+export function routeMessage(
+  message: string,
+  config?: ModelRoutingConfig | null,
+): { tier: ModelTier; model: string; reason: string } {
+  // If config specifies a forced model, use it
+  if (config?.forceModel) {
+    return {
+      tier: 'standard',
+      model: config.forceModel,
+      reason: 'Forced model override',
+    };
+  }
 
-import Anthropic from '@anthropic-ai/sdk';
+  // If auto-routing is disabled, use the default tier
+  if (config && !config.autoRoute) {
+    const tier = config.defaultTier || 'standard';
+    return {
+      tier,
+      model: MODEL_TIERS[tier].model,
+      reason: `Default tier (auto-routing disabled)`,
+    };
+  }
 
-export type ModelTier = 'fast' | 'balanced' | 'powerful';
+  // Check premium patterns first (agency-specific)
+  if (config?.premiumPatterns) {
+    for (const pattern of config.premiumPatterns) {
+      try {
+        if (new RegExp(pattern, 'i').test(message)) {
+          return {
+            tier: 'premium',
+            model: MODEL_TIERS.premium.model,
+            reason: `Matched agency premium pattern: ${pattern}`,
+          };
+        }
+      } catch {
+        // Invalid regex, skip
+      }
+    }
+  }
+
+  // Check built-in premium patterns
+  for (const pattern of PREMIUM_PATTERNS) {
+    if (pattern.test(message)) {
+      return {
+        tier: 'premium',
+        model: MODEL_TIERS.premium.model,
+        reason: `Complex message detected (${pattern.source.substring(0, 40)}...)`,
+      };
+    }
+  }
+
+  // Check economy patterns
+  for (const pattern of ECONOMY_PATTERNS) {
+    if (pattern.test(message)) {
+      return {
+        tier: 'economy',
+        model: MODEL_TIERS.economy.model,
+        reason: `Simple message detected (${pattern.source.substring(0, 40)}...)`,
+      };
+    }
+  }
+
+  // Default to standard
+  const tier = config?.defaultTier || 'standard';
+  return {
+    tier,
+    model: MODEL_TIERS[tier].model,
+    reason: 'Default routing (no pattern match)',
+  };
+}
+
+/**
+ * Estimate cost savings from model routing over a set of messages.
+ */
+export function estimateRoutingSavings(
+  messages: Array<{ inbound: string; outbound: string }>,
+): {
+  withoutRouting: number;
+  withRouting: number;
+  savingsPercent: number;
+  tierBreakdown: Record<ModelTier, number>;
+} {
+  let withoutRouting = 0;
+  let withRouting = 0;
+  const tierBreakdown: Record<ModelTier, number> = { economy: 0, standard: 0, premium: 0 };
+
+  const standardCost = MODEL_TIERS.standard.costPer1kTokens;
+
+  for (const msg of messages) {
+    const inTokens = Math.ceil(msg.inbound.length / 4) + 500;
+    const outTokens = Math.ceil(msg.outbound.length / 4);
+    const totalTokensK = (inTokens + outTokens) / 1000;
+
+    // Without routing: everything goes to standard
+    withoutRouting += totalTokensK * standardCost;
+
+    // With routing: route each message
+    const route = routeMessage(msg.inbound);
+    const routedCost = MODEL_TIERS[route.tier].costPer1kTokens;
+    withRouting += totalTokensK * routedCost;
+    tierBreakdown[route.tier]++;
+  }
+
+  const savingsPercent = withoutRouting > 0
+    ? Math.round((1 - withRouting / withoutRouting) * 100)
+    : 0;
+
+  return { withoutRouting, withRouting, savingsPercent, tierBreakdown };
+}
+
+// ============================================================================
+// Backward-compatible exports (used by existing chat routes & channel router)
+// ============================================================================
+
+export type ModelTierLegacy = 'fast' | 'balanced' | 'powerful';
 
 export interface ModelConfig {
   id: string;
-  tier: ModelTier;
-  inputCostPer1M: number;   // dollars per 1M tokens
+  tier: ModelTierLegacy;
+  inputCostPer1M: number;
   outputCostPer1M: number;
   maxTokens: number;
   description: string;
 }
 
-export const MODELS: Record<ModelTier, ModelConfig> = {
+const MODELS: Record<ModelTierLegacy, ModelConfig> = {
   fast: {
-    id: 'claude-3-5-haiku-20241022',
+    id: MODEL_TIERS.economy.model,
     tier: 'fast',
     inputCostPer1M: 0.80,
     outputCostPer1M: 4.00,
@@ -30,7 +182,7 @@ export const MODELS: Record<ModelTier, ModelConfig> = {
     description: 'Quick responses, simple tasks',
   },
   balanced: {
-    id: 'claude-sonnet-4-20250514',
+    id: MODEL_TIERS.standard.model,
     tier: 'balanced',
     inputCostPer1M: 3.00,
     outputCostPer1M: 15.00,
@@ -38,130 +190,44 @@ export const MODELS: Record<ModelTier, ModelConfig> = {
     description: 'Default: good balance of speed and quality',
   },
   powerful: {
-    id: 'claude-sonnet-4-20250514', // Will upgrade to Opus when available/justified
+    id: MODEL_TIERS.premium.model,
     tier: 'powerful',
-    inputCostPer1M: 3.00,
-    outputCostPer1M: 15.00,
+    inputCostPer1M: 15.00,
+    outputCostPer1M: 75.00,
     maxTokens: 8192,
     description: 'Complex reasoning, long-form writing, analysis',
   },
 };
 
 /**
- * Task complexity signals
- */
-interface ComplexitySignals {
-  messageLength: number;
-  hasMultipleQuestions: boolean;
-  requiresReasoning: boolean;
-  requiresCreativity: boolean;
-  isFollowUp: boolean;
-  conversationDepth: number;
-  hasTechnicalContent: boolean;
-  isSimpleGreeting: boolean;
-  requiresMemoryRecall: boolean;
-}
-
-/**
- * Analyze message complexity using fast heuristics (no API call needed)
- */
-export function analyzeComplexity(
-  message: string,
-  conversationLength: number = 0
-): ComplexitySignals {
-  const lower = message.toLowerCase();
-  
-  return {
-    messageLength: message.length,
-    hasMultipleQuestions: (message.match(/\?/g) || []).length > 1,
-    requiresReasoning: /\b(analyze|compare|evaluate|explain\s+why|pros\s+and\s+cons|trade.?offs?|strategy|plan|recommend)\b/i.test(message),
-    requiresCreativity: /\b(write|create|draft|compose|design|brainstorm|generate|story|poem|essay|article|blog)\b/i.test(message),
-    isFollowUp: conversationLength > 0 && message.length < 100,
-    conversationDepth: conversationLength,
-    hasTechnicalContent: /\b(code|api|sql|function|algorithm|database|deploy|infrastructure|regex|debug)\b/i.test(message),
-    isSimpleGreeting: /^(hi|hello|hey|sup|yo|thanks|thank you|ok|okay|cool|nice|great|got it|bye|good\s*(morning|evening|night))[!.?\s]*$/i.test(message),
-    requiresMemoryRecall: /\b(remember|recalled?|last\s+time|previously|you\s+said|we\s+discussed|told\s+you)\b/i.test(message),
-  };
-}
-
-/**
- * Route to the appropriate model tier based on complexity
- */
-export function routeModel(signals: ComplexitySignals): ModelTier {
-  // Fast tier: greetings, short follow-ups, simple acknowledgments
-  if (signals.isSimpleGreeting) return 'fast';
-  if (signals.isFollowUp && signals.messageLength < 50 && !signals.requiresReasoning) return 'fast';
-  
-  // Powerful tier: complex reasoning, long creative tasks, technical analysis
-  if (signals.requiresReasoning && signals.hasTechnicalContent) return 'powerful';
-  if (signals.requiresCreativity && signals.messageLength > 200) return 'powerful';
-  if (signals.hasMultipleQuestions && signals.requiresReasoning) return 'powerful';
-  if (signals.messageLength > 500 && signals.requiresReasoning) return 'powerful';
-  
-  // Balanced tier: everything else
-  return 'balanced';
-}
-
-/**
- * Get the model config for a message
- */
-export function getModelForMessage(
-  message: string,
-  conversationLength: number = 0
-): ModelConfig {
-  const signals = analyzeComplexity(message, conversationLength);
-  const tier = routeModel(signals);
-  return MODELS[tier];
-}
-
-/**
  * Resolve a user's model preference into a ModelConfig.
- * If 'auto', falls back to smart routing based on the message.
+ * Backward-compatible wrapper around routeMessage.
  */
 export function resolveModelPreference(
   preference: string | undefined,
   message: string,
-  conversationLength: number = 0
+  conversationLength: number = 0,
 ): ModelConfig {
-  if (!preference || preference === 'auto') {
-    return getModelForMessage(message, conversationLength);
-  }
-  if (preference === 'claude-sonnet-4') {
-    return MODELS.balanced;
-  }
-  if (preference === 'claude-haiku') {
-    return MODELS.fast;
-  }
-  // Unknown preference — fall back to auto
-  return getModelForMessage(message, conversationLength);
-}
+  if (preference === 'claude-sonnet-4') return MODELS.balanced;
+  if (preference === 'claude-haiku') return MODELS.fast;
 
-/**
- * Estimate cost savings from routing
- */
-export function estimateSavings(routingHistory: ModelTier[]): {
-  actualCost: number;
-  withoutRouting: number;
-  savings: number;
-  savingsPercent: number;
-} {
-  // Assume average 500 input, 1000 output tokens per message
-  const avgInput = 500;
-  const avgOutput = 1000;
-  
-  let actualCost = 0;
-  const withoutRouting = routingHistory.length * (
-    (MODELS.balanced.inputCostPer1M * avgInput / 1_000_000) +
-    (MODELS.balanced.outputCostPer1M * avgOutput / 1_000_000)
-  );
-  
-  for (const tier of routingHistory) {
-    const model = MODELS[tier];
-    actualCost += (model.inputCostPer1M * avgInput / 1_000_000) + (model.outputCostPer1M * avgOutput / 1_000_000);
+  if (!preference || preference === 'auto') {
+    const route = routeMessage(message);
+    const tierMap: Record<ModelTier, ModelTierLegacy> = {
+      economy: 'fast',
+      standard: 'balanced',
+      premium: 'powerful',
+    };
+    const legacyTier = tierMap[route.tier];
+    return { ...MODELS[legacyTier], id: route.model };
   }
-  
-  const savings = withoutRouting - actualCost;
-  const savingsPercent = withoutRouting > 0 ? (savings / withoutRouting) * 100 : 0;
-  
-  return { actualCost, withoutRouting, savings, savingsPercent: Math.round(savingsPercent) };
+
+  // Unknown preference — auto-route
+  const route = routeMessage(message);
+  const tierMap: Record<ModelTier, ModelTierLegacy> = {
+    economy: 'fast',
+    standard: 'balanced',
+    premium: 'powerful',
+  };
+  return { ...MODELS[tierMap[route.tier]], id: route.model };
 }
