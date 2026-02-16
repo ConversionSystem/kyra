@@ -15,6 +15,7 @@
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { getSessionKeyForClient } from '@/lib/agency/container';
 import { sendGHLMessage, getValidToken, refreshGHLToken } from './api';
+import { getClientPermissions, buildPermissionPrompt } from '@/lib/agency/permissions';
 import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
 
 const GHL_API_BASE = 'https://services.leadconnectorhq.com';
@@ -247,6 +248,25 @@ async function processConversation(
     return false;
   }
 
+  // ── Permissions check ─────────────────────────────────────────────────
+  const permissions = getClientPermissions(client.container_config as Record<string, unknown>);
+
+  if (permissions.mode === 'readonly') {
+    console.log(
+      `[ghl/poller] ⏸️ Client "${client.name}" is in READ-ONLY mode — skipping reply to ${conv.contactName || conv.phone}`,
+    );
+    return false;
+  }
+
+  if (!permissions.ghl.sendMessages) {
+    console.log(
+      `[ghl/poller] ⏸️ Client "${client.name}" does not have sendMessages permission — skipping reply to ${conv.contactName || conv.phone}`,
+    );
+    return false;
+  }
+
+  const permissionPrompt = buildPermissionPrompt(permissions);
+
   const processingStart = Date.now();
   console.log(
     `[ghl/poller] New inbound from ${conv.contactName || conv.phone}: "${latestInbound.body.substring(0, 80)}"`,
@@ -279,6 +299,7 @@ async function processConversation(
       contactInfo,
       conversationHistory,
     },
+    permissionPrompt,
   );
 
   const sessionKey = `${getSessionKeyForClient(client.id)}:contact:${conv.contactId}`;
@@ -480,6 +501,7 @@ function buildEnrichedSystemPrompt(
   client: AgencyClient & { agency_templates?: AgencyTemplate | null },
   template: AgencyTemplate | null | undefined,
   ctx: EnrichedContext,
+  permissionPrompt?: string,
 ): string {
   const lines: string[] = [];
 
@@ -539,6 +561,12 @@ function buildEnrichedSystemPrompt(
   lines.push('- When you don\'t know something specific about the business, be honest and offer to connect them with a team member.');
   lines.push('- For SMS: keep responses under 300 characters when possible. Be direct.');
   lines.push('- Never make up specific business details (prices, hours, addresses) unless provided in your instructions.');
+
+  // ── Permission constraints
+  if (permissionPrompt) {
+    lines.push('');
+    lines.push(permissionPrompt);
+  }
 
   return lines.join('\n');
 }
