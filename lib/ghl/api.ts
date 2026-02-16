@@ -118,8 +118,12 @@ export async function sendGHLMessage(
   accessToken: string,
   contactId: string,
   message: string,
-  messageType: GHLMessageChannel = 'TYPE_SMS',
+  messageType: GHLMessageChannel | string = 'TYPE_SMS',
 ): Promise<GHLSendMessageResult> {
+  // GHL Send Message API uses short type names (SMS, Email, WhatsApp, etc.)
+  // but the Conversations API returns TYPE_SMS, TYPE_EMAIL, etc.
+  const sendType = normalizeMessageType(messageType);
+
   const doSend = async (token: string): Promise<Response> => {
     return fetch(`${GHL_API_BASE}/conversations/messages`, {
       method: 'POST',
@@ -129,7 +133,7 @@ export async function sendGHLMessage(
         Version: GHL_API_VERSION,
       },
       body: JSON.stringify({
-        type: messageType,
+        type: sendType,
         contactId,
         message,
       }),
@@ -190,4 +194,28 @@ export async function getGHLConversation(
 
   const data = await res.json();
   return data.conversation ?? data;
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+/**
+ * Normalize message type for the GHL Send Message API.
+ * The Conversations API returns TYPE_SMS, TYPE_EMAIL, etc.
+ * But the Send Message API expects SMS, Email, WhatsApp, etc.
+ */
+function normalizeMessageType(type: string): string {
+  const map: Record<string, string> = {
+    TYPE_SMS: 'SMS',
+    TYPE_EMAIL: 'Email',
+    TYPE_WHATSAPP: 'WhatsApp',
+    TYPE_FB_MESSENGER: 'FB',
+    TYPE_INSTAGRAM: 'IG',
+    TYPE_LIVE_CHAT: 'Live_Chat',
+    TYPE_CALL: 'Call',
+    // Already normalized values pass through
+    SMS: 'SMS',
+    Email: 'Email',
+    WhatsApp: 'WhatsApp',
+  };
+  return map[type] || type.replace(/^TYPE_/, '');
 }
