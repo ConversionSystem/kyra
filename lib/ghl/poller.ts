@@ -13,7 +13,7 @@
 // ============================================================================
 
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
-import { getSystemPromptForClient, getSessionKeyForClient } from '@/lib/agency/container';
+import { getSessionKeyForClient } from '@/lib/agency/container';
 import { sendGHLMessage, getValidToken, refreshGHLToken } from './api';
 import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
 
@@ -251,7 +251,7 @@ async function processConversation(
     `[ghl/poller] New inbound from ${conv.contactName || conv.phone}: "${latestInbound.body.substring(0, 80)}"`,
   );
 
-  // ── Generate AI response ────────────────────────────────────────────
+  // ── Enrich context ──────────────────────────────────────────────────
   const contactName = conv.fullName || conv.contactName || conv.phone || conv.email || 'Customer';
   const messageType = (latestInbound.messageType || conv.lastMessageType || 'TYPE_SMS') as
     | 'TYPE_SMS'
@@ -262,10 +262,23 @@ async function processConversation(
     | 'TYPE_LIVE_CHAT'
     | 'TYPE_CALL';
 
-  const systemContext = getSystemPromptForClient(client, client.agency_templates, {
-    messageType: formatChannelName(messageType),
-    contactName,
-  });
+  // Fetch contact details from GHL for richer context
+  const contactInfo = await fetchContactInfo(token, conv.contactId).catch(() => null);
+
+  // Build conversation history string from recent messages
+  const conversationHistory = buildConversationHistory(messages);
+
+  // Build enriched system prompt
+  const systemContext = buildEnrichedSystemPrompt(
+    client,
+    client.agency_templates,
+    {
+      messageType: formatChannelName(messageType),
+      contactName,
+      contactInfo,
+      conversationHistory,
+    },
+  );
 
   const sessionKey = `${getSessionKeyForClient(client.id)}:contact:${conv.contactId}`;
 
@@ -335,6 +348,177 @@ function parseSSEResponse(sseBody: string): string {
   }
 
   return chunks.join('');
+}
+
+// ── Contact Enrichment ────────────────────────────────────────────────────────
+
+interface ContactInfo {
+  name: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  companyName?: string;
+  tags?: string[];
+  city?: string;
+  state?: string;
+  source?: string;
+  dateAdded?: string;
+  customFields?: Array<{ key: string; value: string }>;
+}
+
+/**
+ * Fetch contact details from GHL to enrich the AI's context.
+ * The AI will know the customer's name, company, tags, location, etc.
+ */
+async function fetchContactInfo(
+  token: string,
+  contactId: string,
+): Promise<ContactInfo | null> {
+  const res = await fetch(
+    `${GHL_API_BASE}/contacts/${contactId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Version: GHL_API_VERSION,
+      },
+      signal: AbortSignal.timeout(10_000),
+    },
+  );
+
+  if (!res.ok) return null;
+
+  const data = await res.json();
+  const contact = data.contact || data;
+
+  return {
+    name: contact.name || `${contact.firstName || ''} ${contact.lastName || ''}`.trim(),
+    firstName: contact.firstName,
+    lastName: contact.lastName,
+    email: contact.email,
+    phone: contact.phone,
+    companyName: contact.companyName,
+    tags: contact.tags || [],
+    city: contact.city,
+    state: contact.state,
+    source: contact.source,
+    dateAdded: contact.dateAdded,
+    customFields: (contact.customFields || [])
+      .filter((f: { fieldKey?: string; fieldValue?: string }) => f.fieldValue)
+      .map((f: { fieldKey: string; fieldValue: string }) => ({
+        key: f.fieldKey,
+        value: f.fieldValue,
+      })),
+  };
+}
+
+// ── Conversation History Builder ──────────────────────────────────────────────
+
+/**
+ * Build a formatted conversation history string from recent messages.
+ * This gives the AI context about the conversation so far.
+ */
+function buildConversationHistory(messages: GHLMessageItem[]): string {
+  if (messages.length <= 1) return '';
+
+  // Messages come newest-first, reverse for chronological order
+  const chronological = [...messages].reverse();
+
+  const lines: string[] = [];
+  for (const msg of chronological) {
+    if (!msg.body?.trim()) continue;
+    const sender = msg.direction === 'inbound' ? 'Customer' : 'AI';
+    const time = new Date(msg.dateAdded).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    lines.push(`[${time}] ${sender}: ${msg.body}`);
+  }
+
+  return lines.length > 0 ? lines.join('\n') : '';
+}
+
+// ── Enriched System Prompt ────────────────────────────────────────────────────
+
+interface EnrichedContext {
+  messageType: string;
+  contactName: string;
+  contactInfo: ContactInfo | null;
+  conversationHistory: string;
+}
+
+/**
+ * Build a rich system prompt that includes:
+ * - Client/business identity
+ * - Contact details (who the customer is)
+ * - Recent conversation history
+ * - Behavioral instructions
+ */
+function buildEnrichedSystemPrompt(
+  client: AgencyClient & { agency_templates?: AgencyTemplate | null },
+  template: AgencyTemplate | null | undefined,
+  ctx: EnrichedContext,
+): string {
+  const lines: string[] = [];
+
+  // ── Identity
+  lines.push(`You are an AI assistant for "${client.name}".`);
+  lines.push(`Industry: ${client.industry || 'General'}`);
+  lines.push(`You are responding to customer messages via ${ctx.messageType}.`);
+  lines.push('');
+
+  // ── Contact context
+  if (ctx.contactInfo) {
+    lines.push('--- Customer Information ---');
+    if (ctx.contactInfo.name && ctx.contactInfo.name !== ctx.contactName) {
+      lines.push(`Name: ${ctx.contactInfo.name}`);
+    } else {
+      lines.push(`Name: ${ctx.contactName}`);
+    }
+    if (ctx.contactInfo.email) lines.push(`Email: ${ctx.contactInfo.email}`);
+    if (ctx.contactInfo.companyName) lines.push(`Company: ${ctx.contactInfo.companyName}`);
+    if (ctx.contactInfo.city || ctx.contactInfo.state) {
+      lines.push(`Location: ${[ctx.contactInfo.city, ctx.contactInfo.state].filter(Boolean).join(', ')}`);
+    }
+    if (ctx.contactInfo.tags && ctx.contactInfo.tags.length > 0) {
+      lines.push(`Tags: ${ctx.contactInfo.tags.join(', ')}`);
+    }
+    if (ctx.contactInfo.source) lines.push(`Lead source: ${ctx.contactInfo.source}`);
+    if (ctx.contactInfo.customFields && ctx.contactInfo.customFields.length > 0) {
+      for (const f of ctx.contactInfo.customFields.slice(0, 5)) {
+        lines.push(`${f.key}: ${f.value}`);
+      }
+    }
+    lines.push('');
+  } else {
+    lines.push(`Customer: ${ctx.contactName}`);
+    lines.push('');
+  }
+
+  // ── Conversation history
+  if (ctx.conversationHistory) {
+    lines.push('--- Recent Conversation ---');
+    lines.push(ctx.conversationHistory);
+    lines.push('');
+  }
+
+  // ── Template instructions
+  if (template?.soul_template) {
+    lines.push('--- Business Instructions ---');
+    lines.push(template.soul_template);
+    lines.push('');
+  }
+
+  // ── Behavioral rules
+  lines.push('--- Response Guidelines ---');
+  lines.push('- Keep responses helpful, professional, and concise.');
+  lines.push('- Use the customer\'s name when you know it.');
+  lines.push('- Reference their previous messages when relevant for continuity.');
+  lines.push('- When you don\'t know something specific about the business, be honest and offer to connect them with a team member.');
+  lines.push('- For SMS: keep responses under 300 characters when possible. Be direct.');
+  lines.push('- Never make up specific business details (prices, hours, addresses) unless provided in your instructions.');
+
+  return lines.join('\n');
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
