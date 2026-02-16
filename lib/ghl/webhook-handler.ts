@@ -157,10 +157,18 @@ function parseSSEResponse(sseBody: string): string {
     if (!jsonStr || jsonStr === '[DONE]') continue;
 
     try {
-      const event = JSON.parse(jsonStr) as { type: string; text?: string };
-      if (event.type === 'content' && event.text) {
-        chunks.push(event.text);
+      const event = JSON.parse(jsonStr);
+
+      // Content chunks — bridge sends { type: "content", content: "..." }
+      if (event.type === 'content' && (event.content || event.text)) {
+        chunks.push(event.content || event.text);
       }
+
+      // Done event includes the full concatenated response
+      if (event.type === 'done' && event.fullResponse) {
+        return event.fullResponse;
+      }
+
       if (event.type === 'done') {
         break;
       }
