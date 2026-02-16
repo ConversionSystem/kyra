@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { AgencyClient, AgencyMember } from '@/lib/agency/queries';
+import GHLConnection from './ghl-connection';
 
 const statusColors: Record<string, string> = {
   active: 'border-green-500/50 bg-green-500/10 text-green-400',
@@ -388,6 +389,14 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
           </Button>
         </CardContent>
       </Card>
+
+      {/* GHL Connection */}
+      <GHLConnection
+        clientId={initialClient.id}
+        ghlLocationId={initialClient.ghl_location_id ?? null}
+        ghlConnectedAt={initialClient.ghl_connected_at ?? null}
+        onDisconnected={() => router.refresh()}
+      />
 
       {/* Usage Stats (Placeholder) */}
       <Card className="mb-6">
