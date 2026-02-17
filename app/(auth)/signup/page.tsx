@@ -157,7 +157,7 @@ function SignupPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600">
-            <Sparkles className="h-6 w-6 text-gray-900" />
+            <Sparkles className="h-6 w-6 text-white" />
           </div>
           <CardTitle className="text-2xl">Create an account</CardTitle>
           <CardDescription>Get started with your personal AI assistant</CardDescription>
