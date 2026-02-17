@@ -21,6 +21,50 @@ import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
 const GHL_API_BASE = 'https://services.leadconnectorhq.com';
 const GHL_API_VERSION = '2021-04-15';
 
+// ── BYOK: Agency API key resolution ───────────────────────────────────────────
+
+interface ResolvedApiKey {
+  apiKey: string;
+  provider: 'anthropic' | 'openai' | 'google' | 'openrouter';
+  model?: string; // override model when using non-Anthropic provider
+}
+
+/**
+ * Look up the agency's BYOK API keys from Supabase.
+ * Priority: anthropic → openrouter → openai → google → fallback to env var.
+ */
+async function resolveAgencyApiKey(agencyId: string): Promise<ResolvedApiKey | null> {
+  const supabase = createServiceClientWithoutCookies();
+  const { data: agency } = await supabase
+    .from('agencies')
+    .select('api_keys')
+    .eq('id', agencyId)
+    .single();
+
+  const keys = (agency?.api_keys as Record<string, string>) || {};
+
+  // Prefer Anthropic (native bridge support)
+  if (keys.anthropic) {
+    return { apiKey: keys.anthropic, provider: 'anthropic' };
+  }
+  // OpenRouter can route to Claude models via OpenAI-compatible API
+  if (keys.openrouter) {
+    return {
+      apiKey: keys.openrouter,
+      provider: 'openrouter',
+      model: 'anthropic/claude-sonnet-4-20250514',
+    };
+  }
+  // OpenAI native
+  if (keys.openai) {
+    return { apiKey: keys.openai, provider: 'openai', model: 'gpt-4o' };
+  }
+  // Google AI — not yet supported in bridge, skip for now
+  // if (keys.google) { ... }
+
+  return null; // No BYOK keys — caller should fall back to env var
+}
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface GHLConversationSearchItem {
@@ -79,9 +123,20 @@ export async function pollAllClients(): Promise<PollResult[]> {
 
   const results: PollResult[] = [];
 
+  // Pre-resolve BYOK keys per agency (batch — multiple clients may share an agency)
+  const agencyKeyCache = new Map<string, ResolvedApiKey | null>();
+
   for (const client of clients) {
+    // Resolve BYOK key for this client's agency (cached)
+    const agencyId = (client as AgencyClient).agency_id;
+    if (agencyId && !agencyKeyCache.has(agencyId)) {
+      agencyKeyCache.set(agencyId, await resolveAgencyApiKey(agencyId).catch(() => null));
+    }
+    const byokKey = agencyId ? agencyKeyCache.get(agencyId) ?? null : null;
+
     const result = await pollClient(
       client as AgencyClient & { agency_templates?: AgencyTemplate | null },
+      byokKey,
     ).catch((err) => ({
       clientId: client.id,
       clientName: client.name,
@@ -99,6 +154,7 @@ export async function pollAllClients(): Promise<PollResult[]> {
 
 async function pollClient(
   client: AgencyClient & { agency_templates?: AgencyTemplate | null },
+  byokKey: ResolvedApiKey | null,
 ): Promise<PollResult> {
   const result: PollResult = {
     clientId: client.id,
@@ -155,7 +211,7 @@ async function pollClient(
 
   for (const conv of conversations) {
     try {
-      const processed = await processConversation(accessToken, conv, client);
+      const processed = await processConversation(accessToken, conv, client, byokKey);
       if (processed) {
         result.messagesProcessed++;
       }
@@ -211,6 +267,7 @@ async function processConversation(
   token: string,
   conv: GHLConversationSearchItem,
   client: AgencyClient & { agency_templates?: AgencyTemplate | null },
+  byokKey: ResolvedApiKey | null,
 ): Promise<boolean> {
   // Get recent messages to check if we already replied
   const res = await fetch(
@@ -312,15 +369,24 @@ async function processConversation(
     throw new Error('Missing KYRA_WORKER_URL env var');
   }
 
-  // Call the Fly bridge for AI response
+  // Call the Fly bridge for AI response — pass BYOK key if available
+  const bridgePayload: Record<string, unknown> = {
+    message: latestInbound.body,
+    sessionKey,
+    systemContext,
+  };
+
+  if (byokKey) {
+    bridgePayload.apiKey = byokKey.apiKey;
+    bridgePayload.provider = byokKey.provider;
+    if (byokKey.model) bridgePayload.model = byokKey.model;
+    console.log(`[ghl/poller] Using BYOK key (${byokKey.provider}) for agency`);
+  }
+
   const bridgeRes = await fetch(`${bridgeUrl}/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      message: latestInbound.body,
-      sessionKey,
-      systemContext,
-    }),
+    body: JSON.stringify(bridgePayload),
     signal: AbortSignal.timeout(120_000),
   });
 
