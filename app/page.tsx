@@ -213,8 +213,8 @@ export default function LandingPage() {
               />
               <AgencyCard
                 icon={<CreditCardIcon className="h-5 w-5" />}
-                title="Bill your clients directly"
-                description="Set your own pricing with Stripe Connect. They pay you, we take a small platform fee. The margin is yours."
+                title="Bring your own API keys"
+                description="Connect your own Anthropic, OpenAI, or Google keys. You control costs directly — no markups, no middlemen."
               />
               <AgencyCard
                 icon={<BarChart3Icon className="h-5 w-5" />}
@@ -299,8 +299,8 @@ export default function LandingPage() {
               />
               <AgencyCard
                 icon={<CreditCardIcon className="h-5 w-5" />}
-                title="Your Stripe, your revenue"
-                description="Client payments go to YOUR Stripe account. We never touch client billing data — we only take a small platform fee."
+                title="Your keys, your costs"
+                description="Use your own AI provider accounts. Full transparency — you see exactly what you spend, and there's nothing hidden on our end."
               />
               <AgencyCard
                 icon={<Trash2Icon className="h-5 w-5" />}
@@ -331,7 +331,7 @@ export default function LandingPage() {
                 <Link href="https://clawhub.com" className="text-indigo-600 hover:underline" target="_blank">ClawHub</Link>.
               </p>
               <p className="text-gray-600 leading-relaxed mb-6">
-                Kyra packages all of that into a hosted platform that anyone can use — no terminal, no API keys, no DevOps. Agencies deploy it for clients. Businesses use it directly. The technology is the same; the experience is completely different.
+                Kyra packages all of that into a hosted platform that anyone can use — no terminal, no DevOps. Bring your own API keys, pick your models, and deploy AI employees for clients. The technology is the same; the experience is completely different.
               </p>
               <div className="flex flex-wrap gap-3">
                 <Tag text="60+ skills" />

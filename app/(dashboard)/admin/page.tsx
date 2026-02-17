@@ -183,7 +183,7 @@ export default function AdminDashboard() {
             <PlanBadge plan={plan} />
             <div className="text-2xl font-bold mt-2">{summary.planBreakdown[plan] || 0}</div>
             <div className="text-gray-400 text-xs">
-              {plan === 'free' ? '$0/mo' : plan === 'starter' ? '$20/mo' : plan === 'business' ? '$100/mo' : '$200/mo'}
+              Beta (free)
             </div>
           </div>
         ))}

@@ -39,26 +39,10 @@ function SignupPage() {
   const supabase = createClient();
 
   /**
-   * After signup/login, redirect to Stripe Checkout if a paid plan was selected,
-   * otherwise go straight to /chat.
+   * After signup/login, redirect to chat.
+   * Stripe checkout disabled during beta — all plans are free.
    */
   const redirectAfterAuth = async () => {
-    if (selectedPlan && ['starter', 'business', 'max'].includes(selectedPlan)) {
-      try {
-        const res = await fetch('/api/billing/checkout', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ plan: selectedPlan }),
-        });
-        const data = (await res.json()) as { url?: string };
-        if (data.url) {
-          window.location.href = data.url;
-          return;
-        }
-      } catch (err) {
-        console.error('Failed to create checkout session:', err);
-      }
-    }
     router.push('/chat');
     router.refresh();
   };
