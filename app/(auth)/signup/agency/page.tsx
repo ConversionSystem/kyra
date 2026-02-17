@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,7 +43,7 @@ const PLANS = [
   {
     id: 'pro' as const,
     name: 'Pro',
-    price: 297,
+    price: 249,
     icon: Crown,
     description: 'For growing agencies with multiple clients',
     features: [
@@ -61,7 +61,7 @@ const PLANS = [
   {
     id: 'scale' as const,
     name: 'Scale',
-    price: 697,
+    price: 499,
     icon: Rocket,
     description: 'For established agencies at scale',
     features: [
@@ -102,9 +102,11 @@ export default function AgencySignupWrapper() {
 function AgencySignupPage() {
   const router = useRouter();
   const supabase = createClient();
+  const searchParams = useSearchParams();
 
-  // Step tracking
+  // Step tracking — check URL param and auth state
   const [step, setStep] = useState<1 | 2>(1);
+  const [checkingAuth, setCheckingAuth] = useState(true);
 
   // Step 1: auth
   const [email, setEmail] = useState('');
@@ -120,6 +122,31 @@ function AgencySignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+
+  // On mount: if URL says step=2 and user is authenticated, jump to step 2
+  useEffect(() => {
+    async function checkAuth() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // User is authenticated — check if they already have an agency
+        try {
+          const res = await fetch('/api/agency');
+          if (res.ok) {
+            const data = await res.json();
+            if (data?.agency?.id) {
+              // Already has an agency, redirect to dashboard
+              router.push('/agency');
+              return;
+            }
+          }
+        } catch {}
+        // Authenticated but no agency — go to step 2
+        setStep(2);
+      }
+      setCheckingAuth(false);
+    }
+    checkAuth();
+  }, [supabase, router]);
 
   // Auto-generate slug from agency name (unless manually edited)
   useEffect(() => {
@@ -200,6 +227,15 @@ function AgencySignupPage() {
       setIsLoading(false);
     }
   };
+
+  // ---- Loading while checking auth ----
+  if (checkingAuth) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
+      </div>
+    );
+  }
 
   // ---- Email confirmation screen ----
   if (emailSent) {
