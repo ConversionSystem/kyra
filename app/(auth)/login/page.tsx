@@ -20,7 +20,7 @@ export default function LoginPage() {
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirect = searchParams.get('redirect') || '/chat';
+  const redirect = searchParams.get('redirect') || '/agency';
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -177,7 +177,7 @@ function LoginContent() {
 
           <p className="text-center text-sm text-gray-500">
             Don't have an account?{' '}
-            <Link href="/signup" className="text-gray-900 hover:underline">
+            <Link href="/signup/agency" className="text-gray-900 hover:underline">
               Sign up
             </Link>
           </p>

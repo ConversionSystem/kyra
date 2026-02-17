@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
-  const rawRedirect = searchParams.get('redirect') || '/chat';
+  const rawRedirect = searchParams.get('redirect') || '/agency';
   const redirect = decodeURIComponent(rawRedirect);
 
   if (code) {

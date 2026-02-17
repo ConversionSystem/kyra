@@ -14,7 +14,7 @@ export default async function ClientDetailPage({ params }: ClientDetailPageProps
   if (!user) redirect('/login');
 
   const result = await getAgencyForUser(user.id);
-  if (!result) redirect('/chat');
+  if (!result) redirect('/signup/agency');
 
   const client = await getAgencyClient(id);
   if (!client || client.agency_id !== result.agency.id) notFound();
