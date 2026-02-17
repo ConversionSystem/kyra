@@ -25,8 +25,8 @@ import {
 const PLANS = [
   {
     id: 'starter' as const,
-    name: 'Starter',
-    price: 97,
+    name: 'Lite',
+    price: 99,
     icon: Zap,
     description: 'Perfect for solo operators getting started',
     features: [

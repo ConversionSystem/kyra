@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
   const plan = profile?.plan || 'free';
   if (plan === 'free') {
     return NextResponse.json(
-      { error: 'Upgrade to Starter to use automations' },
+      { error: 'Upgrade to Lite to use automations' },
       { status: 403 }
     );
   }

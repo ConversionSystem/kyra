@@ -273,7 +273,7 @@ export default function SkillsSettingsPage() {
               <div>
                 <p className="font-medium text-zinc-100">Unlock more skills</p>
                 <p className="text-sm text-zinc-400">
-                  Upgrade to Starter for GitHub, Notion, voice, and more.
+                  Upgrade to Lite for GitHub, Notion, voice, and more.
                 </p>
               </div>
               <Link href="/settings">
