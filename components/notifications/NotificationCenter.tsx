@@ -27,13 +27,13 @@ const TYPE_ICONS: Record<string, typeof Sparkles> = {
 };
 
 const TYPE_COLORS: Record<string, string> = {
-  insight: 'from-violet-500 to-purple-600',
+  insight: 'from-indigo-500 to-indigo-600',
   reminder_followup: 'from-amber-500 to-orange-600',
   calendar_prep: 'from-blue-500 to-cyan-600',
   weekly_summary: 'from-emerald-500 to-green-600',
-  nudge: 'from-rose-500 to-pink-600',
+  nudge: 'from-rose-500 to-indigo-600',
   morning_brief: 'from-sky-500 to-blue-600',
-  pattern_alert: 'from-indigo-500 to-violet-600',
+  pattern_alert: 'from-indigo-500 to-indigo-600',
 };
 
 const PRIORITY_RING: Record<string, string> = {
@@ -141,7 +141,7 @@ export function NotificationCenter() {
       >
         <Bell className="h-5 w-5" />
         {unreadCount > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-violet-500 text-[10px] font-bold text-white animate-in zoom-in">
+          <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-indigo-500 text-[10px] font-bold text-white animate-in zoom-in">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -153,10 +153,10 @@ export function NotificationCenter() {
           {/* Header */}
           <div className="flex items-center justify-between border-b border-zinc-800 px-4 py-3">
             <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-violet-400" />
+              <Sparkles className="h-4 w-4 text-indigo-400" />
               <span className="font-semibold text-zinc-100">Kyra's Insights</span>
               {unreadCount > 0 && (
-                <span className="rounded-full bg-violet-500/20 px-2 py-0.5 text-xs font-medium text-violet-300">
+                <span className="rounded-full bg-indigo-500/20 px-2 py-0.5 text-xs font-medium text-indigo-300">
                   {unreadCount} new
                 </span>
               )}
@@ -187,14 +187,14 @@ export function NotificationCenter() {
             ) : (
               notifications.map((notification) => {
                 const Icon = TYPE_ICONS[notification.type] || Sparkles;
-                const gradient = TYPE_COLORS[notification.type] || 'from-violet-500 to-purple-600';
+                const gradient = TYPE_COLORS[notification.type] || 'from-indigo-500 to-indigo-600';
                 const priorityClass = PRIORITY_RING[notification.priority] || '';
                 
                 return (
                   <div
                     key={notification.id}
                     className={`group border-b border-zinc-800/50 px-4 py-3 transition-colors hover:bg-zinc-800/50 ${
-                      !notification.read ? 'bg-violet-500/5' : ''
+                      !notification.read ? 'bg-indigo-500/5' : ''
                     }`}
                   >
                     <div className="flex gap-3">
@@ -224,12 +224,12 @@ export function NotificationCenter() {
                             {timeAgo(notification.created_at)}
                           </span>
                           {!notification.read && (
-                            <span className="h-1.5 w-1.5 rounded-full bg-violet-500" />
+                            <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
                           )}
                           {notification.action_label && (
                             <button
                               onClick={() => handleAction(notification)}
-                              className="rounded-md bg-violet-500/10 px-2 py-0.5 text-[11px] font-medium text-violet-400 transition-colors hover:bg-violet-500/20"
+                              className="rounded-md bg-indigo-500/10 px-2 py-0.5 text-[11px] font-medium text-indigo-400 transition-colors hover:bg-indigo-500/20"
                             >
                               {notification.action_label}
                             </button>

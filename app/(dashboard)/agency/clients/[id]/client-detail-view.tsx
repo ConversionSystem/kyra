@@ -280,7 +280,7 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
                   <div
                     className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
                       msg.role === 'user'
-                        ? 'bg-violet-600 text-white'
+                        ? 'bg-indigo-600 text-white'
                         : 'bg-zinc-800 text-zinc-200'
                     }`}
                   >
@@ -364,7 +364,7 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
                   onClick={() => setStatus(s)}
                   className={`rounded-lg border px-4 py-2 text-sm font-medium capitalize transition-colors ${
                     status === s
-                      ? 'border-violet-500/50 bg-violet-500/10 text-violet-400'
+                      ? 'border-indigo-500/50 bg-indigo-500/10 text-indigo-400'
                       : 'border-zinc-700 bg-zinc-800 text-zinc-400 hover:text-zinc-200'
                   }`}
                 >

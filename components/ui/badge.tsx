@@ -12,10 +12,10 @@ const badgeVariants = cva(
         destructive: 'border-transparent bg-red-500 text-zinc-50 shadow hover:bg-red-500/80',
         outline: 'border-zinc-700 text-zinc-50',
         fact: 'border-blue-500/50 bg-blue-500/10 text-blue-400',
-        person: 'border-purple-500/50 bg-purple-500/10 text-purple-400',
+        person: 'border-indigo-500/50 bg-indigo-500/10 text-indigo-400',
         decision: 'border-amber-500/50 bg-amber-500/10 text-amber-400',
         event: 'border-green-500/50 bg-green-500/10 text-green-400',
-        preference: 'border-pink-500/50 bg-pink-500/10 text-pink-400',
+        preference: 'border-indigo-500/50 bg-indigo-500/10 text-indigo-400',
       },
     },
     defaultVariants: {

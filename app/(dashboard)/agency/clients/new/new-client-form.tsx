@@ -29,8 +29,8 @@ const industryColors: Record<string, string> = {
   'Dental / Medical': 'border-cyan-500/50 bg-cyan-500/10 text-cyan-400',
   'Real Estate': 'border-emerald-500/50 bg-emerald-500/10 text-emerald-400',
   'Home Services': 'border-orange-500/50 bg-orange-500/10 text-orange-400',
-  'Retail / E-commerce': 'border-pink-500/50 bg-pink-500/10 text-pink-400',
-  General: 'border-violet-500/50 bg-violet-500/10 text-violet-400',
+  'Retail / E-commerce': 'border-indigo-500/50 bg-indigo-500/10 text-indigo-400',
+  General: 'border-indigo-500/50 bg-indigo-500/10 text-indigo-400',
 };
 
 function getIndustryColor(industry: string) {
@@ -96,7 +96,7 @@ function TemplatePreviewModal({
           {suggestedSkills.length > 0 && (
             <div>
               <h3 className="text-sm font-semibold text-zinc-200 mb-3 flex items-center gap-2">
-                <Zap className="h-4 w-4 text-violet-400" />
+                <Zap className="h-4 w-4 text-indigo-400" />
                 What this AI can do
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -105,7 +105,7 @@ function TemplatePreviewModal({
                     key={skill.id}
                     className="flex items-start gap-2.5 rounded-lg border border-zinc-800 bg-zinc-800/40 p-3"
                   >
-                    <div className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-violet-400" />
+                    <div className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-400" />
                     <div>
                       <p className="text-xs font-medium text-zinc-200">{skill.name}</p>
                       <p className="text-[11px] text-zinc-500 mt-0.5">{skill.description}</p>
@@ -120,7 +120,7 @@ function TemplatePreviewModal({
           {sampleResponses.length > 0 && (
             <div>
               <h3 className="text-sm font-semibold text-zinc-200 mb-3 flex items-center gap-2">
-                <MessageSquare className="h-4 w-4 text-violet-400" />
+                <MessageSquare className="h-4 w-4 text-indigo-400" />
                 Sample Conversations
               </h3>
               <div className="space-y-3">
@@ -136,9 +136,9 @@ function TemplatePreviewModal({
                       <p className="text-sm text-zinc-300">{sample.question}</p>
                     </div>
                     {/* AI response */}
-                    <div className="px-4 py-3 bg-violet-500/[0.03]">
+                    <div className="px-4 py-3 bg-indigo-500/[0.03]">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[10px] font-medium uppercase tracking-wider text-violet-400">
+                        <span className="text-[10px] font-medium uppercase tracking-wider text-indigo-400">
                           AI Response
                         </span>
                       </div>
@@ -209,7 +209,7 @@ function TemplateCard({
       onClick={onSelect}
       className={`w-full text-left rounded-xl border p-4 transition-all ${
         isSelected
-          ? 'border-violet-500/50 bg-violet-500/5 ring-1 ring-violet-500/20'
+          ? 'border-indigo-500/50 bg-indigo-500/5 ring-1 ring-indigo-500/20'
           : 'border-zinc-700/80 bg-zinc-800/40 hover:bg-zinc-800/70 hover:border-zinc-600'
       }`}
     >
@@ -265,7 +265,7 @@ function TemplateCard({
                     onPreview();
                   }
                 }}
-                className="inline-flex items-center gap-1 text-[11px] text-violet-400 hover:text-violet-300 mt-2 cursor-pointer"
+                className="inline-flex items-center gap-1 text-[11px] text-indigo-400 hover:text-indigo-300 mt-2 cursor-pointer"
               >
                 <MessageSquare className="h-3 w-3" />
                 Preview conversations →
@@ -276,8 +276,8 @@ function TemplateCard({
 
         {/* Checkmark */}
         {isSelected && (
-          <div className="shrink-0 rounded-full bg-violet-500/20 p-1">
-            <Check className="h-4 w-4 text-violet-400" />
+          <div className="shrink-0 rounded-full bg-indigo-500/20 p-1">
+            <Check className="h-4 w-4 text-indigo-400" />
           </div>
         )}
       </div>
@@ -457,7 +457,7 @@ export function NewClientForm({ agencyId, templates }: NewClientFormProps) {
                 onClick={() => handleTemplateSelect(null)}
                 className={`w-full text-left rounded-xl border p-4 transition-all ${
                   templateId === null
-                    ? 'border-violet-500/50 bg-violet-500/5 ring-1 ring-violet-500/20'
+                    ? 'border-indigo-500/50 bg-indigo-500/5 ring-1 ring-indigo-500/20'
                     : 'border-zinc-700/80 bg-zinc-800/40 hover:bg-zinc-800/70 hover:border-zinc-600'
                 }`}
               >
@@ -472,8 +472,8 @@ export function NewClientForm({ agencyId, templates }: NewClientFormProps) {
                     </div>
                   </div>
                   {templateId === null && (
-                    <div className="shrink-0 rounded-full bg-violet-500/20 p-1">
-                      <Check className="h-4 w-4 text-violet-400" />
+                    <div className="shrink-0 rounded-full bg-indigo-500/20 p-1">
+                      <Check className="h-4 w-4 text-indigo-400" />
                     </div>
                   )}
                 </div>

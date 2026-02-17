@@ -257,7 +257,7 @@ export default function ChannelsPage() {
                     <li>Open Telegram on your phone or desktop</li>
                     <li>Search for <a href="https://t.me/KyraAIBot" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline font-medium">@KyraAIBot</a> or tap the link to open the bot</li>
                     <li>Tap <strong className="text-zinc-200">&quot;Start&quot;</strong> if this is your first time opening the bot</li>
-                    <li>Copy the connect command below and send it to the bot (e.g. <code className="text-violet-300 bg-zinc-800 px-1.5 py-0.5 rounded text-xs">/connect abc123</code>)</li>
+                    <li>Copy the connect command below and send it to the bot (e.g. <code className="text-indigo-300 bg-zinc-800 px-1.5 py-0.5 rounded text-xs">/connect abc123</code>)</li>
                     <li>You&apos;ll get a confirmation message — Kyra is now connected!</li>
                   </ol>
                   <div className="mt-3 rounded-md bg-blue-500/5 border border-blue-500/20 px-3 py-2">
@@ -267,10 +267,10 @@ export default function ChannelsPage() {
 
                 {telegramToken ? (
                   <div className="space-y-3">
-                    <div className="rounded-lg border border-violet-500/30 bg-violet-500/5 p-4">
+                    <div className="rounded-lg border border-indigo-500/30 bg-indigo-500/5 p-4">
                       <p className="text-xs text-zinc-500 mb-2">Send this to @KyraAIBot:</p>
                       <div className="flex items-center gap-2">
-                        <code className="flex-1 rounded bg-zinc-800 px-3 py-2 text-sm font-mono text-violet-300">
+                        <code className="flex-1 rounded bg-zinc-800 px-3 py-2 text-sm font-mono text-indigo-300">
                           /connect {telegramToken}
                         </code>
                         <Button variant="ghost" size="icon" onClick={copyToken}>
@@ -359,7 +359,7 @@ export default function ChannelsPage() {
                     <li>Click <strong className="text-zinc-200">&quot;Generate Connection Token&quot;</strong> below</li>
                     <li>Open WhatsApp on your phone</li>
                     <li>Message Kyra&apos;s WhatsApp number (shown below)</li>
-                    <li>Send the connect command (e.g. <code className="text-violet-300 bg-zinc-800 px-1.5 py-0.5 rounded text-xs">CONNECT ABC123</code>)</li>
+                    <li>Send the connect command (e.g. <code className="text-indigo-300 bg-zinc-800 px-1.5 py-0.5 rounded text-xs">CONNECT ABC123</code>)</li>
                     <li>You&apos;ll get a confirmation — Kyra is now connected!</li>
                   </ol>
                   <div className="mt-3 rounded-md bg-green-500/5 border border-green-500/20 px-3 py-2">
@@ -369,10 +369,10 @@ export default function ChannelsPage() {
 
                 {whatsappToken ? (
                   <div className="space-y-3">
-                    <div className="rounded-lg border border-violet-500/30 bg-violet-500/5 p-4">
+                    <div className="rounded-lg border border-indigo-500/30 bg-indigo-500/5 p-4">
                       <p className="text-xs text-zinc-500 mb-2">Send this to Kyra on WhatsApp:</p>
                       <div className="flex items-center gap-2">
-                        <code className="flex-1 rounded bg-zinc-800 px-3 py-2 text-sm font-mono text-violet-300">
+                        <code className="flex-1 rounded bg-zinc-800 px-3 py-2 text-sm font-mono text-indigo-300">
                           CONNECT {whatsappToken}
                         </code>
                         <Button variant="ghost" size="icon" onClick={copyWhatsappToken}>
@@ -411,8 +411,8 @@ export default function ChannelsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <div className="rounded-lg bg-purple-500/10 p-2">
-                <Gamepad2 className="h-5 w-5 text-purple-400" />
+              <div className="rounded-lg bg-indigo-500/10 p-2">
+                <Gamepad2 className="h-5 w-5 text-indigo-400" />
               </div>
               Discord
               <StatusBadge status={discord.status} />
@@ -455,11 +455,11 @@ export default function ChannelsPage() {
                   <ol className="text-sm text-zinc-400 space-y-3 list-decimal list-inside">
                     <li>Click <strong className="text-zinc-200">&quot;Generate Connection Token&quot;</strong> below</li>
                     <li>Add the Kyra bot to your Discord server using the invite link</li>
-                    <li>In any text channel, type the connect command (e.g. <code className="text-violet-300 bg-zinc-800 px-1.5 py-0.5 rounded text-xs">!connect ABC123</code>)</li>
+                    <li>In any text channel, type the connect command (e.g. <code className="text-indigo-300 bg-zinc-800 px-1.5 py-0.5 rounded text-xs">!connect ABC123</code>)</li>
                     <li>You&apos;ll get a confirmation message — Kyra is now connected!</li>
                   </ol>
-                  <div className="mt-3 rounded-md bg-purple-500/5 border border-purple-500/20 px-3 py-2">
-                    <p className="text-xs text-purple-300">Once connected, message Kyra anytime in Discord. Same memory and context as web chat.</p>
+                  <div className="mt-3 rounded-md bg-indigo-500/5 border border-indigo-500/20 px-3 py-2">
+                    <p className="text-xs text-indigo-300">Once connected, message Kyra anytime in Discord. Same memory and context as web chat.</p>
                   </div>
                 </div>
 
@@ -470,16 +470,16 @@ export default function ChannelsPage() {
                         href={discordInviteUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-500 transition-colors"
+                        className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 transition-colors"
                       >
                         <Gamepad2 className="h-4 w-4" />
                         Add Kyra Bot to Server
                       </a>
                     )}
-                    <div className="rounded-lg border border-violet-500/30 bg-violet-500/5 p-4">
+                    <div className="rounded-lg border border-indigo-500/30 bg-indigo-500/5 p-4">
                       <p className="text-xs text-zinc-500 mb-2">Send this in any channel:</p>
                       <div className="flex items-center gap-2">
-                        <code className="flex-1 rounded bg-zinc-800 px-3 py-2 text-sm font-mono text-violet-300">
+                        <code className="flex-1 rounded bg-zinc-800 px-3 py-2 text-sm font-mono text-indigo-300">
                           !connect {discordToken}
                         </code>
                         <Button variant="ghost" size="icon" onClick={copyDiscordToken}>

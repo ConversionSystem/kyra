@@ -21,7 +21,7 @@ import type { Agency, AgencyMember, AgencyRole, AgencySettings } from '@/lib/age
 
 const roleConfig: Record<AgencyRole, { label: string; icon: typeof Crown; color: string }> = {
   owner: { label: 'Owner', icon: Crown, color: 'border-amber-500/50 bg-amber-500/10 text-amber-400' },
-  admin: { label: 'Admin', icon: Shield, color: 'border-violet-500/50 bg-violet-500/10 text-violet-400' },
+  admin: { label: 'Admin', icon: Shield, color: 'border-indigo-500/50 bg-indigo-500/10 text-indigo-400' },
   member: { label: 'Member', icon: User, color: 'border-zinc-500/50 bg-zinc-500/10 text-zinc-400' },
 };
 
@@ -216,7 +216,7 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
           <div className="flex items-center gap-3">
             <CardTitle>White-label Settings</CardTitle>
             {!isPremium && (
-              <Badge className="border-violet-500/50 bg-violet-500/10 text-violet-400 text-[10px]">
+              <Badge className="border-indigo-500/50 bg-indigo-500/10 text-indigo-400 text-[10px]">
                 Pro / Scale
               </Badge>
             )}
