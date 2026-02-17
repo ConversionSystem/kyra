@@ -264,7 +264,7 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="rounded-lg border border-gray-200 bg-white h-64 overflow-y-auto mb-3 p-4 space-y-3">
+          <div className="rounded-lg border border-gray-200 bg-white shadow-sm h-64 overflow-y-auto mb-3 p-4 space-y-3">
             {messages.length === 0 ? (
               <div className="flex items-center justify-center h-full">
                 <p className="text-sm text-gray-500">

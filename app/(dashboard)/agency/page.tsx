@@ -114,7 +114,7 @@ export default async function AgencyOverviewPage() {
           { label: 'Paused', count: pausedCount, color: 'bg-yellow-500' },
           { label: 'Setup', count: setupCount, color: 'bg-blue-500' },
         ].map((item) => (
-          <div key={item.label} className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-4">
+          <div key={item.label} className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white shadow-sm p-4">
             <div className={`h-2.5 w-2.5 rounded-full ${item.color}`} />
             <span className="text-sm text-gray-700">{item.label}</span>
             <span className="ml-auto text-sm font-semibold text-gray-900">{item.count}</span>
