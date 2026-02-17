@@ -23,7 +23,7 @@ const navItems = [
 
 const planColors: Record<string, string> = {
   starter: 'border-blue-500/50 bg-blue-500/10 text-blue-400',
-  pro: 'border-violet-500/50 bg-violet-500/10 text-violet-400',
+  pro: 'border-indigo-500/50 bg-indigo-500/10 text-indigo-400',
   scale: 'border-amber-500/50 bg-amber-500/10 text-amber-400',
 };
 

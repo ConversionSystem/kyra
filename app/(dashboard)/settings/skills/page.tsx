@@ -142,7 +142,7 @@ export default function SkillsSettingsPage() {
         {/* Stats */}
         <div className="flex items-center gap-4">
           <div className="rounded-lg border border-zinc-700 bg-zinc-800/50 px-4 py-2">
-            <span className="text-lg font-bold text-violet-400">
+            <span className="text-lg font-bold text-indigo-400">
               {skills.filter(s => s.enabled).length}
             </span>
             <span className="text-sm text-zinc-500 ml-1">enabled</span>
@@ -210,7 +210,7 @@ export default function SkillsSettingsPage() {
                           disabled={toggling === skill.id}
                           className={`relative h-6 w-11 rounded-full transition-colors ${
                             skill.enabled
-                              ? 'bg-violet-500'
+                              ? 'bg-indigo-500'
                               : 'bg-zinc-600'
                           }`}
                         >
@@ -268,7 +268,7 @@ export default function SkillsSettingsPage() {
 
         {/* Upgrade CTA for free users */}
         {plan === 'free' && (
-          <Card className="border-violet-500/30 bg-violet-500/5">
+          <Card className="border-indigo-500/30 bg-indigo-500/5">
             <CardContent className="flex items-center justify-between p-6">
               <div>
                 <p className="font-medium text-zinc-100">Unlock more skills</p>

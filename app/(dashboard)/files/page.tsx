@@ -157,7 +157,7 @@ export default function FilesPage() {
           </div>
           <div className="h-2 rounded-full bg-zinc-800 overflow-hidden">
             <div
-              className="h-full rounded-full bg-violet-500 transition-all"
+              className="h-full rounded-full bg-indigo-500 transition-all"
               style={{ width: `${Math.min(100, (files.length / limit) * 100)}%` }}
             />
           </div>

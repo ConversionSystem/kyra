@@ -38,7 +38,7 @@ export default function UsagePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="w-6 h-6 border-2 border-violet-500/30 border-t-violet-500 rounded-full animate-spin" />
+        <div className="w-6 h-6 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
       </div>
     );
   }
@@ -98,7 +98,7 @@ export default function UsagePage() {
           <CardContent className="p-6 flex flex-col justify-between h-full">
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <Zap className="w-4 h-4 text-violet-400" />
+                <Zap className="w-4 h-4 text-indigo-400" />
                 <span className="text-sm text-zinc-400">Current Plan</span>
               </div>
               <h2 className="text-xl font-bold capitalize">{data.usage.plan}</h2>
@@ -108,7 +108,7 @@ export default function UsagePage() {
             </div>
             {data.usage.plan === 'free' && (
               <Link href="/settings">
-                <Button className="w-full mt-4 bg-violet-600 hover:bg-violet-500 text-white" size="sm">
+                <Button className="w-full mt-4 bg-indigo-600 hover:bg-indigo-500 text-white" size="sm">
                   Upgrade Plan
                 </Button>
               </Link>
@@ -154,7 +154,7 @@ export default function UsagePage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
-            <BarChart3 className="w-4 h-4 text-violet-400" />
+            <BarChart3 className="w-4 h-4 text-indigo-400" />
             Messages per day
           </CardTitle>
           <CardDescription>Last 30 days</CardDescription>
@@ -164,7 +164,7 @@ export default function UsagePage() {
             {data.dailyMessages.map((d) => (
               <div key={d.date} className="flex-1 flex flex-col items-center justify-end h-full group relative">
                 <div
-                  className="w-full bg-violet-500/80 rounded-t transition-all duration-300 hover:bg-violet-400 min-h-[2px]"
+                  className="w-full bg-indigo-500/80 rounded-t transition-all duration-300 hover:bg-indigo-400 min-h-[2px]"
                   style={{ height: `${Math.max((d.count / maxMessages) * 100, 2)}%` }}
                 />
                 <div className="absolute -top-8 left-1/2 -translate-x-1/2 hidden group-hover:block bg-zinc-800 text-xs px-2 py-1 rounded whitespace-nowrap z-10">

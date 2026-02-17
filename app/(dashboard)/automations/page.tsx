@@ -221,7 +221,7 @@ export default function AutomationsPage() {
 
         {/* Create form */}
         {showCreate && (
-          <Card className="border-violet-500/30">
+          <Card className="border-indigo-500/30">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base">New Automation</CardTitle>
@@ -364,7 +364,7 @@ export default function AutomationsPage() {
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <Zap className={`h-4 w-4 ${auto.enabled ? 'text-violet-400' : 'text-zinc-600'}`} />
+                        <Zap className={`h-4 w-4 ${auto.enabled ? 'text-indigo-400' : 'text-zinc-600'}`} />
                         <span className="font-medium text-zinc-100">{auto.name}</span>
                         <Badge variant="outline" className="text-xs">
                           {auto.delivery_channel}
@@ -387,7 +387,7 @@ export default function AutomationsPage() {
                         onClick={() => runNow(auto.id)}
                         disabled={running === auto.id}
                         title="Run now"
-                        className="p-1 text-zinc-600 hover:text-violet-400 transition-colors"
+                        className="p-1 text-zinc-600 hover:text-indigo-400 transition-colors"
                       >
                         {running === auto.id
                           ? <Loader2 className="h-4 w-4 animate-spin" />
@@ -397,7 +397,7 @@ export default function AutomationsPage() {
                         onClick={() => toggleAutomation(auto.id, !auto.enabled)}
                         disabled={toggling === auto.id}
                         className={`relative h-6 w-11 rounded-full transition-colors ${
-                          auto.enabled ? 'bg-violet-500' : 'bg-zinc-600'
+                          auto.enabled ? 'bg-indigo-500' : 'bg-zinc-600'
                         }`}
                       >
                         {toggling === auto.id ? (

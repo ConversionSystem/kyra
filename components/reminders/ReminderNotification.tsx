@@ -67,21 +67,21 @@ export function ReminderNotification() {
       {visibleReminders.map((reminder) => (
         <Card 
           key={reminder.id} 
-          className="bg-violet-600 border-violet-500 shadow-lg animate-in slide-in-from-right"
+          className="bg-indigo-600 border-indigo-500 shadow-lg animate-in slide-in-from-right"
         >
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
-              <div className="shrink-0 rounded-full bg-violet-500 p-2">
+              <div className="shrink-0 rounded-full bg-indigo-500 p-2">
                 <Bell className="h-4 w-4 text-white" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-white">Reminder</p>
-                <p className="text-sm text-violet-100 mt-1">{reminder.content}</p>
+                <p className="text-sm text-indigo-100 mt-1">{reminder.content}</p>
               </div>
               <Button
                 variant="ghost"
                 size="icon"
-                className="shrink-0 text-violet-200 hover:text-white hover:bg-violet-500"
+                className="shrink-0 text-indigo-200 hover:text-white hover:bg-indigo-500"
                 onClick={() => handleDismiss(reminder.id)}
               >
                 <Check className="h-4 w-4" />

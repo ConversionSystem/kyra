@@ -38,7 +38,7 @@ export function PlanRedirect() {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/80">
       <div className="text-center">
-        <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
+        <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
         <p className="text-zinc-300">Redirecting to checkout...</p>
       </div>
     </div>

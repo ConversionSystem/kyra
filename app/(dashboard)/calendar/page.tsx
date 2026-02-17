@@ -118,7 +118,7 @@ export default function CalendarPage() {
           </p>
           <a
             href={connectUrl || '/api/auth/google'}
-            className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-violet-500 transition-colors"
+            className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-500 transition-colors"
           >
             <CalendarDays className="h-4 w-4" />
             Connect Google Calendar
@@ -133,7 +133,7 @@ export default function CalendarPage() {
       <div className="mx-auto max-w-3xl">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
           <div className="flex items-center gap-3">
-            <CalendarDays className="h-6 w-6 text-violet-400" />
+            <CalendarDays className="h-6 w-6 text-indigo-400" />
             <h1 className="text-2xl font-bold text-zinc-100">Calendar</h1>
           </div>
           <div className="flex items-center gap-3">
@@ -143,7 +143,7 @@ export default function CalendarPage() {
                   key={r}
                   onClick={() => setRange(r)}
                   className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                    range === r ? 'bg-violet-600 text-white' : 'text-zinc-400 hover:text-zinc-200'
+                    range === r ? 'bg-indigo-600 text-white' : 'text-zinc-400 hover:text-zinc-200'
                   }`}
                 >
                   {r === 'today' ? 'Today' : 'This Week'}
@@ -152,7 +152,7 @@ export default function CalendarPage() {
             </div>
             <button
               onClick={() => setShowForm(!showForm)}
-              className="flex items-center gap-1.5 rounded-lg bg-violet-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-violet-500 transition-colors"
+              className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-500 transition-colors"
             >
               <Plus className="h-4 w-4" />
               Add Event
@@ -167,7 +167,7 @@ export default function CalendarPage() {
               placeholder="Event title"
               value={formSummary}
               onChange={(e) => setFormSummary(e.target.value)}
-              className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+              className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
               autoFocus
             />
             <div className="flex flex-wrap gap-2 sm:gap-3">
@@ -175,18 +175,18 @@ export default function CalendarPage() {
                 type="date"
                 value={formDate}
                 onChange={(e) => setFormDate(e.target.value)}
-                className="rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-violet-500 min-h-[44px]"
+                className="rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-indigo-500 min-h-[44px]"
               />
               <input
                 type="time"
                 value={formTime}
                 onChange={(e) => setFormTime(e.target.value)}
-                className="rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-violet-500 min-h-[44px]"
+                className="rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-indigo-500 min-h-[44px]"
               />
               <select
                 value={formDuration}
                 onChange={(e) => setFormDuration(e.target.value)}
-                className="rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-violet-500 min-h-[44px]"
+                className="rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-indigo-500 min-h-[44px]"
               >
                 <option value="15">15 min</option>
                 <option value="30">30 min</option>
@@ -199,7 +199,7 @@ export default function CalendarPage() {
               <button type="button" onClick={() => setShowForm(false)} className="rounded-lg px-3 py-1.5 text-sm text-zinc-400 hover:text-zinc-200 transition-colors">
                 Cancel
               </button>
-              <button type="submit" disabled={submitting || !formSummary.trim()} className="rounded-lg bg-violet-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50 transition-colors">
+              <button type="submit" disabled={submitting || !formSummary.trim()} className="rounded-lg bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50 transition-colors">
                 {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create'}
               </button>
             </div>
@@ -281,7 +281,7 @@ function EventCard({
 
   return (
     <div className="group flex items-start gap-3 rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 transition-colors hover:border-zinc-700">
-      <div className="flex-shrink-0 w-1 h-full min-h-[2.5rem] rounded-full bg-violet-500/40" />
+      <div className="flex-shrink-0 w-1 h-full min-h-[2.5rem] rounded-full bg-indigo-500/40" />
       <div className="flex-1 min-w-0">
         {isEditing ? (
           <div className="flex items-center gap-2">
@@ -289,10 +289,10 @@ function EventCard({
               value={editSummary}
               onChange={(e) => onEditSummaryChange(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') onEditSave(event.id); if (e.key === 'Escape') onEditCancel(); }}
-              className="flex-1 rounded-md bg-zinc-800 border border-zinc-600 px-2 py-1 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-violet-500"
+              className="flex-1 rounded-md bg-zinc-800 border border-zinc-600 px-2 py-1 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
               autoFocus
             />
-            <button onClick={() => onEditSave(event.id)} className="text-xs text-violet-400 hover:text-violet-300">Save</button>
+            <button onClick={() => onEditSave(event.id)} className="text-xs text-indigo-400 hover:text-indigo-300">Save</button>
             <button onClick={onEditCancel} className="text-xs text-zinc-500 hover:text-zinc-300">Cancel</button>
           </div>
         ) : (

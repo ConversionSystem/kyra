@@ -121,7 +121,7 @@ export function ClientsListView({ clients }: ClientsListViewProps) {
                     <td className="p-4">
                       <Link
                         href={`/agency/clients/${client.id}`}
-                        className="flex items-center gap-3 hover:text-violet-400 transition-colors"
+                        className="flex items-center gap-3 hover:text-indigo-400 transition-colors"
                       >
                         <div className="h-8 w-8 rounded-lg bg-zinc-700 flex items-center justify-center text-xs font-semibold text-zinc-300 shrink-0">
                           {client.name.charAt(0).toUpperCase()}

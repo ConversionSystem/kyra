@@ -53,8 +53,8 @@ export default async function AgencyOverviewPage() {
         <Card>
           <CardContent className="p-5">
             <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-violet-500/10 p-2">
-                <Users className="h-5 w-5 text-violet-400" />
+              <div className="rounded-lg bg-indigo-500/10 p-2">
+                <Users className="h-5 w-5 text-indigo-400" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-zinc-100">{clients.length}</p>

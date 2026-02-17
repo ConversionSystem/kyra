@@ -546,7 +546,7 @@ function SettingsContent() {
                 <p className="text-xs text-zinc-500">Memories</p>
               </div>
               <div className="rounded-lg border border-zinc-700 bg-zinc-800/50 p-3 md:p-4 text-center">
-                <p className="text-xl md:text-2xl font-bold text-violet-400 capitalize">{usage?.planName ?? 'Free'}</p>
+                <p className="text-xl md:text-2xl font-bold text-indigo-400 capitalize">{usage?.planName ?? 'Free'}</p>
                 <p className="text-xs text-zinc-500">Plan</p>
               </div>
             </div>
@@ -562,7 +562,7 @@ function SettingsContent() {
                   <div
                     className={`h-2 rounded-full transition-all ${
                       usage.usagePercentage > 90 ? 'bg-red-500' :
-                      usage.usagePercentage > 70 ? 'bg-yellow-500' : 'bg-violet-500'
+                      usage.usagePercentage > 70 ? 'bg-yellow-500' : 'bg-indigo-500'
                     }`}
                     style={{ width: `${Math.min(100, usage.usagePercentage)}%` }}
                   />
@@ -605,7 +605,7 @@ function SettingsContent() {
                     </div>
                   )}
                   {usage?.plan !== 'business' && (
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-violet-500/30 bg-violet-500/5 p-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-indigo-500/30 bg-indigo-500/5 p-4">
                       <div>
                         <p className="font-medium text-zinc-100">Business — $100/mo</p>
                         <p className="text-xs text-zinc-500">3,000 credits · AI sub-agents · Priority support</p>

@@ -129,7 +129,7 @@ export function ChatInput({ onSend, isLoading, disabled }: ChatInputProps) {
       onDrop={handleDrop}
     >
       <div className={`flex flex-col rounded-2xl border bg-zinc-900 p-2 shadow-lg transition-colors focus-within:border-zinc-600 ${
-        dragOver ? 'border-violet-500 bg-violet-500/5' : 'border-zinc-700'
+        dragOver ? 'border-indigo-500 bg-indigo-500/5' : 'border-zinc-700'
       }`}>
         {/* Attached files chips */}
         {attachments.length > 0 && (
@@ -142,7 +142,7 @@ export function ChatInput({ onSend, isLoading, disabled }: ChatInputProps) {
                 {att.uploading ? (
                   <Loader2 className="h-3 w-3 animate-spin text-zinc-500" />
                 ) : (
-                  <FileText className="h-3 w-3 text-violet-400" />
+                  <FileText className="h-3 w-3 text-indigo-400" />
                 )}
                 <span className="max-w-[120px] truncate">
                   {att.uploaded?.name || att.file?.name || 'file'}
@@ -205,8 +205,8 @@ export function ChatInput({ onSend, isLoading, disabled }: ChatInputProps) {
 
       {/* Drag overlay hint */}
       {dragOver && (
-        <div className="absolute inset-0 flex items-center justify-center rounded-2xl border-2 border-dashed border-violet-500 bg-violet-500/10 pointer-events-none">
-          <span className="text-sm font-medium text-violet-400">Drop file to attach</span>
+        <div className="absolute inset-0 flex items-center justify-center rounded-2xl border-2 border-dashed border-indigo-500 bg-indigo-500/10 pointer-events-none">
+          <span className="text-sm font-medium text-indigo-400">Drop file to attach</span>
         </div>
       )}
     </form>
