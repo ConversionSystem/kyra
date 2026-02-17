@@ -109,11 +109,11 @@ export default function CalendarPage() {
 
   if (!connected) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-950">
+      <div className="flex min-h-screen items-center justify-center bg-white">
         <div className="text-center space-y-4">
-          <CalendarDays className="h-12 w-12 text-zinc-500 mx-auto" />
-          <h2 className="text-xl font-semibold text-zinc-100">Connect Google Calendar</h2>
-          <p className="text-zinc-400 text-sm max-w-sm">
+          <CalendarDays className="h-12 w-12 text-gray-400 mx-auto" />
+          <h2 className="text-xl font-semibold text-gray-900">Connect Google Calendar</h2>
+          <p className="text-gray-500 text-sm max-w-sm">
             Link your Google Calendar to view, create, and manage events directly from Kyra.
           </p>
           <a
@@ -129,21 +129,21 @@ export default function CalendarPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 px-4 py-8 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-white px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-3xl">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
           <div className="flex items-center gap-3">
-            <CalendarDays className="h-6 w-6 text-indigo-400" />
-            <h1 className="text-2xl font-bold text-zinc-100">Calendar</h1>
+            <CalendarDays className="h-6 w-6 text-indigo-600" />
+            <h1 className="text-2xl font-bold text-gray-900">Calendar</h1>
           </div>
           <div className="flex items-center gap-3">
-            <div className="flex rounded-lg bg-zinc-800 p-0.5">
+            <div className="flex rounded-lg bg-gray-100 p-0.5">
               {(['today', 'week'] as const).map((r) => (
                 <button
                   key={r}
                   onClick={() => setRange(r)}
                   className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                    range === r ? 'bg-indigo-600 text-white' : 'text-zinc-400 hover:text-zinc-200'
+                    range === r ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:text-gray-800'
                   }`}
                 >
                   {r === 'today' ? 'Today' : 'This Week'}
@@ -161,13 +161,13 @@ export default function CalendarPage() {
         </div>
 
         {showForm && (
-          <form onSubmit={handleCreate} className="mb-6 rounded-xl border border-zinc-800 bg-zinc-900 p-4 space-y-3">
+          <form onSubmit={handleCreate} className="mb-6 rounded-xl border border-gray-200 bg-white p-4 space-y-3">
             <input
               type="text"
               placeholder="Event title"
               value={formSummary}
               onChange={(e) => setFormSummary(e.target.value)}
-              className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="w-full rounded-lg bg-gray-100 border border-gray-200 px-3 py-2 text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
               autoFocus
             />
             <div className="flex flex-wrap gap-2 sm:gap-3">
@@ -175,18 +175,18 @@ export default function CalendarPage() {
                 type="date"
                 value={formDate}
                 onChange={(e) => setFormDate(e.target.value)}
-                className="rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-indigo-500 min-h-[44px]"
+                className="rounded-lg bg-gray-100 border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-indigo-500 min-h-[44px]"
               />
               <input
                 type="time"
                 value={formTime}
                 onChange={(e) => setFormTime(e.target.value)}
-                className="rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-indigo-500 min-h-[44px]"
+                className="rounded-lg bg-gray-100 border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-indigo-500 min-h-[44px]"
               />
               <select
                 value={formDuration}
                 onChange={(e) => setFormDuration(e.target.value)}
-                className="rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-indigo-500 min-h-[44px]"
+                className="rounded-lg bg-gray-100 border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-indigo-500 min-h-[44px]"
               >
                 <option value="15">15 min</option>
                 <option value="30">30 min</option>
@@ -196,7 +196,7 @@ export default function CalendarPage() {
               </select>
             </div>
             <div className="flex justify-end gap-2">
-              <button type="button" onClick={() => setShowForm(false)} className="rounded-lg px-3 py-1.5 text-sm text-zinc-400 hover:text-zinc-200 transition-colors">
+              <button type="button" onClick={() => setShowForm(false)} className="rounded-lg px-3 py-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors">
                 Cancel
               </button>
               <button type="submit" disabled={submitting || !formSummary.trim()} className="rounded-lg bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50 transition-colors">
@@ -208,12 +208,12 @@ export default function CalendarPage() {
 
         {loading ? (
           <div className="flex justify-center py-16">
-            <Loader2 className="h-6 w-6 animate-spin text-zinc-500" />
+            <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
           </div>
         ) : events.length === 0 ? (
           <div className="text-center py-16">
-            <CalendarDays className="h-10 w-10 text-zinc-700 mx-auto mb-3" />
-            <p className="text-zinc-500 text-sm">{range === 'today' ? 'No events today' : 'No events this week'}</p>
+            <CalendarDays className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-400 text-sm">{range === 'today' ? 'No events today' : 'No events this week'}</p>
           </div>
         ) : range === 'today' ? (
           <div className="space-y-2">
@@ -236,7 +236,7 @@ export default function CalendarPage() {
           <div className="space-y-6">
             {Object.entries(groupedEvents).map(([day, dayEvents]) => (
               <div key={day}>
-                <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">
+                <h3 className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">
                   {formatDate(dayEvents[0].start)}
                 </h3>
                 <div className="space-y-2">
@@ -280,7 +280,7 @@ function EventCard({
   const isEditing = editingId === event.id;
 
   return (
-    <div className="group flex items-start gap-3 rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 transition-colors hover:border-zinc-700">
+    <div className="group flex items-start gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4 transition-colors hover:border-gray-200">
       <div className="flex-shrink-0 w-1 h-full min-h-[2.5rem] rounded-full bg-indigo-500/40" />
       <div className="flex-1 min-w-0">
         {isEditing ? (
@@ -289,16 +289,16 @@ function EventCard({
               value={editSummary}
               onChange={(e) => onEditSummaryChange(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') onEditSave(event.id); if (e.key === 'Escape') onEditCancel(); }}
-              className="flex-1 rounded-md bg-zinc-800 border border-zinc-600 px-2 py-1 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="flex-1 rounded-md bg-gray-100 border border-gray-300 px-2 py-1 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-indigo-500"
               autoFocus
             />
-            <button onClick={() => onEditSave(event.id)} className="text-xs text-indigo-400 hover:text-indigo-300">Save</button>
-            <button onClick={onEditCancel} className="text-xs text-zinc-500 hover:text-zinc-300">Cancel</button>
+            <button onClick={() => onEditSave(event.id)} className="text-xs text-indigo-600 hover:text-indigo-600">Save</button>
+            <button onClick={onEditCancel} className="text-xs text-gray-400 hover:text-gray-700">Cancel</button>
           </div>
         ) : (
-          <p className="text-sm font-medium text-zinc-100 truncate">{event.summary}</p>
+          <p className="text-sm font-medium text-gray-900 truncate">{event.summary}</p>
         )}
-        <div className="flex items-center gap-3 mt-1 text-xs text-zinc-500">
+        <div className="flex items-center gap-3 mt-1 text-xs text-gray-400">
           <span className="flex items-center gap-1">
             <Clock className="h-3 w-3" />
             {formatTime(event.start)} – {formatTime(event.end)}
@@ -312,10 +312,10 @@ function EventCard({
         </div>
       </div>
       <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-        <button onClick={() => onEdit(event.id, event.summary)} className="rounded-md p-2 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center" title="Edit">
+        <button onClick={() => onEdit(event.id, event.summary)} className="rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center" title="Edit">
           <Pencil className="h-3.5 w-3.5" />
         </button>
-        <button onClick={() => onDelete(event.id)} className="rounded-md p-2 text-zinc-500 hover:bg-red-900/30 hover:text-red-400 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center" title="Delete">
+        <button onClick={() => onDelete(event.id)} className="rounded-md p-2 text-gray-400 hover:bg-red-900/30 hover:text-red-600 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center" title="Delete">
           <Trash2 className="h-3.5 w-3.5" />
         </button>
       </div>

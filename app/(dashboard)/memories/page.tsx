@@ -106,9 +106,9 @@ export default function MemoriesPage() {
   const memoryTypes: (MemoryType | 'all')[] = ['all', 'fact', 'person', 'decision', 'event', 'preference'];
 
   return (
-    <div className="min-h-screen bg-zinc-950">
+    <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-sm">
+      <header className="border-b border-gray-200 bg-white/80 backdrop-blur-sm">
         <div className="mx-auto flex max-w-4xl items-center gap-4 px-4 py-4">
           <Link href="/chat">
             <Button variant="ghost" size="icon">
@@ -116,8 +116,8 @@ export default function MemoriesPage() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-xl font-semibold text-zinc-100">Memory Vault</h1>
-            <p className="text-sm text-zinc-400">
+            <h1 className="text-xl font-semibold text-gray-900">Memory Vault</h1>
+            <p className="text-sm text-gray-500">
               {memories.length} memories stored
             </p>
           </div>
@@ -128,7 +128,7 @@ export default function MemoriesPage() {
         {/* Filters */}
         <div className="mb-6 space-y-4">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
             <Input
               placeholder="Search memories..."
               value={searchQuery}
@@ -160,15 +160,15 @@ export default function MemoriesPage() {
         {/* Memories List */}
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
+            <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
           </div>
         ) : filteredMemories.length === 0 ? (
           <div className="py-12 text-center">
-            <Brain className="mx-auto mb-4 h-12 w-12 text-zinc-600" />
-            <h3 className="mb-2 text-lg font-medium text-zinc-300">
+            <Brain className="mx-auto mb-4 h-12 w-12 text-gray-500" />
+            <h3 className="mb-2 text-lg font-medium text-gray-700">
               {memories.length === 0 ? 'No memories yet' : 'No matching memories'}
             </h3>
-            <p className="text-sm text-zinc-500">
+            <p className="text-sm text-gray-400">
               {memories.length === 0
                 ? 'Start chatting with Kyra and ask her to remember things!'
                 : 'Try adjusting your search or filters'}
@@ -191,12 +191,12 @@ export default function MemoriesPage() {
                     {memoryTypeIcons[memory.type]}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-zinc-100">{memory.content}</p>
+                    <p className="text-sm text-gray-900">{memory.content}</p>
                     <div className="mt-2 flex items-center gap-2">
                       <Badge variant={memoryTypeColors[memory.type] as any} className="capitalize">
                         {memory.type}
                       </Badge>
-                      <span className="text-xs text-zinc-500">
+                      <span className="text-xs text-gray-400">
                         {formatDate(memory.created_at)}
                       </span>
                     </div>
@@ -211,7 +211,7 @@ export default function MemoriesPage() {
                     {deletingId === memory.id ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      <Trash2 className="h-4 w-4 text-zinc-400 hover:text-red-400" />
+                      <Trash2 className="h-4 w-4 text-gray-500 hover:text-red-600" />
                     )}
                   </Button>
                 </CardContent>

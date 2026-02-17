@@ -14,7 +14,7 @@ import { useSearchParams } from 'next/navigation';
 
 export default function SettingsPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-zinc-950 flex items-center justify-center"><div className="text-zinc-400">Loading...</div></div>}>
+    <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center"><div className="text-gray-500">Loading...</div></div>}>
       <SettingsContent />
     </Suspense>
   );
@@ -150,23 +150,23 @@ function SettingsContent() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-        <div className="text-zinc-400">Loading...</div>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-gray-500">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950">
+    <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-sm">
+      <header className="border-b border-gray-200 bg-white/80 backdrop-blur-sm">
         <div className="mx-auto flex max-w-2xl items-center gap-4 px-4 py-4">
           <Link href="/chat">
             <Button variant="ghost" size="icon">
               <ArrowLeft className="h-4 w-4" />
             </Button>
           </Link>
-          <h1 className="text-xl font-semibold text-zinc-100">Settings</h1>
+          <h1 className="text-xl font-semibold text-gray-900">Settings</h1>
         </div>
       </header>
 
@@ -175,8 +175,8 @@ function SettingsContent() {
           <div
             className={`rounded-md px-4 py-3 text-sm ${
               message.type === 'success'
-                ? 'bg-green-500/10 text-green-400'
-                : 'bg-red-500/10 text-red-400'
+                ? 'bg-green-50 text-green-600'
+                : 'bg-red-50 text-red-600'
             }`}
           >
             {message.text}
@@ -194,7 +194,7 @@ function SettingsContent() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-zinc-300">Name</label>
+              <label className="text-sm font-medium text-gray-700">Name</label>
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -202,13 +202,13 @@ function SettingsContent() {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-zinc-300">Email</label>
+              <label className="text-sm font-medium text-gray-700">Email</label>
               <Input
                 value={email}
                 disabled
                 className="opacity-60"
               />
-              <p className="text-xs text-zinc-500">Email cannot be changed</p>
+              <p className="text-xs text-gray-400">Email cannot be changed</p>
             </div>
           </CardContent>
         </Card>
@@ -224,11 +224,11 @@ function SettingsContent() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-zinc-300">Timezone</label>
+              <label className="text-sm font-medium text-gray-700">Timezone</label>
               <select
                 value={timezone}
                 onChange={(e) => setTimezone(e.target.value)}
-                className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100"
+                className="w-full rounded-md border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-900"
               >
                 <option value="UTC">UTC</option>
                 <option value="America/New_York">Eastern Time</option>
@@ -255,7 +255,7 @@ function SettingsContent() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-zinc-300">Model</label>
+              <label className="text-sm font-medium text-gray-700">Model</label>
               <select
                 value={preferredModel}
                 onChange={async (e) => {
@@ -279,7 +279,7 @@ function SettingsContent() {
                   }
                   setIsSavingModel(false);
                 }}
-                className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100"
+                className="w-full rounded-md border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-900"
               >
                 <option value="auto">Auto (Smart Routing)</option>
                 <option value="claude-sonnet-4">Claude Sonnet 4</option>
@@ -287,7 +287,7 @@ function SettingsContent() {
                 <option value="gpt-4o" disabled>GPT-4o (Coming Soon)</option>
               </select>
             </div>
-            <div className="space-y-2 text-xs text-zinc-500">
+            <div className="space-y-2 text-xs text-gray-400">
               {preferredModel === 'auto' && (
                 <p>Automatically picks the best model for each message — fast for simple queries, powerful for complex ones. Best balance of speed and cost.</p>
               )}
@@ -302,7 +302,7 @@ function SettingsContent() {
               )}
             </div>
             {isSavingModel && (
-              <div className="flex items-center gap-2 text-xs text-zinc-400">
+              <div className="flex items-center gap-2 text-xs text-gray-500">
                 <Loader2 className="h-3 w-3 animate-spin" />
                 Saving...
               </div>
@@ -321,26 +321,26 @@ function SettingsContent() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-zinc-300">What should Kyra know about you?</label>
+              <label className="text-sm font-medium text-gray-700">What should Kyra know about you?</label>
               <Textarea
                 value={instructionsKnowledge}
                 onChange={(e) => setInstructionsKnowledge(e.target.value)}
                 placeholder="e.g. I'm a software engineer based in NYC. I work on React and Node.js projects..."
                 rows={4}
                 maxLength={2000}
-                className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
+                className="bg-gray-100 border-gray-200 text-gray-900 placeholder:text-gray-400"
               />
-              <p className="text-xs text-zinc-500 text-right">{instructionsKnowledge.length}/2000</p>
+              <p className="text-xs text-gray-400 text-right">{instructionsKnowledge.length}/2000</p>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-zinc-300">How should Kyra respond?</label>
+              <label className="text-sm font-medium text-gray-700">How should Kyra respond?</label>
               <div className="flex flex-wrap gap-2 mb-2">
                 {INSTRUCTION_PRESETS.map((preset) => (
                   <button
                     key={preset.id}
                     onClick={() => setInstructionsStyle(preset.content)}
-                    className="rounded-full border border-zinc-700 bg-zinc-800/50 px-3 py-1 text-xs text-zinc-300 hover:bg-zinc-700 hover:text-zinc-100 transition-colors"
+                    className="rounded-full border border-gray-200 bg-gray-100 px-3 py-1 text-xs text-gray-700 hover:bg-gray-200 hover:text-gray-700 transition-colors"
                   >
                     {preset.label}
                   </button>
@@ -352,9 +352,9 @@ function SettingsContent() {
                 placeholder="e.g. Be concise and use bullet points. Include code examples when relevant..."
                 rows={4}
                 maxLength={2000}
-                className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
+                className="bg-gray-100 border-gray-200 text-gray-900 placeholder:text-gray-400"
               />
-              <p className="text-xs text-zinc-500 text-right">{instructionsStyle.length}/2000</p>
+              <p className="text-xs text-gray-400 text-right">{instructionsStyle.length}/2000</p>
             </div>
 
             <Button
@@ -407,12 +407,12 @@ function SettingsContent() {
           </CardHeader>
           <CardContent>
             <Link href="/settings/channels">
-              <div className="flex items-center justify-between rounded-lg border border-zinc-700 bg-zinc-800/50 p-4 hover:bg-zinc-800 transition-colors cursor-pointer">
+              <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-100 p-4 hover:bg-gray-100 transition-colors cursor-pointer">
                 <div>
-                  <p className="font-medium text-zinc-100">Manage Channels</p>
-                  <p className="text-xs text-zinc-500">Telegram, WhatsApp — connect your messaging apps</p>
+                  <p className="font-medium text-gray-900">Manage Channels</p>
+                  <p className="text-xs text-gray-400">Telegram, WhatsApp — connect your messaging apps</p>
                 </div>
-                <ChevronRight className="h-5 w-5 text-zinc-500" />
+                <ChevronRight className="h-5 w-5 text-gray-400" />
               </div>
             </Link>
           </CardContent>
@@ -429,12 +429,12 @@ function SettingsContent() {
           </CardHeader>
           <CardContent>
             <Link href="/settings/skills">
-              <div className="flex items-center justify-between rounded-lg border border-zinc-700 bg-zinc-800/50 p-4 hover:bg-zinc-800 transition-colors cursor-pointer">
+              <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-100 p-4 hover:bg-gray-100 transition-colors cursor-pointer">
                 <div>
-                  <p className="font-medium text-zinc-100">Manage Skills</p>
-                  <p className="text-xs text-zinc-500">Web search, GitHub, browser control, voice, and more</p>
+                  <p className="font-medium text-gray-900">Manage Skills</p>
+                  <p className="text-xs text-gray-400">Web search, GitHub, browser control, voice, and more</p>
                 </div>
-                <ChevronRight className="h-5 w-5 text-zinc-500" />
+                <ChevronRight className="h-5 w-5 text-gray-400" />
               </div>
             </Link>
           </CardContent>
@@ -451,12 +451,12 @@ function SettingsContent() {
           </CardHeader>
           <CardContent>
             <Link href="/automations">
-              <div className="flex items-center justify-between rounded-lg border border-zinc-700 bg-zinc-800/50 p-4 hover:bg-zinc-800 transition-colors cursor-pointer">
+              <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-100 p-4 hover:bg-gray-100 transition-colors cursor-pointer">
                 <div>
-                  <p className="font-medium text-zinc-100">Manage Automations</p>
-                  <p className="text-xs text-zinc-500">Daily briefings, email digests, reminders, and more</p>
+                  <p className="font-medium text-gray-900">Manage Automations</p>
+                  <p className="text-xs text-gray-400">Daily briefings, email digests, reminders, and more</p>
                 </div>
-                <ChevronRight className="h-5 w-5 text-zinc-500" />
+                <ChevronRight className="h-5 w-5 text-gray-400" />
               </div>
             </Link>
           </CardContent>
@@ -472,21 +472,21 @@ function SettingsContent() {
             <CardDescription>Connect external services</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between rounded-lg border border-zinc-700 bg-zinc-800/50 p-4">
+            <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-100 p-4">
               <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-blue-500/10 p-2">
-                  <Calendar className="h-5 w-5 text-blue-400" />
+                <div className="rounded-lg bg-blue-50 p-2">
+                  <Calendar className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <p className="font-medium text-zinc-100">Google Calendar</p>
-                  <p className="text-xs text-zinc-500">
+                  <p className="font-medium text-gray-900">Google Calendar</p>
+                  <p className="text-xs text-gray-400">
                     {googleConnected ? 'Connected' : 'View and create events'}
                   </p>
                 </div>
               </div>
               {googleConnected ? (
                 <div className="flex items-center gap-2">
-                  <span className="flex items-center gap-1 text-sm text-green-400">
+                  <span className="flex items-center gap-1 text-sm text-green-600">
                     <Check className="h-4 w-4" />
                     Connected
                   </span>
@@ -537,17 +537,17 @@ function SettingsContent() {
           <CardContent className="space-y-6">
             {/* Current stats */}
             <div className="grid grid-cols-3 gap-2 md:gap-4">
-              <div className="rounded-lg border border-zinc-700 bg-zinc-800/50 p-3 md:p-4 text-center">
-                <p className="text-xl md:text-2xl font-bold text-zinc-100">{usage?.messageCount ?? '-'}</p>
-                <p className="text-xs text-zinc-500">Messages</p>
+              <div className="rounded-lg border border-gray-200 bg-gray-100 p-3 md:p-4 text-center">
+                <p className="text-xl md:text-2xl font-bold text-gray-900">{usage?.messageCount ?? '-'}</p>
+                <p className="text-xs text-gray-400">Messages</p>
               </div>
-              <div className="rounded-lg border border-zinc-700 bg-zinc-800/50 p-3 md:p-4 text-center">
-                <p className="text-xl md:text-2xl font-bold text-zinc-100">{usage?.memoryCount ?? '-'}</p>
-                <p className="text-xs text-zinc-500">Memories</p>
+              <div className="rounded-lg border border-gray-200 bg-gray-100 p-3 md:p-4 text-center">
+                <p className="text-xl md:text-2xl font-bold text-gray-900">{usage?.memoryCount ?? '-'}</p>
+                <p className="text-xs text-gray-400">Memories</p>
               </div>
-              <div className="rounded-lg border border-zinc-700 bg-zinc-800/50 p-3 md:p-4 text-center">
-                <p className="text-xl md:text-2xl font-bold text-indigo-400 capitalize">{usage?.planName ?? 'Free'}</p>
-                <p className="text-xs text-zinc-500">Plan</p>
+              <div className="rounded-lg border border-gray-200 bg-gray-100 p-3 md:p-4 text-center">
+                <p className="text-xl md:text-2xl font-bold text-indigo-600 capitalize">{usage?.planName ?? 'Free'}</p>
+                <p className="text-xs text-gray-400">Plan</p>
               </div>
             </div>
 
@@ -555,10 +555,10 @@ function SettingsContent() {
             {usage && (
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-zinc-400">Credits used</span>
-                  <span className="text-zinc-300">{usage.creditsUsed} / {usage.creditsLimit}</span>
+                  <span className="text-gray-500">Credits used</span>
+                  <span className="text-gray-700">{usage.creditsUsed} / {usage.creditsLimit}</span>
                 </div>
-                <div className="h-2 rounded-full bg-zinc-800">
+                <div className="h-2 rounded-full bg-gray-100">
                   <div
                     className={`h-2 rounded-full transition-all ${
                       usage.usagePercentage > 90 ? 'bg-red-500' :
@@ -567,20 +567,20 @@ function SettingsContent() {
                     style={{ width: `${Math.min(100, usage.usagePercentage)}%` }}
                   />
                 </div>
-                <p className="text-xs text-zinc-500">{usage.creditsRemaining} credits remaining</p>
+                <p className="text-xs text-gray-400">{usage.creditsRemaining} credits remaining</p>
               </div>
             )}
 
             {/* Upgrade options */}
             {(!usage || usage.plan === 'free' || usage.plan === 'starter') && (
               <div className="space-y-3">
-                <p className="text-sm font-medium text-zinc-300">Upgrade your plan</p>
+                <p className="text-sm font-medium text-gray-700">Upgrade your plan</p>
                 <div className="grid gap-3">
                   {usage?.plan !== 'starter' && (
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-zinc-700 bg-zinc-800/50 p-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-gray-200 bg-gray-100 p-4">
                       <div>
-                        <p className="font-medium text-zinc-100">Lite — $99/mo</p>
-                        <p className="text-xs text-zinc-500">500 credits · WhatsApp + Telegram · Web search</p>
+                        <p className="font-medium text-gray-900">Lite — $99/mo</p>
+                        <p className="text-xs text-gray-400">500 credits · WhatsApp + Telegram · Web search</p>
                       </div>
                       <Button
                         size="sm"
@@ -605,10 +605,10 @@ function SettingsContent() {
                     </div>
                   )}
                   {usage?.plan !== 'business' && (
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-indigo-500/30 bg-indigo-500/5 p-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-indigo-500/30 bg-indigo-50 p-4">
                       <div>
-                        <p className="font-medium text-zinc-100">Business — $100/mo</p>
-                        <p className="text-xs text-zinc-500">3,000 credits · AI sub-agents · Priority support</p>
+                        <p className="font-medium text-gray-900">Business — $100/mo</p>
+                        <p className="text-xs text-gray-400">3,000 credits · AI sub-agents · Priority support</p>
                       </div>
                       <Button
                         size="sm"
@@ -632,10 +632,10 @@ function SettingsContent() {
                       </Button>
                     </div>
                   )}
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-zinc-700 bg-zinc-800/50 p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-gray-200 bg-gray-100 p-4">
                     <div>
-                      <p className="font-medium text-zinc-100">Max — $200/mo</p>
-                      <p className="text-xs text-zinc-500">8,000 credits · Unlimited memory · API access · SLA</p>
+                      <p className="font-medium text-gray-900">Max — $200/mo</p>
+                      <p className="text-xs text-gray-400">8,000 credits · Unlimited memory · API access · SLA</p>
                     </div>
                     <Button
                       size="sm"

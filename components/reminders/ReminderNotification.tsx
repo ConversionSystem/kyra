@@ -72,16 +72,16 @@ export function ReminderNotification() {
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
               <div className="shrink-0 rounded-full bg-indigo-500 p-2">
-                <Bell className="h-4 w-4 text-white" />
+                <Bell className="h-4 w-4 text-gray-900" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white">Reminder</p>
+                <p className="text-sm font-medium text-gray-900">Reminder</p>
                 <p className="text-sm text-indigo-100 mt-1">{reminder.content}</p>
               </div>
               <Button
                 variant="ghost"
                 size="icon"
-                className="shrink-0 text-indigo-200 hover:text-white hover:bg-indigo-500"
+                className="shrink-0 text-indigo-200 hover:text-gray-700 hover:bg-indigo-500"
                 onClick={() => handleDismiss(reminder.id)}
               >
                 <Check className="h-4 w-4" />

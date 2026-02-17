@@ -83,11 +83,11 @@ export function ConversationSidebar({
   // Desktop collapsed state
   if (isCollapsed) {
     return (
-      <div className="hidden md:flex h-full w-12 flex-col items-center border-r border-zinc-800 bg-zinc-900 py-4">
-        <Button variant="ghost" size="icon" onClick={() => setIsCollapsed(false)} className="mb-4 text-zinc-400 hover:text-zinc-100">
+      <div className="hidden md:flex h-full w-12 flex-col items-center border-r border-gray-200 bg-white py-4">
+        <Button variant="ghost" size="icon" onClick={() => setIsCollapsed(false)} className="mb-4 text-gray-500 hover:text-gray-700">
           <ChevronRight className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="icon" onClick={onNewConversation} className="text-zinc-400 hover:text-zinc-100">
+        <Button variant="ghost" size="icon" onClick={onNewConversation} className="text-gray-500 hover:text-gray-700">
           <Plus className="h-4 w-4" />
         </Button>
       </div>
@@ -95,16 +95,16 @@ export function ConversationSidebar({
   }
 
   const sidebarContent = (
-    <div className="flex h-full w-64 flex-col border-r border-zinc-800 bg-zinc-900">
+    <div className="flex h-full w-64 flex-col border-r border-gray-200 bg-white">
       {/* Header with collapse */}
       <div className="flex items-center justify-between p-3 pb-0">
-        <span className="text-sm font-semibold text-zinc-300">Kyra</span>
+        <span className="text-sm font-semibold text-gray-700">Kyra</span>
         <div className="flex items-center gap-1">
           {/* Desktop: collapse. Mobile: close */}
-          <Button variant="ghost" size="icon" onClick={() => { setIsCollapsed(true); }} className="hidden md:flex h-7 w-7 text-zinc-500 hover:text-zinc-300">
+          <Button variant="ghost" size="icon" onClick={() => { setIsCollapsed(true); }} className="hidden md:flex h-7 w-7 text-gray-400 hover:text-gray-700">
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={onMobileToggle} className="md:hidden h-7 w-7 text-zinc-500 hover:text-zinc-300">
+          <Button variant="ghost" size="icon" onClick={onMobileToggle} className="md:hidden h-7 w-7 text-gray-400 hover:text-gray-700">
             <X className="h-4 w-4" />
           </Button>
         </div>
@@ -115,7 +115,7 @@ export function ConversationSidebar({
         <Button
           onClick={handleNewConversation}
           variant="outline"
-          className="w-full justify-start gap-2 border-zinc-700 bg-transparent text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100 min-h-[44px]"
+          className="w-full justify-start gap-2 border-gray-200 bg-transparent text-gray-700 hover:bg-gray-100 hover:text-gray-700 min-h-[44px]"
         >
           <Plus className="h-4 w-4" />
           New Chat
@@ -131,19 +131,19 @@ export function ConversationSidebar({
       </div>
 
       {/* Nav Links */}
-      <div className="border-t border-zinc-800 p-2">
+      <div className="border-t border-gray-200 p-2">
         {navLinks.map((link) => (
           <Link
             key={link.label}
             href={link.href}
-            className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200 min-h-[44px]"
+            className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800 min-h-[44px]"
           >
             <link.icon className="h-4 w-4" />
             {link.label}
           </Link>
         ))}
         {credits && (
-          <div className="mt-2 rounded-lg px-3 py-2 text-xs text-zinc-500">
+          <div className="mt-2 rounded-lg px-3 py-2 text-xs text-gray-400">
             {credits.used.toLocaleString()} / {credits.limit.toLocaleString()} credits · {credits.plan}
           </div>
         )}
@@ -190,7 +190,7 @@ function ConversationGroup({
 
   return (
     <div className="mb-3">
-      <h3 className="mb-1 px-2 text-xs font-medium text-zinc-500">{title}</h3>
+      <h3 className="mb-1 px-2 text-xs font-medium text-gray-400">{title}</h3>
       <div className="space-y-0.5">
         {conversations.map((conv) => (
           <div
@@ -198,8 +198,8 @@ function ConversationGroup({
             className={cn(
               'group flex w-full items-center rounded-lg text-sm transition-colors',
               currentId === conv.id
-                ? 'bg-zinc-800 text-zinc-100'
-                : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
+                ? 'bg-gray-100 text-gray-900'
+                : 'text-gray-500 hover:bg-gray-100 hover:text-gray-800'
             )}
           >
             <button
@@ -212,10 +212,10 @@ function ConversationGroup({
             {onDelete && (
               <button
                 onClick={(e) => { e.stopPropagation(); onDelete(conv.id); }}
-                className="mr-1 rounded p-1.5 transition-opacity hover:bg-zinc-700 opacity-0 group-hover:opacity-100 md:opacity-0 md:group-hover:opacity-100 active:opacity-100 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                className="mr-1 rounded p-1.5 transition-opacity hover:bg-gray-200 opacity-0 group-hover:opacity-100 md:opacity-0 md:group-hover:opacity-100 active:opacity-100 min-h-[44px] min-w-[44px] flex items-center justify-center"
                 title="Delete conversation"
               >
-                <Trash2 className="h-3.5 w-3.5 text-zinc-500 hover:text-red-400" />
+                <Trash2 className="h-3.5 w-3.5 text-gray-400 hover:text-red-600" />
               </button>
             )}
           </div>

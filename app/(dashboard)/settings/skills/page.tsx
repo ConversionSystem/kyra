@@ -108,15 +108,15 @@ export default function SkillsSettingsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-zinc-400" />
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950">
-      <header className="border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-sm">
+    <div className="min-h-screen bg-white">
+      <header className="border-b border-gray-200 bg-white/80 backdrop-blur-sm">
         <div className="mx-auto flex max-w-2xl items-center gap-4 px-4 py-4">
           <Link href="/settings">
             <Button variant="ghost" size="icon">
@@ -124,8 +124,8 @@ export default function SkillsSettingsPage() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-xl font-semibold text-zinc-100">Skills</h1>
-            <p className="text-sm text-zinc-500">Enable tools and integrations for your AI assistant</p>
+            <h1 className="text-xl font-semibold text-gray-900">Skills</h1>
+            <p className="text-sm text-gray-400">Enable tools and integrations for your AI assistant</p>
           </div>
         </div>
       </header>
@@ -133,7 +133,7 @@ export default function SkillsSettingsPage() {
       <main className="mx-auto max-w-2xl px-4 py-6 space-y-6">
         {message && (
           <div className={`rounded-md px-4 py-3 text-sm ${
-            message.type === 'success' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
+            message.type === 'success' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
           }`}>
             {message.text}
           </div>
@@ -141,15 +141,15 @@ export default function SkillsSettingsPage() {
 
         {/* Stats */}
         <div className="flex items-center gap-4">
-          <div className="rounded-lg border border-zinc-700 bg-zinc-800/50 px-4 py-2">
-            <span className="text-lg font-bold text-indigo-400">
+          <div className="rounded-lg border border-gray-200 bg-gray-100 px-4 py-2">
+            <span className="text-lg font-bold text-indigo-600">
               {skills.filter(s => s.enabled).length}
             </span>
-            <span className="text-sm text-zinc-500 ml-1">enabled</span>
+            <span className="text-sm text-gray-400 ml-1">enabled</span>
           </div>
-          <div className="rounded-lg border border-zinc-700 bg-zinc-800/50 px-4 py-2">
-            <span className="text-lg font-bold text-zinc-300">{skills.length}</span>
-            <span className="text-sm text-zinc-500 ml-1">available</span>
+          <div className="rounded-lg border border-gray-200 bg-gray-100 px-4 py-2">
+            <span className="text-lg font-bold text-gray-700">{skills.length}</span>
+            <span className="text-sm text-gray-400 ml-1">available</span>
           </div>
           <Badge variant="outline" className="capitalize">{plan} plan</Badge>
         </div>
@@ -168,20 +168,20 @@ export default function SkillsSettingsPage() {
               </CardHeader>
               <CardContent className="space-y-3">
                 {catSkills.map(skill => (
-                  <div key={skill.id} className="rounded-lg border border-zinc-700 bg-zinc-800/50 overflow-hidden">
+                  <div key={skill.id} className="rounded-lg border border-gray-200 bg-gray-100 overflow-hidden">
                     <div className="flex items-center justify-between p-4">
                       <div className="flex items-center gap-3 flex-1 min-w-0">
                         <span className="text-2xl shrink-0">{skill.icon}</span>
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
-                            <p className="font-medium text-zinc-100">{skill.name}</p>
+                            <p className="font-medium text-gray-900">{skill.name}</p>
                             {skill.creditMultiplier > 1 && (
                               <Badge variant="outline" className="text-xs">
                                 {skill.creditMultiplier}x credits
                               </Badge>
                             )}
                           </div>
-                          <p className="text-xs text-zinc-500 truncate sm:whitespace-normal">{skill.description}</p>
+                          <p className="text-xs text-gray-400 truncate sm:whitespace-normal">{skill.description}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0 ml-3">
@@ -190,7 +190,7 @@ export default function SkillsSettingsPage() {
                             onClick={() => setExpandedSkill(
                               expandedSkill === skill.id ? null : skill.id
                             )}
-                            className="p-1 text-zinc-500 hover:text-zinc-300"
+                            className="p-1 text-gray-400 hover:text-gray-700"
                           >
                             {expandedSkill === skill.id
                               ? <ChevronUp className="h-4 w-4" />
@@ -211,11 +211,11 @@ export default function SkillsSettingsPage() {
                           className={`relative h-6 w-11 rounded-full transition-colors ${
                             skill.enabled
                               ? 'bg-indigo-500'
-                              : 'bg-zinc-600'
+                              : 'bg-gray-500'
                           }`}
                         >
                           {toggling === skill.id ? (
-                            <Loader2 className="h-3 w-3 animate-spin absolute top-1.5 left-4 text-white" />
+                            <Loader2 className="h-3 w-3 animate-spin absolute top-1.5 left-4 text-gray-900" />
                           ) : (
                             <span className={`block h-4 w-4 rounded-full bg-white shadow transition-transform ${
                               skill.enabled ? 'translate-x-6' : 'translate-x-1'
@@ -227,11 +227,11 @@ export default function SkillsSettingsPage() {
 
                     {/* API Key input panel */}
                     {expandedSkill === skill.id && skill.needsApiKey && (
-                      <div className="border-t border-zinc-700 p-4 bg-zinc-900/50">
-                        <label className="text-xs font-medium text-zinc-400 block mb-2">
+                      <div className="border-t border-gray-200 p-4 bg-gray-50">
+                        <label className="text-xs font-medium text-gray-500 block mb-2">
                           {skill.apiKeyLabel || 'API Key'}
                           {skill.apiKeySet && (
-                            <span className="ml-2 text-green-400 inline-flex items-center gap-1">
+                            <span className="ml-2 text-green-600 inline-flex items-center gap-1">
                               <Check className="h-3 w-3" /> Saved
                             </span>
                           )}
@@ -268,11 +268,11 @@ export default function SkillsSettingsPage() {
 
         {/* Upgrade CTA for free users */}
         {plan === 'free' && (
-          <Card className="border-indigo-500/30 bg-indigo-500/5">
+          <Card className="border-indigo-500/30 bg-indigo-50">
             <CardContent className="flex items-center justify-between p-6">
               <div>
-                <p className="font-medium text-zinc-100">Unlock more skills</p>
-                <p className="text-sm text-zinc-400">
+                <p className="font-medium text-gray-900">Unlock more skills</p>
+                <p className="text-sm text-gray-500">
                   Upgrade to Lite for GitHub, Notion, voice, and more.
                 </p>
               </div>

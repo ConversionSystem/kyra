@@ -128,8 +128,8 @@ export function ChatInput({ onSend, isLoading, disabled }: ChatInputProps) {
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <div className={`flex flex-col rounded-2xl border bg-zinc-900 p-2 shadow-lg transition-colors focus-within:border-zinc-600 ${
-        dragOver ? 'border-indigo-500 bg-indigo-500/5' : 'border-zinc-700'
+      <div className={`flex flex-col rounded-2xl border bg-white p-2 shadow-lg transition-colors focus-within:border-gray-300 ${
+        dragOver ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200'
       }`}>
         {/* Attached files chips */}
         {attachments.length > 0 && (
@@ -137,12 +137,12 @@ export function ChatInput({ onSend, isLoading, disabled }: ChatInputProps) {
             {attachments.map((att, i) => (
               <span
                 key={i}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-800 px-2.5 py-1.5 text-xs text-zinc-300"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-gray-100 px-2.5 py-1.5 text-xs text-gray-700"
               >
                 {att.uploading ? (
-                  <Loader2 className="h-3 w-3 animate-spin text-zinc-500" />
+                  <Loader2 className="h-3 w-3 animate-spin text-gray-400" />
                 ) : (
-                  <FileText className="h-3 w-3 text-indigo-400" />
+                  <FileText className="h-3 w-3 text-indigo-600" />
                 )}
                 <span className="max-w-[120px] truncate">
                   {att.uploaded?.name || att.file?.name || 'file'}
@@ -150,7 +150,7 @@ export function ChatInput({ onSend, isLoading, disabled }: ChatInputProps) {
                 <button
                   type="button"
                   onClick={() => removeAttachment(i)}
-                  className="ml-0.5 rounded-full p-0.5 hover:bg-zinc-700"
+                  className="ml-0.5 rounded-full p-0.5 hover:bg-gray-200"
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -165,7 +165,7 @@ export function ChatInput({ onSend, isLoading, disabled }: ChatInputProps) {
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={isLoading || disabled}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors disabled:opacity-30"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-30"
             title="Attach file"
           >
             <Paperclip className="h-4 w-4" />
@@ -185,14 +185,14 @@ export function ChatInput({ onSend, isLoading, disabled }: ChatInputProps) {
             onKeyDown={handleKeyDown}
             placeholder="Message Kyra..."
             disabled={isLoading || disabled}
-            className="min-h-[44px] max-h-[200px] resize-none border-0 bg-transparent p-2 text-base md:text-sm text-zinc-100 placeholder:text-zinc-500 focus-visible:ring-0 focus-visible:ring-offset-0"
+            className="min-h-[44px] max-h-[200px] resize-none border-0 bg-transparent p-2 text-base md:text-sm text-gray-900 placeholder:text-gray-400 focus-visible:ring-0 focus-visible:ring-offset-0"
             rows={1}
           />
           <Button
             type="submit"
             size="icon"
             disabled={(!message.trim() && attachments.length === 0) || isLoading || disabled || stillUploading}
-            className="h-10 w-10 shrink-0 rounded-full bg-zinc-100 text-zinc-900 hover:bg-white disabled:opacity-30"
+            className="h-10 w-10 shrink-0 rounded-full bg-gray-100 text-white hover:bg-white disabled:opacity-30"
           >
             {isLoading || stillUploading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -205,8 +205,8 @@ export function ChatInput({ onSend, isLoading, disabled }: ChatInputProps) {
 
       {/* Drag overlay hint */}
       {dragOver && (
-        <div className="absolute inset-0 flex items-center justify-center rounded-2xl border-2 border-dashed border-indigo-500 bg-indigo-500/10 pointer-events-none">
-          <span className="text-sm font-medium text-indigo-400">Drop file to attach</span>
+        <div className="absolute inset-0 flex items-center justify-center rounded-2xl border-2 border-dashed border-indigo-500 bg-indigo-50 pointer-events-none">
+          <span className="text-sm font-medium text-indigo-600">Drop file to attach</span>
         </div>
       )}
     </form>

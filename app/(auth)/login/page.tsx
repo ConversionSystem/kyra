@@ -11,7 +11,7 @@ import { Sparkles, Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-zinc-950 flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-zinc-400" /></div>}>
+    <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-gray-500" /></div>}>
       <LoginContent />
     </Suspense>
   );
@@ -78,18 +78,18 @@ function LoginContent() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-950 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-white px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600">
-            <Sparkles className="h-6 w-6 text-white" />
+            <Sparkles className="h-6 w-6 text-gray-900" />
           </div>
           <CardTitle className="text-2xl">Welcome back</CardTitle>
           <CardDescription>Sign in to continue to Kyra</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {error && (
-            <div className="rounded-md bg-red-500/10 px-4 py-3 text-sm text-red-400">
+            <div className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-600">
               {error}
             </div>
           )}
@@ -127,16 +127,16 @@ function LoginContent() {
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-zinc-700" />
+              <span className="w-full border-t border-gray-200" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-zinc-900 px-2 text-zinc-400">Or continue with email</span>
+              <span className="bg-white px-2 text-gray-500">Or continue with email</span>
             </div>
           </div>
 
           <form onSubmit={handleEmailLogin} className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium text-zinc-200">
+              <label htmlFor="email" className="text-sm font-medium text-gray-800">
                 Email
               </label>
               <Input
@@ -150,7 +150,7 @@ function LoginContent() {
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium text-zinc-200">
+              <label htmlFor="password" className="text-sm font-medium text-gray-800">
                 Password
               </label>
               <Input
@@ -175,9 +175,9 @@ function LoginContent() {
             </Button>
           </form>
 
-          <p className="text-center text-sm text-zinc-400">
+          <p className="text-center text-sm text-gray-500">
             Don't have an account?{' '}
-            <Link href="/signup" className="text-zinc-100 hover:underline">
+            <Link href="/signup" className="text-gray-900 hover:underline">
               Sign up
             </Link>
           </p>
