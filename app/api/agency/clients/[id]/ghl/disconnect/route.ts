@@ -47,12 +47,13 @@ export async function POST(
     );
   }
 
-  // Clear GHL tokens
+  // Clear ALL GHL tokens (OAuth + Private Integration)
   const { error } = await supabase
     .from('agency_clients')
     .update({
       ghl_access_token: null,
       ghl_refresh_token: null,
+      ghl_private_token: null,
       ghl_location_id: null,
       ghl_connected_at: null,
       updated_at: new Date().toISOString(),

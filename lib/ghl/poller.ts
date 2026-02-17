@@ -65,12 +65,12 @@ interface PollResult {
 export async function pollAllClients(): Promise<PollResult[]> {
   const supabase = createServiceClientWithoutCookies();
 
-  // Get all clients with GHL tokens
+  // Get all clients with GHL tokens (OAuth or Private Integration)
   const { data: clients, error } = await supabase
     .from('agency_clients')
     .select('*, agency_templates(*)')
-    .not('ghl_access_token', 'is', null)
-    .in('status', ['active', 'setup']);
+    .in('status', ['active', 'setup'])
+    .or('ghl_access_token.not.is.null,ghl_private_token.not.is.null');
 
   if (error || !clients || clients.length === 0) {
     console.log('[ghl/poller] No active GHL-connected clients found');
@@ -108,6 +108,8 @@ async function pollClient(
     errors: [],
   };
 
+  const isPrivateToken = !!client.ghl_private_token;
+
   let accessToken: string;
   try {
     accessToken = await getValidToken(client.id);
@@ -121,8 +123,9 @@ async function pollClient(
   try {
     conversations = await searchInboundConversations(accessToken, client.ghl_location_id!);
   } catch (err: unknown) {
-    // If 401, try refreshing token once
-    if (err instanceof Error && err.message.includes('401')) {
+    // If 401 and using OAuth tokens, try refreshing once
+    // Private Integration tokens don't expire, so 401 = invalid token (don't retry)
+    if (!isPrivateToken && err instanceof Error && err.message.includes('401')) {
       try {
         const supabase = createServiceClientWithoutCookies();
         const { data: clientData } = await supabase
