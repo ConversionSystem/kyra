@@ -14,7 +14,7 @@ export default async function NewClientPage() {
   const templates = await getAgencyTemplates(result.agency.id);
 
   return (
-    <div className="p-6 md:p-8 max-w-2xl">
+    <div className="p-4 sm:p-6 md:p-8 max-w-2xl">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">New Client</h1>
         <p className="text-sm text-gray-500 mt-1">

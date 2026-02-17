@@ -31,25 +31,25 @@ export default async function AgencyOverviewPage() {
   const recentClients = clients.slice(0, 5);
 
   return (
-    <div className="p-6 md:p-8 max-w-5xl">
+    <div className="p-4 sm:p-6 md:p-8 max-w-5xl">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between gap-4 mb-6 sm:mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Dashboard</h1>
           <p className="text-sm text-gray-500 mt-1">
             {agency.name} &middot; {memberCount} member{memberCount !== 1 ? 's' : ''}
           </p>
         </div>
         <Link href="/agency/clients/new">
-          <Button className="gap-2">
+          <Button size="sm" className="gap-2">
             <Plus className="h-4 w-4" />
-            Add Client
+            <span className="hidden sm:inline">Add Client</span>
           </Button>
         </Link>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
         <Card>
           <CardContent className="p-5">
             <div className="flex items-center gap-3">

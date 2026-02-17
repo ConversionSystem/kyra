@@ -38,15 +38,15 @@ export default function LandingPage() {
             Features
           </Link>
         </nav>
-        <div className="flex items-center gap-3">
-          <Link href="/login" className="text-gray-600 hover:text-gray-700 transition text-sm font-medium">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <Link href="/login" className="text-gray-600 hover:text-gray-700 transition text-xs sm:text-sm font-medium">
             Sign In
           </Link>
           <Link 
             href="/signup/agency" 
-            className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 transition font-medium text-sm text-white"
+            className="px-3 sm:px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 transition font-medium text-xs sm:text-sm text-white"
           >
-            Join the Beta
+            Join Beta
           </Link>
         </div>
       </header>
