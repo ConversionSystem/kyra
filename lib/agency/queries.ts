@@ -38,6 +38,7 @@ export interface AgencyClient {
   ghl_location_id: string | null;
   ghl_access_token: string | null;
   ghl_refresh_token: string | null;
+  ghl_private_token: string | null;
   ghl_connected_at: string | null;
   ghl_connected_by: string | null;
   container_config: Record<string, unknown>;

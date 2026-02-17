@@ -504,7 +504,9 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
         clientId={initialClient.id}
         ghlLocationId={initialClient.ghl_location_id ?? null}
         ghlConnectedAt={initialClient.ghl_connected_at ?? null}
+        hasPrivateToken={!!initialClient.ghl_private_token}
         onDisconnected={() => router.refresh()}
+        onConnected={() => router.refresh()}
       />
 
       {/* AI Permissions */}

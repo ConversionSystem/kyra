@@ -75,14 +75,14 @@ export async function refreshGHLToken(
 
 /**
  * Get a valid access token for an agency client.
- * Reads from Supabase; attempts a refresh if the token is missing.
+ * Priority: Private Integration token (static, no refresh) → OAuth token → refresh.
  */
 export async function getValidToken(agencyClientId: string): Promise<string> {
   const supabase = createServiceClientWithoutCookies();
 
   const { data: client, error } = await supabase
     .from('agency_clients')
-    .select('ghl_access_token, ghl_refresh_token')
+    .select('ghl_private_token, ghl_access_token, ghl_refresh_token')
     .eq('id', agencyClientId)
     .single();
 
@@ -90,7 +90,12 @@ export async function getValidToken(agencyClientId: string): Promise<string> {
     throw new Error(`Agency client ${agencyClientId} not found`);
   }
 
-  // If we have an access token, try it. GHL tokens last 24h so we optimistically use it.
+  // Private Integration tokens take priority — they're static and never expire
+  if (client.ghl_private_token) {
+    return client.ghl_private_token;
+  }
+
+  // Fall back to OAuth access token. GHL tokens last 24h so we optimistically use it.
   // If it fails at call-time, the caller should catch 401 and call refreshGHLToken.
   if (client.ghl_access_token) {
     return client.ghl_access_token;
@@ -99,7 +104,7 @@ export async function getValidToken(agencyClientId: string): Promise<string> {
   // No access token — try refreshing
   if (!client.ghl_refresh_token) {
     throw new Error(
-      `Agency client ${agencyClientId} has no GHL tokens — OAuth not connected`,
+      `Agency client ${agencyClientId} has no GHL tokens — OAuth not connected and no Private Integration token`,
     );
   }
 
