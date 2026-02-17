@@ -28,34 +28,18 @@ export async function createClient() {
   );
 }
 
+/**
+ * Service client that bypasses RLS using the service_role key.
+ * 
+ * IMPORTANT: Do NOT use createServerClient from @supabase/ssr here.
+ * When cookies are present, @supabase/ssr extracts the user's JWT from cookies
+ * and uses it for requests — even with the service_role key. This means RLS
+ * still applies, which defeats the purpose.
+ * 
+ * Always use the plain @supabase/supabase-js client without cookies.
+ */
 export async function createServiceClient() {
-  try {
-    const cookieStore = await cookies();
-    
-    return createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll();
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
-              );
-            } catch {
-              // Ignore
-            }
-          },
-        },
-      }
-    );
-  } catch {
-    // No cookie context (webhook, cron, etc.) — fall back to cookieless client
-    return createServiceClientWithoutCookies();
-  }
+  return createServiceClientWithoutCookies();
 }
 
 /**
