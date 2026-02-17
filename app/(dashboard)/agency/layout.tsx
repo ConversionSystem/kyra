@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getAgencyForUser } from '@/lib/agency/queries';
 import { AgencySidebar } from './agency-sidebar';
+import { VoiceCommandButton } from '@/components/agency/VoiceCommandButton';
 
 export default async function AgencyLayout({
   children,
@@ -24,6 +25,7 @@ export default async function AgencyLayout({
       <main className="flex-1 min-h-screen overflow-y-auto bg-gray-50">
         {children}
       </main>
+      <VoiceCommandButton />
     </div>
   );
 }
