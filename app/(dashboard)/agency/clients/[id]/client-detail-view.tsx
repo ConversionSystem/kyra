@@ -11,13 +11,13 @@ import {
   ArrowLeft,
   Loader2,
   Send,
-  BarChart3,
   Trash2,
   Save,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { AgencyClient, AgencyMember } from '@/lib/agency/queries';
 import GHLConnection from './ghl-connection';
+import { UsageAnalytics } from './usage-analytics';
 import PermissionsCard from './permissions-card';
 
 const statusColors: Record<string, string> = {
@@ -207,7 +207,7 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
   ];
 
   return (
-    <div className="p-6 md:p-8 max-w-3xl">
+    <div className="p-6 md:p-8 max-w-4xl">
       <Link
         href="/agency/clients"
         className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-gray-700 transition-colors mb-6"
@@ -402,37 +402,8 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
       {/* AI Permissions */}
       <PermissionsCard clientId={initialClient.id} />
 
-      {/* Usage Stats (Placeholder) */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
-            Usage
-          </CardTitle>
-          <CardDescription>This month&apos;s activity</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="rounded-lg border border-gray-200 bg-gray-100 p-4 text-center">
-              <p className="text-2xl font-bold text-gray-900">
-                {initialClient.usage_this_month}
-              </p>
-              <p className="text-xs text-gray-400">Credits Used</p>
-            </div>
-            <div className="rounded-lg border border-gray-200 bg-gray-100 p-4 text-center">
-              <p className="text-2xl font-bold text-gray-900">—</p>
-              <p className="text-xs text-gray-400">Messages</p>
-            </div>
-            <div className="rounded-lg border border-gray-200 bg-gray-100 p-4 text-center">
-              <p className="text-2xl font-bold text-gray-900">—</p>
-              <p className="text-xs text-gray-400">Conversations</p>
-            </div>
-          </div>
-          <p className="text-xs text-gray-500 mt-3">
-            Detailed analytics will be available in a future update.
-          </p>
-        </CardContent>
-      </Card>
+      {/* Usage Analytics */}
+      <UsageAnalytics clientId={initialClient.id} />
 
       {/* Danger Zone */}
       {role === 'owner' && (
