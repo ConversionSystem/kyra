@@ -123,30 +123,18 @@ function AgencySignupPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
 
-  // On mount: if URL says step=2 and user is authenticated, jump to step 2
+  // On mount: if user is already authenticated, skip to step 2
   useEffect(() => {
     async function checkAuth() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // User is authenticated — check if they already have an agency
-        try {
-          const res = await fetch('/api/agency');
-          if (res.ok) {
-            const data = await res.json();
-            if (data?.agency?.id) {
-              // Already has an agency, redirect to dashboard
-              router.push('/agency');
-              return;
-            }
-          }
-        } catch {}
-        // Authenticated but no agency — go to step 2
+        // Authenticated → go straight to agency details (step 2)
         setStep(2);
       }
       setCheckingAuth(false);
     }
     checkAuth();
-  }, [supabase, router]);
+  }, [supabase]);
 
   // Auto-generate slug from agency name (unless manually edited)
   useEffect(() => {
