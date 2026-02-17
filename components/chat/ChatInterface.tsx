@@ -248,7 +248,7 @@ export function ChatInterface({
   const showEmptyState = messages.length === 0 && !streamingContent && !currentConversation;
 
   return (
-    <div className="flex h-[100dvh] bg-white">
+    <div className="flex h-[100dvh] bg-gray-50">
       <ConversationSidebar
         conversations={conversations}
         currentConversationId={currentConversation?.id}
@@ -313,7 +313,7 @@ export function ChatInterface({
                 <div className="relative mb-4 inline-block">
                   <div className="absolute inset-0 animate-pulse rounded-full bg-indigo-50 blur-xl" />
                   <div className="relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 via-indigo-500 to-indigo-400">
-                    <Sparkles className="h-7 w-7 text-gray-900" />
+                    <Sparkles className="h-7 w-7 text-white" />
                   </div>
                 </div>
                 <DynamicGreeting />

@@ -83,11 +83,11 @@ export function ConversationSidebar({
   // Desktop collapsed state
   if (isCollapsed) {
     return (
-      <div className="hidden md:flex h-full w-12 flex-col items-center border-r border-gray-200 bg-white py-4">
-        <Button variant="ghost" size="icon" onClick={() => setIsCollapsed(false)} className="mb-4 text-gray-500 hover:text-gray-700">
+      <div className="hidden md:flex h-full w-12 flex-col items-center border-r border-gray-800 bg-gray-900 py-4">
+        <Button variant="ghost" size="icon" onClick={() => setIsCollapsed(false)} className="mb-4 text-gray-400 hover:text-white">
           <ChevronRight className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="icon" onClick={onNewConversation} className="text-gray-500 hover:text-gray-700">
+        <Button variant="ghost" size="icon" onClick={onNewConversation} className="text-gray-400 hover:text-white">
           <Plus className="h-4 w-4" />
         </Button>
       </div>
@@ -95,16 +95,16 @@ export function ConversationSidebar({
   }
 
   const sidebarContent = (
-    <div className="flex h-full w-64 flex-col border-r border-gray-200 bg-white">
+    <div className="flex h-full w-64 flex-col border-r border-gray-800 bg-gray-900">
       {/* Header with collapse */}
       <div className="flex items-center justify-between p-3 pb-0">
-        <span className="text-sm font-semibold text-gray-700">Kyra</span>
+        <span className="text-sm font-semibold text-white">Kyra</span>
         <div className="flex items-center gap-1">
           {/* Desktop: collapse. Mobile: close */}
-          <Button variant="ghost" size="icon" onClick={() => { setIsCollapsed(true); }} className="hidden md:flex h-7 w-7 text-gray-400 hover:text-gray-700">
+          <Button variant="ghost" size="icon" onClick={() => { setIsCollapsed(true); }} className="hidden md:flex h-7 w-7 text-gray-500 hover:text-white">
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={onMobileToggle} className="md:hidden h-7 w-7 text-gray-400 hover:text-gray-700">
+          <Button variant="ghost" size="icon" onClick={onMobileToggle} className="md:hidden h-7 w-7 text-gray-500 hover:text-white">
             <X className="h-4 w-4" />
           </Button>
         </div>
@@ -115,7 +115,7 @@ export function ConversationSidebar({
         <Button
           onClick={handleNewConversation}
           variant="outline"
-          className="w-full justify-start gap-2 border-gray-200 bg-transparent text-gray-700 hover:bg-gray-100 hover:text-gray-700 min-h-[44px]"
+          className="w-full justify-start gap-2 border-gray-700 bg-transparent text-gray-300 hover:bg-gray-800 hover:text-white min-h-[44px]"
         >
           <Plus className="h-4 w-4" />
           New Chat
@@ -131,19 +131,19 @@ export function ConversationSidebar({
       </div>
 
       {/* Nav Links */}
-      <div className="border-t border-gray-200 p-2">
+      <div className="border-t border-gray-800 p-2">
         {navLinks.map((link) => (
           <Link
             key={link.label}
             href={link.href}
-            className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800 min-h-[44px]"
+            className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm text-gray-400 transition-colors hover:bg-gray-800 hover:text-white min-h-[44px]"
           >
             <link.icon className="h-4 w-4" />
             {link.label}
           </Link>
         ))}
         {credits && (
-          <div className="mt-2 rounded-lg px-3 py-2 text-xs text-gray-400">
+          <div className="mt-2 rounded-lg px-3 py-2 text-xs text-gray-500">
             {credits.used.toLocaleString()} / {credits.limit.toLocaleString()} credits · {credits.plan}
           </div>
         )}
@@ -198,8 +198,8 @@ function ConversationGroup({
             className={cn(
               'group flex w-full items-center rounded-lg text-sm transition-colors',
               currentId === conv.id
-                ? 'bg-gray-100 text-gray-900'
-                : 'text-gray-500 hover:bg-gray-100 hover:text-gray-800'
+                ? 'bg-gray-800 text-white'
+                : 'text-gray-400 hover:bg-gray-800 hover:text-white'
             )}
           >
             <button

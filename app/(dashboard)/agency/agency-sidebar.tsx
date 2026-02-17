@@ -36,17 +36,17 @@ export function AgencySidebar({ agencyName, plan }: AgencySidebarProps) {
   const pathname = usePathname();
 
   return (
-    <aside className="w-64 border-r border-gray-200 bg-white flex flex-col shrink-0">
+    <aside className="w-64 border-r border-gray-800 bg-gray-900 flex flex-col shrink-0">
       {/* Header */}
-      <div className="p-4 border-b border-gray-200">
+      <div className="p-4 border-b border-gray-800">
         <Link
           href="/chat"
-          className="flex items-center gap-2 text-xs text-gray-400 hover:text-gray-700 transition-colors mb-3"
+          className="flex items-center gap-2 text-xs text-gray-400 hover:text-gray-300 transition-colors mb-3"
         >
           <ChevronLeft className="h-3 w-3" />
           Back to Chat
         </Link>
-        <h2 className="text-lg font-semibold text-gray-900 truncate">
+        <h2 className="text-lg font-semibold text-white truncate">
           {agencyName}
         </h2>
         <Badge className={cn('mt-1 capitalize', planColors[plan] ?? planColors.starter)}>
@@ -69,8 +69,8 @@ export function AgencySidebar({ agencyName, plan }: AgencySidebarProps) {
               className={cn(
                 'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
                 isActive
-                  ? 'bg-gray-100 text-gray-900'
-                  : 'text-gray-500 hover:bg-gray-100 hover:text-gray-800'
+                  ? 'bg-gray-800 text-white'
+                  : 'text-gray-400 hover:bg-gray-800 hover:text-white'
               )}
             >
               <item.icon className="h-4 w-4 shrink-0" />

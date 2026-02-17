@@ -99,7 +99,7 @@ export function ClientsListView({ clients }: ClientsListViewProps) {
           </CardContent>
         </Card>
       ) : (
-        <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+        <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
