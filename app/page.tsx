@@ -309,7 +309,7 @@ export default function LandingPage() {
 
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             <PricingCard
-              name="Starter"
+              name="Lite"
               price="$99"
               period="/mo"
               description="For agencies getting started with AI"
@@ -333,7 +333,7 @@ export default function LandingPage() {
               clients="15 clients included"
               extra="$25/mo per extra client"
               features={[
-                'Everything in Starter',
+                'Everything in Lite',
                 'White-label branding',
                 'Stripe Connect billing',
                 'Create custom templates',

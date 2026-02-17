@@ -68,9 +68,9 @@ const PLAN_CONFIG: Record<
   string,
   { label: string; price: string; priceCents: number; includedClients: number }
 > = {
-  starter: { label: 'Starter', price: '$49/mo', priceCents: 4900, includedClients: 5 },
-  pro: { label: 'Pro', price: '$149/mo', priceCents: 14900, includedClients: 25 },
-  scale: { label: 'Scale', price: '$399/mo', priceCents: 39900, includedClients: 100 },
+  starter: { label: 'Lite', price: '$99/mo', priceCents: 9900, includedClients: 5 },
+  pro: { label: 'Pro', price: '$249/mo', priceCents: 24900, includedClients: 25 },
+  scale: { label: 'Scale', price: '$499/mo', priceCents: 49900, includedClients: 100 },
 };
 
 const planBadgeColors: Record<string, string> = {
