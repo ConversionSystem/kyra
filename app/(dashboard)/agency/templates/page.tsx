@@ -18,6 +18,8 @@ const industryColors: Record<string, string> = {
   'Fitness / Wellness': 'border-green-200 bg-green-50 text-green-600',
   'Restaurant / Hospitality': 'border-red-200 bg-red-50 text-red-600',
   'Education': 'border-indigo-200 bg-indigo-50 text-indigo-600',
+  'Sales & Consulting': 'border-violet-500/50 bg-violet-50 text-violet-600',
+  'Market Intelligence': 'border-rose-500/50 bg-rose-50 text-rose-600',
   'General': 'border-indigo-200 bg-indigo-50 text-indigo-600',
 };
 
