@@ -579,7 +579,7 @@ function SettingsContent() {
                   {usage?.plan !== 'starter' && (
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-zinc-700 bg-zinc-800/50 p-4">
                       <div>
-                        <p className="font-medium text-zinc-100">Starter — $20/mo</p>
+                        <p className="font-medium text-zinc-100">Lite — $99/mo</p>
                         <p className="text-xs text-zinc-500">500 credits · WhatsApp + Telegram · Web search</p>
                       </div>
                       <Button

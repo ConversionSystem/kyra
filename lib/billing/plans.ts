@@ -66,8 +66,8 @@ export const PLANS: Record<Plan, PlanConfig> = {
     href: '/signup',
   },
   starter: {
-    name: 'Starter',
-    price: 20,
+    name: 'Lite',
+    price: 99,
     creditsPerMonth: 500,
     features: [
       '500 credits/month',
@@ -87,7 +87,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     creditsPerMonth: 3000,
     features: [
       '3,000 credits/month',
-      'Everything in Starter',
+      'Everything in Lite',
       'AI sub-agents for complex tasks',
       'Priority response times',
       'Email integration',
