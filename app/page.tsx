@@ -25,7 +25,7 @@ export default function LandingPage() {
       <header className="container mx-auto px-4 md:px-6 py-4 md:py-6 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
-            <span className="text-gray-900 font-bold text-sm">K</span>
+            <span className="text-white font-bold text-sm">K</span>
           </div>
           <span className="text-xl font-semibold text-gray-900">Kyra</span>
         </div>
@@ -409,7 +409,7 @@ export default function LandingPage() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-2.5">
               <div className="w-6 h-6 rounded bg-indigo-600 flex items-center justify-center">
-                <span className="text-gray-900 font-bold text-xs">K</span>
+                <span className="text-white font-bold text-xs">K</span>
               </div>
               <span className="font-semibold text-sm">Kyra</span>
               <span className="text-gray-400 text-sm ml-1">by Conversion System</span>

@@ -192,7 +192,7 @@ export function ChatInput({ onSend, isLoading, disabled }: ChatInputProps) {
             type="submit"
             size="icon"
             disabled={(!message.trim() && attachments.length === 0) || isLoading || disabled || stillUploading}
-            className="h-10 w-10 shrink-0 rounded-full bg-gray-100 text-white hover:bg-white disabled:opacity-30"
+            className="h-10 w-10 shrink-0 rounded-full bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-30"
           >
             {isLoading || stillUploading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
