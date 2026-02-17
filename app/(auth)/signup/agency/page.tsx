@@ -230,7 +230,7 @@ function AgencySignupPage() {
         {/* Header */}
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600">
-            <Building2 className="h-7 w-7 text-gray-900" />
+            <Building2 className="h-7 w-7 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900">Create your agency</h1>
           <p className="mt-2 text-gray-500">
@@ -399,14 +399,14 @@ function AgencySignupPage() {
                       }`}
                     >
                       {plan.badge && (
-                        <span className="absolute -top-2.5 right-4 rounded-full bg-gradient-to-r from-indigo-500 to-indigo-600 px-3 py-0.5 text-xs font-medium text-gray-900">
+                        <span className="absolute -top-2.5 right-4 rounded-full bg-gradient-to-r from-indigo-500 to-indigo-600 px-3 py-0.5 text-xs font-medium text-white">
                           {plan.badge}
                         </span>
                       )}
                       <div
                         className={`mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br ${plan.color}`}
                       >
-                        <Icon className="h-5 w-5 text-gray-900" />
+                        <Icon className="h-5 w-5 text-white" />
                       </div>
                       <h3 className="text-lg font-semibold text-gray-900">{plan.name}</h3>
                       <p className="mb-3 text-sm text-gray-500">{plan.description}</p>
@@ -425,7 +425,7 @@ function AgencySignupPage() {
                       {isSelected && (
                         <div className="absolute right-3 top-3">
                           <div className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-500">
-                            <Check className="h-3 w-3 text-gray-900" />
+                            <Check className="h-3 w-3 text-white" />
                           </div>
                         </div>
                       )}
