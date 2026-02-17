@@ -21,6 +21,7 @@ import { generateConversationTitle } from '@/lib/utils';
 import { Message, Conversation, MemoryType, User } from '@/types';
 import { getPlanLimit, isWithinLimit, getCreditCost, Plan } from '@/lib/billing/plans';
 import { getSessionKeyForClient, getSessionKeyForUser, getSystemContextForClient, getSystemPromptForClient } from '@/lib/agency/container';
+import { resolveModelPreference } from '@/lib/ai/model-router';
 import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
 import { v4 as uuid } from 'uuid';
 
@@ -201,6 +202,10 @@ export async function POST(request: NextRequest) {
       console.error('[worker-route] Context gathering error:', e);
     }
 
+    // --- Route to optimal model —  user preference → smart routing by message complexity ---
+    const userModelPref = (user as any).settings?.preferred_model;
+    const modelConfig = resolveModelPreference(userModelPref, message);
+
     // --- Forward to Kyra Gateway (Fly.io OpenClaw container) ---
     // Use agency client session key if in client mode, otherwise user session key
     const sessionKey = agencySessionKey || getSessionKeyForUser(authUser.id);
@@ -219,6 +224,8 @@ export async function POST(request: NextRequest) {
           message,
           sessionKey,
           systemContext: finalSystemContext,
+          model: modelConfig.id,
+          maxTokens: modelConfig.maxTokens,
         }),
         signal: AbortSignal.timeout(180_000), // Cold start: bridge ~400ms, gateway first boot ~2-3min
       });
@@ -312,7 +319,8 @@ export async function POST(request: NextRequest) {
 
             // Post-process: save messages and extract commands
             await saveMessages(
-              serviceClient, authUser.id, conversationId, message, fullResponse, controller, encoder
+              serviceClient, authUser.id, conversationId, message, fullResponse, controller, encoder,
+              { model: modelConfig.id, tier: modelConfig.tier },
             );
 
             controller.enqueue(encoder.encode('data: [DONE]\n\n'));
@@ -368,7 +376,8 @@ export async function POST(request: NextRequest) {
             }
 
             await saveMessages(
-              serviceClient, authUser.id, conversationId, message, fullResponse, controller, encoder
+              serviceClient, authUser.id, conversationId, message, fullResponse, controller, encoder,
+              { model: modelConfig.id, tier: modelConfig.tier },
             );
 
             controller.enqueue(encoder.encode('data: [DONE]\n\n'));
@@ -408,6 +417,7 @@ async function saveMessages(
   assistantContent: string,
   controller: ReadableStreamDefaultController,
   encoder: TextEncoder,
+  modelMeta?: { model: string; tier: string },
 ) {
   const { extractCommands } = await import('@/lib/ai/prompts');
   const { saveMemory } = await import('@/lib/ai/memory');
@@ -450,7 +460,7 @@ async function saveMessages(
     .from('messages')
     .insert({
       id: uuid(), conversation_id: conversationId, role: 'assistant', content: cleanResponse,
-      metadata: { model: 'kyra-worker', provider: 'worker' },
+      metadata: { model: modelMeta?.model || 'kyra-worker', tier: modelMeta?.tier, provider: 'worker' },
     })
     .select()
     .single();
