@@ -25,23 +25,23 @@ export default function LandingPage() {
       <header className="container mx-auto px-4 md:px-6 py-4 md:py-6 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
-            <span className="text-white font-bold text-sm">K</span>
+            <span className="text-gray-900 font-bold text-sm">K</span>
           </div>
           <span className="text-xl font-semibold text-gray-900">Kyra</span>
         </div>
         <nav className="hidden md:flex items-center gap-8">
-          <Link href="#how-it-works" className="text-gray-600 hover:text-gray-900 transition text-sm">
+          <Link href="#how-it-works" className="text-gray-600 hover:text-gray-700 transition text-sm">
             How It Works
           </Link>
-          <Link href="#features" className="text-gray-600 hover:text-gray-900 transition text-sm">
+          <Link href="#features" className="text-gray-600 hover:text-gray-700 transition text-sm">
             Features
           </Link>
-          <Link href="#pricing" className="text-gray-600 hover:text-gray-900 transition text-sm">
+          <Link href="#pricing" className="text-gray-600 hover:text-gray-700 transition text-sm">
             Pricing
           </Link>
         </nav>
         <div className="flex items-center gap-3">
-          <Link href="/login" className="text-gray-600 hover:text-gray-900 transition text-sm font-medium">
+          <Link href="/login" className="text-gray-600 hover:text-gray-700 transition text-sm font-medium">
             Sign In
           </Link>
           <Link 
@@ -275,8 +275,8 @@ export default function LandingPage() {
           <div className="max-w-3xl mx-auto">
             <div className="rounded-2xl border border-gray-200 p-8 md:p-10">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-8 h-8 rounded-lg bg-gray-900 flex items-center justify-center">
-                  <span className="text-white text-xs font-bold">OC</span>
+                <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center">
+                  <span className="text-gray-900 text-xs font-bold">OC</span>
                 </div>
                 <span className="font-semibold text-gray-900">Powered by OpenClaw</span>
               </div>
@@ -409,7 +409,7 @@ export default function LandingPage() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-2.5">
               <div className="w-6 h-6 rounded bg-indigo-600 flex items-center justify-center">
-                <span className="text-white font-bold text-xs">K</span>
+                <span className="text-gray-900 font-bold text-xs">K</span>
               </div>
               <span className="font-semibold text-sm">Kyra</span>
               <span className="text-gray-400 text-sm ml-1">by Conversion System</span>
@@ -418,10 +418,10 @@ export default function LandingPage() {
               © 2026 Conversion System. All rights reserved.
             </p>
             <div className="flex items-center gap-6 text-sm text-gray-500">
-              <Link href="https://openclaw.ai" className="hover:text-gray-900 transition" target="_blank">OpenClaw</Link>
-              <Link href="/privacy" className="hover:text-gray-900 transition">Privacy</Link>
-              <Link href="/terms" className="hover:text-gray-900 transition">Terms</Link>
-              <Link href="mailto:support@conversionsystem.com" className="hover:text-gray-900 transition">Support</Link>
+              <Link href="https://openclaw.ai" className="hover:text-gray-700 transition" target="_blank">OpenClaw</Link>
+              <Link href="/privacy" className="hover:text-gray-700 transition">Privacy</Link>
+              <Link href="/terms" className="hover:text-gray-700 transition">Terms</Link>
+              <Link href="mailto:support@conversionsystem.com" className="hover:text-gray-700 transition">Support</Link>
             </div>
           </div>
         </div>

@@ -8,9 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Users, Activity, BarChart3, Plus } from 'lucide-react';
 
 const statusColors: Record<string, string> = {
-  active: 'border-green-500/50 bg-green-500/10 text-green-400',
-  paused: 'border-yellow-500/50 bg-yellow-500/10 text-yellow-400',
-  setup: 'border-blue-500/50 bg-blue-500/10 text-blue-400',
+  active: 'border-green-200 bg-green-50 text-green-600',
+  paused: 'border-yellow-200 bg-yellow-50 text-yellow-600',
+  setup: 'border-blue-200 bg-blue-50 text-blue-600',
 };
 
 export default async function AgencyOverviewPage() {
@@ -35,8 +35,8 @@ export default async function AgencyOverviewPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-100">Dashboard</h1>
-          <p className="text-sm text-zinc-400 mt-1">
+          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-sm text-gray-500 mt-1">
             {agency.name} &middot; {memberCount} member{memberCount !== 1 ? 's' : ''}
           </p>
         </div>
@@ -53,12 +53,12 @@ export default async function AgencyOverviewPage() {
         <Card>
           <CardContent className="p-5">
             <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-indigo-500/10 p-2">
-                <Users className="h-5 w-5 text-indigo-400" />
+              <div className="rounded-lg bg-indigo-50 p-2">
+                <Users className="h-5 w-5 text-indigo-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-zinc-100">{clients.length}</p>
-                <p className="text-xs text-zinc-500">Total Clients</p>
+                <p className="text-2xl font-bold text-gray-900">{clients.length}</p>
+                <p className="text-xs text-gray-400">Total Clients</p>
               </div>
             </div>
           </CardContent>
@@ -67,12 +67,12 @@ export default async function AgencyOverviewPage() {
         <Card>
           <CardContent className="p-5">
             <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-green-500/10 p-2">
-                <Activity className="h-5 w-5 text-green-400" />
+              <div className="rounded-lg bg-green-50 p-2">
+                <Activity className="h-5 w-5 text-green-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-zinc-100">{activeCount}</p>
-                <p className="text-xs text-zinc-500">Active</p>
+                <p className="text-2xl font-bold text-gray-900">{activeCount}</p>
+                <p className="text-xs text-gray-400">Active</p>
               </div>
             </div>
           </CardContent>
@@ -81,12 +81,12 @@ export default async function AgencyOverviewPage() {
         <Card>
           <CardContent className="p-5">
             <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-yellow-500/10 p-2">
-                <Activity className="h-5 w-5 text-yellow-400" />
+              <div className="rounded-lg bg-yellow-50 p-2">
+                <Activity className="h-5 w-5 text-yellow-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-zinc-100">{pausedCount}</p>
-                <p className="text-xs text-zinc-500">Paused</p>
+                <p className="text-2xl font-bold text-gray-900">{pausedCount}</p>
+                <p className="text-xs text-gray-400">Paused</p>
               </div>
             </div>
           </CardContent>
@@ -95,12 +95,12 @@ export default async function AgencyOverviewPage() {
         <Card>
           <CardContent className="p-5">
             <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-blue-500/10 p-2">
-                <BarChart3 className="h-5 w-5 text-blue-400" />
+              <div className="rounded-lg bg-blue-50 p-2">
+                <BarChart3 className="h-5 w-5 text-blue-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-zinc-100">{totalUsage.toLocaleString()}</p>
-                <p className="text-xs text-zinc-500">Usage This Month</p>
+                <p className="text-2xl font-bold text-gray-900">{totalUsage.toLocaleString()}</p>
+                <p className="text-xs text-gray-400">Usage This Month</p>
               </div>
             </div>
           </CardContent>
@@ -114,10 +114,10 @@ export default async function AgencyOverviewPage() {
           { label: 'Paused', count: pausedCount, color: 'bg-yellow-500' },
           { label: 'Setup', count: setupCount, color: 'bg-blue-500' },
         ].map((item) => (
-          <div key={item.label} className="flex items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-900 p-4">
+          <div key={item.label} className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-4">
             <div className={`h-2.5 w-2.5 rounded-full ${item.color}`} />
-            <span className="text-sm text-zinc-300">{item.label}</span>
-            <span className="ml-auto text-sm font-semibold text-zinc-100">{item.count}</span>
+            <span className="text-sm text-gray-700">{item.label}</span>
+            <span className="ml-auto text-sm font-semibold text-gray-900">{item.count}</span>
           </div>
         ))}
       </div>
@@ -126,14 +126,14 @@ export default async function AgencyOverviewPage() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg">Recent Clients</CardTitle>
-          <Link href="/agency/clients" className="text-sm text-zinc-400 hover:text-zinc-200 transition-colors">
+          <Link href="/agency/clients" className="text-sm text-gray-500 hover:text-gray-800 transition-colors">
             View all →
           </Link>
         </CardHeader>
         <CardContent>
           {recentClients.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-zinc-500 mb-4">No clients yet. Create your first one!</p>
+              <p className="text-gray-400 mb-4">No clients yet. Create your first one!</p>
               <Link href="/agency/clients/new">
                 <Button variant="outline" className="gap-2">
                   <Plus className="h-4 w-4" />
@@ -147,15 +147,15 @@ export default async function AgencyOverviewPage() {
                 <Link
                   key={client.id}
                   href={`/agency/clients/${client.id}`}
-                  className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-800/30 p-4 hover:bg-zinc-800/60 transition-colors"
+                  className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 p-4 hover:bg-gray-100 transition-colors"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-lg bg-zinc-700 flex items-center justify-center text-sm font-semibold text-zinc-300">
+                    <div className="h-10 w-10 rounded-lg bg-gray-200 flex items-center justify-center text-sm font-semibold text-gray-700">
                       {client.name.charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <p className="font-medium text-zinc-100">{client.name}</p>
-                      <p className="text-xs text-zinc-500">
+                      <p className="font-medium text-gray-900">{client.name}</p>
+                      <p className="text-xs text-gray-400">
                         {client.industry || 'No industry'} · {client.usage_this_month} credits used
                       </p>
                     </div>

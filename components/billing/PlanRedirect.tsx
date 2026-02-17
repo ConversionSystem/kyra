@@ -36,10 +36,10 @@ export function PlanRedirect() {
   if (!plan) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/80">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/80">
       <div className="text-center">
         <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
-        <p className="text-zinc-300">Redirecting to checkout...</p>
+        <p className="text-gray-700">Redirecting to checkout...</p>
       </div>
     </div>
   );

@@ -22,9 +22,9 @@ const navItems = [
 ];
 
 const planColors: Record<string, string> = {
-  starter: 'border-blue-500/50 bg-blue-500/10 text-blue-400',
-  pro: 'border-indigo-500/50 bg-indigo-500/10 text-indigo-400',
-  scale: 'border-amber-500/50 bg-amber-500/10 text-amber-400',
+  starter: 'border-blue-200 bg-blue-50 text-blue-600',
+  pro: 'border-indigo-200 bg-indigo-50 text-indigo-600',
+  scale: 'border-amber-200 bg-amber-50 text-amber-600',
 };
 
 interface AgencySidebarProps {
@@ -36,17 +36,17 @@ export function AgencySidebar({ agencyName, plan }: AgencySidebarProps) {
   const pathname = usePathname();
 
   return (
-    <aside className="w-64 border-r border-zinc-800 bg-zinc-950 flex flex-col shrink-0">
+    <aside className="w-64 border-r border-gray-200 bg-white flex flex-col shrink-0">
       {/* Header */}
-      <div className="p-4 border-b border-zinc-800">
+      <div className="p-4 border-b border-gray-200">
         <Link
           href="/chat"
-          className="flex items-center gap-2 text-xs text-zinc-500 hover:text-zinc-300 transition-colors mb-3"
+          className="flex items-center gap-2 text-xs text-gray-400 hover:text-gray-700 transition-colors mb-3"
         >
           <ChevronLeft className="h-3 w-3" />
           Back to Chat
         </Link>
-        <h2 className="text-lg font-semibold text-zinc-100 truncate">
+        <h2 className="text-lg font-semibold text-gray-900 truncate">
           {agencyName}
         </h2>
         <Badge className={cn('mt-1 capitalize', planColors[plan] ?? planColors.starter)}>
@@ -69,8 +69,8 @@ export function AgencySidebar({ agencyName, plan }: AgencySidebarProps) {
               className={cn(
                 'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
                 isActive
-                  ? 'bg-zinc-800 text-zinc-100'
-                  : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
+                  ? 'bg-gray-100 text-gray-900'
+                  : 'text-gray-500 hover:bg-gray-100 hover:text-gray-800'
               )}
             >
               <item.icon className="h-4 w-4 shrink-0" />

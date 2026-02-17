@@ -20,12 +20,12 @@ import Link from 'next/link';
 
 function getFileIcon(mimeType: string | null) {
   if (!mimeType) return <File className="h-5 w-5" />;
-  if (mimeType === 'application/pdf') return <FileText className="h-5 w-5 text-red-400" />;
-  if (mimeType === 'text/csv') return <FileSpreadsheet className="h-5 w-5 text-green-400" />;
+  if (mimeType === 'application/pdf') return <FileText className="h-5 w-5 text-red-600" />;
+  if (mimeType === 'text/csv') return <FileSpreadsheet className="h-5 w-5 text-green-600" />;
   if (mimeType.includes('json') || mimeType.includes('javascript') || mimeType.includes('typescript'))
-    return <FileCode className="h-5 w-5 text-yellow-400" />;
-  if (mimeType.startsWith('text/')) return <FileText className="h-5 w-5 text-blue-400" />;
-  return <File className="h-5 w-5 text-zinc-400" />;
+    return <FileCode className="h-5 w-5 text-yellow-600" />;
+  if (mimeType.startsWith('text/')) return <FileText className="h-5 w-5 text-blue-600" />;
+  return <File className="h-5 w-5 text-gray-500" />;
 }
 
 function formatFileSize(bytes: number | null): string {
@@ -110,9 +110,9 @@ export default function FilesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950">
+    <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-sm">
+      <header className="border-b border-gray-200 bg-white/80 backdrop-blur-sm">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-4">
           <div className="flex items-center gap-4">
             <Link href="/chat">
@@ -121,8 +121,8 @@ export default function FilesPage() {
               </Button>
             </Link>
             <div>
-              <h1 className="text-xl font-semibold text-zinc-100">Files</h1>
-              <p className="text-sm text-zinc-400">
+              <h1 className="text-xl font-semibold text-gray-900">Files</h1>
+              <p className="text-sm text-gray-500">
                 {files.length} of {limit} files ({plan} plan)
               </p>
             </div>
@@ -151,11 +151,11 @@ export default function FilesPage() {
       <main className="mx-auto max-w-4xl px-4 py-6">
         {/* Usage bar */}
         <div className="mb-6">
-          <div className="flex items-center justify-between text-sm text-zinc-400 mb-2">
+          <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
             <span>Storage used</span>
             <span>{files.length} / {limit} files</span>
           </div>
-          <div className="h-2 rounded-full bg-zinc-800 overflow-hidden">
+          <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
             <div
               className="h-full rounded-full bg-indigo-500 transition-all"
               style={{ width: `${Math.min(100, (files.length / limit) * 100)}%` }}
@@ -166,13 +166,13 @@ export default function FilesPage() {
         {/* File list */}
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-zinc-400" />
+            <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
           </div>
         ) : files.length === 0 ? (
           <div className="py-12 text-center">
-            <File className="mx-auto mb-4 h-12 w-12 text-zinc-600" />
-            <h3 className="mb-2 text-lg font-medium text-zinc-300">No files uploaded</h3>
-            <p className="text-sm text-zinc-500">
+            <File className="mx-auto mb-4 h-12 w-12 text-gray-500" />
+            <h3 className="mb-2 text-lg font-medium text-gray-700">No files uploaded</h3>
+            <p className="text-sm text-gray-400">
               Upload files to reference them in your conversations with Kyra.
             </p>
           </div>
@@ -185,8 +185,8 @@ export default function FilesPage() {
                     {getFileIcon(file.mime_type)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-zinc-100 truncate">{file.name}</p>
-                    <div className="flex items-center gap-3 text-xs text-zinc-500 mt-0.5">
+                    <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
+                    <div className="flex items-center gap-3 text-xs text-gray-400 mt-0.5">
                       <span>{formatFileSize(file.size_bytes)}</span>
                       <span>{file.mime_type?.split('/').pop() || 'file'}</span>
                       <span>{formatDate(file.created_at)}</span>
@@ -195,7 +195,7 @@ export default function FilesPage() {
                   <div className="flex items-center gap-1 shrink-0">
                     <a
                       href={`/api/files/download?id=${file.id}`}
-                      className="flex items-center justify-center h-10 w-10 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"
+                      className="flex items-center justify-center h-10 w-10 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
                       title="Download"
                     >
                       <Download className="h-4 w-4" />
@@ -203,7 +203,7 @@ export default function FilesPage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="min-h-[44px] min-w-[44px] text-zinc-400 hover:text-red-400"
+                      className="min-h-[44px] min-w-[44px] text-gray-500 hover:text-red-600"
                       onClick={() => handleDelete(file.id)}
                       disabled={deletingId === file.id}
                     >

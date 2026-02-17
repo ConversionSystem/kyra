@@ -45,7 +45,7 @@ export default function UsagePage() {
 
   if (!data) {
     return (
-      <div className="flex items-center justify-center min-h-screen text-zinc-400">
+      <div className="flex items-center justify-center min-h-screen text-gray-500">
         Failed to load analytics
       </div>
     );
@@ -64,7 +64,7 @@ export default function UsagePage() {
     <div className="min-h-screen p-4 md:p-8 max-w-6xl mx-auto space-y-4 md:space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Usage & Analytics</h1>
-        <p className="text-zinc-400 text-sm mt-1">Your activity over the last 30 days</p>
+        <p className="text-gray-500 text-sm mt-1">Your activity over the last 30 days</p>
       </div>
 
       {/* Top row: Credits + Plan */}
@@ -86,10 +86,10 @@ export default function UsagePage() {
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span className="text-2xl font-bold">{data.usage.used}</span>
-                <span className="text-xs text-zinc-500">/ {data.usage.limit}</span>
+                <span className="text-xs text-gray-400">/ {data.usage.limit}</span>
               </div>
             </div>
-            <p className="text-sm text-zinc-400 mt-3">Credits this month</p>
+            <p className="text-sm text-gray-500 mt-3">Credits this month</p>
           </CardContent>
         </Card>
 
@@ -98,11 +98,11 @@ export default function UsagePage() {
           <CardContent className="p-6 flex flex-col justify-between h-full">
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <Zap className="w-4 h-4 text-indigo-400" />
-                <span className="text-sm text-zinc-400">Current Plan</span>
+                <Zap className="w-4 h-4 text-indigo-600" />
+                <span className="text-sm text-gray-500">Current Plan</span>
               </div>
               <h2 className="text-xl font-bold capitalize">{data.usage.plan}</h2>
-              <p className="text-sm text-zinc-500 mt-1">
+              <p className="text-sm text-gray-400 mt-1">
                 {data.usage.limit - data.usage.used} credits remaining
               </p>
             </div>
@@ -120,30 +120,30 @@ export default function UsagePage() {
         <Card>
           <CardContent className="p-6 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                <MessageSquare className="w-5 h-5 text-blue-400" />
+              <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                <MessageSquare className="w-5 h-5 text-blue-600" />
               </div>
               <div>
                 <p className="text-lg font-bold">{data.totalMessages}</p>
-                <p className="text-xs text-zinc-500">Messages (30d)</p>
+                <p className="text-xs text-gray-400">Messages (30d)</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-green-400" />
+              <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-green-600" />
               </div>
               <div>
                 <p className="text-lg font-bold">{data.topConversations.length}</p>
-                <p className="text-xs text-zinc-500">Active conversations</p>
+                <p className="text-xs text-gray-400">Active conversations</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                <Clock className="w-5 h-5 text-amber-400" />
+              <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center">
+                <Clock className="w-5 h-5 text-amber-600" />
               </div>
               <div>
                 <p className="text-lg font-bold">~1.2s</p>
-                <p className="text-xs text-zinc-500">Avg response time</p>
+                <p className="text-xs text-gray-400">Avg response time</p>
               </div>
             </div>
           </CardContent>
@@ -154,7 +154,7 @@ export default function UsagePage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
-            <BarChart3 className="w-4 h-4 text-indigo-400" />
+            <BarChart3 className="w-4 h-4 text-indigo-600" />
             Messages per day
           </CardTitle>
           <CardDescription>Last 30 days</CardDescription>
@@ -167,13 +167,13 @@ export default function UsagePage() {
                   className="w-full bg-indigo-500/80 rounded-t transition-all duration-300 hover:bg-indigo-400 min-h-[2px]"
                   style={{ height: `${Math.max((d.count / maxMessages) * 100, 2)}%` }}
                 />
-                <div className="absolute -top-8 left-1/2 -translate-x-1/2 hidden group-hover:block bg-zinc-800 text-xs px-2 py-1 rounded whitespace-nowrap z-10">
+                <div className="absolute -top-8 left-1/2 -translate-x-1/2 hidden group-hover:block bg-gray-100 text-xs px-2 py-1 rounded whitespace-nowrap z-10">
                   {d.date.slice(5)}: {d.count}
                 </div>
               </div>
             ))}
           </div>
-          <div className="flex justify-between mt-2 text-[10px] text-zinc-600">
+          <div className="flex justify-between mt-2 text-[10px] text-gray-500">
             <span>{data.dailyMessages[0]?.date.slice(5)}</span>
             <span>{data.dailyMessages[data.dailyMessages.length - 1]?.date.slice(5)}</span>
           </div>
@@ -189,7 +189,7 @@ export default function UsagePage() {
           </CardHeader>
           <CardContent>
             {Object.keys(data.channelBreakdown).length === 0 ? (
-              <p className="text-sm text-zinc-500">No messages yet</p>
+              <p className="text-sm text-gray-400">No messages yet</p>
             ) : (
               <div className="space-y-3">
                 {/* Simple donut via SVG */}
@@ -225,9 +225,9 @@ export default function UsagePage() {
                           className="w-3 h-3 rounded-full"
                           style={{ backgroundColor: CHANNEL_COLORS[channel] || '#71717a' }}
                         />
-                        <span className="capitalize text-zinc-300">{channel}</span>
+                        <span className="capitalize text-gray-700">{channel}</span>
                       </div>
-                      <span className="text-zinc-500">{count} ({Math.round((count / totalChannelMessages) * 100)}%)</span>
+                      <span className="text-gray-400">{count} ({Math.round((count / totalChannelMessages) * 100)}%)</span>
                     </div>
                   ))}
                 </div>
@@ -243,23 +243,23 @@ export default function UsagePage() {
           </CardHeader>
           <CardContent>
             {data.topConversations.length === 0 ? (
-              <p className="text-sm text-zinc-500">No conversations yet</p>
+              <p className="text-sm text-gray-400">No conversations yet</p>
             ) : (
               <div className="space-y-2">
                 {data.topConversations.map((conv, i) => (
                   <Link
                     key={conv.id}
                     href={`/chat/${conv.id}`}
-                    className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-zinc-800 transition-colors"
+                    className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-100 transition-colors"
                   >
-                    <span className="text-xs text-zinc-600 w-4">{i + 1}</span>
+                    <span className="text-xs text-gray-500 w-4">{i + 1}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm truncate">{conv.title}</p>
                       <div className="flex items-center gap-2">
                         <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
                           {conv.channel}
                         </Badge>
-                        <span className="text-[10px] text-zinc-500">{conv.messageCount} messages</span>
+                        <span className="text-[10px] text-gray-400">{conv.messageCount} messages</span>
                       </div>
                     </div>
                   </Link>

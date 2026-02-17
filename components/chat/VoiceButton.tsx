@@ -56,7 +56,7 @@ export function VoiceButton({ text }: VoiceButtonProps) {
   return (
     <button
       onClick={handlePlay}
-      className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300"
+      className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
       title={state === 'playing' ? 'Stop' : 'Listen'}
     >
       {state === 'loading' ? (

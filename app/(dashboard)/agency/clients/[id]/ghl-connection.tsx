@@ -91,8 +91,8 @@ export default function GHLConnection({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           {/* GHL logo placeholder */}
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/10">
-            <span className="text-lg font-bold text-orange-400">G</span>
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-50">
+            <span className="text-lg font-bold text-orange-600">G</span>
           </div>
           GoHighLevel Integration
         </CardTitle>
@@ -104,7 +104,7 @@ export default function GHLConnection({
 
       <CardContent className="space-y-4">
         {error && (
-          <div className="rounded-md bg-red-500/10 px-4 py-3 text-sm text-red-400">
+          <div className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-600">
             {error}
           </div>
         )}
@@ -113,21 +113,21 @@ export default function GHLConnection({
           /* ── Connected State ──────────────────────────────────────────── */
           <div className="space-y-4">
             <div className="flex items-center gap-2 rounded-lg border border-green-500/20 bg-green-500/5 px-4 py-3">
-              <Check className="h-5 w-5 text-green-400" />
-              <span className="font-medium text-green-400">Connected</span>
+              <Check className="h-5 w-5 text-green-600" />
+              <span className="font-medium text-green-600">Connected</span>
             </div>
 
-            <div className="grid gap-3 rounded-lg border border-zinc-700 bg-zinc-800/50 p-4 text-sm">
+            <div className="grid gap-3 rounded-lg border border-gray-200 bg-gray-100 p-4 text-sm">
               <div className="flex justify-between">
-                <span className="text-zinc-400">Location ID</span>
-                <span className="font-mono text-xs text-zinc-300">
+                <span className="text-gray-500">Location ID</span>
+                <span className="font-mono text-xs text-gray-700">
                   {ghlLocationId}
                 </span>
               </div>
               {ghlConnectedAt && (
                 <div className="flex justify-between">
-                  <span className="text-zinc-400">Connected</span>
-                  <span className="text-zinc-300">
+                  <span className="text-gray-500">Connected</span>
+                  <span className="text-gray-700">
                     {new Date(ghlConnectedAt).toLocaleDateString('en-US', {
                       year: 'numeric',
                       month: 'short',
@@ -139,8 +139,8 @@ export default function GHLConnection({
                 </div>
               )}
               <div className="flex justify-between">
-                <span className="text-zinc-400">Capabilities</span>
-                <span className="text-zinc-300">
+                <span className="text-gray-500">Capabilities</span>
+                <span className="text-gray-700">
                   Contacts · Conversations · Pipeline · Calendar · Workflows
                 </span>
               </div>
@@ -162,7 +162,7 @@ export default function GHLConnection({
                 size="sm"
                 onClick={handleDisconnect}
                 disabled={isDisconnecting}
-                className="flex items-center gap-2 text-red-400 hover:text-red-300 border-red-500/30 hover:border-red-500/50 hover:bg-red-500/10"
+                className="flex items-center gap-2 text-red-600 hover:text-red-600 border-red-500/30 hover:border-red-200 hover:bg-red-50"
               >
                 {isDisconnecting ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -176,17 +176,17 @@ export default function GHLConnection({
         ) : (
           /* ── Disconnected State ───────────────────────────────────────── */
           <div className="space-y-4">
-            <div className="flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-800/50 px-4 py-3">
-              <X className="h-5 w-5 text-zinc-500" />
-              <span className="text-zinc-400">Not connected</span>
+            <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-100 px-4 py-3">
+              <X className="h-5 w-5 text-gray-400" />
+              <span className="text-gray-500">Not connected</span>
             </div>
 
-            <div className="rounded-lg border border-zinc-700 bg-zinc-800/30 p-4 text-sm text-zinc-400 space-y-2">
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-500 space-y-2">
               <p>
                 Connecting GoHighLevel unlocks the AI&apos;s full CRM
                 capabilities:
               </p>
-              <ul className="list-disc list-inside space-y-1 text-zinc-500">
+              <ul className="list-disc list-inside space-y-1 text-gray-400">
                 <li>Read & update contacts, tags, and custom fields</li>
                 <li>
                   Send messages via SMS, email, and WhatsApp through GHL

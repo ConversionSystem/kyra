@@ -186,7 +186,7 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-zinc-950">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-white">
       <div className="w-full max-w-lg">
         {/* Progress bar */}
         <div className="flex gap-2 mb-8">
@@ -194,7 +194,7 @@ export default function OnboardingPage() {
             <div
               key={i}
               className={`h-1 flex-1 rounded-full transition-all duration-500 ${
-                i <= step ? 'bg-indigo-500' : 'bg-zinc-800'
+                i <= step ? 'bg-indigo-500' : 'bg-gray-100'
               }`}
             />
           ))}
@@ -205,20 +205,20 @@ export default function OnboardingPage() {
           <div
             className={`transition-all duration-500 ease-out ${getStepTransition(0)}`}
           >
-            <Card className="border-zinc-800 bg-zinc-900/50 backdrop-blur">
+            <Card className="border-gray-200 bg-gray-50 backdrop-blur">
               <CardContent className="p-8 space-y-6">
                 <div className="text-center space-y-2">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-500/10 mb-2">
-                    <Sparkles className="w-8 h-8 text-indigo-400" />
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-50 mb-2">
+                    <Sparkles className="w-8 h-8 text-indigo-600" />
                   </div>
                   <h1 className="text-2xl font-bold">Hey, I&apos;m Kyra</h1>
-                  <p className="text-zinc-400">
+                  <p className="text-gray-500">
                     Your personal AI assistant. Let&apos;s get to know each other.
                   </p>
                 </div>
 
                 <div>
-                  <label className="text-sm text-zinc-400 mb-1.5 block">
+                  <label className="text-sm text-gray-500 mb-1.5 block">
                     What should I call you?
                   </label>
                   <input
@@ -227,7 +227,7 @@ export default function OnboardingPage() {
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Your name"
                     autoFocus
-                    className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
+                    className="w-full rounded-lg border border-gray-200 bg-gray-100 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-200 transition-all"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && name.trim()) next();
                     }}
@@ -250,20 +250,20 @@ export default function OnboardingPage() {
           <div
             className={`transition-all duration-500 ease-out ${getStepTransition(1)}`}
           >
-            <Card className="border-zinc-800 bg-zinc-900/50 backdrop-blur">
+            <Card className="border-gray-200 bg-gray-50 backdrop-blur">
               <CardContent className="p-8 space-y-6">
                 <div className="text-center space-y-2">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-500/10 mb-2">
-                    <Briefcase className="w-8 h-8 text-blue-400" />
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-50 mb-2">
+                    <Briefcase className="w-8 h-8 text-blue-600" />
                   </div>
                   <h1 className="text-2xl font-bold">
                     {name ? `Nice to meet you, ${name}` : 'Nice to meet you'}
                   </h1>
-                  <p className="text-zinc-400">What do you do? This helps me tailor my responses.</p>
+                  <p className="text-gray-500">What do you do? This helps me tailor my responses.</p>
                 </div>
 
                 <div>
-                  <label className="text-sm text-zinc-400 mb-1.5 block">
+                  <label className="text-sm text-gray-500 mb-1.5 block">
                     Your role or occupation
                   </label>
                   <input
@@ -271,7 +271,7 @@ export default function OnboardingPage() {
                     value={role}
                     onChange={(e) => setRole(e.target.value)}
                     placeholder="e.g. Marketing Manager, Student, Freelancer"
-                    className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
+                    className="w-full rounded-lg border border-gray-200 bg-gray-100 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-200 transition-all"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') next();
                     }}
@@ -286,7 +286,7 @@ export default function OnboardingPage() {
                     <Button
                       variant="ghost"
                       onClick={next}
-                      className="text-zinc-400"
+                      className="text-gray-500"
                     >
                       Skip
                     </Button>
@@ -306,30 +306,30 @@ export default function OnboardingPage() {
           <div
             className={`transition-all duration-500 ease-out ${getStepTransition(2)}`}
           >
-            <Card className="border-zinc-800 bg-zinc-900/50 backdrop-blur">
+            <Card className="border-gray-200 bg-gray-50 backdrop-blur">
               <CardContent className="p-8 space-y-6">
                 <div className="text-center space-y-2">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-amber-500/10 mb-2">
-                    <Globe className="w-8 h-8 text-amber-400" />
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-amber-50 mb-2">
+                    <Globe className="w-8 h-8 text-amber-600" />
                   </div>
                   <h1 className="text-2xl font-bold">Your timezone</h1>
-                  <p className="text-zinc-400">
+                  <p className="text-gray-500">
                     So I know when to say good morning (and when to let you sleep).
                   </p>
                 </div>
 
                 <div className="space-y-3">
                   {/* Auto-detected timezone display */}
-                  <div className="flex items-center gap-3 rounded-lg border border-indigo-500/50 bg-indigo-500/5 px-4 py-3">
+                  <div className="flex items-center gap-3 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3">
                     <div className="flex-1">
-                      <div className="text-sm font-medium text-zinc-100">
+                      <div className="text-sm font-medium text-gray-900">
                         {formatTimezoneLabel(timezone)}
                       </div>
-                      <div className="text-xs text-zinc-500">{timezone}</div>
+                      <div className="text-xs text-gray-400">{timezone}</div>
                     </div>
                     <button
                       onClick={() => setShowTimezoneDropdown(!showTimezoneDropdown)}
-                      className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
+                      className="text-xs text-indigo-600 hover:text-indigo-600 transition-colors"
                     >
                       {showTimezoneDropdown ? 'Close' : 'Change'}
                     </button>
@@ -337,7 +337,7 @@ export default function OnboardingPage() {
 
                   {/* Timezone override dropdown */}
                   {showTimezoneDropdown && (
-                    <div className="max-h-48 overflow-y-auto rounded-lg border border-zinc-700 bg-zinc-800 divide-y divide-zinc-700/50">
+                    <div className="max-h-48 overflow-y-auto rounded-lg border border-gray-200 bg-gray-100 divide-y divide-gray-300/50">
                       {COMMON_TIMEZONES.map((tz) => (
                         <button
                           key={tz}
@@ -347,8 +347,8 @@ export default function OnboardingPage() {
                           }}
                           className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
                             tz === timezone
-                              ? 'bg-indigo-500/10 text-indigo-300'
-                              : 'text-zinc-300 hover:bg-zinc-700/50'
+                              ? 'bg-indigo-50 text-indigo-600'
+                              : 'text-gray-700 hover:bg-gray-200'
                           }`}
                         >
                           {formatTimezoneLabel(tz)}
@@ -377,14 +377,14 @@ export default function OnboardingPage() {
           <div
             className={`transition-all duration-500 ease-out ${getStepTransition(3)}`}
           >
-            <Card className="border-zinc-800 bg-zinc-900/50 backdrop-blur">
+            <Card className="border-gray-200 bg-gray-50 backdrop-blur">
               <CardContent className="p-8 space-y-6">
                 <div className="text-center space-y-2">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-500/10 mb-2">
-                    <MessageCircle className="w-8 h-8 text-indigo-400" />
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-50 mb-2">
+                    <MessageCircle className="w-8 h-8 text-indigo-600" />
                   </div>
                   <h1 className="text-2xl font-bold">How should I talk to you?</h1>
-                  <p className="text-zinc-400">Pick a vibe. You can always change this later.</p>
+                  <p className="text-gray-500">Pick a vibe. You can always change this later.</p>
                 </div>
 
                 <div className="space-y-3">
@@ -397,15 +397,15 @@ export default function OnboardingPage() {
                         onClick={() => setTone(card.value)}
                         className={`w-full flex items-center gap-4 rounded-xl border p-4 text-left transition-all ${
                           isSelected
-                            ? 'border-indigo-500 bg-indigo-500/10 ring-1 ring-indigo-500/30'
-                            : 'border-zinc-700 bg-zinc-800/50 hover:border-zinc-600 hover:bg-zinc-800'
+                            ? 'border-indigo-500 bg-indigo-50 ring-1 ring-indigo-500/30'
+                            : 'border-gray-200 bg-gray-100 hover:border-gray-300 hover:bg-gray-100'
                         }`}
                       >
                         <div
                           className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
                             isSelected
-                              ? 'bg-indigo-500/20 text-indigo-400'
-                              : 'bg-zinc-700/50 text-zinc-400'
+                              ? 'bg-indigo-50 text-indigo-600'
+                              : 'bg-gray-200 text-gray-500'
                           }`}
                         >
                           <Icon className="w-5 h-5" />
@@ -413,18 +413,18 @@ export default function OnboardingPage() {
                         <div className="flex-1">
                           <div
                             className={`font-medium transition-colors ${
-                              isSelected ? 'text-indigo-300' : 'text-zinc-100'
+                              isSelected ? 'text-indigo-600' : 'text-gray-900'
                             }`}
                           >
                             {card.label}
                           </div>
-                          <div className="text-xs text-zinc-500">{card.description}</div>
+                          <div className="text-xs text-gray-400">{card.description}</div>
                         </div>
                         <div
                           className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
                             isSelected
                               ? 'border-indigo-500 bg-indigo-500'
-                              : 'border-zinc-600'
+                              : 'border-gray-300'
                           }`}
                         >
                           {isSelected && (
@@ -455,16 +455,16 @@ export default function OnboardingPage() {
           <div
             className={`transition-all duration-500 ease-out ${getStepTransition(4)}`}
           >
-            <Card className="border-zinc-800 bg-zinc-900/50 backdrop-blur">
+            <Card className="border-gray-200 bg-gray-50 backdrop-blur">
               <CardContent className="p-8 space-y-6">
                 <div className="text-center space-y-2">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-green-500/10 mb-2">
-                    <Send className="w-8 h-8 text-green-400" />
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-green-50 mb-2">
+                    <Send className="w-8 h-8 text-green-600" />
                   </div>
                   <h1 className="text-2xl font-bold">
                     {name ? `You're all set, ${name}!` : "You're all set!"}
                   </h1>
-                  <p className="text-zinc-400">
+                  <p className="text-gray-500">
                     Pick a prompt to start, or jump straight in.
                   </p>
                 </div>
@@ -475,7 +475,7 @@ export default function OnboardingPage() {
                       key={prompt}
                       onClick={() => complete(prompt)}
                       disabled={completing}
-                      className="w-full text-left rounded-lg border border-zinc-700 bg-zinc-800/50 px-4 py-3 text-sm text-zinc-300 hover:border-indigo-500/50 hover:bg-indigo-500/5 hover:text-indigo-300 transition-all disabled:opacity-50"
+                      className="w-full text-left rounded-lg border border-gray-200 bg-gray-100 px-4 py-3 text-sm text-gray-700 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600 transition-all disabled:opacity-50"
                     >
                       &ldquo;{prompt}&rdquo;
                     </button>

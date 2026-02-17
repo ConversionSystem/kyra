@@ -172,8 +172,8 @@ export default function ChannelsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-zinc-400" />
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
       </div>
     );
   }
@@ -183,8 +183,8 @@ export default function ChannelsPage() {
   const discord = channels.discord || { status: 'disconnected', verified: false };
 
   return (
-    <div className="min-h-screen bg-zinc-950">
-      <header className="border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-sm">
+    <div className="min-h-screen bg-white">
+      <header className="border-b border-gray-200 bg-white/80 backdrop-blur-sm">
         <div className="mx-auto flex max-w-2xl items-center gap-4 px-4 py-4">
           <Link href="/settings">
             <Button variant="ghost" size="icon">
@@ -192,8 +192,8 @@ export default function ChannelsPage() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-xl font-semibold text-zinc-100">Channels</h1>
-            <p className="text-sm text-zinc-500">Connect Kyra to your messaging apps</p>
+            <h1 className="text-xl font-semibold text-gray-900">Channels</h1>
+            <p className="text-sm text-gray-400">Connect Kyra to your messaging apps</p>
           </div>
         </div>
       </header>
@@ -201,7 +201,7 @@ export default function ChannelsPage() {
       <main className="mx-auto max-w-2xl px-4 py-6 space-y-6">
         {message && (
           <div className={`rounded-md px-4 py-3 text-sm ${
-            message.type === 'success' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
+            message.type === 'success' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
           }`}>
             {message.text}
           </div>
@@ -211,8 +211,8 @@ export default function ChannelsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <div className="rounded-lg bg-blue-500/10 p-2">
-                <MessageCircle className="h-5 w-5 text-blue-400" />
+              <div className="rounded-lg bg-blue-50 p-2">
+                <MessageCircle className="h-5 w-5 text-blue-600" />
               </div>
               Telegram
               <StatusBadge status={telegram.status} />
@@ -224,23 +224,23 @@ export default function ChannelsPage() {
           <CardContent className="space-y-4">
             {telegram.status === 'connected' && telegram.verified ? (
               <div className="space-y-3">
-                <div className="rounded-lg border border-zinc-700 bg-zinc-800/50 p-4 space-y-2">
+                <div className="rounded-lg border border-gray-200 bg-gray-100 p-4 space-y-2">
                   {telegram.metadata?.username && (
-                    <p className="text-sm text-zinc-300">
-                      Connected as <span className="font-medium text-zinc-100">@{telegram.metadata.username}</span>
+                    <p className="text-sm text-gray-700">
+                      Connected as <span className="font-medium text-gray-900">@{telegram.metadata.username}</span>
                     </p>
                   )}
                   {telegram.connectedAt && (
-                    <p className="text-xs text-zinc-500">Connected {formatDate(telegram.connectedAt)}</p>
+                    <p className="text-xs text-gray-400">Connected {formatDate(telegram.connectedAt)}</p>
                   )}
                   {telegram.lastMessageAt && (
-                    <p className="text-xs text-zinc-500">Last message {formatDate(telegram.lastMessageAt)}</p>
+                    <p className="text-xs text-gray-400">Last message {formatDate(telegram.lastMessageAt)}</p>
                   )}
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="text-red-400 hover:text-red-300"
+                  className="text-red-600 hover:text-red-600"
                   onClick={() => disconnectChannel('telegram')}
                   disabled={isDisconnecting === 'telegram'}
                 >
@@ -250,35 +250,35 @@ export default function ChannelsPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="rounded-lg border border-zinc-700 bg-zinc-800/50 p-4">
-                  <p className="text-sm font-medium text-zinc-200 mb-3">How to connect Telegram</p>
-                  <ol className="text-sm text-zinc-400 space-y-3 list-decimal list-inside">
-                    <li>Click <strong className="text-zinc-200">&quot;Generate Connection Token&quot;</strong> below to get your unique code</li>
+                <div className="rounded-lg border border-gray-200 bg-gray-100 p-4">
+                  <p className="text-sm font-medium text-gray-800 mb-3">How to connect Telegram</p>
+                  <ol className="text-sm text-gray-500 space-y-3 list-decimal list-inside">
+                    <li>Click <strong className="text-gray-800">&quot;Generate Connection Token&quot;</strong> below to get your unique code</li>
                     <li>Open Telegram on your phone or desktop</li>
-                    <li>Search for <a href="https://t.me/KyraAIBot" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline font-medium">@KyraAIBot</a> or tap the link to open the bot</li>
-                    <li>Tap <strong className="text-zinc-200">&quot;Start&quot;</strong> if this is your first time opening the bot</li>
-                    <li>Copy the connect command below and send it to the bot (e.g. <code className="text-indigo-300 bg-zinc-800 px-1.5 py-0.5 rounded text-xs">/connect abc123</code>)</li>
+                    <li>Search for <a href="https://t.me/KyraAIBot" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium">@KyraAIBot</a> or tap the link to open the bot</li>
+                    <li>Tap <strong className="text-gray-800">&quot;Start&quot;</strong> if this is your first time opening the bot</li>
+                    <li>Copy the connect command below and send it to the bot (e.g. <code className="text-indigo-600 bg-gray-100 px-1.5 py-0.5 rounded text-xs">/connect abc123</code>)</li>
                     <li>You&apos;ll get a confirmation message — Kyra is now connected!</li>
                   </ol>
                   <div className="mt-3 rounded-md bg-blue-500/5 border border-blue-500/20 px-3 py-2">
-                    <p className="text-xs text-blue-300">💡 Once connected, you can message Kyra anytime on Telegram. She&apos;ll have the same memory and context as the web chat.</p>
+                    <p className="text-xs text-blue-600">💡 Once connected, you can message Kyra anytime on Telegram. She&apos;ll have the same memory and context as the web chat.</p>
                   </div>
                 </div>
 
                 {telegramToken ? (
                   <div className="space-y-3">
-                    <div className="rounded-lg border border-indigo-500/30 bg-indigo-500/5 p-4">
-                      <p className="text-xs text-zinc-500 mb-2">Send this to @KyraAIBot:</p>
+                    <div className="rounded-lg border border-indigo-500/30 bg-indigo-50 p-4">
+                      <p className="text-xs text-gray-400 mb-2">Send this to @KyraAIBot:</p>
                       <div className="flex items-center gap-2">
-                        <code className="flex-1 rounded bg-zinc-800 px-3 py-2 text-sm font-mono text-indigo-300">
+                        <code className="flex-1 rounded bg-gray-100 px-3 py-2 text-sm font-mono text-indigo-600">
                           /connect {telegramToken}
                         </code>
                         <Button variant="ghost" size="icon" onClick={copyToken}>
-                          {copied ? <Check className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4" />}
+                          {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
                         </Button>
                       </div>
                       {tokenExpiry && (
-                        <p className="text-xs text-zinc-500 mt-2">
+                        <p className="text-xs text-gray-400 mt-2">
                           Expires {formatDate(tokenExpiry)}
                         </p>
                       )}
@@ -309,8 +309,8 @@ export default function ChannelsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <div className="rounded-lg bg-green-500/10 p-2">
-                <Phone className="h-5 w-5 text-green-400" />
+              <div className="rounded-lg bg-green-50 p-2">
+                <Phone className="h-5 w-5 text-green-600" />
               </div>
               WhatsApp
               <StatusBadge status={whatsapp.status} />
@@ -322,28 +322,28 @@ export default function ChannelsPage() {
           <CardContent className="space-y-4">
             {whatsapp.status === 'connected' && whatsapp.verified ? (
               <div className="space-y-3">
-                <div className="rounded-lg border border-zinc-700 bg-zinc-800/50 p-4 space-y-2">
+                <div className="rounded-lg border border-gray-200 bg-gray-100 p-4 space-y-2">
                   {whatsapp.metadata?.phoneNumber && (
-                    <p className="text-sm text-zinc-300">
-                      Connected: <span className="font-medium text-zinc-100">{whatsapp.metadata.phoneNumber}</span>
+                    <p className="text-sm text-gray-700">
+                      Connected: <span className="font-medium text-gray-900">{whatsapp.metadata.phoneNumber}</span>
                     </p>
                   )}
                   {whatsapp.metadata?.profileName && (
-                    <p className="text-sm text-zinc-300">
-                      Name: <span className="font-medium text-zinc-100">{whatsapp.metadata.profileName}</span>
+                    <p className="text-sm text-gray-700">
+                      Name: <span className="font-medium text-gray-900">{whatsapp.metadata.profileName}</span>
                     </p>
                   )}
                   {whatsapp.connectedAt && (
-                    <p className="text-xs text-zinc-500">Connected {formatDate(whatsapp.connectedAt)}</p>
+                    <p className="text-xs text-gray-400">Connected {formatDate(whatsapp.connectedAt)}</p>
                   )}
                   {whatsapp.lastMessageAt && (
-                    <p className="text-xs text-zinc-500">Last message {formatDate(whatsapp.lastMessageAt)}</p>
+                    <p className="text-xs text-gray-400">Last message {formatDate(whatsapp.lastMessageAt)}</p>
                   )}
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="text-red-400 hover:text-red-300"
+                  className="text-red-600 hover:text-red-600"
                   onClick={() => disconnectChannel('whatsapp')}
                   disabled={isDisconnecting === 'whatsapp'}
                 >
@@ -353,34 +353,34 @@ export default function ChannelsPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="rounded-lg border border-zinc-700 bg-zinc-800/50 p-4">
-                  <p className="text-sm font-medium text-zinc-200 mb-3">How to connect WhatsApp</p>
-                  <ol className="text-sm text-zinc-400 space-y-3 list-decimal list-inside">
-                    <li>Click <strong className="text-zinc-200">&quot;Generate Connection Token&quot;</strong> below</li>
+                <div className="rounded-lg border border-gray-200 bg-gray-100 p-4">
+                  <p className="text-sm font-medium text-gray-800 mb-3">How to connect WhatsApp</p>
+                  <ol className="text-sm text-gray-500 space-y-3 list-decimal list-inside">
+                    <li>Click <strong className="text-gray-800">&quot;Generate Connection Token&quot;</strong> below</li>
                     <li>Open WhatsApp on your phone</li>
                     <li>Message Kyra&apos;s WhatsApp number (shown below)</li>
-                    <li>Send the connect command (e.g. <code className="text-indigo-300 bg-zinc-800 px-1.5 py-0.5 rounded text-xs">CONNECT ABC123</code>)</li>
+                    <li>Send the connect command (e.g. <code className="text-indigo-600 bg-gray-100 px-1.5 py-0.5 rounded text-xs">CONNECT ABC123</code>)</li>
                     <li>You&apos;ll get a confirmation — Kyra is now connected!</li>
                   </ol>
                   <div className="mt-3 rounded-md bg-green-500/5 border border-green-500/20 px-3 py-2">
-                    <p className="text-xs text-green-300">💡 Once connected, message Kyra anytime on WhatsApp. Same memory and context as web chat.</p>
+                    <p className="text-xs text-green-600">💡 Once connected, message Kyra anytime on WhatsApp. Same memory and context as web chat.</p>
                   </div>
                 </div>
 
                 {whatsappToken ? (
                   <div className="space-y-3">
-                    <div className="rounded-lg border border-indigo-500/30 bg-indigo-500/5 p-4">
-                      <p className="text-xs text-zinc-500 mb-2">Send this to Kyra on WhatsApp:</p>
+                    <div className="rounded-lg border border-indigo-500/30 bg-indigo-50 p-4">
+                      <p className="text-xs text-gray-400 mb-2">Send this to Kyra on WhatsApp:</p>
                       <div className="flex items-center gap-2">
-                        <code className="flex-1 rounded bg-zinc-800 px-3 py-2 text-sm font-mono text-indigo-300">
+                        <code className="flex-1 rounded bg-gray-100 px-3 py-2 text-sm font-mono text-indigo-600">
                           CONNECT {whatsappToken}
                         </code>
                         <Button variant="ghost" size="icon" onClick={copyWhatsappToken}>
-                          {copiedWhatsapp ? <Check className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4" />}
+                          {copiedWhatsapp ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
                         </Button>
                       </div>
                       {whatsappTokenExpiry && (
-                        <p className="text-xs text-zinc-500 mt-2">
+                        <p className="text-xs text-gray-400 mt-2">
                           Expires {formatDate(whatsappTokenExpiry)}
                         </p>
                       )}
@@ -411,8 +411,8 @@ export default function ChannelsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <div className="rounded-lg bg-indigo-500/10 p-2">
-                <Gamepad2 className="h-5 w-5 text-indigo-400" />
+              <div className="rounded-lg bg-indigo-50 p-2">
+                <Gamepad2 className="h-5 w-5 text-indigo-600" />
               </div>
               Discord
               <StatusBadge status={discord.status} />
@@ -424,23 +424,23 @@ export default function ChannelsPage() {
           <CardContent className="space-y-4">
             {discord.status === 'connected' && discord.verified ? (
               <div className="space-y-3">
-                <div className="rounded-lg border border-zinc-700 bg-zinc-800/50 p-4 space-y-2">
+                <div className="rounded-lg border border-gray-200 bg-gray-100 p-4 space-y-2">
                   {discord.metadata?.username && (
-                    <p className="text-sm text-zinc-300">
-                      Connected as <span className="font-medium text-zinc-100">{discord.metadata.username}</span>
+                    <p className="text-sm text-gray-700">
+                      Connected as <span className="font-medium text-gray-900">{discord.metadata.username}</span>
                     </p>
                   )}
                   {discord.connectedAt && (
-                    <p className="text-xs text-zinc-500">Connected {formatDate(discord.connectedAt)}</p>
+                    <p className="text-xs text-gray-400">Connected {formatDate(discord.connectedAt)}</p>
                   )}
                   {discord.lastMessageAt && (
-                    <p className="text-xs text-zinc-500">Last message {formatDate(discord.lastMessageAt)}</p>
+                    <p className="text-xs text-gray-400">Last message {formatDate(discord.lastMessageAt)}</p>
                   )}
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="text-red-400 hover:text-red-300"
+                  className="text-red-600 hover:text-red-600"
                   onClick={() => disconnectChannel('discord')}
                   disabled={isDisconnecting === 'discord'}
                 >
@@ -450,16 +450,16 @@ export default function ChannelsPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="rounded-lg border border-zinc-700 bg-zinc-800/50 p-4">
-                  <p className="text-sm font-medium text-zinc-200 mb-3">How to connect Discord</p>
-                  <ol className="text-sm text-zinc-400 space-y-3 list-decimal list-inside">
-                    <li>Click <strong className="text-zinc-200">&quot;Generate Connection Token&quot;</strong> below</li>
+                <div className="rounded-lg border border-gray-200 bg-gray-100 p-4">
+                  <p className="text-sm font-medium text-gray-800 mb-3">How to connect Discord</p>
+                  <ol className="text-sm text-gray-500 space-y-3 list-decimal list-inside">
+                    <li>Click <strong className="text-gray-800">&quot;Generate Connection Token&quot;</strong> below</li>
                     <li>Add the Kyra bot to your Discord server using the invite link</li>
-                    <li>In any text channel, type the connect command (e.g. <code className="text-indigo-300 bg-zinc-800 px-1.5 py-0.5 rounded text-xs">!connect ABC123</code>)</li>
+                    <li>In any text channel, type the connect command (e.g. <code className="text-indigo-600 bg-gray-100 px-1.5 py-0.5 rounded text-xs">!connect ABC123</code>)</li>
                     <li>You&apos;ll get a confirmation message — Kyra is now connected!</li>
                   </ol>
-                  <div className="mt-3 rounded-md bg-indigo-500/5 border border-indigo-500/20 px-3 py-2">
-                    <p className="text-xs text-indigo-300">Once connected, message Kyra anytime in Discord. Same memory and context as web chat.</p>
+                  <div className="mt-3 rounded-md bg-indigo-50 border border-indigo-200 px-3 py-2">
+                    <p className="text-xs text-indigo-600">Once connected, message Kyra anytime in Discord. Same memory and context as web chat.</p>
                   </div>
                 </div>
 
@@ -476,18 +476,18 @@ export default function ChannelsPage() {
                         Add Kyra Bot to Server
                       </a>
                     )}
-                    <div className="rounded-lg border border-indigo-500/30 bg-indigo-500/5 p-4">
-                      <p className="text-xs text-zinc-500 mb-2">Send this in any channel:</p>
+                    <div className="rounded-lg border border-indigo-500/30 bg-indigo-50 p-4">
+                      <p className="text-xs text-gray-400 mb-2">Send this in any channel:</p>
                       <div className="flex items-center gap-2">
-                        <code className="flex-1 rounded bg-zinc-800 px-3 py-2 text-sm font-mono text-indigo-300">
+                        <code className="flex-1 rounded bg-gray-100 px-3 py-2 text-sm font-mono text-indigo-600">
                           !connect {discordToken}
                         </code>
                         <Button variant="ghost" size="icon" onClick={copyDiscordToken}>
-                          {copiedDiscord ? <Check className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4" />}
+                          {copiedDiscord ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
                         </Button>
                       </div>
                       {discordTokenExpiry && (
-                        <p className="text-xs text-zinc-500 mt-2">
+                        <p className="text-xs text-gray-400 mt-2">
                           Expires {formatDate(discordTokenExpiry)}
                         </p>
                       )}
@@ -521,7 +521,7 @@ export default function ChannelsPage() {
 function StatusBadge({ status }: { status: string }) {
   if (status === 'connected') {
     return (
-      <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-green-500/10 px-2.5 py-0.5 text-xs font-medium text-green-400">
+      <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-600">
         <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
         Connected
       </span>
@@ -529,15 +529,15 @@ function StatusBadge({ status }: { status: string }) {
   }
   if (status === 'pending') {
     return (
-      <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-yellow-500/10 px-2.5 py-0.5 text-xs font-medium text-yellow-400">
+      <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-yellow-50 px-2.5 py-0.5 text-xs font-medium text-yellow-600">
         <span className="h-1.5 w-1.5 rounded-full bg-yellow-400" />
         Pending
       </span>
     );
   }
   return (
-    <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-zinc-500/10 px-2.5 py-0.5 text-xs font-medium text-zinc-400">
-      <span className="h-1.5 w-1.5 rounded-full bg-zinc-400" />
+    <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-gray-500/10 px-2.5 py-0.5 text-xs font-medium text-gray-500">
+      <span className="h-1.5 w-1.5 rounded-full bg-gray-400" />
       Disconnected
     </span>
   );

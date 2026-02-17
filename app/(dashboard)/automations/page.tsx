@@ -179,15 +179,15 @@ export default function AutomationsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-zinc-400" />
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950">
-      <header className="border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-sm">
+    <div className="min-h-screen bg-white">
+      <header className="border-b border-gray-200 bg-white/80 backdrop-blur-sm">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-4">
           <div className="flex items-center gap-4">
             <Link href="/chat">
@@ -196,8 +196,8 @@ export default function AutomationsPage() {
               </Button>
             </Link>
             <div>
-              <h1 className="text-xl font-semibold text-zinc-100">Automations</h1>
-              <p className="text-sm text-zinc-500">Scheduled tasks your AI runs automatically</p>
+              <h1 className="text-xl font-semibold text-gray-900">Automations</h1>
+              <p className="text-sm text-gray-400">Scheduled tasks your AI runs automatically</p>
             </div>
           </div>
           <Button
@@ -213,7 +213,7 @@ export default function AutomationsPage() {
       <main className="mx-auto max-w-2xl px-4 py-6 space-y-6">
         {message && (
           <div className={`rounded-md px-4 py-3 text-sm ${
-            message.type === 'success' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
+            message.type === 'success' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
           }`}>
             {message.text}
           </div>
@@ -225,14 +225,14 @@ export default function AutomationsPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base">New Automation</CardTitle>
-                <button onClick={() => setShowCreate(false)} className="text-zinc-500 hover:text-zinc-300">
+                <button onClick={() => setShowCreate(false)} className="text-gray-400 hover:text-gray-700">
                   <X className="h-4 w-4" />
                 </button>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-zinc-300">Name</label>
+                <label className="text-sm font-medium text-gray-700">Name</label>
                 <Input
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
@@ -241,12 +241,12 @@ export default function AutomationsPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-zinc-300">Schedule</label>
+                <label className="text-sm font-medium text-gray-700">Schedule</label>
                 <div className="flex flex-wrap gap-2">
                   <select
                     value={newScheduleType}
                     onChange={(e) => setNewScheduleType(e.target.value as any)}
-                    className="rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 min-h-[44px]"
+                    className="rounded-md border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-900 min-h-[44px]"
                   >
                     <option value="daily">Daily</option>
                     <option value="weekdays">Weekdays</option>
@@ -256,7 +256,7 @@ export default function AutomationsPage() {
                     <select
                       value={newDow}
                       onChange={(e) => setNewDow(parseInt(e.target.value))}
-                      className="rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 min-h-[44px]"
+                      className="rounded-md border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-900 min-h-[44px]"
                     >
                       <option value={1}>Monday</option>
                       <option value={2}>Tuesday</option>
@@ -267,22 +267,22 @@ export default function AutomationsPage() {
                       <option value={0}>Sunday</option>
                     </select>
                   )}
-                  <span className="text-zinc-500 self-center">at</span>
+                  <span className="text-gray-400 self-center">at</span>
                   <div className="flex items-center gap-1">
                     <select
                       value={newHour}
                       onChange={(e) => setNewHour(parseInt(e.target.value))}
-                      className="rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 min-h-[44px]"
+                      className="rounded-md border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-900 min-h-[44px]"
                     >
                       {Array.from({ length: 24 }, (_, i) => (
                         <option key={i} value={i}>{i.toString().padStart(2, '0')}</option>
                       ))}
                     </select>
-                    <span className="text-zinc-500">:</span>
+                    <span className="text-gray-400">:</span>
                     <select
                       value={newMinute}
                       onChange={(e) => setNewMinute(parseInt(e.target.value))}
-                      className="rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 min-h-[44px]"
+                      className="rounded-md border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-900 min-h-[44px]"
                     >
                       {[0, 15, 30, 45].map(m => (
                         <option key={m} value={m}>{m.toString().padStart(2, '0')}</option>
@@ -293,7 +293,7 @@ export default function AutomationsPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-zinc-300">What should your AI do?</label>
+                <label className="text-sm font-medium text-gray-700">What should your AI do?</label>
                 <Textarea
                   value={newPrompt}
                   onChange={(e) => setNewPrompt(e.target.value)}
@@ -303,11 +303,11 @@ export default function AutomationsPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-zinc-300">Deliver to</label>
+                <label className="text-sm font-medium text-gray-700">Deliver to</label>
                 <select
                   value={newChannel}
                   onChange={(e) => setNewChannel(e.target.value)}
-                  className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100"
+                  className="w-full rounded-md border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-900"
                 >
                   <option value="web">Web (Kyra Dashboard)</option>
                   <option value="telegram">Telegram</option>
@@ -339,13 +339,13 @@ export default function AutomationsPage() {
                 <button
                   key={template.id}
                   onClick={() => applyTemplate(template)}
-                  className="rounded-lg border border-zinc-700 bg-zinc-800/50 p-4 text-left hover:bg-zinc-800 transition-colors"
+                  className="rounded-lg border border-gray-200 bg-gray-100 p-4 text-left hover:bg-gray-100 transition-colors"
                 >
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-xl">{template.icon}</span>
-                    <span className="font-medium text-zinc-100 text-sm">{template.name}</span>
+                    <span className="font-medium text-gray-900 text-sm">{template.name}</span>
                   </div>
-                  <p className="text-xs text-zinc-500">{template.description}</p>
+                  <p className="text-xs text-gray-400">{template.description}</p>
                 </button>
               ))}
             </CardContent>
@@ -355,7 +355,7 @@ export default function AutomationsPage() {
         {/* Existing automations */}
         {automations.length > 0 && (
           <div className="space-y-3">
-            <h2 className="text-sm font-medium text-zinc-400">
+            <h2 className="text-sm font-medium text-gray-500">
               Your Automations ({automations.length})
             </h2>
             {automations.map(auto => (
@@ -364,20 +364,20 @@ export default function AutomationsPage() {
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <Zap className={`h-4 w-4 ${auto.enabled ? 'text-indigo-400' : 'text-zinc-600'}`} />
-                        <span className="font-medium text-zinc-100">{auto.name}</span>
+                        <Zap className={`h-4 w-4 ${auto.enabled ? 'text-indigo-600' : 'text-gray-500'}`} />
+                        <span className="font-medium text-gray-900">{auto.name}</span>
                         <Badge variant="outline" className="text-xs">
                           {auto.delivery_channel}
                         </Badge>
                       </div>
-                      <p className="text-xs text-zinc-500 flex items-center gap-1 mb-2">
+                      <p className="text-xs text-gray-400 flex items-center gap-1 mb-2">
                         <Clock className="h-3 w-3" />
                         {auto.schedule_human}
                         {auto.timezone !== 'UTC' && ` (${auto.timezone})`}
                       </p>
-                      <p className="text-sm text-zinc-400 line-clamp-2">{auto.prompt}</p>
+                      <p className="text-sm text-gray-500 line-clamp-2">{auto.prompt}</p>
                       {auto.last_run_at && (
-                        <p className="text-xs text-zinc-600 mt-1">
+                        <p className="text-xs text-gray-500 mt-1">
                           Last run: {new Date(auto.last_run_at).toLocaleString()}
                         </p>
                       )}
@@ -387,7 +387,7 @@ export default function AutomationsPage() {
                         onClick={() => runNow(auto.id)}
                         disabled={running === auto.id}
                         title="Run now"
-                        className="p-1 text-zinc-600 hover:text-indigo-400 transition-colors"
+                        className="p-1 text-gray-500 hover:text-indigo-600 transition-colors"
                       >
                         {running === auto.id
                           ? <Loader2 className="h-4 w-4 animate-spin" />
@@ -397,11 +397,11 @@ export default function AutomationsPage() {
                         onClick={() => toggleAutomation(auto.id, !auto.enabled)}
                         disabled={toggling === auto.id}
                         className={`relative h-6 w-11 rounded-full transition-colors ${
-                          auto.enabled ? 'bg-indigo-500' : 'bg-zinc-600'
+                          auto.enabled ? 'bg-indigo-500' : 'bg-gray-500'
                         }`}
                       >
                         {toggling === auto.id ? (
-                          <Loader2 className="h-3 w-3 animate-spin absolute top-1.5 left-4 text-white" />
+                          <Loader2 className="h-3 w-3 animate-spin absolute top-1.5 left-4 text-gray-900" />
                         ) : (
                           <span className={`block h-4 w-4 rounded-full bg-white shadow transition-transform ${
                             auto.enabled ? 'translate-x-6' : 'translate-x-1'
@@ -413,7 +413,7 @@ export default function AutomationsPage() {
                           if (confirm('Delete this automation?')) deleteAutomation(auto.id);
                         }}
                         disabled={deleting === auto.id}
-                        className="p-1 text-zinc-600 hover:text-red-400 transition-colors"
+                        className="p-1 text-gray-500 hover:text-red-600 transition-colors"
                       >
                         {deleting === auto.id
                           ? <Loader2 className="h-4 w-4 animate-spin" />
@@ -430,9 +430,9 @@ export default function AutomationsPage() {
         {/* Empty state */}
         {automations.length === 0 && !showCreate && (
           <div className="text-center py-12">
-            <Zap className="h-12 w-12 text-zinc-700 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-zinc-300 mb-2">No automations yet</h3>
-            <p className="text-sm text-zinc-500 mb-6">
+            <Zap className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-700 mb-2">No automations yet</h3>
+            <p className="text-sm text-gray-400 mb-6">
               Set up scheduled tasks and your AI will handle them automatically.
             </p>
             <Button onClick={() => setShowCreate(true)}>
