@@ -4,15 +4,14 @@ import Stripe from 'stripe';
 // Stripe Client
 // ============================================================================
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error('STRIPE_SECRET_KEY environment variable is required');
-}
-
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  // @ts-expect-error — Stripe SDK types lag behind latest API version
-  apiVersion: '2025-04-30.basil',
-  typescript: true,
-});
+// Stripe is optional during beta — only initialized when key is present
+export const stripe = process.env.STRIPE_SECRET_KEY
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, {
+      // @ts-expect-error — Stripe SDK types lag behind latest API version
+      apiVersion: '2025-04-30.basil',
+      typescript: true,
+    })
+  : (null as unknown as Stripe); // null during beta — callers should guard
 
 // ============================================================================
 // Price IDs — set via env vars, created in Stripe Dashboard

@@ -46,7 +46,7 @@ export function AgencySidebar({ agencyName, plan, settings }: AgencySidebarProps
   const logoUrl = settings?.logo_url;
   const primaryColor = settings?.primary_color;
   const companyName = settings?.company_name || agencyName;
-  const isPremium = plan === 'pro' || plan === 'scale';
+  const isPremium = true; // All features unlocked during beta
   const hasBranding = isPremium && primaryColor;
 
   return (

@@ -49,7 +49,7 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
   const router = useRouter();
   const isAdmin = currentRole === 'owner' || currentRole === 'admin';
   const isOwner = currentRole === 'owner';
-  const isPremium = agency.plan === 'pro' || agency.plan === 'scale';
+  const isPremium = true; // All features unlocked during beta
 
   // --- General settings ---
   const [name, setName] = useState(agency.name);
