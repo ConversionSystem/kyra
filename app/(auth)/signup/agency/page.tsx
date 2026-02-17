@@ -193,6 +193,14 @@ function AgencySignupPage() {
     setIsLoading(true);
 
     try {
+      // Verify we still have a valid session before submitting
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (!currentUser) {
+        setError('Your session has expired. Please log in again.');
+        setIsLoading(false);
+        return;
+      }
+
       const res = await fetch('/api/agency', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -202,7 +210,11 @@ function AgencySignupPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || 'Failed to create agency');
+        if (res.status === 401) {
+          setError('Your session has expired. Please log in again.');
+        } else {
+          setError(data.error || 'Failed to create agency');
+        }
         return;
       }
 
@@ -210,7 +222,7 @@ function AgencySignupPage() {
       router.push('/agency');
       router.refresh();
     } catch {
-      setError('An unexpected error occurred');
+      setError('An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -346,7 +358,12 @@ function AgencySignupPage() {
           <form onSubmit={handleCreateAgency} className="space-y-8">
             {error && (
               <div className="mx-auto max-w-md rounded-md bg-red-50 px-4 py-3 text-sm text-red-600">
-                {error}
+                <p>{error}</p>
+                {error.includes('session') && (
+                  <a href="/login?redirect=/signup/agency" className="mt-1 block text-red-700 underline font-medium">
+                    Log in again →
+                  </a>
+                )}
               </div>
             )}
 
