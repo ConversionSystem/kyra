@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  width: 960px; height: 540px;
+  background: #09090b;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  padding: 40px 50px;
+  overflow: hidden;
+}
+h2 {
+  font-size: 28px; font-weight: 700; color: #fff;
+  margin-bottom: 32px;
+}
+h2 span { color: #a78bfa; }
+.grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+}
+.card {
+  background: #18181b; border: 1px solid #27272a; border-radius: 12px;
+  padding: 24px;
+}
+.card-icon {
+  font-size: 28px; margin-bottom: 10px;
+}
+.card h3 {
+  color: #fff; font-size: 17px; font-weight: 600; margin-bottom: 6px;
+}
+.card p {
+  color: #71717a; font-size: 13px; line-height: 1.5;
+}
+.card .tag {
+  display: inline-block; margin-top: 10px;
+  background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2);
+  color: #4ade80; font-size: 11px; padding: 3px 10px;
+  border-radius: 12px; font-weight: 500;
+}
+</style>
+</head>
+<body>
+<h2>What <span>Kyra AI</span> Does Inside Your CRM</h2>
+<div class="grid">
+  <div class="card">
+    <div class="card-icon">📇</div>
+    <h3>Smart Contact Management</h3>
+    <p>Search contacts, update records, add notes after conversations, manage tags based on interactions.</p>
+    <span class="tag">Read + Write</span>
+  </div>
+  <div class="card">
+    <div class="card-icon">💬</div>
+    <h3>Automated Conversations</h3>
+    <p>Read full history before responding. Send SMS, email, or WhatsApp through GHL. Context-aware replies.</p>
+    <span class="tag">Read + Write</span>
+  </div>
+  <div class="card">
+    <div class="card-icon">📊</div>
+    <h3>Pipeline Management</h3>
+    <p>View deals across stages. Move opportunities based on conversation outcomes. Track values.</p>
+    <span class="tag">Read + Write</span>
+  </div>
+  <div class="card">
+    <div class="card-icon">📅</div>
+    <h3>Calendar & Appointments</h3>
+    <p>Check available time slots, book appointments directly, send confirmations to customers.</p>
+    <span class="tag">Read + Write</span>
+  </div>
+</div>
+</body>
+</html>
