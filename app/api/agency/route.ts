@@ -7,10 +7,15 @@ import type { CreateAgencyRequest, AgencyWithCounts } from '@/lib/agency/types';
 /**
  * GET /api/agency
  * Return the current user's agency data with member count and client count.
+ * Returns { agency: null } if user has no agency (instead of erroring).
  */
 export async function GET() {
   const result = await requireAgencyMember();
   if (result.error) {
+    // For "no membership" — return null instead of an error so signup pages don't break
+    if (result.error.status === 403) {
+      return NextResponse.json({ agency: null }, { status: 200 });
+    }
     return NextResponse.json({ error: result.error.message }, { status: result.error.status });
   }
 
@@ -44,6 +49,8 @@ export async function GET() {
  * Uses service client to bypass RLS during initial creation.
  */
 export async function POST(request: NextRequest) {
+  console.log('[POST /api/agency] Creating agency...');
+  
   const supabase = await createClient();
   const {
     data: { user },
@@ -51,8 +58,11 @@ export async function POST(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    console.error('[POST /api/agency] Auth failed:', authError?.message);
+    return NextResponse.json({ error: 'Not authenticated. Please log in and try again.' }, { status: 401 });
   }
+  
+  console.log('[POST /api/agency] User:', user.id, user.email);
 
   // Parse body
   let body: CreateAgencyRequest;
@@ -121,9 +131,11 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (createError || !agency) {
-    console.error('Failed to create agency:', createError);
-    return NextResponse.json({ error: 'Failed to create agency' }, { status: 500 });
+    console.error('[POST /api/agency] Failed to create agency:', createError?.message, createError?.code, createError?.details);
+    return NextResponse.json({ error: `Failed to create agency: ${createError?.message || 'unknown error'}` }, { status: 500 });
   }
+
+  console.log('[POST /api/agency] Agency created:', agency.id, agency.name);
 
   // Create owner membership
   const { error: memberError } = await serviceClient.from('agency_members').insert({
@@ -133,11 +145,12 @@ export async function POST(request: NextRequest) {
   });
 
   if (memberError) {
-    console.error('Failed to create agency member:', memberError);
+    console.error('[POST /api/agency] Failed to create member:', memberError?.message, memberError?.code, memberError?.details);
     // Rollback agency creation
     await serviceClient.from('agencies').delete().eq('id', agency.id);
-    return NextResponse.json({ error: 'Failed to create agency membership' }, { status: 500 });
+    return NextResponse.json({ error: `Failed to create agency membership: ${memberError?.message || 'unknown error'}` }, { status: 500 });
   }
 
+  console.log('[POST /api/agency] Success! Agency:', agency.id, 'User:', user.id);
   return NextResponse.json(agency, { status: 201 });
 }
