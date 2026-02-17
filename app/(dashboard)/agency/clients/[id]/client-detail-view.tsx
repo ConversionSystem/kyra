@@ -18,6 +18,7 @@ import {
 import { createClient } from '@/lib/supabase/client';
 import type { AgencyClient, AgencyMember } from '@/lib/agency/queries';
 import GHLConnection from './ghl-connection';
+import PermissionsCard from './permissions-card';
 
 const statusColors: Record<string, string> = {
   active: 'border-green-200 bg-green-50 text-green-600',
@@ -397,6 +398,9 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
         ghlConnectedAt={initialClient.ghl_connected_at ?? null}
         onDisconnected={() => router.refresh()}
       />
+
+      {/* AI Permissions */}
+      <PermissionsCard clientId={initialClient.id} />
 
       {/* Usage Stats (Placeholder) */}
       <Card className="mb-6">
