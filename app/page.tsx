@@ -16,6 +16,9 @@ import {
   SmartphoneIcon,
   MailIcon,
   WrenchIcon,
+  Trash2Icon,
+  EyeIcon,
+  LockIcon,
 } from 'lucide-react';
 
 export default function LandingPage() {
@@ -91,6 +94,10 @@ export default function LandingPage() {
 
             <p className="text-sm text-gray-400 mt-4">
               30-day free trial · No credit card required · Cancel anytime
+            </p>
+            <p className="text-xs text-gray-400 mt-2 flex items-center justify-center gap-1.5">
+              <ShieldCheckIcon className="h-3.5 w-3.5 text-indigo-400" />
+              Your data never trains AI models
             </p>
           </div>
         </section>
@@ -265,6 +272,45 @@ export default function LandingPage() {
                 icon={<ShieldCheckIcon className="h-5 w-5" />}
                 title="Your data stays yours"
                 description="No training on conversations. No sharing with third parties. Client data lives in GHL and your Stripe."
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* Data Privacy & Independence */}
+        <section className="container mx-auto px-4 md:px-6 py-16 md:py-20">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-2xl md:text-3xl font-bold mb-4">
+                Your clients&apos; data stays yours. Period.
+              </h2>
+              <p className="text-gray-600 max-w-2xl mx-auto leading-relaxed">
+                We get it — you need to know that your client conversations aren&apos;t training someone else&apos;s AI, 
+                that billing data isn&apos;t being shared with OpenAI, Anthropic, or Google, and that you&apos;re always in control. 
+                Here&apos;s the short version: your data is yours. Full stop.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-5 max-w-3xl mx-auto">
+              <AgencyCard
+                icon={<LockIcon className="h-5 w-5" />}
+                title="No training on your data"
+                description="Conversations are never used to train AI models. Not ours, not anyone else's. Your client interactions stay private."
+              />
+              <AgencyCard
+                icon={<CreditCardIcon className="h-5 w-5" />}
+                title="Your Stripe, your revenue"
+                description="Client payments go to YOUR Stripe account. We never touch client billing data — we only take a small platform fee."
+              />
+              <AgencyCard
+                icon={<Trash2Icon className="h-5 w-5" />}
+                title="Delete anytime"
+                description="Remove a client and their data is gone. No retention, no dark patterns, no 'we keep it for 90 days' fine print."
+              />
+              <AgencyCard
+                icon={<EyeIcon className="h-5 w-5" />}
+                title="Agency-controlled"
+                description="You decide what the AI can access. Read-only mode, granular permissions, full audit trail. Nothing happens without your say-so."
               />
             </div>
           </div>
