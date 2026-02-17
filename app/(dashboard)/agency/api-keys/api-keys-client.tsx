@@ -157,7 +157,7 @@ export function ApiKeysClient({ agencyId }: ApiKeysClientProps) {
   }
 
   return (
-    <div className="p-6 md:p-8 max-w-3xl">
+    <div className="p-4 sm:p-6 md:p-8 max-w-3xl">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">API Keys</h1>
         <p className="mt-1 text-gray-500">
