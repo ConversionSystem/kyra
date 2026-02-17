@@ -17,11 +17,10 @@ const industryColors: Record<string, string> = {
   'Finance': 'border-blue-200 bg-blue-50 text-blue-600',
   'Fitness / Wellness': 'border-green-200 bg-green-50 text-green-600',
   'Restaurant / Hospitality': 'border-red-200 bg-red-50 text-red-600',
-  'Education': 'border-indigo-200 bg-indigo-50 text-indigo-600',
+  'Education': 'border-emerald-500/50 bg-emerald-50 text-emerald-600',
   'Sales & Consulting': 'border-violet-500/50 bg-violet-50 text-violet-600',
   'Market Intelligence': 'border-rose-500/50 bg-rose-50 text-rose-600',
   'Media & Content': 'border-teal-500/50 bg-teal-50 text-teal-600',
-  'Education': 'border-emerald-500/50 bg-emerald-50 text-emerald-600',
   'General': 'border-indigo-200 bg-indigo-50 text-indigo-600',
 };
 
