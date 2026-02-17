@@ -580,7 +580,7 @@ function SettingsContent() {
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-gray-200 bg-gray-100 p-4">
                       <div>
                         <p className="font-medium text-gray-900">Lite — $99/mo</p>
-                        <p className="text-xs text-gray-400">500 credits · WhatsApp + Telegram · Web search</p>
+                        <p className="text-xs text-gray-400">5 clients · GoHighLevel · SMS & email · Agency dashboard</p>
                       </div>
                       <Button
                         size="sm"
@@ -604,22 +604,22 @@ function SettingsContent() {
                       </Button>
                     </div>
                   )}
-                  {usage?.plan !== 'business' && (
+                  {usage?.plan !== 'pro' && (
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-indigo-500/30 bg-indigo-50 p-4">
                       <div>
-                        <p className="font-medium text-gray-900">Business — $100/mo</p>
-                        <p className="text-xs text-gray-400">3,000 credits · AI sub-agents · Priority support</p>
+                        <p className="font-medium text-gray-900">Pro — $249/mo</p>
+                        <p className="text-xs text-gray-400">15 clients · White-label · Stripe Connect · Custom personas · Priority support</p>
                       </div>
                       <Button
                         size="sm"
                         disabled={isUpgrading !== null}
                         onClick={async () => {
-                          setIsUpgrading('business');
+                          setIsUpgrading('pro');
                           try {
                             const res = await fetch('/api/billing/checkout', {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ plan: 'business' }),
+                              body: JSON.stringify({ plan: 'pro' }),
                             });
                             const data = (await res.json()) as any;
                             if (data.url) window.location.href = data.url;
@@ -628,36 +628,38 @@ function SettingsContent() {
                           setIsUpgrading(null);
                         }}
                       >
-                        {isUpgrading === 'business' ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Upgrade'}
+                        {isUpgrading === 'pro' ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Upgrade'}
                       </Button>
                     </div>
                   )}
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-gray-200 bg-gray-100 p-4">
-                    <div>
-                      <p className="font-medium text-gray-900">Max — $200/mo</p>
-                      <p className="text-xs text-gray-400">8,000 credits · Unlimited memory · API access · SLA</p>
+                  {usage?.plan !== 'scale' && (
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-gray-200 bg-gray-100 p-4">
+                      <div>
+                        <p className="font-medium text-gray-900">Scale — $499/mo</p>
+                        <p className="text-xs text-gray-400">50 clients · API access · Custom integrations · Dedicated account manager</p>
+                      </div>
+                      <Button
+                        size="sm"
+                        disabled={isUpgrading !== null}
+                        onClick={async () => {
+                          setIsUpgrading('scale');
+                          try {
+                            const res = await fetch('/api/billing/checkout', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ plan: 'scale' }),
+                            });
+                            const data = (await res.json()) as any;
+                            if (data.url) window.location.href = data.url;
+                            else setMessage({ type: 'error', text: data.error || 'Failed to start checkout' });
+                          } catch { setMessage({ type: 'error', text: 'Failed to start checkout' }); }
+                          setIsUpgrading(null);
+                        }}
+                      >
+                        {isUpgrading === 'scale' ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Upgrade'}
+                      </Button>
                     </div>
-                    <Button
-                      size="sm"
-                      disabled={isUpgrading !== null}
-                      onClick={async () => {
-                        setIsUpgrading('max');
-                        try {
-                          const res = await fetch('/api/billing/checkout', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ plan: 'max' }),
-                          });
-                          const data = (await res.json()) as any;
-                          if (data.url) window.location.href = data.url;
-                          else setMessage({ type: 'error', text: data.error || 'Failed to start checkout' });
-                        } catch { setMessage({ type: 'error', text: 'Failed to start checkout' }); }
-                        setIsUpgrading(null);
-                      }}
-                    >
-                      {isUpgrading === 'max' ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Upgrade'}
-                    </Button>
-                  </div>
+                  )}
                 </div>
               </div>
             )}
