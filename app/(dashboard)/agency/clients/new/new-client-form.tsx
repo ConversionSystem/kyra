@@ -22,6 +22,8 @@ const industries = [
   'Fitness / Wellness',
   'Restaurant / Hospitality',
   'Education',
+  'Sales & Consulting',
+  'Market Intelligence',
   'Other',
 ];
 
@@ -30,6 +32,8 @@ const industryColors: Record<string, string> = {
   'Real Estate': 'border-emerald-500/50 bg-emerald-50 text-emerald-600',
   'Home Services': 'border-orange-500/50 bg-orange-50 text-orange-600',
   'Retail / E-commerce': 'border-indigo-200 bg-indigo-50 text-indigo-600',
+  'Sales & Consulting': 'border-violet-500/50 bg-violet-50 text-violet-600',
+  'Market Intelligence': 'border-rose-500/50 bg-rose-50 text-rose-600',
   General: 'border-indigo-200 bg-indigo-50 text-indigo-600',
 };
 
