@@ -10,6 +10,8 @@ import {
   CreditCard,
   Settings,
   ChevronLeft,
+  Mic,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AgencySettings } from '@/lib/agency/types';
@@ -18,6 +20,8 @@ const navItems = [
   { label: 'Overview', href: '/agency', icon: LayoutDashboard },
   { label: 'Clients', href: '/agency/clients', icon: Users },
   { label: 'Templates', href: '/agency/templates', icon: FileText },
+  { label: 'Skill Builder', href: '/agency/skill-builder', icon: Sparkles },
+  { label: 'Voice Commands', href: '/agency/voice-commands', icon: Mic },
   { label: 'Billing', href: '/agency/billing', icon: CreditCard },
   { label: 'Settings', href: '/agency/settings', icon: Settings },
 ];
