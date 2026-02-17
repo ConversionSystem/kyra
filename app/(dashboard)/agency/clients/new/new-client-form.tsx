@@ -24,6 +24,8 @@ const industries = [
   'Education',
   'Sales & Consulting',
   'Market Intelligence',
+  'Media & Content',
+  'Education',
   'Other',
 ];
 
@@ -34,6 +36,8 @@ const industryColors: Record<string, string> = {
   'Retail / E-commerce': 'border-indigo-200 bg-indigo-50 text-indigo-600',
   'Sales & Consulting': 'border-violet-500/50 bg-violet-50 text-violet-600',
   'Market Intelligence': 'border-rose-500/50 bg-rose-50 text-rose-600',
+  'Media & Content': 'border-teal-500/50 bg-teal-50 text-teal-600',
+  'Education': 'border-emerald-500/50 bg-emerald-50 text-emerald-600',
   General: 'border-indigo-200 bg-indigo-50 text-indigo-600',
 };
 
