@@ -20,9 +20,9 @@ import type { AgencyClient, AgencyMember } from '@/lib/agency/queries';
 import GHLConnection from './ghl-connection';
 
 const statusColors: Record<string, string> = {
-  active: 'border-green-500/50 bg-green-500/10 text-green-400',
-  paused: 'border-yellow-500/50 bg-yellow-500/10 text-yellow-400',
-  setup: 'border-blue-500/50 bg-blue-500/10 text-blue-400',
+  active: 'border-green-200 bg-green-50 text-green-600',
+  paused: 'border-yellow-200 bg-yellow-50 text-yellow-600',
+  setup: 'border-blue-200 bg-blue-50 text-blue-600',
 };
 
 interface ChatMessage {
@@ -209,7 +209,7 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
     <div className="p-6 md:p-8 max-w-3xl">
       <Link
         href="/agency/clients"
-        className="inline-flex items-center gap-2 text-sm text-zinc-500 hover:text-zinc-300 transition-colors mb-6"
+        className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-gray-700 transition-colors mb-6"
       >
         <ArrowLeft className="h-3 w-3" />
         Back to Clients
@@ -218,20 +218,20 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
       {/* Client Header */}
       <div className="flex items-start justify-between mb-8">
         <div className="flex items-center gap-4">
-          <div className="h-14 w-14 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-xl font-bold text-zinc-300">
+          <div className="h-14 w-14 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center text-xl font-bold text-gray-700">
             {initialClient.name.charAt(0).toUpperCase()}
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-zinc-100">{initialClient.name}</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{initialClient.name}</h1>
             <div className="flex items-center gap-3 mt-1">
               <Badge className={statusColors[initialClient.status]}>
                 {initialClient.status}
               </Badge>
-              <span className="text-sm text-zinc-500">
+              <span className="text-sm text-gray-400">
                 {initialClient.industry || 'No industry'}
               </span>
               {initialClient.template && (
-                <span className="text-sm text-zinc-500">
+                <span className="text-sm text-gray-400">
                   · {initialClient.template.name}
                 </span>
               )}
@@ -244,8 +244,8 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
         <div
           className={`rounded-md px-4 py-3 text-sm mb-6 ${
             saveMessage.type === 'success'
-              ? 'bg-green-500/10 border border-green-500/30 text-green-400'
-              : 'bg-red-500/10 border border-red-500/30 text-red-400'
+              ? 'bg-green-50 border border-green-500/30 text-green-600'
+              : 'bg-red-50 border border-red-500/30 text-red-600'
           }`}
         >
           {saveMessage.text}
@@ -264,10 +264,10 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="rounded-lg border border-zinc-700 bg-zinc-950 h-64 overflow-y-auto mb-3 p-4 space-y-3">
+          <div className="rounded-lg border border-gray-200 bg-white h-64 overflow-y-auto mb-3 p-4 space-y-3">
             {messages.length === 0 ? (
               <div className="flex items-center justify-center h-full">
-                <p className="text-sm text-zinc-600">
+                <p className="text-sm text-gray-500">
                   Send a message to test this client&apos;s AI...
                 </p>
               </div>
@@ -281,7 +281,7 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
                     className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
                       msg.role === 'user'
                         ? 'bg-indigo-600 text-white'
-                        : 'bg-zinc-800 text-zinc-200'
+                        : 'bg-gray-100 text-gray-800'
                     }`}
                   >
                     {msg.content}
@@ -291,8 +291,8 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
             )}
             {isSending && (
               <div className="flex justify-start">
-                <div className="bg-zinc-800 rounded-lg px-3 py-2">
-                  <Loader2 className="h-4 w-4 animate-spin text-zinc-400" />
+                <div className="bg-gray-100 rounded-lg px-3 py-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
                 </div>
               </div>
             )}
@@ -309,7 +309,7 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
                 }
               }}
               placeholder="Type a message..."
-              className="bg-zinc-800 border-zinc-700"
+              className="bg-gray-100 border-gray-200"
               disabled={isSending}
             />
             <Button
@@ -331,20 +331,20 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-zinc-300">Name</label>
+            <label className="text-sm font-medium text-gray-700">Name</label>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="bg-zinc-800 border-zinc-700"
+              className="bg-gray-100 border-gray-200"
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-zinc-300">Industry</label>
+            <label className="text-sm font-medium text-gray-700">Industry</label>
             <select
               value={industry}
               onChange={(e) => setIndustry(e.target.value)}
-              className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100"
+              className="w-full rounded-md border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-900"
             >
               {industries.map((ind) => (
                 <option key={ind} value={ind}>
@@ -355,7 +355,7 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-zinc-300">Status</label>
+            <label className="text-sm font-medium text-gray-700">Status</label>
             <div className="flex gap-2">
               {(['active', 'paused', 'setup'] as const).map((s) => (
                 <button
@@ -364,8 +364,8 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
                   onClick={() => setStatus(s)}
                   className={`rounded-lg border px-4 py-2 text-sm font-medium capitalize transition-colors ${
                     status === s
-                      ? 'border-indigo-500/50 bg-indigo-500/10 text-indigo-400'
-                      : 'border-zinc-700 bg-zinc-800 text-zinc-400 hover:text-zinc-200'
+                      ? 'border-indigo-200 bg-indigo-50 text-indigo-600'
+                      : 'border-gray-200 bg-gray-100 text-gray-500 hover:text-gray-800'
                   }`}
                 >
                   {s}
@@ -409,22 +409,22 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-3 gap-4">
-            <div className="rounded-lg border border-zinc-700 bg-zinc-800/50 p-4 text-center">
-              <p className="text-2xl font-bold text-zinc-100">
+            <div className="rounded-lg border border-gray-200 bg-gray-100 p-4 text-center">
+              <p className="text-2xl font-bold text-gray-900">
                 {initialClient.usage_this_month}
               </p>
-              <p className="text-xs text-zinc-500">Credits Used</p>
+              <p className="text-xs text-gray-400">Credits Used</p>
             </div>
-            <div className="rounded-lg border border-zinc-700 bg-zinc-800/50 p-4 text-center">
-              <p className="text-2xl font-bold text-zinc-100">—</p>
-              <p className="text-xs text-zinc-500">Messages</p>
+            <div className="rounded-lg border border-gray-200 bg-gray-100 p-4 text-center">
+              <p className="text-2xl font-bold text-gray-900">—</p>
+              <p className="text-xs text-gray-400">Messages</p>
             </div>
-            <div className="rounded-lg border border-zinc-700 bg-zinc-800/50 p-4 text-center">
-              <p className="text-2xl font-bold text-zinc-100">—</p>
-              <p className="text-xs text-zinc-500">Conversations</p>
+            <div className="rounded-lg border border-gray-200 bg-gray-100 p-4 text-center">
+              <p className="text-2xl font-bold text-gray-900">—</p>
+              <p className="text-xs text-gray-400">Conversations</p>
             </div>
           </div>
-          <p className="text-xs text-zinc-600 mt-3">
+          <p className="text-xs text-gray-500 mt-3">
             Detailed analytics will be available in a future update.
           </p>
         </CardContent>
@@ -434,7 +434,7 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
       {role === 'owner' && (
         <Card className="border-red-500/20">
           <CardHeader>
-            <CardTitle className="text-red-400">Danger Zone</CardTitle>
+            <CardTitle className="text-red-600">Danger Zone</CardTitle>
             <CardDescription>
               Irreversible actions. Proceed with caution.
             </CardDescription>
@@ -451,7 +451,7 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
               </Button>
             ) : (
               <div className="rounded-lg border border-red-500/30 bg-red-500/5 p-4 space-y-3">
-                <p className="text-sm text-red-400">
+                <p className="text-sm text-red-600">
                   Are you sure you want to delete <strong>{initialClient.name}</strong>?
                   This action cannot be undone. All client data, configurations, and chat
                   history will be permanently removed.

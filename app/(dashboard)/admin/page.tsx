@@ -33,20 +33,20 @@ interface AdminStats {
 
 function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-      <div className="text-zinc-400 text-sm mb-1">{label}</div>
-      <div className="text-2xl font-bold text-white">{value}</div>
-      {sub && <div className="text-zinc-500 text-xs mt-1">{sub}</div>}
+    <div className="bg-white border border-gray-200 rounded-xl p-5">
+      <div className="text-gray-500 text-sm mb-1">{label}</div>
+      <div className="text-2xl font-bold text-gray-900">{value}</div>
+      {sub && <div className="text-gray-400 text-xs mt-1">{sub}</div>}
     </div>
   );
 }
 
 function PlanBadge({ plan }: { plan: string }) {
   const colors: Record<string, string> = {
-    free: 'bg-zinc-700 text-zinc-300',
-    starter: 'bg-blue-900/50 text-blue-300',
-    business: 'bg-indigo-900/50 text-indigo-300',
-    max: 'bg-amber-900/50 text-amber-300',
+    free: 'bg-gray-200 text-gray-700',
+    starter: 'bg-blue-900/50 text-blue-600',
+    business: 'bg-indigo-50 text-indigo-600',
+    max: 'bg-amber-900/50 text-amber-600',
   };
   return (
     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${colors[plan] || colors.free}`}>
@@ -81,7 +81,7 @@ export default function AdminDashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-black">
-        <div className="text-zinc-400 animate-pulse">Loading admin dashboard...</div>
+        <div className="text-gray-500 animate-pulse">Loading admin dashboard...</div>
       </div>
     );
   }
@@ -89,7 +89,7 @@ export default function AdminDashboard() {
   if (error) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-black">
-        <div className="text-red-400">Error: {error}</div>
+        <div className="text-red-600">Error: {error}</div>
       </div>
     );
   }
@@ -100,15 +100,15 @@ export default function AdminDashboard() {
   const planCredits: Record<string, number> = { free: 50, starter: 500, business: 3000, max: 8000 };
 
   return (
-    <div className="min-h-screen bg-black text-white p-4 md:p-6 max-w-7xl mx-auto">
+    <div className="min-h-screen bg-black text-gray-900 p-4 md:p-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold">Kyra Admin</h1>
-          <p className="text-zinc-400 text-sm mt-1">Real-time platform metrics</p>
+          <p className="text-gray-500 text-sm mt-1">Real-time platform metrics</p>
         </div>
         <button
           onClick={() => { setLoading(true); fetch('/api/admin/stats').then(r => r.json()).then((d) => setStats(d as AdminStats)).finally(() => setLoading(false)); }}
-          className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm transition-colors"
+          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm transition-colors"
         >
           ↻ Refresh
         </button>
@@ -123,14 +123,14 @@ export default function AdminDashboard() {
       </div>
 
       {/* Users Table */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-        <div className="p-4 border-b border-zinc-800">
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div className="p-4 border-b border-gray-200">
           <h2 className="text-lg font-semibold">Users</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-zinc-400 text-left border-b border-zinc-800">
+              <tr className="text-gray-500 text-left border-b border-gray-200">
                 <th className="p-3">User</th>
                 <th className="p-3">Plan</th>
                 <th className="p-3 text-right">Usage</th>
@@ -145,27 +145,27 @@ export default function AdminDashboard() {
                 const limit = planCredits[user.plan] || 50;
                 const pct = Math.round((user.usage_this_month / limit) * 100);
                 return (
-                  <tr key={user.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors">
+                  <tr key={user.id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
                     <td className="p-3">
                       <div className="font-medium">{user.name || '—'}</div>
-                      <div className="text-zinc-500 text-xs">{user.email}</div>
+                      <div className="text-gray-400 text-xs">{user.email}</div>
                     </td>
                     <td className="p-3"><PlanBadge plan={user.plan} /></td>
                     <td className="p-3 text-right">
-                      <span className={pct > 80 ? 'text-red-400' : pct > 50 ? 'text-amber-400' : 'text-zinc-300'}>
+                      <span className={pct > 80 ? 'text-red-600' : pct > 50 ? 'text-amber-600' : 'text-gray-700'}>
                         {user.usage_this_month}/{limit}
                       </span>
-                      <div className="w-16 h-1.5 bg-zinc-700 rounded-full mt-1 ml-auto">
+                      <div className="w-16 h-1.5 bg-gray-200 rounded-full mt-1 ml-auto">
                         <div
                           className={`h-full rounded-full ${pct > 80 ? 'bg-red-500' : pct > 50 ? 'bg-amber-500' : 'bg-emerald-500'}`}
                           style={{ width: `${Math.min(pct, 100)}%` }}
                         />
                       </div>
                     </td>
-                    <td className="p-3 text-right text-zinc-300">{user.conversations}</td>
-                    <td className="p-3 text-right text-zinc-300">{user.messages}</td>
-                    <td className="p-3 text-right text-zinc-300">{user.memories}</td>
-                    <td className="p-3 text-zinc-400 text-xs">
+                    <td className="p-3 text-right text-gray-700">{user.conversations}</td>
+                    <td className="p-3 text-right text-gray-700">{user.messages}</td>
+                    <td className="p-3 text-right text-gray-700">{user.memories}</td>
+                    <td className="p-3 text-gray-500 text-xs">
                       {new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </td>
                   </tr>
@@ -179,10 +179,10 @@ export default function AdminDashboard() {
       {/* Plan Breakdown */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
         {['free', 'starter', 'business', 'max'].map((plan) => (
-          <div key={plan} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-center">
+          <div key={plan} className="bg-white border border-gray-200 rounded-xl p-4 text-center">
             <PlanBadge plan={plan} />
             <div className="text-2xl font-bold mt-2">{summary.planBreakdown[plan] || 0}</div>
-            <div className="text-zinc-500 text-xs">
+            <div className="text-gray-400 text-xs">
               {plan === 'free' ? '$0/mo' : plan === 'starter' ? '$20/mo' : plan === 'business' ? '$100/mo' : '$200/mo'}
             </div>
           </div>

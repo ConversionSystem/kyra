@@ -89,7 +89,7 @@ export default function AgencySignupWrapper() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-zinc-950">
+        <div className="flex min-h-screen items-center justify-center bg-white">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
         </div>
       }
@@ -204,15 +204,15 @@ function AgencySignupPage() {
   // ---- Email confirmation screen ----
   if (emailSent) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-950 px-4">
+      <div className="flex min-h-screen items-center justify-center bg-white px-4">
         <Card className="w-full max-w-md">
           <CardContent className="pt-6 text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-500/20">
-              <CheckCircle className="h-6 w-6 text-green-400" />
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-50">
+              <CheckCircle className="h-6 w-6 text-green-600" />
             </div>
-            <h2 className="mb-2 text-xl font-semibold text-zinc-100">Check your email</h2>
-            <p className="text-zinc-400">
-              We&apos;ve sent a confirmation link to <strong className="text-zinc-200">{email}</strong>.
+            <h2 className="mb-2 text-xl font-semibold text-gray-900">Check your email</h2>
+            <p className="text-gray-500">
+              We&apos;ve sent a confirmation link to <strong className="text-gray-800">{email}</strong>.
               Click it to continue setting up your agency.
             </p>
             <Button variant="ghost" className="mt-4" asChild>
@@ -225,15 +225,15 @@ function AgencySignupPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-950 px-4 py-12">
+    <div className="flex min-h-screen items-center justify-center bg-white px-4 py-12">
       <div className="w-full max-w-3xl">
         {/* Header */}
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600">
-            <Building2 className="h-7 w-7 text-white" />
+            <Building2 className="h-7 w-7 text-gray-900" />
           </div>
-          <h1 className="text-3xl font-bold text-zinc-100">Create your agency</h1>
-          <p className="mt-2 text-zinc-400">
+          <h1 className="text-3xl font-bold text-gray-900">Create your agency</h1>
+          <p className="mt-2 text-gray-500">
             Launch your AI-powered agency in minutes
           </p>
         </div>
@@ -241,7 +241,7 @@ function AgencySignupPage() {
         {/* Step indicator */}
         <div className="mb-8 flex items-center justify-center gap-3">
           <StepBadge number={1} label="Account" active={step === 1} completed={step > 1} />
-          <div className="h-px w-12 bg-zinc-700" />
+          <div className="h-px w-12 bg-gray-200" />
           <StepBadge number={2} label="Agency" active={step === 2} completed={false} />
         </div>
 
@@ -254,14 +254,14 @@ function AgencySignupPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               {error && (
-                <div className="rounded-md bg-red-500/10 px-4 py-3 text-sm text-red-400">
+                <div className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-600">
                   {error}
                 </div>
               )}
 
               <form onSubmit={handleSignup} className="space-y-4">
                 <div className="space-y-2">
-                  <label htmlFor="email" className="text-sm font-medium text-zinc-200">
+                  <label htmlFor="email" className="text-sm font-medium text-gray-800">
                     Email
                   </label>
                   <Input
@@ -275,7 +275,7 @@ function AgencySignupPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label htmlFor="password" className="text-sm font-medium text-zinc-200">
+                  <label htmlFor="password" className="text-sm font-medium text-gray-800">
                     Password
                   </label>
                   <Input
@@ -288,7 +288,7 @@ function AgencySignupPage() {
                     minLength={8}
                     disabled={isLoading}
                   />
-                  <p className="text-xs text-zinc-500">Must be at least 8 characters</p>
+                  <p className="text-xs text-gray-400">Must be at least 8 characters</p>
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? (
@@ -301,14 +301,14 @@ function AgencySignupPage() {
               </form>
 
               <div className="space-y-2 pt-2">
-                <p className="text-center text-sm text-zinc-400">
+                <p className="text-center text-sm text-gray-500">
                   Already have an account?{' '}
-                  <Link href="/login" className="text-zinc-100 hover:underline">
+                  <Link href="/login" className="text-gray-900 hover:underline">
                     Log in
                   </Link>
                 </p>
-                <p className="text-center text-sm text-zinc-500">
-                  <Link href="/signup" className="hover:text-zinc-300 hover:underline">
+                <p className="text-center text-sm text-gray-400">
+                  <Link href="/signup" className="hover:text-gray-700 hover:underline">
                     Sign up as individual instead
                   </Link>
                 </p>
@@ -321,7 +321,7 @@ function AgencySignupPage() {
         {step === 2 && (
           <form onSubmit={handleCreateAgency} className="space-y-8">
             {error && (
-              <div className="mx-auto max-w-md rounded-md bg-red-500/10 px-4 py-3 text-sm text-red-400">
+              <div className="mx-auto max-w-md rounded-md bg-red-50 px-4 py-3 text-sm text-red-600">
                 {error}
               </div>
             )}
@@ -334,7 +334,7 @@ function AgencySignupPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <label htmlFor="agencyName" className="text-sm font-medium text-zinc-200">
+                  <label htmlFor="agencyName" className="text-sm font-medium text-gray-800">
                     Agency name
                   </label>
                   <Input
@@ -348,11 +348,11 @@ function AgencySignupPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label htmlFor="slug" className="text-sm font-medium text-zinc-200">
+                  <label htmlFor="slug" className="text-sm font-medium text-gray-800">
                     Agency URL
                   </label>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-zinc-500">kyra.ai/</span>
+                    <span className="text-sm text-gray-400">kyra.ai/</span>
                     <Input
                       id="slug"
                       type="text"
@@ -371,7 +371,7 @@ function AgencySignupPage() {
                       className="flex-1"
                     />
                   </div>
-                  <p className="text-xs text-zinc-500">
+                  <p className="text-xs text-gray-400">
                     Lowercase letters, numbers, and hyphens only
                   </p>
                 </div>
@@ -380,7 +380,7 @@ function AgencySignupPage() {
 
             {/* Plan selection */}
             <div>
-              <h2 className="mb-4 text-center text-xl font-semibold text-zinc-100">
+              <h2 className="mb-4 text-center text-xl font-semibold text-gray-900">
                 Choose your plan
               </h2>
               <div className="grid gap-4 md:grid-cols-3">
@@ -392,32 +392,32 @@ function AgencySignupPage() {
                       key={plan.id}
                       type="button"
                       onClick={() => setSelectedPlan(plan.id)}
-                      className={`relative rounded-xl border bg-zinc-900/50 p-5 text-left transition-all ${
+                      className={`relative rounded-xl border bg-gray-50 p-5 text-left transition-all ${
                         isSelected
                           ? 'border-indigo-500 ring-1 ring-indigo-500/50'
-                          : `border-zinc-800 ${plan.border}`
+                          : `border-gray-200 ${plan.border}`
                       }`}
                     >
                       {plan.badge && (
-                        <span className="absolute -top-2.5 right-4 rounded-full bg-gradient-to-r from-indigo-500 to-indigo-600 px-3 py-0.5 text-xs font-medium text-white">
+                        <span className="absolute -top-2.5 right-4 rounded-full bg-gradient-to-r from-indigo-500 to-indigo-600 px-3 py-0.5 text-xs font-medium text-gray-900">
                           {plan.badge}
                         </span>
                       )}
                       <div
                         className={`mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br ${plan.color}`}
                       >
-                        <Icon className="h-5 w-5 text-white" />
+                        <Icon className="h-5 w-5 text-gray-900" />
                       </div>
-                      <h3 className="text-lg font-semibold text-zinc-100">{plan.name}</h3>
-                      <p className="mb-3 text-sm text-zinc-400">{plan.description}</p>
+                      <h3 className="text-lg font-semibold text-gray-900">{plan.name}</h3>
+                      <p className="mb-3 text-sm text-gray-500">{plan.description}</p>
                       <div className="mb-4">
-                        <span className="text-3xl font-bold text-zinc-100">${plan.price}</span>
-                        <span className="text-sm text-zinc-500">/mo</span>
+                        <span className="text-3xl font-bold text-gray-900">${plan.price}</span>
+                        <span className="text-sm text-gray-400">/mo</span>
                       </div>
                       <ul className="space-y-2">
                         {plan.features.map((feature) => (
-                          <li key={feature} className="flex items-start gap-2 text-sm text-zinc-300">
-                            <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-green-400" />
+                          <li key={feature} className="flex items-start gap-2 text-sm text-gray-700">
+                            <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-green-600" />
                             {feature}
                           </li>
                         ))}
@@ -425,7 +425,7 @@ function AgencySignupPage() {
                       {isSelected && (
                         <div className="absolute right-3 top-3">
                           <div className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-500">
-                            <Check className="h-3 w-3 text-white" />
+                            <Check className="h-3 w-3 text-gray-900" />
                           </div>
                         </div>
                       )}
@@ -488,17 +488,17 @@ function StepBadge({
       <div
         className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors ${
           completed
-            ? 'bg-green-500/20 text-green-400'
+            ? 'bg-green-50 text-green-600'
             : active
               ? 'bg-indigo-500 text-white'
-              : 'bg-zinc-800 text-zinc-500'
+              : 'bg-gray-100 text-gray-400'
         }`}
       >
         {completed ? <Check className="h-4 w-4" /> : number}
       </div>
       <span
         className={`text-sm font-medium ${
-          active ? 'text-zinc-100' : completed ? 'text-green-400' : 'text-zinc-500'
+          active ? 'text-gray-900' : completed ? 'text-green-600' : 'text-gray-400'
         }`}
       >
         {label}

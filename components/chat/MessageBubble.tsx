@@ -43,19 +43,19 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
     return (
       <div className="group py-4 md:py-6">
         <div className="mx-auto max-w-3xl px-4 md:px-0">
-          <div className="mb-1 text-xs font-medium text-zinc-500">You</div>
+          <div className="mb-1 text-xs font-medium text-gray-400">You</div>
           {attachedFiles && attachedFiles.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mb-2">
               {attachedFiles.map((f, i) => (
-                <span key={i} className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-800 px-2.5 py-1.5 text-xs text-zinc-300">
-                  <FileText className="h-3 w-3 text-indigo-400" />
+                <span key={i} className="inline-flex items-center gap-1.5 rounded-lg bg-gray-100 px-2.5 py-1.5 text-xs text-gray-700">
+                  <FileText className="h-3 w-3 text-indigo-600" />
                   <span className="max-w-[200px] truncate">{f.name}</span>
                 </span>
               ))}
             </div>
           )}
           {textContent && (
-            <div className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-100">
+            <div className="whitespace-pre-wrap text-sm leading-relaxed text-gray-900">
               {textContent}
             </div>
           )}
@@ -68,32 +68,32 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
     <div className="group py-4 md:py-6">
       <div className="mx-auto max-w-3xl px-4 md:px-0">
         <div className="mb-1 flex items-center gap-1.5">
-          <Sparkles className="h-3.5 w-3.5 text-indigo-400" />
-          <span className="text-xs font-medium text-zinc-500">Kyra</span>
+          <Sparkles className="h-3.5 w-3.5 text-indigo-600" />
+          <span className="text-xs font-medium text-gray-400">Kyra</span>
         </div>
 
         {searchContext && (
           <SearchResults query={searchContext.query} sources={searchContext.sources} />
         )}
 
-        <div className="prose prose-invert prose-sm max-w-none
+        <div className="prose prose-sm max-w-none
           prose-p:leading-relaxed prose-p:my-2
-          prose-headings:text-zinc-100 prose-headings:font-semibold
+          prose-headings:text-gray-900 prose-headings:font-semibold
           prose-h1:text-xl prose-h1:mt-6 prose-h1:mb-3
           prose-h2:text-lg prose-h2:mt-5 prose-h2:mb-2
           prose-h3:text-base prose-h3:mt-4 prose-h3:mb-2
-          prose-strong:text-zinc-100 prose-strong:font-semibold
-          prose-code:text-indigo-300 prose-code:bg-zinc-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:text-xs prose-code:font-normal prose-code:before:content-none prose-code:after:content-none
-          prose-pre:bg-zinc-900 prose-pre:border prose-pre:border-zinc-700 prose-pre:rounded-xl prose-pre:my-3
-          prose-a:text-indigo-400 prose-a:no-underline hover:prose-a:underline
+          prose-strong:text-gray-900 prose-strong:font-semibold
+          prose-code:text-indigo-600 prose-code:bg-gray-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:text-xs prose-code:font-normal prose-code:before:content-none prose-code:after:content-none
+          prose-pre:bg-white prose-pre:border prose-pre:border-gray-200 prose-pre:rounded-xl prose-pre:my-3
+          prose-a:text-indigo-600 prose-a:no-underline hover:prose-a:underline
           prose-ul:my-2 prose-ol:my-2
-          prose-li:my-0.5 prose-li:text-zinc-300
-          prose-blockquote:border-indigo-500 prose-blockquote:text-zinc-400 prose-blockquote:not-italic
+          prose-li:my-0.5 prose-li:text-gray-700
+          prose-blockquote:border-indigo-500 prose-blockquote:text-gray-500 prose-blockquote:not-italic
           prose-table:text-sm
-          prose-th:text-zinc-300 prose-th:border-zinc-700 prose-th:px-3 prose-th:py-2
-          prose-td:border-zinc-700 prose-td:px-3 prose-td:py-2
-          prose-hr:border-zinc-700
-          text-zinc-300"
+          prose-th:text-gray-700 prose-th:border-gray-200 prose-th:px-3 prose-th:py-2
+          prose-td:border-gray-200 prose-td:px-3 prose-td:py-2
+          prose-hr:border-gray-200
+          text-gray-700"
         >
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
@@ -123,7 +123,7 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
           <div className="mt-2 flex items-center gap-1 md:opacity-0 md:transition-opacity md:group-hover:opacity-100">
             <button
               onClick={handleCopy}
-              className="flex items-center gap-1 rounded-md px-2 py-1.5 text-xs text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300 min-h-[44px] md:min-h-0"
+              className="flex items-center gap-1 rounded-md px-2 py-1.5 text-xs text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700 min-h-[44px] md:min-h-0"
             >
               {copied ? <><Check className="h-3 w-3" /> Copied</> : <><Copy className="h-3 w-3" /> Copy</>}
             </button>
@@ -140,13 +140,13 @@ export function MessageSkeleton() {
     <div className="py-4 md:py-6">
       <div className="mx-auto max-w-3xl px-4 md:px-0">
         <div className="mb-1 flex items-center gap-1.5">
-          <Sparkles className="h-3.5 w-3.5 text-indigo-400" />
-          <span className="text-xs font-medium text-zinc-500">Kyra</span>
+          <Sparkles className="h-3.5 w-3.5 text-indigo-600" />
+          <span className="text-xs font-medium text-gray-400">Kyra</span>
         </div>
         <div className="flex items-center gap-1 pt-1">
-          <span className="h-2 w-2 animate-bounce rounded-full bg-zinc-600 [animation-delay:-0.3s]" />
-          <span className="h-2 w-2 animate-bounce rounded-full bg-zinc-600 [animation-delay:-0.15s]" />
-          <span className="h-2 w-2 animate-bounce rounded-full bg-zinc-600" />
+          <span className="h-2 w-2 animate-bounce rounded-full bg-gray-400 [animation-delay:-0.3s]" />
+          <span className="h-2 w-2 animate-bounce rounded-full bg-gray-400 [animation-delay:-0.15s]" />
+          <span className="h-2 w-2 animate-bounce rounded-full bg-gray-400" />
         </div>
       </div>
     </div>

@@ -248,7 +248,7 @@ export function ChatInterface({
   const showEmptyState = messages.length === 0 && !streamingContent && !currentConversation;
 
   return (
-    <div className="flex h-[100dvh] bg-zinc-950">
+    <div className="flex h-[100dvh] bg-white">
       <ConversationSidebar
         conversations={conversations}
         currentConversationId={currentConversation?.id}
@@ -265,7 +265,7 @@ export function ChatInterface({
         <div className="flex items-center justify-between px-3 py-2 md:justify-end">
           <button
             onClick={() => setMobileSidebarOpen(true)}
-            className="md:hidden flex items-center justify-center h-10 w-10 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"
+            className="md:hidden flex items-center justify-center h-10 w-10 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
             aria-label="Open sidebar"
           >
             <Menu className="h-5 w-5" />
@@ -282,7 +282,7 @@ export function ChatInterface({
           {showEmptyState ? (
             <div className="flex h-full flex-col items-center justify-center px-4" />
           ) : (
-            <div className="divide-y divide-zinc-800/50">
+            <div className="divide-y divide-gray-100/50">
               {messages.map((message) => (
                 <MessageBubble key={message.id} message={message} />
               ))}
@@ -311,9 +311,9 @@ export function ChatInterface({
             {showEmptyState && (
               <div className="mb-6 text-center">
                 <div className="relative mb-4 inline-block">
-                  <div className="absolute inset-0 animate-pulse rounded-full bg-indigo-500/20 blur-xl" />
+                  <div className="absolute inset-0 animate-pulse rounded-full bg-indigo-50 blur-xl" />
                   <div className="relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 via-indigo-500 to-indigo-400">
-                    <Sparkles className="h-7 w-7 text-white" />
+                    <Sparkles className="h-7 w-7 text-gray-900" />
                   </div>
                 </div>
                 <DynamicGreeting />
@@ -354,6 +354,6 @@ function DynamicGreeting() {
   if (!text) return null;
 
   return (
-    <p className="text-base text-zinc-400">{text}</p>
+    <p className="text-base text-gray-500">{text}</p>
   );
 }

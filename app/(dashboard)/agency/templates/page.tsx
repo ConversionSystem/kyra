@@ -9,16 +9,16 @@ import { Button } from '@/components/ui/button';
 import { FileText, Plus, Clock, Zap, ArrowRight, MessageSquare } from 'lucide-react';
 
 const industryColors: Record<string, string> = {
-  'Dental / Medical': 'border-cyan-500/50 bg-cyan-500/10 text-cyan-400',
-  'Real Estate': 'border-emerald-500/50 bg-emerald-500/10 text-emerald-400',
-  'Home Services': 'border-orange-500/50 bg-orange-500/10 text-orange-400',
-  'Retail / E-commerce': 'border-indigo-500/50 bg-indigo-500/10 text-indigo-400',
-  'Legal': 'border-amber-500/50 bg-amber-500/10 text-amber-400',
-  'Finance': 'border-blue-500/50 bg-blue-500/10 text-blue-400',
-  'Fitness / Wellness': 'border-green-500/50 bg-green-500/10 text-green-400',
-  'Restaurant / Hospitality': 'border-red-500/50 bg-red-500/10 text-red-400',
-  'Education': 'border-indigo-500/50 bg-indigo-500/10 text-indigo-400',
-  'General': 'border-indigo-500/50 bg-indigo-500/10 text-indigo-400',
+  'Dental / Medical': 'border-cyan-500/50 bg-cyan-50 text-cyan-600',
+  'Real Estate': 'border-emerald-500/50 bg-emerald-50 text-emerald-600',
+  'Home Services': 'border-orange-500/50 bg-orange-50 text-orange-600',
+  'Retail / E-commerce': 'border-indigo-200 bg-indigo-50 text-indigo-600',
+  'Legal': 'border-amber-200 bg-amber-50 text-amber-600',
+  'Finance': 'border-blue-200 bg-blue-50 text-blue-600',
+  'Fitness / Wellness': 'border-green-200 bg-green-50 text-green-600',
+  'Restaurant / Hospitality': 'border-red-200 bg-red-50 text-red-600',
+  'Education': 'border-indigo-200 bg-indigo-50 text-indigo-600',
+  'General': 'border-indigo-200 bg-indigo-50 text-indigo-600',
 };
 
 function getIndustryColor(industry: string) {
@@ -43,8 +43,8 @@ export default async function AgencyTemplatesPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-100">Templates</h1>
-          <p className="text-sm text-zinc-400 mt-1">
+          <h1 className="text-2xl font-bold text-gray-900">Templates</h1>
+          <p className="text-sm text-gray-500 mt-1">
             Pre-configured AI setups for common industries
           </p>
         </div>
@@ -52,14 +52,14 @@ export default async function AgencyTemplatesPage() {
 
       {/* Built-in Templates */}
       <div className="mb-10">
-        <h2 className="text-sm font-medium text-zinc-400 uppercase tracking-wider mb-4">
+        <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">
           Industry Templates
         </h2>
         {builtIn.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center">
-              <FileText className="h-8 w-8 text-zinc-600 mx-auto mb-3" />
-              <p className="text-zinc-500">No built-in templates available yet.</p>
+              <FileText className="h-8 w-8 text-gray-500 mx-auto mb-3" />
+              <p className="text-gray-400">No built-in templates available yet.</p>
             </CardContent>
           </Card>
         ) : (
@@ -69,14 +69,14 @@ export default async function AgencyTemplatesPage() {
               const sampleResponses = (template.sample_responses ?? []) as SampleResponse[];
 
               return (
-                <Card key={template.id} className="group hover:border-zinc-700 transition-colors">
+                <Card key={template.id} className="group hover:border-gray-200 transition-colors">
                   <CardContent className="p-5">
                     {/* Header with icon */}
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-start gap-3">
                         <span className="text-2xl">{template.icon || '🤖'}</span>
                         <div>
-                          <h3 className="font-semibold text-zinc-100 group-hover:text-white transition-colors">
+                          <h3 className="font-semibold text-gray-900 group-hover:text-gray-700 transition-colors">
                             {template.name}
                           </h3>
                           <Badge className={`mt-1 text-[10px] ${getIndustryColor(template.industry)}`}>
@@ -86,7 +86,7 @@ export default async function AgencyTemplatesPage() {
                       </div>
                     </div>
 
-                    <p className="text-sm text-zinc-400 mb-4 line-clamp-2">
+                    <p className="text-sm text-gray-500 mb-4 line-clamp-2">
                       {template.description}
                     </p>
 
@@ -96,14 +96,14 @@ export default async function AgencyTemplatesPage() {
                         {suggestedSkills.slice(0, 4).map((skill) => (
                           <span
                             key={skill.id}
-                            className="inline-flex items-center gap-1 rounded-md border border-zinc-700/50 bg-zinc-800/50 px-2 py-0.5 text-[11px] text-zinc-400"
+                            className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-gray-100 px-2 py-0.5 text-[11px] text-gray-500"
                           >
                             <Zap className="h-2.5 w-2.5" />
                             {skill.name}
                           </span>
                         ))}
                         {suggestedSkills.length > 4 && (
-                          <span className="inline-flex items-center rounded-md border border-zinc-700/50 bg-zinc-800/50 px-2 py-0.5 text-[11px] text-zinc-500">
+                          <span className="inline-flex items-center rounded-md border border-gray-200 bg-gray-100 px-2 py-0.5 text-[11px] text-gray-400">
                             +{suggestedSkills.length - 4} more
                           </span>
                         )}
@@ -111,7 +111,7 @@ export default async function AgencyTemplatesPage() {
                     )}
 
                     {/* Stats row */}
-                    <div className="flex items-center gap-4 text-xs text-zinc-500 mb-4">
+                    <div className="flex items-center gap-4 text-xs text-gray-400 mb-4">
                       <span className="flex items-center gap-1">
                         <Zap className="h-3 w-3" />
                         {suggestedSkills.length} capability{suggestedSkills.length !== 1 ? 'ies' : 'y'}
@@ -147,17 +147,17 @@ export default async function AgencyTemplatesPage() {
 
       {/* Custom Templates */}
       <div>
-        <h2 className="text-sm font-medium text-zinc-400 uppercase tracking-wider mb-4">
+        <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">
           Your Templates
         </h2>
         {custom.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center">
-              <div className="rounded-full bg-zinc-800 h-12 w-12 flex items-center justify-center mx-auto mb-4">
-                <Plus className="h-5 w-5 text-zinc-500" />
+              <div className="rounded-full bg-gray-100 h-12 w-12 flex items-center justify-center mx-auto mb-4">
+                <Plus className="h-5 w-5 text-gray-400" />
               </div>
-              <p className="text-zinc-400 font-medium mb-1">No custom templates yet</p>
-              <p className="text-sm text-zinc-500 mb-4">
+              <p className="text-gray-500 font-medium mb-1">No custom templates yet</p>
+              <p className="text-sm text-gray-400 mb-4">
                 Create templates from your existing client configurations to speed up onboarding.
               </p>
               <Link href="/agency/clients">
@@ -175,13 +175,13 @@ export default async function AgencyTemplatesPage() {
               const sampleResponses = (template.sample_responses ?? []) as SampleResponse[];
 
               return (
-                <Card key={template.id} className="group hover:border-zinc-700 transition-colors">
+                <Card key={template.id} className="group hover:border-gray-200 transition-colors">
                   <CardContent className="p-5">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-start gap-3">
                         <span className="text-2xl">{template.icon || '🤖'}</span>
                         <div>
-                          <h3 className="font-semibold text-zinc-100 group-hover:text-white transition-colors">
+                          <h3 className="font-semibold text-gray-900 group-hover:text-gray-700 transition-colors">
                             {template.name}
                           </h3>
                           <Badge className={`mt-1 text-[10px] ${getIndustryColor(template.industry)}`}>
@@ -189,12 +189,12 @@ export default async function AgencyTemplatesPage() {
                           </Badge>
                         </div>
                       </div>
-                      <Badge variant="outline" className="text-[10px] text-zinc-500 border-zinc-700">
+                      <Badge variant="outline" className="text-[10px] text-gray-400 border-gray-200">
                         Custom
                       </Badge>
                     </div>
 
-                    <p className="text-sm text-zinc-400 mb-4 line-clamp-2">
+                    <p className="text-sm text-gray-500 mb-4 line-clamp-2">
                       {template.description}
                     </p>
 
@@ -203,21 +203,21 @@ export default async function AgencyTemplatesPage() {
                         {suggestedSkills.slice(0, 4).map((skill) => (
                           <span
                             key={skill.id}
-                            className="inline-flex items-center gap-1 rounded-md border border-zinc-700/50 bg-zinc-800/50 px-2 py-0.5 text-[11px] text-zinc-400"
+                            className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-gray-100 px-2 py-0.5 text-[11px] text-gray-500"
                           >
                             <Zap className="h-2.5 w-2.5" />
                             {skill.name}
                           </span>
                         ))}
                         {suggestedSkills.length > 4 && (
-                          <span className="inline-flex items-center rounded-md border border-zinc-700/50 bg-zinc-800/50 px-2 py-0.5 text-[11px] text-zinc-500">
+                          <span className="inline-flex items-center rounded-md border border-gray-200 bg-gray-100 px-2 py-0.5 text-[11px] text-gray-400">
                             +{suggestedSkills.length - 4} more
                           </span>
                         )}
                       </div>
                     )}
 
-                    <div className="flex items-center gap-4 text-xs text-zinc-500 mb-4">
+                    <div className="flex items-center gap-4 text-xs text-gray-400 mb-4">
                       <span className="flex items-center gap-1">
                         <Zap className="h-3 w-3" />
                         {suggestedSkills.length} capability{suggestedSkills.length !== 1 ? 'ies' : 'y'}

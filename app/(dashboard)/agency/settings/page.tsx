@@ -34,8 +34,8 @@ export default async function AgencySettingsPage() {
     <div className="p-6 md:p-8 max-w-3xl">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-zinc-100">Settings</h1>
-        <p className="text-sm text-zinc-400 mt-1">
+        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+        <p className="text-sm text-gray-500 mt-1">
           Manage your agency configuration and team
         </p>
       </div>

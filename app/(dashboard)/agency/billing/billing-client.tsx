@@ -74,17 +74,17 @@ const PLAN_CONFIG: Record<
 };
 
 const planBadgeColors: Record<string, string> = {
-  starter: 'border-blue-500/50 bg-blue-500/10 text-blue-400',
-  pro: 'border-indigo-500/50 bg-indigo-500/10 text-indigo-400',
-  scale: 'border-amber-500/50 bg-amber-500/10 text-amber-400',
+  starter: 'border-blue-200 bg-blue-50 text-blue-600',
+  pro: 'border-indigo-200 bg-indigo-50 text-indigo-600',
+  scale: 'border-amber-200 bg-amber-50 text-amber-600',
 };
 
 const billingStatusBadge: Record<string, { label: string; class: string }> = {
-  none: { label: 'Not Billed', class: 'border-zinc-600/50 bg-zinc-600/10 text-zinc-400' },
-  active: { label: 'Active', class: 'border-green-500/50 bg-green-500/10 text-green-400' },
-  past_due: { label: 'Past Due', class: 'border-red-500/50 bg-red-500/10 text-red-400' },
-  canceled: { label: 'Canceled', class: 'border-zinc-500/50 bg-zinc-500/10 text-zinc-500' },
-  trialing: { label: 'Trialing', class: 'border-blue-500/50 bg-blue-500/10 text-blue-400' },
+  none: { label: 'Not Billed', class: 'border-gray-300/50 bg-gray-500/10 text-gray-500' },
+  active: { label: 'Active', class: 'border-green-200 bg-green-50 text-green-600' },
+  past_due: { label: 'Past Due', class: 'border-red-200 bg-red-50 text-red-600' },
+  canceled: { label: 'Canceled', class: 'border-gray-500/50 bg-gray-500/10 text-gray-400' },
+  trialing: { label: 'Trialing', class: 'border-blue-200 bg-blue-50 text-blue-600' },
 };
 
 const typeLabels: Record<string, string> = {
@@ -95,10 +95,10 @@ const typeLabels: Record<string, string> = {
 };
 
 const typeColors: Record<string, string> = {
-  subscription: 'text-indigo-400',
-  client_fee: 'text-cyan-400',
-  credit_topup: 'text-green-400',
-  payout: 'text-amber-400',
+  subscription: 'text-indigo-600',
+  client_fee: 'text-cyan-600',
+  credit_topup: 'text-green-600',
+  payout: 'text-amber-600',
 };
 
 function formatCents(cents: number) {
@@ -236,20 +236,20 @@ export default function BillingClient({
     <div className="p-6 md:p-8 max-w-5xl">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-zinc-100">Billing</h1>
-        <p className="text-sm text-zinc-400 mt-1">
+        <h1 className="text-2xl font-bold text-gray-900">Billing</h1>
+        <p className="text-sm text-gray-500 mt-1">
           Manage your subscription, client billing, and Stripe Connect payouts
         </p>
       </div>
 
       {/* Error banner */}
       {error && (
-        <div className="mb-6 p-4 rounded-lg border border-red-500/30 bg-red-500/10 text-red-300 flex items-start gap-3">
+        <div className="mb-6 p-4 rounded-lg border border-red-500/30 bg-red-50 text-red-600 flex items-start gap-3">
           <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-medium">{error}</p>
             <button
-              className="text-xs text-red-400 underline mt-1"
+              className="text-xs text-red-600 underline mt-1"
               onClick={() => setError(null)}
             >
               Dismiss
@@ -263,17 +263,17 @@ export default function BillingClient({
         {/* Current Plan */}
         <Card>
           <CardContent className="p-6">
-            <p className="text-xs text-zinc-500 uppercase tracking-wider mb-2">Current Plan</p>
+            <p className="text-xs text-gray-400 uppercase tracking-wider mb-2">Current Plan</p>
             <div className="flex items-center gap-3 mb-1">
-              <h2 className="text-2xl font-bold text-zinc-100">{plan.label}</h2>
+              <h2 className="text-2xl font-bold text-gray-900">{plan.label}</h2>
               <Badge className={planBadgeColors[agency.plan]}>
                 {plan.price}
               </Badge>
             </div>
-            <p className="text-sm text-zinc-400">
+            <p className="text-sm text-gray-500">
               {clients.length} / {plan.includedClients} clients
             </p>
-            <div className="mt-3 h-2 w-full rounded-full bg-zinc-800">
+            <div className="mt-3 h-2 w-full rounded-full bg-gray-100">
               <div
                 className="h-2 rounded-full bg-indigo-500 transition-all"
                 style={{
@@ -287,14 +287,14 @@ export default function BillingClient({
         {/* Revenue */}
         <Card>
           <CardContent className="p-6">
-            <p className="text-xs text-zinc-500 uppercase tracking-wider mb-2">Monthly Revenue</p>
+            <p className="text-xs text-gray-400 uppercase tracking-wider mb-2">Monthly Revenue</p>
             <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-green-500/10 p-2">
-                <DollarSign className="h-5 w-5 text-green-400" />
+              <div className="rounded-lg bg-green-50 p-2">
+                <DollarSign className="h-5 w-5 text-green-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-zinc-100">{formatCents(netRevenue)}</p>
-                <p className="text-xs text-zinc-500">
+                <p className="text-2xl font-bold text-gray-900">{formatCents(netRevenue)}</p>
+                <p className="text-xs text-gray-400">
                   {formatCents(monthlyRevenue)} gross − {formatCents(platformFee)} platform fee
                 </p>
               </div>
@@ -305,14 +305,14 @@ export default function BillingClient({
         {/* Usage */}
         <Card>
           <CardContent className="p-6">
-            <p className="text-xs text-zinc-500 uppercase tracking-wider mb-2">Usage This Period</p>
+            <p className="text-xs text-gray-400 uppercase tracking-wider mb-2">Usage This Period</p>
             <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-cyan-500/10 p-2">
-                <Zap className="h-5 w-5 text-cyan-400" />
+              <div className="rounded-lg bg-cyan-50 p-2">
+                <Zap className="h-5 w-5 text-cyan-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-zinc-100">{totalUsage.toLocaleString()}</p>
-                <p className="text-xs text-zinc-500">credits across {activeClients.length} active clients</p>
+                <p className="text-2xl font-bold text-gray-900">{totalUsage.toLocaleString()}</p>
+                <p className="text-xs text-gray-400">credits across {activeClients.length} active clients</p>
               </div>
             </div>
           </CardContent>
@@ -325,44 +325,44 @@ export default function BillingClient({
           <CardContent className="p-6">
             <div className="flex items-start justify-between">
               <div className="flex items-start gap-4">
-                <div className="rounded-lg bg-indigo-500/10 p-2.5 mt-0.5">
-                  <LinkIcon className="h-5 w-5 text-indigo-400" />
+                <div className="rounded-lg bg-indigo-50 p-2.5 mt-0.5">
+                  <LinkIcon className="h-5 w-5 text-indigo-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-zinc-100 mb-1">Stripe Connect</h3>
+                  <h3 className="font-semibold text-gray-900 mb-1">Stripe Connect</h3>
                   {connectStatus.connected && connectStatus.chargesEnabled ? (
                     <>
-                      <p className="text-sm text-zinc-400">
+                      <p className="text-sm text-gray-500">
                         Your Stripe account is connected and ready to accept payments.
                       </p>
                       <div className="flex items-center gap-2 mt-2">
-                        <Badge className="border-green-500/50 bg-green-500/10 text-green-400">
+                        <Badge className="border-green-200 bg-green-50 text-green-600">
                           <CheckCircle2 className="h-3 w-3 mr-1" />
                           Connected
                         </Badge>
                         {connectStatus.payoutsEnabled && (
-                          <Badge className="border-green-500/50 bg-green-500/10 text-green-400">
+                          <Badge className="border-green-200 bg-green-50 text-green-600">
                             Payouts Enabled
                           </Badge>
                         )}
                       </div>
-                      <p className="text-xs text-zinc-500 mt-2">
+                      <p className="text-xs text-gray-400 mt-2">
                         10% platform fee on all client payments. Payouts processed by Stripe on a rolling basis.
                       </p>
                     </>
                   ) : connectStatus.connected && !connectStatus.chargesEnabled ? (
                     <>
-                      <p className="text-sm text-zinc-400">
+                      <p className="text-sm text-gray-500">
                         Your Stripe account is connected but onboarding is incomplete.
                         Please finish setup to start accepting payments.
                       </p>
-                      <Badge className="mt-2 border-amber-500/50 bg-amber-500/10 text-amber-400">
+                      <Badge className="mt-2 border-amber-200 bg-amber-50 text-amber-600">
                         <AlertCircle className="h-3 w-3 mr-1" />
                         Onboarding Incomplete
                       </Badge>
                     </>
                   ) : (
-                    <p className="text-sm text-zinc-400">
+                    <p className="text-sm text-gray-500">
                       Connect your Stripe account to bill your clients directly
                       and receive payouts. Kyra takes a 10% platform fee.
                     </p>
@@ -419,7 +419,7 @@ export default function BillingClient({
           <CardContent>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <span className="text-zinc-400 text-lg">$</span>
+                <span className="text-gray-500 text-lg">$</span>
                 <Input
                   type="number"
                   min="1"
@@ -431,7 +431,7 @@ export default function BillingClient({
                   }}
                   className="w-32"
                 />
-                <span className="text-zinc-400 text-sm">/mo per client</span>
+                <span className="text-gray-500 text-sm">/mo per client</span>
               </div>
               {priceEditing && (
                 <div className="flex gap-2">
@@ -459,7 +459,7 @@ export default function BillingClient({
                 </div>
               )}
             </div>
-            <p className="text-xs text-zinc-500 mt-2">
+            <p className="text-xs text-gray-400 mt-2">
               You keep 90% ({formatCents(Math.round(agency.default_client_price_cents * 0.9))}/client).
               Kyra platform fee: 10% ({formatCents(Math.round(agency.default_client_price_cents * 0.1))}/client).
             </p>
@@ -480,11 +480,11 @@ export default function BillingClient({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="rounded-lg border border-zinc-800 overflow-hidden">
+            <div className="rounded-lg border border-gray-200 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-zinc-400 text-left border-b border-zinc-800 bg-zinc-900/50">
+                    <tr className="text-gray-500 text-left border-b border-gray-200 bg-gray-50">
                       <th className="p-3 font-medium">Client</th>
                       <th className="p-3 font-medium">Monthly Price</th>
                       <th className="p-3 font-medium">Status</th>
@@ -502,17 +502,17 @@ export default function BillingClient({
                       return (
                         <tr
                           key={client.id}
-                          className="border-b border-zinc-800/50 hover:bg-zinc-800/20 transition-colors"
+                          className="border-b border-gray-200 hover:bg-gray-100/20 transition-colors"
                         >
                           <td className="p-3">
                             <div>
-                              <span className="text-zinc-100 font-medium">{client.name}</span>
-                              <span className="text-xs text-zinc-500 ml-2">
+                              <span className="text-gray-900 font-medium">{client.name}</span>
+                              <span className="text-xs text-gray-400 ml-2">
                                 {client.status}
                               </span>
                             </div>
                           </td>
-                          <td className="p-3 text-zinc-300">
+                          <td className="p-3 text-gray-700">
                             {client.billing_amount_cents > 0
                               ? formatCents(client.billing_amount_cents)
                               : formatCents(agency.default_client_price_cents)}
@@ -522,7 +522,7 @@ export default function BillingClient({
                               {statusBadge.label}
                             </Badge>
                           </td>
-                          <td className="p-3 text-zinc-300">
+                          <td className="p-3 text-gray-700">
                             {clientEarnings > 0 ? formatCents(clientEarnings) : '—'}
                           </td>
                           <td className="p-3 text-right">
@@ -544,7 +544,7 @@ export default function BillingClient({
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="text-red-400 border-red-500/30 hover:bg-red-500/10"
+                                className="text-red-600 border-red-500/30 hover:bg-red-50"
                                 onClick={() => handleCancelClient(client.id)}
                                 disabled={loading === `cancel-${client.id}`}
                               >
@@ -555,7 +555,7 @@ export default function BillingClient({
                                 )}
                               </Button>
                             ) : (
-                              <span className="text-xs text-zinc-500">—</span>
+                              <span className="text-xs text-gray-400">—</span>
                             )}
                           </td>
                         </tr>
@@ -580,21 +580,21 @@ export default function BillingClient({
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="p-4 rounded-lg bg-zinc-800/50">
-                <p className="text-xs text-zinc-500 mb-1">Active Subscriptions</p>
-                <p className="text-xl font-bold text-zinc-100">{activeClients.length}</p>
+              <div className="p-4 rounded-lg bg-gray-100">
+                <p className="text-xs text-gray-400 mb-1">Active Subscriptions</p>
+                <p className="text-xl font-bold text-gray-900">{activeClients.length}</p>
               </div>
-              <div className="p-4 rounded-lg bg-zinc-800/50">
-                <p className="text-xs text-zinc-500 mb-1">Gross MRR</p>
-                <p className="text-xl font-bold text-zinc-100">{formatCents(monthlyRevenue)}</p>
+              <div className="p-4 rounded-lg bg-gray-100">
+                <p className="text-xs text-gray-400 mb-1">Gross MRR</p>
+                <p className="text-xl font-bold text-gray-900">{formatCents(monthlyRevenue)}</p>
               </div>
-              <div className="p-4 rounded-lg bg-zinc-800/50">
-                <p className="text-xs text-zinc-500 mb-1">Platform Fee (10%)</p>
-                <p className="text-xl font-bold text-red-400">−{formatCents(platformFee)}</p>
+              <div className="p-4 rounded-lg bg-gray-100">
+                <p className="text-xs text-gray-400 mb-1">Platform Fee (10%)</p>
+                <p className="text-xl font-bold text-red-600">−{formatCents(platformFee)}</p>
               </div>
-              <div className="p-4 rounded-lg bg-zinc-800/50">
-                <p className="text-xs text-zinc-500 mb-1">Your Net Revenue</p>
-                <p className="text-xl font-bold text-green-400">{formatCents(netRevenue)}</p>
+              <div className="p-4 rounded-lg bg-gray-100">
+                <p className="text-xs text-gray-400 mb-1">Your Net Revenue</p>
+                <p className="text-xl font-bold text-green-600">{formatCents(netRevenue)}</p>
               </div>
             </div>
           </CardContent>
@@ -610,18 +610,18 @@ export default function BillingClient({
         <CardContent>
           {billingRecords.length === 0 ? (
             <div className="text-center py-8">
-              <BarChart3 className="h-8 w-8 text-zinc-600 mx-auto mb-3" />
-              <p className="text-zinc-500">No billing records yet.</p>
-              <p className="text-xs text-zinc-600 mt-1">
+              <BarChart3 className="h-8 w-8 text-gray-500 mx-auto mb-3" />
+              <p className="text-gray-400">No billing records yet.</p>
+              <p className="text-xs text-gray-500 mt-1">
                 Transactions will appear here once billing starts.
               </p>
             </div>
           ) : (
-            <div className="rounded-lg border border-zinc-800 overflow-hidden">
+            <div className="rounded-lg border border-gray-200 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-zinc-400 text-left border-b border-zinc-800 bg-zinc-900/50">
+                    <tr className="text-gray-500 text-left border-b border-gray-200 bg-gray-50">
                       <th className="p-3 font-medium">Date</th>
                       <th className="p-3 font-medium">Type</th>
                       <th className="p-3 font-medium">Client</th>
@@ -632,18 +632,18 @@ export default function BillingClient({
                     {billingRecords.map((record) => (
                       <tr
                         key={record.id}
-                        className="border-b border-zinc-800/50 hover:bg-zinc-800/20 transition-colors"
+                        className="border-b border-gray-200 hover:bg-gray-100/20 transition-colors"
                       >
-                        <td className="p-3 text-zinc-300">{formatDate(record.created_at)}</td>
+                        <td className="p-3 text-gray-700">{formatDate(record.created_at)}</td>
                         <td className="p-3">
-                          <span className={typeColors[record.type] ?? 'text-zinc-400'}>
+                          <span className={typeColors[record.type] ?? 'text-gray-500'}>
                             {typeLabels[record.type] ?? record.type}
                           </span>
                         </td>
-                        <td className="p-3 text-zinc-400">
+                        <td className="p-3 text-gray-500">
                           {record.client?.name ?? '—'}
                         </td>
-                        <td className="p-3 text-right font-medium text-zinc-100">
+                        <td className="p-3 text-right font-medium text-gray-900">
                           {formatCents(record.amount_cents)}
                         </td>
                       </tr>

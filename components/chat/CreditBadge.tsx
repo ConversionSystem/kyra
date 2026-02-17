@@ -21,10 +21,10 @@ export function CreditBadge({ creditsUsed, creditsLimit, plan }: CreditBadgeProp
       href="/settings"
       className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all ${
         isZero
-          ? 'bg-red-500/15 text-red-400 ring-1 ring-red-500/30 animate-pulse'
+          ? 'bg-red-500/15 text-red-600 ring-1 ring-red-500/30 animate-pulse'
           : isLow
-          ? 'bg-amber-500/15 text-amber-400 ring-1 ring-amber-500/30'
-          : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-300'
+          ? 'bg-amber-500/15 text-amber-600 ring-1 ring-amber-500/30'
+          : 'bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700'
       }`}
       title={`${remaining} credits remaining (${plan} plan)`}
     >
@@ -57,14 +57,14 @@ export function CreditWarningBanner({ creditsUsed, creditsLimit }: CreditWarning
     <div
       className={`mx-auto max-w-3xl px-4 py-2 text-center text-sm ${
         isZero
-          ? 'bg-red-500/10 text-red-400'
-          : 'bg-amber-500/10 text-amber-400'
+          ? 'bg-red-50 text-red-600'
+          : 'bg-amber-50 text-amber-600'
       }`}
     >
       {isZero ? (
         <span>
           You&apos;ve used all your credits.{' '}
-          <Link href="/settings" className="underline font-medium hover:text-red-300">
+          <Link href="/settings" className="underline font-medium hover:text-red-600">
             Upgrade your plan
           </Link>{' '}
           to continue chatting.
@@ -72,7 +72,7 @@ export function CreditWarningBanner({ creditsUsed, creditsLimit }: CreditWarning
       ) : (
         <span>
           ⚡ Only {remaining} credits remaining.{' '}
-          <Link href="/settings" className="underline font-medium hover:text-amber-300">
+          <Link href="/settings" className="underline font-medium hover:text-amber-600">
             Upgrade
           </Link>{' '}
           for more.

@@ -10,9 +10,9 @@ import { Plus, Search } from 'lucide-react';
 import type { AgencyClient } from '@/lib/agency/queries';
 
 const statusColors: Record<string, string> = {
-  active: 'border-green-500/50 bg-green-500/10 text-green-400',
-  paused: 'border-yellow-500/50 bg-yellow-500/10 text-yellow-400',
-  setup: 'border-blue-500/50 bg-blue-500/10 text-blue-400',
+  active: 'border-green-200 bg-green-50 text-green-600',
+  paused: 'border-yellow-200 bg-yellow-50 text-yellow-600',
+  setup: 'border-blue-200 bg-blue-50 text-blue-600',
 };
 
 const statusFilters = ['all', 'active', 'paused', 'setup'] as const;
@@ -38,8 +38,8 @@ export function ClientsListView({ clients }: ClientsListViewProps) {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-100">Clients</h1>
-          <p className="text-sm text-zinc-400 mt-1">
+          <h1 className="text-2xl font-bold text-gray-900">Clients</h1>
+          <p className="text-sm text-gray-500 mt-1">
             {clients.length} client{clients.length !== 1 ? 's' : ''} total
           </p>
         </div>
@@ -54,12 +54,12 @@ export function ClientsListView({ clients }: ClientsListViewProps) {
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
             placeholder="Search clients..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 bg-zinc-900 border-zinc-700"
+            className="pl-10 bg-white border-gray-200"
           />
         </div>
         <div className="flex gap-2">
@@ -69,8 +69,8 @@ export function ClientsListView({ clients }: ClientsListViewProps) {
               onClick={() => setStatusFilter(filter)}
               className={`rounded-lg border px-3 py-2 text-xs font-medium capitalize transition-colors ${
                 statusFilter === filter
-                  ? 'border-zinc-600 bg-zinc-800 text-zinc-100'
-                  : 'border-zinc-800 bg-zinc-900 text-zinc-500 hover:text-zinc-300 hover:border-zinc-700'
+                  ? 'border-gray-300 bg-gray-100 text-gray-900'
+                  : 'border-gray-200 bg-white text-gray-400 hover:text-gray-700 hover:border-gray-200'
               }`}
             >
               {filter}
@@ -83,7 +83,7 @@ export function ClientsListView({ clients }: ClientsListViewProps) {
       {filtered.length === 0 ? (
         <Card>
           <CardContent className="p-8 text-center">
-            <p className="text-zinc-500">
+            <p className="text-gray-400">
               {clients.length === 0
                 ? 'No clients yet. Create your first one!'
                 : 'No clients match your filters.'}
@@ -99,11 +99,11 @@ export function ClientsListView({ clients }: ClientsListViewProps) {
           </CardContent>
         </Card>
       ) : (
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900 overflow-hidden">
+        <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-zinc-400 text-left border-b border-zinc-800">
+                <tr className="text-gray-500 text-left border-b border-gray-200">
                   <th className="p-4 font-medium">Client</th>
                   <th className="p-4 font-medium">Industry</th>
                   <th className="p-4 font-medium">Status</th>
@@ -116,35 +116,35 @@ export function ClientsListView({ clients }: ClientsListViewProps) {
                 {filtered.map((client) => (
                   <tr
                     key={client.id}
-                    className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors"
+                    className="border-b border-gray-200 hover:bg-gray-50 transition-colors"
                   >
                     <td className="p-4">
                       <Link
                         href={`/agency/clients/${client.id}`}
-                        className="flex items-center gap-3 hover:text-indigo-400 transition-colors"
+                        className="flex items-center gap-3 hover:text-indigo-600 transition-colors"
                       >
-                        <div className="h-8 w-8 rounded-lg bg-zinc-700 flex items-center justify-center text-xs font-semibold text-zinc-300 shrink-0">
+                        <div className="h-8 w-8 rounded-lg bg-gray-200 flex items-center justify-center text-xs font-semibold text-gray-700 shrink-0">
                           {client.name.charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <p className="font-medium text-zinc-100">{client.name}</p>
-                          <p className="text-xs text-zinc-500">{client.slug}</p>
+                          <p className="font-medium text-gray-900">{client.name}</p>
+                          <p className="text-xs text-gray-400">{client.slug}</p>
                         </div>
                       </Link>
                     </td>
-                    <td className="p-4 text-zinc-300">{client.industry || '—'}</td>
+                    <td className="p-4 text-gray-700">{client.industry || '—'}</td>
                     <td className="p-4">
                       <Badge className={statusColors[client.status]}>
                         {client.status}
                       </Badge>
                     </td>
-                    <td className="p-4 text-zinc-400 text-xs">
+                    <td className="p-4 text-gray-500 text-xs">
                       {client.template?.name ?? '—'}
                     </td>
-                    <td className="p-4 text-right text-zinc-300">
+                    <td className="p-4 text-right text-gray-700">
                       {client.usage_this_month.toLocaleString()}
                     </td>
-                    <td className="p-4 text-zinc-400 text-xs">
+                    <td className="p-4 text-gray-500 text-xs">
                       {new Date(client.created_at).toLocaleDateString('en-US', {
                         month: 'short',
                         day: 'numeric',

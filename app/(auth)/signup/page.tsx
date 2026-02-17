@@ -14,7 +14,7 @@ import { Suspense } from 'react';
 export default function SignupPageWrapper() {
   return (
     <Suspense fallback={
-      <div className="flex min-h-screen items-center justify-center bg-zinc-950">
+      <div className="flex min-h-screen items-center justify-center bg-white">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
       </div>
     }>
@@ -132,14 +132,14 @@ function SignupPage() {
 
   if (success) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-950 px-4">
+      <div className="flex min-h-screen items-center justify-center bg-white px-4">
         <Card className="w-full max-w-md">
           <CardContent className="pt-6 text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-500/20">
-              <CheckCircle className="h-6 w-6 text-green-400" />
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-50">
+              <CheckCircle className="h-6 w-6 text-green-600" />
             </div>
-            <h2 className="mb-2 text-xl font-semibold text-zinc-100">Check your email</h2>
-            <p className="text-zinc-400">
+            <h2 className="mb-2 text-xl font-semibold text-gray-900">Check your email</h2>
+            <p className="text-gray-500">
               We've sent you a confirmation link to <strong>{email}</strong>. 
               Click it to activate your account.
             </p>
@@ -153,18 +153,18 @@ function SignupPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-950 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-white px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600">
-            <Sparkles className="h-6 w-6 text-white" />
+            <Sparkles className="h-6 w-6 text-gray-900" />
           </div>
           <CardTitle className="text-2xl">Create an account</CardTitle>
           <CardDescription>Get started with your personal AI assistant</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {error && (
-            <div className="rounded-md bg-red-500/10 px-4 py-3 text-sm text-red-400">
+            <div className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-600">
               {error}
             </div>
           )}
@@ -202,16 +202,16 @@ function SignupPage() {
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-zinc-700" />
+              <span className="w-full border-t border-gray-200" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-zinc-900 px-2 text-zinc-400">Or continue with email</span>
+              <span className="bg-white px-2 text-gray-500">Or continue with email</span>
             </div>
           </div>
 
           <form onSubmit={handleEmailSignup} className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="name" className="text-sm font-medium text-zinc-200">
+              <label htmlFor="name" className="text-sm font-medium text-gray-800">
                 Name
               </label>
               <Input
@@ -225,7 +225,7 @@ function SignupPage() {
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium text-zinc-200">
+              <label htmlFor="email" className="text-sm font-medium text-gray-800">
                 Email
               </label>
               <Input
@@ -239,7 +239,7 @@ function SignupPage() {
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium text-zinc-200">
+              <label htmlFor="password" className="text-sm font-medium text-gray-800">
                 Password
               </label>
               <Input
@@ -252,7 +252,7 @@ function SignupPage() {
                 minLength={8}
                 disabled={isLoading || isGoogleLoading}
               />
-              <p className="text-xs text-zinc-500">Must be at least 8 characters</p>
+              <p className="text-xs text-gray-400">Must be at least 8 characters</p>
             </div>
             <Button
               type="submit"
@@ -266,9 +266,9 @@ function SignupPage() {
             </Button>
           </form>
 
-          <p className="text-center text-sm text-zinc-400">
+          <p className="text-center text-sm text-gray-500">
             Already have an account?{' '}
-            <Link href="/login" className="text-zinc-100 hover:underline">
+            <Link href="/login" className="text-gray-900 hover:underline">
               Sign in
             </Link>
           </p>

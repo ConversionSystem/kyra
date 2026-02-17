@@ -55,22 +55,22 @@ export function SearchResults({ query, sources }: SearchResultsProps) {
   if (!sources.length) return null;
 
   return (
-    <div className="mb-3 rounded-lg border border-zinc-800 bg-zinc-900/60 overflow-hidden">
+    <div className="mb-3 rounded-lg border border-gray-200 bg-white/60 overflow-hidden">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center gap-2 px-3 py-2 text-xs text-zinc-400 hover:bg-zinc-800/50 transition-colors"
+        className="flex w-full items-center gap-2 px-3 py-2 text-xs text-gray-500 hover:bg-gray-100 transition-colors"
       >
-        <Search className="h-3 w-3 text-indigo-400" />
-        <span className="font-medium text-zinc-300">Searched the web</span>
-        <span className="text-zinc-500">· {sources.length} source{sources.length !== 1 ? 's' : ''}</span>
+        <Search className="h-3 w-3 text-indigo-600" />
+        <span className="font-medium text-gray-700">Searched the web</span>
+        <span className="text-gray-400">· {sources.length} source{sources.length !== 1 ? 's' : ''}</span>
         <span className="ml-auto">
           {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
         </span>
       </button>
 
       {expanded && (
-        <div className="border-t border-zinc-800 px-3 py-2 space-y-1.5">
-          <p className="text-xs text-zinc-500 mb-2">
+        <div className="border-t border-gray-200 px-3 py-2 space-y-1.5">
+          <p className="text-xs text-gray-400 mb-2">
             Search: &quot;{query}&quot;
           </p>
           {sources.map((source, i) => (
@@ -79,7 +79,7 @@ export function SearchResults({ query, sources }: SearchResultsProps) {
               href={source.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-zinc-800 transition-colors group"
+              className="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-gray-100 transition-colors group"
             >
               {getFaviconUrl(source.url) ? (
                 <img
@@ -89,12 +89,12 @@ export function SearchResults({ query, sources }: SearchResultsProps) {
                   onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                 />
               ) : (
-                <Globe className="h-3 w-3 text-zinc-500" />
+                <Globe className="h-3 w-3 text-gray-400" />
               )}
-              <span className="text-zinc-300 group-hover:text-indigo-400 truncate flex-1">
+              <span className="text-gray-700 group-hover:text-indigo-600 truncate flex-1">
                 {source.title}
               </span>
-              <ExternalLink className="h-3 w-3 text-zinc-600 group-hover:text-zinc-400 flex-shrink-0" />
+              <ExternalLink className="h-3 w-3 text-gray-500 group-hover:text-gray-500 flex-shrink-0" />
             </a>
           ))}
         </div>

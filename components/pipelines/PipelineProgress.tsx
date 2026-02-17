@@ -35,11 +35,11 @@ const STATUS_ICONS: Record<string, typeof Circle> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  pending: 'text-zinc-600',
-  running: 'text-indigo-400 animate-spin',
-  completed: 'text-emerald-400',
-  failed: 'text-red-400',
-  skipped: 'text-zinc-700',
+  pending: 'text-gray-500',
+  running: 'text-indigo-600 animate-spin',
+  completed: 'text-emerald-600',
+  failed: 'text-red-600',
+  skipped: 'text-gray-300',
 };
 
 export function PipelineProgress({
@@ -69,29 +69,29 @@ export function PipelineProgress({
   };
 
   return (
-    <div className="my-3 overflow-hidden rounded-xl border border-zinc-700/50 bg-zinc-900/80">
+    <div className="my-3 overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
       {/* Header */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-zinc-800/50"
+        className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-gray-100"
       >
         <div className="flex items-center gap-3">
           <div className="relative h-8 w-8">
             <svg className="h-8 w-8 -rotate-90" viewBox="0 0 32 32">
-              <circle cx="16" cy="16" r="12" fill="none" stroke="currentColor" strokeWidth="3" className="text-zinc-800" />
+              <circle cx="16" cy="16" r="12" fill="none" stroke="currentColor" strokeWidth="3" className="text-gray-100" />
               <circle
                 cx="16" cy="16" r="12" fill="none" stroke="currentColor" strokeWidth="3"
                 strokeDasharray={`${progress * 0.754} 100`}
                 className="text-indigo-500 transition-all duration-500"
               />
             </svg>
-            <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-zinc-300">
+            <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-gray-700">
               {completedSteps}/{steps.length}
             </span>
           </div>
           <div>
-            <p className="text-sm font-medium text-zinc-200">{title}</p>
-            <p className="text-xs text-zinc-500">
+            <p className="text-sm font-medium text-gray-800">{title}</p>
+            <p className="text-xs text-gray-400">
               {status === 'completed' ? 'Completed' :
                status === 'paused' ? 'Waiting for approval' :
                status === 'running' ? `Step ${currentStep} of ${steps.length}` :
@@ -100,34 +100,34 @@ export function PipelineProgress({
             </p>
           </div>
         </div>
-        {expanded ? <ChevronUp className="h-4 w-4 text-zinc-600" /> : <ChevronDown className="h-4 w-4 text-zinc-600" />}
+        {expanded ? <ChevronUp className="h-4 w-4 text-gray-500" /> : <ChevronDown className="h-4 w-4 text-gray-500" />}
       </button>
 
       {/* Steps */}
       {expanded && (
-        <div className="border-t border-zinc-800 px-4 py-3">
+        <div className="border-t border-gray-200 px-4 py-3">
           <div className="space-y-1">
             {steps.map((step, i) => {
               const Icon = STATUS_ICONS[step.status] || Circle;
-              const colorClass = STATUS_COLORS[step.status] || 'text-zinc-600';
+              const colorClass = STATUS_COLORS[step.status] || 'text-gray-500';
               
               return (
                 <div key={step.id} className="flex items-start gap-3 py-1.5">
                   <div className="mt-0.5 flex flex-col items-center">
                     <Icon className={`h-4 w-4 ${colorClass}`} />
                     {i < steps.length - 1 && (
-                      <div className={`mt-1 h-4 w-px ${step.status === 'completed' ? 'bg-emerald-500/30' : 'bg-zinc-800'}`} />
+                      <div className={`mt-1 h-4 w-px ${step.status === 'completed' ? 'bg-emerald-500/30' : 'bg-gray-100'}`} />
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className={`text-sm ${step.status === 'completed' ? 'text-zinc-300' : step.status === 'running' ? 'text-zinc-200' : 'text-zinc-500'}`}>
+                    <p className={`text-sm ${step.status === 'completed' ? 'text-gray-700' : step.status === 'running' ? 'text-gray-800' : 'text-gray-400'}`}>
                       {step.name}
                     </p>
                     {step.status === 'failed' && step.error && (
-                      <p className="mt-0.5 text-xs text-red-400">{step.error}</p>
+                      <p className="mt-0.5 text-xs text-red-600">{step.error}</p>
                     )}
                   </div>
-                  <span className="shrink-0 text-[10px] text-zinc-700">{step.credit_cost}cr</span>
+                  <span className="shrink-0 text-[10px] text-gray-300">{step.credit_cost}cr</span>
                 </div>
               );
             })}
@@ -136,8 +136,8 @@ export function PipelineProgress({
           {/* Approval Button */}
           {status === 'paused' && (
             <div className="mt-3 flex items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 p-3">
-              <PauseCircle className="h-4 w-4 shrink-0 text-amber-400" />
-              <p className="flex-1 text-xs text-amber-300">
+              <PauseCircle className="h-4 w-4 shrink-0 text-amber-600" />
+              <p className="flex-1 text-xs text-amber-600">
                 This step needs your approval before Kyra continues.
               </p>
               <Button

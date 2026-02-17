@@ -20,9 +20,9 @@ import type { Agency, AgencyMember, AgencyRole, AgencySettings } from '@/lib/age
 // ---------- Role helpers ----------
 
 const roleConfig: Record<AgencyRole, { label: string; icon: typeof Crown; color: string }> = {
-  owner: { label: 'Owner', icon: Crown, color: 'border-amber-500/50 bg-amber-500/10 text-amber-400' },
-  admin: { label: 'Admin', icon: Shield, color: 'border-indigo-500/50 bg-indigo-500/10 text-indigo-400' },
-  member: { label: 'Member', icon: User, color: 'border-zinc-500/50 bg-zinc-500/10 text-zinc-400' },
+  owner: { label: 'Owner', icon: Crown, color: 'border-amber-200 bg-amber-50 text-amber-600' },
+  admin: { label: 'Admin', icon: Shield, color: 'border-indigo-200 bg-indigo-50 text-indigo-600' },
+  member: { label: 'Member', icon: User, color: 'border-gray-500/50 bg-gray-500/10 text-gray-500' },
 };
 
 // ---------- Types ----------
@@ -170,34 +170,34 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-zinc-300">Agency Name</label>
+            <label className="text-sm font-medium text-gray-700">Agency Name</label>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
               disabled={!isAdmin}
-              className="bg-zinc-800 border-zinc-700 max-w-md"
+              className="bg-gray-100 border-gray-200 max-w-md"
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-zinc-300">Slug</label>
+            <label className="text-sm font-medium text-gray-700">Slug</label>
             <Input
               value={agency.slug}
               disabled
-              className="bg-zinc-800/50 border-zinc-700 font-mono text-xs text-zinc-500 max-w-md"
+              className="bg-gray-100 border-gray-200 font-mono text-xs text-gray-400 max-w-md"
             />
-            <p className="text-xs text-zinc-500">Slug cannot be changed after creation.</p>
+            <p className="text-xs text-gray-400">Slug cannot be changed after creation.</p>
           </div>
 
           {isAdmin && (
             <div className="pt-2">
               {saveError && (
-                <div className="rounded-md bg-red-500/10 border border-red-500/30 px-4 py-2.5 text-sm text-red-400 mb-3">
+                <div className="rounded-md bg-red-50 border border-red-500/30 px-4 py-2.5 text-sm text-red-600 mb-3">
                   {saveError}
                 </div>
               )}
               {saveSuccess && (
-                <div className="rounded-md bg-green-500/10 border border-green-500/30 px-4 py-2.5 text-sm text-green-400 mb-3">
+                <div className="rounded-md bg-green-50 border border-green-500/30 px-4 py-2.5 text-sm text-green-600 mb-3">
                   Settings saved successfully.
                 </div>
               )}
@@ -216,7 +216,7 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
           <div className="flex items-center gap-3">
             <CardTitle>White-label Settings</CardTitle>
             {!isPremium && (
-              <Badge className="border-indigo-500/50 bg-indigo-500/10 text-indigo-400 text-[10px]">
+              <Badge className="border-indigo-200 bg-indigo-50 text-indigo-600 text-[10px]">
                 Pro / Scale
               </Badge>
             )}
@@ -229,52 +229,52 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-zinc-300">Logo URL</label>
+            <label className="text-sm font-medium text-gray-700">Logo URL</label>
             <Input
               value={logoUrl}
               onChange={(e) => setLogoUrl(e.target.value)}
               placeholder="https://example.com/logo.png"
               disabled={!isPremium || !isAdmin}
-              className="bg-zinc-800 border-zinc-700 max-w-md"
+              className="bg-gray-100 border-gray-200 max-w-md"
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-zinc-300">Primary Color</label>
+            <label className="text-sm font-medium text-gray-700">Primary Color</label>
             <div className="flex items-center gap-3 max-w-md">
               <Input
                 value={primaryColor}
                 onChange={(e) => setPrimaryColor(e.target.value)}
                 placeholder="#8b5cf6"
                 disabled={!isPremium || !isAdmin}
-                className="bg-zinc-800 border-zinc-700 font-mono text-sm flex-1"
+                className="bg-gray-100 border-gray-200 font-mono text-sm flex-1"
               />
               <div
-                className="h-9 w-9 rounded-md border border-zinc-700 shrink-0"
+                className="h-9 w-9 rounded-md border border-gray-200 shrink-0"
                 style={{ backgroundColor: primaryColor }}
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-zinc-300">Company Name Override</label>
+            <label className="text-sm font-medium text-gray-700">Company Name Override</label>
             <Input
               value={companyName}
               onChange={(e) => setCompanyName(e.target.value)}
               placeholder="Your Brand Name"
               disabled={!isPremium || !isAdmin}
-              className="bg-zinc-800 border-zinc-700 max-w-md"
+              className="bg-gray-100 border-gray-200 max-w-md"
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-zinc-300">Support Email</label>
+            <label className="text-sm font-medium text-gray-700">Support Email</label>
             <Input
               value={supportEmail}
               onChange={(e) => setSupportEmail(e.target.value)}
               placeholder="support@example.com"
               disabled={!isPremium || !isAdmin}
-              className="bg-zinc-800 border-zinc-700 max-w-md"
+              className="bg-gray-100 border-gray-200 max-w-md"
             />
           </div>
 
@@ -305,17 +305,17 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
               return (
                 <div
                   key={member.id}
-                  className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-800/30 p-4"
+                  className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 p-4"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-full bg-zinc-700 flex items-center justify-center text-sm font-semibold text-zinc-300">
+                    <div className="h-9 w-9 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold text-gray-700">
                       {(member.user?.email?.[0] ?? '?').toUpperCase()}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-zinc-100">
+                      <p className="text-sm font-medium text-gray-900">
                         {member.user?.email ?? 'Unknown user'}
                       </p>
-                      <p className="text-xs text-zinc-500">
+                      <p className="text-xs text-gray-400">
                         Joined {new Date(member.created_at).toLocaleDateString('en-US', {
                           month: 'short',
                           day: 'numeric',
@@ -333,7 +333,7 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
                       <button
                         onClick={() => handleRemoveMember(member.id)}
                         disabled={removingId === member.id}
-                        className="text-zinc-500 hover:text-red-400 transition-colors p-1"
+                        className="text-gray-400 hover:text-red-600 transition-colors p-1"
                         title="Remove member"
                       >
                         {removingId === member.id ? (
@@ -351,15 +351,15 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
 
           {/* Invite form */}
           {isAdmin && (
-            <form onSubmit={handleInvite} className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-4">
-              <p className="text-sm font-medium text-zinc-300 mb-3">Invite New Member</p>
+            <form onSubmit={handleInvite} className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+              <p className="text-sm font-medium text-gray-700 mb-3">Invite New Member</p>
               {inviteError && (
-                <div className="rounded-md bg-red-500/10 border border-red-500/30 px-3 py-2 text-sm text-red-400 mb-3">
+                <div className="rounded-md bg-red-50 border border-red-500/30 px-3 py-2 text-sm text-red-600 mb-3">
                   {inviteError}
                 </div>
               )}
               {inviteSuccess && (
-                <div className="rounded-md bg-green-500/10 border border-green-500/30 px-3 py-2 text-sm text-green-400 mb-3">
+                <div className="rounded-md bg-green-50 border border-green-500/30 px-3 py-2 text-sm text-green-600 mb-3">
                   Invitation sent successfully.
                 </div>
               )}
@@ -370,12 +370,12 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
                   onChange={(e) => setInviteEmail(e.target.value)}
                   placeholder="email@example.com"
                   required
-                  className="bg-zinc-800 border-zinc-700 flex-1"
+                  className="bg-gray-100 border-gray-200 flex-1"
                 />
                 <select
                   value={inviteRole}
                   onChange={(e) => setInviteRole(e.target.value as 'admin' | 'member')}
-                  className="rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100"
+                  className="rounded-md border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-900"
                 >
                   <option value="member">Member</option>
                   <option value="admin">Admin</option>
@@ -398,7 +398,7 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
       {isOwner && (
         <Card className="border-red-500/20">
           <CardHeader>
-            <CardTitle className="text-red-400">Danger Zone</CardTitle>
+            <CardTitle className="text-red-600">Danger Zone</CardTitle>
             <CardDescription>
               Irreversible actions. Please be careful.
             </CardDescription>
@@ -408,14 +408,14 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
               <Button
                 variant="outline"
                 onClick={() => setShowDeleteConfirm(true)}
-                className="border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300 gap-2"
+                className="border-red-500/30 text-red-600 hover:bg-red-50 hover:text-red-600 gap-2"
               >
                 <Trash2 className="h-4 w-4" />
                 Delete Agency
               </Button>
             ) : (
               <div className="rounded-lg border border-red-500/30 bg-red-500/5 p-4">
-                <p className="text-sm text-red-300 mb-3">
+                <p className="text-sm text-red-600 mb-3">
                   Type <span className="font-mono font-bold">{agency.slug}</span> to confirm
                   deletion. This will permanently remove your agency, all clients, and all data.
                 </p>
@@ -424,12 +424,12 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
                     value={deleteConfirmText}
                     onChange={(e) => setDeleteConfirmText(e.target.value)}
                     placeholder={agency.slug}
-                    className="bg-zinc-900 border-red-500/30 font-mono text-sm max-w-xs"
+                    className="bg-white border-red-500/30 font-mono text-sm max-w-xs"
                   />
                   <Button
                     variant="outline"
                     disabled={deleteConfirmText !== agency.slug}
-                    className="border-red-500/50 text-red-400 hover:bg-red-500/20 gap-2 shrink-0"
+                    className="border-red-200 text-red-600 hover:bg-red-50 gap-2 shrink-0"
                   >
                     <Trash2 className="h-4 w-4" />
                     Confirm Delete

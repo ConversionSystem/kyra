@@ -19,7 +19,7 @@ export default async function AgencyLayout({
   const { agency, role } = result;
 
   return (
-    <div className="min-h-screen bg-zinc-950 flex">
+    <div className="min-h-screen bg-white flex">
       <AgencySidebar agencyName={agency.name} plan={agency.plan} />
       <main className="flex-1 min-h-screen overflow-y-auto">
         {children}
