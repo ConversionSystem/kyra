@@ -9,7 +9,12 @@
 // 2. For each client, search conversations with inbound unread messages
 // 3. For each conversation, get messages and find new inbound ones
 // 4. Skip if we already replied (outbound message is newer than latest inbound)
-// 5. Process through AI bridge and send reply via GHL API
+// 5. Process through REAL OpenClaw Gateway (via Kyra Bridge on Fly.io)
+//
+// Architecture:
+//   Poller → HTTP POST /chat → Kyra Bridge → OpenClaw Gateway (real AI)
+//   The bridge runs alongside a real `openclaw gateway` instance.
+//   All responses come from OpenClaw with full skills, memory, and tools.
 // ============================================================================
 
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
@@ -369,7 +374,10 @@ async function processConversation(
     throw new Error('Missing KYRA_WORKER_URL env var');
   }
 
-  // Call the Fly bridge for AI response — pass BYOK key if available
+  // Call the OpenClaw Bridge (real OpenClaw Gateway on Fly.io)
+  // The gateway uses its own API keys (set as Fly secrets).
+  // BYOK keys from Supabase are logged for tracking — multi-gateway
+  // per-agency key routing will be added in a future phase.
   const bridgePayload: Record<string, unknown> = {
     message: latestInbound.body,
     sessionKey,
@@ -377,10 +385,7 @@ async function processConversation(
   };
 
   if (byokKey) {
-    bridgePayload.apiKey = byokKey.apiKey;
-    bridgePayload.provider = byokKey.provider;
-    if (byokKey.model) bridgePayload.model = byokKey.model;
-    console.log(`[ghl/poller] Using BYOK key (${byokKey.provider}) for agency`);
+    console.log(`[ghl/poller] Agency has BYOK key (${byokKey.provider}) — gateway uses its own keys for now`);
   }
 
   const bridgeRes = await fetch(`${bridgeUrl}/chat`, {
