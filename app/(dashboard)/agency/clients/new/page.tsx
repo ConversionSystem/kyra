@@ -9,7 +9,7 @@ export default async function NewClientPage() {
   if (!user) redirect('/login');
 
   const result = await getAgencyForUser(user.id);
-  if (!result) redirect('/chat');
+  if (!result) redirect('/signup/agency');
 
   const templates = await getAgencyTemplates(result.agency.id);
 
