@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
@@ -9,9 +10,10 @@ import {
   FileText,
   KeyRound,
   Settings,
-  ChevronLeft,
   Mic,
   Sparkles,
+  Menu,
+  X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AgencySettings } from '@/lib/agency/types';
@@ -41,22 +43,31 @@ interface AgencySidebarProps {
 
 export function AgencySidebar({ agencyName, plan, settings }: AgencySidebarProps) {
   const pathname = usePathname();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-  // Branding overrides — fall back to defaults when not set
+  // Close mobile sidebar on route change
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
+  // Prevent body scroll when mobile sidebar is open
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [mobileOpen]);
+
   const logoUrl = settings?.logo_url;
   const primaryColor = settings?.primary_color;
   const companyName = settings?.company_name || agencyName;
   const isPremium = true; // All features unlocked during beta
   const hasBranding = isPremium && primaryColor;
 
-  return (
-    <aside
-      className={cn(
-        'w-64 border-r flex flex-col shrink-0',
-        hasBranding ? 'border-white/10' : 'border-gray-800 bg-gray-900'
-      )}
-      style={hasBranding ? { backgroundColor: primaryColor } : undefined}
-    >
+  const sidebarContent = (
+    <>
       {/* Header */}
       <div
         className={cn(
@@ -64,44 +75,33 @@ export function AgencySidebar({ agencyName, plan, settings }: AgencySidebarProps
           hasBranding ? 'border-white/10' : 'border-gray-800'
         )}
       >
-        <Link
-          href="/chat"
-          className={cn(
-            'flex items-center gap-2 text-xs transition-colors mb-3',
-            hasBranding
-              ? 'text-white/60 hover:text-white/80'
-              : 'text-gray-400 hover:text-gray-300'
-          )}
-        >
-          <ChevronLeft className="h-3 w-3" />
-          Back to Chat
-        </Link>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3 min-w-0">
+            {isPremium && logoUrl ? (
+              <div className="h-9 w-9 rounded-lg bg-white/20 flex items-center justify-center overflow-hidden shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={logoUrl}
+                  alt={`${companyName} logo`}
+                  className="h-full w-full object-contain p-0.5"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
+              </div>
+            ) : null}
+            <h2 className={cn('text-lg font-semibold truncate', 'text-white')}>
+              {companyName}
+            </h2>
+          </div>
 
-        <div className="flex items-center gap-3">
-          {/* Agency logo */}
-          {isPremium && logoUrl ? (
-            <div className="h-9 w-9 rounded-lg bg-white/20 flex items-center justify-center overflow-hidden shrink-0">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={logoUrl}
-                alt={`${companyName} logo`}
-                className="h-full w-full object-contain p-0.5"
-                onError={(e) => {
-                  // Hide broken image and let the name show alone
-                  (e.target as HTMLImageElement).style.display = 'none';
-                }}
-              />
-            </div>
-          ) : null}
-
-          <h2
-            className={cn(
-              'text-lg font-semibold truncate',
-              hasBranding ? 'text-white' : 'text-white'
-            )}
+          {/* Mobile close button */}
+          <button
+            onClick={() => setMobileOpen(false)}
+            className="lg:hidden p-1 rounded text-gray-400 hover:text-white"
           >
-            {companyName}
-          </h2>
+            <X className="h-5 w-5" />
+          </button>
         </div>
 
         <Badge className={cn('mt-2 capitalize', planColors[plan] ?? planColors.starter)}>
@@ -121,8 +121,9 @@ export function AgencySidebar({ agencyName, plan, settings }: AgencySidebarProps
             <Link
               key={item.href}
               href={item.href}
+              onClick={() => setMobileOpen(false)}
               className={cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
+                'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors',
                 isActive
                   ? hasBranding
                     ? 'bg-white/20 text-white font-medium'
@@ -139,13 +140,60 @@ export function AgencySidebar({ agencyName, plan, settings }: AgencySidebarProps
         })}
       </nav>
 
-      {/* 
-        TODO: Client-facing chat page 
-        When a public/embed chat page exists for agency clients, apply branding
-        (logo_url, company_name, primary_color, accent_color) from AgencySettings
-        to that page as well. Currently no client-facing chat page exists — only
-        the agency dashboard chat at /chat.
-      */}
-    </aside>
+      {/* Footer */}
+      <div className={cn('p-4 border-t text-xs', hasBranding ? 'border-white/10 text-white/40' : 'border-gray-800 text-gray-600')}>
+        Powered by Kyra
+      </div>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile top bar */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-gray-900 border-b border-gray-800 flex items-center px-4 gap-3">
+        <button
+          onClick={() => setMobileOpen(true)}
+          className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+          aria-label="Open menu"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+        <h1 className="text-sm font-semibold text-white truncate">{companyName}</h1>
+        <Badge className={cn('ml-auto capitalize text-[10px]', planColors[plan] ?? planColors.starter)}>
+          {plan}
+        </Badge>
+      </div>
+
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div
+          className="lg:hidden fixed inset-0 z-50 bg-black/50"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      {/* Mobile sidebar (slide-in) */}
+      <aside
+        className={cn(
+          'lg:hidden fixed top-0 left-0 bottom-0 z-50 w-72 flex flex-col transition-transform duration-200 ease-in-out',
+          mobileOpen ? 'translate-x-0' : '-translate-x-full',
+          hasBranding ? '' : 'bg-gray-900'
+        )}
+        style={hasBranding ? { backgroundColor: primaryColor } : undefined}
+      >
+        {sidebarContent}
+      </aside>
+
+      {/* Desktop sidebar (always visible) */}
+      <aside
+        className={cn(
+          'hidden lg:flex w-64 border-r flex-col shrink-0',
+          hasBranding ? 'border-white/10' : 'border-gray-800 bg-gray-900'
+        )}
+        style={hasBranding ? { backgroundColor: primaryColor } : undefined}
+      >
+        {sidebarContent}
+      </aside>
+    </>
   );
 }
