@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,8 +14,12 @@ import {
   Crown,
   Shield,
   User,
+  ImageIcon,
+  Palette,
+  Globe,
 } from 'lucide-react';
 import type { Agency, AgencyMember, AgencyRole, AgencySettings } from '@/lib/agency/types';
+import { BrandingPreview } from './branding-preview';
 
 // ---------- Role helpers ----------
 
@@ -53,12 +57,15 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
-  // --- White-label settings ---
+  // --- White-label / branding settings ---
   const settings = (agency.settings ?? {}) as AgencySettings;
   const [logoUrl, setLogoUrl] = useState(settings.logo_url ?? '');
   const [primaryColor, setPrimaryColor] = useState(settings.primary_color ?? '#8b5cf6');
+  const [accentColor, setAccentColor] = useState(settings.accent_color ?? '#6366f1');
   const [companyName, setCompanyName] = useState(settings.company_name ?? '');
+  const [customDomain, setCustomDomain] = useState(settings.custom_domain ?? '');
   const [supportEmail, setSupportEmail] = useState(settings.support_email ?? '');
+  const [logoError, setLogoError] = useState(false);
 
   // --- Invite form ---
   const [inviteEmail, setInviteEmail] = useState('');
@@ -90,7 +97,9 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
           settings: {
             logo_url: logoUrl.trim() || undefined,
             primary_color: primaryColor.trim() || undefined,
+            accent_color: accentColor.trim() || undefined,
             company_name: companyName.trim() || undefined,
+            custom_domain: customDomain.trim() || undefined,
             support_email: supportEmail.trim() || undefined,
           },
         }),
@@ -210,11 +219,14 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
         </CardContent>
       </Card>
 
-      {/* White-label Settings */}
+      {/* Branding Settings */}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
-            <CardTitle>White-label Settings</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Palette className="h-5 w-5 text-indigo-500" />
+              Branding
+            </CardTitle>
             {!isPremium && (
               <Badge className="border-indigo-200 bg-indigo-50 text-indigo-600 text-[10px]">
                 Pro / Scale
@@ -223,69 +235,179 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
           </div>
           <CardDescription>
             {isPremium
-              ? 'Customize the branding your clients see'
-              : 'Upgrade to Pro or Scale to customize branding for your clients'}
+              ? 'Customize the branding your clients see — logo, colors, and company name replace Kyra branding throughout the platform.'
+              : 'Upgrade to Pro or Scale to white-label the platform with your own branding.'}
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Logo URL</label>
-            <Input
-              value={logoUrl}
-              onChange={(e) => setLogoUrl(e.target.value)}
-              placeholder="https://example.com/logo.png"
-              disabled={!isPremium || !isAdmin}
-              className="bg-gray-100 border-gray-200 max-w-md"
-            />
-          </div>
+        <CardContent>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Left column — form fields */}
+            <div className="space-y-5">
+              {/* Logo */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Logo</label>
+                <div className="flex items-start gap-4">
+                  {/* Logo preview */}
+                  <div className="h-16 w-16 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 flex items-center justify-center overflow-hidden shrink-0">
+                    {logoUrl && !logoError ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={logoUrl}
+                        alt="Agency logo"
+                        className="h-full w-full object-contain p-1"
+                        onError={() => setLogoError(true)}
+                      />
+                    ) : (
+                      <ImageIcon className="h-6 w-6 text-gray-400" />
+                    )}
+                  </div>
+                  <div className="flex-1 space-y-1.5">
+                    <Input
+                      value={logoUrl}
+                      onChange={(e) => {
+                        setLogoUrl(e.target.value);
+                        setLogoError(false);
+                      }}
+                      placeholder="https://example.com/logo.png"
+                      disabled={!isPremium || !isAdmin}
+                      className="bg-gray-100 border-gray-200"
+                    />
+                    <p className="text-xs text-gray-400">
+                      Enter a URL to your logo image. Recommended: square, at least 128×128px.
+                    </p>
+                  </div>
+                </div>
+              </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Primary Color</label>
-            <div className="flex items-center gap-3 max-w-md">
-              <Input
-                value={primaryColor}
-                onChange={(e) => setPrimaryColor(e.target.value)}
-                placeholder="#8b5cf6"
-                disabled={!isPremium || !isAdmin}
-                className="bg-gray-100 border-gray-200 font-mono text-sm flex-1"
+              {/* Company name */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Company Name</label>
+                <Input
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  placeholder="Your Brand Name"
+                  disabled={!isPremium || !isAdmin}
+                  className="bg-gray-100 border-gray-200"
+                />
+                <p className="text-xs text-gray-400">
+                  Replaces &quot;Kyra&quot; branding in the client-facing dashboard.
+                </p>
+              </div>
+
+              {/* Primary color */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Primary Color</label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="color"
+                    value={primaryColor || '#8b5cf6'}
+                    onChange={(e) => setPrimaryColor(e.target.value)}
+                    disabled={!isPremium || !isAdmin}
+                    className="h-9 w-9 rounded-md border border-gray-200 cursor-pointer shrink-0 p-0.5 bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                  <Input
+                    value={primaryColor}
+                    onChange={(e) => setPrimaryColor(e.target.value)}
+                    placeholder="#8b5cf6"
+                    disabled={!isPremium || !isAdmin}
+                    className="bg-gray-100 border-gray-200 font-mono text-sm flex-1"
+                  />
+                </div>
+                <p className="text-xs text-gray-400">
+                  Used for the sidebar, navigation highlights, and primary buttons.
+                </p>
+              </div>
+
+              {/* Accent color */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Accent Color</label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="color"
+                    value={accentColor || '#6366f1'}
+                    onChange={(e) => setAccentColor(e.target.value)}
+                    disabled={!isPremium || !isAdmin}
+                    className="h-9 w-9 rounded-md border border-gray-200 cursor-pointer shrink-0 p-0.5 bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                  <Input
+                    value={accentColor}
+                    onChange={(e) => setAccentColor(e.target.value)}
+                    placeholder="#6366f1"
+                    disabled={!isPremium || !isAdmin}
+                    className="bg-gray-100 border-gray-200 font-mono text-sm flex-1"
+                  />
+                </div>
+                <p className="text-xs text-gray-400">
+                  Used for chat bubbles, links, and interactive elements.
+                </p>
+              </div>
+
+              {/* Support email */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Support Email</label>
+                <Input
+                  value={supportEmail}
+                  onChange={(e) => setSupportEmail(e.target.value)}
+                  placeholder="support@youragency.com"
+                  disabled={!isPremium || !isAdmin}
+                  className="bg-gray-100 border-gray-200"
+                />
+              </div>
+
+              {/* Custom domain */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                  <Globe className="h-4 w-4 text-gray-400" />
+                  Custom Domain
+                </label>
+                <Input
+                  value={customDomain}
+                  onChange={(e) => setCustomDomain(e.target.value)}
+                  placeholder="ai.youragency.com"
+                  disabled={!isPremium || !isAdmin}
+                  className="bg-gray-100 border-gray-200"
+                />
+                <p className="text-xs text-gray-400">
+                  Point your domain to Kyra via CNAME. DNS configuration is handled separately —{' '}
+                  <span className="text-indigo-500">see docs</span>.
+                </p>
+              </div>
+
+              {/* Save button */}
+              {isPremium && isAdmin && (
+                <div className="pt-2">
+                  {saveError && (
+                    <div className="rounded-md bg-red-50 border border-red-500/30 px-4 py-2.5 text-sm text-red-600 mb-3">
+                      {saveError}
+                    </div>
+                  )}
+                  {saveSuccess && (
+                    <div className="rounded-md bg-green-50 border border-green-500/30 px-4 py-2.5 text-sm text-green-600 mb-3">
+                      Branding saved successfully.
+                    </div>
+                  )}
+                  <Button onClick={handleSave} disabled={saving || !name.trim()} className="gap-2">
+                    {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                    Save Branding
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Right column — live preview */}
+            <div className="space-y-3">
+              <label className="text-sm font-medium text-gray-700">Preview</label>
+              <BrandingPreview
+                logoUrl={logoUrl}
+                companyName={companyName}
+                primaryColor={primaryColor}
+                accentColor={accentColor}
               />
-              <div
-                className="h-9 w-9 rounded-md border border-gray-200 shrink-0"
-                style={{ backgroundColor: primaryColor }}
-              />
+              <p className="text-xs text-gray-400 text-center">
+                This preview updates live as you change settings.
+              </p>
             </div>
           </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Company Name Override</label>
-            <Input
-              value={companyName}
-              onChange={(e) => setCompanyName(e.target.value)}
-              placeholder="Your Brand Name"
-              disabled={!isPremium || !isAdmin}
-              className="bg-gray-100 border-gray-200 max-w-md"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Support Email</label>
-            <Input
-              value={supportEmail}
-              onChange={(e) => setSupportEmail(e.target.value)}
-              placeholder="support@example.com"
-              disabled={!isPremium || !isAdmin}
-              className="bg-gray-100 border-gray-200 max-w-md"
-            />
-          </div>
-
-          {isPremium && isAdmin && (
-            <div className="pt-2">
-              <Button onClick={handleSave} disabled={saving || !name.trim()} variant="outline" className="gap-2">
-                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                Save White-label
-              </Button>
-            </div>
-          )}
         </CardContent>
       </Card>
 
