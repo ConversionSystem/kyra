@@ -15,7 +15,7 @@ primary_region = 'fra'
 
 [env]
   NODE_ENV = 'production'
-  NODE_OPTIONS = '--max-old-space-size=1536'
+  NODE_OPTIONS = '--max-old-space-size=1024'
   BRIDGE_PORT = '3100'
   GATEWAY_PORT = '18789'
 
@@ -33,13 +33,13 @@ primary_region = 'fra'
     soft_limit = 40
 
   [[http_service.checks]]
-    grace_period = "60s"
+    grace_period = "120s"
     interval = "30s"
     method = "GET"
     path = "/health"
     timeout = "10s"
 
 [[vm]]
-  memory = '1024mb'
+  memory = '2048mb'
   cpu_kind = 'shared'
   cpus = 1
