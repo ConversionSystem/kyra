@@ -32,8 +32,8 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Protected routes
-  const protectedPaths = ['/chat', '/memories', '/settings', '/admin'];
+  // Protected routes — agency dashboard requires auth
+  const protectedPaths = ['/agency', '/admin'];
   const isProtectedPath = protectedPaths.some(path => 
     request.nextUrl.pathname.startsWith(path)
   );
@@ -45,15 +45,15 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Redirect authenticated users away from auth pages
-  const authPaths = ['/login', '/signup'];
+  // Redirect authenticated users away from auth pages → agency dashboard
+  const authPaths = ['/login'];
   const isAuthPath = authPaths.some(path => 
     request.nextUrl.pathname === path
   );
 
   if (isAuthPath && user) {
     const url = request.nextUrl.clone();
-    url.pathname = '/chat';
+    url.pathname = '/agency';
     return NextResponse.redirect(url);
   }
 

@@ -9,7 +9,7 @@ export default async function AgencyClientsPage() {
   if (!user) redirect('/login');
 
   const result = await getAgencyForUser(user.id);
-  if (!result) redirect('/chat');
+  if (!result) redirect('/signup/agency');
 
   const clients = await getAgencyClients(result.agency.id);
 
