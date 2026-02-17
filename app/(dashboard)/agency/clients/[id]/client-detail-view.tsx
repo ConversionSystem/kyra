@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,8 @@ import {
   Send,
   Trash2,
   Save,
+  FileDown,
+  ChevronDown,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { AgencyClient, AgencyMember } from '@/lib/agency/queries';
@@ -53,9 +55,57 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
   const [isSending, setIsSending] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
+  // Export state
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
+
   // Delete state
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Close export menu on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
+        setShowExportMenu(false);
+      }
+    };
+    if (showExportMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showExportMenu]);
+
+  const handleExport = async (type: string, range: string) => {
+    setIsExporting(true);
+    setShowExportMenu(false);
+    try {
+      const res = await fetch(
+        `/api/agency/clients/${initialClient.id}/export?type=${type}&range=${range}&format=md`
+      );
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        setSaveMessage({ type: 'error', text: `Export failed: ${err?.error || res.statusText}` });
+        setIsExporting(false);
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download =
+        res.headers.get('Content-Disposition')?.match(/filename="(.+)"/)?.[1] ||
+        `${initialClient.name}-export.md`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      setSaveMessage({ type: 'error', text: 'Export failed. Network error.' });
+    }
+    setIsExporting(false);
+  };
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -238,6 +288,64 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
               )}
             </div>
           </div>
+        </div>
+
+        {/* Export Button */}
+        <div className="relative" ref={exportMenuRef}>
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={() => setShowExportMenu(!showExportMenu)}
+            disabled={isExporting}
+          >
+            {isExporting ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Exporting...
+              </>
+            ) : (
+              <>
+                <FileDown className="h-4 w-4" />
+                Export
+                <ChevronDown className="h-3 w-3" />
+              </>
+            )}
+          </Button>
+          {showExportMenu && (
+            <div className="absolute right-0 top-full mt-2 w-56 rounded-lg border border-gray-200 bg-white shadow-lg z-50 py-1">
+              <p className="px-3 py-1.5 text-xs font-medium text-gray-400 uppercase tracking-wider">
+                Conversations
+              </p>
+              <button
+                onClick={() => handleExport('conversations', '7d')}
+                className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Last 7 days
+              </button>
+              <button
+                onClick={() => handleExport('conversations', '30d')}
+                className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Last 30 days
+              </button>
+              <div className="border-t border-gray-100 my-1" />
+              <p className="px-3 py-1.5 text-xs font-medium text-gray-400 uppercase tracking-wider">
+                Reports
+              </p>
+              <button
+                onClick={() => handleExport('summary', '30d')}
+                className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Summary (30d)
+              </button>
+              <button
+                onClick={() => handleExport('all', 'all')}
+                className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Export All Data
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
