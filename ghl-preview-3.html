@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  width: 960px; height: 540px;
+  background: #09090b;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  padding: 30px 50px;
+  overflow: hidden;
+}
+h2 {
+  font-size: 26px; font-weight: 700; color: #fff;
+  margin-bottom: 8px;
+}
+.subtitle {
+  color: #71717a; font-size: 14px; margin-bottom: 14px;
+}
+.chat-window {
+  background: #18181b; border: 1px solid #27272a; border-radius: 12px;
+  overflow: hidden; height: 390px;
+}
+.chat-header {
+  background: #1f1f23; padding: 14px 20px; border-bottom: 1px solid #27272a;
+  display: flex; align-items: center; gap: 10px;
+}
+.avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: linear-gradient(135deg, #7c3aed, #a78bfa);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; color: #fff;
+}
+.chat-header .name {
+  color: #fff; font-size: 14px; font-weight: 600;
+}
+.chat-header .status {
+  color: #4ade80; font-size: 11px;
+}
+.messages {
+  padding: 20px;
+}
+.msg {
+  margin-bottom: 16px; display: flex; gap: 10px;
+}
+.msg.customer { justify-content: flex-end; }
+.msg .bubble {
+  max-width: 420px; padding: 10px 16px; border-radius: 12px;
+  font-size: 13px; line-height: 1.5;
+}
+.msg.customer .bubble {
+  background: #27272a; color: #e4e4e7;
+  border-bottom-right-radius: 4px;
+}
+.msg.ai .bubble {
+  background: rgba(139,92,246,0.15); color: #e4e4e7;
+  border: 1px solid rgba(139,92,246,0.2);
+  border-bottom-left-radius: 4px;
+}
+.msg .bubble .action {
+  display: inline-block; margin-top: 6px;
+  background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2);
+  color: #4ade80; font-size: 10px; padding: 2px 8px;
+  border-radius: 8px; font-weight: 500;
+}
+.msg .time {
+  color: #52525b; font-size: 10px; align-self: flex-end;
+}
+</style>
+</head>
+<body>
+<h2>🤖 AI That Actually Works Your CRM</h2>
+<p class="subtitle">Real conversation — AI reads contact history, checks calendar, and books an appointment via GHL</p>
+<div class="chat-window">
+  <div class="chat-header">
+    <div class="avatar">K</div>
+    <div>
+      <div class="name">Kyra AI — Smile Dental Care</div>
+      <div class="status">● Active · GHL Connected</div>
+    </div>
+  </div>
+  <div class="messages">
+    <div class="msg customer">
+      <span class="time">10:23 AM</span>
+      <div class="bubble">Hi, I need to schedule a cleaning appointment</div>
+    </div>
+    <div class="msg ai">
+      <div class="bubble">
+        Hi Sarah! I can see you're due for your 6-month cleaning. 😊 Dr. Martinez has openings this Thursday at 2pm or Friday at 10am. Which works better for you?
+        <br><span class="action">📇 Read contact · 📅 Checked calendar</span>
+      </div>
+      <span class="time">10:23 AM</span>
+    </div>
+    <div class="msg customer">
+      <span class="time">10:24 AM</span>
+      <div class="bubble">Thursday at 2 works great!</div>
+    </div>
+    <div class="msg ai">
+      <div class="bubble">
+        Perfect! I've booked you for Thursday at 2:00 PM with Dr. Martinez. You'll receive a confirmation text shortly. See you then! 🦷
+        <br><span class="action">📅 Booked appointment · 📝 Updated contact notes · 📊 Moved to "Scheduled"</span>
+      </div>
+      <span class="time">10:24 AM</span>
+    </div>
+  </div>
+</div>
+</body>
+</html>
