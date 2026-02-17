@@ -14,72 +14,10 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
-  Zap,
-  Crown,
   Rocket,
 } from 'lucide-react';
 
-// ---------------------------------------------------------------------------
-// Plan data
-// ---------------------------------------------------------------------------
-const PLANS = [
-  {
-    id: 'starter' as const,
-    name: 'Lite',
-    price: 99,
-    icon: Zap,
-    description: 'Perfect for solo operators getting started',
-    features: [
-      'Up to 3 client AI instances',
-      'Email & SMS channels',
-      'Built-in templates',
-      'Basic analytics',
-      'Community support',
-    ],
-    color: 'from-blue-500 to-cyan-500',
-    border: 'border-blue-500/30 hover:border-blue-500/60',
-    badge: null,
-  },
-  {
-    id: 'pro' as const,
-    name: 'Pro',
-    price: 249,
-    icon: Crown,
-    description: 'For growing agencies with multiple clients',
-    features: [
-      'Up to 15 client AI instances',
-      'All channels (SMS, email, chat, voice)',
-      'Custom templates',
-      'White-label branding',
-      'Priority support',
-      'Client billing tools',
-    ],
-    color: 'from-indigo-500 to-indigo-600',
-    border: 'border-indigo-500/30 hover:border-indigo-500/60',
-    badge: 'Most Popular',
-  },
-  {
-    id: 'scale' as const,
-    name: 'Scale',
-    price: 499,
-    icon: Rocket,
-    description: 'For established agencies at scale',
-    features: [
-      'Unlimited client AI instances',
-      'All channels + custom integrations',
-      'Custom templates & workflows',
-      'Full white-label + custom domain',
-      'Dedicated account manager',
-      'API access & webhooks',
-      'Revenue share dashboard',
-    ],
-    color: 'from-amber-500 to-orange-500',
-    border: 'border-amber-500/30 hover:border-amber-500/60',
-    badge: null,
-  },
-] as const;
-
-type PlanId = (typeof PLANS)[number]['id'];
+// Plans hidden during beta — all users get full access
 
 // ---------------------------------------------------------------------------
 // Component
@@ -116,7 +54,6 @@ function AgencySignupPage() {
   const [agencyName, setAgencyName] = useState('');
   const [slug, setSlug] = useState('');
   const [slugEdited, setSlugEdited] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<PlanId>('pro');
 
   // State
   const [error, setError] = useState<string | null>(null);
@@ -204,7 +141,7 @@ function AgencySignupPage() {
       const res = await fetch('/api/agency', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: agencyName, slug, plan: selectedPlan }),
+        body: JSON.stringify({ name: agencyName, slug, plan: 'beta' }),
       });
 
       const data = await res.json();
@@ -268,9 +205,9 @@ function AgencySignupPage() {
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600">
             <Building2 className="h-7 w-7 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Create your agency</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Join the Kyra Beta</h1>
           <p className="mt-2 text-gray-500">
-            Launch your AI-powered agency in minutes
+            Full platform access · Bring your own API keys · Free during beta
           </p>
         </div>
 
@@ -419,62 +356,35 @@ function AgencySignupPage() {
               </CardContent>
             </Card>
 
-            {/* Plan selection */}
-            <div>
-              <h2 className="mb-4 text-center text-xl font-semibold text-gray-900">
-                Choose your plan
-              </h2>
-              <div className="grid gap-4 md:grid-cols-3">
-                {PLANS.map((plan) => {
-                  const Icon = plan.icon;
-                  const isSelected = selectedPlan === plan.id;
-                  return (
-                    <button
-                      key={plan.id}
-                      type="button"
-                      onClick={() => setSelectedPlan(plan.id)}
-                      className={`relative rounded-xl border bg-gray-50 p-5 text-left transition-all ${
-                        isSelected
-                          ? 'border-indigo-500 ring-1 ring-indigo-500/50'
-                          : `border-gray-200 ${plan.border}`
-                      }`}
-                    >
-                      {plan.badge && (
-                        <span className="absolute -top-2.5 right-4 rounded-full bg-gradient-to-r from-indigo-500 to-indigo-600 px-3 py-0.5 text-xs font-medium text-white">
-                          {plan.badge}
-                        </span>
-                      )}
-                      <div
-                        className={`mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br ${plan.color}`}
-                      >
-                        <Icon className="h-5 w-5 text-white" />
-                      </div>
-                      <h3 className="text-lg font-semibold text-gray-900">{plan.name}</h3>
-                      <p className="mb-3 text-sm text-gray-500">{plan.description}</p>
-                      <div className="mb-4">
-                        <span className="text-3xl font-bold text-gray-900">${plan.price}</span>
-                        <span className="text-sm text-gray-400">/mo</span>
-                      </div>
-                      <ul className="space-y-2">
-                        {plan.features.map((feature) => (
-                          <li key={feature} className="flex items-start gap-2 text-sm text-gray-700">
-                            <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-green-600" />
-                            {feature}
-                          </li>
-                        ))}
-                      </ul>
-                      {isSelected && (
-                        <div className="absolute right-3 top-3">
-                          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-500">
-                            <Check className="h-3 w-3 text-white" />
-                          </div>
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            {/* Beta access info */}
+            <Card className="mx-auto w-full max-w-md">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-xs font-semibold uppercase tracking-wider">
+                    Beta
+                  </span>
+                  <span className="text-sm font-medium text-gray-900">Full Access — Free</span>
+                </div>
+                <p className="text-sm text-gray-500 mb-4">
+                  During the beta, you get full platform access at no cost. Connect your own AI provider API keys (Anthropic, OpenAI, Google, etc.) — you only pay your provider directly.
+                </p>
+                <ul className="space-y-2">
+                  {[
+                    'Unlimited client AI instances',
+                    'GoHighLevel integration',
+                    'All channels (SMS, email, chat)',
+                    'Bring your own API keys (any LLM)',
+                    'Agency dashboard & templates',
+                    'White-label branding',
+                  ].map((feature) => (
+                    <li key={feature} className="flex items-start gap-2 text-sm text-gray-700">
+                      <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-green-600" />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
 
             {/* Submit */}
             <div className="flex items-center justify-between">
