@@ -1,14 +1,12 @@
 import Link from 'next/link';
 import { 
   ArrowRightIcon, 
-  CheckIcon,
   MessageSquareIcon, 
   ShieldCheckIcon,
   UsersIcon,
   BarChart3Icon,
   BrainIcon,
   SettingsIcon,
-  CheckCircle2Icon,
   CreditCardIcon,
   CalendarIcon,
   HeadphonesIcon,
@@ -39,9 +37,6 @@ export default function LandingPage() {
           <Link href="#features" className="text-gray-600 hover:text-gray-700 transition text-sm">
             Features
           </Link>
-          <Link href="#pricing" className="text-gray-600 hover:text-gray-700 transition text-sm">
-            Pricing
-          </Link>
         </nav>
         <div className="flex items-center gap-3">
           <Link href="/login" className="text-gray-600 hover:text-gray-700 transition text-sm font-medium">
@@ -51,7 +46,7 @@ export default function LandingPage() {
             href="/signup/agency" 
             className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 transition font-medium text-sm text-white"
           >
-            Get Started Free
+            Join the Beta
           </Link>
         </div>
       </header>
@@ -60,9 +55,14 @@ export default function LandingPage() {
         {/* Hero */}
         <section className="container mx-auto px-4 md:px-6 pt-16 md:pt-24 pb-16 md:pb-20">
           <div className="max-w-3xl mx-auto text-center">
-            <p className="text-indigo-600 font-medium text-sm mb-4">
-              Powered by OpenClaw
-            </p>
+            <div className="inline-flex items-center gap-2 mb-4">
+              <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-semibold uppercase tracking-wider">
+                Beta
+              </span>
+              <span className="text-indigo-600 font-medium text-sm">
+                Powered by OpenClaw
+              </span>
+            </div>
             
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.1] mb-6 tracking-tight text-gray-900">
               Your clients deserve a dedicated assistant. Now they can have one.
@@ -81,7 +81,7 @@ export default function LandingPage() {
                 href="/signup/agency"
                 className="flex items-center gap-2 px-7 py-3.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 transition font-semibold text-base text-white"
               >
-                Start Your 30-Day Free Trial
+                Join the Beta — It&apos;s Free
                 <ArrowRightIcon className="h-4 w-4" />
               </Link>
               <Link
@@ -93,7 +93,7 @@ export default function LandingPage() {
             </div>
 
             <p className="text-sm text-gray-400 mt-4">
-              30-day free trial · No credit card required · Cancel anytime
+              Free during beta · Bring your own API keys · No credit card required
             </p>
             <p className="text-xs text-gray-400 mt-2 flex items-center justify-center gap-1.5">
               <ShieldCheckIcon className="h-3.5 w-3.5 text-indigo-400" />
@@ -164,7 +164,7 @@ export default function LandingPage() {
                 Set up a client in 5 minutes
               </h2>
               <p className="text-gray-600 max-w-xl mx-auto">
-                No code, no servers, no API keys. Connect and go.
+                No code, no servers. Connect your API keys, pick a persona, and go.
               </p>
             </div>
 
@@ -347,80 +347,57 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Pricing */}
-        <section id="pricing" className="bg-gray-50 border-y border-gray-100 py-16 md:py-20">
+        {/* BYOK + Beta */}
+        <section id="byok" className="bg-gray-50 border-y border-gray-100 py-16 md:py-20">
           <div className="container mx-auto px-4 md:px-6">
             <div className="text-center mb-12">
+              <div className="inline-flex items-center gap-2 mb-4">
+                <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-semibold uppercase tracking-wider">
+                  Beta
+                </span>
+              </div>
               <h2 className="text-2xl md:text-3xl font-bold mb-4">
-                Simple, predictable pricing
+                Bring Your Own Keys. Use Any Model.
               </h2>
-              <p className="text-gray-600 max-w-xl mx-auto">
-                You set what you charge your clients. The difference is your margin.
+              <p className="text-gray-600 max-w-2xl mx-auto">
+                Kyra is free during the beta. Connect your own API keys — just like OpenClaw — and use the AI models you already trust. No vendor lock-in, no surprise bills from us.
               </p>
             </div>
 
             <div className="grid md:grid-cols-3 gap-5 max-w-4xl mx-auto">
-              <PricingCard
-                name="Lite"
-                price="$99"
-                period="/mo"
-                description="Getting started"
-                clients="5 clients included"
-                extra="$29/mo per additional client"
-                features={[
-                  'GoHighLevel integration',
-                  'Agency dashboard',
-                  'Industry personas',
-                  'SMS & email responses',
-                  'Conversation monitoring',
-                  'Email support',
-                ]}
-                cta="Start 30-Day Free Trial"
-                href="/signup/agency"
-              />
-              <PricingCard
-                name="Pro"
-                price="$249"
-                period="/mo"
-                description="Scaling up"
-                clients="15 clients included"
-                extra="$25/mo per additional client"
-                features={[
-                  'Everything in Lite',
-                  'White-label branding',
-                  'Stripe Connect billing',
-                  'Custom personas',
-                  'Smart model routing',
-                  'Bring your own API keys',
-                  'Priority support',
-                ]}
-                cta="Start 30-Day Free Trial"
-                href="/signup/agency"
-                highlighted
-              />
-              <PricingCard
-                name="Scale"
-                price="$499"
-                period="/mo"
-                description="Full volume"
-                clients="50 clients included"
-                extra="$19/mo per additional client"
-                features={[
-                  'Everything in Pro',
-                  'Persona marketplace',
-                  'API access',
-                  'Unlimited team members',
-                  'Dedicated account manager',
-                  'Custom integrations',
-                ]}
-                cta="Contact Us"
-                href="mailto:angel@conversionsystem.com"
-              />
+              <div className="p-5 rounded-xl border border-gray-200 bg-white text-center">
+                <div className="text-3xl mb-3">🧠</div>
+                <h3 className="font-semibold mb-1 text-gray-900">Any LLM</h3>
+                <p className="text-gray-500 text-sm leading-relaxed">
+                  Claude, GPT-4, Gemini, Llama, Mistral — plug in the model that fits your use case and budget.
+                </p>
+              </div>
+              <div className="p-5 rounded-xl border border-gray-200 bg-white text-center">
+                <div className="text-3xl mb-3">🔑</div>
+                <h3 className="font-semibold mb-1 text-gray-900">Your API Keys</h3>
+                <p className="text-gray-500 text-sm leading-relaxed">
+                  You control costs directly with your own provider accounts. No markups, no middlemen.
+                </p>
+              </div>
+              <div className="p-5 rounded-xl border border-gray-200 bg-white text-center">
+                <div className="text-3xl mb-3">🆓</div>
+                <h3 className="font-semibold mb-1 text-gray-900">Free During Beta</h3>
+                <p className="text-gray-500 text-sm leading-relaxed">
+                  Full platform access while we&apos;re in beta. Help us shape the product, and you&apos;ll get early-adopter perks when we launch.
+                </p>
+              </div>
             </div>
 
-            <div className="text-center mt-8">
-              <p className="text-sm text-gray-400">
-                All plans include a 30-day free trial. No credit card required. 10% platform fee on Stripe Connect billing.
+            <div className="text-center mt-10">
+              <Link
+                href="/signup/agency"
+                className="inline-flex items-center gap-2 px-7 py-3.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 transition font-semibold text-base text-white"
+              >
+                Join the Beta
+                <ArrowRightIcon className="h-4 w-4" />
+              </Link>
+              <p className="text-sm text-gray-400 mt-3">
+                No credit card required · You only pay your AI provider directly
               </p>
             </div>
           </div>
@@ -439,11 +416,11 @@ export default function LandingPage() {
               href="/signup/agency"
               className="inline-flex items-center gap-2 px-8 py-4 rounded-lg bg-indigo-600 hover:bg-indigo-700 transition font-semibold text-lg text-white"
             >
-              Get Started Free
+              Join the Beta
               <ArrowRightIcon className="h-5 w-5" />
             </Link>
             <p className="text-sm text-gray-400 mt-4">
-              30 days free · 5 clients included · No credit card required
+              Free during beta · Bring your own API keys · No credit card required
             </p>
           </div>
         </section>
@@ -546,53 +523,4 @@ function Tag({ text }: { text: string }) {
   );
 }
 
-function PricingCard({ name, price, period, description, clients, extra, features, cta, href, highlighted }: {
-  name: string;
-  price: string;
-  period: string;
-  description: string;
-  clients: string;
-  extra: string;
-  features: string[];
-  cta: string;
-  href: string;
-  highlighted?: boolean;
-}) {
-  return (
-    <div className={`rounded-xl p-7 border flex flex-col ${
-      highlighted 
-        ? 'border-indigo-600 ring-1 ring-indigo-600 bg-white' 
-        : 'border-gray-200 bg-white'
-    }`}>
-      {highlighted && (
-        <div className="text-xs font-semibold uppercase tracking-wider text-indigo-600 mb-3">Most Popular</div>
-      )}
-      <h3 className="text-lg font-bold mb-0.5 text-gray-900">{name}</h3>
-      <p className="text-gray-400 text-sm mb-3">{description}</p>
-      <div className="flex items-baseline gap-1 mb-1">
-        <span className="text-3xl font-bold text-gray-900">{price}</span>
-        <span className="text-gray-400">{period}</span>
-      </div>
-      <p className="text-sm text-indigo-600 font-medium mb-0.5">{clients}</p>
-      <p className="text-xs text-gray-400 mb-5">{extra}</p>
-      <ul className="space-y-2.5 mb-7 flex-1">
-        {features.map((feature) => (
-          <li key={feature} className="flex items-start gap-2 text-sm text-gray-600">
-            <CheckIcon className="h-4 w-4 text-indigo-600 shrink-0 mt-0.5" />
-            {feature}
-          </li>
-        ))}
-      </ul>
-      <Link
-        href={href}
-        className={`block text-center py-2.5 rounded-lg font-medium text-sm transition ${
-          highlighted
-            ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
-            : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-        }`}
-      >
-        {cta}
-      </Link>
-    </div>
-  );
-}
+// PricingCard removed — pricing hidden during beta
