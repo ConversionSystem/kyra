@@ -7,7 +7,7 @@ import {
   LayoutDashboard,
   Users,
   FileText,
-  CreditCard,
+  KeyRound,
   Settings,
   ChevronLeft,
   Mic,
@@ -22,7 +22,7 @@ const navItems = [
   { label: 'Templates', href: '/agency/templates', icon: FileText },
   { label: 'Skill Builder', href: '/agency/skill-builder', icon: Sparkles },
   { label: 'Voice Commands', href: '/agency/voice-commands', icon: Mic },
-  { label: 'Billing', href: '/agency/billing', icon: CreditCard },
+  { label: 'API Keys', href: '/agency/api-keys', icon: KeyRound },
   { label: 'Settings', href: '/agency/settings', icon: Settings },
 ];
 
@@ -30,6 +30,7 @@ const planColors: Record<string, string> = {
   starter: 'border-blue-200 bg-blue-50 text-blue-600',
   pro: 'border-indigo-200 bg-indigo-50 text-indigo-600',
   scale: 'border-amber-200 bg-amber-50 text-amber-600',
+  beta: 'border-amber-200 bg-amber-50 text-amber-700',
 };
 
 interface AgencySidebarProps {
