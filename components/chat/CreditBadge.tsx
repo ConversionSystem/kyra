@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Coins, AlertTriangle, Zap } from 'lucide-react';
+import { Coins, AlertTriangle, Zap, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 
 interface CreditBadgeProps {
@@ -11,31 +11,14 @@ interface CreditBadgeProps {
 }
 
 export function CreditBadge({ creditsUsed, creditsLimit, plan }: CreditBadgeProps) {
-  const remaining = Math.max(0, creditsLimit - creditsUsed);
-  const percentage = creditsLimit > 0 ? (creditsUsed / creditsLimit) * 100 : 100;
-  const isLow = percentage >= 90;
-  const isZero = remaining <= 0;
-
   return (
     <Link
-      href="/settings"
-      className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all ${
-        isZero
-          ? 'bg-red-500/15 text-red-600 ring-1 ring-red-500/30 animate-pulse'
-          : isLow
-          ? 'bg-amber-500/15 text-amber-600 ring-1 ring-amber-500/30'
-          : 'bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700'
-      }`}
-      title={`${remaining} credits remaining (${plan} plan)`}
+      href="/agency/api-keys"
+      className="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all bg-amber-100 text-amber-700 hover:bg-amber-200"
+      title="Beta — Bring Your Own Keys"
     >
-      {isZero ? (
-        <AlertTriangle className="h-3 w-3" />
-      ) : isLow ? (
-        <Zap className="h-3 w-3" />
-      ) : (
-        <Coins className="h-3 w-3" />
-      )}
-      <span>{remaining}</span>
+      <Sparkles className="h-3 w-3" />
+      <span>Beta</span>
     </Link>
   );
 }
@@ -46,38 +29,6 @@ interface CreditWarningBannerProps {
 }
 
 export function CreditWarningBanner({ creditsUsed, creditsLimit }: CreditWarningBannerProps) {
-  const remaining = Math.max(0, creditsLimit - creditsUsed);
-  const percentage = creditsLimit > 0 ? (creditsUsed / creditsLimit) * 100 : 100;
-  const isLow = percentage >= 90 && remaining > 0;
-  const isZero = remaining <= 0;
-
-  if (!isLow && !isZero) return null;
-
-  return (
-    <div
-      className={`mx-auto max-w-3xl px-4 py-2 text-center text-sm ${
-        isZero
-          ? 'bg-red-50 text-red-600'
-          : 'bg-amber-50 text-amber-600'
-      }`}
-    >
-      {isZero ? (
-        <span>
-          You&apos;ve used all your credits.{' '}
-          <Link href="/settings" className="underline font-medium hover:text-red-600">
-            Upgrade your plan
-          </Link>{' '}
-          to continue chatting.
-        </span>
-      ) : (
-        <span>
-          ⚡ Only {remaining} credits remaining.{' '}
-          <Link href="/settings" className="underline font-medium hover:text-amber-600">
-            Upgrade
-          </Link>{' '}
-          for more.
-        </span>
-      )}
-    </div>
-  );
+  // No credit warnings during beta — BYOK means users pay providers directly
+  return null;
 }

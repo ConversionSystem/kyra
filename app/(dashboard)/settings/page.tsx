@@ -34,7 +34,7 @@ function SettingsContent() {
   const [googleConnected, setGoogleConnected] = useState(false);
   const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
   const [usage, setUsage] = useState<any>(null);
-  const [isUpgrading, setIsUpgrading] = useState<string | null>(null);
+  // const [isUpgrading, setIsUpgrading] = useState<string | null>(null); // Hidden during beta
   const [preferredModel, setPreferredModel] = useState('auto');
   const [isSavingModel, setIsSavingModel] = useState(false);
   const [instructionsKnowledge, setInstructionsKnowledge] = useState('');
@@ -571,117 +571,21 @@ function SettingsContent() {
               </div>
             )}
 
-            {/* Upgrade options */}
-            {(!usage || usage.plan === 'free' || usage.plan === 'starter') && (
-              <div className="space-y-3">
-                <p className="text-sm font-medium text-gray-700">Upgrade your plan</p>
-                <div className="grid gap-3">
-                  {usage?.plan !== 'starter' && (
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-gray-200 bg-gray-100 p-4">
-                      <div>
-                        <p className="font-medium text-gray-900">Lite — $99/mo</p>
-                        <p className="text-xs text-gray-400">5 clients · GoHighLevel · SMS & email · Agency dashboard</p>
-                      </div>
-                      <Button
-                        size="sm"
-                        disabled={isUpgrading !== null}
-                        onClick={async () => {
-                          setIsUpgrading('starter');
-                          try {
-                            const res = await fetch('/api/billing/checkout', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ plan: 'starter' }),
-                            });
-                            const data = (await res.json()) as any;
-                            if (data.url) window.location.href = data.url;
-                            else setMessage({ type: 'error', text: data.error || 'Failed to start checkout' });
-                          } catch { setMessage({ type: 'error', text: 'Failed to start checkout' }); }
-                          setIsUpgrading(null);
-                        }}
-                      >
-                        {isUpgrading === 'starter' ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Upgrade'}
-                      </Button>
-                    </div>
-                  )}
-                  {usage?.plan !== 'pro' && (
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-indigo-500/30 bg-indigo-50 p-4">
-                      <div>
-                        <p className="font-medium text-gray-900">Pro — $249/mo</p>
-                        <p className="text-xs text-gray-400">15 clients · White-label · Stripe Connect · Custom personas · Priority support</p>
-                      </div>
-                      <Button
-                        size="sm"
-                        disabled={isUpgrading !== null}
-                        onClick={async () => {
-                          setIsUpgrading('pro');
-                          try {
-                            const res = await fetch('/api/billing/checkout', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ plan: 'pro' }),
-                            });
-                            const data = (await res.json()) as any;
-                            if (data.url) window.location.href = data.url;
-                            else setMessage({ type: 'error', text: data.error || 'Failed to start checkout' });
-                          } catch { setMessage({ type: 'error', text: 'Failed to start checkout' }); }
-                          setIsUpgrading(null);
-                        }}
-                      >
-                        {isUpgrading === 'pro' ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Upgrade'}
-                      </Button>
-                    </div>
-                  )}
-                  {usage?.plan !== 'scale' && (
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-gray-200 bg-gray-100 p-4">
-                      <div>
-                        <p className="font-medium text-gray-900">Scale — $499/mo</p>
-                        <p className="text-xs text-gray-400">50 clients · API access · Custom integrations · Dedicated account manager</p>
-                      </div>
-                      <Button
-                        size="sm"
-                        disabled={isUpgrading !== null}
-                        onClick={async () => {
-                          setIsUpgrading('scale');
-                          try {
-                            const res = await fetch('/api/billing/checkout', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ plan: 'scale' }),
-                            });
-                            const data = (await res.json()) as any;
-                            if (data.url) window.location.href = data.url;
-                            else setMessage({ type: 'error', text: data.error || 'Failed to start checkout' });
-                          } catch { setMessage({ type: 'error', text: 'Failed to start checkout' }); }
-                          setIsUpgrading(null);
-                        }}
-                      >
-                        {isUpgrading === 'scale' ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Upgrade'}
-                      </Button>
-                    </div>
-                  )}
-                </div>
+            {/* Beta notice */}
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="px-2 py-0.5 rounded-full bg-amber-200 text-amber-800 text-xs font-semibold uppercase">Beta</span>
+                <p className="font-medium text-amber-900">Free during beta</p>
               </div>
-            )}
-
-            {/* Manage subscription (for paid users) */}
-            {usage?.hasSubscription && (
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={async () => {
-                  try {
-                    const res = await fetch('/api/billing/portal', { method: 'POST' });
-                    const data = (await res.json()) as any;
-                    if (data.url) window.location.href = data.url;
-                  } catch {
-                    setMessage({ type: 'error', text: 'Failed to open billing portal' });
-                  }
-                }}
-              >
-                Manage Subscription
-              </Button>
-            )}
+              <p className="text-sm text-amber-700">
+                Full platform access while we&apos;re in beta. Bring your own API keys — you only pay your AI provider directly.
+              </p>
+              <Link href="/agency/api-keys">
+                <Button variant="outline" size="sm" className="mt-3">
+                  Manage API Keys
+                </Button>
+              </Link>
+            </div>
           </CardContent>
         </Card>
 

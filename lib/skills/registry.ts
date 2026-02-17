@@ -226,11 +226,8 @@ export const SKILLS_REGISTRY: SkillDefinition[] = [
  * Get skills available for a user's plan
  */
 export function getAvailableSkills(plan: Plan): SkillDefinition[] {
-  return SKILLS_REGISTRY.filter(s => {
-    if (!s.hostedCompatible) return false;
-    if (s.requiredPlan.length === 0) return true;
-    return s.requiredPlan.includes(plan);
-  });
+  // During beta: all skills unlocked regardless of plan
+  return SKILLS_REGISTRY.filter(s => s.hostedCompatible);
 }
 
 /**
