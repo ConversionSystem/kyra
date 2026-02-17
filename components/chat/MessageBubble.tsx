@@ -48,7 +48,7 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
             <div className="flex flex-wrap gap-1.5 mb-2">
               {attachedFiles.map((f, i) => (
                 <span key={i} className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-800 px-2.5 py-1.5 text-xs text-zinc-300">
-                  <FileText className="h-3 w-3 text-violet-400" />
+                  <FileText className="h-3 w-3 text-indigo-400" />
                   <span className="max-w-[200px] truncate">{f.name}</span>
                 </span>
               ))}
@@ -68,7 +68,7 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
     <div className="group py-4 md:py-6">
       <div className="mx-auto max-w-3xl px-4 md:px-0">
         <div className="mb-1 flex items-center gap-1.5">
-          <Sparkles className="h-3.5 w-3.5 text-violet-400" />
+          <Sparkles className="h-3.5 w-3.5 text-indigo-400" />
           <span className="text-xs font-medium text-zinc-500">Kyra</span>
         </div>
 
@@ -83,12 +83,12 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
           prose-h2:text-lg prose-h2:mt-5 prose-h2:mb-2
           prose-h3:text-base prose-h3:mt-4 prose-h3:mb-2
           prose-strong:text-zinc-100 prose-strong:font-semibold
-          prose-code:text-violet-300 prose-code:bg-zinc-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:text-xs prose-code:font-normal prose-code:before:content-none prose-code:after:content-none
+          prose-code:text-indigo-300 prose-code:bg-zinc-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:text-xs prose-code:font-normal prose-code:before:content-none prose-code:after:content-none
           prose-pre:bg-zinc-900 prose-pre:border prose-pre:border-zinc-700 prose-pre:rounded-xl prose-pre:my-3
-          prose-a:text-violet-400 prose-a:no-underline hover:prose-a:underline
+          prose-a:text-indigo-400 prose-a:no-underline hover:prose-a:underline
           prose-ul:my-2 prose-ol:my-2
           prose-li:my-0.5 prose-li:text-zinc-300
-          prose-blockquote:border-violet-500 prose-blockquote:text-zinc-400 prose-blockquote:not-italic
+          prose-blockquote:border-indigo-500 prose-blockquote:text-zinc-400 prose-blockquote:not-italic
           prose-table:text-sm
           prose-th:text-zinc-300 prose-th:border-zinc-700 prose-th:px-3 prose-th:py-2
           prose-td:border-zinc-700 prose-td:px-3 prose-td:py-2
@@ -115,7 +115,7 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
             {displayContent}
           </ReactMarkdown>
           {isStreaming && (
-            <span className="ml-0.5 inline-block h-5 w-0.5 animate-pulse bg-violet-400" />
+            <span className="ml-0.5 inline-block h-5 w-0.5 animate-pulse bg-indigo-400" />
           )}
         </div>
 
@@ -140,7 +140,7 @@ export function MessageSkeleton() {
     <div className="py-4 md:py-6">
       <div className="mx-auto max-w-3xl px-4 md:px-0">
         <div className="mb-1 flex items-center gap-1.5">
-          <Sparkles className="h-3.5 w-3.5 text-violet-400" />
+          <Sparkles className="h-3.5 w-3.5 text-indigo-400" />
           <span className="text-xs font-medium text-zinc-500">Kyra</span>
         </div>
         <div className="flex items-center gap-1 pt-1">

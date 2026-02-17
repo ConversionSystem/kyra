@@ -12,13 +12,13 @@ const industryColors: Record<string, string> = {
   'Dental / Medical': 'border-cyan-500/50 bg-cyan-500/10 text-cyan-400',
   'Real Estate': 'border-emerald-500/50 bg-emerald-500/10 text-emerald-400',
   'Home Services': 'border-orange-500/50 bg-orange-500/10 text-orange-400',
-  'Retail / E-commerce': 'border-pink-500/50 bg-pink-500/10 text-pink-400',
+  'Retail / E-commerce': 'border-indigo-500/50 bg-indigo-500/10 text-indigo-400',
   'Legal': 'border-amber-500/50 bg-amber-500/10 text-amber-400',
   'Finance': 'border-blue-500/50 bg-blue-500/10 text-blue-400',
   'Fitness / Wellness': 'border-green-500/50 bg-green-500/10 text-green-400',
   'Restaurant / Hospitality': 'border-red-500/50 bg-red-500/10 text-red-400',
   'Education': 'border-indigo-500/50 bg-indigo-500/10 text-indigo-400',
-  'General': 'border-violet-500/50 bg-violet-500/10 text-violet-400',
+  'General': 'border-indigo-500/50 bg-indigo-500/10 text-indigo-400',
 };
 
 function getIndustryColor(industry: string) {

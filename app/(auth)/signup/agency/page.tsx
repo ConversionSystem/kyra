@@ -54,8 +54,8 @@ const PLANS = [
       'Priority support',
       'Client billing tools',
     ],
-    color: 'from-violet-500 to-purple-600',
-    border: 'border-violet-500/30 hover:border-violet-500/60',
+    color: 'from-indigo-500 to-indigo-600',
+    border: 'border-indigo-500/30 hover:border-indigo-500/60',
     badge: 'Most Popular',
   },
   {
@@ -90,7 +90,7 @@ export default function AgencySignupWrapper() {
     <Suspense
       fallback={
         <div className="flex min-h-screen items-center justify-center bg-zinc-950">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
         </div>
       }
     >
@@ -229,7 +229,7 @@ function AgencySignupPage() {
       <div className="w-full max-w-3xl">
         {/* Header */}
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-purple-600">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600">
             <Building2 className="h-7 w-7 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-zinc-100">Create your agency</h1>
@@ -394,12 +394,12 @@ function AgencySignupPage() {
                       onClick={() => setSelectedPlan(plan.id)}
                       className={`relative rounded-xl border bg-zinc-900/50 p-5 text-left transition-all ${
                         isSelected
-                          ? 'border-violet-500 ring-1 ring-violet-500/50'
+                          ? 'border-indigo-500 ring-1 ring-indigo-500/50'
                           : `border-zinc-800 ${plan.border}`
                       }`}
                     >
                       {plan.badge && (
-                        <span className="absolute -top-2.5 right-4 rounded-full bg-gradient-to-r from-violet-500 to-purple-600 px-3 py-0.5 text-xs font-medium text-white">
+                        <span className="absolute -top-2.5 right-4 rounded-full bg-gradient-to-r from-indigo-500 to-indigo-600 px-3 py-0.5 text-xs font-medium text-white">
                           {plan.badge}
                         </span>
                       )}
@@ -424,7 +424,7 @@ function AgencySignupPage() {
                       </ul>
                       {isSelected && (
                         <div className="absolute right-3 top-3">
-                          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-violet-500">
+                          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-500">
                             <Check className="h-3 w-3 text-white" />
                           </div>
                         </div>
@@ -490,7 +490,7 @@ function StepBadge({
           completed
             ? 'bg-green-500/20 text-green-400'
             : active
-              ? 'bg-violet-500 text-white'
+              ? 'bg-indigo-500 text-white'
               : 'bg-zinc-800 text-zinc-500'
         }`}
       >

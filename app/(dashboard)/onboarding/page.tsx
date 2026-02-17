@@ -194,7 +194,7 @@ export default function OnboardingPage() {
             <div
               key={i}
               className={`h-1 flex-1 rounded-full transition-all duration-500 ${
-                i <= step ? 'bg-violet-500' : 'bg-zinc-800'
+                i <= step ? 'bg-indigo-500' : 'bg-zinc-800'
               }`}
             />
           ))}
@@ -208,8 +208,8 @@ export default function OnboardingPage() {
             <Card className="border-zinc-800 bg-zinc-900/50 backdrop-blur">
               <CardContent className="p-8 space-y-6">
                 <div className="text-center space-y-2">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-violet-500/10 mb-2">
-                    <Sparkles className="w-8 h-8 text-violet-400" />
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-500/10 mb-2">
+                    <Sparkles className="w-8 h-8 text-indigo-400" />
                   </div>
                   <h1 className="text-2xl font-bold">Hey, I&apos;m Kyra</h1>
                   <p className="text-zinc-400">
@@ -227,7 +227,7 @@ export default function OnboardingPage() {
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Your name"
                     autoFocus
-                    className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all"
+                    className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && name.trim()) next();
                     }}
@@ -237,7 +237,7 @@ export default function OnboardingPage() {
                 <div className="flex justify-end pt-2">
                   <Button
                     onClick={next}
-                    className="bg-violet-600 hover:bg-violet-500 text-white"
+                    className="bg-indigo-600 hover:bg-indigo-500 text-white"
                   >
                     Continue <ChevronRight className="w-4 h-4 ml-1" />
                   </Button>
@@ -271,7 +271,7 @@ export default function OnboardingPage() {
                     value={role}
                     onChange={(e) => setRole(e.target.value)}
                     placeholder="e.g. Marketing Manager, Student, Freelancer"
-                    className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all"
+                    className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') next();
                     }}
@@ -292,7 +292,7 @@ export default function OnboardingPage() {
                     </Button>
                     <Button
                       onClick={next}
-                      className="bg-violet-600 hover:bg-violet-500 text-white"
+                      className="bg-indigo-600 hover:bg-indigo-500 text-white"
                     >
                       Continue <ChevronRight className="w-4 h-4 ml-1" />
                     </Button>
@@ -320,7 +320,7 @@ export default function OnboardingPage() {
 
                 <div className="space-y-3">
                   {/* Auto-detected timezone display */}
-                  <div className="flex items-center gap-3 rounded-lg border border-violet-500/50 bg-violet-500/5 px-4 py-3">
+                  <div className="flex items-center gap-3 rounded-lg border border-indigo-500/50 bg-indigo-500/5 px-4 py-3">
                     <div className="flex-1">
                       <div className="text-sm font-medium text-zinc-100">
                         {formatTimezoneLabel(timezone)}
@@ -329,7 +329,7 @@ export default function OnboardingPage() {
                     </div>
                     <button
                       onClick={() => setShowTimezoneDropdown(!showTimezoneDropdown)}
-                      className="text-xs text-violet-400 hover:text-violet-300 transition-colors"
+                      className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
                     >
                       {showTimezoneDropdown ? 'Close' : 'Change'}
                     </button>
@@ -347,7 +347,7 @@ export default function OnboardingPage() {
                           }}
                           className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
                             tz === timezone
-                              ? 'bg-violet-500/10 text-violet-300'
+                              ? 'bg-indigo-500/10 text-indigo-300'
                               : 'text-zinc-300 hover:bg-zinc-700/50'
                           }`}
                         >
@@ -364,7 +364,7 @@ export default function OnboardingPage() {
                   </Button>
                   <Button
                     onClick={next}
-                    className="bg-violet-600 hover:bg-violet-500 text-white"
+                    className="bg-indigo-600 hover:bg-indigo-500 text-white"
                   >
                     Continue <ChevronRight className="w-4 h-4 ml-1" />
                   </Button>
@@ -380,8 +380,8 @@ export default function OnboardingPage() {
             <Card className="border-zinc-800 bg-zinc-900/50 backdrop-blur">
               <CardContent className="p-8 space-y-6">
                 <div className="text-center space-y-2">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-pink-500/10 mb-2">
-                    <MessageCircle className="w-8 h-8 text-pink-400" />
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-500/10 mb-2">
+                    <MessageCircle className="w-8 h-8 text-indigo-400" />
                   </div>
                   <h1 className="text-2xl font-bold">How should I talk to you?</h1>
                   <p className="text-zinc-400">Pick a vibe. You can always change this later.</p>
@@ -397,14 +397,14 @@ export default function OnboardingPage() {
                         onClick={() => setTone(card.value)}
                         className={`w-full flex items-center gap-4 rounded-xl border p-4 text-left transition-all ${
                           isSelected
-                            ? 'border-violet-500 bg-violet-500/10 ring-1 ring-violet-500/30'
+                            ? 'border-indigo-500 bg-indigo-500/10 ring-1 ring-indigo-500/30'
                             : 'border-zinc-700 bg-zinc-800/50 hover:border-zinc-600 hover:bg-zinc-800'
                         }`}
                       >
                         <div
                           className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
                             isSelected
-                              ? 'bg-violet-500/20 text-violet-400'
+                              ? 'bg-indigo-500/20 text-indigo-400'
                               : 'bg-zinc-700/50 text-zinc-400'
                           }`}
                         >
@@ -413,7 +413,7 @@ export default function OnboardingPage() {
                         <div className="flex-1">
                           <div
                             className={`font-medium transition-colors ${
-                              isSelected ? 'text-violet-300' : 'text-zinc-100'
+                              isSelected ? 'text-indigo-300' : 'text-zinc-100'
                             }`}
                           >
                             {card.label}
@@ -423,7 +423,7 @@ export default function OnboardingPage() {
                         <div
                           className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
                             isSelected
-                              ? 'border-violet-500 bg-violet-500'
+                              ? 'border-indigo-500 bg-indigo-500'
                               : 'border-zinc-600'
                           }`}
                         >
@@ -442,7 +442,7 @@ export default function OnboardingPage() {
                   </Button>
                   <Button
                     onClick={next}
-                    className="bg-violet-600 hover:bg-violet-500 text-white"
+                    className="bg-indigo-600 hover:bg-indigo-500 text-white"
                   >
                     Continue <ChevronRight className="w-4 h-4 ml-1" />
                   </Button>
@@ -475,7 +475,7 @@ export default function OnboardingPage() {
                       key={prompt}
                       onClick={() => complete(prompt)}
                       disabled={completing}
-                      className="w-full text-left rounded-lg border border-zinc-700 bg-zinc-800/50 px-4 py-3 text-sm text-zinc-300 hover:border-violet-500/50 hover:bg-violet-500/5 hover:text-violet-300 transition-all disabled:opacity-50"
+                      className="w-full text-left rounded-lg border border-zinc-700 bg-zinc-800/50 px-4 py-3 text-sm text-zinc-300 hover:border-indigo-500/50 hover:bg-indigo-500/5 hover:text-indigo-300 transition-all disabled:opacity-50"
                     >
                       &ldquo;{prompt}&rdquo;
                     </button>
@@ -489,7 +489,7 @@ export default function OnboardingPage() {
                   <Button
                     onClick={() => complete()}
                     disabled={completing}
-                    className="bg-violet-600 hover:bg-violet-500 text-white"
+                    className="bg-indigo-600 hover:bg-indigo-500 text-white"
                   >
                     {completing ? (
                       <span className="flex items-center gap-2">

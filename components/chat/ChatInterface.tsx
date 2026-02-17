@@ -311,8 +311,8 @@ export function ChatInterface({
             {showEmptyState && (
               <div className="mb-6 text-center">
                 <div className="relative mb-4 inline-block">
-                  <div className="absolute inset-0 animate-pulse rounded-full bg-violet-500/20 blur-xl" />
-                  <div className="relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 via-purple-500 to-fuchsia-500">
+                  <div className="absolute inset-0 animate-pulse rounded-full bg-indigo-500/20 blur-xl" />
+                  <div className="relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 via-indigo-500 to-indigo-400">
                     <Sparkles className="h-7 w-7 text-white" />
                   </div>
                 </div>

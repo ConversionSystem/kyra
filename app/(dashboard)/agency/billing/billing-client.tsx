@@ -75,7 +75,7 @@ const PLAN_CONFIG: Record<
 
 const planBadgeColors: Record<string, string> = {
   starter: 'border-blue-500/50 bg-blue-500/10 text-blue-400',
-  pro: 'border-violet-500/50 bg-violet-500/10 text-violet-400',
+  pro: 'border-indigo-500/50 bg-indigo-500/10 text-indigo-400',
   scale: 'border-amber-500/50 bg-amber-500/10 text-amber-400',
 };
 
@@ -95,7 +95,7 @@ const typeLabels: Record<string, string> = {
 };
 
 const typeColors: Record<string, string> = {
-  subscription: 'text-violet-400',
+  subscription: 'text-indigo-400',
   client_fee: 'text-cyan-400',
   credit_topup: 'text-green-400',
   payout: 'text-amber-400',
@@ -275,7 +275,7 @@ export default function BillingClient({
             </p>
             <div className="mt-3 h-2 w-full rounded-full bg-zinc-800">
               <div
-                className="h-2 rounded-full bg-violet-500 transition-all"
+                className="h-2 rounded-full bg-indigo-500 transition-all"
                 style={{
                   width: `${Math.min(100, (clients.length / plan.includedClients) * 100)}%`,
                 }}
@@ -325,8 +325,8 @@ export default function BillingClient({
           <CardContent className="p-6">
             <div className="flex items-start justify-between">
               <div className="flex items-start gap-4">
-                <div className="rounded-lg bg-violet-500/10 p-2.5 mt-0.5">
-                  <LinkIcon className="h-5 w-5 text-violet-400" />
+                <div className="rounded-lg bg-indigo-500/10 p-2.5 mt-0.5">
+                  <LinkIcon className="h-5 w-5 text-indigo-400" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-zinc-100 mb-1">Stripe Connect</h3>

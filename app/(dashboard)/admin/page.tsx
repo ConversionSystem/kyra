@@ -45,7 +45,7 @@ function PlanBadge({ plan }: { plan: string }) {
   const colors: Record<string, string> = {
     free: 'bg-zinc-700 text-zinc-300',
     starter: 'bg-blue-900/50 text-blue-300',
-    business: 'bg-purple-900/50 text-purple-300',
+    business: 'bg-indigo-900/50 text-indigo-300',
     max: 'bg-amber-900/50 text-amber-300',
   };
   return (

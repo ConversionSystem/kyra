@@ -103,7 +103,7 @@ export default function HeroChatWidget() {
   const showSuggestions = messages.length <= 1 && !isStreaming;
 
   return (
-    <div className="bg-gray-950 rounded-2xl border border-gray-800 shadow-2xl shadow-purple-900/20 overflow-hidden flex flex-col h-[360px]">
+    <div className="bg-gray-950 rounded-2xl border border-gray-800 shadow-2xl shadow-indigo-900/20 overflow-hidden flex flex-col h-[360px]">
       {/* Window bar */}
       <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-800/80 bg-gray-900/50 shrink-0">
         <div className="flex gap-1.5">
@@ -113,7 +113,7 @@ export default function HeroChatWidget() {
         </div>
         <div className="flex-1 text-center">
           <span className="text-xs text-gray-400 font-medium flex items-center justify-center gap-1.5">
-            <SparklesIcon className="h-3 w-3 text-purple-400" />
+            <SparklesIcon className="h-3 w-3 text-indigo-400" />
             Try Kyra — Live Demo
           </span>
         </div>
@@ -126,7 +126,7 @@ export default function HeroChatWidget() {
           <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
               msg.role === 'user'
-                ? 'bg-purple-600 rounded-br-md text-white'
+                ? 'bg-indigo-600 rounded-br-md text-white'
                 : 'bg-gray-800/80 rounded-bl-md text-gray-200'
             }`}>
               {msg.content || (isStreaming && i === messages.length - 1 ? (
@@ -146,7 +146,7 @@ export default function HeroChatWidget() {
               <button
                 key={i}
                 onClick={() => sendMessage(s)}
-                className="text-xs px-3 py-1.5 rounded-full border border-purple-700/40 bg-purple-900/20 text-purple-300 hover:bg-purple-900/40 hover:border-purple-600/60 transition"
+                className="text-xs px-3 py-1.5 rounded-full border border-indigo-700/40 bg-indigo-900/20 text-indigo-300 hover:bg-indigo-900/40 hover:border-indigo-600/60 transition"
               >
                 {s}
               </button>
@@ -162,7 +162,7 @@ export default function HeroChatWidget() {
         {rateLimited ? (
           <a
             href="/signup"
-            className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 transition font-semibold text-sm"
+            className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-600 hover:from-indigo-500 hover:to-indigo-500 transition font-semibold text-sm"
           >
             Sign Up Free — 100 Credits/Month
             <SparklesIcon className="h-4 w-4" />
@@ -170,7 +170,7 @@ export default function HeroChatWidget() {
         ) : (
           <form
             onSubmit={(e) => { e.preventDefault(); sendMessage(); }}
-            className="flex items-center gap-2 bg-gray-800/60 rounded-xl border border-gray-700/50 focus-within:border-purple-600/50 transition px-4 py-2.5"
+            className="flex items-center gap-2 bg-gray-800/60 rounded-xl border border-gray-700/50 focus-within:border-indigo-600/50 transition px-4 py-2.5"
           >
             <input
               ref={inputRef}
@@ -185,7 +185,7 @@ export default function HeroChatWidget() {
             <button
               type="submit"
               disabled={!input.trim() || isStreaming}
-              className="text-purple-400 hover:text-purple-300 disabled:text-gray-600 transition"
+              className="text-indigo-400 hover:text-indigo-300 disabled:text-gray-600 transition"
             >
               <SendIcon className="h-4 w-4" />
             </button>

@@ -36,7 +36,7 @@ const STATUS_ICONS: Record<string, typeof Circle> = {
 
 const STATUS_COLORS: Record<string, string> = {
   pending: 'text-zinc-600',
-  running: 'text-violet-400 animate-spin',
+  running: 'text-indigo-400 animate-spin',
   completed: 'text-emerald-400',
   failed: 'text-red-400',
   skipped: 'text-zinc-700',
@@ -82,7 +82,7 @@ export function PipelineProgress({
               <circle
                 cx="16" cy="16" r="12" fill="none" stroke="currentColor" strokeWidth="3"
                 strokeDasharray={`${progress * 0.754} 100`}
-                className="text-violet-500 transition-all duration-500"
+                className="text-indigo-500 transition-all duration-500"
               />
             </svg>
             <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-zinc-300">

@@ -60,7 +60,7 @@ export function SearchResults({ query, sources }: SearchResultsProps) {
         onClick={() => setExpanded(!expanded)}
         className="flex w-full items-center gap-2 px-3 py-2 text-xs text-zinc-400 hover:bg-zinc-800/50 transition-colors"
       >
-        <Search className="h-3 w-3 text-violet-400" />
+        <Search className="h-3 w-3 text-indigo-400" />
         <span className="font-medium text-zinc-300">Searched the web</span>
         <span className="text-zinc-500">· {sources.length} source{sources.length !== 1 ? 's' : ''}</span>
         <span className="ml-auto">
@@ -91,7 +91,7 @@ export function SearchResults({ query, sources }: SearchResultsProps) {
               ) : (
                 <Globe className="h-3 w-3 text-zinc-500" />
               )}
-              <span className="text-zinc-300 group-hover:text-violet-400 truncate flex-1">
+              <span className="text-zinc-300 group-hover:text-indigo-400 truncate flex-1">
                 {source.title}
               </span>
               <ExternalLink className="h-3 w-3 text-zinc-600 group-hover:text-zinc-400 flex-shrink-0" />
