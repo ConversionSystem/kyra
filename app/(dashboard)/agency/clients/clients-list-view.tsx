@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, FileDown, Loader2 } from 'lucide-react';
 import type { AgencyClient } from '@/lib/agency/queries';
 
 const statusColors: Record<string, string> = {
@@ -24,6 +24,7 @@ interface ClientsListViewProps {
 export function ClientsListView({ clients }: ClientsListViewProps) {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [isBulkExporting, setIsBulkExporting] = useState(false);
 
   const filtered = useMemo(() => {
     return clients.filter((c) => {
@@ -32,6 +33,49 @@ export function ClientsListView({ clients }: ClientsListViewProps) {
       return matchesSearch && matchesStatus;
     });
   }, [clients, search, statusFilter]);
+
+  const handleBulkExport = async () => {
+    if (isBulkExporting || clients.length === 0) return;
+    setIsBulkExporting(true);
+
+    try {
+      // Fetch all client exports and combine into one file
+      const sections: string[] = [
+        `# Agency Clients — Combined Export`,
+        `> Exported from Kyra on ${new Date().toISOString().split('T')[0]}`,
+        `> ${clients.length} client${clients.length !== 1 ? 's' : ''}`,
+        ``,
+      ];
+
+      for (const client of clients) {
+        const res = await fetch(
+          `/api/agency/clients/${client.id}/export?type=all&range=30d&format=md`
+        );
+        if (res.ok) {
+          const text = await res.text();
+          sections.push(text);
+          sections.push(`\n---\n`);
+        } else {
+          sections.push(`## ${client.name}\n\n*Export failed.*\n\n---\n`);
+        }
+      }
+
+      const markdown = sections.join('\n');
+      const blob = new Blob([markdown], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `all-clients-export-${new Date().toISOString().split('T')[0]}.md`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      // Silently fail — user will notice no download happened
+    }
+
+    setIsBulkExporting(false);
+  };
 
   return (
     <div className="p-6 md:p-8 max-w-5xl">
@@ -43,12 +87,34 @@ export function ClientsListView({ clients }: ClientsListViewProps) {
             {clients.length} client{clients.length !== 1 ? 's' : ''} total
           </p>
         </div>
-        <Link href="/agency/clients/new">
-          <Button className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Client
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          {clients.length > 0 && (
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={handleBulkExport}
+              disabled={isBulkExporting}
+            >
+              {isBulkExporting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Exporting...
+                </>
+              ) : (
+                <>
+                  <FileDown className="h-4 w-4" />
+                  Export All
+                </>
+              )}
+            </Button>
+          )}
+          <Link href="/agency/clients/new">
+            <Button className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Client
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Filters */}
