@@ -7,12 +7,13 @@ import { Badge } from '@/components/ui/badge';
 import {
   LayoutDashboard,
   Users,
-  FileText,
+  MessageSquare,
+  BookOpen,
+  Zap,
+  BarChart3,
+  Radio,
   KeyRound,
   Settings,
-  Mic,
-  Sparkles,
-  Radio,
   Terminal,
   ExternalLink,
   Menu,
@@ -23,11 +24,12 @@ import type { AgencySettings } from '@/lib/agency/types';
 
 const navItems = [
   { label: 'Overview', href: '/agency', icon: LayoutDashboard },
+  { label: 'Conversations', href: '/agency/conversations', icon: MessageSquare },
   { label: 'Clients', href: '/agency/clients', icon: Users },
+  { label: 'Knowledge Base', href: '/agency/knowledge', icon: BookOpen },
+  { label: 'Automations', href: '/agency/automations', icon: Zap },
+  { label: 'Analytics', href: '/agency/analytics', icon: BarChart3 },
   { label: 'Channels', href: '/agency/channels', icon: Radio },
-  { label: 'Templates', href: '/agency/templates', icon: FileText },
-  { label: 'Skill Builder', href: '/agency/skill-builder', icon: Sparkles },
-  { label: 'Voice Commands', href: '/agency/voice-commands', icon: Mic },
   { label: 'API Keys', href: '/agency/api-keys', icon: KeyRound },
   { label: 'Settings', href: '/agency/settings', icon: Settings },
 ];
@@ -124,28 +126,6 @@ export function AgencySidebar({ agencyName, plan, settings }: AgencySidebarProps
 
       {/* Navigation */}
       <nav className="flex-1 p-3 space-y-1">
-        {/* Control UI — external link to Gateway Dashboard */}
-        {dashboardUrl && (
-          <a
-            href={dashboardUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => setMobileOpen(false)}
-            className={cn(
-              'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors mb-1',
-              hasBranding
-                ? 'bg-white/15 text-white hover:bg-white/25 font-medium'
-                : 'bg-indigo-900/40 text-indigo-300 hover:bg-indigo-900/60 hover:text-indigo-200 font-medium'
-            )}
-          >
-            <Terminal className="h-4 w-4 shrink-0" />
-            Control UI
-            <ExternalLink className="h-3 w-3 ml-auto opacity-50" />
-          </a>
-        )}
-
-        <div className={cn('border-b mb-1', hasBranding ? 'border-white/10' : 'border-gray-800')} />
-
         {navItems.map((item) => {
           const isActive =
             item.href === '/agency'
@@ -175,9 +155,29 @@ export function AgencySidebar({ agencyName, plan, settings }: AgencySidebarProps
         })}
       </nav>
 
-      {/* Footer */}
-      <div className={cn('p-4 border-t text-xs', hasBranding ? 'border-white/10 text-white/40' : 'border-gray-800 text-gray-600')}>
-        Powered by Kyra
+      {/* OpenClaw Terminal — bottom section */}
+      <div className={cn('p-3 border-t', hasBranding ? 'border-white/10' : 'border-gray-800')}>
+        {dashboardUrl && (
+          <a
+            href={dashboardUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => setMobileOpen(false)}
+            className={cn(
+              'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors',
+              hasBranding
+                ? 'text-white/60 hover:bg-white/10 hover:text-white'
+                : 'text-gray-500 hover:bg-gray-800 hover:text-gray-300'
+            )}
+          >
+            <Terminal className="h-4 w-4 shrink-0" />
+            OpenClaw Terminal
+            <ExternalLink className="h-3 w-3 ml-auto opacity-50" />
+          </a>
+        )}
+        <div className={cn('px-3 mt-2 text-xs', hasBranding ? 'text-white/30' : 'text-gray-600')}>
+          Powered by OpenClaw
+        </div>
       </div>
     </>
   );
