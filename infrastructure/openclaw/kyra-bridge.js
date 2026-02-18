@@ -1006,7 +1006,16 @@ function proxyToGateway(clientReq, clientRes) {
       ...(GATEWAY_TOKEN ? { authorization: `Bearer ${GATEWAY_TOKEN}` } : {}),
     },
   }, (proxyRes) => {
-    clientRes.writeHead(proxyRes.statusCode, proxyRes.headers);
+    // Strip iframe-blocking headers so dashboard can be embedded in Kyra
+    const headers = { ...proxyRes.headers };
+    delete headers['x-frame-options'];
+    // Rewrite CSP frame-ancestors to allow Kyra's domain
+    if (headers['content-security-policy']) {
+      headers['content-security-policy'] = headers['content-security-policy']
+        .replace(/frame-ancestors\s+'none'/g, "frame-ancestors 'self' https://kyra.conversionsystem.com https://localhost:3000")
+        .replace(/connect-src\s+'self'\s+ws:\s+wss:/g, "connect-src 'self' ws: wss: https://gateway.conversionsystem.com https://kyra-gateway.fly.dev");
+    }
+    clientRes.writeHead(proxyRes.statusCode, headers);
     proxyRes.pipe(clientRes, { end: true });
   });
 
