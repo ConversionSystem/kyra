@@ -23,7 +23,8 @@ import type {
 // Fly.io bridge at KYRA_WORKER_URL/chat so the AI can respond.
 // ============================================================================
 
-const WORKER_URL = process.env.KYRA_WORKER_URL;
+import { getGatewayByAgencyId } from '@/lib/openclaw/gateway-resolver';
+
 const API_SECRET = process.env.KYRA_API_SECRET;
 
 /**
@@ -248,7 +249,7 @@ async function handleInboundMessage(
   );
 
   // Forward to the client's OpenClaw container — fire and forget
-  await forwardToContainer(client.id, formattedMessage, systemContext);
+  await forwardToContainer(client.id, formattedMessage, systemContext, client.agency_id);
 }
 
 /**
@@ -278,7 +279,7 @@ async function handleContactEvent(
 
     const systemContext = `A new contact was created in the GHL CRM for "${client.name}". You may want to note this for future reference. Do NOT send any outbound messages unless specifically configured to do so for new leads.`;
 
-    await forwardToContainer(client.id, message, systemContext);
+    await forwardToContainer(client.id, message, systemContext, client.agency_id);
   }
   // ContactUpdate and ContactDelete are logged but don't trigger AI
 }
@@ -296,13 +297,13 @@ async function handleOpportunityEvent(
     const valueStr = monetaryValue ? ` ($${(monetaryValue / 100).toFixed(2)})` : '';
     const message = `[GHL] New opportunity created: "${oppName}"${valueStr} — Status: ${status}`;
     const systemContext = `A new opportunity was added to the pipeline for "${client.name}". Note this for pipeline tracking.`;
-    await forwardToContainer(client.id, message, systemContext);
+    await forwardToContainer(client.id, message, systemContext, client.agency_id);
   }
 
   if (eventType === 'OpportunityStageUpdate') {
     const message = `[GHL] Opportunity "${oppName}" moved to a new pipeline stage — Status: ${status}`;
     const systemContext = `An opportunity changed stages in the pipeline for "${client.name}". Track this for pipeline health reports.`;
-    await forwardToContainer(client.id, message, systemContext);
+    await forwardToContainer(client.id, message, systemContext, client.agency_id);
   }
 }
 
@@ -318,7 +319,7 @@ async function handleAppointmentEvent(
   if (eventType === 'AppointmentCreate') {
     const message = `[GHL] New appointment booked: "${title || 'Untitled'}" at ${startTime} — Status: ${appointmentStatus}`;
     const systemContext = `A new appointment was booked via GHL for "${client.name}". Contact ID: ${contactId}. Consider sending a confirmation or reminder at the appropriate time.`;
-    await forwardToContainer(client.id, message, systemContext);
+    await forwardToContainer(client.id, message, systemContext, client.agency_id);
   }
 
   if (eventType === 'AppointmentUpdate') {
@@ -326,7 +327,8 @@ async function handleAppointmentEvent(
     await forwardToContainer(
       client.id,
       message,
-      `An appointment was updated for "${client.name}".`
+      `An appointment was updated for "${client.name}".`,
+      client.agency_id
     );
   }
 }
@@ -344,7 +346,7 @@ async function handleCallCompleted(
   if (payload.direction === 'inbound' && payload.status === 'no-answer') {
     // Missed call — the AI might want to follow up
     const systemContext = `A call was missed for "${client.name}". Contact ID: ${payload.contactId}. Consider following up with the caller.`;
-    await forwardToContainer(client.id, message, systemContext);
+    await forwardToContainer(client.id, message, systemContext, client.agency_id);
   }
   // Other call events are logged but don't trigger AI
 }
@@ -364,7 +366,7 @@ async function handleFormOrSurveySubmission(
 
   const message = `[GHL] New ${kind} submission: "${formName}"\n${fields}`;
   const systemContext = `A new ${kind} was submitted for "${client.name}". Contact ID: ${payload.contactId}. This may be a new lead or inquiry.`;
-  await forwardToContainer(client.id, message, systemContext);
+  await forwardToContainer(client.id, message, systemContext, client.agency_id);
 }
 
 /**
@@ -393,21 +395,25 @@ async function handleConversationUpdate(
 async function forwardToContainer(
   clientId: string,
   message: string,
-  systemContext: string
+  systemContext: string,
+  agencyId?: string
 ): Promise<void> {
-  if (!WORKER_URL || !API_SECRET) {
-    console.warn('[ghl-webhook] KYRA_WORKER_URL or KYRA_API_SECRET not configured, cannot forward');
+  // Resolve the agency's own gateway
+  const agencyGateway = agencyId ? await getGatewayByAgencyId(agencyId) : null;
+  const workerUrl = agencyGateway?.url || process.env.KYRA_WORKER_URL;
+
+  if (!workerUrl) {
+    console.warn('[ghl-webhook] No gateway provisioned and no KYRA_WORKER_URL fallback');
     return;
   }
 
   const sessionKey = getSessionKeyForClient(clientId);
 
   try {
-    // Fire and forget with a reasonable timeout
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30_000);
 
-    const response = await fetch(`${WORKER_URL}/chat`, {
+    const response = await fetch(`${workerUrl}/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

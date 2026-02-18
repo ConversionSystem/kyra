@@ -1,8 +1,9 @@
 /**
  * OpenClaw Gateway Client
  *
- * Communicates with the Kyra OpenClaw Bridge (HTTP API → real OpenClaw Gateway).
- * The bridge runs on Fly.io alongside a real `openclaw gateway` instance.
+ * Communicates with per-agency OpenClaw Gateways via their HTTP bridge.
+ * Each agency has its own isolated gateway — use the gateway-resolver
+ * to get the correct URL before calling these functions.
  *
  * This is NOT a dumb API proxy. Every message flows through:
  *   - Real OpenClaw agent with 60+ skills
@@ -12,7 +13,8 @@
  *   - Multi-model support
  */
 
-const BRIDGE_URL = process.env.KYRA_WORKER_URL || 'https://kyra-gateway.fly.dev';
+// Legacy fallback — only used when gateway-resolver returns no per-agency URL
+const FALLBACK_BRIDGE_URL = process.env.KYRA_WORKER_URL || 'https://kyra-gateway.fly.dev';
 
 export interface OpenClawMessage {
   role: 'user' | 'assistant' | 'system';
@@ -35,14 +37,22 @@ export interface OpenClawHealthStatus {
 
 /**
  * Send a message to a client's OpenClaw session via the bridge.
+ *
+ * @param gatewayUrl - The agency's gateway URL (from gateway-resolver)
+ * @param sessionKey - Session key for the conversation
+ * @param message - Message to send
+ * @param systemContext - Optional system context for the session
  */
 export async function sendMessage(
+  gatewayUrl: string | undefined,
   sessionKey: string,
   message: string,
   systemContext?: string
 ): Promise<OpenClawResponse> {
+  const baseUrl = gatewayUrl || FALLBACK_BRIDGE_URL;
+
   try {
-    const response = await fetch(`${BRIDGE_URL}/chat`, {
+    const response = await fetch(`${baseUrl}/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -70,12 +80,15 @@ export async function sendMessage(
 }
 
 /**
- * Check if the OpenClaw Gateway is healthy.
- * Returns detailed status including whether it's a REAL OpenClaw instance.
+ * Check if an OpenClaw Gateway is healthy.
+ *
+ * @param gatewayUrl - The agency's gateway URL (from gateway-resolver)
  */
-export async function healthCheck(): Promise<OpenClawHealthStatus | null> {
+export async function healthCheck(gatewayUrl?: string): Promise<OpenClawHealthStatus | null> {
+  const baseUrl = gatewayUrl || FALLBACK_BRIDGE_URL;
+
   try {
-    const response = await fetch(`${BRIDGE_URL}/health`, {
+    const response = await fetch(`${baseUrl}/health`, {
       signal: AbortSignal.timeout(10_000),
     });
     if (!response.ok) return null;
@@ -86,10 +99,10 @@ export async function healthCheck(): Promise<OpenClawHealthStatus | null> {
 }
 
 /**
- * Check if bridge is reachable and connected to a real OpenClaw Gateway.
+ * Check if a gateway is reachable and connected to a real OpenClaw Gateway.
  */
-export async function isOpenClawAvailable(): Promise<boolean> {
-  const status = await healthCheck();
+export async function isOpenClawAvailable(gatewayUrl?: string): Promise<boolean> {
+  const status = await healthCheck(gatewayUrl);
   return status?.gatewayConnected === true;
 }
 
@@ -109,19 +122,22 @@ export interface ToolInvokeResult {
 
 /**
  * Invoke any OpenClaw tool directly via the bridge's /tools/invoke endpoint.
- * This gives Kyra's dashboard access to every OpenClaw capability:
- * web_search, web_fetch, browser, cron, memory, sessions, tts, etc.
+ *
+ * @param gatewayUrl - The agency's gateway URL (from gateway-resolver)
  */
 export async function invokeTool(
+  gatewayUrl: string | undefined,
   tool: string,
   args: Record<string, unknown> = {},
   action?: string
 ): Promise<ToolInvokeResult> {
+  const baseUrl = gatewayUrl || FALLBACK_BRIDGE_URL;
+
   try {
     const body: Record<string, unknown> = { tool, args };
     if (action) body.action = action;
 
-    const response = await fetch(`${BRIDGE_URL}/tools/invoke`, {
+    const response = await fetch(`${baseUrl}/tools/invoke`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -144,29 +160,29 @@ export const OPENCLAW_TOOLS = {
   // Web & Research
   web_search: { name: 'Web Search', icon: '🔍', category: 'research', description: 'Search the web with AI-powered results' },
   web_fetch: { name: 'Web Fetch', icon: '🌐', category: 'research', description: 'Fetch and extract content from any URL' },
-  
+
   // Browser Automation
   browser: { name: 'Browser Control', icon: '🖥️', category: 'automation', description: 'Automated browser actions, screenshots, scraping' },
-  
+
   // AI & Memory
   memory_search: { name: 'Memory Search', icon: '🧠', category: 'ai', description: 'Search through persistent AI memory' },
   memory_get: { name: 'Memory Read', icon: '📖', category: 'ai', description: 'Read specific memory entries' },
   sessions_spawn: { name: 'Sub-Agent', icon: '🤖', category: 'ai', description: 'Spawn an autonomous sub-agent for tasks' },
-  
+
   // Scheduling
   cron: { name: 'Scheduler', icon: '⏰', category: 'automation', description: 'Create scheduled tasks and reminders' },
-  
+
   // Communication
   tts: { name: 'Text-to-Speech', icon: '🔊', category: 'communication', description: 'Convert text to natural speech audio' },
   message: { name: 'Messaging', icon: '💬', category: 'communication', description: 'Send messages across channels' },
-  
+
   // Sessions & Management
   sessions_list: { name: 'Sessions', icon: '📋', category: 'management', description: 'List active AI sessions' },
   sessions_history: { name: 'History', icon: '📜', category: 'management', description: 'View conversation history' },
   sessions_send: { name: 'Session Send', icon: '📤', category: 'management', description: 'Send message to another session' },
   agents_list: { name: 'Agents', icon: '👥', category: 'management', description: 'List available AI agents' },
   subagents: { name: 'Sub-Agents', icon: '🔄', category: 'management', description: 'Manage running sub-agents' },
-  
+
   // Infrastructure
   nodes: { name: 'Nodes', icon: '📱', category: 'infrastructure', description: 'Paired device management' },
   canvas: { name: 'Canvas', icon: '🎨', category: 'infrastructure', description: 'Visual canvas rendering' },

@@ -3,7 +3,7 @@
  *
  * Dedicated endpoint for sending messages to an agency client's AI instance.
  * Verifies the caller is a member of the agency that owns the client,
- * then forwards the message to the Fly.io bridge with the client's session key.
+ * then forwards the message to the AGENCY'S OWN gateway (not shared).
  *
  * POST /api/agency/clients/[id]/chat
  * Body: { message: string }
@@ -13,21 +13,14 @@
 import { NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getSessionKeyForClient, getSystemContextForClient, getSystemPromptForClient } from '@/lib/agency/container';
+import { resolveGatewayUrl } from '@/lib/openclaw/gateway-resolver';
 import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
-
-const WORKER_URL = process.env.KYRA_WORKER_URL;
-const API_SECRET = process.env.KYRA_API_SECRET;
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: clientId } = await params;
-
-  if (!WORKER_URL || !API_SECRET) {
-    console.error('[client-chat] KYRA_WORKER_URL or KYRA_API_SECRET not configured');
-    return new Response('Worker not configured', { status: 500 });
-  }
 
   try {
     const supabase = await createClient();
@@ -61,13 +54,16 @@ export async function POST(
       return new Response('Forbidden: not a member of this agency', { status: 403 });
     }
 
-    // 4. Parse request body
+    // 4. Resolve the agency's own gateway (per-agency isolation)
+    const { url: gatewayUrl } = await resolveGatewayUrl(user.id);
+
+    // 5. Parse request body
     const { message } = (await request.json()) as { message?: string };
     if (!message || typeof message !== 'string') {
       return new Response('Message is required', { status: 400 });
     }
 
-    // 5. Build session key & context
+    // 6. Build session key & context
     const typedClient = client as AgencyClient & { template?: AgencyTemplate | null };
     const sessionKey = getSessionKeyForClient(clientId);
     const clientContext = getSystemContextForClient(typedClient, typedClient.template);
@@ -80,10 +76,10 @@ export async function POST(
       'Client context: ' + JSON.stringify(clientContext),
     ].join('\n');
 
-    // 6. Forward to Fly.io bridge
+    // 7. Forward to the agency's own gateway
     let workerResponse: Response;
     try {
-      workerResponse = await fetch(`${WORKER_URL}/chat`, {
+      workerResponse = await fetch(`${gatewayUrl}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -91,13 +87,13 @@ export async function POST(
           sessionKey,
           systemContext,
         }),
-        signal: AbortSignal.timeout(120_000), // Cold start can take ~60s
+        signal: AbortSignal.timeout(120_000),
       });
     } catch (fetchError) {
-      console.error('[client-chat] Worker unreachable:', fetchError);
+      console.error('[client-chat] Gateway unreachable:', fetchError);
       return new Response(
         JSON.stringify({
-          error: 'Worker unreachable',
+          error: 'Gateway unreachable',
           message: "The AI backend is temporarily unavailable. Please try again in a moment.",
         }),
         { status: 503, headers: { 'Content-Type': 'application/json' } }
@@ -106,20 +102,19 @@ export async function POST(
 
     if (!workerResponse.ok) {
       const errorText = await workerResponse.text();
-      console.error(`[client-chat] Worker returned ${workerResponse.status}: ${errorText}`);
+      console.error(`[client-chat] Gateway returned ${workerResponse.status}: ${errorText}`);
       return new Response(
-        JSON.stringify({ error: 'Worker request failed', details: errorText }),
+        JSON.stringify({ error: 'Gateway request failed', details: errorText }),
         { status: workerResponse.status, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    // 7. Stream response back to client
+    // 8. Stream response back to client
     const contentType = workerResponse.headers.get('content-type') || '';
     const isStreaming = contentType.includes('text/event-stream');
     const encoder = new TextEncoder();
 
     if (isStreaming && workerResponse.body) {
-      // SSE passthrough — parse worker stream and re-emit as Kyra SSE
       const workerBody = workerResponse.body;
 
       const stream = new ReadableStream({
@@ -142,16 +137,13 @@ export async function POST(
                   if (data === '[DONE]') continue;
                   try {
                     const parsed = JSON.parse(data);
-                    // OpenAI format
                     if (parsed.choices?.[0]?.delta?.content) {
                       const content = parsed.choices[0].delta.content;
                       fullResponse += content;
                       controller.enqueue(
                         encoder.encode(`data: ${JSON.stringify({ type: 'content', content })}\n\n`)
                       );
-                    }
-                    // Legacy Kyra format
-                    else if (parsed.type === 'content' && parsed.content) {
+                    } else if (parsed.type === 'content' && parsed.content) {
                       fullResponse += parsed.content;
                       controller.enqueue(encoder.encode(line + '\n'));
                     } else if (parsed.response) {
@@ -165,7 +157,6 @@ export async function POST(
               }
             }
 
-            // Send done with full response for the client to use
             controller.enqueue(
               encoder.encode(`data: ${JSON.stringify({ type: 'done', fullResponse })}\n\n`)
             );
@@ -189,7 +180,6 @@ export async function POST(
         },
       });
     } else {
-      // JSON response — convert to SSE format
       let responseData: any;
       try {
         responseData = await workerResponse.json();
@@ -202,7 +192,6 @@ export async function POST(
       const stream = new ReadableStream({
         async start(controller) {
           try {
-            // Send response in chunks to simulate streaming
             const chunkSize = 20;
             for (let i = 0; i < fullResponse.length; i += chunkSize) {
               const chunk = fullResponse.slice(i, i + chunkSize);

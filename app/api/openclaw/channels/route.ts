@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-
-const BRIDGE_URL = process.env.KYRA_WORKER_URL || 'https://kyra-gateway.fly.dev';
+import { resolveGatewayUrl } from '@/lib/openclaw/gateway-resolver';
 
 /**
  * GET /api/openclaw/channels
- * Get status of all connected channels.
+ * Get status of all connected channels for the user's agency gateway.
  */
 export async function GET() {
   const supabase = await createClient();
@@ -13,7 +12,8 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const res = await fetch(`${BRIDGE_URL}/channels/status`, {
+    const { url } = await resolveGatewayUrl(user.id);
+    const res = await fetch(`${url}/channels/status`, {
       signal: AbortSignal.timeout(10_000),
     });
     return NextResponse.json(await res.json());
@@ -24,7 +24,7 @@ export async function GET() {
 
 /**
  * POST /api/openclaw/channels
- * Connect a new channel. Body: { channel: string, config: object }
+ * Connect a new channel on the user's agency gateway. Body: { channel: string, config: object }
  */
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -32,8 +32,9 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
+    const { url } = await resolveGatewayUrl(user.id);
     const body = await request.json();
-    const res = await fetch(`${BRIDGE_URL}/channels/connect`, {
+    const res = await fetch(`${url}/channels/connect`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
