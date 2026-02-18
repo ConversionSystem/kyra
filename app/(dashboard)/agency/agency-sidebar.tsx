@@ -12,8 +12,9 @@ import {
   Settings,
   Mic,
   Sparkles,
-  Wrench,
   Radio,
+  Terminal,
+  ExternalLink,
   Menu,
   X,
 } from 'lucide-react';
@@ -24,7 +25,6 @@ const navItems = [
   { label: 'Overview', href: '/agency', icon: LayoutDashboard },
   { label: 'Clients', href: '/agency/clients', icon: Users },
   { label: 'Channels', href: '/agency/channels', icon: Radio },
-  { label: 'AI Tools', href: '/agency/tools', icon: Wrench },
   { label: 'Templates', href: '/agency/templates', icon: FileText },
   { label: 'Skill Builder', href: '/agency/skill-builder', icon: Sparkles },
   { label: 'Voice Commands', href: '/agency/voice-commands', icon: Mic },
@@ -48,6 +48,15 @@ interface AgencySidebarProps {
 export function AgencySidebar({ agencyName, plan, settings }: AgencySidebarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [dashboardUrl, setDashboardUrl] = useState<string | null>(null);
+
+  // Fetch authenticated dashboard URL
+  useEffect(() => {
+    fetch('/api/openclaw/dashboard-url')
+      .then((r) => r.json())
+      .then((data) => { if (data.url) setDashboardUrl(data.url); })
+      .catch(() => {});
+  }, []);
 
   // Close mobile sidebar on route change
   useEffect(() => {
@@ -115,6 +124,28 @@ export function AgencySidebar({ agencyName, plan, settings }: AgencySidebarProps
 
       {/* Navigation */}
       <nav className="flex-1 p-3 space-y-1">
+        {/* Control UI — external link to Gateway Dashboard */}
+        {dashboardUrl && (
+          <a
+            href={dashboardUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => setMobileOpen(false)}
+            className={cn(
+              'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors mb-1',
+              hasBranding
+                ? 'bg-white/15 text-white hover:bg-white/25 font-medium'
+                : 'bg-indigo-900/40 text-indigo-300 hover:bg-indigo-900/60 hover:text-indigo-200 font-medium'
+            )}
+          >
+            <Terminal className="h-4 w-4 shrink-0" />
+            Control UI
+            <ExternalLink className="h-3 w-3 ml-auto opacity-50" />
+          </a>
+        )}
+
+        <div className={cn('border-b mb-1', hasBranding ? 'border-white/10' : 'border-gray-800')} />
+
         {navItems.map((item) => {
           const isActive =
             item.href === '/agency'
