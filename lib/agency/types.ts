@@ -18,7 +18,7 @@ export interface Agency {
   updated_at: string;
 }
 
-export type AgencyPlan = 'starter' | 'pro' | 'scale';
+export type AgencyPlan = 'starter' | 'pro' | 'scale' | 'beta';
 
 export interface AgencySettings {
   logo_url?: string;
