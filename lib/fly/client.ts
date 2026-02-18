@@ -292,20 +292,44 @@ export interface FlyIp {
   region: string;
 }
 
-export async function allocateSharedIpv4(appName: string): Promise<FlyIp> {
-  return flyApi<FlyIp>({
+/**
+ * Allocate IPs via Fly GraphQL API (the Machines REST API /ips endpoint returns 404).
+ * This mirrors what `fly ips allocate-v4 --shared` and `fly ips allocate-v6` do.
+ */
+async function flyGraphQL<T>(query: string, variables: Record<string, unknown>): Promise<T> {
+  const token = process.env.FLY_API_TOKEN;
+  if (!token) throw new Error('FLY_API_TOKEN not configured');
+
+  const res = await fetch('https://api.fly.io/graphql', {
     method: 'POST',
-    path: `/apps/${appName}/ips`,
-    body: { type: 'shared_v4' },
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ query, variables }),
   });
+
+  const json = await res.json();
+  if (json.errors?.length) {
+    throw new Error(`Fly GraphQL: ${json.errors[0].message}`);
+  }
+  return json.data;
+}
+
+export async function allocateSharedIpv4(appName: string): Promise<FlyIp> {
+  const data = await flyGraphQL<{ allocateIpAddress: { ipAddress: { id: string; address: string; type: string; region: string } } }>(
+    `mutation($input: AllocateIPAddressInput!) { allocateIpAddress(input: $input) { ipAddress { id address type region } } }`,
+    { input: { appId: appName, type: 'shared_v4' } }
+  );
+  return data.allocateIpAddress.ipAddress;
 }
 
 export async function allocateIpv6(appName: string): Promise<FlyIp> {
-  return flyApi<FlyIp>({
-    method: 'POST',
-    path: `/apps/${appName}/ips`,
-    body: { type: 'v6' },
-  });
+  const data = await flyGraphQL<{ allocateIpAddress: { ipAddress: { id: string; address: string; type: string; region: string } } }>(
+    `mutation($input: AllocateIPAddressInput!) { allocateIpAddress(input: $input) { ipAddress { id address type region } } }`,
+    { input: { appId: appName, type: 'v6' } }
+  );
+  return data.allocateIpAddress.ipAddress;
 }
 
 // ── Utility ───────────────────────────────────────────────────────────────────
