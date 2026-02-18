@@ -245,7 +245,13 @@ export function ChannelsClient() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ channel: channel.id, code: cleanCode }),
       });
-      const data = await res.json();
+
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        data = { ok: false, error: { message: `Server returned ${res.status}: ${res.statusText}` } };
+      }
 
       if (data.ok) {
         setMessages((prev) => ({
