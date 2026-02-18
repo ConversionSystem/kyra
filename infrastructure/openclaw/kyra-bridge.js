@@ -36,6 +36,66 @@ const GATEWAY_PORT = parseInt(process.env.GATEWAY_PORT) || 18789;
 const GATEWAY_TOKEN = process.env.GATEWAY_TOKEN || '';
 const GATEWAY_HOST = '127.0.0.1';
 
+// ── Device Identity (Ed25519 keypair for gateway auth) ────────────────────────
+// OpenClaw Gateway strips scopes from token-only auth. Device auth is required
+// to get operator.admin scope. We generate a keypair at startup.
+
+const ED25519_SPKI_PREFIX = Buffer.from('302a300506032b6570032100', 'hex');
+
+function generateDeviceIdentity() {
+  const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519');
+  const publicKeyPem = publicKey.export({ type: 'spki', format: 'pem' }).toString();
+  const privateKeyPem = privateKey.export({ type: 'pkcs8', format: 'pem' }).toString();
+
+  // Derive device ID from public key (SHA-256 of raw key bytes)
+  const spki = publicKey.export({ type: 'spki', format: 'der' });
+  const rawKey = (spki.length === ED25519_SPKI_PREFIX.length + 32 &&
+    spki.subarray(0, ED25519_SPKI_PREFIX.length).equals(ED25519_SPKI_PREFIX))
+    ? spki.subarray(ED25519_SPKI_PREFIX.length)
+    : spki;
+  const deviceId = crypto.createHash('sha256').update(rawKey).digest('hex');
+
+  // Public key as base64url (raw 32 bytes)
+  const publicKeyB64Url = rawKey.toString('base64')
+    .replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/g, '');
+
+  return { deviceId, publicKeyPem, privateKeyPem, publicKeyB64Url };
+}
+
+function signPayload(privateKeyPem, payload) {
+  const key = crypto.createPrivateKey(privateKeyPem);
+  const sig = crypto.sign(null, Buffer.from(payload, 'utf8'), key);
+  return sig.toString('base64').replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/g, '');
+}
+
+function buildDeviceAuth(identity, clientId, clientMode, role, scopes, token) {
+  const signedAtMs = Date.now();
+  // v1 payload format (no nonce — local connection)
+  const payload = [
+    'v1',
+    identity.deviceId,
+    clientId,
+    clientMode,
+    role,
+    scopes.join(','),
+    String(signedAtMs),
+    token || '',
+  ].join('|');
+
+  const signature = signPayload(identity.privateKeyPem, payload);
+
+  return {
+    id: identity.deviceId,
+    publicKey: identity.publicKeyB64Url,
+    signature,
+    signedAt: signedAtMs,
+  };
+}
+
+// Generate identity once at startup
+const DEVICE_IDENTITY = generateDeviceIdentity();
+console.log(`[bridge] Device identity: ${DEVICE_IDENTITY.deviceId.substring(0, 16)}...`);
+
 // ── WebSocket Frame Encoder/Decoder ───────────────────────────────────────────
 // Minimal implementation — no external dependencies.
 
@@ -187,19 +247,28 @@ class GatewayClient extends EventEmitter {
       // Handle connect.challenge → auth
       const onMessage = (msg) => {
         if (msg.type === 'event' && msg.event === 'connect.challenge') {
+          const role = 'operator';
+          const scopes = ['operator.admin'];
+          const clientId = 'gateway-client';
+          const clientMode = 'backend';
+          const device = buildDeviceAuth(
+            DEVICE_IDENTITY, clientId, clientMode, role, scopes, GATEWAY_TOKEN
+          );
+
           this.rpc('connect', {
             minProtocol: 3,
             maxProtocol: 3,
             client: {
-              id: 'openclaw-webchat',
+              id: clientId,
               version: '1.0.0',
-              platform: 'node',
-              mode: 'backend',
+              platform: 'linux',
+              mode: clientMode,
             },
-            role: 'operator',
-            scopes: ['operator.admin'],
-            auth: { token: GATEWAY_TOKEN },
+            role,
+            scopes,
             caps: [],
+            auth: { token: GATEWAY_TOKEN },
+            device,
           }, 15000).then(() => {
             clearTimeout(timer);
             this._authenticated = true;
@@ -257,6 +326,10 @@ class GatewayClient extends EventEmitter {
 
   _handleMessage(msg) {
     if (msg.type === 'event') {
+      // Debug: log events (except ticks which are noisy)
+      if (msg.event !== 'tick') {
+        console.log(`[gw-ws] Event: ${msg.event} payload_keys=${msg.payload ? Object.keys(msg.payload).join(',') : 'null'}`);
+      }
       this.emit('event', msg.event, msg.payload);
       return;
     }
@@ -382,7 +455,10 @@ function chatSend(sessionKey, message, timeoutMs = 120000, onDelta = null) {
 
     function onEvent(event, payload) {
       if (event !== 'chat') return;
-      if (payload?.sessionKey !== sessionKey) return;
+      // Gateway prefixes sessionKey with "agent:main:" — match by suffix
+      const evtSession = payload?.sessionKey || '';
+      const sessionMatch = evtSession === sessionKey || evtSession.endsWith(':' + sessionKey);
+      if (!sessionMatch) return;
       if (runId && payload.runId && payload.runId !== runId) return;
       if (!runId && payload.runId) runId = payload.runId;
 
@@ -415,11 +491,17 @@ function chatSend(sessionKey, message, timeoutMs = 120000, onDelta = null) {
     gw.on('event', onEvent);
 
     // Send via OpenClaw Gateway RPC
+    const rpcId = crypto.randomUUID();
+    console.log(`[bridge] chat.send RPC: session=${sessionKey.substring(0, 30)} idempotencyKey=${rpcId.substring(0, 8)}`);
     gw.rpc('chat.send', {
       sessionKey,
       message,
       deliver: false,
-    }, timeoutMs).catch((err) => {
+      idempotencyKey: rpcId,
+    }, timeoutMs).then((result) => {
+      console.log(`[bridge] chat.send RPC resolved: ${JSON.stringify(result)?.substring(0, 200)}`);
+    }).catch((err) => {
+      console.error(`[bridge] chat.send RPC rejected: ${err.message}`);
       if (!settled) {
         settled = true;
         clearTimeout(timer);
@@ -482,9 +564,11 @@ const server = http.createServer((req, res) => {
   // ── Health check
   if (req.method === 'GET' && req.url === '/health') {
     const gwConnected = gw.connected;
-    res.writeHead(gwConnected ? 200 : 503, { 'Content-Type': 'application/json' });
+    // Always return 200 — bridge is healthy even if gateway is still booting.
+    // Fly.io health checks need this to pass during the 60-90s gateway startup.
+    res.writeHead(200, { 'Content-Type': 'application/json' });
     return res.end(JSON.stringify({
-      status: gwConnected ? 'ok' : 'gateway_disconnected',
+      status: gwConnected ? 'ok' : 'gateway_starting',
       openClaw: true,
       realOpenClaw: true,
       bridge: 'kyra-openclaw-bridge',
@@ -623,13 +707,22 @@ server.listen(BRIDGE_PORT, '0.0.0.0', () => {
   console.log('============================================');
   console.log('');
 
-  // Connect to gateway immediately
-  ensureConnected().then(() => {
-    console.log('[bridge] Gateway connected — ready for requests');
-  }).catch((err) => {
-    console.error('[bridge] Initial gateway connection failed:', err.message);
-    console.log('[bridge] Will retry on first request...');
-  });
+  // Connect to gateway with retry loop (gateway takes 60-90s to boot)
+  async function connectWithRetry() {
+    const maxRetries = 30; // 30 * 5s = 150s max wait
+    for (let i = 1; i <= maxRetries; i++) {
+      try {
+        await ensureConnected();
+        console.log('[bridge] Gateway connected — ready for requests');
+        return;
+      } catch (err) {
+        console.log(`[bridge] Gateway not ready (attempt ${i}/${maxRetries}): ${err.message}`);
+        if (i < maxRetries) await new Promise(r => setTimeout(r, 5000));
+      }
+    }
+    console.error('[bridge] Gateway did not become available after retries. Will retry on first request.');
+  }
+  connectWithRetry();
 });
 
 // Graceful shutdown

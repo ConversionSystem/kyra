@@ -3,8 +3,12 @@
 # Kyra OpenClaw Container — Startup Script
 #
 # 1. Generates OpenClaw config from environment variables
-# 2. Starts the OpenClaw Gateway (real AI engine)
-# 3. Starts the Kyra HTTP Bridge (HTTP API → Gateway WS)
+# 2. Starts the Kyra HTTP Bridge IMMEDIATELY (so Fly health checks pass)
+# 3. Starts the OpenClaw Gateway (real AI engine) in background
+#
+# The bridge handles gateway reconnection internally — it doesn't need
+# the gateway to be ready before accepting HTTP traffic. Health checks
+# return 503 until the gateway connects, but the port is open.
 #
 # Environment variables:
 #   ANTHROPIC_API_KEY    — Anthropic API key (primary)
@@ -115,12 +119,28 @@ fs.writeFileSync('/root/.openclaw/openclaw.json', JSON.stringify(config, null, 2
 console.log('OpenClaw config written to /root/.openclaw/openclaw.json');
 " || { echo "FATAL: Failed to generate config"; exit 1; }
 
+# ── Start Kyra Bridge FIRST (for health checks) ─────────────────────────────
+#
+# The bridge starts its HTTP server on port 3100 immediately. Fly's health
+# check will see the port open. The bridge returns 503 on /health until
+# the gateway connects, but Fly only needs the TCP connection to pass
+# the initial grace period. Once the gateway is up, /health returns 200.
+
+echo ""
+echo "=== Starting Kyra Bridge on port $BRIDGE_PORT ==="
+
+node /usr/local/bin/kyra-bridge.js 2>&1 | stdbuf -oL sed 's/^/[bridge] /' &
+BRIDGE_PID=$!
+echo "Bridge PID: $BRIDGE_PID"
+
+# Give bridge 2 seconds to bind the port
+sleep 2
+
 # ── Start OpenClaw Gateway ────────────────────────────────────────────────────
 
 echo ""
 echo "=== Starting OpenClaw Gateway on port $GATEWAY_PORT ==="
 
-# Export token for the gateway CLI to pick up
 export OPENCLAW_GATEWAY_TOKEN="$GATEWAY_TOKEN"
 
 openclaw gateway \
@@ -128,49 +148,25 @@ openclaw gateway \
   --bind loopback \
   --port "$GATEWAY_PORT" \
   --token "$GATEWAY_TOKEN" \
-  2>&1 | sed 's/^/[openclaw] /' &
+  2>&1 | stdbuf -oL sed 's/^/[openclaw] /' &
 
 GATEWAY_PID=$!
 echo "Gateway PID: $GATEWAY_PID"
-
-# Wait for gateway to accept TCP connections
-echo "Waiting for gateway to be ready..."
-READY=0
-for i in $(seq 1 90); do
-  if ! kill -0 $GATEWAY_PID 2>/dev/null; then
-    echo "FATAL: Gateway process exited!"
-    wait $GATEWAY_PID 2>/dev/null
-    exit 1
-  fi
-
-  if node -e "
-    const net = require('net');
-    const s = net.createConnection(${GATEWAY_PORT}, '127.0.0.1');
-    s.setTimeout(1000);
-    s.on('connect', () => { s.destroy(); process.exit(0); });
-    s.on('error', () => process.exit(1));
-    s.on('timeout', () => { s.destroy(); process.exit(1); });
-  " 2>/dev/null; then
-    echo "Gateway ready! (took ${i}s)"
-    READY=1
-    break
-  fi
-
-  sleep 1
-done
-
-if [ $READY -ne 1 ]; then
-  echo "FATAL: Gateway did not become ready in 90 seconds"
-  kill $GATEWAY_PID 2>/dev/null
-  exit 1
-fi
-
-# ── Start Kyra Bridge ────────────────────────────────────────────────────────
-
 echo ""
-echo "=== Starting Kyra Bridge on port $BRIDGE_PORT ==="
-echo "=== REAL OpenClaw is online. Skills, memory, tools — all live. ==="
+echo "=== REAL OpenClaw starting. Bridge ready for health checks. ==="
+echo "=== Gateway will connect to bridge automatically when ready. ==="
 echo ""
 
-# Run bridge in foreground (container's main process)
-exec node /usr/local/bin/kyra-bridge.js
+# ── Wait for either process to exit ──────────────────────────────────────────
+
+# If either process dies, the container should restart
+wait -n $BRIDGE_PID $GATEWAY_PID
+EXIT_CODE=$?
+
+echo "A process exited with code $EXIT_CODE — shutting down container"
+
+# Clean up the other process
+kill $BRIDGE_PID 2>/dev/null || true
+kill $GATEWAY_PID 2>/dev/null || true
+
+exit $EXIT_CODE
