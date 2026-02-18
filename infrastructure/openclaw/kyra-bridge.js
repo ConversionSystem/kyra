@@ -743,7 +743,7 @@ async function handleChannelConnect(body, res) {
     const patchResult = await gw.rpc('config.patch', {
       baseHash,
       raw,
-      reason: `Connect ${channel} channel via Kyra dashboard`,
+      note: `Connect ${channel} channel via Kyra dashboard`,
       restartDelayMs: 2000,
     }, 30000);
 
@@ -778,7 +778,7 @@ async function handleChannelDisconnect(body, res) {
     const patchResult = await gw.rpc('config.patch', {
       baseHash,
       raw,
-      reason: `Disconnect ${channel} channel via Kyra dashboard`,
+      note: `Disconnect ${channel} channel via Kyra dashboard`,
       restartDelayMs: 2000,
     }, 30000);
 
