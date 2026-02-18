@@ -1,22 +1,25 @@
 import Link from 'next/link';
-import { 
-  ArrowRightIcon, 
-  MessageSquareIcon, 
+import {
+  ArrowRightIcon,
+  MessageSquareIcon,
   ShieldCheckIcon,
   UsersIcon,
   BarChart3Icon,
   BrainIcon,
   SettingsIcon,
-  CreditCardIcon,
-  CalendarIcon,
-  HeadphonesIcon,
   GlobeIcon,
   SmartphoneIcon,
-  MailIcon,
-  WrenchIcon,
-  Trash2Icon,
+  TerminalIcon,
+  ZapIcon,
+  SearchIcon,
+  FileTextIcon,
+  ClockIcon,
   EyeIcon,
   LockIcon,
+  LayersIcon,
+  MonitorIcon,
+  DollarSignIcon,
+  CheckCircleIcon,
 } from 'lucide-react';
 
 export default function LandingPage() {
@@ -31,6 +34,9 @@ export default function LandingPage() {
           <span className="text-xl font-semibold text-gray-900">Kyra</span>
         </div>
         <nav className="hidden md:flex items-center gap-8">
+          <Link href="#why-kyra" className="text-gray-600 hover:text-gray-700 transition text-sm">
+            Why Kyra
+          </Link>
           <Link href="#how-it-works" className="text-gray-600 hover:text-gray-700 transition text-sm">
             How It Works
           </Link>
@@ -42,8 +48,8 @@ export default function LandingPage() {
           <Link href="/login" className="text-gray-600 hover:text-gray-700 transition text-xs sm:text-sm font-medium">
             Sign In
           </Link>
-          <Link 
-            href="/signup/agency" 
+          <Link
+            href="/signup/agency"
             className="px-3 sm:px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 transition font-medium text-xs sm:text-sm text-white"
           >
             Join Beta
@@ -63,17 +69,19 @@ export default function LandingPage() {
                 Powered by OpenClaw
               </span>
             </div>
-            
+
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.1] mb-6 tracking-tight text-gray-900">
-              Your clients deserve a dedicated assistant. Now they can have one.
+              Give every client a real AI employee.
+              <br />
+              <span className="text-indigo-600">Not a chatbot.</span>
             </h1>
-            
+
             <p className="text-lg md:text-xl text-gray-600 leading-relaxed max-w-2xl mx-auto mb-8">
-              Kyra brings the power of{' '}
-              <Link href="https://openclaw.ai" className="text-indigo-600 hover:underline" target="_blank">
+              Kyra hosts the full{' '}
+              <Link href="https://openclaw.ai" className="text-indigo-600 hover:underline font-medium" target="_blank">
                 OpenClaw
               </Link>
-              {' '}to people who&apos;ll never run a terminal. Sign up, connect GoHighLevel, pick a persona — your client has a personal assistant that handles leads, books appointments, and never clocks out.
+              {' '}platform for agencies. Your clients get AI employees that browse the web, research leads, schedule follow-ups, analyze documents, and work 24/7 — managed from one dashboard.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -81,127 +89,335 @@ export default function LandingPage() {
                 href="/signup/agency"
                 className="flex items-center gap-2 px-7 py-3.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 transition font-semibold text-base text-white"
               >
-                Join the Beta — It&apos;s Free
+                Start Free Beta
                 <ArrowRightIcon className="h-4 w-4" />
               </Link>
               <Link
-                href="#how-it-works"
+                href="#why-kyra"
                 className="flex items-center gap-2 px-6 py-3 rounded-lg border border-gray-300 hover:border-gray-400 transition font-medium text-sm text-gray-700"
               >
-                See How It Works
+                See Why Agencies Switch
               </Link>
             </div>
 
             <p className="text-sm text-gray-400 mt-4">
               Free during beta · Bring your own API keys · No credit card required
             </p>
-            <p className="text-xs text-gray-400 mt-2 flex items-center justify-center gap-1.5">
-              <ShieldCheckIcon className="h-3.5 w-3.5 text-indigo-400" />
-              Your data never trains AI models
-            </p>
           </div>
         </section>
 
-        {/* What is Kyra */}
-        <section className="bg-gray-50 border-y border-gray-100 py-16 md:py-20">
+        {/* The Problem */}
+        <section id="why-kyra" className="bg-gray-50 border-y border-gray-100 py-16 md:py-20">
           <div className="container mx-auto px-4 md:px-6">
             <div className="max-w-3xl mx-auto">
               <h2 className="text-2xl md:text-3xl font-bold mb-6 text-center">
-                OpenClaw is incredible. But 99% of people will never set it up.
+                Every &ldquo;AI agent&rdquo; your agency can buy today is just a chatbot.
               </h2>
               <div className="text-gray-600 leading-relaxed space-y-4 text-center max-w-2xl mx-auto">
                 <p>
-                  <Link href="https://openclaw.ai" className="text-indigo-600 hover:underline" target="_blank">OpenClaw</Link> is one of the most powerful personal assistant frameworks out there — tools, memory, scheduling, multi-channel messaging, sub-agents, browser control. It can genuinely run parts of a business.
+                  GHL&apos;s Conversation AI has 2 intents. Stammer.ai builds chat widgets.
+                  They respond to messages — that&apos;s it. They can&apos;t research a lead, browse a website,
+                  analyze a PDF, or proactively follow up on their own.
+                </p>
+                <p className="text-gray-900 font-medium text-lg">
+                  Your clients don&apos;t need another chatbot.
+                  They need an AI employee that actually works.
                 </p>
                 <p>
-                  But it needs API keys, a server, CLI comfort, and time to configure. That&apos;s fine for developers. It&apos;s a dealbreaker for everyone else.
+                  <Link href="https://openclaw.ai" className="text-indigo-600 hover:underline" target="_blank">OpenClaw</Link>
+                  {' '}is the most powerful autonomous AI agent platform — 51 skills, 24 tools,
+                  browser control, persistent memory, multi-model support. But it needs a server, a terminal, and technical expertise.
                 </p>
                 <p className="text-gray-900 font-medium">
-                  Kyra is the bridge. We host OpenClaw so your clients don&apos;t have to. They get a dedicated assistant — you get a new service to sell.
+                  Kyra hosts real OpenClaw for every client. Agencies manage everything from one dashboard.
                 </p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* What it actually does */}
+        {/* Chatbot vs AI Employee comparison */}
         <section className="container mx-auto px-4 md:px-6 py-16 md:py-20">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="text-2xl md:text-3xl font-bold mb-4">
-                What your clients actually get
+                Chatbot vs. AI Employee
               </h2>
               <p className="text-gray-600 max-w-xl mx-auto">
-                Not a chatbot. A persistent assistant that knows their business, their contacts, and their calendar.
+                The gap between what agencies sell today and what Kyra delivers.
               </p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-8">
-              <Outcome 
-                icon={<MessageSquareIcon className="h-6 w-6" />}
-                title="Responds to every lead"
-                description="SMS, email, or chat — every inbound message gets a thoughtful, personalized reply within 60 seconds. No leads left hanging."
+            <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+              {/* Chatbot column */}
+              <div className="rounded-2xl border border-gray-200 bg-gray-50 p-6 md:p-8">
+                <div className="flex items-center gap-2 mb-5">
+                  <MessageSquareIcon className="h-5 w-5 text-gray-400" />
+                  <h3 className="font-semibold text-gray-500">Typical &ldquo;AI Agent&rdquo;</h3>
+                </div>
+                <ul className="space-y-3">
+                  <CompareItem text="Answers FAQs from a script" negative />
+                  <CompareItem text="2 intents: Q&A + booking" negative />
+                  <CompareItem text="OpenAI only" negative />
+                  <CompareItem text="Can't browse the web" negative />
+                  <CompareItem text="Can't read documents" negative />
+                  <CompareItem text="Can't take proactive action" negative />
+                  <CompareItem text="Forgets everything between sessions" negative />
+                  <CompareItem text="One trick: respond to messages" negative />
+                </ul>
+              </div>
+
+              {/* AI Employee column */}
+              <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/30 p-6 md:p-8">
+                <div className="flex items-center gap-2 mb-5">
+                  <BrainIcon className="h-5 w-5 text-indigo-600" />
+                  <h3 className="font-semibold text-indigo-700">Kyra AI Employee</h3>
+                </div>
+                <ul className="space-y-3">
+                  <CompareItem text="Understands context and nuance" />
+                  <CompareItem text="Unlimited capabilities via 51 skills" />
+                  <CompareItem text="Claude, GPT, Gemini — any model" />
+                  <CompareItem text="Browses the web and researches leads" />
+                  <CompareItem text="Reads PDFs, analyzes documents" />
+                  <CompareItem text="Schedules follow-ups autonomously" />
+                  <CompareItem text="Persistent memory across all conversations" />
+                  <CompareItem text="Full OpenClaw: browser, email, files, cron" />
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* The 3 Layers of Value */}
+        <section className="bg-gray-50 border-y border-gray-100 py-16 md:py-20">
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="text-center mb-12">
+              <h2 className="text-2xl md:text-3xl font-bold mb-4">
+                Three layers of value. One platform.
+              </h2>
+              <p className="text-gray-600 max-w-xl mx-auto">
+                More than hosting. More than a dashboard. A complete agency AI business.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+              <LayerCard
+                number="1"
+                color="blue"
+                icon={<TerminalIcon className="h-6 w-6" />}
+                title="Real OpenClaw Hosting"
+                subtitle="The Foundation"
+                description="Every user gets a real OpenClaw Gateway with the full terminal UI, all 51 skills, 24 tools, Chromium browser, and multi-model support. Not a dumbed-down version — the real thing."
+                tags={['51 skills', '24 tools', 'Browser control', 'Persistent memory']}
               />
-              <Outcome 
-                icon={<CalendarIcon className="h-6 w-6" />}
-                title="Books appointments"
-                description="Qualifies prospects through natural conversation and puts them on the calendar. Your client's team shows up to close, not chase."
+              <LayerCard
+                number="2"
+                color="indigo"
+                icon={<LayersIcon className="h-6 w-6" />}
+                title="Agency Control Layer"
+                subtitle="The Differentiator"
+                description="Manage 20 clients' AI employees from one screen instead of 20 separate terminals. Per-client config, conversations inbox, usage tracking, GHL integration, white-label branding."
+                tags={['Multi-client dashboard', 'GHL integration', 'White-label', 'Per-client analytics']}
               />
-              <Outcome 
-                icon={<BrainIcon className="h-6 w-6" />}
-                title="Remembers everything"
-                description="Every interaction builds context. The assistant knows who called last week, what they asked about, and where they are in the pipeline."
+              <LayerCard
+                number="3"
+                color="violet"
+                icon={<DollarSignIcon className="h-6 w-6" />}
+                title="AI Employee Business"
+                subtitle="The Revenue"
+                description='Sell AI employees to clients at $500–5,000/month. Your cost: platform + API keys. Clients never see a terminal — they just know their "AI receptionist" works 24/7.'
+                tags={['70-90% margins', '$500-5K/client/mo', 'White-label ready', 'BYOK']}
               />
             </div>
           </div>
         </section>
 
         {/* How it works */}
-        <section id="how-it-works" className="bg-gray-50 border-y border-gray-100 py-16 md:py-20">
+        <section id="how-it-works" className="container mx-auto px-4 md:px-6 py-16 md:py-20">
+          <div className="text-center mb-12">
+            <h2 className="text-2xl md:text-3xl font-bold mb-4">
+              Set up a client&apos;s AI employee in minutes
+            </h2>
+            <p className="text-gray-600 max-w-xl mx-auto">
+              No servers. No terminal. No DevOps. Just results.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-4 gap-8 max-w-4xl mx-auto">
+            <Step
+              number="1"
+              title="Add a client"
+              description="Name, industry, and what the AI should do. Pick from industry templates or start from scratch."
+            />
+            <Step
+              number="2"
+              title="Train the AI"
+              description="Upload FAQs, business info, or a website URL. The AI learns their services, pricing, and tone."
+            />
+            <Step
+              number="3"
+              title="Connect channels"
+              description="GHL for SMS/leads, Telegram, WhatsApp, Discord — one click each. The AI is live on all channels."
+            />
+            <Step
+              number="4"
+              title="Monitor & scale"
+              description="Watch conversations in real-time. Track usage per client. Add more clients as you grow."
+            />
+          </div>
+        </section>
+
+        {/* What the AI can actually do */}
+        <section id="features" className="bg-gray-50 border-y border-gray-100 py-16 md:py-20">
           <div className="container mx-auto px-4 md:px-6">
             <div className="text-center mb-12">
               <h2 className="text-2xl md:text-3xl font-bold mb-4">
-                Set up a client in 5 minutes
+                What your clients&apos; AI employees can actually do
               </h2>
               <p className="text-gray-600 max-w-xl mx-auto">
-                No code, no servers. Connect your API keys, pick a persona, and go.
+                Powered by OpenClaw&apos;s full autonomous agent platform — not a chatbot SDK.
               </p>
             </div>
 
-            <div className="grid md:grid-cols-4 gap-8 max-w-4xl mx-auto">
-              <Step
-                number="1"
-                title="Connect their GHL account"
-                description="One-click OAuth. Kyra syncs their contacts, conversations, and pipeline."
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-5xl mx-auto">
+              <Feature
+                icon={<MessageSquareIcon className="h-5 w-5" />}
+                title="Respond to every lead"
+                description="SMS, WhatsApp, Telegram, web chat — thoughtful replies in seconds. No leads left hanging, 24/7."
               />
-              <Step
-                number="2"
-                title="Pick a persona"
-                description="Dental receptionist, real estate assistant, home services coordinator — or build your own."
+              <Feature
+                icon={<SearchIcon className="h-5 w-5" />}
+                title="Research leads & competitors"
+                description="Browse the web, check competitor pricing, look up businesses — real research, not canned answers."
               />
-              <Step
-                number="3"
-                title="Set the boundaries"
-                description="Choose what the assistant can do. Start with just reading, then unlock messaging, booking, and more."
+              <Feature
+                icon={<FileTextIcon className="h-5 w-5" />}
+                title="Analyze documents"
+                description="Customer sends a PDF? The AI reads it, extracts key info, and responds intelligently."
               />
-              <Step
-                number="4"
-                title="Turn it on"
-                description="The assistant starts working. You monitor everything from your dashboard."
+              <Feature
+                icon={<ClockIcon className="h-5 w-5" />}
+                title="Schedule & follow up"
+                description="Proactively sends follow-ups, reminders, and check-ins. Doesn't wait to be asked."
+              />
+              <Feature
+                icon={<BrainIcon className="h-5 w-5" />}
+                title="Remember everything"
+                description="Persistent memory across every conversation. Knows who called last week and what they asked about."
+              />
+              <Feature
+                icon={<SmartphoneIcon className="h-5 w-5" />}
+                title="GoHighLevel native"
+                description="Reads contacts, updates pipelines, books on calendars — all through GHL's own API."
+              />
+              <Feature
+                icon={<GlobeIcon className="h-5 w-5" />}
+                title="Browse any website"
+                description="Full Chromium browser built in. Fill forms, extract data, take screenshots, automate workflows."
+              />
+              <Feature
+                icon={<ZapIcon className="h-5 w-5" />}
+                title="Run automations"
+                description="Scheduled tasks, recurring jobs, smart triggers. The AI works while everyone sleeps."
+              />
+              <Feature
+                icon={<MonitorIcon className="h-5 w-5" />}
+                title="Full OpenClaw Terminal"
+                description="Power users get the complete OpenClaw Gateway Dashboard — chat, sessions, cron, skills, config, logs."
               />
             </div>
           </div>
         </section>
 
-        {/* For Agencies */}
+        {/* For Agencies — the business case */}
         <section className="container mx-auto px-4 md:px-6 py-16 md:py-20">
           <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-2xl md:text-3xl font-bold mb-4">
+                The agency math
+              </h2>
+              <p className="text-gray-600 max-w-xl mx-auto">
+                Stop selling chatbots for $300/month. Sell AI employees for $2,000/month.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto mb-10">
+              <div className="rounded-2xl border border-gray-200 bg-gray-50 p-6 md:p-8">
+                <h3 className="font-semibold text-gray-500 mb-4">Without Kyra</h3>
+                <ul className="space-y-3 text-sm text-gray-600">
+                  <li className="flex items-start gap-2">
+                    <span className="text-red-400 mt-0.5">✕</span>
+                    20 clients = 20 separate OpenClaw instances
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-red-400 mt-0.5">✕</span>
+                    20 dashboards to monitor
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-red-400 mt-0.5">✕</span>
+                    20 configs to maintain manually
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-red-400 mt-0.5">✕</span>
+                    40+ hours/month on ops
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-red-400 mt-0.5">✕</span>
+                    No cross-client visibility
+                  </li>
+                </ul>
+              </div>
+
+              <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/30 p-6 md:p-8">
+                <h3 className="font-semibold text-indigo-700 mb-4">With Kyra</h3>
+                <ul className="space-y-3 text-sm text-gray-700">
+                  <li className="flex items-start gap-2">
+                    <CheckCircleIcon className="h-4 w-4 text-indigo-600 mt-0.5 shrink-0" />
+                    One platform, all clients managed
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircleIcon className="h-4 w-4 text-indigo-600 mt-0.5 shrink-0" />
+                    One conversations inbox across all clients
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircleIcon className="h-4 w-4 text-indigo-600 mt-0.5 shrink-0" />
+                    Per-client AI config from one dashboard
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircleIcon className="h-4 w-4 text-indigo-600 mt-0.5 shrink-0" />
+                    5 hours/month instead of 40
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircleIcon className="h-4 w-4 text-indigo-600 mt-0.5 shrink-0" />
+                    Usage tracking + billing per client
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-indigo-100 bg-indigo-50/50 p-6 md:p-8 max-w-3xl mx-auto text-center">
+              <p className="text-gray-700 mb-2">
+                Agencies charge clients <span className="font-bold text-gray-900">$500–$5,000/month</span> for AI employee services.
+              </p>
+              <p className="text-gray-700">
+                Their cost with Kyra: platform fee + API keys (~$50–100/client).
+              </p>
+              <p className="text-2xl font-bold text-indigo-700 mt-4">
+                70–90% gross margins.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Agency features grid */}
+        <section className="bg-gray-50 border-y border-gray-100 py-16 md:py-20">
+          <div className="container mx-auto px-4 md:px-6">
             <div className="text-center mb-12">
               <h2 className="text-2xl md:text-3xl font-bold mb-4">
                 Built for agencies managing multiple clients
               </h2>
               <p className="text-gray-600 max-w-xl mx-auto">
-                One dashboard. Every client. Full control.
+                Everything you need to run an AI employee business.
               </p>
             </div>
 
@@ -209,108 +425,32 @@ export default function LandingPage() {
               <AgencyCard
                 icon={<UsersIcon className="h-5 w-5" />}
                 title="Multi-client dashboard"
-                description="Add clients, connect their GHL accounts, customize each assistant's personality — all from one place."
+                description="Add clients, set up their AI, connect GHL, monitor conversations — all from one screen."
               />
               <AgencyCard
-                icon={<CreditCardIcon className="h-5 w-5" />}
-                title="Bring your own API keys"
-                description="Connect your own Anthropic, OpenAI, or Google keys. You control costs directly — no markups, no middlemen."
-              />
-              <AgencyCard
-                icon={<BarChart3Icon className="h-5 w-5" />}
-                title="See what's working"
-                description="Conversations, response times, appointments booked, costs per client — real numbers, not vanity metrics."
+                icon={<MessageSquareIcon className="h-5 w-5" />}
+                title="Cross-client conversations"
+                description="One inbox for every conversation across all clients. Filter, search, monitor quality."
               />
               <AgencyCard
                 icon={<SettingsIcon className="h-5 w-5" />}
-                title="Your brand, not ours"
-                description="White-label the whole thing. Your logo, your colors, your domain. Clients never see Kyra's name."
+                title="White-label everything"
+                description="Your logo, your colors, your domain. Clients see your brand — never Kyra or OpenClaw."
               />
-            </div>
-          </div>
-        </section>
-
-        {/* Features grid */}
-        <section id="features" className="bg-gray-50 border-y border-gray-100 py-16 md:py-20">
-          <div className="container mx-auto px-4 md:px-6">
-            <div className="text-center mb-12">
-              <h2 className="text-2xl md:text-3xl font-bold mb-4">
-                Under the hood
-              </h2>
-              <p className="text-gray-600 max-w-xl mx-auto">
-                Kyra runs on OpenClaw&apos;s engine — the same technology that powers autonomous agents for developers worldwide.
-              </p>
-            </div>
-            
-            <div className="grid md:grid-cols-3 gap-5 max-w-4xl mx-auto">
-              <Feature
-                icon={<GlobeIcon className="h-5 w-5" />}
-                title="Multi-channel"
-                description="SMS, email, web chat, WhatsApp, Telegram — one assistant, consistent everywhere."
+              <AgencyCard
+                icon={<BarChart3Icon className="h-5 w-5" />}
+                title="Per-client analytics"
+                description="Messages handled, response times, costs per client. Real numbers for accurate billing."
               />
-              <Feature
+              <AgencyCard
                 icon={<SmartphoneIcon className="h-5 w-5" />}
-                title="GoHighLevel native"
-                description="Reads contacts, updates pipelines, books on calendars — all through GHL's own APIs."
+                title="GHL integration"
+                description="Leads come in via GHL → routed to the right client's AI → response goes back. Seamless."
               />
-              <Feature
-                icon={<HeadphonesIcon className="h-5 w-5" />}
-                title="Knows when to hand off"
-                description="Complex situations get flagged for a human. The assistant steps back gracefully."
-              />
-              <Feature
-                icon={<WrenchIcon className="h-5 w-5" />}
-                title="Gradual rollout"
-                description="Start in monitor-only mode. Enable responses when ready. Expand capabilities at your pace."
-              />
-              <Feature
-                icon={<MailIcon className="h-5 w-5" />}
-                title="Conversation memory"
-                description="Every interaction builds a richer picture. Follow-ups feel natural, not robotic."
-              />
-              <Feature
-                icon={<ShieldCheckIcon className="h-5 w-5" />}
-                title="Your data stays yours"
-                description="No training on conversations. No sharing with third parties. Client data lives in GHL and your Stripe."
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* Data Privacy & Independence */}
-        <section className="container mx-auto px-4 md:px-6 py-16 md:py-20">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-12">
-              <h2 className="text-2xl md:text-3xl font-bold mb-4">
-                Your clients&apos; data stays yours. Period.
-              </h2>
-              <p className="text-gray-600 max-w-2xl mx-auto leading-relaxed">
-                We get it — you need to know that your client conversations aren&apos;t training someone else&apos;s AI, 
-                that billing data isn&apos;t being shared with OpenAI, Anthropic, or Google, and that you&apos;re always in control. 
-                Here&apos;s the short version: your data is yours. Full stop.
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-5 max-w-3xl mx-auto">
               <AgencyCard
                 icon={<LockIcon className="h-5 w-5" />}
-                title="No training on your data"
-                description="Conversations are never used to train AI models. Not ours, not anyone else's. Your client interactions stay private."
-              />
-              <AgencyCard
-                icon={<CreditCardIcon className="h-5 w-5" />}
-                title="Your keys, your costs"
-                description="Use your own AI provider accounts. Full transparency — you see exactly what you spend, and there's nothing hidden on our end."
-              />
-              <AgencyCard
-                icon={<Trash2Icon className="h-5 w-5" />}
-                title="Delete anytime"
-                description="Remove a client and their data is gone. No retention, no dark patterns, no 'we keep it for 90 days' fine print."
-              />
-              <AgencyCard
-                icon={<EyeIcon className="h-5 w-5" />}
-                title="Agency-controlled"
-                description="You decide what the AI can access. Read-only mode, granular permissions, full audit trail. Nothing happens without your say-so."
+                title="Permission controls"
+                description="Choose what each client's AI can access. Web search? Yes. Send emails? Not yet. You decide."
               />
             </div>
           </div>
@@ -321,35 +461,75 @@ export default function LandingPage() {
           <div className="max-w-3xl mx-auto">
             <div className="rounded-2xl border border-gray-200 p-8 md:p-10">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center">
-                  <span className="text-gray-900 text-xs font-bold">OC</span>
+                <div className="w-10 h-10 rounded-lg bg-gray-900 flex items-center justify-center">
+                  <TerminalIcon className="h-5 w-5 text-white" />
                 </div>
-                <span className="font-semibold text-gray-900">Powered by OpenClaw</span>
+                <div>
+                  <span className="font-semibold text-gray-900 block">Powered by OpenClaw</span>
+                  <span className="text-xs text-gray-500">The autonomous AI agent platform</span>
+                </div>
               </div>
               <p className="text-gray-600 leading-relaxed mb-4">
-                OpenClaw is an open-source framework used by thousands of developers to build autonomous agents. It comes with 60+ skills, multi-model support, persistent memory, browser control, scheduling, and a growing ecosystem on{' '}
-                <Link href="https://clawhub.com" className="text-indigo-600 hover:underline" target="_blank">ClawHub</Link>.
+                OpenClaw is an open-source framework used by thousands of developers to build autonomous agents.
+                Every Kyra user gets the <strong>real thing</strong> — not a simplified version, not an API wrapper.
+                The full OpenClaw Gateway with terminal UI, all skills, all tools.
               </p>
               <p className="text-gray-600 leading-relaxed mb-6">
-                Kyra packages all of that into a hosted platform that anyone can use — no terminal, no DevOps. Bring your own API keys, pick your models, and deploy AI employees for clients. The technology is the same; the experience is completely different.
+                Kyra&apos;s value is what we build <em>around</em> OpenClaw: multi-client management, GHL integration,
+                conversation monitoring, per-client analytics, white-label branding. The agency control layer
+                that makes OpenClaw usable for managing 10, 50, or 100 clients.
               </p>
-              <div className="flex flex-wrap gap-3">
-                <Tag text="60+ skills" />
-                <Tag text="Multi-model (Claude, GPT, Gemini)" />
+              <div className="flex flex-wrap gap-2">
+                <Tag text="51 skills" />
+                <Tag text="24 built-in tools" />
+                <Tag text="Claude, GPT, Gemini" />
                 <Tag text="Persistent memory" />
+                <Tag text="Browser automation" />
                 <Tag text="Sub-agents" />
-                <Tag text="Browser control" />
                 <Tag text="Scheduling & cron" />
+                <Tag text="Web search" />
                 <Tag text="File management" />
-                <Tag text="Voice" />
+                <Tag text="Full terminal UI" />
               </div>
             </div>
           </div>
         </section>
 
-        {/* BYOK + Beta */}
-        <section id="byok" className="bg-gray-50 border-y border-gray-100 py-16 md:py-20">
+        {/* Data Privacy */}
+        <section className="bg-gray-50 border-y border-gray-100 py-16 md:py-20">
           <div className="container mx-auto px-4 md:px-6">
+            <div className="text-center mb-12">
+              <h2 className="text-2xl md:text-3xl font-bold mb-4">
+                Your clients&apos; data stays yours
+              </h2>
+              <p className="text-gray-600 max-w-xl mx-auto">
+                No training on conversations. No sharing. Full control.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-5 max-w-4xl mx-auto">
+              <Feature
+                icon={<LockIcon className="h-5 w-5" />}
+                title="No training on your data"
+                description="Conversations are never used to train AI models. Not ours, not anyone else's."
+              />
+              <Feature
+                icon={<EyeIcon className="h-5 w-5" />}
+                title="Agency-controlled"
+                description="You decide what each AI can access. Granular permissions, full audit trail."
+              />
+              <Feature
+                icon={<ShieldCheckIcon className="h-5 w-5" />}
+                title="BYOK — your keys, your costs"
+                description="Use your own AI provider accounts. Full transparency, no markups."
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* BYOK + Beta CTA */}
+        <section className="container mx-auto px-4 md:px-6 py-16 md:py-20">
+          <div className="max-w-4xl mx-auto">
             <div className="text-center mb-12">
               <div className="inline-flex items-center gap-2 mb-4">
                 <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-semibold uppercase tracking-wider">
@@ -357,71 +537,63 @@ export default function LandingPage() {
                 </span>
               </div>
               <h2 className="text-2xl md:text-3xl font-bold mb-4">
-                Bring Your Own Keys. Use Any Model.
+                Free during beta. Bring your own keys.
               </h2>
               <p className="text-gray-600 max-w-2xl mx-auto">
-                Kyra is free during the beta. Connect your own API keys — just like OpenClaw — and use the AI models you already trust. No vendor lock-in, no surprise bills from us.
+                Full platform access while we&apos;re in beta. Connect your own API keys — Anthropic, OpenAI, Google, or OpenRouter.
+                You control costs directly. No surprise bills.
               </p>
             </div>
 
             <div className="grid md:grid-cols-3 gap-5 max-w-4xl mx-auto">
               <div className="p-5 rounded-xl border border-gray-200 bg-white text-center">
                 <div className="text-3xl mb-3">🧠</div>
-                <h3 className="font-semibold mb-1 text-gray-900">Any LLM</h3>
+                <h3 className="font-semibold mb-1 text-gray-900">Any Model</h3>
                 <p className="text-gray-500 text-sm leading-relaxed">
-                  Claude, GPT-4, Gemini, Llama, Mistral — plug in the model that fits your use case and budget.
+                  Claude, GPT-4, Gemini, Llama — pick the model that fits your use case and budget.
                 </p>
               </div>
               <div className="p-5 rounded-xl border border-gray-200 bg-white text-center">
                 <div className="text-3xl mb-3">🔑</div>
                 <h3 className="font-semibold mb-1 text-gray-900">Your API Keys</h3>
                 <p className="text-gray-500 text-sm leading-relaxed">
-                  You control costs directly with your own provider accounts. No markups, no middlemen.
+                  Connect your own provider accounts. No middlemen. You see exactly what you spend.
                 </p>
               </div>
               <div className="p-5 rounded-xl border border-gray-200 bg-white text-center">
                 <div className="text-3xl mb-3">🆓</div>
                 <h3 className="font-semibold mb-1 text-gray-900">Free During Beta</h3>
                 <p className="text-gray-500 text-sm leading-relaxed">
-                  Full platform access while we&apos;re in beta. Help us shape the product, and you&apos;ll get early-adopter perks when we launch.
+                  Full access. Help us shape the product and get early-adopter perks at launch.
                 </p>
               </div>
-            </div>
-
-            <div className="text-center mt-10">
-              <Link
-                href="/signup/agency"
-                className="inline-flex items-center gap-2 px-7 py-3.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 transition font-semibold text-base text-white"
-              >
-                Join the Beta
-                <ArrowRightIcon className="h-4 w-4" />
-              </Link>
-              <p className="text-sm text-gray-400 mt-3">
-                No credit card required · You only pay your AI provider directly
-              </p>
             </div>
           </div>
         </section>
 
         {/* Final CTA */}
-        <section className="container mx-auto px-4 md:px-6 py-20 md:py-24">
-          <div className="max-w-2xl mx-auto text-center">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Give your clients an assistant they&apos;ll actually rely on
-            </h2>
-            <p className="text-gray-600 mb-8 max-w-xl mx-auto text-lg">
-              Not another chatbot. A real assistant — powered by OpenClaw, managed by you, working for them around the clock.
-            </p>
-            <Link
-              href="/signup/agency"
-              className="inline-flex items-center gap-2 px-8 py-4 rounded-lg bg-indigo-600 hover:bg-indigo-700 transition font-semibold text-lg text-white"
-            >
-              Join the Beta
-              <ArrowRightIcon className="h-5 w-5" />
-            </Link>
-            <p className="text-sm text-gray-400 mt-4">
-              Free during beta · Bring your own API keys · No credit card required
-            </p>
+        <section className="bg-gray-900 py-20 md:py-24">
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="max-w-2xl mx-auto text-center">
+              <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
+                Stop selling chatbots.
+                <br />
+                Start selling AI employees.
+              </h2>
+              <p className="text-gray-400 mb-8 max-w-xl mx-auto text-lg">
+                Real OpenClaw power. Agency-grade management. The category that doesn&apos;t exist yet — until now.
+              </p>
+              <Link
+                href="/signup/agency"
+                className="inline-flex items-center gap-2 px-8 py-4 rounded-lg bg-indigo-600 hover:bg-indigo-500 transition font-semibold text-lg text-white"
+              >
+                Join the Beta — It&apos;s Free
+                <ArrowRightIcon className="h-5 w-5" />
+              </Link>
+              <p className="text-sm text-gray-500 mt-4">
+                Free during beta · Bring your own API keys · No credit card required
+              </p>
+            </div>
           </div>
         </section>
       </main>
@@ -455,16 +627,52 @@ export default function LandingPage() {
 
 // ── Components ────────────────────────────────────────────────────────────
 
-function Outcome({ icon, title, description }: {
+function CompareItem({ text, negative }: { text: string; negative?: boolean }) {
+  return (
+    <li className="flex items-start gap-2.5 text-sm">
+      {negative ? (
+        <span className="text-gray-400 mt-0.5 shrink-0">✕</span>
+      ) : (
+        <CheckCircleIcon className="h-4 w-4 text-indigo-600 mt-0.5 shrink-0" />
+      )}
+      <span className={negative ? 'text-gray-500' : 'text-gray-700'}>{text}</span>
+    </li>
+  );
+}
+
+function LayerCard({ number, color, icon, title, subtitle, description, tags }: {
+  number: string;
+  color: string;
   icon: React.ReactNode;
   title: string;
+  subtitle: string;
   description: string;
+  tags: string[];
 }) {
+  const colorMap: Record<string, { bg: string; border: string; text: string; tag: string }> = {
+    blue: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-600', tag: 'bg-blue-100 text-blue-700' },
+    indigo: { bg: 'bg-indigo-50', border: 'border-indigo-200', text: 'text-indigo-600', tag: 'bg-indigo-100 text-indigo-700' },
+    violet: { bg: 'bg-violet-50', border: 'border-violet-200', text: 'text-violet-600', tag: 'bg-violet-100 text-violet-700' },
+  };
+  const c = colorMap[color] || colorMap.indigo;
+
   return (
-    <div>
-      <div className="text-indigo-600 mb-3">{icon}</div>
-      <h3 className="text-lg font-semibold mb-2 text-gray-900">{title}</h3>
-      <p className="text-gray-600 text-sm leading-relaxed">{description}</p>
+    <div className={`rounded-2xl border ${c.border} ${c.bg} p-6 md:p-8`}>
+      <div className={`inline-flex items-center justify-center w-10 h-10 rounded-xl ${c.bg} ${c.text} mb-4`}>
+        {icon}
+      </div>
+      <div className={`text-xs font-semibold uppercase tracking-wider ${c.text} mb-1`}>
+        Layer {number} — {subtitle}
+      </div>
+      <h3 className="text-lg font-bold text-gray-900 mb-3">{title}</h3>
+      <p className="text-gray-600 text-sm leading-relaxed mb-4">{description}</p>
+      <div className="flex flex-wrap gap-1.5">
+        {tags.map((tag) => (
+          <span key={tag} className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${c.tag}`}>
+            {tag}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
@@ -501,9 +709,9 @@ function AgencyCard({ icon, title, description }: {
   );
 }
 
-function Feature({ icon, title, description }: { 
-  icon: React.ReactNode; 
-  title: string; 
+function Feature({ icon, title, description }: {
+  icon: React.ReactNode;
+  title: string;
   description: string;
 }) {
   return (
@@ -522,5 +730,3 @@ function Tag({ text }: { text: string }) {
     </span>
   );
 }
-
-// PricingCard removed — pricing hidden during beta
