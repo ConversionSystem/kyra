@@ -141,13 +141,29 @@ export function ChannelsClient() {
   const [messages, setMessages] = useState<Record<string, { type: 'success' | 'error'; text: string }>>({});
   const [expandedChannel, setExpandedChannel] = useState<string | null>(null);
 
-  // Load channel status
+  // Load channel status — with localStorage cache so status persists across refreshes during gateway restart
   const loadStatus = useCallback(async () => {
+    // Load cached status first
+    try {
+      const cached = localStorage.getItem('kyra-channel-status');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && typeof parsed === 'object') {
+          setChannelStatus(parsed);
+        }
+      }
+    } catch { /* ignore */ }
+
     try {
       const res = await fetch('/api/openclaw/channels');
       const data = await res.json();
-      if (data.ok) setChannelStatus(data.channels || {});
-    } catch { /* ignore */ }
+      if (data.ok) {
+        setChannelStatus(data.channels || {});
+        // Cache to localStorage
+        localStorage.setItem('kyra-channel-status', JSON.stringify(data.channels || {}));
+      }
+      // If not ok (gateway restarting), keep cached status — don't clear
+    } catch { /* ignore — keep cached status */ }
     setLoading(false);
   }, []);
 
@@ -186,12 +202,19 @@ export function ChannelsClient() {
       const data = await res.json();
 
       if (data.ok) {
+        // Immediately mark as connected in local state + cache
+        const newStatus = { ...channelStatus, [channel.id]: { configured: true, hasToken: true } };
+        setChannelStatus(newStatus);
+        localStorage.setItem('kyra-channel-status', JSON.stringify(newStatus));
+
         setMessages((prev) => ({
           ...prev,
-          [channel.id]: { type: 'success', text: `${channel.name} connected! Gateway restarting to apply changes...` },
+          [channel.id]: { type: 'success', text: `${channel.name} connected! Gateway restarting to apply changes... (this takes ~2 minutes)` },
         }));
-        // Refresh status after gateway restart
-        setTimeout(loadStatus, 5000);
+        // Refresh status after gateway restart (~150s for full reboot)
+        setTimeout(loadStatus, 10000);
+        setTimeout(loadStatus, 60000);
+        setTimeout(loadStatus, 150000);
       } else {
         setMessages((prev) => ({
           ...prev,
