@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { requireAgencyMember } from '@/lib/agency/middleware';
 import { isValidSlug } from '@/lib/agency/utils';
+import { provisionGateway } from '@/lib/fly/provisioner';
 import type { CreateAgencyRequest, AgencyWithCounts } from '@/lib/agency/types';
 
 /**
@@ -156,5 +157,21 @@ export async function POST(request: NextRequest) {
   }
 
   console.log('[POST /api/agency] Success! Agency:', agency.id, 'User:', user.id);
+
+  // ── Auto-provision OpenClaw Gateway ──────────────────────────────────────
+  // Fire and forget — don't block the signup response.
+  // Gateway takes ~2-3 min to boot. Status page will show progress.
+  provisionGateway(agency.id)
+    .then((result) => {
+      if (result.success) {
+        console.log(`[POST /api/agency] Gateway provisioned: ${result.appName} → ${result.gatewayUrl}`);
+      } else {
+        console.error(`[POST /api/agency] Gateway provisioning failed: ${result.error}`);
+      }
+    })
+    .catch((err) => {
+      console.error(`[POST /api/agency] Gateway provisioning error:`, err);
+    });
+
   return NextResponse.json(agency, { status: 201 });
 }

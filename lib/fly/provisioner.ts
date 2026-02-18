@@ -103,17 +103,19 @@ export async function provisionGateway(agencyId: string): Promise<ProvisionResul
     console.log(`[provisioner] Creating Fly app: ${appName}`);
     await fly.createApp(appName);
 
-    // 2. Allocate IPs
+    // 2. Allocate IPs — best effort, Fly auto-allocates when machines have services
     console.log(`[provisioner] Allocating IPs for ${appName}`);
     try {
       await fly.allocateSharedIpv4(appName);
+      console.log(`[provisioner] IPv4 allocated for ${appName}`);
     } catch (e) {
-      console.warn(`[provisioner] Shared IPv4 allocation warning (may already exist):`, e);
+      console.warn(`[provisioner] Shared IPv4 allocation skipped (Fly auto-allocates with services):`, e instanceof Error ? e.message : e);
     }
     try {
       await fly.allocateIpv6(appName);
+      console.log(`[provisioner] IPv6 allocated for ${appName}`);
     } catch (e) {
-      console.warn(`[provisioner] IPv6 allocation warning:`, e);
+      console.warn(`[provisioner] IPv6 allocation skipped (Fly auto-allocates with services):`, e instanceof Error ? e.message : e);
     }
 
     // 3. Create persistent volume
