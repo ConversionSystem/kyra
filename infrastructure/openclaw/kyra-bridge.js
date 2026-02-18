@@ -16,8 +16,11 @@
  *   - Session isolation per client-contact pair
  *
  * Endpoints:
- *   POST /chat    { message, sessionKey, systemContext }
- *   GET  /health  → gateway status + session count
+ *   POST /chat       { message, sessionKey, systemContext }
+ *   GET  /health     → gateway status + session count
+ *   POST /tools/invoke → proxy any OpenClaw tool
+ *   /__openclaw__/*  → full Gateway Dashboard (HTML + WS proxy)
+ *   /dashboard       → redirect to /__openclaw__/
  *
  * Architecture:
  *   Kyra Poller (Vercel) → HTTP → [this bridge] → WS → OpenClaw Gateway
@@ -732,10 +735,56 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // ── OpenClaw Gateway Dashboard (full proxy)
+  // Proxy the entire OpenClaw webchat UI + API through the bridge.
+  // This gives agencies the FULL Gateway Dashboard experience:
+  // Chat, Sessions, Cron Jobs, Skills, Nodes, Config, Logs, etc.
+  if (req.url.startsWith('/__openclaw__') || req.url.startsWith('/api/') || req.url === '/favicon.ico') {
+    proxyToGateway(req, res);
+    return;
+  }
+
+  // ── Dashboard redirect (/ → /__openclaw__/)
+  if (req.method === 'GET' && req.url === '/dashboard') {
+    res.writeHead(302, { 'Location': '/__openclaw__/' });
+    res.end();
+    return;
+  }
+
   // ── Not found
   res.writeHead(404, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify({ error: 'Not found. POST /chat or GET /health' }));
 });
+
+// ── Gateway Reverse Proxy ─────────────────────────────────────────────────────
+// Proxies HTTP requests to the OpenClaw Gateway's internal HTTP server.
+// This exposes the full Gateway Dashboard (webchat UI) through the bridge.
+
+function proxyToGateway(clientReq, clientRes) {
+  const gwUrl = `http://${GATEWAY_HOST}:${GATEWAY_PORT}${clientReq.url}`;
+  const proxyReq = http.request(gwUrl, {
+    method: clientReq.method,
+    headers: {
+      ...clientReq.headers,
+      host: `${GATEWAY_HOST}:${GATEWAY_PORT}`,
+      // Pass auth token if configured
+      ...(GATEWAY_TOKEN ? { authorization: `Bearer ${GATEWAY_TOKEN}` } : {}),
+    },
+  }, (proxyRes) => {
+    clientRes.writeHead(proxyRes.statusCode, proxyRes.headers);
+    proxyRes.pipe(clientRes, { end: true });
+  });
+
+  proxyReq.on('error', (err) => {
+    console.error(`[proxy] Gateway proxy error: ${err.message}`);
+    if (!clientRes.headersSent) {
+      clientRes.writeHead(502, { 'Content-Type': 'application/json' });
+    }
+    clientRes.end(JSON.stringify({ error: 'Gateway not available', detail: err.message }));
+  });
+
+  clientReq.pipe(proxyReq, { end: true });
+}
 
 // ── Chat Handler ──────────────────────────────────────────────────────────────
 
@@ -829,6 +878,56 @@ async function handleChat(params, res) {
 }
 
 // ── Startup ───────────────────────────────────────────────────────────────────
+
+// ── WebSocket Proxy (for Gateway Dashboard) ──────────────────────────────────
+// The OpenClaw webchat UI connects via WebSocket. We proxy upgrade requests
+// from the dashboard directly to the gateway's WebSocket server.
+
+server.on('upgrade', (req, clientSocket, head) => {
+  // Only proxy WebSocket connections for the dashboard
+  const gwUrl = `ws://${GATEWAY_HOST}:${GATEWAY_PORT}${req.url || '/'}`;
+  console.log(`[ws-proxy] Upgrade request: ${req.url} → ${gwUrl}`);
+
+  const gwSocket = net.connect(GATEWAY_PORT, GATEWAY_HOST, () => {
+    // Forward the HTTP upgrade request to the gateway
+    const headers = Object.entries(req.headers)
+      .filter(([key]) => key !== 'host')
+      .map(([key, val]) => `${key}: ${val}`)
+      .join('\r\n');
+
+    const upgradeReq = [
+      `${req.method} ${req.url} HTTP/1.1`,
+      `Host: ${GATEWAY_HOST}:${GATEWAY_PORT}`,
+      headers,
+      '', ''
+    ].join('\r\n');
+
+    gwSocket.write(upgradeReq);
+    if (head && head.length > 0) gwSocket.write(head);
+
+    // Once connected, pipe both directions
+    gwSocket.once('data', (chunk) => {
+      // First chunk includes the HTTP upgrade response
+      clientSocket.write(chunk);
+      // Now pipe bidirectionally
+      gwSocket.pipe(clientSocket);
+      clientSocket.pipe(gwSocket);
+    });
+  });
+
+  gwSocket.on('error', (err) => {
+    console.error(`[ws-proxy] Gateway WS error: ${err.message}`);
+    clientSocket.destroy();
+  });
+
+  clientSocket.on('error', (err) => {
+    console.error(`[ws-proxy] Client WS error: ${err.message}`);
+    gwSocket.destroy();
+  });
+
+  clientSocket.on('close', () => gwSocket.destroy());
+  gwSocket.on('close', () => clientSocket.destroy());
+});
 
 server.listen(BRIDGE_PORT, '0.0.0.0', () => {
   console.log('');
