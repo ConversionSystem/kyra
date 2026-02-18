@@ -100,6 +100,16 @@ const config = {
       mode: 'token',
       token: process.env.GATEWAY_TOKEN || 'kyra-internal'
     },
+    // Allow the Gateway Dashboard UI to connect from these origins
+    controlUi: {
+      allowedOrigins: [
+        'https://gateway.conversionsystem.com',
+        'https://kyra-gateway.fly.dev',
+        'https://kyra.conversionsystem.com',
+        'http://localhost:3000',
+        'http://localhost:3100',
+      ],
+    },
     // Unblock tools for HTTP /tools/invoke API so Kyra dashboard can use them
     // Default deny: sessions_spawn, sessions_send, gateway, whatsapp_login
     // We allow file ops, exec, sessions — Kyra IS the trusted interface
