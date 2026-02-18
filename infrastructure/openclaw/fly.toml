@@ -39,6 +39,10 @@ primary_region = 'fra'
     path = "/health"
     timeout = "10s"
 
+[mounts]
+  source = 'openclaw_data'
+  destination = '/root/.openclaw'
+
 [[vm]]
   memory = '2048mb'
   cpu_kind = 'shared'
