@@ -1,4 +1,4 @@
 # HEARTBEAT.md
 
-# Kyra container heartbeat — keep empty for now.
-# Future: periodic GHL inbox checks, follow-up queue processing.
+# Keep this file empty to skip heartbeat checks.
+# Add periodic tasks below when needed.
