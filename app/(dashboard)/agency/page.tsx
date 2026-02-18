@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Users, Activity, BarChart3, Plus } from 'lucide-react';
+import { GatewayStatus } from '@/components/agency/gateway-status';
 
 const statusColors: Record<string, string> = {
   active: 'border-green-200 bg-green-50 text-green-600',
@@ -46,6 +47,11 @@ export default async function AgencyOverviewPage() {
             <span className="hidden sm:inline">Add Client</span>
           </Button>
         </Link>
+      </div>
+
+      {/* Gateway Status */}
+      <div className="mb-6 sm:mb-8">
+        <GatewayStatus />
       </div>
 
       {/* Stats */}
