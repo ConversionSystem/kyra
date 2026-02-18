@@ -794,6 +794,62 @@ async function handleChannelDisconnect(body, res) {
   }
 }
 
+// ── Channel Pairing ─────────────────────────────────────────────────────────
+
+async function handleChannelPair(body, res) {
+  try {
+    const { channel, code } = JSON.parse(body);
+
+    if (!code) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ ok: false, error: { message: 'code required' } }));
+    }
+
+    await ensureConnected();
+
+    // List pending pairings to find one matching the code
+    const pendingResult = await gw.rpc('device.pair.list', {}, 10000);
+    const pending = pendingResult?.pending || pendingResult?.devices || [];
+
+    // Find the pairing request matching this code
+    const match = pending.find(p => {
+      const pCode = (p.pairingCode || p.code || '').toUpperCase();
+      return pCode === code.toUpperCase();
+    });
+
+    if (!match) {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ ok: false, error: { message: `No pending pairing found for code: ${code}. Make sure you sent a message to the bot first.` } }));
+    }
+
+    // Approve the pairing
+    const approveResult = await gw.rpc('device.pair.approve', {
+      requestId: match.requestId || match.id,
+    }, 10000);
+
+    console.log(`[bridge] Pairing approved for ${channel || 'unknown'}: code=${code}`);
+
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, message: 'Pairing approved! You can now chat with your bot.', result: approveResult }));
+  } catch (err) {
+    console.error(`[bridge] Pairing error: ${err.message}`);
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: false, error: { message: err.message } }));
+  }
+}
+
+async function handleChannelPairings(res) {
+  try {
+    await ensureConnected();
+    const result = await gw.rpc('device.pair.list', {}, 10000);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, pending: result?.pending || result?.devices || [] }));
+  } catch (err) {
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: false, error: { message: err.message } }));
+  }
+}
+
 // ── HTTP Server ───────────────────────────────────────────────────────────────
 
 const server = http.createServer((req, res) => {
@@ -857,6 +913,20 @@ const server = http.createServer((req, res) => {
   // ── Channel Status endpoint
   if (req.method === 'GET' && req.url === '/channels/status') {
     handleChannelStatus(res);
+    return;
+  }
+
+  // ── Channel Pairing endpoint (approve Telegram/Discord user pairing)
+  if (req.method === 'POST' && req.url === '/channels/pair') {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => { handleChannelPair(body, res); });
+    return;
+  }
+
+  // ── Pending Pairings endpoint
+  if (req.method === 'GET' && req.url === '/channels/pairings') {
+    handleChannelPairings(res);
     return;
   }
 
