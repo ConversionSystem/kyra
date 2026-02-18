@@ -5,8 +5,7 @@ import { getAgencyForUser, getAgencyClients } from '@/lib/agency/queries';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Users, Activity, BarChart3, Plus, Terminal } from 'lucide-react';
-import { OpenControlUIButton } from '@/components/open-control-ui-button';
+import { Users, Activity, BarChart3, Plus } from 'lucide-react';
 
 const statusColors: Record<string, string> = {
   active: 'border-green-200 bg-green-50 text-green-600',
@@ -48,34 +47,6 @@ export default async function AgencyOverviewPage() {
           </Button>
         </Link>
       </div>
-
-      {/* AI Engine Quick Access */}
-      <Card className="mb-6 sm:mb-8 border-indigo-200 bg-gradient-to-r from-indigo-50 to-purple-50">
-        <CardContent className="p-4 sm:p-5">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-indigo-100 p-2.5">
-                <Terminal className="h-5 w-5 text-indigo-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">AI Engine</h3>
-                <p className="text-xs text-gray-500">
-                  Chat, sessions, cron jobs, skills, config &amp; more
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Link href="/agency/tools">
-                <Button size="sm" variant="outline" className="gap-1.5 border-indigo-300 text-indigo-700 hover:bg-indigo-100">
-                  <Terminal className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">AI Tools</span>
-                </Button>
-              </Link>
-              <OpenControlUIButton />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
