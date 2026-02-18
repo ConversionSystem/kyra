@@ -121,12 +121,12 @@ async function forwardToContainer(
 ): Promise<void> {
   // Resolve the agency's own gateway
   const agencyGateway = await getGatewayByAgencyId(agencyId);
-  const workerUrl = agencyGateway?.url || process.env.KYRA_WORKER_URL;
+  const workerUrl = agencyGateway?.url;
   const apiSecret = process.env.KYRA_API_SECRET;
 
   if (!workerUrl) {
     console.warn(
-      '[ghl/webhook] No gateway provisioned for agency and no KYRA_WORKER_URL fallback',
+      `[ghl/webhook] No isolated gateway provisioned for agency ${agencyId}`,
     );
     return;
   }
