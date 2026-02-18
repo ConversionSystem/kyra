@@ -13,8 +13,8 @@
  *   - Multi-model support
  */
 
-// Legacy fallback — only used when gateway-resolver returns no per-agency URL
-const FALLBACK_BRIDGE_URL = process.env.KYRA_WORKER_URL || 'https://kyra-gateway.fly.dev';
+// ⚠️ NO FALLBACK — every function requires an explicit gatewayUrl.
+// Passing undefined/null will throw, not silently use a shared gateway.
 
 export interface OpenClawMessage {
   role: 'user' | 'assistant' | 'system';
@@ -49,10 +49,10 @@ export async function sendMessage(
   message: string,
   systemContext?: string
 ): Promise<OpenClawResponse> {
-  const baseUrl = gatewayUrl || FALLBACK_BRIDGE_URL;
+  if (!gatewayUrl) throw new Error('No gateway URL provided — cannot send message without isolated gateway');
 
   try {
-    const response = await fetch(`${baseUrl}/chat`, {
+    const response = await fetch(`${gatewayUrl}/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -85,10 +85,10 @@ export async function sendMessage(
  * @param gatewayUrl - The agency's gateway URL (from gateway-resolver)
  */
 export async function healthCheck(gatewayUrl?: string): Promise<OpenClawHealthStatus | null> {
-  const baseUrl = gatewayUrl || FALLBACK_BRIDGE_URL;
+  if (!gatewayUrl) return null;
 
   try {
-    const response = await fetch(`${baseUrl}/health`, {
+    const response = await fetch(`${gatewayUrl}/health`, {
       signal: AbortSignal.timeout(10_000),
     });
     if (!response.ok) return null;
@@ -131,13 +131,15 @@ export async function invokeTool(
   args: Record<string, unknown> = {},
   action?: string
 ): Promise<ToolInvokeResult> {
-  const baseUrl = gatewayUrl || FALLBACK_BRIDGE_URL;
+  if (!gatewayUrl) {
+    return { ok: false, error: { type: 'gateway_not_provisioned', message: 'No gateway URL — cannot invoke tool' } };
+  }
 
   try {
     const body: Record<string, unknown> = { tool, args };
     if (action) body.action = action;
 
-    const response = await fetch(`${baseUrl}/tools/invoke`, {
+    const response = await fetch(`${gatewayUrl}/tools/invoke`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),

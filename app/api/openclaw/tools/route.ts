@@ -26,8 +26,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing tool name' }, { status: 400 });
     }
 
-    // Resolve agency's gateway
-    const { url } = await resolveGatewayUrl(user.id);
+    // Resolve agency's gateway — no fallback
+    const resolved = await resolveGatewayUrl(user.id);
+    if (!resolved) {
+      return NextResponse.json(
+        { ok: false, error: { type: 'gateway_not_provisioned', message: 'Your AI gateway is being set up. Please try again in a few minutes.' } },
+        { status: 503 }
+      );
+    }
+    const { url } = resolved;
 
     // Invoke via the agency's OpenClaw bridge
     const result = await invokeTool(url, tool, args || {}, action);

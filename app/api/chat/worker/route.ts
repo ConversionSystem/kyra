@@ -206,8 +206,15 @@ export async function POST(request: NextRequest) {
       ? agencySystemContext + '\n\n' + systemContext
       : systemContext;
 
-    // Resolve the user's agency gateway
-    const { url: gatewayUrl } = await resolveGatewayUrl(authUser.id);
+    // Resolve the user's agency gateway — no fallback to shared gateway
+    const resolved = await resolveGatewayUrl(authUser.id);
+    if (!resolved) {
+      return new Response(
+        JSON.stringify({ error: 'Your AI gateway is being set up. Please try again in a few minutes.' }),
+        { status: 503, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+    const { url: gatewayUrl } = resolved;
 
     let workerResponse: Response;
     try {

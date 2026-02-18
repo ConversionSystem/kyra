@@ -372,9 +372,9 @@ async function processConversation(
 
   // Resolve the agency's own gateway (per-agency isolation)
   const agencyGateway = await getGatewayByAgencyId(client.agency_id);
-  const bridgeUrl = agencyGateway?.url || process.env.KYRA_WORKER_URL;
+  const bridgeUrl = agencyGateway?.url;
   if (!bridgeUrl) {
-    throw new Error('No gateway provisioned for agency and no KYRA_WORKER_URL fallback');
+    throw new Error(`No isolated gateway provisioned for agency ${client.agency_id}`);
   }
 
   // Call the agency's own OpenClaw Bridge (isolated per-agency gateway)

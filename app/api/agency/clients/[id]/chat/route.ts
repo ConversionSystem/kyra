@@ -54,8 +54,15 @@ export async function POST(
       return new Response('Forbidden: not a member of this agency', { status: 403 });
     }
 
-    // 4. Resolve the agency's own gateway (per-agency isolation)
-    const { url: gatewayUrl } = await resolveGatewayUrl(user.id);
+    // 4. Resolve the agency's own gateway — NO FALLBACK
+    const resolved = await resolveGatewayUrl(user.id);
+    if (!resolved) {
+      return new Response(
+        JSON.stringify({ error: 'Your AI gateway is being set up. Please try again in a few minutes.' }),
+        { status: 503, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+    const { url: gatewayUrl } = resolved;
 
     // 5. Parse request body
     const { message } = (await request.json()) as { message?: string };
