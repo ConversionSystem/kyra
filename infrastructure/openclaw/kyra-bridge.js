@@ -687,8 +687,10 @@ async function handleChannelStatus(res) {
   try {
     await ensureConnected();
     // Get current config to check which channels are configured
+    // config.get returns: { config, raw (string), parsed (object), resolved, hash, ... }
     const configResult = await gw.rpc('config.get', {}, 10000);
-    const channels = configResult?.raw?.channels || {};
+    // Use parsed (object) or config — raw is a JSON string, not an object
+    const channels = configResult?.config?.channels || configResult?.parsed?.channels || {};
 
     const status = {};
     for (const [name, cfg] of Object.entries(channels)) {
