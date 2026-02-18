@@ -19,13 +19,15 @@
 
 FROM debian:bookworm-slim
 
-# Install Node.js 22 LTS + essentials
+# Install Node.js 22 LTS + essentials + Chromium for browser automation
 RUN apt-get update && apt-get install -y \
-    curl xz-utils ca-certificates git procps \
+    curl xz-utils ca-certificates git procps coreutils \
+    chromium \
+    fonts-liberation fonts-noto-color-emoji \
     && curl -fsSL https://nodejs.org/dist/v22.13.1/node-v22.13.1-linux-x64.tar.xz \
        | tar -xJ -C /usr/local --strip-components=1 \
     && rm -rf /var/lib/apt/lists/* \
-    && node --version && npm --version
+    && node --version && npm --version && chromium --version
 
 # Install OpenClaw globally from npm
 RUN npm install -g openclaw@latest \
