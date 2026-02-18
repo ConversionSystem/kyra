@@ -5,17 +5,20 @@ import { CheckCircle2, XCircle, Loader2, ExternalLink, Maximize2, Minimize2 } fr
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-const GATEWAY_DASHBOARD_URL = process.env.NEXT_PUBLIC_GATEWAY_URL || 'https://kyra-gateway.fly.dev';
-
 export function ToolsClient() {
   const [gatewayStatus, setGatewayStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking');
+  const [dashboardUrl, setDashboardUrl] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
-    fetch('/api/openclaw/health')
-      .then((r) => r.json())
-      .then((data) => setGatewayStatus(data.connected ? 'connected' : 'disconnected'))
-      .catch(() => setGatewayStatus('disconnected'));
+    // Fetch health + dashboard URL in parallel
+    Promise.all([
+      fetch('/api/openclaw/health').then((r) => r.json()).catch(() => ({ connected: false })),
+      fetch('/api/openclaw/dashboard-url').then((r) => r.json()).catch(() => ({})),
+    ]).then(([health, dashboard]) => {
+      setGatewayStatus(health.connected ? 'connected' : 'disconnected');
+      if (dashboard.url) setDashboardUrl(dashboard.url);
+    });
   }, []);
 
   if (gatewayStatus === 'checking') {
@@ -69,15 +72,17 @@ export function ToolsClient() {
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => window.open(`${GATEWAY_DASHBOARD_URL}/__openclaw__/`, '_blank')}
-            className="text-gray-400 hover:text-white h-7 px-2"
-          >
-            <ExternalLink className="h-3.5 w-3.5 mr-1" />
-            <span className="hidden sm:inline text-xs">Open in new tab</span>
-          </Button>
+          {dashboardUrl && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => window.open(dashboardUrl, '_blank')}
+              className="text-gray-400 hover:text-white h-7 px-2"
+            >
+              <ExternalLink className="h-3.5 w-3.5 mr-1" />
+              <span className="hidden sm:inline text-xs">Open in new tab</span>
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"
@@ -94,12 +99,18 @@ export function ToolsClient() {
       </div>
 
       {/* Embedded Gateway Dashboard */}
-      <iframe
-        src={`${GATEWAY_DASHBOARD_URL}/__openclaw__/`}
-        className="flex-1 w-full border-0"
-        allow="clipboard-read; clipboard-write; microphone"
-        title="OpenClaw Gateway Dashboard"
-      />
+      {dashboardUrl ? (
+        <iframe
+          src={dashboardUrl}
+          className="flex-1 w-full border-0"
+          allow="clipboard-read; clipboard-write; microphone"
+          title="OpenClaw Gateway Dashboard"
+        />
+      ) : (
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+        </div>
+      )}
     </div>
   );
 }

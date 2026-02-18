@@ -5,7 +5,8 @@ import { getAgencyForUser, getAgencyClients } from '@/lib/agency/queries';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Users, Activity, BarChart3, Plus, Terminal, ExternalLink } from 'lucide-react';
+import { Users, Activity, BarChart3, Plus, Terminal } from 'lucide-react';
+import { OpenControlUIButton } from '@/components/open-control-ui-button';
 
 const statusColors: Record<string, string> = {
   active: 'border-green-200 bg-green-50 text-green-600',
@@ -70,17 +71,7 @@ export default async function AgencyOverviewPage() {
                   <span className="hidden sm:inline">AI Tools</span>
                 </Button>
               </Link>
-              <a
-                href="https://gateway.conversionsystem.com/__openclaw__/"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Button size="sm" className="gap-1.5 bg-indigo-600 hover:bg-indigo-700">
-                  <ExternalLink className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Open Control UI</span>
-                  <span className="sm:hidden">Control UI</span>
-                </Button>
-              </a>
+              <OpenControlUIButton />
             </div>
           </div>
         </CardContent>
