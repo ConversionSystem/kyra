@@ -56,9 +56,16 @@ if [ ! -d /root/.openclaw/workspace ]; then
   cp -r /root/.openclaw-defaults/workspace /root/.openclaw/workspace
   mkdir -p /root/.openclaw/workspace/memory
 else
-  echo "Existing workspace found in volume — preserving."
-  # Sync any NEW default files that don't exist yet (but don't overwrite)
+  echo "Existing workspace found in volume — preserving user customizations."
+  # Only copy files that don't exist yet (user-modified files are preserved)
   cp -rn /root/.openclaw-defaults/workspace/* /root/.openclaw/workspace/ 2>/dev/null || true
+  mkdir -p /root/.openclaw/workspace/memory
+fi
+
+# Force-reset workspace if RESET_WORKSPACE=1 (for development/testing)
+if [ "$RESET_WORKSPACE" = "1" ]; then
+  echo "RESET_WORKSPACE=1 — overwriting workspace with defaults..."
+  cp -r /root/.openclaw-defaults/workspace/* /root/.openclaw/workspace/
 fi
 
 # ── Generate or preserve OpenClaw config ─────────────────────────────────────
