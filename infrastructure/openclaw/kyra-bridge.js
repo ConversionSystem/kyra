@@ -1197,20 +1197,24 @@ server.listen(BRIDGE_PORT, '0.0.0.0', () => {
   console.log('============================================');
   console.log('');
 
-  // Connect to gateway with retry loop (gateway takes 60-90s to boot)
+  // Connect to gateway with infinite retry loop
+  // Gateway with Chromium can take 3-5+ minutes on shared-CPU machines
   async function connectWithRetry() {
-    const maxRetries = 30; // 30 * 5s = 150s max wait
-    for (let i = 1; i <= maxRetries; i++) {
+    let attempt = 0;
+    while (true) {
+      attempt++;
       try {
         await ensureConnected();
         console.log('[bridge] Gateway connected — ready for requests');
         return;
       } catch (err) {
-        console.log(`[bridge] Gateway not ready (attempt ${i}/${maxRetries}): ${err.message}`);
-        if (i < maxRetries) await new Promise(r => setTimeout(r, 5000));
+        const delay = attempt <= 30 ? 5000 : 15000; // 5s for first 2.5 min, then 15s
+        if (attempt % 10 === 1 || attempt <= 5) {
+          console.log(`[bridge] Gateway not ready (attempt ${attempt}): ${err.message}`);
+        }
+        await new Promise(r => setTimeout(r, delay));
       }
     }
-    console.error('[bridge] Gateway did not become available after retries. Will retry on first request.');
   }
   connectWithRetry();
 });
