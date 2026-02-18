@@ -5,8 +5,8 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Kyra - Your Personal AI Assistant',
-  description: 'An AI assistant that remembers everything about you',
+  title: 'Kyra — AI Employees for Agencies | Powered by OpenClaw',
+  description: 'Give every client a real AI employee, not a chatbot. Kyra hosts the full OpenClaw platform for agencies — manage all clients from one dashboard.',
 };
 
 export const viewport: Viewport = {
