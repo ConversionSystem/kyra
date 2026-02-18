@@ -667,6 +667,131 @@ async function handleSessionsHistory(body, res) {
   }
 }
 
+// ── Channel Management ────────────────────────────────────────────────────────
+// Connect, disconnect, and check status of messaging channels (Telegram, Discord, etc.)
+// Uses OpenClaw's config.patch RPC to hot-reload channel configuration.
+
+async function handleConfigGet(res) {
+  try {
+    await ensureConnected();
+    const result = await gw.rpc('config.get', {}, 10000);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, config: result }));
+  } catch (err) {
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: false, error: { message: err.message } }));
+  }
+}
+
+async function handleChannelStatus(res) {
+  try {
+    await ensureConnected();
+    // Get current config to check which channels are configured
+    const configResult = await gw.rpc('config.get', {}, 10000);
+    const channels = configResult?.raw?.channels || {};
+
+    const status = {};
+    for (const [name, cfg] of Object.entries(channels)) {
+      if (!cfg || typeof cfg !== 'object') continue;
+      status[name] = {
+        configured: true,
+        hasToken: !!(cfg.botToken || cfg.token || cfg.appToken),
+      };
+    }
+
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, channels: status }));
+  } catch (err) {
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: false, error: { message: err.message } }));
+  }
+}
+
+async function handleChannelConnect(body, res) {
+  try {
+    const { channel, config: channelConfig } = JSON.parse(body);
+
+    if (!channel || !channelConfig) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ ok: false, error: { message: 'channel and config required' } }));
+    }
+
+    // Validate channel name
+    const validChannels = ['telegram', 'discord', 'slack', 'whatsapp', 'signal', 'imessage'];
+    if (!validChannels.includes(channel)) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ ok: false, error: { message: `Invalid channel: ${channel}. Valid: ${validChannels.join(', ')}` } }));
+    }
+
+    await ensureConnected();
+
+    // Get current config for baseHash (required by config.patch)
+    const currentConfig = await gw.rpc('config.get', {}, 10000);
+    const baseHash = currentConfig?.hash;
+
+    if (!baseHash) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ ok: false, error: { message: 'Could not get config hash' } }));
+    }
+
+    // Build the patch — set the channel config
+    const raw = JSON.stringify({ channels: { [channel]: channelConfig } });
+
+    console.log(`[bridge] Connecting channel: ${channel}`);
+
+    // Apply config patch (this triggers a gateway restart)
+    const patchResult = await gw.rpc('config.patch', {
+      baseHash,
+      raw,
+      reason: `Connect ${channel} channel via Kyra dashboard`,
+      restartDelayMs: 2000,
+    }, 30000);
+
+    console.log(`[bridge] Channel ${channel} config applied, gateway restarting...`);
+
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, channel, message: `${channel} channel configured. Gateway restarting to apply changes...`, patchResult }));
+  } catch (err) {
+    console.error(`[bridge] Channel connect error: ${err.message}`);
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: false, error: { message: err.message } }));
+  }
+}
+
+async function handleChannelDisconnect(body, res) {
+  try {
+    const { channel } = JSON.parse(body);
+
+    if (!channel) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ ok: false, error: { message: 'channel required' } }));
+    }
+
+    await ensureConnected();
+
+    const currentConfig = await gw.rpc('config.get', {}, 10000);
+    const baseHash = currentConfig?.hash;
+
+    // Set the channel to empty object to disconnect
+    const raw = JSON.stringify({ channels: { [channel]: {} } });
+
+    const patchResult = await gw.rpc('config.patch', {
+      baseHash,
+      raw,
+      reason: `Disconnect ${channel} channel via Kyra dashboard`,
+      restartDelayMs: 2000,
+    }, 30000);
+
+    console.log(`[bridge] Channel ${channel} disconnected`);
+
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, channel, message: `${channel} channel removed. Gateway restarting...` }));
+  } catch (err) {
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: false, error: { message: err.message } }));
+  }
+}
+
 // ── HTTP Server ───────────────────────────────────────────────────────────────
 
 const server = http.createServer((req, res) => {
@@ -716,6 +841,34 @@ const server = http.createServer((req, res) => {
     req.on('end', () => {
       handleSessionsHistory(body, res);
     });
+    return;
+  }
+
+  // ── Channel Connect endpoint (add/configure messaging channels)
+  if (req.method === 'POST' && req.url === '/channels/connect') {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => { handleChannelConnect(body, res); });
+    return;
+  }
+
+  // ── Channel Status endpoint
+  if (req.method === 'GET' && req.url === '/channels/status') {
+    handleChannelStatus(res);
+    return;
+  }
+
+  // ── Channel Disconnect endpoint
+  if (req.method === 'POST' && req.url === '/channels/disconnect') {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => { handleChannelDisconnect(body, res); });
+    return;
+  }
+
+  // ── Config Get endpoint (for baseHash)
+  if (req.method === 'GET' && req.url === '/config') {
+    handleConfigGet(res);
     return;
   }
 
