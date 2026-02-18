@@ -49,9 +49,28 @@ echo "OPENAI_API_KEY:     $([ -n "$OPENAI_API_KEY" ] && echo 'set' || echo 'not 
 echo "OPENROUTER_API_KEY: $([ -n "$OPENROUTER_API_KEY" ] && echo 'set' || echo 'not set')"
 echo ""
 
-# ── Generate OpenClaw config ──────────────────────────────────────────────────
+# ── Initialize persistent volume ─────────────────────────────────────────────
+# If workspace doesn't exist in the volume, copy defaults
+if [ ! -d /root/.openclaw/workspace ]; then
+  echo "First boot: initializing workspace from defaults..."
+  cp -r /root/.openclaw-defaults/workspace /root/.openclaw/workspace
+  mkdir -p /root/.openclaw/workspace/memory
+else
+  echo "Existing workspace found in volume — preserving."
+  # Sync any NEW default files that don't exist yet (but don't overwrite)
+  cp -rn /root/.openclaw-defaults/workspace/* /root/.openclaw/workspace/ 2>/dev/null || true
+fi
 
-node -e "
+# ── Generate or preserve OpenClaw config ─────────────────────────────────────
+# If config already exists (from previous config.patch / channel connect), keep it.
+# Only generate fresh config on first boot.
+
+if [ -f /root/.openclaw/openclaw.json ]; then
+  echo "Existing config found — preserving (channels, patches, etc. survive deploys)"
+  echo "Config: $(cat /root/.openclaw/openclaw.json | head -5)..."
+else
+  echo "No config found — generating default config..."
+  node -e "
 const fs = require('fs');
 
 const config = {
@@ -147,6 +166,7 @@ const config = {
 fs.writeFileSync('/root/.openclaw/openclaw.json', JSON.stringify(config, null, 2));
 console.log('OpenClaw config written to /root/.openclaw/openclaw.json');
 " || { echo "FATAL: Failed to generate config"; exit 1; }
+fi
 
 # ── Start Kyra Bridge FIRST (for health checks) ─────────────────────────────
 #
