@@ -74,6 +74,13 @@ const config = {
         mode: 'safeguard',
         memoryFlush: { enabled: true }
       },
+      // Image analysis model (uses OpenAI vision by default)
+      ...(process.env.OPENAI_API_KEY ? {
+        imageModel: {
+          primary: 'openai/gpt-4o',
+          fallbacks: ['anthropic/claude-sonnet-4-20250514']
+        }
+      } : {}),
       thinkingDefault: 'off',
       maxConcurrent: 8,
       subagents: {
@@ -92,6 +99,13 @@ const config = {
     auth: {
       mode: 'token',
       token: process.env.GATEWAY_TOKEN || 'kyra-internal'
+    },
+    // Unblock tools for HTTP /tools/invoke API so Kyra dashboard can use them
+    // Default deny: sessions_spawn, sessions_send, gateway, whatsapp_login
+    // We allow file ops, exec, sessions — Kyra IS the trusted interface
+    tools: {
+      allow: ['read', 'write', 'edit', 'exec', 'process', 'sessions_send', 'sessions_spawn', 'image'],
+      deny: ['gateway', 'whatsapp_login'], // Keep gateway control locked
     }
   },
   channels: {},
@@ -109,9 +123,14 @@ const config = {
   tools: {
     web: {
       search: {
-        provider: 'perplexity'
-      }
-    }
+        enabled: true,
+        provider: process.env.PERPLEXITY_API_KEY ? 'perplexity' : 'brave',
+        ...(process.env.PERPLEXITY_API_KEY ? {
+          perplexity: { apiKey: process.env.PERPLEXITY_API_KEY }
+        } : {}),
+      },
+      fetch: { enabled: true },
+    },
   }
 };
 
