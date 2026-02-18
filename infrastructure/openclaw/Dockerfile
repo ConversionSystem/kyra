@@ -33,11 +33,9 @@ RUN apt-get update && apt-get install -y \
 RUN npm install -g openclaw@latest \
     && openclaw --version
 
-# Create workspace structure
-RUN mkdir -p /root/.openclaw/workspace/memory
-
-# Copy workspace files (base personality + operating instructions)
-COPY workspace/ /root/.openclaw/workspace/
+# Copy workspace defaults to staging area (volume may override at runtime)
+RUN mkdir -p /root/.openclaw-defaults/workspace/memory
+COPY workspace/ /root/.openclaw-defaults/workspace/
 
 # Copy infrastructure scripts
 COPY start.sh /usr/local/bin/start.sh
