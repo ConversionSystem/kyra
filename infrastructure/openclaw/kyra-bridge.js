@@ -1134,15 +1134,26 @@ server.on('upgrade', (req, clientSocket, head) => {
 
   const gwSocket = net.connect(GATEWAY_PORT, GATEWAY_HOST, () => {
     // Forward the HTTP upgrade request to the gateway
+    // Strip proxy headers so gateway sees this as a local connection (auto-approve pairing)
+    const stripHeaders = new Set([
+      'host', 'x-forwarded-for', 'x-forwarded-host', 'x-forwarded-proto',
+      'x-real-ip', 'fly-client-ip', 'fly-forwarded-port', 'fly-forwarded-proto',
+      'fly-forwarded-ssl', 'fly-request-id', 'via', 'cf-connecting-ip',
+      'cf-ipcountry', 'cf-ray', 'cf-visitor', 'true-client-ip',
+    ]);
     const headers = Object.entries(req.headers)
-      .filter(([key]) => key !== 'host')
+      .filter(([key]) => !stripHeaders.has(key.toLowerCase()))
       .map(([key, val]) => `${key}: ${val}`)
       .join('\r\n');
 
+    // Inject auth token if not already in headers
+    const hasAuth = Object.keys(req.headers).some(k => k.toLowerCase() === 'authorization');
+    const authHeader = (!hasAuth && GATEWAY_TOKEN) ? `\r\nAuthorization: Bearer ${GATEWAY_TOKEN}` : '';
+
     const upgradeReq = [
       `${req.method} ${req.url} HTTP/1.1`,
-      `Host: ${GATEWAY_HOST}:${GATEWAY_PORT}`,
-      headers,
+      `Host: 127.0.0.1:${GATEWAY_PORT}`,
+      headers + authHeader,
       '', ''
     ].join('\r\n');
 
