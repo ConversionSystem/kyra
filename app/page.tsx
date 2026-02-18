@@ -246,8 +246,8 @@ export default function LandingPage() {
               icon={<DollarSignIcon className="h-6 w-6" />}
               title="AI Employee Business"
               subtitle="The Revenue"
-              description='Your clients never see a terminal. They just know their "AI receptionist" handles leads 24/7. You charge $500–5,000/month. Your cost: ~$50–100/client.'
-              tags={['70-90% margins', '$500-5K/client', 'White-label ready', 'BYOK']}
+              description='Your clients never see a terminal. They just know their "AI receptionist" handles leads 24/7. You set the price, keep the margin.'
+              tags={['White-label ready', 'BYOK', 'You set the price', 'Recurring revenue']}
             />
           </div>
         </section>
@@ -328,7 +328,7 @@ export default function LandingPage() {
             <Step
               number="4"
               title="Monitor & bill"
-              description="Watch conversations in real-time. Track usage per client. Bill them $500-5,000/month."
+              description="Watch conversations in real-time. Track usage per client. Bill on your terms."
             />
           </div>
         </section>
@@ -403,7 +403,7 @@ export default function LandingPage() {
                 The agency math
               </h2>
               <p className="text-gray-600 max-w-xl mx-auto">
-                Stop selling chatbots for $300/month. Sell AI employees for $2,000/month.
+                Stop selling chatbots. Start selling AI employees.
               </p>
             </div>
 
@@ -463,13 +463,13 @@ export default function LandingPage() {
 
             <div className="rounded-2xl border border-indigo-100 bg-indigo-50/50 p-6 md:p-8 max-w-3xl mx-auto text-center">
               <p className="text-gray-700 mb-2">
-                Agencies charge clients <span className="font-bold text-gray-900">$500–$5,000/month</span> for AI employee services.
+                Agencies package AI employees as a <span className="font-bold text-gray-900">recurring service</span> for their clients.
               </p>
               <p className="text-gray-700">
-                Their cost with Kyra: platform fee + API keys (~$50–100/client).
+                You control the pricing. You keep the margin. Kyra handles the infrastructure.
               </p>
               <p className="text-2xl font-bold text-indigo-700 mt-4">
-                70–90% gross margins.
+                Your service. Your pricing. Your clients.
               </p>
             </div>
           </div>
