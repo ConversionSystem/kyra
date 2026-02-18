@@ -8,6 +8,7 @@
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { getSystemPromptForClient, getSessionKeyForClient } from '@/lib/agency/container';
 import { sendGHLMessage, getValidToken } from './api';
+import { getGatewayByAgencyId } from '@/lib/openclaw/gateway-resolver';
 import type { GHLWebhookPayload, GHLMessageChannel } from './types';
 import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
 
@@ -57,10 +58,11 @@ export async function processInboundMessage(
     `[ghl/handler] Processing inbound from ${contactName} for client "${client.name}" via ${messageType}`,
   );
 
-  // ── Call the Fly bridge ───────────────────────────────────────────────
-  const bridgeUrl = process.env.KYRA_WORKER_URL;
+  // ── Call the agency's own gateway ────────────────────────────────────
+  const agencyGateway = await getGatewayByAgencyId(client.agency_id);
+  const bridgeUrl = agencyGateway?.url || process.env.KYRA_WORKER_URL;
   if (!bridgeUrl) {
-    throw new Error('Missing KYRA_WORKER_URL env var');
+    throw new Error('No gateway provisioned for agency and no KYRA_WORKER_URL fallback');
   }
 
   const aiResponse = await callBridge(bridgeUrl, {

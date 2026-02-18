@@ -20,6 +20,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { getGatewayByAgencyId } from '@/lib/openclaw/gateway-resolver';
 import type { GHLWebhookPayload, GHLWebhookEventType } from '@/lib/ghl/types';
 
 // Events that should be forwarded to the AI container
@@ -118,12 +119,14 @@ async function forwardToContainer(
   agencyId: string,
   payload: GHLWebhookPayload,
 ): Promise<void> {
-  const workerUrl = process.env.KYRA_WORKER_URL;
+  // Resolve the agency's own gateway
+  const agencyGateway = await getGatewayByAgencyId(agencyId);
+  const workerUrl = agencyGateway?.url || process.env.KYRA_WORKER_URL;
   const apiSecret = process.env.KYRA_API_SECRET;
 
-  if (!workerUrl || !apiSecret) {
+  if (!workerUrl) {
     console.warn(
-      '[ghl/webhook] Missing KYRA_WORKER_URL or KYRA_API_SECRET — cannot forward',
+      '[ghl/webhook] No gateway provisioned for agency and no KYRA_WORKER_URL fallback',
     );
     return;
   }

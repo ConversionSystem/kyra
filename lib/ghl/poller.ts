@@ -21,6 +21,7 @@ import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { getSessionKeyForClient } from '@/lib/agency/container';
 import { sendGHLMessage, getValidToken, refreshGHLToken } from './api';
 import { getClientPermissions, buildPermissionPrompt } from '@/lib/agency/permissions';
+import { getGatewayByAgencyId } from '@/lib/openclaw/gateway-resolver';
 import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
 
 const GHL_API_BASE = 'https://services.leadconnectorhq.com';
@@ -369,15 +370,14 @@ async function processConversation(
 
   const sessionKey = `${getSessionKeyForClient(client.id)}:contact:${conv.contactId}`;
 
-  const bridgeUrl = process.env.KYRA_WORKER_URL;
+  // Resolve the agency's own gateway (per-agency isolation)
+  const agencyGateway = await getGatewayByAgencyId(client.agency_id);
+  const bridgeUrl = agencyGateway?.url || process.env.KYRA_WORKER_URL;
   if (!bridgeUrl) {
-    throw new Error('Missing KYRA_WORKER_URL env var');
+    throw new Error('No gateway provisioned for agency and no KYRA_WORKER_URL fallback');
   }
 
-  // Call the OpenClaw Bridge (real OpenClaw Gateway on Fly.io)
-  // The gateway uses its own API keys (set as Fly secrets).
-  // BYOK keys from Supabase are logged for tracking — multi-gateway
-  // per-agency key routing will be added in a future phase.
+  // Call the agency's own OpenClaw Bridge (isolated per-agency gateway)
   const bridgePayload: Record<string, unknown> = {
     message: latestInbound.body,
     sessionKey,
