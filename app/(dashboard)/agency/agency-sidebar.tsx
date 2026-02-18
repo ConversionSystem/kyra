@@ -13,6 +13,7 @@ import {
   Mic,
   Sparkles,
   Wrench,
+  Radio,
   Menu,
   X,
 } from 'lucide-react';
@@ -22,6 +23,7 @@ import type { AgencySettings } from '@/lib/agency/types';
 const navItems = [
   { label: 'Overview', href: '/agency', icon: LayoutDashboard },
   { label: 'Clients', href: '/agency/clients', icon: Users },
+  { label: 'Channels', href: '/agency/channels', icon: Radio },
   { label: 'AI Tools', href: '/agency/tools', icon: Wrench },
   { label: 'Templates', href: '/agency/templates', icon: FileText },
   { label: 'Skill Builder', href: '/agency/skill-builder', icon: Sparkles },
