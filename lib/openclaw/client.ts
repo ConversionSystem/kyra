@@ -93,6 +93,87 @@ export async function isOpenClawAvailable(): Promise<boolean> {
   return status?.gatewayConnected === true;
 }
 
+// ── Tool Invocation ───────────────────────────────────────────────────────────
+
+export interface ToolInvokeResult {
+  ok: boolean;
+  result?: {
+    content: Array<{ type: string; text?: string; [key: string]: unknown }>;
+    details?: Record<string, unknown>;
+  };
+  error?: {
+    type: string;
+    message: string;
+  };
+}
+
+/**
+ * Invoke any OpenClaw tool directly via the bridge's /tools/invoke endpoint.
+ * This gives Kyra's dashboard access to every OpenClaw capability:
+ * web_search, web_fetch, browser, cron, memory, sessions, tts, etc.
+ */
+export async function invokeTool(
+  tool: string,
+  args: Record<string, unknown> = {},
+  action?: string
+): Promise<ToolInvokeResult> {
+  try {
+    const body: Record<string, unknown> = { tool, args };
+    if (action) body.action = action;
+
+    const response = await fetch(`${BRIDGE_URL}/tools/invoke`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(30_000),
+    });
+
+    return await response.json() as ToolInvokeResult;
+  } catch (error) {
+    return {
+      ok: false,
+      error: { type: 'network_error', message: String(error) },
+    };
+  }
+}
+
+/**
+ * List available OpenClaw tools and their status.
+ */
+export const OPENCLAW_TOOLS = {
+  // Web & Research
+  web_search: { name: 'Web Search', icon: '🔍', category: 'research', description: 'Search the web with AI-powered results' },
+  web_fetch: { name: 'Web Fetch', icon: '🌐', category: 'research', description: 'Fetch and extract content from any URL' },
+  
+  // Browser Automation
+  browser: { name: 'Browser Control', icon: '🖥️', category: 'automation', description: 'Automated browser actions, screenshots, scraping' },
+  
+  // AI & Memory
+  memory_search: { name: 'Memory Search', icon: '🧠', category: 'ai', description: 'Search through persistent AI memory' },
+  memory_get: { name: 'Memory Read', icon: '📖', category: 'ai', description: 'Read specific memory entries' },
+  sessions_spawn: { name: 'Sub-Agent', icon: '🤖', category: 'ai', description: 'Spawn an autonomous sub-agent for tasks' },
+  
+  // Scheduling
+  cron: { name: 'Scheduler', icon: '⏰', category: 'automation', description: 'Create scheduled tasks and reminders' },
+  
+  // Communication
+  tts: { name: 'Text-to-Speech', icon: '🔊', category: 'communication', description: 'Convert text to natural speech audio' },
+  message: { name: 'Messaging', icon: '💬', category: 'communication', description: 'Send messages across channels' },
+  
+  // Sessions & Management
+  sessions_list: { name: 'Sessions', icon: '📋', category: 'management', description: 'List active AI sessions' },
+  sessions_history: { name: 'History', icon: '📜', category: 'management', description: 'View conversation history' },
+  sessions_send: { name: 'Session Send', icon: '📤', category: 'management', description: 'Send message to another session' },
+  agents_list: { name: 'Agents', icon: '👥', category: 'management', description: 'List available AI agents' },
+  subagents: { name: 'Sub-Agents', icon: '🔄', category: 'management', description: 'Manage running sub-agents' },
+  
+  // Infrastructure
+  nodes: { name: 'Nodes', icon: '📱', category: 'infrastructure', description: 'Paired device management' },
+  canvas: { name: 'Canvas', icon: '🎨', category: 'infrastructure', description: 'Visual canvas rendering' },
+} as const;
+
+export type OpenClawToolName = keyof typeof OPENCLAW_TOOLS;
+
 // ── SSE Parser ────────────────────────────────────────────────────────────────
 
 function parseSSEResponse(sseBody: string): string {

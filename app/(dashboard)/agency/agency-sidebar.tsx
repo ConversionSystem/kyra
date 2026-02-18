@@ -12,6 +12,7 @@ import {
   Settings,
   Mic,
   Sparkles,
+  Wrench,
   Menu,
   X,
 } from 'lucide-react';
@@ -21,6 +22,7 @@ import type { AgencySettings } from '@/lib/agency/types';
 const navItems = [
   { label: 'Overview', href: '/agency', icon: LayoutDashboard },
   { label: 'Clients', href: '/agency/clients', icon: Users },
+  { label: 'AI Tools', href: '/agency/tools', icon: Wrench },
   { label: 'Templates', href: '/agency/templates', icon: FileText },
   { label: 'Skill Builder', href: '/agency/skill-builder', icon: Sparkles },
   { label: 'Voice Commands', href: '/agency/voice-commands', icon: Mic },
