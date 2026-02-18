@@ -5,7 +5,8 @@
  * Each agency has its own isolated gateway — this module ensures API routes
  * talk to the right one.
  *
- * Falls back to KYRA_WORKER_URL env var for legacy/development setups.
+ * ⚠️  NO FALLBACK TO SHARED GATEWAY — if no per-agency gateway exists,
+ * return null / throw. Never leak one agency's data to another.
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -27,8 +28,12 @@ export interface AgencyGateway {
   agencyName: string;
 }
 
-const FALLBACK_URL = process.env.KYRA_WORKER_URL || 'https://kyra-gateway.fly.dev';
-const FALLBACK_TOKEN = process.env.OPENCLAW_GATEWAY_TOKEN || '';
+export class GatewayNotProvisionedError extends Error {
+  constructor(context: string) {
+    super(`No isolated gateway provisioned (${context}). Cannot use shared gateway — data isolation required.`);
+    this.name = 'GatewayNotProvisionedError';
+  }
+}
 
 /**
  * Get gateway details for an agency by agency ID.
@@ -74,30 +79,33 @@ export async function getGatewayByUserId(userId: string): Promise<AgencyGateway 
 }
 
 /**
- * Get the gateway URL for an agency, with fallback to the legacy shared gateway.
+ * Get the gateway URL for an agency. NO FALLBACK.
+ * Returns null if no per-agency gateway is provisioned.
  * Use this in API routes that need a gateway URL.
  */
-export async function resolveGatewayUrl(userId: string): Promise<{ url: string; token: string }> {
+export async function resolveGatewayUrl(userId: string): Promise<{ url: string; token: string } | null> {
   const gateway = await getGatewayByUserId(userId);
 
   if (gateway) {
     return { url: gateway.url, token: gateway.token };
   }
 
-  // Fallback to legacy shared gateway (for development or agencies without own gateway)
-  console.warn(`[gateway-resolver] No per-agency gateway for user ${userId}, using fallback`);
-  return { url: FALLBACK_URL, token: FALLBACK_TOKEN };
+  console.warn(`[gateway-resolver] No per-agency gateway for user ${userId} — NO FALLBACK`);
+  return null;
 }
 
 /**
  * Get the OpenClaw Dashboard URL for an agency (for iframe embedding).
  * Token is passed via hash fragment (never in server logs).
+ * Returns null if no gateway is provisioned.
  */
-export async function getDashboardUrl(userId: string): Promise<{ url: string; baseUrl: string }> {
-  const { url, token } = await resolveGatewayUrl(userId);
+export async function getDashboardUrl(userId: string): Promise<{ url: string; baseUrl: string } | null> {
+  const resolved = await resolveGatewayUrl(userId);
+  if (!resolved) return null;
+
   return {
-    url: `${url}/__openclaw__/#token=${encodeURIComponent(token)}`,
-    baseUrl: `${url}/__openclaw__/`,
+    url: `${resolved.url}/__openclaw__/#token=${encodeURIComponent(resolved.token)}`,
+    baseUrl: `${resolved.url}/__openclaw__/`,
   };
 }
 

@@ -78,7 +78,8 @@ export async function processChannelMessage(
 
   // Route through the user's agency gateway if enabled
   if (features.useWorker) {
-    const { url: WORKER_URL } = await resolveGatewayUrl(userId);
+    const resolved = await resolveGatewayUrl(userId);
+    const WORKER_URL = resolved?.url;
     const API_SECRET = process.env.KYRA_API_SECRET;
 
     if (WORKER_URL && API_SECRET) {

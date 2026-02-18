@@ -8,6 +8,8 @@ import { getDashboardUrl } from '@/lib/openclaw/gateway-resolver';
  * Returns the Gateway Dashboard URL for the user's agency.
  * Each agency has its own isolated gateway with its own dashboard.
  * Token is passed via hash fragment so it never hits server logs.
+ *
+ * ⚠️ NO FALLBACK — if no per-agency gateway exists, returns 503.
  */
 export async function GET() {
   const supabase = await createClient();
@@ -16,18 +18,26 @@ export async function GET() {
 
   try {
     const dashboardUrl = await getDashboardUrl(user.id);
+
+    if (!dashboardUrl) {
+      return NextResponse.json(
+        {
+          error: 'Gateway not provisioned',
+          message: 'Your AI gateway is being set up. This usually takes 2-3 minutes after signup. Please refresh shortly.',
+        },
+        { status: 503 }
+      );
+    }
+
     return NextResponse.json(dashboardUrl);
   } catch (error) {
     console.error('[dashboard-url] Error resolving gateway:', error);
-
-    // Fallback to legacy shared gateway
-    const baseUrl = process.env.GATEWAY_CUSTOM_DOMAIN || 'https://gateway.conversionsystem.com';
-    const token = process.env.OPENCLAW_GATEWAY_TOKEN || '';
-
-    return NextResponse.json({
-      url: `${baseUrl}/__openclaw__/#token=${encodeURIComponent(token)}`,
-      baseUrl: `${baseUrl}/__openclaw__/`,
-      warning: 'Using shared gateway — agency gateway not provisioned',
-    });
+    return NextResponse.json(
+      {
+        error: 'Gateway error',
+        message: 'Unable to reach your AI gateway. It may be starting up — please try again in a minute.',
+      },
+      { status: 503 }
+    );
   }
 }

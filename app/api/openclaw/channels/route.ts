@@ -12,8 +12,9 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const { url } = await resolveGatewayUrl(user.id);
-    const res = await fetch(`${url}/channels/status`, {
+    const resolved = await resolveGatewayUrl(user.id);
+    if (!resolved) return NextResponse.json({ ok: false, error: { message: 'Gateway not provisioned' } }, { status: 503 });
+    const res = await fetch(`${resolved.url}/channels/status`, {
       signal: AbortSignal.timeout(10_000),
     });
     return NextResponse.json(await res.json());
@@ -32,9 +33,10 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const { url } = await resolveGatewayUrl(user.id);
+    const resolved = await resolveGatewayUrl(user.id);
+    if (!resolved) return NextResponse.json({ ok: false, error: { message: 'Gateway not provisioned' } }, { status: 503 });
     const body = await request.json();
-    const res = await fetch(`${url}/channels/connect`, {
+    const res = await fetch(`${resolved.url}/channels/connect`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
