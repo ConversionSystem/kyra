@@ -558,6 +558,112 @@ setInterval(() => {
   }
 }, 10 * 60 * 1000);
 
+// ── Tools Invoke Handler ──────────────────────────────────────────────────────
+// Proxies requests to the OpenClaw Gateway's /tools/invoke HTTP API.
+// This gives Kyra's dashboard access to EVERY OpenClaw tool.
+
+async function handleToolsInvoke(body, res) {
+  try {
+    const parsed = JSON.parse(body);
+    const { tool, action, args, sessionKey, dryRun } = parsed;
+
+    if (!tool) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ ok: false, error: { message: 'tool is required' } }));
+    }
+
+    console.log(`[bridge] tools/invoke: tool=${tool} action=${action || 'n/a'} session=${sessionKey || 'main'}`);
+
+    // Forward to gateway's /tools/invoke HTTP API
+    const gwBody = JSON.stringify({ tool, action, args: args || {}, sessionKey, dryRun });
+
+    const result = await new Promise((resolve, reject) => {
+      const gwReq = http.request({
+        hostname: GATEWAY_HOST,
+        port: GATEWAY_PORT,
+        path: '/tools/invoke',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${GATEWAY_TOKEN}`,
+          'Content-Length': Buffer.byteLength(gwBody),
+        },
+      }, (gwRes) => {
+        let data = '';
+        gwRes.on('data', chunk => data += chunk);
+        gwRes.on('end', () => {
+          resolve({ statusCode: gwRes.statusCode, body: data });
+        });
+      });
+      gwReq.on('error', reject);
+      gwReq.setTimeout(120000, () => {
+        gwReq.destroy();
+        reject(new Error('Gateway request timeout'));
+      });
+      gwReq.write(gwBody);
+      gwReq.end();
+    });
+
+    res.writeHead(result.statusCode, {
+      'Content-Type': 'application/json',
+      'X-Powered-By': 'OpenClaw',
+    });
+    res.end(result.body);
+  } catch (err) {
+    console.error(`[bridge] tools/invoke error: ${err.message}`);
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: false, error: { message: err.message } }));
+  }
+}
+
+// ── Sessions List Handler ─────────────────────────────────────────────────────
+
+async function handleSessionsList(res) {
+  try {
+    await ensureConnected();
+    const result = await gw.rpc('sessions.list', {
+      kinds: ['main', 'direct', 'group'],
+      limit: 50,
+      messageLimit: 1,
+    }, 30000);
+
+    res.writeHead(200, { 'Content-Type': 'application/json', 'X-Powered-By': 'OpenClaw' });
+    res.end(JSON.stringify({ ok: true, sessions: result }));
+  } catch (err) {
+    console.error(`[bridge] sessions list error: ${err.message}`);
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: false, error: { message: err.message } }));
+  }
+}
+
+// ── Sessions History Handler ──────────────────────────────────────────────────
+
+async function handleSessionsHistory(body, res) {
+  try {
+    const parsed = JSON.parse(body);
+    const { sessionKey, limit, includeTools } = parsed;
+
+    if (!sessionKey) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ ok: false, error: { message: 'sessionKey required' } }));
+    }
+
+    await ensureConnected();
+    const result = await gw.rpc('chat.history', {
+      sessionKey,
+      limit: limit || 50,
+      includeTools: includeTools || false,
+    }, 30000);
+
+    res.writeHead(200, { 'Content-Type': 'application/json', 'X-Powered-By': 'OpenClaw' });
+    res.end(JSON.stringify({ ok: true, messages: result }));
+  } catch (err) {
+    console.error(`[bridge] sessions history error: ${err.message}`);
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: false, error: { message: err.message } }));
+  }
+}
+
 // ── HTTP Server ───────────────────────────────────────────────────────────────
 
 const server = http.createServer((req, res) => {
@@ -578,6 +684,36 @@ const server = http.createServer((req, res) => {
       pid: process.pid,
       uptime: Math.floor(process.uptime()),
     }));
+  }
+
+  // ── Tools Invoke endpoint (proxy to OpenClaw Gateway's /tools/invoke)
+  // This exposes EVERY OpenClaw tool through the bridge: web_search, browser,
+  // exec, memory, cron, sessions, canvas, nodes, message, image, and all skills.
+  // Kyra's dashboard calls this to give agencies access to the full power of
+  // OpenClaw without ever touching a terminal.
+  if (req.method === 'POST' && req.url === '/tools/invoke') {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => {
+      handleToolsInvoke(body, res);
+    });
+    return;
+  }
+
+  // ── Sessions List endpoint (list all active sessions)
+  if (req.method === 'GET' && req.url === '/sessions') {
+    handleSessionsList(res);
+    return;
+  }
+
+  // ── Sessions History endpoint (get conversation history)
+  if (req.method === 'POST' && req.url === '/sessions/history') {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => {
+      handleSessionsHistory(body, res);
+    });
+    return;
   }
 
   // ── Chat endpoint
