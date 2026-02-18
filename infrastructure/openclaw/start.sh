@@ -74,7 +74,20 @@ fi
 
 if [ -f /root/.openclaw/openclaw.json ]; then
   echo "Existing config found — preserving (channels, patches, etc. survive deploys)"
-  echo "Config: $(cat /root/.openclaw/openclaw.json | head -5)..."
+  # Update model to beta-tier (haiku) if still set to expensive model
+  node -e "
+    const fs = require('fs');
+    const cfg = JSON.parse(fs.readFileSync('/root/.openclaw/openclaw.json', 'utf-8'));
+    const m = cfg.agents?.defaults?.model;
+    if (m && m.primary && m.primary.includes('sonnet')) {
+      console.log('Updating model from ' + m.primary + ' to haiku (beta cost control)');
+      m.primary = 'openrouter/anthropic/claude-haiku-4.5';
+      m.fallbacks = ['openrouter/anthropic/claude-sonnet-4', 'openai/gpt-4o-mini'];
+      fs.writeFileSync('/root/.openclaw/openclaw.json', JSON.stringify(cfg, null, 2));
+    } else {
+      console.log('Model already set to: ' + (m?.primary || 'unknown'));
+    }
+  " || true
 else
   echo "No config found — generating default config..."
   node -e "
@@ -85,10 +98,10 @@ const config = {
   agents: {
     defaults: {
       model: {
-        primary: process.env.OPENCLAW_MODEL || 'anthropic/claude-sonnet-4-20250514',
+        primary: process.env.OPENCLAW_MODEL || 'openrouter/anthropic/claude-haiku-4.5',
         fallbacks: [
           'openrouter/anthropic/claude-sonnet-4',
-          'openai/gpt-4o'
+          'openai/gpt-4o-mini'
         ]
       },
       workspace: '/root/.openclaw/workspace',
