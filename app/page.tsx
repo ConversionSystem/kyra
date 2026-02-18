@@ -20,6 +20,9 @@ import {
   MonitorIcon,
   DollarSignIcon,
   CheckCircleIcon,
+  XIcon,
+  CheckIcon,
+  SparklesIcon,
 } from 'lucide-react';
 
 export default function LandingPage() {
@@ -34,11 +37,14 @@ export default function LandingPage() {
           <span className="text-xl font-semibold text-gray-900">Kyra</span>
         </div>
         <nav className="hidden md:flex items-center gap-8">
-          <Link href="#why-kyra" className="text-gray-600 hover:text-gray-700 transition text-sm">
-            Why Kyra
+          <Link href="#problem" className="text-gray-600 hover:text-gray-700 transition text-sm">
+            The Problem
           </Link>
-          <Link href="#how-it-works" className="text-gray-600 hover:text-gray-700 transition text-sm">
+          <Link href="#layers" className="text-gray-600 hover:text-gray-700 transition text-sm">
             How It Works
+          </Link>
+          <Link href="#compare" className="text-gray-600 hover:text-gray-700 transition text-sm">
+            Compare
           </Link>
           <Link href="#features" className="text-gray-600 hover:text-gray-700 transition text-sm">
             Features
@@ -58,7 +64,7 @@ export default function LandingPage() {
       </header>
 
       <main>
-        {/* Hero */}
+        {/* ── Hero ──────────────────────────────────────────────────────── */}
         <section className="container mx-auto px-4 md:px-6 pt-16 md:pt-24 pb-16 md:pb-20">
           <div className="max-w-3xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 mb-4">
@@ -81,7 +87,7 @@ export default function LandingPage() {
               <Link href="https://openclaw.ai" className="text-indigo-600 hover:underline font-medium" target="_blank">
                 OpenClaw
               </Link>
-              {' '}platform for agencies. Your clients get AI employees that browse the web, research leads, schedule follow-ups, analyze documents, and work 24/7 — managed from one dashboard.
+              {' '}platform for agencies. Your clients get autonomous AI employees that browse the web, manage leads, schedule follow-ups, and work 24/7 — all managed from one dashboard.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -93,10 +99,10 @@ export default function LandingPage() {
                 <ArrowRightIcon className="h-4 w-4" />
               </Link>
               <Link
-                href="#why-kyra"
+                href="#compare"
                 className="flex items-center gap-2 px-6 py-3 rounded-lg border border-gray-300 hover:border-gray-400 transition font-medium text-sm text-gray-700"
               >
-                See Why Agencies Switch
+                See How We Compare
               </Link>
             </div>
 
@@ -104,136 +110,196 @@ export default function LandingPage() {
               Free during beta · Bring your own API keys · No credit card required
             </p>
           </div>
+
+          {/* Dashboard Preview */}
+          <div className="max-w-4xl mx-auto mt-14">
+            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-3 shadow-xl shadow-gray-200/50">
+              <div className="rounded-xl bg-white border border-gray-100 overflow-hidden">
+                {/* Fake browser chrome */}
+                <div className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 border-b border-gray-100">
+                  <div className="flex gap-1.5">
+                    <div className="w-3 h-3 rounded-full bg-red-300" />
+                    <div className="w-3 h-3 rounded-full bg-yellow-300" />
+                    <div className="w-3 h-3 rounded-full bg-green-300" />
+                  </div>
+                  <div className="flex-1 mx-8">
+                    <div className="bg-gray-100 rounded-md px-3 py-1 text-xs text-gray-400 text-center max-w-xs mx-auto">
+                      kyra.conversionsystem.com/agency
+                    </div>
+                  </div>
+                </div>
+                {/* Dashboard mockup */}
+                <div className="p-6 md:p-8">
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <div className="text-lg font-bold text-gray-900">Dashboard</div>
+                      <div className="text-xs text-gray-400">Your Agency · 3 members</div>
+                    </div>
+                    <div className="px-3 py-1.5 rounded-lg bg-green-50 border border-green-200 text-green-700 text-xs font-medium flex items-center gap-1.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                      AI Gateway Online
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-4 gap-3 mb-6">
+                    {[
+                      { label: 'Total Clients', value: '12', color: 'indigo' },
+                      { label: 'Active', value: '10', color: 'green' },
+                      { label: 'Messages Today', value: '847', color: 'blue' },
+                      { label: 'Avg Response', value: '4.2s', color: 'violet' },
+                    ].map((stat) => (
+                      <div key={stat.label} className="p-3 rounded-lg bg-gray-50 border border-gray-100">
+                        <div className="text-lg font-bold text-gray-900">{stat.value}</div>
+                        <div className="text-[10px] text-gray-400">{stat.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="space-y-2">
+                    {[
+                      { name: 'Smile Dental', industry: 'Dental', messages: 142, status: 'active' },
+                      { name: 'Peak Roofing', industry: 'Home Services', messages: 89, status: 'active' },
+                      { name: 'Luxe Realty', industry: 'Real Estate', messages: 203, status: 'active' },
+                    ].map((client) => (
+                      <div key={client.name} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 border border-gray-100">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-xs font-bold text-indigo-600">
+                            {client.name[0]}
+                          </div>
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">{client.name}</div>
+                            <div className="text-[10px] text-gray-400">{client.industry} · {client.messages} messages</div>
+                          </div>
+                        </div>
+                        <div className="px-2 py-0.5 rounded-full bg-green-50 border border-green-200 text-green-600 text-[10px] font-medium">
+                          {client.status}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </section>
 
-        {/* The Problem */}
-        <section id="why-kyra" className="bg-gray-50 border-y border-gray-100 py-16 md:py-20">
+        {/* ── The Problem ───────────────────────────────────────────────── */}
+        <section id="problem" className="bg-gray-50 border-y border-gray-100 py-16 md:py-20">
           <div className="container mx-auto px-4 md:px-6">
-            <div className="max-w-3xl mx-auto">
-              <h2 className="text-2xl md:text-3xl font-bold mb-6 text-center">
-                Every &ldquo;AI agent&rdquo; your agency can buy today is just a chatbot.
+            <div className="max-w-3xl mx-auto text-center">
+              <h2 className="text-2xl md:text-3xl font-bold mb-6">
+                Your agency has 20 clients.<br />
+                How do you give each one an AI employee?
               </h2>
-              <div className="text-gray-600 leading-relaxed space-y-4 text-center max-w-2xl mx-auto">
+              <div className="text-gray-600 leading-relaxed space-y-4 max-w-2xl mx-auto">
                 <p>
-                  GHL&apos;s Conversation AI has 2 intents. Stammer.ai builds chat widgets.
-                  They respond to messages — that&apos;s it. They can&apos;t research a lead, browse a website,
-                  analyze a PDF, or proactively follow up on their own.
-                </p>
-                <p className="text-gray-900 font-medium text-lg">
-                  Your clients don&apos;t need another chatbot.
-                  They need an AI employee that actually works.
+                  <strong>Option A:</strong> GHL&apos;s built-in AI. Two intents. Scripted. Can&apos;t browse the web, read a PDF, or follow up on its own. Your clients will ask why it&apos;s dumb.
                 </p>
                 <p>
-                  <Link href="https://openclaw.ai" className="text-indigo-600 hover:underline" target="_blank">OpenClaw</Link>
-                  {' '}is the most powerful autonomous AI agent platform — 51 skills, 24 tools,
-                  browser control, persistent memory, multi-model support. But it needs a server, a terminal, and technical expertise.
+                  <strong>Option B:</strong> Host OpenClaw yourself. 20 servers. 20 terminals. 20 configs. 40+ hours/month managing infrastructure instead of selling.
                 </p>
-                <p className="text-gray-900 font-medium">
-                  Kyra hosts real OpenClaw for every client. Agencies manage everything from one dashboard.
+                <p>
+                  <strong>Option C:</strong> Stammer.ai or a chatbot builder. Looks like AI. Acts like a script. Clients cancel in 2 months.
+                </p>
+                <p className="text-gray-900 font-semibold text-lg pt-2">
+                  Option D: Kyra.
+                </p>
+                <p>
+                  Real OpenClaw. Real autonomous AI. One dashboard. Every client gets their own AI employee that actually works — and you manage it all from one screen.
                 </p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Chatbot vs AI Employee comparison */}
+        {/* ── The 3 Layers ──────────────────────────────────────────────── */}
+        <section id="layers" className="container mx-auto px-4 md:px-6 py-16 md:py-20">
+          <div className="text-center mb-12">
+            <h2 className="text-2xl md:text-3xl font-bold mb-4">
+              Three layers of value. One platform.
+            </h2>
+            <p className="text-gray-600 max-w-xl mx-auto">
+              More than hosting. More than a dashboard. A complete agency AI business.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            <LayerCard
+              number="1"
+              color="blue"
+              icon={<TerminalIcon className="h-6 w-6" />}
+              title="Real OpenClaw Hosting"
+              subtitle="The Foundation"
+              description="Every agency gets a dedicated OpenClaw Gateway — the full terminal, all 51 skills, Chromium browser, persistent memory, multi-model support. Auto-provisioned in 3 minutes."
+              tags={['51 skills', 'Chromium browser', 'Persistent memory', 'Any model']}
+            />
+            <LayerCard
+              number="2"
+              color="indigo"
+              icon={<LayersIcon className="h-6 w-6" />}
+              title="Agency Control Layer"
+              subtitle="The Moat"
+              description="Manage 20 clients' AI employees from one screen instead of 20 separate terminals. Per-client config, conversations inbox, usage tracking, GHL integration, white-label branding."
+              tags={['Multi-client dashboard', 'GHL native', 'White-label', 'Per-client analytics']}
+            />
+            <LayerCard
+              number="3"
+              color="violet"
+              icon={<DollarSignIcon className="h-6 w-6" />}
+              title="AI Employee Business"
+              subtitle="The Revenue"
+              description='Your clients never see a terminal. They just know their "AI receptionist" handles leads 24/7. You charge $500–5,000/month. Your cost: ~$50–100/client.'
+              tags={['70-90% margins', '$500-5K/client', 'White-label ready', 'BYOK']}
+            />
+          </div>
+        </section>
+
+        {/* ── Named Competitor Comparison ────────────────────────────────── */}
+        <section id="compare" className="bg-gray-50 border-y border-gray-100 py-16 md:py-20">
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="text-center mb-12">
+              <h2 className="text-2xl md:text-3xl font-bold mb-4">
+                How Kyra compares
+              </h2>
+              <p className="text-gray-600 max-w-xl mx-auto">
+                No other platform combines real autonomous AI with agency management.
+              </p>
+            </div>
+
+            <div className="max-w-4xl mx-auto overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-3 px-4 font-medium text-gray-500 w-[200px]">Capability</th>
+                    <th className="text-center py-3 px-4 font-medium text-gray-400">GHL AI</th>
+                    <th className="text-center py-3 px-4 font-medium text-gray-400">Stammer.ai</th>
+                    <th className="text-center py-3 px-4 font-medium text-gray-400">xCloud / Hostinger</th>
+                    <th className="text-center py-3 px-4 font-semibold text-indigo-600">Kyra</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  <CompareRow label="Real autonomous AI agent" ghl={false} stammer={false} xcloud="partial" kyra={true} />
+                  <CompareRow label="Multi-client management" ghl={false} stammer={true} xcloud={false} kyra={true} />
+                  <CompareRow label="Browse the web" ghl={false} stammer={false} xcloud={true} kyra={true} />
+                  <CompareRow label="Persistent memory" ghl={false} stammer={false} xcloud={true} kyra={true} />
+                  <CompareRow label="51+ skills & tools" ghl={false} stammer={false} xcloud={true} kyra={true} />
+                  <CompareRow label="GHL CRM integration" ghl={true} stammer="partial" xcloud={false} kyra={true} />
+                  <CompareRow label="White-label branding" ghl={false} stammer={true} xcloud={false} kyra={true} />
+                  <CompareRow label="Per-client analytics" ghl="partial" stammer="partial" xcloud={false} kyra={true} />
+                  <CompareRow label="Agency billing / markup" ghl={false} stammer={true} xcloud={false} kyra={true} />
+                  <CompareRow label="Any AI model (BYOK)" ghl={false} stammer={false} xcloud={true} kyra={true} />
+                  <CompareRow label="Conversations inbox" ghl="partial" stammer={false} xcloud={false} kyra={true} />
+                  <CompareRow label="Permission controls" ghl={false} stammer={false} xcloud={false} kyra={true} />
+                </tbody>
+              </table>
+            </div>
+
+            <p className="text-center text-gray-400 text-xs mt-6 max-w-xl mx-auto">
+              GHL = GoHighLevel Conversation AI ($97/mo). Stammer.ai = white-label chatbot builder ($49/mo). xCloud/Hostinger = raw OpenClaw hosting ($5-24/mo). Kyra = full OpenClaw + agency layer.
+            </p>
+          </div>
+        </section>
+
+        {/* ── How it works ──────────────────────────────────────────────── */}
         <section className="container mx-auto px-4 md:px-6 py-16 md:py-20">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-12">
-              <h2 className="text-2xl md:text-3xl font-bold mb-4">
-                Chatbot vs. AI Employee
-              </h2>
-              <p className="text-gray-600 max-w-xl mx-auto">
-                The gap between what agencies sell today and what Kyra delivers.
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
-              {/* Chatbot column */}
-              <div className="rounded-2xl border border-gray-200 bg-gray-50 p-6 md:p-8">
-                <div className="flex items-center gap-2 mb-5">
-                  <MessageSquareIcon className="h-5 w-5 text-gray-400" />
-                  <h3 className="font-semibold text-gray-500">Typical &ldquo;AI Agent&rdquo;</h3>
-                </div>
-                <ul className="space-y-3">
-                  <CompareItem text="Answers FAQs from a script" negative />
-                  <CompareItem text="2 intents: Q&A + booking" negative />
-                  <CompareItem text="OpenAI only" negative />
-                  <CompareItem text="Can't browse the web" negative />
-                  <CompareItem text="Can't read documents" negative />
-                  <CompareItem text="Can't take proactive action" negative />
-                  <CompareItem text="Forgets everything between sessions" negative />
-                  <CompareItem text="One trick: respond to messages" negative />
-                </ul>
-              </div>
-
-              {/* AI Employee column */}
-              <div className="rounded-2xl border-2 border-indigo-200 bg-indigo-50/30 p-6 md:p-8">
-                <div className="flex items-center gap-2 mb-5">
-                  <BrainIcon className="h-5 w-5 text-indigo-600" />
-                  <h3 className="font-semibold text-indigo-700">Kyra AI Employee</h3>
-                </div>
-                <ul className="space-y-3">
-                  <CompareItem text="Understands context and nuance" />
-                  <CompareItem text="Unlimited capabilities via 51 skills" />
-                  <CompareItem text="Claude, GPT, Gemini — any model" />
-                  <CompareItem text="Browses the web and researches leads" />
-                  <CompareItem text="Reads PDFs, analyzes documents" />
-                  <CompareItem text="Schedules follow-ups autonomously" />
-                  <CompareItem text="Persistent memory across all conversations" />
-                  <CompareItem text="Full OpenClaw: browser, email, files, cron" />
-                </ul>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* The 3 Layers of Value */}
-        <section className="bg-gray-50 border-y border-gray-100 py-16 md:py-20">
-          <div className="container mx-auto px-4 md:px-6">
-            <div className="text-center mb-12">
-              <h2 className="text-2xl md:text-3xl font-bold mb-4">
-                Three layers of value. One platform.
-              </h2>
-              <p className="text-gray-600 max-w-xl mx-auto">
-                More than hosting. More than a dashboard. A complete agency AI business.
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-              <LayerCard
-                number="1"
-                color="blue"
-                icon={<TerminalIcon className="h-6 w-6" />}
-                title="Real OpenClaw Hosting"
-                subtitle="The Foundation"
-                description="Every user gets a real OpenClaw Gateway with the full terminal UI, all 51 skills, 24 tools, Chromium browser, and multi-model support. Not a dumbed-down version — the real thing."
-                tags={['51 skills', '24 tools', 'Browser control', 'Persistent memory']}
-              />
-              <LayerCard
-                number="2"
-                color="indigo"
-                icon={<LayersIcon className="h-6 w-6" />}
-                title="Agency Control Layer"
-                subtitle="The Differentiator"
-                description="Manage 20 clients' AI employees from one screen instead of 20 separate terminals. Per-client config, conversations inbox, usage tracking, GHL integration, white-label branding."
-                tags={['Multi-client dashboard', 'GHL integration', 'White-label', 'Per-client analytics']}
-              />
-              <LayerCard
-                number="3"
-                color="violet"
-                icon={<DollarSignIcon className="h-6 w-6" />}
-                title="AI Employee Business"
-                subtitle="The Revenue"
-                description='Sell AI employees to clients at $500–5,000/month. Your cost: platform + API keys. Clients never see a terminal — they just know their "AI receptionist" works 24/7.'
-                tags={['70-90% margins', '$500-5K/client/mo', 'White-label ready', 'BYOK']}
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* How it works */}
-        <section id="how-it-works" className="container mx-auto px-4 md:px-6 py-16 md:py-20">
           <div className="text-center mb-12">
             <h2 className="text-2xl md:text-3xl font-bold mb-4">
               Set up a client&apos;s AI employee in minutes
@@ -261,13 +327,13 @@ export default function LandingPage() {
             />
             <Step
               number="4"
-              title="Monitor & scale"
-              description="Watch conversations in real-time. Track usage per client. Add more clients as you grow."
+              title="Monitor & bill"
+              description="Watch conversations in real-time. Track usage per client. Bill them $500-5,000/month."
             />
           </div>
         </section>
 
-        {/* What the AI can actually do */}
+        {/* ── What the AI can do ─────────────────────────────────────────── */}
         <section id="features" className="bg-gray-50 border-y border-gray-100 py-16 md:py-20">
           <div className="container mx-auto px-4 md:px-6">
             <div className="text-center mb-12">
@@ -275,7 +341,7 @@ export default function LandingPage() {
                 What your clients&apos; AI employees can actually do
               </h2>
               <p className="text-gray-600 max-w-xl mx-auto">
-                Powered by OpenClaw&apos;s full autonomous agent platform — not a chatbot SDK.
+                Powered by OpenClaw — not a chatbot SDK.
               </p>
             </div>
 
@@ -323,13 +389,13 @@ export default function LandingPage() {
               <Feature
                 icon={<MonitorIcon className="h-5 w-5" />}
                 title="Full OpenClaw Terminal"
-                description="Power users get the complete OpenClaw Gateway Dashboard — chat, sessions, cron, skills, config, logs."
+                description="Power users get the complete Gateway Dashboard — chat, sessions, cron, skills, config, logs."
               />
             </div>
           </div>
         </section>
 
-        {/* For Agencies — the business case */}
+        {/* ── The Agency Math ────────────────────────────────────────────── */}
         <section className="container mx-auto px-4 md:px-6 py-16 md:py-20">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-12">
@@ -351,7 +417,7 @@ export default function LandingPage() {
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-red-400 mt-0.5">✕</span>
-                    20 dashboards to monitor
+                    20 terminals to SSH into
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-red-400 mt-0.5">✕</span>
@@ -373,23 +439,23 @@ export default function LandingPage() {
                 <ul className="space-y-3 text-sm text-gray-700">
                   <li className="flex items-start gap-2">
                     <CheckCircleIcon className="h-4 w-4 text-indigo-600 mt-0.5 shrink-0" />
-                    One platform, all clients managed
+                    One dashboard, all clients managed
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircleIcon className="h-4 w-4 text-indigo-600 mt-0.5 shrink-0" />
-                    One conversations inbox across all clients
+                    One conversations inbox, every client
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircleIcon className="h-4 w-4 text-indigo-600 mt-0.5 shrink-0" />
-                    Per-client AI config from one dashboard
+                    Per-client AI config in clicks
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircleIcon className="h-4 w-4 text-indigo-600 mt-0.5 shrink-0" />
-                    5 hours/month instead of 40
+                    2 hours/month instead of 40
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircleIcon className="h-4 w-4 text-indigo-600 mt-0.5 shrink-0" />
-                    Usage tracking + billing per client
+                    Per-client usage tracking + billing
                   </li>
                 </ul>
               </div>
@@ -409,7 +475,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Agency features grid */}
+        {/* ── Agency Features Grid ───────────────────────────────────────── */}
         <section className="bg-gray-50 border-y border-gray-100 py-16 md:py-20">
           <div className="container mx-auto px-4 md:px-6">
             <div className="text-center mb-12">
@@ -425,7 +491,7 @@ export default function LandingPage() {
               <AgencyCard
                 icon={<UsersIcon className="h-5 w-5" />}
                 title="Multi-client dashboard"
-                description="Add clients, set up their AI, connect GHL, monitor conversations — all from one screen."
+                description="Add clients, configure their AI, connect GHL, monitor conversations — all from one screen."
               />
               <AgencyCard
                 icon={<MessageSquareIcon className="h-5 w-5" />}
@@ -456,122 +522,83 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* OpenClaw section */}
+        {/* ── Data Privacy ───────────────────────────────────────────────── */}
         <section className="container mx-auto px-4 md:px-6 py-16 md:py-20">
-          <div className="max-w-3xl mx-auto">
-            <div className="rounded-2xl border border-gray-200 p-8 md:p-10">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-lg bg-gray-900 flex items-center justify-center">
-                  <TerminalIcon className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <span className="font-semibold text-gray-900 block">Powered by OpenClaw</span>
-                  <span className="text-xs text-gray-500">The autonomous AI agent platform</span>
-                </div>
-              </div>
-              <p className="text-gray-600 leading-relaxed mb-4">
-                OpenClaw is an open-source framework used by thousands of developers to build autonomous agents.
-                Every Kyra user gets the <strong>real thing</strong> — not a simplified version, not an API wrapper.
-                The full OpenClaw Gateway with terminal UI, all skills, all tools.
-              </p>
-              <p className="text-gray-600 leading-relaxed mb-6">
-                Kyra&apos;s value is what we build <em>around</em> OpenClaw: multi-client management, GHL integration,
-                conversation monitoring, per-client analytics, white-label branding. The agency control layer
-                that makes OpenClaw usable for managing 10, 50, or 100 clients.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <Tag text="51 skills" />
-                <Tag text="24 built-in tools" />
-                <Tag text="Claude, GPT, Gemini" />
-                <Tag text="Persistent memory" />
-                <Tag text="Browser automation" />
-                <Tag text="Sub-agents" />
-                <Tag text="Scheduling & cron" />
-                <Tag text="Web search" />
-                <Tag text="File management" />
-                <Tag text="Full terminal UI" />
-              </div>
-            </div>
+          <div className="text-center mb-12">
+            <h2 className="text-2xl md:text-3xl font-bold mb-4">
+              Your clients&apos; data stays yours
+            </h2>
+            <p className="text-gray-600 max-w-xl mx-auto">
+              Every agency gets a completely isolated AI instance. No shared data. No shared sessions.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-5 max-w-4xl mx-auto">
+            <Feature
+              icon={<LockIcon className="h-5 w-5" />}
+              title="Isolated per agency"
+              description="Each agency gets their own OpenClaw instance on dedicated infrastructure. Nothing shared."
+            />
+            <Feature
+              icon={<EyeIcon className="h-5 w-5" />}
+              title="Agency-controlled"
+              description="You decide what each AI can access. Granular permissions, full audit trail."
+            />
+            <Feature
+              icon={<ShieldCheckIcon className="h-5 w-5" />}
+              title="BYOK — your keys, your costs"
+              description="Use your own AI provider accounts. Full transparency, no markups on API usage."
+            />
           </div>
         </section>
 
-        {/* Data Privacy */}
+        {/* ── Beta CTA ───────────────────────────────────────────────────── */}
         <section className="bg-gray-50 border-y border-gray-100 py-16 md:py-20">
           <div className="container mx-auto px-4 md:px-6">
-            <div className="text-center mb-12">
-              <h2 className="text-2xl md:text-3xl font-bold mb-4">
-                Your clients&apos; data stays yours
-              </h2>
-              <p className="text-gray-600 max-w-xl mx-auto">
-                No training on conversations. No sharing. Full control.
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-5 max-w-4xl mx-auto">
-              <Feature
-                icon={<LockIcon className="h-5 w-5" />}
-                title="No training on your data"
-                description="Conversations are never used to train AI models. Not ours, not anyone else's."
-              />
-              <Feature
-                icon={<EyeIcon className="h-5 w-5" />}
-                title="Agency-controlled"
-                description="You decide what each AI can access. Granular permissions, full audit trail."
-              />
-              <Feature
-                icon={<ShieldCheckIcon className="h-5 w-5" />}
-                title="BYOK — your keys, your costs"
-                description="Use your own AI provider accounts. Full transparency, no markups."
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* BYOK + Beta CTA */}
-        <section className="container mx-auto px-4 md:px-6 py-16 md:py-20">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-12">
-              <div className="inline-flex items-center gap-2 mb-4">
-                <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-semibold uppercase tracking-wider">
-                  Beta
-                </span>
-              </div>
-              <h2 className="text-2xl md:text-3xl font-bold mb-4">
-                Free during beta. Bring your own keys.
-              </h2>
-              <p className="text-gray-600 max-w-2xl mx-auto">
-                Full platform access while we&apos;re in beta. Connect your own API keys — Anthropic, OpenAI, Google, or OpenRouter.
-                You control costs directly. No surprise bills.
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-5 max-w-4xl mx-auto">
-              <div className="p-5 rounded-xl border border-gray-200 bg-white text-center">
-                <div className="text-3xl mb-3">🧠</div>
-                <h3 className="font-semibold mb-1 text-gray-900">Any Model</h3>
-                <p className="text-gray-500 text-sm leading-relaxed">
-                  Claude, GPT-4, Gemini, Llama — pick the model that fits your use case and budget.
+            <div className="max-w-4xl mx-auto">
+              <div className="text-center mb-12">
+                <div className="inline-flex items-center gap-2 mb-4">
+                  <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-semibold uppercase tracking-wider">
+                    Beta
+                  </span>
+                </div>
+                <h2 className="text-2xl md:text-3xl font-bold mb-4">
+                  Free during beta. Bring your own keys.
+                </h2>
+                <p className="text-gray-600 max-w-2xl mx-auto">
+                  Full platform access while we&apos;re in beta. Connect your own API keys — Anthropic, OpenAI, Google, or OpenRouter.
+                  You control costs directly.
                 </p>
               </div>
-              <div className="p-5 rounded-xl border border-gray-200 bg-white text-center">
-                <div className="text-3xl mb-3">🔑</div>
-                <h3 className="font-semibold mb-1 text-gray-900">Your API Keys</h3>
-                <p className="text-gray-500 text-sm leading-relaxed">
-                  Connect your own provider accounts. No middlemen. You see exactly what you spend.
-                </p>
-              </div>
-              <div className="p-5 rounded-xl border border-gray-200 bg-white text-center">
-                <div className="text-3xl mb-3">🆓</div>
-                <h3 className="font-semibold mb-1 text-gray-900">Free During Beta</h3>
-                <p className="text-gray-500 text-sm leading-relaxed">
-                  Full access. Help us shape the product and get early-adopter perks at launch.
-                </p>
+
+              <div className="grid md:grid-cols-3 gap-5 max-w-4xl mx-auto">
+                <div className="p-5 rounded-xl border border-gray-200 bg-white text-center">
+                  <div className="text-3xl mb-3">🧠</div>
+                  <h3 className="font-semibold mb-1 text-gray-900">Any Model</h3>
+                  <p className="text-gray-500 text-sm leading-relaxed">
+                    Claude, GPT-4, Gemini, Llama — pick the model that fits your use case and budget.
+                  </p>
+                </div>
+                <div className="p-5 rounded-xl border border-gray-200 bg-white text-center">
+                  <div className="text-3xl mb-3">🔑</div>
+                  <h3 className="font-semibold mb-1 text-gray-900">Your API Keys</h3>
+                  <p className="text-gray-500 text-sm leading-relaxed">
+                    Connect your own provider accounts. No middlemen. You see exactly what you spend.
+                  </p>
+                </div>
+                <div className="p-5 rounded-xl border border-gray-200 bg-white text-center">
+                  <div className="text-3xl mb-3">⚡</div>
+                  <h3 className="font-semibold mb-1 text-gray-900">3-Minute Setup</h3>
+                  <p className="text-gray-500 text-sm leading-relaxed">
+                    Sign up, your AI gateway auto-provisions. Add a client and connect GHL in minutes.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Final CTA */}
+        {/* ── Final CTA ──────────────────────────────────────────────────── */}
         <section className="bg-gray-900 py-20 md:py-24">
           <div className="container mx-auto px-4 md:px-6">
             <div className="max-w-2xl mx-auto text-center">
@@ -581,7 +608,7 @@ export default function LandingPage() {
                 Start selling AI employees.
               </h2>
               <p className="text-gray-400 mb-8 max-w-xl mx-auto text-lg">
-                Real OpenClaw power. Agency-grade management. The category that doesn&apos;t exist yet — until now.
+                Real OpenClaw. Agency-grade management. The category that doesn&apos;t exist yet — until now.
               </p>
               <Link
                 href="/signup/agency"
@@ -625,18 +652,41 @@ export default function LandingPage() {
   );
 }
 
-// ── Components ────────────────────────────────────────────────────────────
+// ── Components ────────────────────────────────────────────────────────────────
 
-function CompareItem({ text, negative }: { text: string; negative?: boolean }) {
+function CompareRow({ label, ghl, stammer, xcloud, kyra }: {
+  label: string;
+  ghl: boolean | 'partial';
+  stammer: boolean | 'partial';
+  xcloud: boolean | 'partial';
+  kyra: boolean | 'partial';
+}) {
+  const renderCell = (value: boolean | 'partial', highlight?: boolean) => {
+    if (value === true) return (
+      <td className={`text-center py-2.5 px-4 ${highlight ? 'bg-indigo-50/50' : ''}`}>
+        <CheckIcon className={`h-4 w-4 mx-auto ${highlight ? 'text-indigo-600' : 'text-green-500'}`} />
+      </td>
+    );
+    if (value === 'partial') return (
+      <td className={`text-center py-2.5 px-4 ${highlight ? 'bg-indigo-50/50' : ''}`}>
+        <span className="text-yellow-500 text-xs font-medium">Partial</span>
+      </td>
+    );
+    return (
+      <td className={`text-center py-2.5 px-4 ${highlight ? 'bg-indigo-50/50' : ''}`}>
+        <XIcon className="h-4 w-4 mx-auto text-gray-300" />
+      </td>
+    );
+  };
+
   return (
-    <li className="flex items-start gap-2.5 text-sm">
-      {negative ? (
-        <span className="text-gray-400 mt-0.5 shrink-0">✕</span>
-      ) : (
-        <CheckCircleIcon className="h-4 w-4 text-indigo-600 mt-0.5 shrink-0" />
-      )}
-      <span className={negative ? 'text-gray-500' : 'text-gray-700'}>{text}</span>
-    </li>
+    <tr className="border-b border-gray-50">
+      <td className="py-2.5 px-4 text-gray-700">{label}</td>
+      {renderCell(ghl)}
+      {renderCell(stammer)}
+      {renderCell(xcloud)}
+      {renderCell(kyra, true)}
+    </tr>
   );
 }
 
@@ -720,13 +770,5 @@ function Feature({ icon, title, description }: {
       <h3 className="font-semibold mb-1 text-gray-900">{title}</h3>
       <p className="text-gray-500 text-sm leading-relaxed">{description}</p>
     </div>
-  );
-}
-
-function Tag({ text }: { text: string }) {
-  return (
-    <span className="inline-flex items-center px-3 py-1 rounded-full bg-gray-100 text-gray-700 text-xs font-medium">
-      {text}
-    </span>
   );
 }
