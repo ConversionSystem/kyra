@@ -805,32 +805,37 @@ async function handleChannelPair(body, res) {
       return res.end(JSON.stringify({ ok: false, error: { message: 'code required' } }));
     }
 
-    await ensureConnected();
+    const ch = (channel || 'telegram').toLowerCase();
+    const cleanCode = code.replace(/[^A-Za-z0-9]/g, '').slice(0, 8).toUpperCase();
 
-    // List pending pairings to find one matching the code
-    const pendingResult = await gw.rpc('device.pair.list', {}, 10000);
-    const pending = pendingResult?.pending || pendingResult?.devices || [];
+    console.log(`[bridge] Approving pairing for ${ch}: code=${cleanCode}`);
 
-    // Find the pairing request matching this code
-    const match = pending.find(p => {
-      const pCode = (p.pairingCode || p.code || '').toUpperCase();
-      return pCode === code.toUpperCase();
-    });
+    // Channel pairing uses the openclaw CLI (not WebSocket RPC)
+    // Run: openclaw pairing approve --channel <ch> <code>
+    const { execSync } = require('child_process');
+    try {
+      const result = execSync(
+        `openclaw pairing approve --channel ${ch} ${cleanCode}`,
+        { timeout: 15000, encoding: 'utf-8', env: { ...process.env, NO_COLOR: '1' } }
+      );
+      console.log(`[bridge] Pairing approved: ${result.trim()}`);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, message: 'Pairing approved! You can now chat with your bot.', output: result.trim() }));
+    } catch (execErr) {
+      const stderr = execErr.stderr || '';
+      const stdout = execErr.stdout || '';
+      const output = (stderr + stdout).trim();
+      console.error(`[bridge] Pairing CLI error: ${output}`);
 
-    if (!match) {
-      res.writeHead(404, { 'Content-Type': 'application/json' });
-      return res.end(JSON.stringify({ ok: false, error: { message: `No pending pairing found for code: ${code}. Make sure you sent a message to the bot first.` } }));
+      // Check if code not found
+      if (output.includes('No pending') || output.includes('not found') || output.includes('no matching')) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: false, error: { message: `No pending pairing found for code: ${cleanCode}. Make sure you sent a message to the bot on ${ch} first, then enter the code it replies with.` } }));
+      }
+
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: { message: output || execErr.message } }));
     }
-
-    // Approve the pairing
-    const approveResult = await gw.rpc('device.pair.approve', {
-      requestId: match.requestId || match.id,
-    }, 10000);
-
-    console.log(`[bridge] Pairing approved for ${channel || 'unknown'}: code=${code}`);
-
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ ok: true, message: 'Pairing approved! You can now chat with your bot.', result: approveResult }));
   } catch (err) {
     console.error(`[bridge] Pairing error: ${err.message}`);
     res.writeHead(500, { 'Content-Type': 'application/json' });
@@ -840,10 +845,15 @@ async function handleChannelPair(body, res) {
 
 async function handleChannelPairings(res) {
   try {
-    await ensureConnected();
-    const result = await gw.rpc('device.pair.list', {}, 10000);
+    const { execSync } = require('child_process');
+    const result = execSync(
+      'openclaw pairing list --channel telegram --json 2>/dev/null || echo "[]"',
+      { timeout: 10000, encoding: 'utf-8', env: { ...process.env, NO_COLOR: '1' } }
+    );
+    let pending = [];
+    try { pending = JSON.parse(result.trim())?.requests || JSON.parse(result.trim()) || []; } catch { /* ignore */ }
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ ok: true, pending: result?.pending || result?.devices || [] }));
+    res.end(JSON.stringify({ ok: true, pending }));
   } catch (err) {
     res.writeHead(500, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ ok: false, error: { message: err.message } }));
