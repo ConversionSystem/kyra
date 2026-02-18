@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-
-const BRIDGE_URL = process.env.KYRA_WORKER_URL || 'https://kyra-gateway.fly.dev';
+import { resolveGatewayUrl } from '@/lib/openclaw/gateway-resolver';
 
 /**
  * POST /api/openclaw/channels/pair
- * Approve a pairing request by code.
+ * Approve a pairing request by code on the user's agency gateway.
  * Body: { channel: string, code: string }
  */
 export async function POST(request: NextRequest) {
@@ -14,8 +13,9 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
+    const { url } = await resolveGatewayUrl(user.id);
     const body = await request.json();
-    const res = await fetch(`${BRIDGE_URL}/channels/pair`, {
+    const res = await fetch(`${url}/channels/pair`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
 
 /**
  * GET /api/openclaw/channels/pair
- * List pending pairing requests.
+ * List pending pairing requests on the user's agency gateway.
  */
 export async function GET() {
   const supabase = await createClient();
@@ -37,7 +37,8 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const res = await fetch(`${BRIDGE_URL}/channels/pairings`, {
+    const { url } = await resolveGatewayUrl(user.id);
+    const res = await fetch(`${url}/channels/pairings`, {
       signal: AbortSignal.timeout(10_000),
     });
     return NextResponse.json(await res.json());

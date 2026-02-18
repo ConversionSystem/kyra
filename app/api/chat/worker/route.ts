@@ -23,16 +23,10 @@ import { getPlanLimit, isWithinLimit, getCreditCost, Plan } from '@/lib/billing/
 import { getSessionKeyForClient, getSessionKeyForUser, getSystemContextForClient, getSystemPromptForClient } from '@/lib/agency/container';
 import { resolveModelPreference } from '@/lib/ai/model-router';
 import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
+import { resolveGatewayUrl } from '@/lib/openclaw/gateway-resolver';
 import { v4 as uuid } from 'uuid';
 
-const WORKER_URL = process.env.KYRA_WORKER_URL;
-const API_SECRET = process.env.KYRA_API_SECRET;
-
 export async function POST(request: NextRequest) {
-  if (!WORKER_URL || !API_SECRET) {
-    console.error('KYRA_WORKER_URL or KYRA_API_SECRET not configured');
-    return new Response('Worker not configured', { status: 500 });
-  }
 
   try {
     const supabase = await createClient();
@@ -206,16 +200,18 @@ export async function POST(request: NextRequest) {
     const userModelPref = (user as any).settings?.preferred_model;
     const modelConfig = resolveModelPreference(userModelPref, message);
 
-    // --- Forward to Kyra Gateway (Fly.io OpenClaw container) ---
-    // Use agency client session key if in client mode, otherwise user session key
+    // --- Forward to agency's own gateway (per-agency isolation) ---
     const sessionKey = agencySessionKey || getSessionKeyForUser(authUser.id);
     const finalSystemContext = agencySystemContext
       ? agencySystemContext + '\n\n' + systemContext
       : systemContext;
 
+    // Resolve the user's agency gateway
+    const { url: gatewayUrl } = await resolveGatewayUrl(authUser.id);
+
     let workerResponse: Response;
     try {
-      workerResponse = await fetch(`${WORKER_URL}/chat`, {
+      workerResponse = await fetch(`${gatewayUrl}/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
