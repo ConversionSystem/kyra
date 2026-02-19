@@ -277,11 +277,37 @@ export async function getGatewayStatus(agencyId: string): Promise<GatewayStatus>
               .eq('id', agencyId);
             result.status = 'running';
           }
+
+          // If bridge is up but gateway process is NOT connected, and status claims 'running' — downgrade to error
+          if (!health.gatewayConnected && agency.gateway_status === 'running') {
+            await supabase
+              .from('agencies')
+              .update({
+                gateway_status: 'error',
+                gateway_error: 'Gateway bridge is up but OpenClaw process is not connected. Try restarting.',
+              })
+              .eq('id', agencyId);
+            result.status = 'error';
+            result.error = 'Gateway bridge is up but OpenClaw process is not connected. Try restarting.';
+          }
         }
       }
     } catch (err) {
       // Health check failed — machine might still be starting
       console.warn(`[provisioner] Health check failed for ${agency.gateway_app_name}:`, err);
+
+      // If status was 'running' (not 'starting'), the gateway has likely crashed — downgrade to error
+      if (agency.gateway_status === 'running') {
+        await supabase
+          .from('agencies')
+          .update({
+            gateway_status: 'error',
+            gateway_error: 'Gateway health check failed — process may have crashed. Try restarting.',
+          })
+          .eq('id', agencyId);
+        result.status = 'error';
+        result.error = 'Gateway health check failed — process may have crashed. Try restarting.';
+      }
     }
   }
 
