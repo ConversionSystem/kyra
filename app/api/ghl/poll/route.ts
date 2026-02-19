@@ -164,11 +164,16 @@ export async function GET(request: NextRequest) {
 
       // Step 5: Call gateway
       try {
-        // Use short hashed session key to prevent stuck sessions + daily rotation
+        // Use clean session key with daily rotation to prevent session bloat
         const today = new Date().toISOString().slice(0, 10);
         const clientShort = client.id.slice(0, 8);
-        const contactShort = conv.contactId.slice(0, 8);
-        const sessionKey = `ghl:${clientShort}:${contactShort}:${today}`;
+        // Hash contact ID to avoid any pattern matching issues with gateway session store
+        let contactHash = 0;
+        for (let i = 0; i < conv.contactId.length; i++) {
+          contactHash = ((contactHash << 5) - contactHash + conv.contactId.charCodeAt(i)) | 0;
+        }
+        const contactKey = Math.abs(contactHash).toString(36);
+        const sessionKey = `ghl:${clientShort}:${contactKey}:${today}`;
         const persona = (client.container_config as any)?.persona || '';
         const instructions = (client.container_config as any)?.instructions || '';
         const systemContext = [
