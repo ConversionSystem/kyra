@@ -186,10 +186,22 @@ export async function GET(request: NextRequest) {
           continue;
         }
 
-        const sseBody = await chatRes.text();
-        // Parse SSE to get the full response
+        // Read SSE stream manually to get the full AI response
         let aiResponse = '';
-        for (const line of sseBody.split('\n')) {
+        const reader = chatRes.body?.getReader();
+        if (!reader) {
+          addLog(`  No response body reader`);
+          continue;
+        }
+        const decoder = new TextDecoder();
+        let sseBuffer = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          sseBuffer += decoder.decode(value, { stream: true });
+        }
+        // Parse SSE to get the full response
+        for (const line of sseBuffer.split('\n')) {
           if (!line.startsWith('data: ')) continue;
           const data = line.slice(6).trim();
           if (data === '[DONE]') continue;
