@@ -116,51 +116,59 @@ export async function GET(request: NextRequest) {
         continue;
       }
 
-      // Step 4: Process first unread conversation only (time safety)
-      const conv = conversations[0];
-      if (!conv) continue;
+      // Step 4: Process up to 3 unread conversations per client
+      const MAX_CONVS = 3;
+      const toProcess = conversations.slice(0, MAX_CONVS);
+      if (!toProcess.length) continue;
 
-      addLog(`  Processing conv with ${conv.contactName || conv.phone || 'unknown'}...`);
+      for (const conv of toProcess) {
+        // Time guard per conversation
+        if (Date.now() - startTime > 45_000) {
+          addLog(`  ⏱️ Time budget hit — stopping`);
+          break;
+        }
 
-      // Get messages
-      let latestInbound: any = null;
-      let hasReply = false;
-      try {
-        const msgRes = await fetch(
-          `${GHL_API_BASE}/conversations/${conv.id}/messages?limit=5`,
-          {
-            headers: { Authorization: `Bearer ${token}`, Version: GHL_API_VERSION },
-            signal: AbortSignal.timeout(10_000),
+        addLog(`  Processing conv with ${conv.contactName || conv.phone || 'unknown'}...`);
+
+        // Get messages
+        let latestInbound: any = null;
+        let hasReply = false;
+        try {
+          const msgRes = await fetch(
+            `${GHL_API_BASE}/conversations/${conv.id}/messages?limit=5`,
+            {
+              headers: { Authorization: `Bearer ${token}`, Version: GHL_API_VERSION },
+              signal: AbortSignal.timeout(10_000),
+            }
+          );
+          if (!msgRes.ok) {
+            addLog(`    Get messages failed: ${msgRes.status}`);
+            continue;
           }
-        );
-        if (!msgRes.ok) {
-          addLog(`  Get messages failed: ${msgRes.status}`);
+          const msgData = await msgRes.json();
+          const messages = msgData.messages?.messages || [];
+
+          latestInbound = messages.find((m: any) => m.direction === 'inbound');
+          if (!latestInbound?.body?.trim()) {
+            addLog(`    No inbound message body found, skipping`);
+            continue;
+          }
+
+          const inboundTime = new Date(latestInbound.dateAdded).getTime();
+          hasReply = messages.some(
+            (m: any) => m.direction === 'outbound' && new Date(m.dateAdded).getTime() > inboundTime
+          );
+        } catch (err: any) {
+          addLog(`    Messages error: ${err.message}`);
           continue;
         }
-        const msgData = await msgRes.json();
-        const messages = msgData.messages?.messages || [];
 
-        latestInbound = messages.find((m: any) => m.direction === 'inbound');
-        if (!latestInbound?.body?.trim()) {
-          addLog(`  No inbound message body found`);
+        if (hasReply) {
+          addLog(`    Already replied, skipping`);
           continue;
         }
 
-        const inboundTime = new Date(latestInbound.dateAdded).getTime();
-        hasReply = messages.some(
-          (m: any) => m.direction === 'outbound' && new Date(m.dateAdded).getTime() > inboundTime
-        );
-      } catch (err: any) {
-        addLog(`  Messages error: ${err.message}`);
-        continue;
-      }
-
-      if (hasReply) {
-        addLog(`  Already replied, skipping`);
-        continue;
-      }
-
-      addLog(`  Inbound: "${latestInbound.body.slice(0, 60)}" — sending to gateway...`);
+        addLog(`    Inbound: "${latestInbound.body.slice(0, 60)}" — sending to gateway...`);
 
       // Step 5: Call gateway
       try {
@@ -270,9 +278,10 @@ export async function GET(request: NextRequest) {
           errors.push(`Send failed for ${client.name}: ${sendRes.status}`);
         }
       } catch (err: any) {
-        addLog(`  Gateway/send error: ${err.message}`);
+        addLog(`    Gateway/send error: ${err.message}`);
         errors.push(`${client.name}: ${err.message}`);
       }
+      } // end for conv of toProcess
     }
 
     addLog(`Done. Processed: ${totalProcessed}, Errors: ${errors.length}`);
