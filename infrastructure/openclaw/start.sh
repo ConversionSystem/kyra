@@ -1,14 +1,21 @@
 #!/bin/bash
 # ============================================================================
-# Kyra OpenClaw Container — Startup Script
+# Kyra OpenClaw Container — Startup Script (v2 — with watchdog)
 #
-# 1. Generates OpenClaw config from environment variables
-# 2. Starts the Kyra HTTP Bridge IMMEDIATELY (so Fly health checks pass)
-# 3. Starts the OpenClaw Gateway (real AI engine) in background
+# 1. Runs openclaw doctor --repair for config self-healing
+# 2. Generates OpenClaw config from environment variables (first boot only)
+# 3. Starts the Kyra HTTP Bridge IMMEDIATELY (so Fly health checks pass)
+# 4. Starts the OpenClaw Gateway (real AI engine) in background
+# 5. Watchdog monitors gateway port binding — restarts if it hangs
 #
-# The bridge handles gateway reconnection internally — it doesn't need
-# the gateway to be ready before accepting HTTP traffic. Health checks
-# return 503 until the gateway connects, but the port is open.
+# v2 changes (Feb 19 2026):
+#   - Added gateway watchdog: if port 18789 doesn't open within 120s,
+#     kill the gateway and restart it. Repeats up to 3 times.
+#   - Added continuous liveness check: every 60s, verify gateway is
+#     still listening. If dead, restart it.
+#   - Run openclaw doctor --repair before gateway start for config healing.
+#   - This fixes the "gateway hangs silently" bug where 4/5 gateways
+#     showed as running but never bound to their port.
 #
 # Environment variables:
 #   ANTHROPIC_API_KEY    — Anthropic API key (primary)
@@ -23,8 +30,9 @@
 set -e
 
 echo "============================================"
-echo "  Kyra OpenClaw Container"
+echo "  Kyra OpenClaw Container v2"
 echo "  Powered by REAL OpenClaw"
+echo "  With gateway watchdog"
 echo "============================================"
 echo ""
 
@@ -50,31 +58,24 @@ echo "OPENROUTER_API_KEY: $([ -n "$OPENROUTER_API_KEY" ] && echo 'set' || echo '
 echo ""
 
 # ── Initialize persistent volume ─────────────────────────────────────────────
-# If workspace doesn't exist in the volume, copy defaults
 if [ ! -d /root/.openclaw/workspace ]; then
   echo "First boot: initializing workspace from defaults..."
   cp -r /root/.openclaw-defaults/workspace /root/.openclaw/workspace
   mkdir -p /root/.openclaw/workspace/memory
 else
   echo "Existing workspace found in volume — preserving user customizations."
-  # Only copy files that don't exist yet (user-modified files are preserved)
   cp -rn /root/.openclaw-defaults/workspace/* /root/.openclaw/workspace/ 2>/dev/null || true
   mkdir -p /root/.openclaw/workspace/memory
 fi
 
-# Force-reset workspace if RESET_WORKSPACE=1 (for development/testing)
 if [ "$RESET_WORKSPACE" = "1" ]; then
   echo "RESET_WORKSPACE=1 — overwriting workspace with defaults..."
   cp -r /root/.openclaw-defaults/workspace/* /root/.openclaw/workspace/
 fi
 
 # ── Generate or preserve OpenClaw config ─────────────────────────────────────
-# If config already exists (from previous config.patch / channel connect), keep it.
-# Only generate fresh config on first boot.
-
 if [ -f /root/.openclaw/openclaw.json ]; then
   echo "Existing config found — preserving (channels, patches, etc. survive deploys)"
-  # Update model to beta-tier (haiku) if still set to expensive model
   node -e "
     const fs = require('fs');
     const cfg = JSON.parse(fs.readFileSync('/root/.openclaw/openclaw.json', 'utf-8'));
@@ -113,7 +114,6 @@ const config = {
         mode: 'safeguard',
         memoryFlush: { enabled: true }
       },
-      // Image analysis model (uses OpenAI vision by default)
       ...(process.env.OPENAI_API_KEY ? {
         imageModel: {
           primary: 'openai/gpt-4o',
@@ -139,7 +139,6 @@ const config = {
       mode: 'token',
       token: process.env.GATEWAY_TOKEN || 'kyra-internal'
     },
-    // Allow the Gateway Dashboard UI to connect from these origins
     controlUi: {
       allowedOrigins: [
         'https://gateway.conversionsystem.com',
@@ -149,12 +148,9 @@ const config = {
         'http://localhost:3100',
       ],
     },
-    // Unblock tools for HTTP /tools/invoke API so Kyra dashboard can use them
-    // Default deny: sessions_spawn, sessions_send, gateway, whatsapp_login
-    // We allow file ops, exec, sessions — Kyra IS the trusted interface
     tools: {
       allow: ['read', 'write', 'edit', 'exec', 'process', 'sessions_send', 'sessions_spawn', 'image'],
-      deny: ['gateway', 'whatsapp_login'], // Keep gateway control locked
+      deny: ['gateway', 'whatsapp_login'],
     }
   },
   channels: {},
@@ -188,14 +184,24 @@ console.log('OpenClaw config written to /root/.openclaw/openclaw.json');
 " || { echo "FATAL: Failed to generate config"; exit 1; }
 fi
 
-# ── Start Kyra Bridge FIRST (for health checks) ─────────────────────────────
-#
-# The bridge starts its HTTP server on port 3100 immediately. Fly's health
-# check will see the port open. The bridge returns 503 on /health until
-# the gateway connects, but Fly only needs the TCP connection to pass
-# the initial grace period. Once the gateway is up, /health returns 200.
-
+# ── Run openclaw doctor (config self-healing) ────────────────────────────────
+# This detects and fixes broken configs, normalizes settings, and ensures
+# a clean state before starting the gateway. Critical for volume-persisted
+# configs that may have been corrupted or left in a bad state.
 echo ""
+echo "=== Running openclaw doctor --repair ==="
+openclaw doctor --repair --yes 2>&1 || echo "[WARN] openclaw doctor failed (non-fatal, continuing)"
+echo ""
+
+# ── Port check helper ────────────────────────────────────────────────────────
+check_port() {
+  # Returns 0 if port is listening, 1 if not
+  # Uses /proc/net/tcp to avoid needing ss/netstat
+  local port_hex=$(printf '%X' "$1")
+  grep -qi ":${port_hex} " /proc/net/tcp 2>/dev/null
+}
+
+# ── Start Kyra Bridge FIRST (for health checks) ─────────────────────────────
 echo "=== Starting Kyra Bridge on port $BRIDGE_PORT ==="
 
 node /usr/local/bin/kyra-bridge.js 2>&1 | stdbuf -oL sed 's/^/[bridge] /' &
@@ -205,37 +211,143 @@ echo "Bridge PID: $BRIDGE_PID"
 # Give bridge 2 seconds to bind the port
 sleep 2
 
-# ── Start OpenClaw Gateway ────────────────────────────────────────────────────
+# ── Gateway start function ───────────────────────────────────────────────────
+GATEWAY_PID=""
+start_gateway() {
+  echo ""
+  echo "=== Starting OpenClaw Gateway on port $GATEWAY_PORT ==="
+  export OPENCLAW_GATEWAY_TOKEN="$GATEWAY_TOKEN"
 
-echo ""
-echo "=== Starting OpenClaw Gateway on port $GATEWAY_PORT ==="
+  openclaw gateway \
+    --allow-unconfigured \
+    --bind loopback \
+    --port "$GATEWAY_PORT" \
+    --token "$GATEWAY_TOKEN" \
+    2>&1 | stdbuf -oL sed 's/^/[openclaw] /' &
 
-export OPENCLAW_GATEWAY_TOKEN="$GATEWAY_TOKEN"
+  GATEWAY_PID=$!
+  echo "Gateway PID: $GATEWAY_PID"
+}
 
-openclaw gateway \
-  --allow-unconfigured \
-  --bind loopback \
-  --port "$GATEWAY_PORT" \
-  --token "$GATEWAY_TOKEN" \
-  2>&1 | stdbuf -oL sed 's/^/[openclaw] /' &
+# ── Gateway watchdog ─────────────────────────────────────────────────────────
+# Monitors if the gateway actually binds to its port within STARTUP_TIMEOUT.
+# If it hangs (process alive but port not open), kills and restarts.
+# After successful start, checks liveness every LIVENESS_INTERVAL seconds.
 
-GATEWAY_PID=$!
-echo "Gateway PID: $GATEWAY_PID"
+STARTUP_TIMEOUT=120    # seconds to wait for gateway to bind port
+LIVENESS_INTERVAL=60   # seconds between liveness checks
+MAX_RESTARTS=3         # max consecutive restart attempts
+RESTART_COUNT=0
+
+gateway_watchdog() {
+  while true; do
+    # ── Phase 1: Wait for gateway to start ──────────────────────────────
+    echo "[watchdog] Waiting up to ${STARTUP_TIMEOUT}s for gateway on port $GATEWAY_PORT..."
+    WAITED=0
+    while [ $WAITED -lt $STARTUP_TIMEOUT ]; do
+      if check_port "$GATEWAY_PORT"; then
+        echo "[watchdog] ✅ Gateway is listening on port $GATEWAY_PORT (took ${WAITED}s)"
+        RESTART_COUNT=0  # Reset on successful start
+        break
+      fi
+
+      # Check if gateway process is still alive
+      if ! kill -0 "$GATEWAY_PID" 2>/dev/null; then
+        echo "[watchdog] ⚠️  Gateway process $GATEWAY_PID died during startup!"
+        break
+      fi
+
+      sleep 5
+      WAITED=$((WAITED + 5))
+    done
+
+    # If port still not open, gateway is hung or crashed
+    if ! check_port "$GATEWAY_PORT"; then
+      RESTART_COUNT=$((RESTART_COUNT + 1))
+      echo "[watchdog] ❌ Gateway failed to bind to port $GATEWAY_PORT within ${STARTUP_TIMEOUT}s (attempt $RESTART_COUNT/$MAX_RESTARTS)"
+
+      if [ $RESTART_COUNT -ge $MAX_RESTARTS ]; then
+        echo "[watchdog] 💀 Max restarts ($MAX_RESTARTS) exceeded. Giving up — container will exit."
+        kill $BRIDGE_PID 2>/dev/null || true
+        kill $GATEWAY_PID 2>/dev/null || true
+        exit 1
+      fi
+
+      # Kill the hung gateway
+      echo "[watchdog] Killing hung gateway process $GATEWAY_PID..."
+      kill -9 "$GATEWAY_PID" 2>/dev/null || true
+      # Kill any orphaned openclaw processes
+      pkill -9 -f "openclaw gateway" 2>/dev/null || true
+      pkill -9 -f "openclaw-gateway" 2>/dev/null || true
+      sleep 3
+
+      # Run doctor again before retry
+      echo "[watchdog] Running openclaw doctor --repair before retry..."
+      openclaw doctor --repair --yes 2>&1 || true
+
+      # Restart gateway
+      start_gateway
+      continue
+    fi
+
+    # ── Phase 2: Continuous liveness checks ─────────────────────────────
+    echo "[watchdog] Entering liveness monitoring (every ${LIVENESS_INTERVAL}s)..."
+    while true; do
+      sleep $LIVENESS_INTERVAL
+
+      # Check bridge is still alive
+      if ! kill -0 "$BRIDGE_PID" 2>/dev/null; then
+        echo "[watchdog] 💀 Bridge process died! Container exiting."
+        kill $GATEWAY_PID 2>/dev/null || true
+        exit 1
+      fi
+
+      # Check gateway process is still alive
+      if ! kill -0 "$GATEWAY_PID" 2>/dev/null; then
+        echo "[watchdog] ⚠️  Gateway process died! Restarting..."
+        RESTART_COUNT=$((RESTART_COUNT + 1))
+        if [ $RESTART_COUNT -ge $MAX_RESTARTS ]; then
+          echo "[watchdog] 💀 Max restarts exceeded. Container exiting."
+          kill $BRIDGE_PID 2>/dev/null || true
+          exit 1
+        fi
+        start_gateway
+        break  # Go back to startup monitoring
+      fi
+
+      # Check gateway port is still open
+      if ! check_port "$GATEWAY_PORT"; then
+        echo "[watchdog] ⚠️  Gateway port $GATEWAY_PORT no longer listening! Restarting..."
+        RESTART_COUNT=$((RESTART_COUNT + 1))
+        if [ $RESTART_COUNT -ge $MAX_RESTARTS ]; then
+          echo "[watchdog] 💀 Max restarts exceeded. Container exiting."
+          kill $BRIDGE_PID 2>/dev/null || true
+          exit 1
+        fi
+        kill -9 "$GATEWAY_PID" 2>/dev/null || true
+        pkill -9 -f "openclaw-gateway" 2>/dev/null || true
+        sleep 3
+        start_gateway
+        break  # Go back to startup monitoring
+      fi
+
+      # Reset restart count on successful liveness check
+      if [ $RESTART_COUNT -gt 0 ]; then
+        RESTART_COUNT=0
+        echo "[watchdog] Restart count reset (gateway healthy)"
+      fi
+    done
+  done
+}
+
+# ── Launch gateway + watchdog ─────────────────────────────────────────────────
+start_gateway
+
 echo ""
 echo "=== REAL OpenClaw starting. Bridge ready for health checks. ==="
-echo "=== Gateway will connect to bridge automatically when ready. ==="
+echo "=== Watchdog monitoring gateway port binding. ==="
 echo ""
 
-# ── Wait for either process to exit ──────────────────────────────────────────
-
-# If either process dies, the container should restart
-wait -n $BRIDGE_PID $GATEWAY_PID
-EXIT_CODE=$?
-
-echo "A process exited with code $EXIT_CODE — shutting down container"
-
-# Clean up the other process
-kill $BRIDGE_PID 2>/dev/null || true
-kill $GATEWAY_PID 2>/dev/null || true
-
-exit $EXIT_CODE
+# Run watchdog in foreground (replaces the old wait -n)
+# Watchdog will exit with code 1 if max restarts exceeded or bridge dies
+gateway_watchdog
