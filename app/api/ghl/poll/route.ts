@@ -15,6 +15,8 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // Allow up to 60s for processing
 
 export async function GET(request: NextRequest) {
+  const startTime = Date.now();
+
   // ── Auth: Vercel Cron or API secret ─────────────────────────────────
   const authHeader = request.headers.get('authorization');
   const apiSecret = process.env.KYRA_API_SECRET;
@@ -38,23 +40,26 @@ export async function GET(request: NextRequest) {
 
     const totalProcessed = results.reduce((sum, r) => sum + r.messagesProcessed, 0);
     const totalErrors = results.reduce((sum, r) => sum + r.errors.length, 0);
+    const durationMs = Date.now() - startTime;
 
     console.log(
-      `[ghl/poll] Done. Clients: ${results.length}, Messages processed: ${totalProcessed}, Errors: ${totalErrors}`,
+      `[ghl/poll] Done in ${durationMs}ms. Clients: ${results.length}, Messages processed: ${totalProcessed}, Errors: ${totalErrors}`,
     );
 
     return NextResponse.json({
       ok: true,
       timestamp: new Date().toISOString(),
+      durationMs,
       clients: results.length,
       messagesProcessed: totalProcessed,
       errors: totalErrors,
       details: results,
     });
   } catch (err) {
-    console.error('[ghl/poll] Fatal error:', err);
+    const durationMs = Date.now() - startTime;
+    console.error(`[ghl/poll] Fatal error after ${durationMs}ms:`, err);
     return NextResponse.json(
-      { error: 'Poll failed', message: String(err) },
+      { error: 'Poll failed', message: String(err), durationMs },
       { status: 500 },
     );
   }
