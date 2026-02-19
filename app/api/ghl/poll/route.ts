@@ -201,6 +201,7 @@ export async function GET(request: NextRequest) {
           sseBuffer += decoder.decode(value, { stream: true });
         }
         // Parse SSE to get the full response
+        addLog(`  SSE buffer (${sseBuffer.length} chars): ${sseBuffer.slice(0, 300).replace(/\n/g, '\\n')}`);
         for (const line of sseBuffer.split('\n')) {
           if (!line.startsWith('data: ')) continue;
           const data = line.slice(6).trim();
@@ -209,8 +210,21 @@ export async function GET(request: NextRequest) {
             const parsed = JSON.parse(data);
             if (parsed.type === 'done' && parsed.fullResponse) {
               aiResponse = parsed.fullResponse;
+            } else if (parsed.response) {
+              // Some gateway versions return { response: "..." } instead of SSE events
+              aiResponse = parsed.response;
+            } else if (parsed.fullResponse) {
+              aiResponse = parsed.fullResponse;
             }
           } catch { /* ignore */ }
+        }
+        // Fallback: if no SSE-style response, try parsing the whole buffer as JSON
+        if (!aiResponse && sseBuffer.trim()) {
+          try {
+            const directJson = JSON.parse(sseBuffer.trim());
+            if (directJson.response) aiResponse = directJson.response;
+            else if (directJson.fullResponse) aiResponse = directJson.fullResponse;
+          } catch { /* not JSON */ }
         }
 
         if (!aiResponse.trim()) {
