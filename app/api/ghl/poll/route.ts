@@ -164,7 +164,9 @@ export async function GET(request: NextRequest) {
 
       // Step 5: Call gateway
       try {
-        const sessionKey = `agent:client:${client.id}:contact:${conv.contactId}`;
+        // Include date in session key so sessions auto-reset daily (prevents context bloat)
+        const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+        const sessionKey = `agent:client:${client.id}:contact:${conv.contactId}:${today}`;
         const persona = (client.container_config as any)?.persona || '';
         const instructions = (client.container_config as any)?.instructions || '';
         const systemContext = [
