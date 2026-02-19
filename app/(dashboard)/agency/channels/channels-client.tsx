@@ -141,29 +141,26 @@ export function ChannelsClient() {
   const [messages, setMessages] = useState<Record<string, { type: 'success' | 'error'; text: string }>>({});
   const [expandedChannel, setExpandedChannel] = useState<string | null>(null);
 
-  // Load channel status — with localStorage cache so status persists across refreshes during gateway restart
+  // Load channel status from API — no caching to avoid stale/cross-agency leaks
   const loadStatus = useCallback(async () => {
-    // Load cached status first
-    try {
-      const cached = localStorage.getItem('kyra-channel-status');
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (parsed && typeof parsed === 'object') {
-          setChannelStatus(parsed);
-        }
-      }
-    } catch { /* ignore */ }
-
     try {
       const res = await fetch('/api/openclaw/channels');
-      const data = await res.json();
-      if (data.ok) {
-        setChannelStatus(data.channels || {});
-        // Cache to localStorage
-        localStorage.setItem('kyra-channel-status', JSON.stringify(data.channels || {}));
+      if (res.ok) {
+        const data = await res.json();
+        if (data.ok) {
+          setChannelStatus(data.channels || {});
+        } else {
+          // API returned error — show all disconnected (safe default)
+          setChannelStatus({});
+        }
+      } else {
+        // Request failed — show all disconnected (safe default)
+        setChannelStatus({});
       }
-      // If not ok (gateway restarting), keep cached status — don't clear
-    } catch { /* ignore — keep cached status */ }
+    } catch {
+      // Network error — show all disconnected (safe default)
+      setChannelStatus({});
+    }
     setLoading(false);
   }, []);
 
@@ -202,10 +199,8 @@ export function ChannelsClient() {
       const data = await res.json();
 
       if (data.ok) {
-        // Immediately mark as connected in local state + cache
-        const newStatus = { ...channelStatus, [channel.id]: { configured: true, hasToken: true } };
-        setChannelStatus(newStatus);
-        localStorage.setItem('kyra-channel-status', JSON.stringify(newStatus));
+        // Immediately mark as connected in local state
+        setChannelStatus((prev) => ({ ...prev, [channel.id]: { configured: true, hasToken: true } }));
 
         setMessages((prev) => ({
           ...prev,
