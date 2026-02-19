@@ -251,8 +251,20 @@ export async function GET(request: NextRequest) {
         addLog(`  AI: "${aiResponse.slice(0, 80)}..."`);
 
         // Step 6: Send reply via GHL
-        const messageType = (latestInbound.messageType || 'TYPE_SMS') as string;
-        const sendType = messageType.replace('TYPE_', '');
+        // Map GHL message types to valid Send Message API types
+        const GHL_TYPE_MAP: Record<string, string> = {
+          'TYPE_SMS': 'SMS',
+          'TYPE_EMAIL': 'Email',
+          'TYPE_WHATSAPP': 'WhatsApp',
+          'TYPE_FB_MESSENGER': 'FB',
+          'TYPE_INSTAGRAM': 'IG',
+          'TYPE_LIVE_CHAT': 'Live_Chat',
+          'TYPE_WEBCHAT': 'Live_Chat',
+          'TYPE_GMB': 'GMB',
+          'TYPE_CALL': 'SMS', // fallback for missed calls
+        };
+        const rawType = latestInbound.messageType || conv.lastMessageType || 'TYPE_SMS';
+        const sendType = GHL_TYPE_MAP[rawType] || 'SMS';
 
         const sendRes = await fetch(`${GHL_API_BASE}/conversations/messages`, {
           method: 'POST',
