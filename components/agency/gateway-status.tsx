@@ -193,6 +193,39 @@ export function GatewayStatus() {
     );
   }
 
+  // Unhealthy — machine running but gateway process not responding
+  const isUnhealthy = status.status === 'running' && !status.healthCheck?.gatewayConnected;
+  if (isUnhealthy) {
+    return (
+      <Card className="border-orange-200 bg-orange-50">
+        <CardContent className="p-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg bg-orange-100 p-2">
+                <AlertCircle className="h-5 w-5 text-orange-600" />
+              </div>
+              <div>
+                <p className="font-medium text-orange-900">AI Gateway Not Responding</p>
+                <p className="text-xs text-orange-700 mt-0.5">
+                  The gateway machine is running but the AI engine is not responding. Try restarting.
+                </p>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => fetch('/api/agency/gateway/restart', { method: 'POST' }).then(fetchStatus)}
+              className="gap-2"
+            >
+              <RefreshCw className="h-3 w-3" />
+              Restart
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   // Fallback — unknown state
   return (
     <Card>
