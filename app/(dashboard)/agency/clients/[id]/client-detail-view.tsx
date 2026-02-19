@@ -303,7 +303,7 @@ function AIPersonalityTab({ client }: { client: AgencyClient }) {
     setMessage(null);
     try {
       const res = await fetch(`/api/agency/clients/${client.id}`, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           container_config: {
@@ -455,7 +455,7 @@ function SettingsTab({
     setSaveMessage(null);
     try {
       const res = await fetch(`/api/agency/clients/${client.id}`, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, industry, status }),
       });
