@@ -188,9 +188,11 @@ fi
 # This detects and fixes broken configs, normalizes settings, and ensures
 # a clean state before starting the gateway. Critical for volume-persisted
 # configs that may have been corrupted or left in a bad state.
+# NOTE: Doctor can hang if it prompts for input. Pipe 'yes' and add timeout.
 echo ""
 echo "=== Running openclaw doctor --repair ==="
-openclaw doctor --repair --yes 2>&1 || echo "[WARN] openclaw doctor failed (non-fatal, continuing)"
+timeout 30 sh -c 'yes | openclaw doctor --repair 2>&1' || echo "[WARN] openclaw doctor timed out or failed (non-fatal, continuing)"
+echo "=== Doctor done ==="
 echo ""
 
 # ── Port check helper ────────────────────────────────────────────────────────
@@ -283,7 +285,7 @@ gateway_watchdog() {
 
       # Run doctor again before retry
       echo "[watchdog] Running openclaw doctor --repair before retry..."
-      openclaw doctor --repair --yes 2>&1 || true
+      timeout 30 sh -c 'yes | openclaw doctor --repair 2>&1' || true
 
       # Restart gateway
       start_gateway
