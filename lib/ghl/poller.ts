@@ -113,6 +113,9 @@ interface PollResult {
 // ── Main Poll Function ────────────────────────────────────────────────────────
 
 export async function pollAllClients(): Promise<PollResult[]> {
+  const functionStart = Date.now();
+  const TIME_BUDGET_MS = 50_000; // Stop processing at 50s to leave headroom for Vercel's 60s limit
+
   const supabase = createServiceClientWithoutCookies();
 
   // Get all clients with GHL tokens (OAuth or Private Integration)
@@ -133,6 +136,13 @@ export async function pollAllClients(): Promise<PollResult[]> {
   const agencyKeyCache = new Map<string, ResolvedApiKey | null>();
 
   for (const client of clients) {
+    // Time budget check — stop before Vercel kills us
+    const elapsed = Date.now() - functionStart;
+    if (elapsed > TIME_BUDGET_MS) {
+      console.warn(`[ghl/poller] ⏱️ Time budget exceeded (${elapsed}ms) — skipping remaining ${clients.length - results.length} clients`);
+      break;
+    }
+
     // Resolve BYOK key for this client's agency (cached)
     const agencyId = (client as AgencyClient).agency_id;
     if (agencyId && !agencyKeyCache.has(agencyId)) {
@@ -215,7 +225,14 @@ async function pollClient(
 
   result.conversationsChecked = conversations.length;
 
-  for (const conv of conversations) {
+  // Limit to 3 conversations per client per cycle to stay within time budget
+  const MAX_CONVS_PER_CYCLE = 3;
+  const toProcess = conversations.slice(0, MAX_CONVS_PER_CYCLE);
+  if (conversations.length > MAX_CONVS_PER_CYCLE) {
+    console.log(`[ghl/poller] Client "${client.name}": ${conversations.length} unread conversations, processing first ${MAX_CONVS_PER_CYCLE} this cycle`);
+  }
+
+  for (const conv of toProcess) {
     try {
       const processed = await processConversation(accessToken, conv, client, byokKey);
       if (processed) {
@@ -392,7 +409,7 @@ async function processConversation(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(bridgePayload),
-    signal: AbortSignal.timeout(120_000),
+    signal: AbortSignal.timeout(30_000), // 30s max — must fit within Vercel's 60s function limit
   });
 
   if (!bridgeRes.ok) {
