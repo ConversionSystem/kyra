@@ -236,7 +236,7 @@ start_gateway() {
 # If it hangs (process alive but port not open), kills and restarts.
 # After successful start, checks liveness every LIVENESS_INTERVAL seconds.
 
-STARTUP_TIMEOUT=120    # seconds to wait for gateway to bind port
+STARTUP_TIMEOUT=300    # seconds to wait for gateway to bind port (OpenClaw is slow on shared-CPU VMs)
 LIVENESS_INTERVAL=60   # seconds between liveness checks
 MAX_RESTARTS=3         # max consecutive restart attempts
 RESTART_COUNT=0
