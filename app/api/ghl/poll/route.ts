@@ -164,9 +164,11 @@ export async function GET(request: NextRequest) {
 
       // Step 5: Call gateway
       try {
-        // Include date in session key so sessions auto-reset daily (prevents context bloat)
-        const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-        const sessionKey = `agent:client:${client.id}:contact:${conv.contactId}:${today}`;
+        // Use short hashed session key to prevent stuck sessions + daily rotation
+        const today = new Date().toISOString().slice(0, 10);
+        const clientShort = client.id.slice(0, 8);
+        const contactShort = conv.contactId.slice(0, 8);
+        const sessionKey = `ghl:${clientShort}:${contactShort}:${today}`;
         const persona = (client.container_config as any)?.persona || '';
         const instructions = (client.container_config as any)?.instructions || '';
         const systemContext = [
