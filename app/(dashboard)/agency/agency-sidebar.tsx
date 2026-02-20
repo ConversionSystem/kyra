@@ -176,7 +176,7 @@ export function AgencySidebar({ agencyName, plan, settings }: AgencySidebarProps
           </a>
         ) : (
           <Link
-            href="/agency/clients/new"
+            href="/agency/clients"
             title="Deploy a client AI to unlock the terminal"
             onClick={() => setMobileOpen(false)}
             className={cn(
