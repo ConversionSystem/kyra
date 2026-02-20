@@ -461,6 +461,71 @@ export async function chatViaGateway(
   }
 }
 
+// ============ Gateway Config (openclaw.json) ============
+
+/**
+ * Read the gateway's openclaw.json config for a client.
+ */
+export async function getGatewayConfig(
+  clientId: string
+): Promise<{ config: Record<string, unknown> } | null> {
+  try {
+    const res = await provisionerFetch(`/containers/${clientId}/openclaw-config`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Patch (deep merge) the gateway's openclaw.json config for a client.
+ * Restarts the container to apply changes.
+ */
+export async function patchGatewayConfig(
+  clientId: string,
+  patch: Record<string, unknown>
+): Promise<{ ok: boolean; config?: Record<string, unknown>; error?: string }> {
+  try {
+    const res = await provisionerFetch(`/containers/${clientId}/openclaw-config`, {
+      method: 'PATCH',
+      body: JSON.stringify({ patch }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+      return { ok: false, error: err.error || `Provisioner returned ${res.status}` };
+    }
+    const data = await res.json();
+    return { ok: true, config: data.config };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+/**
+ * Replace the gateway's openclaw.json config entirely for a client.
+ * Restarts the container to apply changes.
+ */
+export async function replaceGatewayConfig(
+  clientId: string,
+  config: Record<string, unknown>
+): Promise<{ ok: boolean; config?: Record<string, unknown>; error?: string }> {
+  try {
+    const res = await provisionerFetch(`/containers/${clientId}/openclaw-config`, {
+      method: 'PUT',
+      body: JSON.stringify({ config }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+      return { ok: false, error: err.error || `Provisioner returned ${res.status}` };
+    }
+    const data = await res.json();
+    return { ok: true, config: data.config };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
 // ============ Resolve Gateway for Client ============
 
 /**
