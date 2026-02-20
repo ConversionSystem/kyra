@@ -20,7 +20,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
-import { getGatewayByAgencyId } from '@/lib/openclaw/gateway-resolver';
+import { getGatewayByClientId } from '@/lib/ovh/gateway-resolver';
 import type { GHLWebhookPayload, GHLWebhookEventType } from '@/lib/ghl/types';
 
 // Events that should be forwarded to the AI container
@@ -119,14 +119,14 @@ async function forwardToContainer(
   agencyId: string,
   payload: GHLWebhookPayload,
 ): Promise<void> {
-  // Resolve the agency's own gateway
-  const agencyGateway = await getGatewayByAgencyId(agencyId);
-  const workerUrl = agencyGateway?.url;
+  // Resolve the client's own gateway (OVH per-client isolation)
+  const clientGateway = await getGatewayByClientId(clientId);
+  const workerUrl = clientGateway?.url;
   const apiSecret = process.env.KYRA_API_SECRET;
 
   if (!workerUrl) {
     console.warn(
-      `[ghl/webhook] No isolated gateway provisioned for agency ${agencyId}`,
+      `[ghl/webhook] No gateway provisioned for client ${clientId}`,
     );
     return;
   }
