@@ -430,17 +430,20 @@ export async function chatViaGateway(
   }
 
   try {
-    const res = await fetch(`${client.gateway_url}/chat`, {
+    // Use OpenClaw's /v1/chat/completions (OpenAI-compatible) HTTP API
+    const messages: Array<{ role: string; content: string }> = [];
+    messages.push({ role: 'user', content: message });
+
+    const res = await fetch(`${client.gateway_url}/v1/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${client.gateway_token}`,
       },
       body: JSON.stringify({
-        message,
-        sessionId: options.sessionId,
-        apiKey: options.apiKey,
-        model: options.model,
+        model: options.model || 'openai/gpt-4o-mini',
+        messages,
+        stream: false,
       }),
       signal: AbortSignal.timeout(30_000),
     });
@@ -450,7 +453,9 @@ export async function chatViaGateway(
       return { error: err.error || `Gateway returned ${res.status}` };
     }
 
-    return await res.json();
+    const data = await res.json();
+    const reply = data?.choices?.[0]?.message?.content || '';
+    return { reply, sessionId: options.sessionId || 'default' };
   } catch (error) {
     return { error: error instanceof Error ? error.message : String(error) };
   }

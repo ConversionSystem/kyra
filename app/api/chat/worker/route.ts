@@ -217,21 +217,27 @@ export async function POST(request: NextRequest) {
     }
     const { url: gatewayUrl } = resolved;
 
+    // Build OpenAI-compatible messages for /v1/chat/completions
+    const chatMessages: Array<{ role: string; content: string }> = [];
+    if (finalSystemContext) {
+      chatMessages.push({ role: 'system', content: finalSystemContext });
+    }
+    chatMessages.push({ role: 'user', content: message });
+
     let workerResponse: Response;
     try {
-      workerResponse = await fetch(`${gatewayUrl}/chat`, {
+      workerResponse = await fetch(`${gatewayUrl}/v1/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${resolved.token}`,
         },
         body: JSON.stringify({
-          message,
-          sessionKey,
-          systemContext: finalSystemContext,
-          model: modelConfig.id,
-          maxTokens: modelConfig.maxTokens,
+          model: modelConfig.id || 'openai/gpt-4o-mini',
+          messages: chatMessages,
+          stream: true,
         }),
-        signal: AbortSignal.timeout(180_000), // Cold start: bridge ~400ms, gateway first boot ~2-3min
+        signal: AbortSignal.timeout(180_000),
       });
     } catch (fetchError) {
       console.error('[worker-route] Worker unreachable:', fetchError);
