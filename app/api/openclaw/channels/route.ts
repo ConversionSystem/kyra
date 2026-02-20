@@ -79,11 +79,15 @@ export async function POST(request: NextRequest) {
 
     // Telegram-specific defaults
     // dmPolicy: "open" = any customer can DM the bot (correct for customer service bots)
-    // Use "pairing" only for personal AI assistants that need restricted access
+    // IMPORTANT: dmPolicy="open" requires allowFrom: ["*"] — OpenClaw won't start without it
     if (channel === 'telegram') {
       channelPatch.dmPolicy = channelPatch.dmPolicy || 'open';
       channelPatch.groupPolicy = channelPatch.groupPolicy || 'open';
       channelPatch.streamMode = channelPatch.streamMode || 'partial';
+      // Required by OpenClaw when dmPolicy="open"
+      if (channelPatch.dmPolicy === 'open') {
+        channelPatch.allowFrom = ['*'];
+      }
     }
 
     // Discord-specific defaults
