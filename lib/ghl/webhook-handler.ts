@@ -8,7 +8,7 @@
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { getSystemPromptForClient, getSessionKeyForClient } from '@/lib/agency/container';
 import { sendGHLMessage, getValidToken } from './api';
-import { getGatewayByAgencyId } from '@/lib/openclaw/gateway-resolver';
+import { getGatewayByClientId } from '@/lib/ovh/gateway-resolver';
 import type { GHLWebhookPayload, GHLMessageChannel } from './types';
 import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
 
@@ -59,10 +59,10 @@ export async function processInboundMessage(
   );
 
   // ── Call the agency's own gateway ────────────────────────────────────
-  const agencyGateway = await getGatewayByAgencyId(client.agency_id);
-  const bridgeUrl = agencyGateway?.url;
+  const clientGateway = await getGatewayByClientId(client.id);
+  const bridgeUrl = clientGateway?.url;
   if (!bridgeUrl) {
-    throw new Error(`No isolated gateway provisioned for agency ${client.agency_id}`);
+    throw new Error(`No gateway provisioned for client ${client.id} (${client.name})`);
   }
 
   const aiResponse = await callBridge(bridgeUrl, {

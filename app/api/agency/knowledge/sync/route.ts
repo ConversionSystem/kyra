@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { requireAgencyMember } from '@/lib/agency/middleware';
-import { getGatewayByAgencyId } from '@/lib/openclaw/gateway-resolver';
+import { getGatewayByClientId, getGatewayByAgencyId } from '@/lib/ovh/gateway-resolver';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,10 +19,18 @@ export async function POST(request: NextRequest) {
   }
 
   const { agency } = result.data;
-  const gateway = await getGatewayByAgencyId(agency.id);
+
+  // Accept optional clientId — if provided, sync only to that client's gateway.
+  // Otherwise, fall back to the first active client gateway in the agency.
+  const body = await request.json().catch(() => ({}));
+  const clientId = body.clientId || request.nextUrl.searchParams.get('clientId');
+
+  const gateway = clientId
+    ? await getGatewayByClientId(clientId)
+    : await getGatewayByAgencyId(agency.id);
 
   if (!gateway) {
-    return NextResponse.json({ error: 'Gateway not provisioned' }, { status: 400 });
+    return NextResponse.json({ error: 'Gateway not provisioned. Deploy a client AI first.' }, { status: 400 });
   }
 
   const supabase = createServiceClientWithoutCookies();
