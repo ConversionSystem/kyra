@@ -175,16 +175,26 @@ export function AgencySidebar({ agencyName, plan, settings }: AgencySidebarProps
             <ExternalLink className="h-3 w-3 ml-auto opacity-50" />
           </a>
         ) : (
-          <div
-            title="Deploy a client AI to access the terminal"
+          <Link
+            href="/agency/clients/new"
+            title="Deploy a client AI to unlock the terminal"
+            onClick={() => setMobileOpen(false)}
             className={cn(
-              'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm cursor-not-allowed opacity-40',
-              hasBranding ? 'text-white/40' : 'text-gray-600'
+              'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors',
+              hasBranding
+                ? 'text-white/40 hover:bg-white/10 hover:text-white/70'
+                : 'text-gray-500 hover:bg-gray-800 hover:text-gray-300'
             )}
           >
             <Terminal className="h-4 w-4 shrink-0" />
             OpenClaw Terminal
-          </div>
+            <span className={cn(
+              'ml-auto text-[10px] font-medium px-1.5 py-0.5 rounded',
+              hasBranding ? 'bg-white/10 text-white/50' : 'bg-gray-800 text-gray-500'
+            )}>
+              Setup
+            </span>
+          </Link>
         )}
         <div className={cn('px-3 mt-2 text-xs', hasBranding ? 'text-white/30' : 'text-gray-600')}>
           Powered by OpenClaw
