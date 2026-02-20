@@ -1,48 +1,44 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { getFirstGatewayByUserId } from '@/lib/ovh/gateway-resolver';
+import { getDashboardUrl } from '@/lib/ovh/gateway-resolver';
 
 /**
- * GET /api/openclaw/dashboard-url
+ * GET /api/openclaw/dashboard-url?clientId=xxx
  *
- * Returns the Gateway Dashboard URL for the agency's first active client.
- * Each client has its own isolated gateway on OVH — this returns the first
- * running one for the agency-level terminal link.
+ * Returns the Gateway Dashboard URL for a client's gateway (OVH per-client isolation).
+ * Accepts optional clientId query param to target a specific client.
+ * Falls back to the first active client gateway in the user's agency.
+ * Token is passed via hash fragment so it never hits server logs.
  *
- * ⚠️ NO FALLBACK — if no per-client gateway exists, returns 503.
+ * ⚠️ NO FALLBACK — if no client gateway exists, returns 503.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  try {
-    const gateway = await getFirstGatewayByUserId(user.id);
+  const clientId = request.nextUrl.searchParams.get('clientId');
 
-    if (!gateway) {
+  try {
+    const dashboardUrl = await getDashboardUrl(user.id, clientId);
+
+    if (!dashboardUrl) {
       return NextResponse.json(
         {
           error: 'Gateway not provisioned',
-          message: 'No active client gateways found. Create a client and provision their AI first.',
+          message: 'No AI gateway found. Deploy a client AI first, then the dashboard will be available.',
         },
         { status: 503 }
       );
     }
 
-    const dashboardUrl = `${gateway.url}/__openclaw__/#token=${encodeURIComponent(gateway.token)}`;
-
-    return NextResponse.json({
-      url: dashboardUrl,
-      baseUrl: `${gateway.url}/__openclaw__/`,
-      clientId: gateway.clientId,
-      clientName: gateway.clientName,
-    });
+    return NextResponse.json(dashboardUrl);
   } catch (error) {
     console.error('[dashboard-url] Error resolving gateway:', error);
     return NextResponse.json(
       {
         error: 'Gateway error',
-        message: 'Unable to reach AI gateway. It may be starting up — please try again in a minute.',
+        message: 'Unable to reach the AI gateway. It may be starting up — please try again in a minute.',
       },
       { status: 503 }
     );
