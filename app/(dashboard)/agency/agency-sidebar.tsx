@@ -18,6 +18,7 @@ import {
   ExternalLink,
   Menu,
   X,
+  TrendingUp,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AgencySettings } from '@/lib/agency/types';
@@ -26,10 +27,11 @@ const navItems = [
   { label: 'Overview', href: '/agency', icon: LayoutDashboard },
   { label: 'Conversations', href: '/agency/conversations', icon: MessageSquare },
   { label: 'Clients', href: '/agency/clients', icon: Users },
-  { label: 'Knowledge Base', href: '/agency/knowledge', icon: BookOpen },
+  { label: 'Templates', href: '/agency/templates', icon: BookOpen },
+  { label: 'Channels', href: '/agency/channels', icon: Radio },
   { label: 'Automations', href: '/agency/automations', icon: Zap },
   { label: 'Analytics', href: '/agency/analytics', icon: BarChart3 },
-  { label: 'Channels', href: '/agency/channels', icon: Radio },
+  { label: 'Revenue', href: '/agency/revenue', icon: TrendingUp },
   { label: 'API Keys', href: '/agency/api-keys', icon: KeyRound },
   { label: 'Settings', href: '/agency/settings', icon: Settings },
 ];
