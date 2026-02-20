@@ -50,6 +50,13 @@ export interface AgencyClient {
   usage_this_month: number;
   created_at: string;
   updated_at: string;
+  // Gateway / OVH container
+  gateway_url: string | null;
+  gateway_token: string | null;
+  gateway_container_id: string | null;
+  gateway_status: 'running' | 'starting' | 'provisioning' | 'error' | null;
+  gateway_error: string | null;
+  gateway_provisioned_at: string | null;
   template?: AgencyTemplate | null;
 }
 

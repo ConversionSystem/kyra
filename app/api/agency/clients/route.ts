@@ -129,17 +129,24 @@ export async function POST(request: NextRequest) {
 
   const userMd = `# ${name}\n\nClient of ${agency.name}.`;
 
-  // Fire and forget — gateway provisioning happens in background
-  provisionClientGateway(client.id, agency.id, {
-    soulMd,
-    userMd,
-  }).then(result => {
+  // Auto-provision with retry — fire and forget
+  const provisionWithRetry = async () => {
+    const result = await provisionClientGateway(client.id, agency.id, { soulMd, userMd });
     if (result.success) {
       console.log(`[clients] Gateway provisioned for ${client.id}: ${result.gatewayUrl}`);
-    } else {
-      console.error(`[clients] Gateway provisioning failed for ${client.id}: ${result.error}`);
+      return;
     }
-  }).catch(err => {
+    // First attempt failed — wait 5s and retry once
+    console.warn(`[clients] First provision attempt failed for ${client.id}: ${result.error}. Retrying in 5s...`);
+    await new Promise(r => setTimeout(r, 5000));
+    const retry = await provisionClientGateway(client.id, agency.id, { soulMd, userMd });
+    if (retry.success) {
+      console.log(`[clients] Gateway provisioned on retry for ${client.id}: ${retry.gatewayUrl}`);
+    } else {
+      console.error(`[clients] Gateway provisioning failed after retry for ${client.id}: ${retry.error}`);
+    }
+  };
+  provisionWithRetry().catch(err => {
     console.error(`[clients] Gateway provisioning error for ${client.id}:`, err);
   });
 

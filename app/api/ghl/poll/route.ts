@@ -214,53 +214,26 @@ export async function GET(request: NextRequest) {
         });
 
         if (!chatRes.ok) {
-          addLog(`  Gateway error: ${chatRes.status}`);
+          const errText = await chatRes.text().catch(() => '');
+          addLog(`  Gateway error: ${chatRes.status} ${errText.slice(0, 100)}`);
           continue;
         }
 
-        // Read SSE stream manually to get the full AI response
+        // Parse OpenAI-compatible response (stream: false → standard JSON)
         let aiResponse = '';
-        const reader = chatRes.body?.getReader();
-        if (!reader) {
-          addLog(`  No response body reader`);
+        try {
+          const chatData = await chatRes.json();
+          // Standard OpenAI format: choices[0].message.content
+          aiResponse = chatData?.choices?.[0]?.message?.content || '';
+          // Legacy bridge.js fallbacks (in case old containers still respond)
+          if (!aiResponse) aiResponse = chatData?.response || chatData?.fullResponse || '';
+        } catch (err: any) {
+          addLog(`  Failed to parse gateway JSON: ${err.message}`);
           continue;
-        }
-        const decoder = new TextDecoder();
-        let sseBuffer = '';
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          sseBuffer += decoder.decode(value, { stream: true });
-        }
-        // Parse SSE to get the full response
-        addLog(`  SSE buffer (${sseBuffer.length} chars): ${sseBuffer.slice(0, 300).replace(/\n/g, '\\n')}`);
-        for (const line of sseBuffer.split('\n')) {
-          if (!line.startsWith('data: ')) continue;
-          const data = line.slice(6).trim();
-          if (data === '[DONE]') continue;
-          try {
-            const parsed = JSON.parse(data);
-            if (parsed.type === 'done' && parsed.fullResponse) {
-              aiResponse = parsed.fullResponse;
-            } else if (parsed.response) {
-              // Some gateway versions return { response: "..." } instead of SSE events
-              aiResponse = parsed.response;
-            } else if (parsed.fullResponse) {
-              aiResponse = parsed.fullResponse;
-            }
-          } catch { /* ignore */ }
-        }
-        // Fallback: if no SSE-style response, try parsing the whole buffer as JSON
-        if (!aiResponse && sseBuffer.trim()) {
-          try {
-            const directJson = JSON.parse(sseBuffer.trim());
-            if (directJson.response) aiResponse = directJson.response;
-            else if (directJson.fullResponse) aiResponse = directJson.fullResponse;
-          } catch { /* not JSON */ }
         }
 
         if (!aiResponse.trim()) {
-          addLog(`  Empty AI response`);
+          addLog(`  Empty AI response from gateway`);
           continue;
         }
         addLog(`  AI: "${aiResponse.slice(0, 80)}..."`);
