@@ -20,6 +20,7 @@ import {
   X,
   TrendingUp,
   CreditCard,
+  FileText,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AgencySettings } from '@/lib/agency/types';
@@ -34,6 +35,7 @@ const navItems = [
   { label: 'Analytics', href: '/agency/analytics', icon: BarChart3 },
   { label: 'Revenue', href: '/agency/revenue', icon: TrendingUp },
   { label: 'Plans', href: '/agency/plans', icon: CreditCard },
+  { label: 'Proposal', href: '/agency/proposal', icon: FileText },
   { label: 'API Keys', href: '/agency/api-keys', icon: KeyRound },
   { label: 'Settings', href: '/agency/settings', icon: Settings },
 ];
