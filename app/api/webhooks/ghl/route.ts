@@ -413,16 +413,22 @@ async function forwardToContainer(
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30_000);
 
-    const response = await fetch(`${workerUrl}/chat`, {
+    // Build OpenAI-compatible messages for /v1/chat/completions
+    const chatMessages: Array<{ role: string; content: string }> = [];
+    if (systemContext) {
+      chatMessages.push({ role: 'system', content: systemContext });
+    }
+    chatMessages.push({ role: 'user', content: message });
+
+    const response = await fetch(`${workerUrl}/v1/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${API_SECRET}`,
+        Authorization: `Bearer ${clientGateway?.token || API_SECRET}`,
       },
       body: JSON.stringify({
-        message,
-        sessionKey,
-        systemContext,
+        model: 'openai/gpt-4o-mini',
+        messages: chatMessages,
         stream: false,
       }),
       signal: controller.signal,

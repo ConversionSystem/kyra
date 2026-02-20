@@ -186,26 +186,23 @@ async function forwardToContainer(
       message = `[GHL ${payload.type}] ${JSON.stringify(payload)}`;
   }
 
-  // Forward to the worker which routes to the correct container
-  const res = await fetch(`${workerUrl}/api/ghl/inbound`, {
+  // Forward to OpenClaw gateway via /v1/chat/completions
+  const chatMessages: Array<{ role: string; content: string }> = [];
+  chatMessages.push({ role: 'system', content: `You are an AI assistant for a business. Process this GHL webhook event and take appropriate action.\nClient ID: ${clientId}\nEvent type: ${payload.type}\nContact: ${payload.contactId || payload.id || 'unknown'}` });
+  chatMessages.push({ role: 'user', content: message });
+
+  const res = await fetch(`${workerUrl}/v1/chat/completions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiSecret}`,
-      'X-Kyra-Agency-Id': agencyId,
-      'X-Kyra-Client-Id': clientId,
+      Authorization: `Bearer ${clientGateway?.token || apiSecret}`,
     },
     body: JSON.stringify({
-      clientId,
-      agencyId,
-      eventType: payload.type,
-      message,
-      contactId: payload.contactId || payload.id,
-      conversationId: payload.conversationId,
-      locationId: payload.locationId,
-      rawPayload: payload,
+      model: 'openai/gpt-4o-mini',
+      messages: chatMessages,
+      stream: false,
     }),
-    signal: AbortSignal.timeout(10_000),
+    signal: AbortSignal.timeout(30_000),
   });
 
   if (!res.ok) {
