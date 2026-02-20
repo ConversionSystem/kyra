@@ -103,16 +103,17 @@ export async function GET(request: NextRequest) {
         continue;
       }
 
-      // Step 3: Resolve gateway
-      const { data: agencyData } = await supabase
-        .from('agencies')
-        .select('gateway_url')
-        .eq('id', client.agency_id)
+      // Step 3: Resolve the client's own gateway (OVH per-client isolation)
+      const { data: clientGw } = await supabase
+        .from('agency_clients')
+        .select('gateway_url, gateway_token, gateway_status')
+        .eq('id', client.id)
         .single();
 
-      const gatewayUrl = agencyData?.gateway_url;
-      if (!gatewayUrl) {
-        addLog(`  No gateway for agency ${client.agency_id}`);
+      const gatewayUrl = clientGw?.gateway_url;
+      const gateway = clientGw;
+      if (!gatewayUrl || !['running', 'starting'].includes(clientGw?.gateway_status || '')) {
+        addLog(`  No gateway for client ${client.id}`);
         continue;
       }
 
@@ -191,10 +192,24 @@ export async function GET(request: NextRequest) {
           `Customer: ${conv.contactName || conv.phone || 'Unknown'}`,
         ].join('\n');
 
-        const chatRes = await fetch(`${gatewayUrl}/chat`, {
+        // Build OpenAI-compatible messages for /v1/chat/completions
+        const chatMessages: Array<{ role: string; content: string }> = [];
+        if (systemContext) {
+          chatMessages.push({ role: 'system', content: systemContext });
+        }
+        chatMessages.push({ role: 'user', content: latestInbound.body });
+
+        const chatRes = await fetch(`${gatewayUrl}/v1/chat/completions`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: latestInbound.body, sessionKey, systemContext }),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${gateway?.gateway_token || ''}`,
+          },
+          body: JSON.stringify({
+            model: 'openai/gpt-4o-mini',
+            messages: chatMessages,
+            stream: false,
+          }),
           signal: AbortSignal.timeout(30_000),
         });
 
