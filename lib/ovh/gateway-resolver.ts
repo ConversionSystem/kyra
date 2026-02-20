@@ -129,6 +129,37 @@ export async function chatWithClient(
 }
 
 /**
+ * Get the first running gateway for an agency by agency ID.
+ * Used by routes that know the agency but not a specific client.
+ * Returns the first client with a running gateway.
+ */
+export async function getGatewayByAgencyId(agencyId: string): Promise<ClientGateway | null> {
+  const supabase = getSupabase();
+  const { data: clients } = await supabase
+    .from('agency_clients')
+    .select('id, name, agency_id, gateway_url, gateway_token, gateway_container_id, gateway_status')
+    .eq('agency_id', agencyId)
+    .eq('gateway_status', 'running')
+    .not('gateway_url', 'is', null)
+    .not('gateway_token', 'is', null)
+    .order('created_at', { ascending: true })
+    .limit(1);
+
+  if (!clients?.length) return null;
+  const client = clients[0];
+
+  return {
+    url: client.gateway_url,
+    token: client.gateway_token,
+    containerId: client.gateway_container_id,
+    status: client.gateway_status,
+    clientId: client.id,
+    clientName: client.name,
+    agencyId: client.agency_id,
+  };
+}
+
+/**
  * Get the first active client gateway for an agency (by user ID).
  * Used for the agency-level "OpenClaw Terminal" link.
  * Returns the first running client gateway found.
@@ -146,27 +177,64 @@ export async function getFirstGatewayByUserId(userId: string): Promise<ClientGat
 
   if (!member?.agency_id) return null;
 
-  // Get first client with a running gateway
-  const { data: clients } = await supabase
-    .from('agency_clients')
-    .select('id, name, agency_id, gateway_url, gateway_token, gateway_container_id, gateway_status')
-    .eq('agency_id', member.agency_id)
-    .eq('gateway_status', 'running')
-    .not('gateway_url', 'is', null)
-    .not('gateway_token', 'is', null)
-    .limit(1);
+  return getGatewayByAgencyId(member.agency_id);
+}
 
-  if (!clients?.length) return null;
-  const client = clients[0];
+/**
+ * Resolve a gateway URL + token for a user.
+ * Looks up the user's agency membership, then finds the first active client gateway.
+ * Used by routes that only have the auth user ID (dashboard, tools, channels).
+ *
+ * If clientId is provided, resolves that specific client's gateway.
+ * Otherwise finds the first active client gateway in the user's agency.
+ */
+export async function resolveGatewayForUser(
+  userId: string,
+  clientId?: string | null,
+): Promise<{ url: string; token: string; clientId: string } | null> {
+  if (clientId) {
+    const gw = await getGatewayByClientId(clientId);
+    if (!gw) return null;
+    return { url: gw.url, token: gw.token, clientId: gw.clientId };
+  }
+
+  const gw = await getFirstGatewayByUserId(userId);
+  if (!gw) return null;
+  return { url: gw.url, token: gw.token, clientId: gw.clientId };
+}
+
+/**
+ * Get the OpenClaw Dashboard URL for a client's gateway.
+ * Token is passed via hash fragment (never in server logs).
+ */
+export async function getDashboardUrlForClient(
+  clientId: string,
+): Promise<{ url: string; baseUrl: string; clientId: string } | null> {
+  const gw = await getGatewayByClientId(clientId);
+  if (!gw) return null;
 
   return {
-    url: client.gateway_url,
-    token: client.gateway_token,
-    containerId: client.gateway_container_id,
-    status: client.gateway_status,
-    clientId: client.id,
-    clientName: client.name,
-    agencyId: client.agency_id,
+    url: `${gw.url}/__openclaw__/#token=${encodeURIComponent(gw.token)}`,
+    baseUrl: `${gw.url}/__openclaw__/`,
+    clientId: gw.clientId,
+  };
+}
+
+/**
+ * Get dashboard URL for a user (resolves their agency → first active client).
+ * Accepts optional clientId to target a specific client.
+ */
+export async function getDashboardUrl(
+  userId: string,
+  clientId?: string | null,
+): Promise<{ url: string; baseUrl: string; clientId: string } | null> {
+  const resolved = await resolveGatewayForUser(userId, clientId);
+  if (!resolved) return null;
+
+  return {
+    url: `${resolved.url}/__openclaw__/#token=${encodeURIComponent(resolved.token)}`,
+    baseUrl: `${resolved.url}/__openclaw__/`,
+    clientId: resolved.clientId,
   };
 }
 

@@ -6,7 +6,7 @@ import { getSystemPrompt, CalendarEvent } from '@/lib/ai/prompts';
 import { buildSkillsPrompt } from '@/lib/skills/registry';
 import { getToolDefinitions, executeToolCall } from '@/lib/tools/definitions';
 import { resolveModelPreference } from '@/lib/ai/model-router';
-import { resolveGatewayUrl } from '@/lib/openclaw/gateway-resolver';
+import { resolveGatewayForUser } from '@/lib/ovh/gateway-resolver';
 
 function getSupabase() {
   return createClient(
@@ -78,7 +78,7 @@ export async function processChannelMessage(
 
   // Route through the user's agency gateway if enabled
   if (features.useWorker) {
-    const resolved = await resolveGatewayUrl(userId);
+    const resolved = await resolveGatewayForUser(userId);
     const WORKER_URL = resolved?.url;
     const API_SECRET = process.env.KYRA_API_SECRET;
 

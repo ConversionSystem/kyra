@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { invokeTool, OPENCLAW_TOOLS } from '@/lib/openclaw/client';
-import { resolveGatewayUrl } from '@/lib/openclaw/gateway-resolver';
+import { resolveGatewayForUser } from '@/lib/ovh/gateway-resolver';
 
 /**
  * POST /api/openclaw/tools
  *
- * Invoke any OpenClaw tool on the user's agency gateway.
- * Each agency's tools run on their own isolated gateway.
+ * Invoke any OpenClaw tool on a client's gateway (OVH per-client isolation).
+ * Accepts optional clientId to target a specific client's gateway.
+ * Falls back to the first active client gateway in the user's agency.
  *
- * Body: { tool: string, args?: object, action?: string }
+ * Body: { tool: string, args?: object, action?: string, clientId?: string }
  */
 export async function POST(request: NextRequest) {
   try {
@@ -20,23 +21,26 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { tool, args, action } = body;
+    const { tool, args, action, clientId } = body;
 
     if (!tool || typeof tool !== 'string') {
       return NextResponse.json({ error: 'Missing tool name' }, { status: 400 });
     }
 
-    // Resolve agency's gateway — no fallback
-    const resolved = await resolveGatewayUrl(user.id);
+    // Resolve client's gateway — per-client isolation (OVH)
+    const resolved = await resolveGatewayForUser(
+      user.id,
+      clientId || request.nextUrl.searchParams.get('clientId'),
+    );
     if (!resolved) {
       return NextResponse.json(
-        { ok: false, error: { type: 'gateway_not_provisioned', message: 'Your AI gateway is being set up. Please try again in a few minutes.' } },
+        { ok: false, error: { type: 'gateway_not_provisioned', message: 'No AI gateway found. Deploy a client AI first.' } },
         { status: 503 }
       );
     }
     const { url } = resolved;
 
-    // Invoke via the agency's OpenClaw bridge
+    // Invoke via the client's OpenClaw gateway
     const result = await invokeTool(url, tool, args || {}, action);
 
     return NextResponse.json(result);
