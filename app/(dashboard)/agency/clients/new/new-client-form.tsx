@@ -299,15 +299,18 @@ function TemplateCard({
 interface NewClientFormProps {
   agencyId: string;
   templates: AgencyTemplate[];
+  defaultTemplateId?: string;
 }
 
-export function NewClientForm({ agencyId, templates }: NewClientFormProps) {
+export function NewClientForm({ agencyId, templates, defaultTemplateId }: NewClientFormProps) {
   const router = useRouter();
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
-  const [industry, setIndustry] = useState('General');
-  const [templateId, setTemplateId] = useState<string | null>(null);
+  // Pre-select template from URL param (e.g. /clients/new?template=abc)
+  const defaultTemplate = defaultTemplateId ? templates.find((t) => t.id === defaultTemplateId) ?? null : null;
+  const [industry, setIndustry] = useState(defaultTemplate?.industry ?? 'General');
+  const [templateId, setTemplateId] = useState<string | null>(defaultTemplate?.id ?? null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [previewTemplate, setPreviewTemplate] = useState<AgencyTemplate | null>(null);

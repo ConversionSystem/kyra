@@ -3,7 +3,11 @@ import { createClient } from '@/lib/supabase/server';
 import { getAgencyForUser, getAgencyTemplates } from '@/lib/agency/queries';
 import { NewClientForm } from './new-client-form';
 
-export default async function NewClientPage() {
+export default async function NewClientPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ template?: string }>;
+}) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
@@ -12,6 +16,7 @@ export default async function NewClientPage() {
   if (!result) redirect('/signup/agency');
 
   const templates = await getAgencyTemplates(result.agency.id);
+  const { template: preselectedTemplateId } = await searchParams;
 
   return (
     <div className="p-4 sm:p-6 md:p-8 max-w-2xl">
@@ -21,7 +26,11 @@ export default async function NewClientPage() {
           Set up a new AI client for your agency
         </p>
       </div>
-      <NewClientForm agencyId={result.agency.id} templates={templates} />
+      <NewClientForm
+        agencyId={result.agency.id}
+        templates={templates}
+        defaultTemplateId={preselectedTemplateId}
+      />
     </div>
   );
 }
