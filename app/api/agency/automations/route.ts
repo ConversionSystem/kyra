@@ -8,9 +8,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { requireAgencyMember } from '@/lib/agency/middleware';
-import { getGatewayByAgencyId } from '@/lib/openclaw/gateway-resolver';
+import { getGatewayByClientId, getGatewayByAgencyId } from '@/lib/ovh/gateway-resolver';
 
 export const dynamic = 'force-dynamic';
+
+// Helper: resolve gateway — prefer clientId, fall back to first active in agency
+async function resolveGateway(agencyId: string, clientId?: string | null) {
+  if (clientId) {
+    return getGatewayByClientId(clientId);
+  }
+  return getGatewayByAgencyId(agencyId);
+}
 
 // Helper: call gateway HTTP API
 async function gatewayFetch(
@@ -47,12 +55,13 @@ export async function GET(request: NextRequest) {
   }
 
   const { agency } = result.data;
-  const gateway = await getGatewayByAgencyId(agency.id);
+  const clientId = request.nextUrl.searchParams.get('clientId');
+  const gateway = await resolveGateway(agency.id, clientId);
 
   if (!gateway) {
     return NextResponse.json({
       jobs: [],
-      error: 'Gateway not provisioned. Provision a gateway first.',
+      error: 'Gateway not provisioned. Deploy a client AI first.',
     });
   }
 
@@ -90,12 +99,13 @@ export async function POST(request: NextRequest) {
   }
 
   const { agency } = result.data;
-  const gateway = await getGatewayByAgencyId(agency.id);
-  if (!gateway) {
-    return NextResponse.json({ error: 'Gateway not provisioned' }, { status: 400 });
-  }
 
   const body = await request.json();
+  const clientId = body.clientId || request.nextUrl.searchParams.get('clientId');
+  const gateway = await resolveGateway(agency.id, clientId);
+  if (!gateway) {
+    return NextResponse.json({ error: 'Gateway not provisioned. Deploy a client AI first.' }, { status: 400 });
+  }
 
   // Validate required fields
   if (!body.name || !body.schedule || !body.task) {
@@ -139,12 +149,14 @@ export async function PATCH(request: NextRequest) {
   }
 
   const { agency } = result.data;
-  const gateway = await getGatewayByAgencyId(agency.id);
-  if (!gateway) {
-    return NextResponse.json({ error: 'Gateway not provisioned' }, { status: 400 });
-  }
 
   const body = await request.json();
+  const clientId = body.clientId || request.nextUrl.searchParams.get('clientId');
+  const gateway = await resolveGateway(agency.id, clientId);
+  if (!gateway) {
+    return NextResponse.json({ error: 'Gateway not provisioned. Deploy a client AI first.' }, { status: 400 });
+  }
+
   if (!body.jobId) {
     return NextResponse.json({ error: 'Missing jobId' }, { status: 400 });
   }
@@ -180,12 +192,13 @@ export async function DELETE(request: NextRequest) {
   }
 
   const { agency } = result.data;
-  const gateway = await getGatewayByAgencyId(agency.id);
+  const { searchParams } = new URL(request.url);
+  const clientId = searchParams.get('clientId');
+  const gateway = await resolveGateway(agency.id, clientId);
   if (!gateway) {
-    return NextResponse.json({ error: 'Gateway not provisioned' }, { status: 400 });
+    return NextResponse.json({ error: 'Gateway not provisioned. Deploy a client AI first.' }, { status: 400 });
   }
 
-  const { searchParams } = new URL(request.url);
   const jobId = searchParams.get('jobId');
   if (!jobId) {
     return NextResponse.json({ error: 'Missing jobId' }, { status: 400 });

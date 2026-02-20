@@ -23,7 +23,7 @@ import { getPlanLimit, isWithinLimit, getCreditCost, Plan } from '@/lib/billing/
 import { getSessionKeyForClient, getSessionKeyForUser, getSystemContextForClient, getSystemPromptForClient } from '@/lib/agency/container';
 import { resolveModelPreference } from '@/lib/ai/model-router';
 import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
-import { resolveGatewayUrl } from '@/lib/openclaw/gateway-resolver';
+import { resolveGatewayForUser } from '@/lib/ovh/gateway-resolver';
 import { v4 as uuid } from 'uuid';
 
 export async function POST(request: NextRequest) {
@@ -206,11 +206,12 @@ export async function POST(request: NextRequest) {
       ? agencySystemContext + '\n\n' + systemContext
       : systemContext;
 
-    // Resolve the user's agency gateway — no fallback to shared gateway
-    const resolved = await resolveGatewayUrl(authUser.id);
+    // Resolve the client's gateway (OVH per-client isolation)
+    // If clientId is provided, resolve that client's gateway; otherwise find first active in agency
+    const resolved = await resolveGatewayForUser(authUser.id, clientId);
     if (!resolved) {
       return new Response(
-        JSON.stringify({ error: 'Your AI gateway is being set up. Please try again in a few minutes.' }),
+        JSON.stringify({ error: 'No AI gateway found. Deploy a client AI first.' }),
         { status: 503, headers: { 'Content-Type': 'application/json' } }
       );
     }
