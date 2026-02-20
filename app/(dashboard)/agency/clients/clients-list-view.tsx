@@ -9,6 +9,19 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Plus, Search, FileDown, Loader2 } from 'lucide-react';
 import type { AgencyClient } from '@/lib/agency/queries';
 
+const gatewayStatusMap: Record<string, { dot: string; label: string }> = {
+  running:      { dot: 'bg-green-400',  label: 'Live' },
+  starting:     { dot: 'bg-yellow-400', label: 'Starting' },
+  provisioning: { dot: 'bg-blue-400',   label: 'Deploying' },
+  error:        { dot: 'bg-red-400',    label: 'Offline' },
+};
+
+function GatewayDot({ status }: { status: string | null }) {
+  const s = status ? gatewayStatusMap[status] : null;
+  if (!s) return <span className="inline-flex items-center gap-1 text-[10px] text-gray-400"><span className="h-1.5 w-1.5 rounded-full bg-gray-300 inline-block" />Not deployed</span>;
+  return <span className="inline-flex items-center gap-1 text-[10px] text-gray-500"><span className={`h-1.5 w-1.5 rounded-full ${s.dot} inline-block`} />{s.label}</span>;
+}
+
 const statusColors: Record<string, string> = {
   active: 'border-green-200 bg-green-50 text-green-600',
   paused: 'border-yellow-200 bg-yellow-50 text-yellow-600',
@@ -166,7 +179,12 @@ export function ClientsListView({ clients }: ClientsListViewProps) {
                       </Link>
                     </td>
                     <td className="p-4 text-gray-700">{client.industry || '—'}</td>
-                    <td className="p-4"><Badge className={statusColors[client.status]}>{client.status}</Badge></td>
+                    <td className="p-4">
+                      <div className="flex flex-col gap-1">
+                        <Badge className={statusColors[client.status]}>{client.status}</Badge>
+                        <GatewayDot status={client.gateway_status ?? null} />
+                      </div>
+                    </td>
                     <td className="p-4 text-gray-500 text-xs">{client.template?.name ?? '—'}</td>
                     <td className="p-4 text-right text-gray-700">{client.usage_this_month.toLocaleString()}</td>
                     <td className="p-4 text-gray-500 text-xs">
@@ -192,10 +210,13 @@ export function ClientsListView({ clients }: ClientsListViewProps) {
                         <p className="font-medium text-gray-900 truncate">{client.name}</p>
                         <Badge className={`${statusColors[client.status]} text-[10px] shrink-0`}>{client.status}</Badge>
                       </div>
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        {client.industry || 'No industry'}
-                        {client.template ? ` · ${client.template.name}` : ''}
-                      </p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <p className="text-xs text-gray-400">
+                          {client.industry || 'No industry'}
+                          {client.template ? ` · ${client.template.name}` : ''}
+                        </p>
+                        <GatewayDot status={client.gateway_status ?? null} />
+                      </div>
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-sm font-medium text-gray-700">{client.usage_this_month.toLocaleString()}</p>

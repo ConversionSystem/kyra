@@ -22,6 +22,9 @@ import {
   Shield,
   BarChart3,
   Brain,
+  RefreshCw,
+  CheckCircle2,
+  AlertTriangle,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { AgencyClient, AgencyMember } from '@/lib/agency/queries';
@@ -58,6 +61,67 @@ interface ClientDetailViewProps {
   role: AgencyMember['role'];
 }
 
+// ── Reprovision Button ────────────────────────────────────────────────────────
+
+function ReprovisionButton({ clientId }: { clientId: string }) {
+  const router = useRouter();
+  const [state, setState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const handleReprovision = async () => {
+    setState('loading');
+    setErrorMsg('');
+    try {
+      const res = await fetch(`/api/agency/clients/${clientId}/reprovision`, { method: 'POST' });
+      const data = await res.json();
+      if (data.ok) {
+        setState('success');
+        setTimeout(() => router.refresh(), 1500);
+      } else {
+        setState('error');
+        setErrorMsg(data.error || 'Provisioning failed');
+      }
+    } catch {
+      setState('error');
+      setErrorMsg('Network error — please try again');
+    }
+  };
+
+  if (state === 'success') {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-green-600 font-medium">
+        <CheckCircle2 className="h-3.5 w-3.5" />
+        AI deployed! Refreshing...
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-start gap-1">
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={handleReprovision}
+        disabled={state === 'loading'}
+        className="h-7 text-xs border-orange-200 text-orange-600 hover:bg-orange-50"
+      >
+        {state === 'loading' ? (
+          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+        ) : (
+          <RefreshCw className="h-3 w-3 mr-1" />
+        )}
+        {state === 'loading' ? 'Deploying AI...' : 'Deploy AI'}
+      </Button>
+      {state === 'error' && (
+        <p className="text-xs text-red-500 flex items-center gap-1">
+          <AlertTriangle className="h-3 w-3" />
+          {errorMsg}
+        </p>
+      )}
+    </div>
+  );
+}
+
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export function ClientDetailView({ client: initialClient, role }: ClientDetailViewProps) {
@@ -80,7 +144,7 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
         <div className="h-11 w-11 sm:h-14 sm:w-14 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center text-lg sm:text-xl font-bold text-gray-700 shrink-0">
           {initialClient.name.charAt(0).toUpperCase()}
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">{initialClient.name}</h1>
           <div className="flex flex-wrap items-center gap-2 mt-1">
             <Badge className={statusColors[initialClient.status]}>
@@ -96,6 +160,12 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
             )}
           </div>
         </div>
+        {/* Show Deploy AI button if gateway not running */}
+        {(!initialClient.gateway_status || initialClient.gateway_status === 'error') && (
+          <div className="shrink-0">
+            <ReprovisionButton clientId={initialClient.id} />
+          </div>
+        )}
       </div>
 
       {/* Tab bar — scrollable on mobile */}

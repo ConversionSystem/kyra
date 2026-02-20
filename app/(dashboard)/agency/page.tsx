@@ -5,7 +5,7 @@ import { getAgencyForUser, getAgencyClients } from '@/lib/agency/queries';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Users, Activity, BarChart3, Plus } from 'lucide-react';
+import { Users, Activity, BarChart3, Plus, Rocket, KeyRound, MessageSquare, TrendingUp, CheckCircle2 } from 'lucide-react';
 import { GatewayStatus } from '@/components/agency/gateway-status';
 
 const statusColors: Record<string, string> = {
@@ -48,6 +48,43 @@ export default async function AgencyOverviewPage() {
           </Button>
         </Link>
       </div>
+
+      {/* Onboarding checklist for new agencies */}
+      {clients.length === 0 && (
+        <div className="mb-8 rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-white p-6">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="rounded-xl bg-indigo-600 p-2.5">
+              <Rocket className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h2 className="font-bold text-gray-900">Launch your AI employee business</h2>
+              <p className="text-sm text-gray-500">5 steps to your first paying client</p>
+            </div>
+          </div>
+          <div className="grid md:grid-cols-5 gap-3">
+            {[
+              { step: '1', icon: KeyRound, label: 'Add API Keys', desc: 'Connect OpenAI or Anthropic', href: '/agency/api-keys', done: false },
+              { step: '2', icon: Users, label: 'Deploy AI Employee', desc: 'Pick a template + configure', href: '/agency/clients/new', done: false },
+              { step: '3', icon: MessageSquare, label: 'Connect Channel', desc: 'Telegram, SMS, or web chat', href: '/agency/channels', done: false },
+              { step: '4', icon: TrendingUp, label: 'Calculate Revenue', desc: 'See your margin & pricing', href: '/agency/revenue', done: false },
+              { step: '5', icon: CheckCircle2, label: 'Get First Client', desc: 'Show them a live demo', href: '/agency/templates', done: false },
+            ].map((item) => (
+              <Link key={item.step} href={item.href} className="group flex flex-col gap-2 rounded-xl border border-indigo-100 bg-white p-4 hover:border-indigo-300 hover:shadow-sm transition-all">
+                <div className="flex items-center justify-between">
+                  <div className="h-7 w-7 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-bold text-indigo-700">
+                    {item.step}
+                  </div>
+                  <item.icon className="h-4 w-4 text-gray-300 group-hover:text-indigo-400 transition-colors" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">{item.label}</p>
+                  <p className="text-xs text-gray-400">{item.desc}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Gateway Status */}
       <div className="mb-6 sm:mb-8">
