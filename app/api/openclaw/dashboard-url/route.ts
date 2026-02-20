@@ -1,15 +1,15 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { getDashboardUrl } from '@/lib/openclaw/gateway-resolver';
+import { getFirstGatewayByUserId } from '@/lib/ovh/gateway-resolver';
 
 /**
  * GET /api/openclaw/dashboard-url
  *
- * Returns the Gateway Dashboard URL for the user's agency.
- * Each agency has its own isolated gateway with its own dashboard.
- * Token is passed via hash fragment so it never hits server logs.
+ * Returns the Gateway Dashboard URL for the agency's first active client.
+ * Each client has its own isolated gateway on OVH — this returns the first
+ * running one for the agency-level terminal link.
  *
- * ⚠️ NO FALLBACK — if no per-agency gateway exists, returns 503.
+ * ⚠️ NO FALLBACK — if no per-client gateway exists, returns 503.
  */
 export async function GET() {
   const supabase = await createClient();
@@ -17,25 +17,32 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const dashboardUrl = await getDashboardUrl(user.id);
+    const gateway = await getFirstGatewayByUserId(user.id);
 
-    if (!dashboardUrl) {
+    if (!gateway) {
       return NextResponse.json(
         {
           error: 'Gateway not provisioned',
-          message: 'Your AI gateway is being set up. This usually takes 2-3 minutes after signup. Please refresh shortly.',
+          message: 'No active client gateways found. Create a client and provision their AI first.',
         },
         { status: 503 }
       );
     }
 
-    return NextResponse.json(dashboardUrl);
+    const dashboardUrl = `${gateway.url}/__openclaw__/#token=${encodeURIComponent(gateway.token)}`;
+
+    return NextResponse.json({
+      url: dashboardUrl,
+      baseUrl: `${gateway.url}/__openclaw__/`,
+      clientId: gateway.clientId,
+      clientName: gateway.clientName,
+    });
   } catch (error) {
     console.error('[dashboard-url] Error resolving gateway:', error);
     return NextResponse.json(
       {
         error: 'Gateway error',
-        message: 'Unable to reach your AI gateway. It may be starting up — please try again in a minute.',
+        message: 'Unable to reach AI gateway. It may be starting up — please try again in a minute.',
       },
       { status: 503 }
     );
