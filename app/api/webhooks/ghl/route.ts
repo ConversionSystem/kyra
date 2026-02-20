@@ -23,7 +23,7 @@ import type {
 // Fly.io bridge at KYRA_WORKER_URL/chat so the AI can respond.
 // ============================================================================
 
-import { getGatewayByAgencyId } from '@/lib/openclaw/gateway-resolver';
+import { getGatewayByClientId } from '@/lib/ovh/gateway-resolver';
 
 const API_SECRET = process.env.KYRA_API_SECRET;
 
@@ -398,12 +398,12 @@ async function forwardToContainer(
   systemContext: string,
   agencyId?: string
 ): Promise<void> {
-  // Resolve the agency's own gateway
-  const agencyGateway = agencyId ? await getGatewayByAgencyId(agencyId) : null;
-  const workerUrl = agencyGateway?.url;
+  // Resolve the client's own gateway (OVH per-client isolation)
+  const clientGateway = await getGatewayByClientId(clientId);
+  const workerUrl = clientGateway?.url;
 
   if (!workerUrl) {
-    console.warn(`[ghl-webhook] No isolated gateway provisioned for agency ${agencyId}`);
+    console.warn(`[ghl-webhook] No gateway provisioned for client ${clientId}`);
     return;
   }
 
