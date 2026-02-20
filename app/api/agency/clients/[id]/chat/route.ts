@@ -13,7 +13,7 @@
 import { NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getSessionKeyForClient, getSystemContextForClient, getSystemPromptForClient } from '@/lib/agency/container';
-import { resolveGatewayUrl } from '@/lib/openclaw/gateway-resolver';
+import { resolveClientGateway } from '@/lib/ovh/provisioner';
 import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
 
 export async function POST(
@@ -54,11 +54,11 @@ export async function POST(
       return new Response('Forbidden: not a member of this agency', { status: 403 });
     }
 
-    // 4. Resolve the agency's own gateway — NO FALLBACK
-    const resolved = await resolveGatewayUrl(user.id);
+    // 4. Resolve the CLIENT's own gateway — per-client isolation (OVH)
+    const resolved = await resolveClientGateway(clientId);
     if (!resolved) {
       return new Response(
-        JSON.stringify({ error: 'Your AI gateway is being set up. Please try again in a few minutes.' }),
+        JSON.stringify({ error: 'This client\'s AI is being set up. Please try again in a few minutes.' }),
         { status: 503, headers: { 'Content-Type': 'application/json' } }
       );
     }

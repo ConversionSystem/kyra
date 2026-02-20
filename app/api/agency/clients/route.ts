@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { requireAgencyMember, requireAgencyAdmin } from '@/lib/agency/middleware';
 import { isValidSlug } from '@/lib/agency/utils';
+import { provisionClientGateway } from '@/lib/ovh/provisioner';
 import type { CreateClientRequest } from '@/lib/agency/types';
 
 /**
@@ -119,6 +120,28 @@ export async function POST(request: NextRequest) {
     console.error('Failed to create client:', createError);
     return NextResponse.json({ error: 'Failed to create client' }, { status: 500 });
   }
+
+  // Auto-provision per-client gateway on OVH (non-blocking)
+  // Build SOUL.md from template or default
+  const soulMd = containerConfig.soul_template
+    ? String(containerConfig.soul_template)
+    : `You are an AI assistant for "${name}".\nIndustry: ${industry || 'General'}\nBe helpful, professional, and concise.`;
+
+  const userMd = `# ${name}\n\nClient of ${agency.name}.`;
+
+  // Fire and forget — gateway provisioning happens in background
+  provisionClientGateway(client.id, agency.id, {
+    soulMd,
+    userMd,
+  }).then(result => {
+    if (result.success) {
+      console.log(`[clients] Gateway provisioned for ${client.id}: ${result.gatewayUrl}`);
+    } else {
+      console.error(`[clients] Gateway provisioning failed for ${client.id}: ${result.error}`);
+    }
+  }).catch(err => {
+    console.error(`[clients] Gateway provisioning error for ${client.id}:`, err);
+  });
 
   return NextResponse.json(client, { status: 201 });
 }
