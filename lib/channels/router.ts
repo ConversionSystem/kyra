@@ -106,14 +106,24 @@ export async function processChannelMessage(
           .join('\n');
         const systemContext = `You are Kyra, a helpful personal AI assistant. The user's name is ${user.name || 'there'}. Channel: ${channelType}.\n\nRecent conversation:\n${historyText}`;
 
-        const response = await fetch(`${WORKER_URL}/api/kyra/chat`, {
+        // Build OpenAI-compatible messages for /v1/chat/completions
+        const chatMessages: Array<{ role: string; content: string }> = [];
+        if (systemContext) {
+          chatMessages.push({ role: 'system', content: systemContext });
+        }
+        chatMessages.push({ role: 'user', content: text });
+
+        const response = await fetch(`${WORKER_URL}/v1/chat/completions`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${API_SECRET}`,
-            'X-Kyra-User-Id': userId,
           },
-          body: JSON.stringify({ message: text, systemContext }),
+          body: JSON.stringify({
+            model: 'openai/gpt-4o-mini',
+            messages: chatMessages,
+            stream: false,
+          }),
           signal: AbortSignal.timeout(60_000),
         });
 
