@@ -157,7 +157,7 @@ export function AgencySidebar({ agencyName, plan, settings }: AgencySidebarProps
 
       {/* OpenClaw Terminal + Footer */}
       <div className={cn('p-3 border-t', hasBranding ? 'border-white/10' : 'border-gray-800')}>
-        {dashboardUrl && (
+        {dashboardUrl ? (
           <a
             href={dashboardUrl}
             target="_blank"
@@ -174,6 +174,17 @@ export function AgencySidebar({ agencyName, plan, settings }: AgencySidebarProps
             OpenClaw Terminal
             <ExternalLink className="h-3 w-3 ml-auto opacity-50" />
           </a>
+        ) : (
+          <div
+            title="Deploy a client AI to access the terminal"
+            className={cn(
+              'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm cursor-not-allowed opacity-40',
+              hasBranding ? 'text-white/40' : 'text-gray-600'
+            )}
+          >
+            <Terminal className="h-4 w-4 shrink-0" />
+            OpenClaw Terminal
+          </div>
         )}
         <div className={cn('px-3 mt-2 text-xs', hasBranding ? 'text-white/30' : 'text-gray-600')}>
           Powered by OpenClaw
