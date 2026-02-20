@@ -1,0 +1,128 @@
+{
+  "meta": {
+    "lastTouchedVersion": "2026.2.17",
+    "lastTouchedAt": "2026-02-20T14:30:40.578Z"
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "openai/gpt-4o-mini",
+        "fallbacks": [
+          "openai/gpt-4o",
+          "openrouter/anthropic/claude-haiku-4.5"
+        ]
+      },
+      "imageModel": {
+        "primary": "openai/gpt-4o-mini",
+        "fallbacks": [
+          "openai/gpt-4o"
+        ]
+      },
+      "workspace": "/root/.openclaw/workspace",
+      "memorySearch": {
+        "sources": [
+          "memory",
+          "sessions"
+        ],
+        "experimental": {
+          "sessionMemory": true
+        }
+      },
+      "compaction": {
+        "mode": "safeguard",
+        "memoryFlush": {
+          "enabled": true
+        }
+      },
+      "thinkingDefault": "off",
+      "maxConcurrent": 8,
+      "subagents": {
+        "maxConcurrent": 8,
+        "model": {
+          "primary": "openai/gpt-4o-mini",
+          "fallbacks": [
+            "openai/gpt-4o"
+          ]
+        }
+      }
+    }
+  },
+  "tools": {
+    "web": {
+      "search": {
+        "enabled": true,
+        "provider": "brave"
+      },
+      "fetch": {
+        "enabled": true
+      }
+    }
+  },
+  "commands": {
+    "native": "auto",
+    "nativeSkills": "auto"
+  },
+  "hooks": {
+    "internal": {
+      "enabled": true,
+      "entries": {
+        "boot-md": {
+          "enabled": true
+        },
+        "session-memory": {
+          "enabled": true
+        }
+      }
+    }
+  },
+  "channels": {
+    "telegram": {
+      "dmPolicy": "pairing",
+      "botToken": "7828089602:AAHHbPGdyShimhcU1DYzt3nsCj03ZRgyHA0",
+      "groupPolicy": "allowlist",
+      "streamMode": "partial"
+    }
+  },
+  "gateway": {
+    "port": 18789,
+    "mode": "local",
+    "bind": "loopback",
+    "controlUi": {
+      "allowedOrigins": [
+        "https://kyra.conversionsystem.com",
+        "https://gateway.conversionsystem.com",
+        "https://kyra-gateway.fly.dev",
+        "https://kyra-gw-52cccda8.fly.dev",
+        "http://localhost:3000",
+        "http://localhost:3100"
+      ]
+    },
+    "auth": {
+      "mode": "token",
+      "token": "kgw-1ac444ab17dfb0bba3d7d61a4bbf6ac3703b7e2de9a9ef54b0b56b8392a4f4fb"
+    },
+    "tools": {
+      "deny": [
+        "gateway",
+        "whatsapp_login"
+      ],
+      "allow": [
+        "read",
+        "write",
+        "edit",
+        "exec",
+        "process",
+        "sessions_send",
+        "sessions_spawn",
+        "image"
+      ]
+    }
+  },
+  "plugins": {
+    "entries": {
+      "telegram": {
+        "enabled": true
+      }
+    }
+  }
+}

@@ -52,13 +52,20 @@ export async function sendMessage(
   if (!gatewayUrl) throw new Error('No gateway URL provided — cannot send message without isolated gateway');
 
   try {
-    const response = await fetch(`${gatewayUrl}/chat`, {
+    // Use OpenClaw's /v1/chat/completions (OpenAI-compatible) HTTP API
+    const chatMessages: Array<{ role: string; content: string }> = [];
+    if (systemContext) {
+      chatMessages.push({ role: 'system', content: systemContext });
+    }
+    chatMessages.push({ role: 'user', content: message });
+
+    const response = await fetch(`${gatewayUrl}/v1/chat/completions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        sessionKey,
-        message,
-        systemContext: systemContext || '',
+        model: 'openai/gpt-4o-mini',
+        messages: chatMessages,
+        stream: false,
       }),
       signal: AbortSignal.timeout(120_000),
     });
@@ -68,9 +75,9 @@ export async function sendMessage(
       return { success: false, error };
     }
 
-    // Parse SSE response to extract full text
-    const sseBody = await response.text();
-    const content = parseSSEResponse(sseBody);
+    // Parse OpenAI-compatible JSON response
+    const data = await response.json();
+    const content = data?.choices?.[0]?.message?.content || '';
 
     return { success: true, content };
   } catch (error) {
