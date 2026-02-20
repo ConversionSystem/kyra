@@ -60,9 +60,18 @@ export interface AgencyClient {
   stripe_subscription_id: string | null;
   billing_status: BillingStatus;
   usage_this_month: number;
+  // Per-client gateway (OVH architecture)
+  gateway_url: string | null;
+  gateway_token: string | null;
+  gateway_container_id: string | null;
+  gateway_status: ClientGatewayStatus | null;
+  gateway_error: string | null;
+  gateway_provisioned_at: string | null;
   created_at: string;
   updated_at: string;
 }
+
+export type ClientGatewayStatus = 'provisioning' | 'starting' | 'running' | 'stopped' | 'error';
 
 export type ClientStatus = 'active' | 'paused' | 'setup';
 

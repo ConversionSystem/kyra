@@ -21,7 +21,7 @@ import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { getSessionKeyForClient } from '@/lib/agency/container';
 import { sendGHLMessage, getValidToken, refreshGHLToken } from './api';
 import { getClientPermissions, buildPermissionPrompt } from '@/lib/agency/permissions';
-import { getGatewayByAgencyId } from '@/lib/openclaw/gateway-resolver';
+import { resolveClientGateway, chatViaGateway } from '@/lib/ovh/provisioner';
 import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
 
 const GHL_API_BASE = 'https://services.leadconnectorhq.com';
@@ -387,38 +387,24 @@ async function processConversation(
 
   const sessionKey = `${getSessionKeyForClient(client.id)}:contact:${conv.contactId}`;
 
-  // Resolve the agency's own gateway (per-agency isolation)
-  const agencyGateway = await getGatewayByAgencyId(client.agency_id);
-  const bridgeUrl = agencyGateway?.url;
-  if (!bridgeUrl) {
-    throw new Error(`No isolated gateway provisioned for agency ${client.agency_id}`);
+  // Resolve the CLIENT's own gateway (per-client isolation on OVH)
+  const clientGateway = await resolveClientGateway(client.id);
+  if (!clientGateway) {
+    throw new Error(`No isolated gateway provisioned for client ${client.id} (${client.name})`);
   }
 
-  // Call the agency's own OpenClaw Bridge (isolated per-agency gateway)
-  const bridgePayload: Record<string, unknown> = {
-    message: latestInbound.body,
-    sessionKey,
-    systemContext,
-  };
-
-  if (byokKey) {
-    console.log(`[ghl/poller] Agency has BYOK key (${byokKey.provider}) — gateway uses its own keys for now`);
-  }
-
-  const bridgeRes = await fetch(`${bridgeUrl}/chat`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(bridgePayload),
-    signal: AbortSignal.timeout(30_000), // 30s max — must fit within Vercel's 60s function limit
+  // Call the client's own gateway via OVH provisioner
+  const chatResult = await chatViaGateway(client.id, latestInbound.body, {
+    sessionId: sessionKey,
+    apiKey: byokKey?.apiKey,
+    model: byokKey?.model,
   });
 
-  if (!bridgeRes.ok) {
-    const text = await bridgeRes.text().catch(() => '');
-    throw new Error(`Bridge error (${bridgeRes.status}): ${text}`);
+  if ('error' in chatResult) {
+    throw new Error(`Gateway error: ${chatResult.error}`);
   }
 
-  const sseBody = await bridgeRes.text();
-  const aiResponse = parseSSEResponse(sseBody);
+  const aiResponse = chatResult.reply;
 
   if (!aiResponse?.trim()) {
     console.warn('[ghl/poller] Empty AI response, skipping');
