@@ -3,6 +3,7 @@ import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { requireAgencyMember, requireAgencyAdmin } from '@/lib/agency/middleware';
 import { isValidSlug } from '@/lib/agency/utils';
 import { provisionClientGateway } from '@/lib/ovh/provisioner';
+import { buildInjectionDefensePromptSuffix } from '@/lib/security/prompt-injection';
 import type { CreateClientRequest } from '@/lib/agency/types';
 
 /**
@@ -123,9 +124,11 @@ export async function POST(request: NextRequest) {
 
   // Auto-provision per-client gateway on OVH (non-blocking)
   // Build SOUL.md from template or default
-  const soulMd = containerConfig.soul_template
+  const baseSoulMd = containerConfig.soul_template
     ? String(containerConfig.soul_template)
     : `You are an AI assistant for "${name}".\nIndustry: ${industry || 'General'}\nBe helpful, professional, and concise.`;
+  // Append prompt injection defense — non-negotiable security layer for all deployed agents
+  const soulMd = baseSoulMd + buildInjectionDefensePromptSuffix();
 
   const userMd = `# ${name}\n\nClient of ${agency.name}.`;
 
