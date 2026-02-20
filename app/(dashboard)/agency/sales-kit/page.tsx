@@ -19,7 +19,7 @@ const EMAIL_TEMPLATES: Template[] = [
   {
     industry: '🌿 Cannabis Dispensary',
     tag: 'HIGHEST MARGIN',
-    subject: 'Quick question about your dispensary's text messages',
+    subject: "Quick question about your dispensary's text messages",
     body: `Hi [Owner Name],
 
 Quick question: how many texts does your dispensary get per day asking about strains, hours, and deals?
@@ -141,15 +141,15 @@ const OBJECTIONS = [
     response: `"That's true for complex situations — and your team handles those. But 70% of customer questions are 'Are you open?' 'Do you have X?' 'What are your prices?' — those don't need a human, and customers actually prefer getting answers in 30 seconds vs waiting on hold. We free your team for the conversations that actually matter."`,
   },
   {
-    objection: '"It's too expensive."',
+    objection: `"It's too expensive."`,
     response: `"Let me flip that: what does it cost when a lead texts at 9pm and no one replies until morning? Or when a budtender stops helping a customer to answer a phone call? Most of our clients save 10–15 hours of staff time per month. At $25/hr that's $250–$375 in recovered productivity. The AI costs less than that."`,
   },
   {
-    objection: '"We're too small / we don't have enough volume."',
+    objection: `"We're too small / we don't have enough volume."`,
     response: `"This actually works best for smaller businesses — you can't afford to hire a dedicated customer service rep, but you DO lose sales every day because you can't answer everyone. One missed customer a week at average transaction value — what does that add up to over a year?"`,
   },
   {
-    objection: '"We tried AI before and it didn't work."',
+    objection: `"We tried AI before and it didn't work."`,
     response: `"That's fair and I hear this a lot. Most AI tools fail because they're generic — they don't know your business, your products, or your customers. What we deploy is specifically trained on your business: your products, your prices, your FAQs, your tone. And we set it up for you — you don't need to configure anything."`,
   },
   {
