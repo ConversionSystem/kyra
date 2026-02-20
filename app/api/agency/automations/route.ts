@@ -41,7 +41,13 @@ async function gatewayFetch(
 
   if (!res.ok) {
     const text = await res.text().catch(() => '');
-    throw new Error(`Gateway ${method} ${path}: ${res.status} ${text}`);
+    throw new Error(`Gateway ${method} ${path}: ${res.status} ${text.slice(0, 200)}`);
+  }
+
+  // Guard against HTML catch-all responses (gateway serves SPA for unknown routes)
+  const contentType = res.headers.get('content-type') || '';
+  if (!contentType.includes('application/json')) {
+    throw new Error(`Gateway ${method} ${path}: expected JSON but got ${contentType}`);
   }
 
   return res.json();
