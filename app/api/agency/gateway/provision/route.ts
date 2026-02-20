@@ -1,33 +1,25 @@
 /**
  * POST /api/agency/gateway/provision
  *
- * Provisions a new isolated OpenClaw Gateway for the user's agency.
- * Creates a Fly.io app, volume, and machine — completely isolated
- * from all other agencies.
+ * LEGACY: Agency-level gateway provisioning.
+ * In the new OVH architecture, gateways are provisioned per-client automatically
+ * when a client is created. This route now returns guidance.
  *
- * Requires: FLY_API_TOKEN env var
+ * For backward compatibility, it can optionally provision gateways for all
+ * clients that don't have one yet.
  */
 
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { provisionGateway } from '@/lib/fly/provisioner';
+import { provisionClientGateway } from '@/lib/ovh/provisioner';
 
 export async function POST() {
   try {
-    // Auth check
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    // Check FLY_API_TOKEN is configured
-    if (!process.env.FLY_API_TOKEN) {
-      return NextResponse.json(
-        { error: 'Gateway provisioning not configured (missing FLY_API_TOKEN)' },
-        { status: 503 }
-      );
-    }
-
-    // Get user's agency (must be owner or admin)
+    // Get user's agency
     const { data: member } = await supabase
       .from('agency_members')
       .select('agency_id, role')
@@ -35,45 +27,39 @@ export async function POST() {
       .limit(1)
       .single();
 
-    if (!member) {
-      return NextResponse.json({ error: 'No agency found' }, { status: 404 });
-    }
-
-    if (!['owner', 'admin'].includes(member.role)) {
+    if (!member || !['owner', 'admin'].includes(member.role)) {
       return NextResponse.json({ error: 'Only agency owners/admins can provision gateways' }, { status: 403 });
     }
 
-    // Check if gateway already exists
-    const { data: agency } = await supabase
-      .from('agencies')
-      .select('gateway_status, gateway_url, gateway_app_name')
-      .eq('id', member.agency_id)
-      .single();
+    // Find clients without gateways
+    const { data: clients } = await supabase
+      .from('agency_clients')
+      .select('id, name, container_config')
+      .eq('agency_id', member.agency_id)
+      .is('gateway_status', null);
 
-    if (agency?.gateway_status && !['pending', 'error'].includes(agency.gateway_status)) {
+    if (!clients || clients.length === 0) {
       return NextResponse.json({
-        error: `Gateway already ${agency.gateway_status}`,
-        gatewayUrl: agency.gateway_url,
-        appName: agency.gateway_app_name,
-      }, { status: 409 });
+        success: true,
+        message: 'All clients already have gateways provisioned.',
+      });
     }
 
-    // Provision the gateway
-    console.log(`[api/provision] Provisioning gateway for agency ${member.agency_id} (user: ${user.id})`);
-    const result = await provisionGateway(member.agency_id);
+    // Provision gateways for all unprovisioned clients
+    const results = [];
+    for (const client of clients) {
+      const soulMd = (client.container_config as Record<string, unknown>)?.soul_template
+        ? String((client.container_config as Record<string, unknown>).soul_template)
+        : `You are an AI assistant for "${client.name}".`;
 
-    if (!result.success) {
-      return NextResponse.json(
-        { error: result.error || 'Provisioning failed' },
-        { status: 500 }
-      );
+      const result = await provisionClientGateway(client.id, member.agency_id, { soulMd });
+      results.push({ clientId: client.id, name: client.name, ...result });
     }
 
     return NextResponse.json({
       success: true,
-      appName: result.appName,
-      gatewayUrl: result.gatewayUrl,
-      message: 'Gateway provisioning started. It takes ~2-3 minutes for the AI engine to fully boot. Check /api/agency/gateway/status for updates.',
+      message: `Provisioned gateways for ${results.filter(r => r.success).length}/${results.length} clients.`,
+      results,
     });
   } catch (error) {
     console.error('[api/provision] Error:', error);
