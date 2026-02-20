@@ -552,6 +552,98 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* ── 21 Industries ─────────────────────────────────────────────── */}
+        <section className="py-16 md:py-20">
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="text-center mb-10">
+              <h2 className="text-2xl md:text-3xl font-bold mb-3">
+                21 ready-to-deploy AI employee templates
+              </h2>
+              <p className="text-gray-600 max-w-xl mx-auto">
+                Pick an industry, configure the personality, connect the channel. Your client&apos;s AI employee is live in minutes.
+              </p>
+            </div>
+            <div className="flex flex-wrap justify-center gap-2 max-w-4xl mx-auto mb-10">
+              {[
+                { label: '🌿 Cannabis & Dispensary', hot: true },
+                { label: '⚖️ Legal / Law Firm', hot: false },
+                { label: '🏠 Real Estate', hot: false },
+                { label: '🚗 Automotive', hot: false },
+                { label: '🦷 Dental & Medical', hot: false },
+                { label: '💊 Medical Aesthetics', hot: false },
+                { label: '💪 Fitness & Wellness', hot: false },
+                { label: '🍽️ Restaurant & Food', hot: false },
+                { label: '🏨 Hotel & Hospitality', hot: false },
+                { label: '🔧 Home Services', hot: false },
+                { label: '📦 Retail & E-commerce', hot: false },
+                { label: '🧘 Spa & Beauty', hot: false },
+                { label: '📋 Insurance', hot: false },
+                { label: '🏦 Mortgage & Lending', hot: false },
+                { label: '🎉 Events & Venues', hot: false },
+                { label: '🏋️ Chiropractic & PT', hot: false },
+                { label: '🎓 Education', hot: false },
+                { label: '📊 Sales & Consulting', hot: false },
+                { label: '🔍 Market Intelligence', hot: false },
+                { label: '📰 Media & Content', hot: false },
+                { label: '🤖 General Purpose', hot: false },
+              ].map((item) => (
+                <span
+                  key={item.label}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border ${
+                    item.hot
+                      ? 'bg-green-50 border-green-200 text-green-700'
+                      : 'bg-gray-50 border-gray-200 text-gray-600'
+                  }`}
+                >
+                  {item.label}
+                  {item.hot && <span className="text-[10px] font-bold bg-green-500 text-white rounded-full px-1.5">PROVEN</span>}
+                </span>
+              ))}
+            </div>
+            <div className="text-center">
+              <Link
+                href="/signup/agency"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 transition text-white font-semibold text-sm"
+              >
+                Deploy your first AI employee free
+                <ArrowRightIcon className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Cannabis Proof ─────────────────────────────────────────────── */}
+        <section className="bg-green-950 py-16 md:py-20">
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="max-w-4xl mx-auto">
+              <div className="text-center mb-10">
+                <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-800 text-green-200 text-xs font-semibold uppercase tracking-wider mb-4">
+                  🌿 Proven in Cannabis
+                </span>
+                <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">
+                  $29M+ generated for cannabis clients
+                </h2>
+                <p className="text-green-200 max-w-xl mx-auto">
+                  Cannabis dispensaries face unique challenges: compliance, education, and high-volume inquiries. Our AI handles it all.
+                </p>
+              </div>
+              <div className="grid md:grid-cols-3 gap-5">
+                {[
+                  { stat: '$29M+', label: 'Revenue generated', sub: 'Across cannabis clients' },
+                  { stat: '70%', label: 'Fewer phone calls', sub: 'Customers self-serve via AI' },
+                  { stat: '<60s', label: 'AI response time', sub: 'SMS, Telegram, web chat' },
+                ].map((item) => (
+                  <div key={item.stat} className="rounded-xl bg-green-900/50 border border-green-800 p-6 text-center">
+                    <p className="text-4xl font-black text-green-300 mb-1">{item.stat}</p>
+                    <p className="text-white font-semibold">{item.label}</p>
+                    <p className="text-green-400 text-sm mt-1">{item.sub}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* ── Beta CTA ───────────────────────────────────────────────────── */}
         <section className="bg-gray-50 border-y border-gray-100 py-16 md:py-20">
           <div className="container mx-auto px-4 md:px-6">
