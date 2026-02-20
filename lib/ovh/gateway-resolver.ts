@@ -129,24 +129,24 @@ export async function chatWithClient(
 }
 
 /**
- * Get the first running gateway for an agency.
+ * Get the first running gateway for an agency by agency ID.
  * Used by routes that know the agency but not a specific client.
  * Returns the first client with a running gateway.
  */
 export async function getGatewayByAgencyId(agencyId: string): Promise<ClientGateway | null> {
   const supabase = getSupabase();
-  const { data: client } = await supabase
+  const { data: clients } = await supabase
     .from('agency_clients')
     .select('id, name, agency_id, gateway_url, gateway_token, gateway_container_id, gateway_status')
     .eq('agency_id', agencyId)
-    .in('gateway_status', ['running', 'starting'])
+    .eq('gateway_status', 'running')
     .not('gateway_url', 'is', null)
     .not('gateway_token', 'is', null)
     .order('created_at', { ascending: true })
-    .limit(1)
-    .single();
+    .limit(1);
 
-  if (!client?.gateway_url || !client?.gateway_token) return null;
+  if (!clients?.length) return null;
+  const client = clients[0];
 
   return {
     url: client.gateway_url,
@@ -157,6 +157,27 @@ export async function getGatewayByAgencyId(agencyId: string): Promise<ClientGate
     clientName: client.name,
     agencyId: client.agency_id,
   };
+}
+
+/**
+ * Get the first active client gateway for an agency (by user ID).
+ * Used for the agency-level "OpenClaw Terminal" link.
+ * Returns the first running client gateway found.
+ */
+export async function getFirstGatewayByUserId(userId: string): Promise<ClientGateway | null> {
+  const supabase = getSupabase();
+
+  // Get user's agency
+  const { data: member } = await supabase
+    .from('agency_members')
+    .select('agency_id')
+    .eq('user_id', userId)
+    .limit(1)
+    .single();
+
+  if (!member?.agency_id) return null;
+
+  return getGatewayByAgencyId(member.agency_id);
 }
 
 /**
@@ -177,19 +198,7 @@ export async function resolveGatewayForUser(
     return { url: gw.url, token: gw.token, clientId: gw.clientId };
   }
 
-  const supabase = getSupabase();
-
-  // Get user's agency
-  const { data: member } = await supabase
-    .from('agency_members')
-    .select('agency_id')
-    .eq('user_id', userId)
-    .limit(1)
-    .single();
-
-  if (!member?.agency_id) return null;
-
-  const gw = await getGatewayByAgencyId(member.agency_id);
+  const gw = await getFirstGatewayByUserId(userId);
   if (!gw) return null;
   return { url: gw.url, token: gw.token, clientId: gw.clientId };
 }
