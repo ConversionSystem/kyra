@@ -565,7 +565,7 @@ export default function LandingPage() {
             </div>
             <div className="flex flex-wrap justify-center gap-2 max-w-4xl mx-auto mb-10">
               {[
-                { label: '🌿 Cannabis & Dispensary', hot: true },
+                { label: '🌿 Cannabis & Dispensary', hot: true, href: '/cannabis' },
                 { label: '⚖️ Legal / Law Firm', hot: false },
                 { label: '🏠 Real Estate', hot: false },
                 { label: '🚗 Automotive', hot: false },
@@ -586,19 +586,22 @@ export default function LandingPage() {
                 { label: '🔍 Market Intelligence', hot: false },
                 { label: '📰 Media & Content', hot: false },
                 { label: '🤖 General Purpose', hot: false },
-              ].map((item) => (
-                <span
-                  key={item.label}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border ${
-                    item.hot
-                      ? 'bg-green-50 border-green-200 text-green-700'
-                      : 'bg-gray-50 border-gray-200 text-gray-600'
-                  }`}
-                >
-                  {item.label}
-                  {item.hot && <span className="text-[10px] font-bold bg-green-500 text-white rounded-full px-1.5">PROVEN</span>}
-                </span>
-              ))}
+              ].map((item) => {
+                const cls = `inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition ${
+                  item.hot
+                    ? 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100'
+                    : 'bg-gray-50 border-gray-200 text-gray-600'
+                }`;
+                const inner = (
+                  <>
+                    {item.label}
+                    {item.hot && <span className="text-[10px] font-bold bg-green-500 text-white rounded-full px-1.5">PROVEN</span>}
+                  </>
+                );
+                return (item as any).href
+                  ? <Link key={item.label} href={(item as any).href} className={cls}>{inner}</Link>
+                  : <span key={item.label} className={cls}>{inner}</span>;
+              })}
             </div>
             <div className="text-center">
               <Link
@@ -626,6 +629,11 @@ export default function LandingPage() {
                 <p className="text-green-200 max-w-xl mx-auto">
                   Cannabis dispensaries face unique challenges: compliance, education, and high-volume inquiries. Our AI handles it all.
                 </p>
+                <div className="mt-4">
+                  <Link href="/cannabis" className="inline-flex items-center gap-1.5 text-green-300 hover:text-green-100 text-sm font-semibold transition">
+                    See the full cannabis AI →
+                  </Link>
+                </div>
               </div>
               <div className="grid md:grid-cols-3 gap-5">
                 {[

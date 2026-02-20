@@ -15,6 +15,7 @@ import { processMessageForGraph } from '@/lib/memory/graph';
 import { resolveModelPreference } from '@/lib/ai/model-router';
 import { v4 as uuid } from 'uuid';
 import { features } from '@/lib/config/features';
+import { scanMessage, getBlockResponse, logSecurityEvent } from '@/lib/security/prompt-injection';
 
 export async function POST(request: NextRequest) {
   // Route through Kyra Worker (multi-tenant) when enabled — takes priority
@@ -109,6 +110,28 @@ export async function POST(request: NextRequest) {
     if ((!message || typeof message !== 'string') && (!file_ids || file_ids.length === 0)) {
       return new Response('Message is required', { status: 400 });
     }
+
+    // ── Prompt Injection Defense ─────────────────────────────────────────
+    if (message && typeof message === 'string') {
+      const scan = scanMessage(message);
+      logSecurityEvent(authUser.id, message, scan);
+      if (!scan.allowed) {
+        // Return a 200 with a safe redirect response so the client UX stays intact
+        const safeReply = getBlockResponse();
+        const encoder2 = new TextEncoder();
+        const blockedStream = new ReadableStream({
+          start(ctrl) {
+            ctrl.enqueue(encoder2.encode(`data: ${JSON.stringify({ type: 'content', content: safeReply })}\n\n`));
+            ctrl.enqueue(encoder2.encode('data: [DONE]\n\n'));
+            ctrl.close();
+          },
+        });
+        return new Response(blockedStream, {
+          headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' },
+        });
+      }
+    }
+    // ────────────────────────────────────────────────────────────────────
 
     let conversationId = conversation_id;
     let conversation: Conversation | null = null;
