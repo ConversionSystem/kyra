@@ -78,9 +78,11 @@ export async function POST(request: NextRequest) {
     };
 
     // Telegram-specific defaults
+    // dmPolicy: "open" = any customer can DM the bot (correct for customer service bots)
+    // Use "pairing" only for personal AI assistants that need restricted access
     if (channel === 'telegram') {
-      channelPatch.dmPolicy = channelPatch.dmPolicy || 'pairing';
-      channelPatch.groupPolicy = channelPatch.groupPolicy || 'allowlist';
+      channelPatch.dmPolicy = channelPatch.dmPolicy || 'open';
+      channelPatch.groupPolicy = channelPatch.groupPolicy || 'open';
       channelPatch.streamMode = channelPatch.streamMode || 'partial';
     }
 

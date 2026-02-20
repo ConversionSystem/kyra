@@ -526,6 +526,31 @@ export async function replaceGatewayConfig(
   }
 }
 
+/**
+ * Run an OpenClaw CLI command inside a client's container via docker exec.
+ * Used for: pairing approvals, diagnostics, etc.
+ * Example: execContainerCommand(clientId, ['openclaw', 'pairing', 'approve', 'telegram', code])
+ */
+export async function execContainerCommand(
+  clientId: string,
+  cmd: string[]
+): Promise<{ ok: boolean; stdout?: string; stderr?: string; exitCode?: number; error?: string }> {
+  try {
+    const res = await provisionerFetch(`/containers/${clientId}/exec-cmd`, {
+      method: 'POST',
+      body: JSON.stringify({ cmd }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+      return { ok: false, error: err.error || `Provisioner returned ${res.status}` };
+    }
+    const data = await res.json();
+    return { ok: data.ok, stdout: data.stdout, stderr: data.stderr, exitCode: data.exitCode };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
 // ============ Resolve Gateway for Client ============
 
 /**
