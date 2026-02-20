@@ -129,6 +129,48 @@ export async function chatWithClient(
 }
 
 /**
+ * Get the first active client gateway for an agency (by user ID).
+ * Used for the agency-level "OpenClaw Terminal" link.
+ * Returns the first running client gateway found.
+ */
+export async function getFirstGatewayByUserId(userId: string): Promise<ClientGateway | null> {
+  const supabase = getSupabase();
+
+  // Get user's agency
+  const { data: member } = await supabase
+    .from('agency_members')
+    .select('agency_id')
+    .eq('user_id', userId)
+    .limit(1)
+    .single();
+
+  if (!member?.agency_id) return null;
+
+  // Get first client with a running gateway
+  const { data: clients } = await supabase
+    .from('agency_clients')
+    .select('id, name, agency_id, gateway_url, gateway_token, gateway_container_id, gateway_status')
+    .eq('agency_id', member.agency_id)
+    .eq('gateway_status', 'running')
+    .not('gateway_url', 'is', null)
+    .not('gateway_token', 'is', null)
+    .limit(1);
+
+  if (!clients?.length) return null;
+  const client = clients[0];
+
+  return {
+    url: client.gateway_url,
+    token: client.gateway_token,
+    containerId: client.gateway_container_id,
+    status: client.gateway_status,
+    clientId: client.id,
+    clientName: client.name,
+    agencyId: client.agency_id,
+  };
+}
+
+/**
  * Health check a client's gateway.
  */
 export async function checkClientHealth(clientId: string): Promise<{
