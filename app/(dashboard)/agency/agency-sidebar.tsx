@@ -14,6 +14,8 @@ import {
   Radio,
   KeyRound,
   Settings,
+  Terminal,
+  ExternalLink,
   Menu,
   X,
 } from 'lucide-react';
@@ -48,6 +50,15 @@ interface AgencySidebarProps {
 export function AgencySidebar({ agencyName, plan, settings }: AgencySidebarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [dashboardUrl, setDashboardUrl] = useState<string | null>(null);
+
+  // Fetch OpenClaw dashboard URL for first active client gateway
+  useEffect(() => {
+    fetch('/api/openclaw/dashboard-url')
+      .then((r) => r.json())
+      .then((data) => { if (data.url) setDashboardUrl(data.url); })
+      .catch(() => {});
+  }, []);
 
   // Close mobile sidebar on route change
   useEffect(() => {
@@ -144,9 +155,27 @@ export function AgencySidebar({ agencyName, plan, settings }: AgencySidebarProps
         })}
       </nav>
 
-      {/* Footer */}
+      {/* OpenClaw Terminal + Footer */}
       <div className={cn('p-3 border-t', hasBranding ? 'border-white/10' : 'border-gray-800')}>
-        <div className={cn('px-3 py-2 text-xs', hasBranding ? 'text-white/30' : 'text-gray-600')}>
+        {dashboardUrl && (
+          <a
+            href={dashboardUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => setMobileOpen(false)}
+            className={cn(
+              'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors',
+              hasBranding
+                ? 'text-white/60 hover:bg-white/10 hover:text-white'
+                : 'text-gray-500 hover:bg-gray-800 hover:text-gray-300'
+            )}
+          >
+            <Terminal className="h-4 w-4 shrink-0" />
+            OpenClaw Terminal
+            <ExternalLink className="h-3 w-3 ml-auto opacity-50" />
+          </a>
+        )}
+        <div className={cn('px-3 mt-2 text-xs', hasBranding ? 'text-white/30' : 'text-gray-600')}>
           Powered by OpenClaw
         </div>
       </div>
