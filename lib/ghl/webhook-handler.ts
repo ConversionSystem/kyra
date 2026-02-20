@@ -119,19 +119,25 @@ interface BridgeRequest {
 }
 
 /**
- * Call the Fly.io bridge and parse the SSE response.
- * The bridge streams events like:
- *   data: {"type":"content","text":"Hello"}
- *   data: {"type":"done"}
- *
- * We collect all content events and return the full response text.
+ * Call the OpenClaw gateway's /v1/chat/completions endpoint.
+ * Translates from Kyra's bridge format to OpenAI-compatible format.
  */
 async function callBridge(bridgeUrl: string, req: BridgeRequest): Promise<string> {
-  const res = await fetch(`${bridgeUrl}/chat`, {
+  const messages: Array<{ role: string; content: string }> = [];
+  if (req.systemContext) {
+    messages.push({ role: 'system', content: req.systemContext });
+  }
+  messages.push({ role: 'user', content: req.message });
+
+  const res = await fetch(`${bridgeUrl}/v1/chat/completions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(req),
-    signal: AbortSignal.timeout(120_000), // 2 min timeout for AI generation
+    body: JSON.stringify({
+      model: 'openai/gpt-4o-mini',
+      messages,
+      stream: false,
+    }),
+    signal: AbortSignal.timeout(120_000),
   });
 
   if (!res.ok) {
@@ -139,8 +145,17 @@ async function callBridge(bridgeUrl: string, req: BridgeRequest): Promise<string
     throw new Error(`Bridge returned ${res.status}: ${text}`);
   }
 
-  // Parse SSE stream
+  // Parse the response — non-streaming returns OpenAI JSON directly
   const body = await res.text();
+  try {
+    const json = JSON.parse(body);
+    // OpenAI format: { choices: [{ message: { content: "..." } }] }
+    if (json.choices?.[0]?.message?.content) {
+      return json.choices[0].message.content;
+    }
+  } catch {
+    // Fall through to SSE parsing
+  }
   return parseSSEResponse(body);
 }
 

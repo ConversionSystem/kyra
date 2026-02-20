@@ -96,19 +96,25 @@ export async function POST(
       'Client context: ' + JSON.stringify(clientContext),
     ].join('\n');
 
-    // 7. Forward to the agency's own gateway
+    // 7. Forward to the client's gateway via /v1/chat/completions (OpenAI-compatible)
+    const chatMessages: Array<{ role: string; content: string }> = [];
+    if (systemContext) {
+      chatMessages.push({ role: 'system', content: systemContext });
+    }
+    chatMessages.push({ role: 'user', content: message });
+
     let workerResponse: Response;
     try {
-      workerResponse = await fetch(`${gatewayUrl}/chat`, {
+      workerResponse = await fetch(`${gatewayUrl}/v1/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${resolved.token}`,
         },
         body: JSON.stringify({
-          message,
-          sessionId: sessionKey,
-          apiKey: llmApiKey,
+          model: 'openai/gpt-4o-mini',
+          messages: chatMessages,
+          stream: true,
         }),
         signal: AbortSignal.timeout(120_000),
       });
