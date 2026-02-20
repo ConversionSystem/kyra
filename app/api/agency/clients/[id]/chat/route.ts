@@ -12,6 +12,7 @@
 
 import { NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { getSessionKeyForClient, getSystemContextForClient, getSystemPromptForClient } from '@/lib/agency/container';
 import { resolveClientGateway } from '@/lib/ovh/provisioner';
 import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
@@ -70,6 +71,18 @@ export async function POST(
       return new Response('Message is required', { status: 400 });
     }
 
+    // 5b. Fetch agency's API keys (BYOK)
+    const serviceClient = createServiceClientWithoutCookies();
+    const { data: agency } = await serviceClient
+      .from('agencies')
+      .select('api_keys')
+      .eq('id', client.agency_id)
+      .single();
+
+    const apiKeys = (agency?.api_keys as Record<string, string>) || {};
+    // Priority: anthropic > openrouter > openai (Claude is preferred model)
+    const llmApiKey = apiKeys.anthropic || apiKeys.openrouter || apiKeys.openai || '';
+
     // 6. Build session key & context
     const typedClient = client as AgencyClient & { template?: AgencyTemplate | null };
     const sessionKey = getSessionKeyForClient(clientId);
@@ -88,11 +101,14 @@ export async function POST(
     try {
       workerResponse = await fetch(`${gatewayUrl}/chat`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${resolved.token}`,
+        },
         body: JSON.stringify({
           message,
-          sessionKey,
-          systemContext,
+          sessionId: sessionKey,
+          apiKey: llmApiKey,
         }),
         signal: AbortSignal.timeout(120_000),
       });
@@ -194,7 +210,7 @@ export async function POST(
         responseData = { response: await workerResponse.text() };
       }
 
-      const fullResponse = responseData.response || responseData.content || responseData.message || '';
+      const fullResponse = responseData.reply || responseData.response || responseData.content || responseData.message || '';
 
       const stream = new ReadableStream({
         async start(controller) {

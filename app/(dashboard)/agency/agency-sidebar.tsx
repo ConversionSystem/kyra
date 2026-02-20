@@ -52,7 +52,7 @@ export function AgencySidebar({ agencyName, plan, settings }: AgencySidebarProps
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dashboardUrl, setDashboardUrl] = useState<string | null>(null);
 
-  // Fetch authenticated dashboard URL
+  // Fetch OpenClaw dashboard URL for first active client gateway
   useEffect(() => {
     fetch('/api/openclaw/dashboard-url')
       .then((r) => r.json())
@@ -155,7 +155,7 @@ export function AgencySidebar({ agencyName, plan, settings }: AgencySidebarProps
         })}
       </nav>
 
-      {/* OpenClaw Terminal — bottom section */}
+      {/* OpenClaw Terminal + Footer */}
       <div className={cn('p-3 border-t', hasBranding ? 'border-white/10' : 'border-gray-800')}>
         {dashboardUrl && (
           <a
