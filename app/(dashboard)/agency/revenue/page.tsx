@@ -65,7 +65,7 @@ export default function RevenuePage() {
               <input type="range"
                 min={1} max={100} step={1}
                 value={numClients}
-                onValueChange={([v]) => setNumClients(v)}
+                onChange={(e) => setNumClients(Number(e.target.value))}
                 className="w-full mb-2 accent-indigo-600"
               />
               <div className="flex justify-between text-xs text-gray-400">
@@ -85,7 +85,7 @@ export default function RevenuePage() {
               <input type="range"
                 min={99} max={5000} step={50}
                 value={pricePerClient}
-                onValueChange={([v]) => setPricePerClient(v)}
+                onChange={(e) => setPricePerClient(Number(e.target.value))}
                 className="w-full mb-2 accent-indigo-600"
               />
               <div className="flex justify-between text-xs text-gray-400">
