@@ -57,6 +57,7 @@ export interface AgencyClient {
   gateway_status: 'running' | 'starting' | 'provisioning' | 'error' | null;
   gateway_error: string | null;
   gateway_provisioned_at: string | null;
+  settings: Record<string, unknown>;
   template?: AgencyTemplate | null;
 }
 
