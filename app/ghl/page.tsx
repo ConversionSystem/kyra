@@ -62,19 +62,7 @@ const comparison = [
   { feature: 'Multi-channel (Telegram/SMS)', kyra: true, ghl: false },
 ];
 
-const testimonials = [
-  {
-    name: 'Paul Rivera',
-    company: 'Purple Lotus Patient Center',
-    revenue: '$27M/yr',
-    quote: 'Our AI handles hundreds of patient inquiries a day. Kyra gives us full visibility into every conversation from one dashboard.',
-  },
-  {
-    name: 'Sarah Mettinger',
-    company: 'Aurora Sky Agency',
-    quote: 'We deploy AI employees for 12 clients. The GHL webhook trigger means every AI conversation flows into our GHL automations automatically.',
-  },
-];
+const testimonials: { name: string; company: string; revenue?: string; quote: string }[] = [];
 
 export default function GHLPage() {
   return (
@@ -223,23 +211,23 @@ export default function GHLPage() {
         </div>
       </section>
 
-      {/* Testimonials */}
+      {/* Early adopter CTA */}
       <section className="bg-gray-50 py-20">
-        <div className="max-w-4xl mx-auto px-6">
-          <h2 className="text-2xl font-bold text-gray-900 text-center mb-10">
-            GHL agencies already using Kyra
+        <div className="max-w-2xl mx-auto px-6 text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            Be among the first GHL agencies on Kyra
           </h2>
-          <div className="grid sm:grid-cols-2 gap-6">
-            {testimonials.map((t, i) => (
-              <div key={i} className="rounded-xl bg-white border border-gray-200 p-6 space-y-4">
-                <p className="text-gray-700 italic">&ldquo;{t.quote}&rdquo;</p>
-                <div>
-                  <p className="font-semibold text-gray-900">{t.name}</p>
-                  <p className="text-sm text-gray-400">{t.company}{t.revenue ? ` · ${t.revenue}` : ''}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+          <p className="text-gray-500 mb-8">
+            Early agencies get direct access to the founding team, priority support,
+            and shape the roadmap. GHL + Kyra is a powerful combination — let&apos;s build it together.
+          </p>
+          <Link
+            href="/signup"
+            className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-8 py-3.5 rounded-xl transition"
+          >
+            Apply for early access
+            <ArrowRight className="h-4 w-4" />
+          </Link>
         </div>
       </section>
 
