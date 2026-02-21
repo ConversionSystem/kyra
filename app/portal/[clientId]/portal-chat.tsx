@@ -19,7 +19,7 @@ export function PortalChat({ clientId, clientName }: { clientId: string; clientN
     setSending(true);
 
     try {
-      const res = await fetch(`/api/agency/clients/${clientId}/chat`, {
+      const res = await fetch(`/api/portal/${clientId}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text }),
