@@ -10,6 +10,7 @@ import { ArrowLeft, Loader2, Check, MessageSquare, Zap, X, CheckCircle2, ArrowRi
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import type { AgencyTemplate, SampleResponse, SuggestedSkill } from '@/lib/agency/queries';
+import { agentRoles } from '@/app/(dashboard)/agency/roles/roles-data';
 
 // ============================================================================
 // Role Template Data
@@ -28,7 +29,7 @@ const rolePresets: Record<string, { name: string; emoji: string; label: string; 
 // ============================================================================
 // Setup Wizard (Step 2 — shown after client creation)
 // ============================================================================
-function SetupWizard({ clientId, clientName, defaultNorthStar, onDone }: { clientId: string; clientName: string; defaultNorthStar?: string; onDone: () => void }) {
+function SetupWizard({ clientId, clientName, defaultNorthStar, agentRole, onDone }: { clientId: string; clientName: string; defaultNorthStar?: string; agentRole?: string; onDone: () => void }) {
   const router = useRouter();
   const [northStar, setNorthStar] = useState(defaultNorthStar ?? '');
   const [monthlyBudget, setMonthlyBudget] = useState('');
@@ -41,6 +42,7 @@ function SetupWizard({ clientId, clientName, defaultNorthStar, onDone }: { clien
       const settings: Record<string, unknown> = {
         north_star: northStar.trim() || null,
         model_preference: modelPreference,
+        ...(agentRole ? { agent_role: agentRole } : {}),
       };
       const budgetNum = parseInt(monthlyBudget, 10);
       if (!isNaN(budgetNum) && budgetNum > 0) {
@@ -490,6 +492,7 @@ interface NewClientFormProps {
 export function NewClientForm({ agencyId, templates, defaultTemplateId, defaultRole }: NewClientFormProps) {
   const router = useRouter();
   const rolePreset = defaultRole ? rolePresets[defaultRole] ?? null : null;
+  const selectedAgentRole = defaultRole ? agentRoles.find((r) => r.id === defaultRole) ?? null : null;
   const [name, setName] = useState(rolePreset?.name ?? '');
   const [slug, setSlug] = useState(rolePreset ? slugify(rolePreset.name) : '');
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
@@ -577,6 +580,7 @@ export function NewClientForm({ agencyId, templates, defaultTemplateId, defaultR
         clientId={createdClient.id}
         clientName={createdClient.name}
         defaultNorthStar={rolePreset?.northStar}
+        agentRole={defaultRole}
         onDone={() => router.push(`/agency/clients/${createdClient.id}`)}
       />
     );
@@ -592,6 +596,13 @@ export function NewClientForm({ agencyId, templates, defaultTemplateId, defaultR
           <ArrowLeft className="h-3 w-3" />
           Back to Clients
         </Link>
+
+        {selectedAgentRole && (
+          <div className="rounded-md bg-indigo-50 border border-indigo-200 px-4 py-3 text-sm text-indigo-700 mb-6 flex items-center gap-2">
+            <span>{selectedAgentRole.emoji}</span>
+            <span>Role pre-selected: <strong>{selectedAgentRole.name}</strong></span>
+          </div>
+        )}
 
         {error && (
           <div className="rounded-md bg-red-50 border border-red-500/30 px-4 py-3 text-sm text-red-600 mb-6">
