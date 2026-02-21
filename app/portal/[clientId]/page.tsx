@@ -24,25 +24,34 @@ export default async function ClientPortalPage({
   // Fetch agency for branding
   const { data: agency } = await supabase
     .from('agencies')
-    .select('id, name')
+    .select('id, name, settings')
     .eq('id', client.agency_id)
     .single();
+
+  const agencyLogoUrl = (agency?.settings as Record<string, unknown>)?.logo_url as string | undefined;
 
   const isLive = client.gateway_status === 'running' && client.gateway_url;
 
   return (
     <div className="min-h-screen bg-gray-950 text-white flex flex-col">
       {/* Header */}
-      <div className="border-b border-gray-800 bg-gray-900">
+      <div className="border-b border-gray-800 bg-gray-900/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-lg font-bold">
-              {client.name.charAt(0).toUpperCase()}
-            </div>
+            {agencyLogoUrl ? (
+              <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center overflow-hidden shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={agencyLogoUrl} alt={`${agency?.name} logo`} className="h-full w-full object-contain p-0.5" />
+              </div>
+            ) : (
+              <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-lg font-bold">
+                {client.name.charAt(0).toUpperCase()}
+              </div>
+            )}
             <div>
-              <p className="font-bold text-white text-sm">{client.name}</p>
+              <p className="font-bold text-white text-base">{client.name}</p>
               <p className="text-xs text-gray-400">
-                {client.industry || 'AI Employee'} · Powered by {agency?.name || 'Kyra'}
+                {client.industry || 'AI Employee'} · {agency?.name || 'Kyra'}
               </p>
             </div>
           </div>
@@ -88,11 +97,9 @@ export default async function ClientPortalPage({
       </div>
 
       {/* Footer */}
-      <p className="text-center text-xs text-gray-700 pb-6">
-        AI employee managed by{' '}
-        <span className="text-gray-500">{agency?.name || 'your agency'}</span>
-        {' · '}Powered by{' '}
-        <Link href="/" className="text-gray-500 hover:text-gray-300 transition">Kyra</Link>
+      <p className="text-center text-[11px] text-gray-600 pb-4 pt-2">
+        Powered by{' '}
+        <Link href="/" className="text-gray-500 hover:text-gray-400 transition">Kyra</Link>
       </p>
     </div>
   );
