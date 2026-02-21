@@ -1,35 +1,28 @@
-import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
-import { getAgencyForUser } from '@/lib/agency/queries';
-import ConversationsClient from './conversations-client';
+import { Suspense } from 'react';
+import { ConversationsFeed } from './conversations-feed';
+import { Inbox, Loader2 } from 'lucide-react';
 
-export default async function ConversationsPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/login');
+export const metadata = { title: 'Conversations — Kyra' };
 
-  const result = await getAgencyForUser(user.id);
-  if (!result) redirect('/signup/agency');
-
-  // Fetch clients for filter dropdown
-  const { data: clients } = await supabase
-    .from('agency_clients')
-    .select('id, name')
-    .eq('agency_id', result.agency.id)
-    .in('status', ['active', 'setup'])
-    .order('name');
-
+export default function ConversationsPage() {
   return (
-    <div className="p-4 sm:p-6 md:p-8 max-w-7xl">
-      {/* Header */}
+    <div className="max-w-5xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Conversations</h1>
+        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+          <Inbox className="h-6 w-6 text-indigo-500" />
+          Conversations
+        </h1>
         <p className="text-sm text-gray-500 mt-1">
-          All AI conversations across your clients — live from GHL
+          Every message your AI employees send and receive — across all clients, in one place.
         </p>
       </div>
-
-      <ConversationsClient clients={clients || []} />
+      <Suspense fallback={
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+        </div>
+      }>
+        <ConversationsFeed />
+      </Suspense>
     </div>
   );
 }
