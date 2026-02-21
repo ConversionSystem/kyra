@@ -191,6 +191,16 @@ export async function POST(
             );
             controller.enqueue(encoder.encode('data: [DONE]\n\n'));
             controller.close();
+            // Fire-and-forget: log conversation
+            if (fullResponse) {
+              void (async () => {
+                try {
+                  await createServiceClientWithoutCookies()
+                    .from('client_conversations')
+                    .insert({ client_id: clientId, agency_id: client.agency_id, channel: 'test_chat', user_message: message, ai_response: fullResponse });
+                } catch { /* table may not exist yet */ }
+              })();
+            }
           } catch (error) {
             console.error('[client-chat] Stream error:', error);
             controller.enqueue(
@@ -234,6 +244,16 @@ export async function POST(
             );
             controller.enqueue(encoder.encode('data: [DONE]\n\n'));
             controller.close();
+            // Fire-and-forget: log conversation
+            if (fullResponse) {
+              void (async () => {
+                try {
+                  await createServiceClientWithoutCookies()
+                    .from('client_conversations')
+                    .insert({ client_id: clientId, agency_id: client.agency_id, channel: 'test_chat', user_message: message, ai_response: fullResponse });
+                } catch { /* table may not exist yet */ }
+              })();
+            }
           } catch (error) {
             console.error('[client-chat] JSON response error:', error);
             controller.enqueue(
