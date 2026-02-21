@@ -6,7 +6,7 @@ import { NewClientForm } from './new-client-form';
 export default async function NewClientPage({
   searchParams,
 }: {
-  searchParams: Promise<{ template?: string }>;
+  searchParams: Promise<{ template?: string; role?: string }>;
 }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -16,7 +16,7 @@ export default async function NewClientPage({
   if (!result) redirect('/signup/agency');
 
   const templates = await getAgencyTemplates(result.agency.id);
-  const { template: preselectedTemplateId } = await searchParams;
+  const { template: preselectedTemplateId, role: preselectedRole } = await searchParams;
 
   return (
     <div className="p-4 sm:p-6 md:p-8 max-w-2xl">
@@ -30,6 +30,7 @@ export default async function NewClientPage({
         agencyId={result.agency.id}
         templates={templates}
         defaultTemplateId={preselectedTemplateId}
+        defaultRole={preselectedRole}
       />
     </div>
   );
