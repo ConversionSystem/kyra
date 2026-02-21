@@ -17,6 +17,7 @@ import {
   ImageIcon,
   Palette,
   Globe,
+  Zap,
 } from 'lucide-react';
 import type { Agency, AgencyMember, AgencyRole, AgencySettings } from '@/lib/agency/types';
 import { BrandingPreview } from './branding-preview';
@@ -65,6 +66,7 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
   const [companyName, setCompanyName] = useState(settings.company_name ?? '');
   const [customDomain, setCustomDomain] = useState(settings.custom_domain ?? '');
   const [supportEmail, setSupportEmail] = useState(settings.support_email ?? '');
+  const [ghlWebhookUrl, setGhlWebhookUrl] = useState((settings as any).ghl_webhook_url ?? '');
   const [logoError, setLogoError] = useState(false);
 
   // --- Invite form ---
@@ -101,6 +103,7 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
             company_name: companyName.trim() || undefined,
             custom_domain: customDomain.trim() || undefined,
             support_email: supportEmail.trim() || undefined,
+            ghl_webhook_url: ghlWebhookUrl.trim() || undefined,
           },
         }),
       });
@@ -513,6 +516,53 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
               </div>
             </form>
           )}
+        </CardContent>
+      </Card>
+
+      {/* GHL Webhook Integration */}
+      <Card className="border-indigo-100">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Zap className="h-5 w-5 text-indigo-500" />
+            GHL Workflow Trigger
+          </CardTitle>
+          <CardDescription>
+            Fire a GoHighLevel workflow automatically whenever your AI employee handles a conversation.
+            Add a webhook trigger URL from any GHL workflow — Kyra will POST conversation data to it in real time.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-gray-700">Webhook URL</label>
+            <Input
+              value={ghlWebhookUrl}
+              onChange={e => setGhlWebhookUrl(e.target.value)}
+              placeholder="https://services.leadconnectorhq.com/hooks/..."
+              className="font-mono text-sm"
+            />
+            <p className="text-xs text-gray-400">
+              In GHL: Automation → Create Workflow → Add Trigger → Webhook → Copy URL → paste here.
+            </p>
+          </div>
+          {ghlWebhookUrl && (
+            <div className="rounded-lg bg-indigo-50 border border-indigo-100 p-3 text-xs text-indigo-700 space-y-1">
+              <p className="font-semibold">Kyra will send this payload on each conversation:</p>
+              <pre className="text-[10px] leading-relaxed whitespace-pre">{`{
+  "event": "conversation",
+  "client_name": "ABC Dental",
+  "client_id": "uuid",
+  "channel": "portal | telegram | sms",
+  "user_message": "...",
+  "ai_response": "...",
+  "timestamp": "2026-02-21T19:00:00Z"
+}`}</pre>
+            </div>
+          )}
+          <Button onClick={handleSave} disabled={saving} className="gap-2">
+            {saving ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving…</> : 'Save Webhook URL'}
+          </Button>
+          {saveSuccess && <p className="text-sm text-green-600">✓ Webhook URL saved</p>}
+          {saveError && <p className="text-sm text-red-600">{saveError}</p>}
         </CardContent>
       </Card>
 
