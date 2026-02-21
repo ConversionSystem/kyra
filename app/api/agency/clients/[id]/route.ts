@@ -68,11 +68,23 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   if (body.status !== undefined) updates.status = body.status;
   if (body.container_config !== undefined) updates.container_config = body.container_config;
 
+  const supabase = await createClient();
+
+  // Merge settings JSONB if provided
+  if (body.settings !== undefined && typeof body.settings === 'object') {
+    const { data: existing } = await supabase
+      .from('agency_clients')
+      .select('settings')
+      .eq('id', id)
+      .eq('agency_id', agency.id)
+      .single();
+    const currentSettings = (existing?.settings ?? {}) as Record<string, unknown>;
+    updates.settings = { ...currentSettings, ...body.settings };
+  }
+
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
   }
-
-  const supabase = await createClient();
 
   const { data: client, error } = await supabase
     .from('agency_clients')

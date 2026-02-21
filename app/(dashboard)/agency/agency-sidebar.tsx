@@ -22,24 +22,64 @@ import {
   CreditCard,
   FileText,
   Target,
+  Heart,
+  Wallet,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AgencySettings } from '@/lib/agency/types';
+import type { LucideIcon } from 'lucide-react';
 
-const navItems = [
-  { label: 'Overview', href: '/agency', icon: LayoutDashboard },
-  { label: 'Conversations', href: '/agency/conversations', icon: MessageSquare },
-  { label: 'Clients', href: '/agency/clients', icon: Users },
-  { label: 'Templates', href: '/agency/templates', icon: BookOpen },
-  { label: 'Channels', href: '/agency/channels', icon: Radio },
-  { label: 'Automations', href: '/agency/automations', icon: Zap },
-  { label: 'Analytics', href: '/agency/analytics', icon: BarChart3 },
-  { label: 'Revenue', href: '/agency/revenue', icon: TrendingUp },
-  { label: 'Plans', href: '/agency/plans', icon: CreditCard },
-  { label: 'Proposal', href: '/agency/proposal', icon: FileText },
-  { label: 'Sales Kit', href: '/agency/sales-kit', icon: Target },
-  { label: 'API Keys', href: '/agency/api-keys', icon: KeyRound },
-  { label: 'Settings', href: '/agency/settings', icon: Settings },
+interface NavItem {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+}
+
+interface NavSection {
+  label?: string;
+  items: NavItem[];
+}
+
+const navSections: NavSection[] = [
+  {
+    items: [
+      { label: 'Overview', href: '/agency', icon: LayoutDashboard },
+      { label: 'Clients', href: '/agency/clients', icon: Users },
+      { label: 'Conversations', href: '/agency/conversations', icon: MessageSquare },
+    ],
+  },
+  {
+    label: 'Automation',
+    items: [
+      { label: 'Heartbeat', href: '/agency/heartbeat', icon: Heart },
+      { label: 'Automations', href: '/agency/automations', icon: Zap },
+      { label: 'Channels', href: '/agency/channels', icon: Radio },
+    ],
+  },
+  {
+    label: 'Insights',
+    items: [
+      { label: 'Performance', href: '/agency/performance', icon: BarChart3 },
+      { label: 'Budget', href: '/agency/budget', icon: Wallet },
+      { label: 'Revenue', href: '/agency/revenue', icon: TrendingUp },
+      { label: 'Plans', href: '/agency/plans', icon: CreditCard },
+    ],
+  },
+  {
+    label: 'Resources',
+    items: [
+      { label: 'Templates', href: '/agency/templates', icon: BookOpen },
+      { label: 'Proposal', href: '/agency/proposal', icon: FileText },
+      { label: 'Sales Kit', href: '/agency/sales-kit', icon: Target },
+    ],
+  },
+  {
+    label: 'Account',
+    items: [
+      { label: 'API Keys', href: '/agency/api-keys', icon: KeyRound },
+      { label: 'Settings', href: '/agency/settings', icon: Settings },
+    ],
+  },
 ];
 
 const planColors: Record<string, string> = {
@@ -132,34 +172,46 @@ export function AgencySidebar({ agencyName, plan, settings }: AgencySidebarProps
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-3 space-y-1">
-        {navItems.map((item) => {
-          const isActive =
-            item.href === '/agency'
-              ? pathname === '/agency'
-              : pathname.startsWith(item.href);
+      <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
+        {navSections.map((section, si) => (
+          <div key={si}>
+            {section.label && (
+              <div className={cn(
+                'text-[10px] uppercase tracking-widest font-medium px-3 pt-4 pb-1',
+                hasBranding ? 'text-white/40' : 'text-gray-500'
+              )}>
+                {section.label}
+              </div>
+            )}
+            {section.items.map((item) => {
+              const isActive =
+                item.href === '/agency'
+                  ? pathname === '/agency'
+                  : pathname.startsWith(item.href);
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => setMobileOpen(false)}
-              className={cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors',
-                isActive
-                  ? hasBranding
-                    ? 'bg-white/20 text-white font-medium'
-                    : 'bg-gray-800 text-white'
-                  : hasBranding
-                    ? 'text-white/70 hover:bg-white/10 hover:text-white'
-                    : 'text-gray-400 hover:bg-gray-800 hover:text-white'
-              )}
-            >
-              <item.icon className="h-4 w-4 shrink-0" />
-              {item.label}
-            </Link>
-          );
-        })}
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMobileOpen(false)}
+                  className={cn(
+                    'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
+                    isActive
+                      ? hasBranding
+                        ? 'bg-white/20 text-white font-medium'
+                        : 'bg-gray-800 text-white'
+                      : hasBranding
+                        ? 'text-white/70 hover:bg-white/10 hover:text-white'
+                        : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                  )}
+                >
+                  <item.icon className="h-4 w-4 shrink-0" />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
+        ))}
       </nav>
 
       {/* OpenClaw Terminal — opens in new tab */}
