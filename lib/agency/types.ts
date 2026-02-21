@@ -67,6 +67,7 @@ export interface AgencyClient {
   gateway_status: ClientGatewayStatus | null;
   gateway_error: string | null;
   gateway_provisioned_at: string | null;
+  settings: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 }
@@ -140,6 +141,7 @@ export interface UpdateClientRequest {
   industry?: string;
   status?: ClientStatus;
   container_config?: Record<string, unknown>;
+  settings?: Record<string, unknown>;
 }
 
 export interface AgencyWithCounts extends Agency {
