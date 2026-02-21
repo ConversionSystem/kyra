@@ -25,6 +25,10 @@ import {
   RefreshCw,
   CheckCircle2,
   AlertTriangle,
+  Terminal,
+  ExternalLink,
+  Copy,
+  Share2,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { AgencyClient, AgencyMember } from '@/lib/agency/queries';
@@ -222,7 +226,19 @@ function TestChatTab({ client }: { client: AgencyClient }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [copied, setCopied] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  const gatewayUrl = (client as any).gateway_url as string | undefined;
+  const portalUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}/portal/${client.id}`
+    : `/portal/${client.id}`;
+
+  const handleCopyPortalLink = async () => {
+    await navigator.clipboard.writeText(portalUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const handleSendMessage = async () => {
     if (!chatInput.trim() || isSending) return;
@@ -297,8 +313,65 @@ function TestChatTab({ client }: { client: AgencyClient }) {
 
   return (
     <div>
-      <p className="text-sm text-gray-500 mb-4">
-        Send test messages to this client&apos;s AI. Responses use your agency&apos;s API keys and this client&apos;s personality.
+      {/* ── Terminal Access Panel ── */}
+      <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 mb-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+              <Terminal className="h-4 w-4 text-indigo-500" />
+              OpenClaw Terminal
+            </p>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Full control — memory, automations, channels, personality, files. Share with your client so they can manage their own AI.
+            </p>
+          </div>
+          <div className="flex gap-2 shrink-0">
+            {gatewayUrl ? (
+              <a
+                href={gatewayUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 transition text-white text-xs font-semibold"
+              >
+                <Terminal className="h-3.5 w-3.5" />
+                Open Terminal
+                <ExternalLink className="h-3 w-3 opacity-70" />
+              </a>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-gray-200 text-gray-400 text-xs font-semibold cursor-not-allowed">
+                <Terminal className="h-3.5 w-3.5" />
+                No terminal yet
+              </span>
+            )}
+            <button
+              onClick={handleCopyPortalLink}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition text-gray-700 text-xs font-semibold"
+              title="Copy client portal link"
+            >
+              {copied
+                ? <><CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> Copied</>
+                : <><Share2 className="h-3.5 w-3.5" /> Share with Client</>
+              }
+            </button>
+          </div>
+        </div>
+        {gatewayUrl && (
+          <div className="mt-3 flex items-center gap-2 rounded-lg bg-white border border-gray-200 px-3 py-2">
+            <span className="text-[10px] font-mono text-gray-400 truncate flex-1">{gatewayUrl}</span>
+            <button
+              onClick={() => navigator.clipboard.writeText(gatewayUrl)}
+              className="shrink-0 text-gray-400 hover:text-gray-700"
+              title="Copy gateway URL"
+            >
+              <Copy className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* ── Test Chat ── */}
+      <p className="text-sm text-gray-500 mb-3">
+        Test the AI below — or share the portal link with your client so they can control it directly.
       </p>
       <div className="rounded-lg border border-gray-200 bg-white shadow-sm h-96 overflow-y-auto mb-3 p-4 space-y-3">
         {messages.length === 0 ? (
