@@ -46,7 +46,7 @@ export default function LandingPage() {
           <Link href="#compare" className="text-gray-600 hover:text-gray-700 transition text-sm">
             Compare
           </Link>
-          <Link href="#features" className="text-gray-600 hover:text-gray-700 transition text-sm">
+          <Link href="#ai-os" className="text-gray-600 hover:text-gray-700 transition text-sm">
             Features
           </Link>
         </nav>
@@ -249,6 +249,41 @@ export default function LandingPage() {
               description='Your clients never see a terminal. They just know their "AI receptionist" handles leads 24/7. You set the price, keep the margin.'
               tags={['White-label ready', 'BYOK', 'You set the price', 'Recurring revenue']}
             />
+          </div>
+        </section>
+
+        {/* ── AI Employee OS ─────────────────────────────────────────────── */}
+        <section id="ai-os" className="bg-indigo-50/40 border-y border-indigo-100/50 py-16 md:py-20">
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="text-center mb-12">
+              <h2 className="text-2xl md:text-3xl font-bold mb-4">
+                The AI Employee OS
+              </h2>
+              <p className="text-gray-600 max-w-2xl mx-auto">
+                Everything your agency needs to manage AI employees at scale — not just a chatbot terminal.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+              <AIOSCard
+                emoji="💓"
+                title="Always-On Accountability"
+                body="Every AI employee checks in hourly. Set a North Star goal and watch your agents work toward it 24/7. Know instantly which clients are active, idle, or need attention."
+                color="indigo"
+              />
+              <AIOSCard
+                emoji="💰"
+                title="Cost Control at Scale"
+                body="Set monthly conversation limits per client, choose fast vs. smart AI models, and get alerts before you overspend. Agencies managing 20+ clients can't afford surprises."
+                color="purple"
+              />
+              <AIOSCard
+                emoji="📊"
+                title="Prove ROI Every Monday"
+                body="Automated weekly reports show conversations handled, active clients, and performance scores — delivered to your inbox. Turn your AI employees into measurable business results."
+                color="green"
+              />
+            </div>
           </div>
         </section>
 
@@ -869,6 +904,33 @@ function Feature({ icon, title, description }: {
       <div className="text-indigo-600 mb-3">{icon}</div>
       <h3 className="font-semibold mb-1 text-gray-900">{title}</h3>
       <p className="text-gray-500 text-sm leading-relaxed">{description}</p>
+    </div>
+  );
+}
+
+function AIOSCard({ emoji, title, body, color }: {
+  emoji: string;
+  title: string;
+  body: string;
+  color: 'indigo' | 'purple' | 'green';
+}) {
+  const colorMap = {
+    indigo: { icon: 'bg-indigo-100 text-indigo-600', badge: 'bg-indigo-100 text-indigo-700' },
+    purple: { icon: 'bg-purple-100 text-purple-600', badge: 'bg-purple-100 text-purple-700' },
+    green: { icon: 'bg-green-100 text-green-600', badge: 'bg-green-100 text-green-700' },
+  };
+  const c = colorMap[color];
+
+  return (
+    <div className="relative p-6 rounded-xl border border-gray-200 bg-white shadow-sm">
+      <span className={`absolute top-4 right-4 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${c.badge}`}>
+        New
+      </span>
+      <div className={`inline-flex items-center justify-center w-11 h-11 rounded-xl ${c.icon} text-xl mb-4`}>
+        {emoji}
+      </div>
+      <h3 className="font-semibold text-gray-900 mb-2">{title}</h3>
+      <p className="text-gray-500 text-sm leading-relaxed">{body}</p>
     </div>
   );
 }
