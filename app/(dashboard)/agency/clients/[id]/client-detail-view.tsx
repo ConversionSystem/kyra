@@ -29,6 +29,10 @@ import {
   ExternalLink,
   Copy,
   Share2,
+  Inbox,
+  Clock,
+  User,
+  Bot,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { AgencyClient, AgencyMember } from '@/lib/agency/queries';
@@ -49,7 +53,7 @@ interface ChatMessage {
   content: string;
 }
 
-type Tab = 'chat' | 'personality' | 'settings' | 'ghl' | 'permissions' | 'usage';
+type Tab = 'chat' | 'personality' | 'settings' | 'ghl' | 'permissions' | 'usage' | 'conversations';
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'chat', label: 'Test Chat', icon: MessageSquare },
@@ -58,6 +62,7 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'ghl', label: 'GHL', icon: Link2 },
   { id: 'permissions', label: 'Permissions', icon: Shield },
   { id: 'usage', label: 'Usage', icon: BarChart3 },
+  { id: 'conversations', label: 'Conversations', icon: Inbox },
 ];
 
 interface ClientDetailViewProps {
@@ -216,6 +221,9 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
       {activeTab === 'usage' && (
         <UsageTab client={initialClient} />
       )}
+      {activeTab === 'conversations' && (
+        <ConversationsTab client={initialClient} />
+      )}
     </div>
   );
 }
@@ -355,8 +363,21 @@ function TestChatTab({ client }: { client: AgencyClient }) {
             </button>
           </div>
         </div>
+        {/* Portal share URL — always visible */}
+        <div className="mt-3 flex items-center gap-2 rounded-lg bg-indigo-50 border border-indigo-100 px-3 py-2">
+          <Share2 className="h-3.5 w-3.5 text-indigo-400 shrink-0" />
+          <span className="text-[10px] font-mono text-indigo-700 truncate flex-1">{portalUrl}</span>
+          <button
+            onClick={handleCopyPortalLink}
+            className="shrink-0 text-indigo-400 hover:text-indigo-700"
+            title="Copy client portal link"
+          >
+            {copied ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+          </button>
+        </div>
         {gatewayUrl && (
-          <div className="mt-3 flex items-center gap-2 rounded-lg bg-white border border-gray-200 px-3 py-2">
+          <div className="mt-1.5 flex items-center gap-2 rounded-lg bg-white border border-gray-200 px-3 py-2">
+            <Terminal className="h-3.5 w-3.5 text-gray-300 shrink-0" />
             <span className="text-[10px] font-mono text-gray-400 truncate flex-1">{gatewayUrl}</span>
             <button
               onClick={() => navigator.clipboard.writeText(gatewayUrl)}
@@ -801,6 +822,132 @@ function UsageTab({ client }: { client: AgencyClient }) {
         Messages handled, response times, and costs for this client&apos;s AI assistant.
       </p>
       <UsageAnalytics clientId={client.id} />
+    </div>
+  );
+}
+
+// ── Conversations Tab ─────────────────────────────────────────────────────────
+
+interface Conversation {
+  id: string;
+  channel: string;
+  user_message: string;
+  ai_response: string;
+  created_at: string;
+}
+
+function ConversationsTab({ client }: { client: AgencyClient }) {
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [migrationRequired, setMigrationRequired] = useState(false);
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch(`/api/agency/clients/${client.id}/conversations`)
+      .then(r => r.json())
+      .then(d => {
+        if (d.migrationRequired) { setMigrationRequired(true); return; }
+        setConversations(d.conversations || []);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [client.id]);
+
+  const channelBadge: Record<string, string> = {
+    test_chat: 'bg-blue-50 text-blue-600 border-blue-200',
+    portal: 'bg-purple-50 text-purple-600 border-purple-200',
+    telegram: 'bg-sky-50 text-sky-600 border-sky-200',
+    sms: 'bg-green-50 text-green-600 border-green-200',
+    whatsapp: 'bg-emerald-50 text-emerald-600 border-emerald-200',
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+      </div>
+    );
+  }
+
+  if (migrationRequired) {
+    return (
+      <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 space-y-3">
+        <p className="font-semibold text-amber-800 flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4" /> One-time setup required
+        </p>
+        <p className="text-sm text-amber-700">
+          Run this SQL in your{' '}
+          <a href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer" className="underline font-medium">
+            Supabase SQL Editor
+          </a>{' '}
+          to enable conversation logging:
+        </p>
+        <pre className="text-xs bg-white border border-amber-200 rounded-lg p-3 overflow-x-auto text-gray-700 whitespace-pre-wrap">
+{`CREATE TABLE IF NOT EXISTS client_conversations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  client_id UUID NOT NULL REFERENCES agency_clients(id) ON DELETE CASCADE,
+  agency_id UUID NOT NULL REFERENCES agencies(id) ON DELETE CASCADE,
+  channel TEXT NOT NULL DEFAULT 'test_chat',
+  user_message TEXT NOT NULL,
+  ai_response TEXT NOT NULL,
+  tokens_used INT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+ALTER TABLE client_conversations ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Agency members view" ON client_conversations FOR SELECT
+  USING (agency_id IN (SELECT agency_id FROM agency_members WHERE user_id = auth.uid()));
+CREATE POLICY "Service insert" ON client_conversations FOR INSERT WITH CHECK (true);`}
+        </pre>
+      </div>
+    );
+  }
+
+  if (conversations.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
+        <Inbox className="h-10 w-10 text-gray-300" />
+        <p className="font-medium text-gray-600">No conversations yet</p>
+        <p className="text-sm text-gray-400">
+          Use the Test Chat tab or share the portal link — conversations will appear here.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-gray-500">{conversations.length} conversation{conversations.length !== 1 ? 's' : ''} logged</p>
+      {conversations.map(conv => (
+        <div
+          key={conv.id}
+          className="rounded-xl border border-gray-200 bg-white hover:border-gray-300 transition cursor-pointer"
+          onClick={() => setExpanded(expanded === conv.id ? null : conv.id)}
+        >
+          <div className="flex items-start gap-3 p-4">
+            <User className="h-4 w-4 text-indigo-400 mt-0.5 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm text-gray-900 line-clamp-2">{conv.user_message}</p>
+              {expanded === conv.id && (
+                <div className="mt-3 pt-3 border-t border-gray-100 space-y-3">
+                  <div className="flex items-start gap-2">
+                    <Bot className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{conv.ai_response}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${channelBadge[conv.channel] || 'bg-gray-50 text-gray-500 border-gray-200'}`}>
+                {conv.channel.replace('_', ' ')}
+              </span>
+              <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                {new Date(conv.created_at).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+              </span>
+            </div>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
