@@ -6,10 +6,180 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Loader2, Check, MessageSquare, Zap, X } from 'lucide-react';
+import { ArrowLeft, Loader2, Check, MessageSquare, Zap, X, CheckCircle2, ArrowRight, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import type { AgencyTemplate, SampleResponse, SuggestedSkill } from '@/lib/agency/queries';
+
+// ============================================================================
+// Setup Wizard (Step 2 — shown after client creation)
+// ============================================================================
+function SetupWizard({ clientId, clientName, onDone }: { clientId: string; clientName: string; onDone: () => void }) {
+  const router = useRouter();
+  const [northStar, setNorthStar] = useState('');
+  const [monthlyBudget, setMonthlyBudget] = useState('');
+  const [modelPreference, setModelPreference] = useState('auto');
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleLaunch = async () => {
+    setIsSaving(true);
+    try {
+      const settings: Record<string, unknown> = {
+        north_star: northStar.trim() || null,
+        model_preference: modelPreference,
+      };
+      const budgetNum = parseInt(monthlyBudget, 10);
+      if (!isNaN(budgetNum) && budgetNum > 0) {
+        settings.monthly_budget = budgetNum;
+      }
+
+      await fetch(`/api/agency/clients/${clientId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ settings }),
+      });
+
+      router.push(`/agency/clients/${clientId}`);
+    } catch {
+      router.push(`/agency/clients/${clientId}`);
+    }
+  };
+
+  const modelOptions = [
+    {
+      value: 'auto',
+      label: '✨ Auto (Recommended)',
+      description: 'Kyra picks the right model per conversation.',
+    },
+    {
+      value: 'gpt-4o-mini',
+      label: '⚡ Fast & Affordable',
+      description: 'Best for high-volume. Handles most conversations with ease.',
+    },
+    {
+      value: 'gpt-4o',
+      label: '🧠 Smart & Capable',
+      description: 'Better reasoning for complex questions.',
+    },
+  ];
+
+  return (
+    <div className="max-w-2xl mx-auto">
+      {/* Success celebration */}
+      <div className="rounded-2xl border-2 border-green-200 bg-gradient-to-br from-green-50 via-emerald-50 to-indigo-50 p-8 mb-8 text-center">
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-green-100 mb-4">
+          <CheckCircle2 className="h-7 w-7 text-green-600" />
+        </div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-1">
+          Your AI employee is live!
+        </h2>
+        <p className="text-gray-500">
+          <span className="font-medium text-gray-700">{clientName}</span> has been created. Let&apos;s set them up for success.
+        </p>
+      </div>
+
+      {/* Step 2 card */}
+      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+        <div className="bg-gradient-to-r from-indigo-600 to-indigo-500 px-6 py-4">
+          <p className="text-indigo-200 text-xs font-semibold uppercase tracking-wider">Step 2</p>
+          <h3 className="text-lg font-bold text-white">Set Up Your AI Employee</h3>
+        </div>
+
+        <div className="p-6 space-y-6">
+          {/* North Star Goal */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">
+              What is this AI employee&apos;s #1 goal?
+            </label>
+            <textarea
+              rows={3}
+              value={northStar}
+              onChange={(e) => setNorthStar(e.target.value)}
+              placeholder="e.g. Book more dental appointments, qualify leads for our sales team, answer cannabis compliance questions 24/7"
+              className="w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-indigo-400 focus:border-indigo-400"
+            />
+            <p className="text-xs text-gray-400">
+              This is the single outcome your AI employee is always working toward.
+            </p>
+          </div>
+
+          {/* Monthly Conversation Budget */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">
+              Monthly conversation limit (optional)
+            </label>
+            <Input
+              type="number"
+              value={monthlyBudget}
+              onChange={(e) => setMonthlyBudget(e.target.value)}
+              placeholder="e.g. 500"
+              min="0"
+              className="bg-gray-50 border-gray-200"
+            />
+            <p className="text-xs text-gray-400">
+              We&apos;ll alert you when 80% is reached. Leave blank for unlimited.
+            </p>
+          </div>
+
+          {/* AI Speed */}
+          <div className="space-y-3">
+            <label className="text-sm font-medium text-gray-700">AI Speed</label>
+            <div className="space-y-2">
+              {modelOptions.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setModelPreference(option.value)}
+                  className={`w-full text-left rounded-lg border p-3 transition-all ${
+                    modelPreference === option.value
+                      ? 'border-indigo-200 bg-indigo-50 ring-1 ring-indigo-500/20'
+                      : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{option.label}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">{option.description}</p>
+                    </div>
+                    {modelPreference === option.value && (
+                      <div className="shrink-0 rounded-full bg-indigo-100 p-1">
+                        <Check className="h-3.5 w-3.5 text-indigo-600" />
+                      </div>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="border-t border-gray-100 px-6 py-4 space-y-3">
+          <Button onClick={handleLaunch} disabled={isSaving} className="w-full gap-2">
+            {isSaving ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                Launch My AI Employee
+                <ArrowRight className="h-4 w-4" />
+              </>
+            )}
+          </Button>
+          <button
+            type="button"
+            onClick={() => router.push(`/agency/clients/${clientId}`)}
+            className="w-full text-center text-sm text-gray-400 hover:text-gray-600 transition-colors py-1"
+          >
+            Skip for now →
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const industries = [
   'General',
@@ -314,6 +484,7 @@ export function NewClientForm({ agencyId, templates, defaultTemplateId }: NewCli
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [previewTemplate, setPreviewTemplate] = useState<AgencyTemplate | null>(null);
+  const [createdClient, setCreatedClient] = useState<{ id: string; name: string } | null>(null);
 
   const builtInTemplates = templates.filter((t) => t.agency_id === null);
   const customTemplates = templates.filter((t) => t.agency_id !== null);
@@ -376,12 +547,23 @@ export function NewClientForm({ agencyId, templates, defaultTemplateId }: NewCli
         return;
       }
 
-      router.push(`/agency/clients/${client.id}`);
+      setCreatedClient({ id: client.id, name: client.name });
     } catch {
       setError('Failed to create client. Please try again.');
       setIsSubmitting(false);
     }
   };
+
+  // Show setup wizard after client creation
+  if (createdClient) {
+    return (
+      <SetupWizard
+        clientId={createdClient.id}
+        clientName={createdClient.name}
+        onDone={() => router.push(`/agency/clients/${createdClient.id}`)}
+      />
+    );
+  }
 
   return (
     <>
