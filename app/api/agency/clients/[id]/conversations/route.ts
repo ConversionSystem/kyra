@@ -5,6 +5,7 @@
  */
 import { NextRequest } from 'next/server';
 import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { dispatchWebhookIfConfigured } from '@/lib/agency/webhook-dispatcher';
 
 export async function GET(
   request: NextRequest,
@@ -90,6 +91,15 @@ export async function POST(
       }
       throw error;
     }
+
+    // Fire-and-forget GHL webhook
+    void dispatchWebhookIfConfigured({
+      clientId,
+      agencyId: agency_id,
+      channel: channel || 'test_chat',
+      userMessage: user_message,
+      aiResponse: ai_response,
+    });
 
     return Response.json({ ok: true });
   } catch (err) {
