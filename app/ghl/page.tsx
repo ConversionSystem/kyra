@@ -246,34 +246,29 @@ export default function GHLPage() {
       {/* Pricing CTA */}
       <section className="max-w-3xl mx-auto px-6 py-20 text-center">
         <h2 className="text-3xl font-bold text-gray-900 mb-4">
-          Your margin: 97-99% on AI employees
+          Sell AI employees. Keep the margin.
         </h2>
-        <p className="text-gray-500 text-lg mb-8">
-          Kyra costs $0.48/client/month at 20 clients. You charge $300-2000/month.
-          The math is simple.
+        <p className="text-gray-500 text-lg mb-10 max-w-xl mx-auto">
+          Kyra is your backend. You set the price for your clients.
+          Agencies typically charge $300–$2,000/month per AI employee.
+          See our plans for what Kyra costs you.
         </p>
-        <div className="grid sm:grid-cols-3 gap-4 mb-10 text-left">
-          {[
-            { plan: 'Starter', price: '$97/mo', clients: '5 AI employees', margin: '~99%' },
-            { plan: 'Pro', price: '$297/mo', clients: '25 AI employees', margin: '~98%', highlight: true },
-            { plan: 'Scale', price: '$697/mo', clients: '100 AI employees', margin: '~97%' },
-          ].map((p, i) => (
-            <div key={i} className={`rounded-xl p-5 space-y-2 border ${p.highlight ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white border-gray-200'}`}>
-              <p className={`text-sm font-medium ${p.highlight ? 'text-indigo-200' : 'text-gray-400'}`}>{p.plan}</p>
-              <p className={`text-2xl font-bold ${p.highlight ? 'text-white' : 'text-gray-900'}`}>{p.price}</p>
-              <p className={`text-sm ${p.highlight ? 'text-indigo-100' : 'text-gray-500'}`}>{p.clients}</p>
-              <p className={`text-xs font-semibold ${p.highlight ? 'text-indigo-200' : 'text-green-600'}`}>Your margin: {p.margin}</p>
-            </div>
-          ))}
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Link
+            href="/signup"
+            className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-10 py-4 rounded-xl transition text-lg"
+          >
+            Start free
+            <ArrowRight className="h-5 w-5" />
+          </Link>
+          <Link
+            href="/agency/plans"
+            className="inline-flex items-center gap-2 border border-gray-200 text-gray-700 hover:bg-gray-50 font-semibold px-10 py-4 rounded-xl transition text-lg"
+          >
+            See pricing
+          </Link>
         </div>
-        <Link
-          href="/signup"
-          className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-10 py-4 rounded-xl transition text-lg"
-        >
-          Start your AI employee agency
-          <ArrowRight className="h-5 w-5" />
-        </Link>
-        <p className="mt-3 text-sm text-gray-400">Free plan available · No credit card required</p>
+        <p className="mt-4 text-sm text-gray-400">Free plan available · No credit card required</p>
       </section>
 
       {/* Footer */}
