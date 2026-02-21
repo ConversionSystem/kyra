@@ -16,6 +16,7 @@ import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { getSessionKeyForClient, getSystemContextForClient, getSystemPromptForClient } from '@/lib/agency/container';
 import { resolveClientGateway } from '@/lib/ovh/provisioner';
 import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
+import { dispatchWebhookIfConfigured } from '@/lib/agency/webhook-dispatcher';
 
 export async function POST(
   request: NextRequest,
@@ -191,7 +192,7 @@ export async function POST(
             );
             controller.enqueue(encoder.encode('data: [DONE]\n\n'));
             controller.close();
-            // Fire-and-forget: log conversation
+            // Fire-and-forget: log conversation + GHL webhook
             if (fullResponse) {
               void (async () => {
                 try {
@@ -199,6 +200,7 @@ export async function POST(
                     .from('client_conversations')
                     .insert({ client_id: clientId, agency_id: client.agency_id, channel: 'test_chat', user_message: message, ai_response: fullResponse });
                 } catch { /* table may not exist yet */ }
+                void dispatchWebhookIfConfigured({ clientId, agencyId: client.agency_id, channel: 'test_chat', userMessage: message, aiResponse: fullResponse });
               })();
             }
           } catch (error) {
@@ -244,7 +246,7 @@ export async function POST(
             );
             controller.enqueue(encoder.encode('data: [DONE]\n\n'));
             controller.close();
-            // Fire-and-forget: log conversation
+            // Fire-and-forget: log conversation + GHL webhook
             if (fullResponse) {
               void (async () => {
                 try {
@@ -252,6 +254,7 @@ export async function POST(
                     .from('client_conversations')
                     .insert({ client_id: clientId, agency_id: client.agency_id, channel: 'test_chat', user_message: message, ai_response: fullResponse });
                 } catch { /* table may not exist yet */ }
+                void dispatchWebhookIfConfigured({ clientId, agencyId: client.agency_id, channel: 'test_chat', userMessage: message, aiResponse: fullResponse });
               })();
             }
           } catch (error) {
