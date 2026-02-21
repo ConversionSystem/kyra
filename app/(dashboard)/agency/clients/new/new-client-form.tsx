@@ -12,11 +12,25 @@ import { createClient } from '@/lib/supabase/client';
 import type { AgencyTemplate, SampleResponse, SuggestedSkill } from '@/lib/agency/queries';
 
 // ============================================================================
+// Role Template Data
+// ============================================================================
+const rolePresets: Record<string, { name: string; emoji: string; label: string; northStar: string }> = {
+  'researcher':          { name: 'Sage',  emoji: '🔍', label: 'Researcher',        northStar: 'Surface 3 actionable insights per week from industry news and competitor activity' },
+  'sales-qualifier':     { name: 'Quinn', emoji: '🎯', label: 'Sales Qualifier',   northStar: 'Qualify every inbound lead within 5 minutes and book meetings with prospects scoring 7+' },
+  'brand-voice':         { name: 'Nova',  emoji: '🛡️', label: 'Brand Voice Guard', northStar: 'Ensure every client-facing message aligns with brand voice before it goes out' },
+  'social-scout':        { name: 'Scout', emoji: '📱', label: 'Social Scout',      northStar: 'Track brand mentions and surface trending topics relevant to our audience daily' },
+  'appointment-setter':  { name: 'Aria',  emoji: '📞', label: 'Appointment Setter', northStar: 'Convert every qualified lead into a booked appointment within 24 hours' },
+  'intake-specialist':   { name: 'Blake', emoji: '📋', label: 'Intake Specialist', northStar: 'Collect complete client intake information and route to the right team member' },
+  'community-manager':   { name: 'Cleo',  emoji: '💬', label: 'Community Manager', northStar: 'Answer 90% of FAQs instantly and escalate complex issues within 1 hour' },
+  'weekly-reporter':     { name: 'Atlas', emoji: '📊', label: 'Weekly Reporter',   northStar: 'Deliver a clear weekly summary of all AI activity every Monday morning' },
+};
+
+// ============================================================================
 // Setup Wizard (Step 2 — shown after client creation)
 // ============================================================================
-function SetupWizard({ clientId, clientName, onDone }: { clientId: string; clientName: string; onDone: () => void }) {
+function SetupWizard({ clientId, clientName, defaultNorthStar, onDone }: { clientId: string; clientName: string; defaultNorthStar?: string; onDone: () => void }) {
   const router = useRouter();
-  const [northStar, setNorthStar] = useState('');
+  const [northStar, setNorthStar] = useState(defaultNorthStar ?? '');
   const [monthlyBudget, setMonthlyBudget] = useState('');
   const [modelPreference, setModelPreference] = useState('auto');
   const [isSaving, setIsSaving] = useState(false);
@@ -470,12 +484,14 @@ interface NewClientFormProps {
   agencyId: string;
   templates: AgencyTemplate[];
   defaultTemplateId?: string;
+  defaultRole?: string;
 }
 
-export function NewClientForm({ agencyId, templates, defaultTemplateId }: NewClientFormProps) {
+export function NewClientForm({ agencyId, templates, defaultTemplateId, defaultRole }: NewClientFormProps) {
   const router = useRouter();
-  const [name, setName] = useState('');
-  const [slug, setSlug] = useState('');
+  const rolePreset = defaultRole ? rolePresets[defaultRole] ?? null : null;
+  const [name, setName] = useState(rolePreset?.name ?? '');
+  const [slug, setSlug] = useState(rolePreset ? slugify(rolePreset.name) : '');
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
   // Pre-select template from URL param (e.g. /clients/new?template=abc)
   const defaultTemplate = defaultTemplateId ? templates.find((t) => t.id === defaultTemplateId) ?? null : null;
@@ -560,6 +576,7 @@ export function NewClientForm({ agencyId, templates, defaultTemplateId }: NewCli
       <SetupWizard
         clientId={createdClient.id}
         clientName={createdClient.name}
+        defaultNorthStar={rolePreset?.northStar}
         onDone={() => router.push(`/agency/clients/${createdClient.id}`)}
       />
     );
@@ -579,6 +596,21 @@ export function NewClientForm({ agencyId, templates, defaultTemplateId }: NewCli
         {error && (
           <div className="rounded-md bg-red-50 border border-red-500/30 px-4 py-3 text-sm text-red-600 mb-6">
             {error}
+          </div>
+        )}
+
+        {/* Role banner */}
+        {rolePreset && (
+          <div className="rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3 mb-6 flex items-center gap-3">
+            <span className="text-xl">{rolePreset.emoji}</span>
+            <div>
+              <p className="text-sm font-medium text-indigo-800">
+                Setting up: {rolePreset.label}
+              </p>
+              <p className="text-xs text-indigo-600/70">
+                Pre-filled with best practices &mdash; customize anything below
+              </p>
+            </div>
           </div>
         )}
 
