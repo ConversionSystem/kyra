@@ -60,6 +60,9 @@ const comparison = [
   { feature: 'Client billing management', kyra: true, ghl: false },
   { feature: 'Custom AI personality', kyra: true, ghl: false },
   { feature: 'Multi-channel (Telegram/SMS)', kyra: true, ghl: false },
+  { feature: '\u{1F493} Heartbeat Protocol — AI checks in hourly, works toward client goals', kyra: true, ghl: false },
+  { feature: '\u{1F4B0} Token Budget Manager — Per-client spend limits, model selection', kyra: true, ghl: false },
+  { feature: '\u{1F4CA} Performance Telemetry — Weekly ROI reports, auto-emailed', kyra: true, ghl: false },
 ];
 
 const testimonials: { name: string; company: string; revenue?: string; quote: string }[] = [];
@@ -124,6 +127,14 @@ export default function GHLPage() {
         <p className="mt-4 text-sm text-gray-400">
           Free to start · No credit card · White-label from day one
         </p>
+      </section>
+
+      {/* What's New */}
+      <section className="max-w-4xl mx-auto px-6 pb-10">
+        <div className="rounded-xl bg-indigo-50 border border-indigo-100 px-6 py-4 text-sm text-indigo-700">
+          <span className="font-semibold">{'\u{1F195}'} Just shipped:</span>{' '}
+          Heartbeat Protocol, Token Budget Manager, and Performance Telemetry — the tools agencies need to prove AI ROI to their clients.
+        </div>
       </section>
 
       {/* Comparison table */}

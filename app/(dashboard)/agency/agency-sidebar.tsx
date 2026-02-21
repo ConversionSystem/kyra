@@ -25,6 +25,8 @@ import {
   Heart,
   Wallet,
   Store,
+  Mail,
+  Rocket,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AgencySettings } from '@/lib/agency/types';
@@ -73,6 +75,8 @@ const navSections: NavSection[] = [
       { label: 'Proposal', href: '/agency/proposal', icon: FileText },
       { label: 'Sales Kit', href: '/agency/sales-kit', icon: Target },
       { label: 'GHL Listing', href: '/agency/ghl-listing', icon: Store },
+      { label: 'Outreach', href: '/agency/outreach', icon: Mail },
+      { label: 'Launch Pitch', href: '/agency/launch-pitch', icon: Rocket },
     ],
   },
   {
