@@ -129,7 +129,7 @@ export async function provisionClientGateway(
         agencyId,
         config,
         resources: {
-          memoryMb: resources.memoryMb || 256,
+          memoryMb: resources.memoryMb || 1024,  // OpenClaw needs ~350MB min; 256 causes OOM crash
           cpuShares: resources.cpuShares || 256,
         },
       }),
