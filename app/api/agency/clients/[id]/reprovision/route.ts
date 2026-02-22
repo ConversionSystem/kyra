@@ -40,7 +40,7 @@ export async function POST(
 
   const userMd = `# ${client.name}\n\nClient of ${agency.name}.`;
 
-  const result = await provisionClientGateway(client.id, agency.id, { soulMd, userMd });
+  const result = await provisionClientGateway(client.id, agency.id, { soulMd, userMd }, {}, client.name);
 
   if (result.success) {
     return NextResponse.json({ ok: true, gatewayUrl: result.gatewayUrl });
