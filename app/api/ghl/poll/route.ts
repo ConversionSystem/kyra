@@ -183,14 +183,25 @@ export async function GET(request: NextRequest) {
         }
         const contactKey = Math.abs(contactHash).toString(36);
         const sessionKey = `ghl:${clientShort}:${contactKey}:${today}`;
-        const persona = (client.container_config as any)?.persona || '';
-        const instructions = (client.container_config as any)?.instructions || '';
+
+        // The AI's core identity (persona + instructions) lives in the container's SOUL.md.
+        // Here we inject only the per-conversation context that SOUL.md doesn't know:
+        // who the customer is, that this is SMS, and any greeting for first-time contacts.
+        const cfg = (client.container_config as Record<string, unknown>) ?? {};
+        const persona = (cfg.persona as string) || `AI assistant for ${client.name}`;
+        const greeting = (cfg.greeting as string) || '';
+
+        // Detect first contact: no prior outbound messages in this conversation
+        const isFirstContact = !conv.unreadCount || conv.lastMessageDirection === 'inbound';
+
         const systemContext = [
-          persona ? `You are ${persona}.` : `You are an AI assistant for "${client.name}".`,
-          instructions || 'Be helpful, professional, and concise.',
-          `You are responding to a customer via SMS. Keep responses brief.`,
-          `Customer: ${conv.contactName || conv.phone || 'Unknown'}`,
-        ].join('\n');
+          `You are ${persona}. You are responding via SMS — keep replies concise (1-3 sentences max).`,
+          greeting && isFirstContact
+            ? `If this is a new contact, start your reply with your greeting: "${greeting}"`
+            : '',
+          `Customer name: ${conv.contactName || conv.phone || 'Unknown'}.`,
+          `Respond naturally and helpfully. Do not mention you are an AI unless directly asked.`,
+        ].filter(Boolean).join('\n');
 
         // Build OpenAI-compatible messages for /v1/chat/completions
         const chatMessages: Array<{ role: string; content: string }> = [];
@@ -272,6 +283,18 @@ export async function GET(request: NextRequest) {
         if (sendRes.ok) {
           addLog(`  ✅ Reply sent to ${conv.contactName || conv.phone}`);
           totalProcessed++;
+
+          // Log to client_conversations so Kyra dashboard shows the exchange
+          const contactLabel = conv.contactName || conv.phone || 'Unknown';
+          void supabase.from('client_conversations').insert({
+            client_id: client.id,
+            agency_id: client.agency_id,
+            channel: `ghl_sms`,
+            user_message: `[${contactLabel}] ${latestInbound.body}`,
+            ai_response: aiResponse,
+          }).then(({ error: logErr }) => {
+            if (logErr) addLog(`  ⚠️ Conversation log failed: ${logErr.message}`);
+          });
         } else {
           const errText = await sendRes.text().catch(() => '');
           addLog(`  Send failed: ${sendRes.status} ${errText.slice(0, 100)}`);
