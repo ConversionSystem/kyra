@@ -27,6 +27,8 @@ interface CRMUpdate {
   tagsToAdd: string[];
   note: string;
   pipelineStageHint?: string; // 'new' | 'engaged' | 'qualified' | 'booked' | 'closed'
+  needsHuman: boolean;
+  escalationReason?: string; // why escalation was triggered
 }
 
 async function extractCRMUpdate(
@@ -48,11 +50,13 @@ async function extractCRMUpdate(
             role: 'system',
             content: [
               'You are a CRM assistant. Analyse this SMS conversation and output ONLY valid JSON (no markdown).',
-              'Schema: { "tagsToAdd": string[], "note": string, "pipelineStageHint": string | null }',
-              'tagsToAdd: 1-3 short lowercase tags describing intent (e.g. "appointment-requested", "price-inquiry", "not-interested", "hot-lead").',
-              'note: 1-2 sentence summary of what the customer wanted and what was resolved.',
+              'Schema: { "tagsToAdd": string[], "note": string, "pipelineStageHint": string | null, "needsHuman": boolean, "escalationReason": string | null }',
+              'tagsToAdd: 1-3 short lowercase kebab-case tags describing intent (e.g. "appointment-requested", "price-inquiry", "not-interested", "hot-lead", "complaint").',
+              'note: 1-2 sentence summary of what the customer wanted and outcome.',
               'pipelineStageHint: one of "new" | "engaged" | "qualified" | "booked" | "closed" | null.',
-              'Output raw JSON only. No explanation.',
+              'needsHuman: true if ANY of these: customer asks for a human/manager, expresses anger/frustration, has an urgent/unresolved issue the AI couldn\'t solve, or explicitly says they want to speak with someone.',
+              'escalationReason: brief reason why human needed (1 sentence), or null.',
+              'Output raw JSON only. No explanation. No markdown.',
             ].join('\n'),
           },
           ...conversation,
@@ -73,6 +77,8 @@ async function extractCRMUpdate(
       tagsToAdd: Array.isArray(parsed.tagsToAdd) ? parsed.tagsToAdd.slice(0, 3) : [],
       note: typeof parsed.note === 'string' ? parsed.note.slice(0, 500) : '',
       pipelineStageHint: parsed.pipelineStageHint || null,
+      needsHuman: !!parsed.needsHuman,
+      escalationReason: typeof parsed.escalationReason === 'string' ? parsed.escalationReason : undefined,
     };
   } catch {
     return null;
@@ -91,35 +97,91 @@ async function applyGHLCRMUpdates(
     'Content-Type': 'application/json',
   };
 
-  // 1. Add tags
-  if (update.tagsToAdd.length > 0) {
+  // 1. Build final tag list (include escalation tag if needed)
+  const allTags = [...update.tagsToAdd];
+  if (update.needsHuman) {
+    allTags.push('needs-human', 'kyra-escalated');
+  }
+
+  if (allTags.length > 0) {
     try {
       const tagRes = await fetch(`${GHL_API_BASE}/contacts/${contactId}/tags`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ tags: update.tagsToAdd }),
+        body: JSON.stringify({ tags: allTags }),
         signal: AbortSignal.timeout(5_000),
       });
       if (tagRes.ok) {
-        addLog(`    🏷️ Tags added: [${update.tagsToAdd.join(', ')}]`);
+        addLog(`    🏷️ Tags added: [${allTags.join(', ')}]`);
       }
     } catch { /* best-effort */ }
   }
 
-  // 2. Add note
-  if (update.note) {
+  // 2. Add note (escalation gets a priority prefix)
+  const noteBody = update.needsHuman && update.escalationReason
+    ? `[Kyra AI 🚨 ESCALATION] ${update.escalationReason}\n\nConversation summary: ${update.note}`
+    : `[Kyra AI] ${update.note}`;
+
+  if (update.note || update.needsHuman) {
     try {
       const noteRes = await fetch(`${GHL_API_BASE}/contacts/${contactId}/notes`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ body: `[Kyra AI] ${update.note}` }),
+        body: JSON.stringify({ body: noteBody }),
         signal: AbortSignal.timeout(5_000),
       });
       if (noteRes.ok) {
-        addLog(`    📝 Note added: "${update.note.slice(0, 60)}..."`);
+        addLog(`    📝 Note added${update.needsHuman ? ' 🚨' : ''}`);
       }
     } catch { /* best-effort */ }
   }
+}
+
+async function sendEscalationAlert(opts: {
+  agencyName: string;
+  clientName: string;
+  contactName: string;
+  contactPhone: string;
+  reason: string;
+  conversationSummary: string;
+  notifyEmail: string;
+}): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey || !opts.notifyEmail) return;
+
+  const html = `
+    <div style="font-family:sans-serif;max-width:600px;margin:0 auto">
+      <div style="background:#ef4444;color:white;padding:16px 20px;border-radius:8px 8px 0 0">
+        <h2 style="margin:0">🚨 Kyra AI Escalation Alert</h2>
+      </div>
+      <div style="border:1px solid #fca5a5;border-top:none;padding:20px;border-radius:0 0 8px 8px">
+        <p><strong>Client AI:</strong> ${opts.clientName}</p>
+        <p><strong>Contact:</strong> ${opts.contactName} (${opts.contactPhone})</p>
+        <p><strong>Reason:</strong> ${opts.reason}</p>
+        <hr style="border-color:#fee2e2"/>
+        <p><strong>Conversation summary:</strong><br/>${opts.conversationSummary}</p>
+        <hr style="border-color:#fee2e2"/>
+        <p style="color:#6b7280;font-size:12px">
+          This contact has been tagged <em>needs-human</em> in GHL.<br/>
+          Sent by Kyra AI (${opts.agencyName})
+        </p>
+      </div>
+    </div>`;
+
+  await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: 'Kyra AI <alerts@kyra.conversionsystem.com>',
+      to: opts.notifyEmail,
+      subject: `🚨 ${opts.clientName}: ${opts.contactName} needs a human`,
+      html,
+    }),
+    signal: AbortSignal.timeout(8_000),
+  }).catch(() => {});
 }
 
 // ── GHL Contact Context ───────────────────────────────────────────────────────
@@ -404,6 +466,7 @@ export async function GET(request: NextRequest) {
             ? `Use the tags to personalise your response (e.g. if tagged 'hot-lead', be more proactive about next steps).`
             : '',
           `Respond naturally and helpfully. Do not mention you are an AI unless directly asked.`,
+          `If you cannot fully resolve the customer's issue or they ask for a human, say: "I'll flag this for our team and someone will follow up with you shortly." Then stop — don't keep trying to solve it.`,
         ].filter(Boolean).join('\n');
 
         // Build OpenAI-compatible messages for /v1/chat/completions
@@ -512,8 +575,34 @@ export async function GET(request: NextRequest) {
                   gateway.gateway_token,
                   [...chatMessages, { role: 'assistant', content: aiResponse }],
                 );
-                if (crmUpdate && (crmUpdate.tagsToAdd.length > 0 || crmUpdate.note)) {
+                if (crmUpdate && (crmUpdate.tagsToAdd.length > 0 || crmUpdate.note || crmUpdate.needsHuman)) {
                   await applyGHLCRMUpdates(conv.contactId, ghlTokenForCRM, crmUpdate, addLog);
+                }
+                // Escalation alert — notify agency when human follow-up needed
+                if (crmUpdate?.needsHuman) {
+                  addLog(`  🚨 Escalation detected for ${conv.contactName || conv.phone}: ${crmUpdate.escalationReason || 'human needed'}`);
+                  // Get agency notification email
+                  const { data: agencyRow } = await supabase
+                    .from('agencies')
+                    .select('name, settings')
+                    .eq('id', client.agency_id)
+                    .single();
+                  const agencySettings = (agencyRow?.settings ?? {}) as Record<string, unknown>;
+                  const notifyEmail =
+                    (agencySettings.escalation_email as string | undefined) ||
+                    (agencySettings.weekly_report_email as string | undefined);
+                  if (notifyEmail) {
+                    await sendEscalationAlert({
+                      agencyName: agencyRow?.name || 'Your agency',
+                      clientName: client.name,
+                      contactName: conv.contactName || conv.phone || 'Unknown contact',
+                      contactPhone: conv.phone || '',
+                      reason: crmUpdate.escalationReason || 'Customer needs human assistance',
+                      conversationSummary: crmUpdate.note,
+                      notifyEmail,
+                    });
+                    addLog(`    📧 Escalation alert sent to ${notifyEmail}`);
+                  }
                 }
               } catch { /* best-effort, never block */ }
             })();
