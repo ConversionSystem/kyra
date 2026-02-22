@@ -521,6 +521,10 @@ export async function GET(request: NextRequest) {
             : '',
           `Respond naturally and helpfully. Do not mention you are an AI unless directly asked.`,
           `If you cannot fully resolve the customer's issue or they ask for a human, say: "I'll flag this for our team and someone will follow up with you shortly." Then stop — don't keep trying to solve it.`,
+          // Inject booking link if configured
+          cfg.calendar_url
+            ? `When a customer wants to schedule, book, or make an appointment, include this booking link in your reply: ${cfg.calendar_url}`
+            : '',
         ].filter(Boolean).join('\n');
 
         // Build OpenAI-compatible messages for /v1/chat/completions
@@ -583,6 +587,18 @@ export async function GET(request: NextRequest) {
           continue;
         }
         addLog(`  AI: "${aiResponse.slice(0, 80)}..."`);
+
+        // Auto-append calendar booking link if AI mentions appointments and URL is configured
+        const calendarUrl = cfg.calendar_url as string | undefined;
+        if (calendarUrl) {
+          const BOOKING_KEYWORDS = ['schedule', 'book', 'appointment', 'available', 'slot', 'calendar'];
+          const mentionsBooking = BOOKING_KEYWORDS.some(k => aiResponse.toLowerCase().includes(k));
+          const alreadyHasLink = aiResponse.includes(calendarUrl) || aiResponse.includes('http');
+          if (mentionsBooking && !alreadyHasLink) {
+            aiResponse = `${aiResponse}\n\nBook online: ${calendarUrl}`;
+            addLog(`  📅 Booking link appended`);
+          }
+        }
 
         // Step 6: Send reply via GHL
         // Map GHL message types to valid Send Message API types
