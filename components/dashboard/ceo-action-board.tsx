@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { AlertTriangle, CheckCircle2, Info, RefreshCw, X } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Info, RefreshCw, X, Copy, Check as CheckIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
@@ -14,6 +14,7 @@ type ActionItem = {
   link: string;
   linkLabel: string;
   severity: Severity;
+  sql?: string;
 };
 
 const SEV_STYLES: Record<Severity, { card: string; icon: string; label: string }> = {
@@ -27,6 +28,25 @@ function SevIcon({ severity }: { severity: Severity }) {
   if (severity === 'critical') return <AlertTriangle className={cls} />;
   if (severity === 'warning') return <AlertTriangle className={cls} />;
   return <Info className={cls} />;
+}
+
+function SqlCopy({ sql }: { sql: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <div className="mt-2">
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-xs font-medium text-gray-500">SQL to paste in Supabase SQL Editor:</span>
+        <button type="button" onClick={async () => {
+          await navigator.clipboard.writeText(sql);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        }} className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium">
+          {copied ? <><CheckIcon className="h-3 w-3" /> Copied!</> : <><Copy className="h-3 w-3" /> Copy SQL</>}
+        </button>
+      </div>
+      <pre className="text-xs bg-gray-900 text-green-300 p-2 rounded-lg overflow-x-auto max-h-28 leading-relaxed">{sql}</pre>
+    </div>
+  );
 }
 
 export default function CeoActionBoard() {
@@ -125,6 +145,7 @@ export default function CeoActionBoard() {
                           {item.linkLabel}
                         </Link>
                       )}
+                      {item.sql && <SqlCopy sql={item.sql} />}
                     </div>
                   </div>
                 </div>
