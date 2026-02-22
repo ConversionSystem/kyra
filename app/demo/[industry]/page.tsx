@@ -107,8 +107,9 @@ export function generateStaticParams() {
 // Allow dynamic paths too (not just static)
 export const dynamicParams = true;
 
-export async function generateMetadata({ params }: { params: { industry: string } }) {
-  const demo = DEMOS[params.industry];
+export async function generateMetadata({ params }: { params: Promise<{ industry: string }> }) {
+  const { industry } = await params;
+  const demo = DEMOS[industry];
   if (!demo) return { title: 'Kyra AI Demo' };
   return {
     title: `${demo.title} — Kyra AI`,
@@ -116,8 +117,9 @@ export async function generateMetadata({ params }: { params: { industry: string 
   };
 }
 
-export default function DemoPage({ params }: { params: { industry: string } }) {
-  const demo = DEMOS[params.industry];
+export default async function DemoPage({ params }: { params: Promise<{ industry: string }> }) {
+  const { industry } = await params;
+  const demo = DEMOS[industry];
   if (!demo) notFound();
 
   return (
