@@ -9,6 +9,59 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Plus, Search, FileDown, Loader2 } from 'lucide-react';
 import type { AgencyClient } from '@/lib/agency/queries';
 
+// ── Setup Score ──────────────────────────────────────────────────────────────
+// 3 pillars: Personality configured, GHL connected, AI tested/active
+interface SetupPillar { label: string; done: boolean }
+
+function getSetupPillars(client: AgencyClient): SetupPillar[] {
+  const cc = (client.container_config as Record<string, unknown>) ?? {};
+  return [
+    {
+      label: 'Personality',
+      done: !!(cc.persona || cc.instructions),
+    },
+    {
+      label: 'GHL',
+      done: !!(
+        (client as any).ghl_location_id ||
+        (client as any).ghl_private_token ||
+        (client as any).ghl_access_token
+      ),
+    },
+    {
+      label: 'Tested',
+      done: (client.usage_this_month ?? 0) > 0,
+    },
+  ];
+}
+
+function SetupScore({ client }: { client: AgencyClient }) {
+  const pillars = getSetupPillars(client);
+  const done = pillars.filter(p => p.done).length;
+  const pct = Math.round((done / pillars.length) * 100);
+  const missing = pillars.filter(p => !p.done).map(p => p.label);
+
+  if (pct === 100) {
+    return (
+      <span className="text-[10px] font-medium text-green-600">✓ Setup complete</span>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-1.5" title={`Missing: ${missing.join(', ')}`}>
+      <div className="flex gap-0.5">
+        {pillars.map(p => (
+          <div
+            key={p.label}
+            className={`h-1.5 w-5 rounded-full ${p.done ? 'bg-indigo-500' : 'bg-gray-200'}`}
+          />
+        ))}
+      </div>
+      <span className="text-[10px] text-gray-400">{pct}%</span>
+    </div>
+  );
+}
+
 const gatewayStatusMap: Record<string, { dot: string; label: string }> = {
   running:      { dot: 'bg-green-400',  label: 'Live' },
   starting:     { dot: 'bg-yellow-400', label: 'Starting' },
@@ -160,6 +213,7 @@ export function ClientsListView({ clients }: ClientsListViewProps) {
                   <th className="p-4 font-medium">Industry</th>
                   <th className="p-4 font-medium">Status</th>
                   <th className="p-4 font-medium">Template</th>
+                  <th className="p-4 font-medium">Setup</th>
                   <th className="p-4 font-medium text-right">Usage</th>
                   <th className="p-4 font-medium">Created</th>
                 </tr>
@@ -186,6 +240,7 @@ export function ClientsListView({ clients }: ClientsListViewProps) {
                       </div>
                     </td>
                     <td className="p-4 text-gray-500 text-xs">{client.template?.name ?? '—'}</td>
+                    <td className="p-4"><SetupScore client={client} /></td>
                     <td className="p-4 text-right text-gray-700">{client.usage_this_month.toLocaleString()}</td>
                     <td className="p-4 text-gray-500 text-xs">
                       {new Date(client.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
@@ -216,6 +271,9 @@ export function ClientsListView({ clients }: ClientsListViewProps) {
                           {client.template ? ` · ${client.template.name}` : ''}
                         </p>
                         <GatewayDot status={client.gateway_status ?? null} />
+                      </div>
+                      <div className="mt-1">
+                        <SetupScore client={client} />
                       </div>
                     </div>
                     <div className="text-right shrink-0">
