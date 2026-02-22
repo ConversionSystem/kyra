@@ -12,8 +12,9 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const { id: clientId } = await params;
   const result = await requireAgencyMember();
   if (result.error) {
     return NextResponse.json({ error: result.error.message }, { status: result.error.status });
@@ -25,7 +26,7 @@ export async function POST(
   const { data: client } = await supabase
     .from('agency_clients')
     .select('id, name, industry')
-    .eq('id', params.id)
+    .eq('id', clientId)
     .eq('agency_id', agency.id)
     .single();
 
