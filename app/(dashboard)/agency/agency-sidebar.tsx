@@ -117,8 +117,8 @@ export function AgencySidebar({ agencyName, plan, settings }: AgencySidebarProps
       .then((data) => {
         if (data.gatewayUrl && data.status === 'running') {
           setAgencyGatewayUrl(data.gatewayUrl);
-        } else if (!data.gatewayUrl || data.status === 'not_provisioned') {
-          // Auto-provision the agency gateway on first load
+        } else if (!data.gatewayUrl || data.status === 'not_provisioned' || data.status === 'error') {
+          // Auto-provision the agency gateway on first load (or retry after error)
           setProvisioningGateway(true);
           fetch('/api/agency/gateway', { method: 'POST' })
             .then((r) => r.json())
@@ -264,13 +264,13 @@ export function AgencySidebar({ agencyName, plan, settings }: AgencySidebarProps
             ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
             : <Terminal className="h-4 w-4 shrink-0" />
           }
-          {provisioningGateway ? 'Starting your AI...' : 'My AI Terminal'}
+          {provisioningGateway ? 'Starting terminal...' : 'OpenClaw Terminal'}
           {agencyGatewayUrl && !provisioningGateway && (
-            <ExternalLink className="h-3 w-3 ml-auto opacity-50" />
+            <ExternalLink className="h-3 w-3 ml-auto" />
           )}
         </a>
-        <div className={cn('px-3 mt-0.5 text-[10px]', hasBranding ? 'text-white/20' : 'text-gray-700')}>
-          Your personal AI · separate from clients
+        <div className={cn('px-3 mt-0.5 text-[10px]', hasBranding ? 'text-white/30' : 'text-gray-600')}>
+          {provisioningGateway ? 'Provisioning your container...' : 'Your private AI · opens in new tab'}
         </div>
       </div>
     </>
