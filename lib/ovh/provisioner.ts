@@ -553,6 +553,117 @@ export async function execContainerCommand(
   }
 }
 
+// ============ Agency Gateway ============
+
+/**
+ * Provision a dedicated OpenClaw gateway for an AGENCY OWNER.
+ * This is separate from client containers — the agency owner gets their own
+ * isolated AI terminal with agency-level context (not a client's business).
+ *
+ * Container naming: kyra-ag-{agencyId} (vs kyra-cl-{clientId} for clients)
+ * Gateway URL: {agencyId}.gw.kyra.conversionsystem.com
+ */
+export async function provisionAgencyGateway(
+  agencyId: string,
+  agencyName: string,
+  ownerEmail?: string
+): Promise<{ success: boolean; gatewayUrl?: string; error?: string }> {
+  const supabase = getSupabase();
+
+  console.log(`[ovh-provisioner] Provisioning agency gateway for ${agencyId} (${agencyName})`);
+
+  try {
+    await supabase
+      .from('agencies')
+      .update({ gateway_status: 'provisioning', gateway_error: null })
+      .eq('id', agencyId);
+
+    const soulMd = `# SOUL.md — ${agencyName} Agency AI
+
+You are the dedicated AI assistant for **${agencyName}**, an AI agency built on Kyra.
+
+## Your Role
+You help the agency owner manage their AI business:
+- Strategic advice on AI deployments for clients
+- Business intelligence and market insights
+- Managing client relationships and onboarding
+- Monitoring performance across all client AIs
+- Building systems that scale the agency
+
+## Context
+- This is the AGENCY OWNER'S personal AI terminal — not a client's
+- You have full context about running an AI agency
+- You help with both operational tasks and strategic thinking
+
+## Style
+Be direct, strategic, and action-oriented. The agency owner is busy building a business.`;
+
+    const userMd = `# ${agencyName} Agency Owner\n\nThis is the agency owner's personal AI terminal.`;
+
+    const res = await provisionerFetch('/containers', {
+      method: 'POST',
+      body: JSON.stringify({
+        clientId: agencyId,          // reuse the provisioner's clientId param
+        agencyId,
+        clientName: `${agencyName} Agency`,
+        containerPrefix: 'kyra-ag', // agency prefix so it's visually distinct
+        config: { soulMd, userMd },
+        resources: { memoryMb: 1024, cpuShares: 256 },
+      }),
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok && res.status !== 409) {
+      throw new Error(data.error || `Provisioner returned ${res.status}`);
+    }
+
+    // 409 = already exists → still record the URL
+    const gatewayUrl = data.gatewayUrl || `https://${agencyId}.${GATEWAY_DOMAIN}`;
+
+    await supabase
+      .from('agencies')
+      .update({
+        gateway_url: gatewayUrl,
+        gateway_token: data.authToken || null,
+        gateway_container_id: data.containerId || null,
+        gateway_status: 'running',
+        gateway_provisioned_at: new Date().toISOString(),
+        gateway_error: null,
+      })
+      .eq('id', agencyId);
+
+    console.log(`[ovh-provisioner] Agency ${agencyId} gateway live: ${gatewayUrl}`);
+    return { success: true, gatewayUrl };
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error(`[ovh-provisioner] Agency gateway provisioning failed for ${agencyId}:`, msg);
+    await supabase
+      .from('agencies')
+      .update({ gateway_status: 'error', gateway_error: msg })
+      .eq('id', agencyId);
+    return { success: false, error: msg };
+  }
+}
+
+/**
+ * Get the agency's own gateway URL + token. Used by the sidebar terminal link.
+ */
+export async function resolveAgencyGateway(
+  agencyId: string
+): Promise<{ url: string; token: string } | null> {
+  const supabase = getSupabase();
+  const { data } = await supabase
+    .from('agencies')
+    .select('gateway_url, gateway_token, gateway_status')
+    .eq('id', agencyId)
+    .single();
+
+  if (!data?.gateway_url || !data?.gateway_token) return null;
+  if (!['running', 'starting'].includes(data.gateway_status || '')) return null;
+  return { url: data.gateway_url, token: data.gateway_token };
+}
+
 // ============ Resolve Gateway for Client ============
 
 /**
