@@ -2,11 +2,12 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Search, FileDown, Loader2 } from 'lucide-react';
+import { Plus, Search, FileDown, Loader2, Sparkles } from 'lucide-react';
 import type { AgencyClient } from '@/lib/agency/queries';
 
 // ── Setup Score ──────────────────────────────────────────────────────────────
@@ -88,9 +89,24 @@ interface ClientsListViewProps {
 }
 
 export function ClientsListView({ clients }: ClientsListViewProps) {
+  const router = useRouter();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isBulkExporting, setIsBulkExporting] = useState(false);
+  const [demoCreating, setDemoCreating] = useState(false);
+
+  const handleCreateDemo = async () => {
+    setDemoCreating(true);
+    try {
+      const res = await fetch('/api/agency/demo-client', { method: 'POST' });
+      const d = await res.json();
+      if (d.clientId) {
+        router.push(`/agency/clients/${d.clientId}`);
+      }
+    } catch {
+      setDemoCreating(false);
+    }
+  };
 
   const filtered = useMemo(() => {
     return clients.filter((c) => {
@@ -189,16 +205,36 @@ export function ClientsListView({ clients }: ClientsListViewProps) {
       {/* Empty state */}
       {filtered.length === 0 ? (
         <Card>
-          <CardContent className="p-8 text-center">
-            <p className="text-gray-400">
-              {clients.length === 0 ? 'No clients yet. Create your first one!' : 'No clients match your filters.'}
-            </p>
+          <CardContent className="p-10 text-center space-y-2">
+            {clients.length === 0 ? (
+              <>
+                <p className="text-xl font-semibold text-gray-700">Your AI employees are ready to work</p>
+                <p className="text-sm text-gray-400 max-w-sm mx-auto">
+                  Try a live demo to see Kyra in action — a pre-built dental AI with real conversation history. Takes 30 seconds.
+                </p>
+              </>
+            ) : (
+              <p className="text-gray-400">No clients match your filters.</p>
+            )}
             {clients.length === 0 && (
-              <Link href="/agency/clients/new" className="mt-4 inline-block">
-                <Button variant="outline" className="gap-2">
-                  <Plus className="h-4 w-4" /> Add Client
+              <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+                <Button
+                  onClick={handleCreateDemo}
+                  disabled={demoCreating}
+                  className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white"
+                >
+                  {demoCreating ? (
+                    <><Loader2 className="h-4 w-4 animate-spin" /> Setting up demo...</>
+                  ) : (
+                    <><Sparkles className="h-4 w-4" /> Try a Live Demo</>
+                  )}
                 </Button>
-              </Link>
+                <Link href="/agency/clients/new">
+                  <Button variant="outline" className="gap-2">
+                    <Plus className="h-4 w-4" /> Add Real Client
+                  </Button>
+                </Link>
+              </div>
             )}
           </CardContent>
         </Card>
