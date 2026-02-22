@@ -733,6 +733,133 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* ── Pricing ────────────────────────────────────────────────────── */}
+        <section className="py-20 md:py-24 bg-white" id="pricing">
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                Simple, predictable pricing
+              </h2>
+              <p className="text-lg text-gray-500 max-w-xl mx-auto">
+                One flat monthly fee per plan. You set what you charge clients — most agencies charge $500–$5K/mo per AI employee.
+              </p>
+            </div>
+
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 max-w-5xl mx-auto mb-10">
+              {[
+                {
+                  name: 'Free',
+                  price: 0,
+                  clients: 1,
+                  features: ['1 client AI employee', '21 templates', 'GHL + SMS integration', 'BYOK'],
+                  cta: 'Start Free',
+                  href: '/signup/agency',
+                  highlight: false,
+                },
+                {
+                  name: 'Starter',
+                  price: 97,
+                  clients: 5,
+                  features: ['5 client AI employees', 'Everything in Free', 'Full analytics', 'Smart escalation alerts'],
+                  cta: 'Start Starter',
+                  href: '/signup/agency?plan=starter',
+                  highlight: false,
+                },
+                {
+                  name: 'Pro',
+                  price: 247,
+                  clients: 15,
+                  features: ['15 client AI employees', 'Everything in Starter', 'White-label branding', 'Priority support'],
+                  cta: 'Start Pro',
+                  href: '/signup/agency?plan=pro',
+                  highlight: true,
+                },
+                {
+                  name: 'Scale',
+                  price: 497,
+                  clients: 50,
+                  features: ['50 client AI employees', 'Everything in Pro', 'Dedicated infrastructure', 'SLA + Slack support'],
+                  cta: 'Start Scale',
+                  href: '/signup/agency?plan=scale',
+                  highlight: false,
+                },
+              ].map((plan) => (
+                <div
+                  key={plan.name}
+                  className={`rounded-2xl border p-6 flex flex-col ${
+                    plan.highlight
+                      ? 'border-indigo-300 bg-indigo-50 shadow-md shadow-indigo-100 relative'
+                      : 'border-gray-200 bg-white'
+                  }`}
+                >
+                  {plan.highlight && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                      <span className="px-3 py-0.5 rounded-full bg-indigo-600 text-white text-xs font-bold">
+                        Most Popular
+                      </span>
+                    </div>
+                  )}
+                  <div className="mb-4">
+                    <p className="font-bold text-gray-900 text-lg">{plan.name}</p>
+                    <div className="flex items-baseline gap-1 mt-1">
+                      <span className="text-3xl font-black text-gray-900">
+                        {plan.price === 0 ? 'Free' : `$${plan.price}`}
+                      </span>
+                      {plan.price > 0 && <span className="text-gray-400 text-sm">/mo</span>}
+                    </div>
+                    <p className="text-sm font-semibold text-indigo-600 mt-1">
+                      {plan.clients} client{plan.clients === 1 ? '' : 's'} AI employee{plan.clients === 1 ? '' : 's'}
+                    </p>
+                  </div>
+                  <ul className="space-y-2 mb-6 flex-1">
+                    {plan.features.map((f) => (
+                      <li key={f} className="flex items-start gap-2 text-sm text-gray-600">
+                        <CheckCircleIcon className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <Link
+                    href={plan.href}
+                    className={`w-full text-center py-2.5 rounded-lg text-sm font-semibold transition ${
+                      plan.highlight
+                        ? 'bg-indigo-600 text-white hover:bg-indigo-500'
+                        : 'border border-gray-300 text-gray-700 hover:border-gray-400 hover:bg-gray-50'
+                    }`}
+                  >
+                    {plan.cta}
+                  </Link>
+                </div>
+              ))}
+            </div>
+
+            {/* Agency math callout */}
+            <div className="max-w-3xl mx-auto rounded-2xl bg-gray-900 text-white p-6 md:p-8">
+              <p className="text-center text-sm text-gray-400 mb-5">
+                The agency math that makes this obvious 💰
+              </p>
+              <div className="grid sm:grid-cols-3 gap-4">
+                {[
+                  { plan: 'Starter', kyra: 97, clients: 5, charge: 500 },
+                  { plan: 'Pro', kyra: 247, clients: 15, charge: 1000 },
+                  { plan: 'Scale', kyra: 497, clients: 50, charge: 1500 },
+                ].map((item) => (
+                  <div key={item.plan} className="rounded-xl bg-gray-800 p-4 text-center">
+                    <p className="text-xs text-gray-400 mb-1">{item.plan} (${item.kyra}/mo)</p>
+                    <p className="text-sm text-gray-300">{item.clients} clients × ${item.charge}/mo</p>
+                    <p className="text-2xl font-black text-green-400 mt-1">
+                      ${(item.clients * item.charge).toLocaleString()}/mo
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      ${(item.clients * item.charge - item.kyra).toLocaleString()} profit
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* ── Final CTA ──────────────────────────────────────────────────── */}
         <section className="bg-gray-900 py-20 md:py-24">
           <div className="container mx-auto px-4 md:px-6">
