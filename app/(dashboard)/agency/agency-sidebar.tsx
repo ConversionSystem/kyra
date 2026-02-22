@@ -29,6 +29,7 @@ import {
   Rocket,
   Sparkles,
   Loader2,
+  Briefcase,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AgencySettings } from '@/lib/agency/types';
@@ -71,14 +72,20 @@ const navSections: NavSection[] = [
     ],
   },
   {
+    label: 'Sell',
+    items: [
+      { label: 'Biz in a Box', href: '/agency/biz-in-a-box', icon: Briefcase },
+      { label: 'Sales Kit', href: '/agency/sales-kit', icon: Target },
+      { label: 'Proposal', href: '/agency/proposal', icon: FileText },
+      { label: 'Outreach', href: '/agency/outreach', icon: Mail },
+    ],
+  },
+  {
     label: 'Resources',
     items: [
-      { label: 'Roles', href: '/agency/roles', icon: Sparkles },
       { label: 'Templates', href: '/agency/templates', icon: BookOpen },
-      { label: 'Proposal', href: '/agency/proposal', icon: FileText },
-      { label: 'Sales Kit', href: '/agency/sales-kit', icon: Target },
+      { label: 'Roles', href: '/agency/roles', icon: Sparkles },
       { label: 'GHL Listing', href: '/agency/ghl-listing', icon: Store },
-      { label: 'Outreach', href: '/agency/outreach', icon: Mail },
       { label: 'Launch Pitch', href: '/agency/launch-pitch', icon: Rocket },
     ],
   },
