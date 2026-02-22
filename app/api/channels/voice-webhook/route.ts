@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
     (client?.name ? `Thank you for calling ${client.name}. We're not available right now, but leave a message after the tone and we'll text you back shortly.` :
     `Thank you for calling. We're not available right now. Please leave a message after the tone.`);
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://kyra.conversionsystem.com';
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://kyra.conversionsystem.com').replace(/\/$/, '');
 
   return twiml(`
     <Say voice="Polly.Joanna" rate="90%">${voiceGreeting}</Say>
