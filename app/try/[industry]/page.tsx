@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { use } from 'react';
-import { Send, Zap, ArrowRight, Loader2 } from 'lucide-react';
+import { Send, Zap, ArrowRight, Loader2, Share2, Copy, Check as CheckIcon, Linkedin, Mail } from 'lucide-react';
 
 // ── Industry config ───────────────────────────────────────────────────────────
 const INDUSTRIES: Record<string, {
@@ -78,6 +78,8 @@ export default function TryPage({ params }: { params: Promise<{ industry: string
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [msgCount, setMsgCount] = useState(0);
+  const [showShare, setShowShare] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -154,6 +156,19 @@ export default function TryPage({ params }: { params: Promise<{ industry: string
   };
 
   const showSignupNudge = msgCount >= 3;
+  const showShareButton = msgCount >= 3;
+
+  const demoUrl = typeof window !== 'undefined' ? window.location.href : `https://kyra.conversionsystem.com/try/${industry}`;
+  const shareText = `I just tried this AI for ${config.businessName} — it answered like a real employee. Try it: ${demoUrl}`;
+  const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(demoUrl)}`;
+  const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
+  const emailHref = `mailto:?subject=${encodeURIComponent(`AI that actually works for ${config.businessName}`)}&body=${encodeURIComponent(`Hey,\n\nI just tried this live AI demo — it responds like a real employee (not a chatbot).\n\nTry it here: ${demoUrl}\n\nThis is built on Kyra — an AI platform for GHL agencies. Could be interesting for your clients.`)}`;
+
+  const copyLink = async () => {
+    await navigator.clipboard.writeText(demoUrl);
+    setLinkCopied(true);
+    setTimeout(() => { setLinkCopied(false); setShowShare(false); }, 2000);
+  };
 
   return (
     <div className="min-h-screen bg-gray-950 flex flex-col">
@@ -172,13 +187,51 @@ export default function TryPage({ params }: { params: Promise<{ industry: string
               </div>
             </div>
           </div>
-          <Link
-            href="/signup/agency"
-            className="bg-white text-gray-900 font-bold text-xs px-3 py-2 rounded-lg flex items-center gap-1.5 hover:bg-gray-100 transition shrink-0"
-          >
-            <Zap className="h-3 w-3" style={{ color: config.color }} />
-            Deploy for my clients
-          </Link>
+          <div className="flex items-center gap-2 shrink-0">
+            {showShareButton && (
+              <div className="relative">
+                <button type="button" onClick={() => setShowShare(s => !s)}
+                  className="bg-white/20 hover:bg-white/30 text-white text-xs font-medium px-3 py-2 rounded-lg flex items-center gap-1.5 transition">
+                  <Share2 className="h-3 w-3" />
+                  Share
+                </button>
+                {showShare && (
+                  <div className="absolute right-0 top-full mt-2 w-52 bg-gray-900 border border-white/10 rounded-xl shadow-xl z-50 overflow-hidden">
+                    <div className="px-3 py-2 border-b border-white/10">
+                      <p className="text-xs text-gray-400 font-medium">Share this demo</p>
+                    </div>
+                    <button type="button" onClick={copyLink}
+                      className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-gray-200 hover:bg-white/10 transition text-left">
+                      {linkCopied ? <CheckIcon className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4 text-gray-400" />}
+                      {linkCopied ? 'Copied!' : 'Copy link'}
+                    </button>
+                    <a href={linkedinUrl} target="_blank" rel="noopener noreferrer"
+                      className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-gray-200 hover:bg-white/10 transition">
+                      <Linkedin className="h-4 w-4 text-[#0077b5]" />
+                      Share on LinkedIn
+                    </a>
+                    <a href={twitterUrl} target="_blank" rel="noopener noreferrer"
+                      className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-gray-200 hover:bg-white/10 transition">
+                      <span className="h-4 w-4 text-center text-xs font-black text-gray-400">𝕏</span>
+                      Share on X (Twitter)
+                    </a>
+                    <a href={emailHref}
+                      className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-gray-200 hover:bg-white/10 transition">
+                      <Mail className="h-4 w-4 text-gray-400" />
+                      Email to team
+                    </a>
+                  </div>
+                )}
+              </div>
+            )}
+            <Link
+              href="/signup/agency"
+              className="bg-white text-gray-900 font-bold text-xs px-3 py-2 rounded-lg flex items-center gap-1.5 hover:bg-gray-100 transition"
+            >
+              <Zap className="h-3 w-3" style={{ color: config.color }} />
+              Deploy for my clients
+            </Link>
+          </div>
         </div>
       </header>
 
