@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const { name, slug, plan } = body;
+  const { name, slug, plan, referralId } = body as typeof body & { referralId?: string };
 
   // Validate required fields
   if (!name || !slug || !plan) {
@@ -257,6 +257,22 @@ export async function POST(request: NextRequest) {
 </html>`,
       }),
     }).catch(err => console.warn('[welcome-email] Failed to send:', err));
+  }
+
+  // ── Referral tracking (fire-and-forget) ─────────────────────────────────
+  if (referralId && referralId !== agency.id) {
+    void serviceClient
+      .from('agency_referrals')
+      .insert({
+        referrer_id: referralId,
+        referred_id: agency.id,
+        referred_email: user.email,
+        status: 'signed_up',
+      })
+      .then(({ error }) => {
+        if (error) console.warn('[referral] Failed to log:', error.message);
+        else console.log(`[referral] Agency ${agency.id} referred by ${referralId}`);
+      });
   }
 
   // ── Gateway provisioning moved to per-client (OVH architecture) ──────────
