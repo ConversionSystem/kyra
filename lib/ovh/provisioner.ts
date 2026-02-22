@@ -19,6 +19,33 @@ const PROVISIONER_URL = process.env.OVH_PROVISIONER_URL || 'http://192.99.43.7:9
 const PROVISIONER_SECRET = process.env.OVH_PROVISIONER_SECRET || '';
 const GATEWAY_DOMAIN = 'gw.kyra.conversionsystem.com';
 
+// Provider → OpenClaw model string
+const PROVIDER_MODEL_MAP: Record<string, string> = {
+  anthropic: 'anthropic/claude-haiku-4-5',
+  openrouter: 'openai/gpt-4o-mini',   // openrouter can handle openai models
+  openai: 'openai/gpt-4o-mini',
+  google: 'google/gemini-flash-1.5',
+};
+
+/**
+ * Given an agencies.api_keys record, return the winning provider + key.
+ * Priority: anthropic > openrouter > openai > google
+ */
+function resolveWinningKey(
+  apiKeys: Record<string, string>
+): { provider: string; key: string; model: string } | null {
+  for (const provider of ['anthropic', 'openrouter', 'openai', 'google']) {
+    if (apiKeys[provider]) {
+      return {
+        provider,
+        key: apiKeys[provider],
+        model: PROVIDER_MODEL_MAP[provider] || 'openai/gpt-4o-mini',
+      };
+    }
+  }
+  return null;
+}
+
 function getSupabase() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -122,6 +149,30 @@ export async function provisionClientGateway(
       })
       .eq('id', clientId);
 
+    // Pull agency's API keys so the new container uses the right key from day 1
+    const { data: agencyData } = await supabase
+      .from('agencies')
+      .select('api_keys')
+      .eq('id', agencyId)
+      .single();
+
+    const agencyApiKeys = (agencyData?.api_keys as Record<string, string>) || {};
+    const winningKey = resolveWinningKey(agencyApiKeys);
+
+    // Build the apiKeys dict to send to provisioner (all configured keys, not just winner)
+    const apiKeysForContainer: Record<string, string> = {};
+    for (const provider of ['anthropic', 'openrouter', 'openai', 'google']) {
+      if (agencyApiKeys[provider]) apiKeysForContainer[provider] = agencyApiKeys[provider];
+    }
+
+    // If agency has a preferred model, update openclaw.json defaults via config
+    const agentModel = winningKey ? {
+      primary: winningKey.model,
+      fallbacks: winningKey.provider === 'anthropic'
+        ? ['anthropic/claude-haiku-4-5']
+        : ['openai/gpt-4o-mini'],
+    } : undefined;
+
     // Call OVH provisioner
     const res = await provisionerFetch('/containers', {
       method: 'POST',
@@ -130,6 +181,8 @@ export async function provisionClientGateway(
         agencyId,
         clientName: clientName || undefined,
         config,
+        apiKeys: Object.keys(apiKeysForContainer).length > 0 ? apiKeysForContainer : undefined,
+        agentModel,
         resources: {
           memoryMb: resources.memoryMb || 1024,  // OpenClaw needs ~350MB min; 256 causes OOM crash
           cpuShares: resources.cpuShares || 256,
@@ -553,6 +606,39 @@ export async function execContainerCommand(
   }
 }
 
+// ============ Update Container API Key ============
+
+/**
+ * Push new API keys to a running container.
+ * The container is stopped, recreated with the new env vars, and restarted.
+ * Data is preserved — only the env vars change.
+ *
+ * @param containerId  The client ID (or agency ID) — used as container suffix
+ * @param apiKeys      Map of provider → key (e.g. { openai: 'sk-...' })
+ */
+export async function updateContainerApiKey(
+  containerId: string,
+  apiKeys: Record<string, string>
+): Promise<{ ok: boolean; error?: string }> {
+  const winning = resolveWinningKey(apiKeys);
+  try {
+    const res = await provisionerFetch(`/containers/${containerId}/api-key`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        apiKeys,
+        model: winning?.model,
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+      return { ok: false, error: err.error || `Provisioner returned ${res.status}` };
+    }
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
 // ============ Agency Gateway ============
 
 /**
@@ -577,6 +663,21 @@ export async function provisionAgencyGateway(
       .from('agencies')
       .update({ gateway_status: 'provisioning', gateway_error: null })
       .eq('id', agencyId);
+
+    // Pull agency's saved API keys
+    const { data: agencyData } = await supabase
+      .from('agencies')
+      .select('api_keys')
+      .eq('id', agencyId)
+      .single();
+
+    const agencyApiKeys = (agencyData?.api_keys as Record<string, string>) || {};
+    const winningKey = resolveWinningKey(agencyApiKeys);
+
+    const apiKeysForContainer: Record<string, string> = {};
+    for (const provider of ['anthropic', 'openrouter', 'openai', 'google']) {
+      if (agencyApiKeys[provider]) apiKeysForContainer[provider] = agencyApiKeys[provider];
+    }
 
     const soulMd = `# SOUL.md — ${agencyName} Agency AI
 
@@ -608,6 +709,8 @@ Be direct, strategic, and action-oriented. The agency owner is busy building a b
         clientName: `${agencyName} Agency AI`,
         // NOTE: uses default kyra-cl- prefix so Traefik/nginx routes it correctly
         config: { soulMd, userMd },
+        apiKeys: Object.keys(apiKeysForContainer).length > 0 ? apiKeysForContainer : undefined,
+        agentModel: winningKey ? { primary: winningKey.model, fallbacks: [winningKey.model] } : undefined,
         resources: { memoryMb: 1024, cpuShares: 256 },
       }),
     });
