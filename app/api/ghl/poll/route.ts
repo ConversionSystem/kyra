@@ -771,8 +771,8 @@ export async function GET(request: NextRequest) {
           // Skip if contact has no phone (can't SMS)
           if (!contact.phone) continue;
 
-          // Check if they already have a conversation with outbound messages
-          const convCheckRes = await fetch(
+          // Step 1: Find or create a GHL conversation for this contact
+          const convSearchRes = await fetch(
             `${GHL_API_BASE}/conversations/search?locationId=${client.ghl_location_id}&contactId=${contact.id}&limit=1`,
             {
               headers: { Authorization: `Bearer ${token}`, Version: GHL_API_VERSION },
@@ -780,18 +780,52 @@ export async function GET(request: NextRequest) {
             }
           );
 
-          if (convCheckRes.ok) {
-            const convData = await convCheckRes.json();
+          let conversationId: string | null = null;
+          if (convSearchRes.ok) {
+            const convData = await convSearchRes.json();
             const existingConv = convData.conversations?.[0];
-            if (existingConv && existingConv.lastMessageType === 'TYPE_SMS') {
-              addLog(`    [proactive] ${contact.firstName || contact.id} — already in conversation, skipping`);
-              continue;
+            if (existingConv) {
+              // Check if already has outbound messages — skip if already greeted
+              if (existingConv.unreadCount === 0 && existingConv.lastMessageType) {
+                addLog(`    [proactive] ${contact.firstName || contact.id} — already contacted, skipping`);
+                continue;
+              }
+              conversationId = existingConv.id;
             }
           }
 
-          // Send proactive greeting
+          // Step 2: Create conversation if none exists
+          if (!conversationId) {
+            const createConvRes = await fetch(`${GHL_API_BASE}/conversations/`, {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${token}`,
+                Version: GHL_API_VERSION,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                locationId: client.ghl_location_id,
+                contactId: contact.id,
+              }),
+              signal: AbortSignal.timeout(8_000),
+            });
+            if (!createConvRes.ok) {
+              const e = await createConvRes.text().catch(() => '');
+              addLog(`    [proactive] Could not create conversation for ${contact.id}: ${createConvRes.status} ${e.slice(0, 60)}`);
+              continue;
+            }
+            const newConv = await createConvRes.json();
+            conversationId = newConv?.conversation?.id || newConv?.id;
+          }
+
+          if (!conversationId) {
+            addLog(`    [proactive] No conversation ID for ${contact.id} — skipping`);
+            continue;
+          }
+
+          // Step 3: Send greeting via the conversation
           const greetMsg = greeting.replace(/\{\{name\}\}/gi, contact.firstName || 'there');
-          const outboundRes = await fetch(`${GHL_API_BASE}/conversations/messages/outbound`, {
+          const outboundRes = await fetch(`${GHL_API_BASE}/conversations/${conversationId}/messages`, {
             method: 'POST',
             headers: {
               Authorization: `Bearer ${token}`,
@@ -800,7 +834,6 @@ export async function GET(request: NextRequest) {
             },
             body: JSON.stringify({
               type: 'SMS',
-              contactId: contact.id,
               message: greetMsg,
             }),
             signal: AbortSignal.timeout(10_000),
