@@ -22,6 +22,8 @@ const INDUSTRIES = [
   { emoji: '🏡', name: 'Real Estate', slug: 'realestate', desc: 'Lead qualification & tour booking' },
   { emoji: '🚗', name: 'Auto', slug: 'auto', desc: 'Inventory Q&A & test drive booking' },
   { emoji: '🌿', name: 'Cannabis', slug: 'cannabis', desc: 'Age verification & product education' },
+  { emoji: '🍽️', name: 'Restaurant', slug: 'restaurant', desc: 'Reservations, menu & catering Q&A' },
+  { emoji: '✨', name: 'Med Spa', slug: 'medspa', desc: 'Consultation booking & treatment info' },
 ];
 
 const FEATURES = [
@@ -196,7 +198,7 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {INDUSTRIES.map((ind) => (
               <Link
                 key={ind.slug}
