@@ -213,20 +213,24 @@ export default function HomePage() {
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {INDUSTRIES.map((ind) => (
-              <Link
+              <div
                 key={ind.slug}
-                href={`/demo/${ind.slug}`}
-                className="group bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-2xl p-6 transition-all"
+                className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-all"
               >
                 <div className="text-4xl mb-3">{ind.emoji}</div>
                 <h3 className="font-bold text-lg mb-1">{ind.name}</h3>
                 <p className="text-slate-400 text-sm mb-4">{ind.desc}</p>
-                <div className="flex items-center gap-1.5 text-sm text-indigo-400 font-medium">
-                  <span className="h-1.5 w-1.5 rounded-full bg-green-400 inline-block" />
-                  Watch live demo
-                  <span className="group-hover:translate-x-1 transition-transform inline-block">→</span>
+                <div className="flex items-center gap-2">
+                  <Link href={`/try/${ind.slug}`}
+                    className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white text-center text-xs font-bold py-2 px-3 rounded-lg transition">
+                    💬 Try it live
+                  </Link>
+                  <Link href={`/demo/${ind.slug}`}
+                    className="flex-1 bg-white/10 hover:bg-white/15 text-slate-300 text-center text-xs font-medium py-2 px-3 rounded-lg transition border border-white/10">
+                    Watch demo
+                  </Link>
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
         </div>

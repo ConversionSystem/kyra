@@ -1,0 +1,282 @@
+'use client';
+
+import { useState, useRef, useEffect } from 'react';
+import Link from 'next/link';
+import { use } from 'react';
+import { Send, Zap, ArrowRight, Loader2 } from 'lucide-react';
+
+// ── Industry config ───────────────────────────────────────────────────────────
+const INDUSTRIES: Record<string, {
+  name: string; emoji: string; color: string; gradient: string;
+  businessName: string; greeting: string;
+}> = {
+  dental: {
+    name: 'Dental', emoji: '🦷', color: '#4f46e5', gradient: 'from-indigo-600 to-violet-600',
+    businessName: 'Smile Dental Clinic',
+    greeting: "Hi! 👋 I'm Kyra, the AI assistant for Smile Dental. How can I help you today — looking to book an appointment, or have a question about our services?",
+  },
+  realestate: {
+    name: 'Real Estate', emoji: '🏡', color: '#0891b2', gradient: 'from-cyan-600 to-blue-600',
+    businessName: 'Summit Realty Group',
+    greeting: "Hi there! 🏡 I'm Kyra from Summit Realty. Are you looking to buy, sell, or just exploring the market? I'm here to help!",
+  },
+  auto: {
+    name: 'Auto', emoji: '🚗', color: '#dc2626', gradient: 'from-red-600 to-rose-600',
+    businessName: 'AutoMax Dealership',
+    greeting: "Hey! 🚗 I'm Kyra at AutoMax. Looking for a specific vehicle, want to schedule a test drive, or just browsing? I'll help you find your perfect car!",
+  },
+  cannabis: {
+    name: 'Cannabis', emoji: '🌿', color: '#16a34a', gradient: 'from-green-600 to-emerald-600',
+    businessName: 'Green Leaf Dispensary',
+    greeting: "Hi! 🌿 Welcome to Green Leaf. I'm Kyra, your AI budtender. Looking for product recommendations, checking hours, or have a question? I'm here!",
+  },
+  restaurant: {
+    name: 'Restaurant', emoji: '🍽️', color: '#d97706', gradient: 'from-amber-500 to-orange-600',
+    businessName: 'The Oak Room',
+    greeting: "Welcome to The Oak Room! 🍽️ I'm Kyra. Interested in making a reservation, checking our menu, or planning a special event? Happy to help!",
+  },
+  medspa: {
+    name: 'Med Spa', emoji: '✨', color: '#db2777', gradient: 'from-pink-600 to-rose-600',
+    businessName: 'Glow Aesthetic Studio',
+    greeting: "Hi! ✨ I'm Kyra at Glow Aesthetic Studio. Curious about our treatments, pricing, or ready to book a consultation? Let's chat!",
+  },
+  law: {
+    name: 'Legal', emoji: '⚖️', color: '#7c3aed', gradient: 'from-violet-600 to-purple-700',
+    businessName: 'Sterling Law Group',
+    greeting: "Hello, thank you for reaching out to Sterling Law Group. ⚖️ I'm Kyra, our intake assistant. Could you briefly describe what you're dealing with so I can see how we might help?",
+  },
+  fitness: {
+    name: 'Fitness', emoji: '💪', color: '#2563eb', gradient: 'from-blue-600 to-indigo-600',
+    businessName: 'Iron Peak Fitness',
+    greeting: "Hey! 💪 Welcome to Iron Peak Fitness. I'm Kyra. Interested in membership options, class schedules, or personal training? Let's get you started!",
+  },
+};
+
+const DEFAULT = INDUSTRIES.dental;
+
+type Message = { role: 'user' | 'assistant'; content: string };
+
+const SUGGESTED: Record<string, string[]> = {
+  dental: ["How much is a cleaning?", "Do you accept Delta Dental insurance?", "Can I book for next Tuesday?"],
+  realestate: ["I'm looking for a 3-bed home under $500K", "What areas do you cover?", "I want to schedule a showing"],
+  auto: ["Show me your SUVs", "What financing options do you have?", "Can I book a test drive?"],
+  cannabis: ["What do you recommend for sleep?", "Are you open today?", "Do you have CBD products?"],
+  restaurant: ["I need a table for 4 on Saturday", "Do you have vegetarian options?", "What are your hours?"],
+  medspa: ["How much is Botox?", "Do you offer free consultations?", "I'd like to book an appointment"],
+  law: ["I was in a car accident", "I need help with a divorce", "I have an employment dispute"],
+  fitness: ["What's your membership cost?", "Do you offer personal training?", "What classes do you have?"],
+};
+
+export default function TryPage({ params }: { params: Promise<{ industry: string }> }) {
+  const { industry } = use(params);
+  const config = INDUSTRIES[industry] ?? DEFAULT;
+  const suggestions = SUGGESTED[industry] ?? SUGGESTED.dental;
+
+  const [messages, setMessages] = useState<Message[]>([
+    { role: 'assistant', content: config.greeting },
+  ]);
+  const [input, setInput] = useState('');
+  const [sending, setSending] = useState(false);
+  const [msgCount, setMsgCount] = useState(0);
+  const endRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const send = async (text?: string) => {
+    const msg = (text ?? input).trim();
+    if (!msg || sending) return;
+    setInput('');
+    setSending(true);
+    setMsgCount(c => c + 1);
+
+    const history = messages.slice(-6);
+    setMessages(prev => [...prev, { role: 'user', content: msg }, { role: 'assistant', content: '' }]);
+
+    try {
+      const res = await fetch('/api/try', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ industry, message: msg, history }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Something went wrong' }));
+        setMessages(prev => {
+          const upd = [...prev];
+          upd[upd.length - 1] = { role: 'assistant', content: err.error ?? 'Something went wrong. Try again!' };
+          return upd;
+        });
+        return;
+      }
+
+      const reader = res.body?.getReader();
+      const dec = new TextDecoder();
+      if (!reader) return;
+
+      let buf = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop() ?? '';
+        for (const line of lines) {
+          const t = line.trim();
+          if (!t.startsWith('data:')) continue;
+          const data = t.slice(5).trim();
+          if (!data || data === '[DONE]') continue;
+          try {
+            const { content } = JSON.parse(data);
+            if (content) {
+              setMessages(prev => {
+                const upd = [...prev];
+                const last = upd[upd.length - 1];
+                if (last?.role === 'assistant') upd[upd.length - 1] = { ...last, content: last.content + content };
+                return upd;
+              });
+            }
+          } catch { /* skip */ }
+        }
+      }
+    } catch {
+      setMessages(prev => {
+        const upd = [...prev];
+        upd[upd.length - 1] = { role: 'assistant', content: "Sorry, I'm having trouble connecting. Try again in a moment!" };
+        return upd;
+      });
+    } finally {
+      setSending(false);
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  };
+
+  const showSignupNudge = msgCount >= 3;
+
+  return (
+    <div className="min-h-screen bg-gray-950 flex flex-col">
+      {/* Header */}
+      <header className={`bg-gradient-to-r ${config.gradient} px-4 py-4 shadow-lg`}>
+        <div className="max-w-2xl mx-auto flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-xl shrink-0">
+              {config.emoji}
+            </div>
+            <div>
+              <p className="text-white font-bold text-sm leading-tight">{config.businessName}</p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse inline-block" />
+                <span className="text-white/80 text-xs">Kyra AI · online</span>
+              </div>
+            </div>
+          </div>
+          <Link
+            href="/signup/agency"
+            className="bg-white text-gray-900 font-bold text-xs px-3 py-2 rounded-lg flex items-center gap-1.5 hover:bg-gray-100 transition shrink-0"
+          >
+            <Zap className="h-3 w-3" style={{ color: config.color }} />
+            Deploy for my clients
+          </Link>
+        </div>
+      </header>
+
+      {/* Info bar */}
+      <div className="bg-gray-900/80 border-b border-white/5 px-4 py-2">
+        <p className="text-center text-xs text-gray-400 max-w-2xl mx-auto">
+          💬 This is a <strong className="text-white">live AI demo</strong> — type anything a real customer would say.{' '}
+          <Link href="/demo/dental" className="text-indigo-400 hover:underline">See animated demo →</Link>
+        </p>
+      </div>
+
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto px-4 py-6">
+        <div className="max-w-2xl mx-auto space-y-4">
+          {messages.map((m, i) => (
+            <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              {m.role === 'assistant' && (
+                <div className="h-8 w-8 rounded-full bg-gradient-to-br shrink-0 mr-2 mt-1 flex items-center justify-center text-sm"
+                  style={{ background: `linear-gradient(135deg, ${config.color}40, ${config.color})` }}>
+                  {config.emoji}
+                </div>
+              )}
+              <div className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                m.role === 'user'
+                  ? 'bg-indigo-600 text-white rounded-br-sm'
+                  : 'bg-gray-800 text-gray-100 rounded-bl-sm'
+              }`}>
+                {m.content || (sending && i === messages.length - 1 ? (
+                  <span className="flex items-center gap-1.5 text-gray-400">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Typing…
+                  </span>
+                ) : '')}
+              </div>
+            </div>
+          ))}
+          <div ref={endRef} />
+        </div>
+      </div>
+
+      {/* Suggested questions (first message only) */}
+      {messages.length === 1 && (
+        <div className="px-4 pb-2">
+          <div className="max-w-2xl mx-auto">
+            <p className="text-xs text-gray-500 mb-2 ml-10">Try asking:</p>
+            <div className="flex flex-wrap gap-2 ml-10">
+              {suggestions.map(s => (
+                <button key={s} type="button" onClick={() => send(s)}
+                  className="text-xs bg-gray-800 hover:bg-gray-700 border border-white/10 text-gray-300 px-3 py-1.5 rounded-full transition">
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Signup nudge after 3 messages */}
+      {showSignupNudge && (
+        <div className="px-4 py-2">
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-indigo-950/80 border border-indigo-500/30 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+              <p className="text-sm text-indigo-200">
+                🎯 <strong>Like how this works?</strong> Deploy this AI for your clients in minutes.
+              </p>
+              <Link href="/signup/agency"
+                className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-2 rounded-lg flex items-center gap-1 shrink-0 transition">
+                Try free <ArrowRight className="h-3 w-3" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Input */}
+      <div className="border-t border-white/10 bg-gray-900 px-4 py-4">
+        <div className="max-w-2xl mx-auto flex items-center gap-3">
+          <input
+            ref={inputRef}
+            type="text"
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
+            placeholder={`Message ${config.businessName}…`}
+            className="flex-1 bg-gray-800 border border-white/10 text-white placeholder-gray-500 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 transition"
+            autoFocus
+            disabled={sending}
+          />
+          <button type="button" onClick={() => send()} disabled={sending || !input.trim()}
+            className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white rounded-xl p-3 transition shrink-0">
+            {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+          </button>
+        </div>
+        <p className="text-center text-xs text-gray-600 mt-2">
+          Powered by <Link href="/" className="text-indigo-400 hover:underline">Kyra AI</Link> ·{' '}
+          <Link href="/pricing" className="hover:text-gray-400">See plans</Link> ·{' '}
+          <Link href="/demo/dental" className="hover:text-gray-400">More demos</Link>
+        </p>
+      </div>
+    </div>
+  );
+}
