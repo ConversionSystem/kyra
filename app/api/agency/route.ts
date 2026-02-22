@@ -275,6 +275,24 @@ export async function POST(request: NextRequest) {
       });
   }
 
+  // ── New signup webhook (fire-and-forget) ────────────────────────────────
+  const signupWebhook = process.env.SIGNUP_WEBHOOK_URL;
+  if (signupWebhook) {
+    void fetch(signupWebhook, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text: `🚀 *New Kyra signup!*\n*Agency:* ${agency.name}\n*Email:* ${user.email ?? 'unknown'}\n*Plan:* Free\n*Time:* ${new Date().toLocaleString('en-US', { timeZone: 'Europe/Bratislava' })} CET`,
+        embeds: [{
+          title: `New agency: ${agency.name}`,
+          description: `${user.email} just signed up for Kyra`,
+          color: 0x4f46e5,
+          timestamp: new Date().toISOString(),
+        }],
+      }),
+    }).catch(() => {});
+  }
+
   // ── Gateway provisioning moved to per-client (OVH architecture) ──────────
   return NextResponse.json(agency, { status: 201 });
 }
