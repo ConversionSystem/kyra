@@ -567,7 +567,7 @@ export async function provisionAgencyGateway(
   agencyId: string,
   agencyName: string,
   ownerEmail?: string
-): Promise<{ success: boolean; gatewayUrl?: string; error?: string }> {
+): Promise<{ success: boolean; gatewayUrl?: string; authToken?: string; error?: string }> {
   const supabase = getSupabase();
 
   console.log(`[ovh-provisioner] Provisioning agency gateway for ${agencyId} (${agencyName})`);
@@ -632,8 +632,9 @@ Be direct, strategic, and action-oriented. The agency owner is busy building a b
       })
       .eq('id', agencyId);
 
+    const authToken = data.authToken || null;
     console.log(`[ovh-provisioner] Agency ${agencyId} gateway live: ${gatewayUrl}`);
-    return { success: true, gatewayUrl };
+    return { success: true, gatewayUrl, authToken };
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     console.error(`[ovh-provisioner] Agency gateway provisioning failed for ${agencyId}:`, msg);
