@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
 
   // Auto-provision with retry — fire and forget
   const provisionWithRetry = async () => {
-    const result = await provisionClientGateway(client.id, agency.id, { soulMd, userMd });
+    const result = await provisionClientGateway(client.id, agency.id, { soulMd, userMd }, {}, name);
     if (result.success) {
       console.log(`[clients] Gateway provisioned for ${client.id}: ${result.gatewayUrl}`);
       return;
@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
     // First attempt failed — wait 5s and retry once
     console.warn(`[clients] First provision attempt failed for ${client.id}: ${result.error}. Retrying in 5s...`);
     await new Promise(r => setTimeout(r, 5000));
-    const retry = await provisionClientGateway(client.id, agency.id, { soulMd, userMd });
+    const retry = await provisionClientGateway(client.id, agency.id, { soulMd, userMd }, {}, name);
     if (retry.success) {
       console.log(`[clients] Gateway provisioned on retry for ${client.id}: ${retry.gatewayUrl}`);
     } else {
