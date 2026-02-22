@@ -8,12 +8,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
-const KYRA_COST_PER_CLIENT = null; // unknown — pricing TBD
-
 const PLAN_LIMITS = {
-  starter: { clients: 5,  price: 0,   label: 'Starter (Beta)' },
-  pro:     { clients: 20, price: 249, label: 'Pro'            },
-  scale:   { clients: 100, price: 499, label: 'Scale'          },
+  free:    { clients: 1,  price: 0,   label: 'Free'    },
+  starter: { clients: 5,  price: 97,  label: 'Starter' },
+  pro:     { clients: 15, price: 247, label: 'Pro'     },
+  scale:   { clients: 50, price: 497, label: 'Scale'   },
 };
 
 function fmt(n: number) {
@@ -24,14 +23,13 @@ export default function RevenuePage() {
   const [numClients, setNumClients] = useState(5);
   const [pricePerClient, setPricePerClient] = useState(500);
 
-  const kyraFee = numClients <= 5 ? 0 : numClients <= 20 ? 249 : 499;
+  const plan = numClients <= 1 ? 'free' : numClients <= 5 ? 'starter' : numClients <= 15 ? 'pro' : 'scale';
+  const kyraFee = PLAN_LIMITS[plan as keyof typeof PLAN_LIMITS].price;
   const totalCost = kyraFee;
   const grossRevenue = numClients * pricePerClient;
   const netRevenue = grossRevenue - totalCost;
   const margin = grossRevenue > 0 ? Math.round((netRevenue / grossRevenue) * 100) : 0;
   const annualRevenue = netRevenue * 12;
-
-  const plan = numClients <= 5 ? 'starter' : numClients <= 20 ? 'pro' : 'scale';
 
   return (
     <div className="p-4 sm:p-6 md:p-8 max-w-4xl">
