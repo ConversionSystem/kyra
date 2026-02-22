@@ -9,7 +9,7 @@ export interface Agency {
   owner_id: string;
   name: string;
   slug: string;
-  plan: 'starter' | 'pro' | 'scale';
+  plan: 'free' | 'starter' | 'pro' | 'scale';
   stripe_customer_id: string | null;
   stripe_connect_account_id: string | null;
   stripe_onboarding_complete: boolean;

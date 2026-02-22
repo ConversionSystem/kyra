@@ -4,6 +4,7 @@ import { requireAgencyMember, requireAgencyAdmin } from '@/lib/agency/middleware
 import { isValidSlug } from '@/lib/agency/utils';
 import { provisionClientGateway } from '@/lib/ovh/provisioner';
 import { buildInjectionDefensePromptSuffix } from '@/lib/security/prompt-injection';
+import { canAddClient, getPlanClientLimit } from '@/lib/billing/plans';
 import type { CreateClientRequest } from '@/lib/agency/types';
 
 /**
@@ -69,6 +70,27 @@ export async function POST(request: NextRequest) {
   }
 
   const serviceClient = await createServiceClient();
+
+  // Enforce plan client limit
+  const { count: currentClientCount } = await serviceClient
+    .from('agency_clients')
+    .select('*', { count: 'exact', head: true })
+    .eq('agency_id', agency.id);
+
+  const agencyPlan = (agency as any).plan || 'free';
+  if (!canAddClient(agencyPlan, currentClientCount ?? 0)) {
+    const limit = getPlanClientLimit(agencyPlan);
+    return NextResponse.json(
+      {
+        error: `Your ${agencyPlan} plan allows up to ${limit} client${limit === 1 ? '' : 's'}. Upgrade to add more.`,
+        code: 'PLAN_LIMIT_REACHED',
+        currentCount: currentClientCount,
+        limit,
+        plan: agencyPlan,
+      },
+      { status: 403 }
+    );
+  }
 
   // Check slug uniqueness within this agency
   const { data: existingClient } = await serviceClient
