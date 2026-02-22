@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import DemoChat from './demo/[industry]/demo-chat';
+import LeadCapture from '@/components/landing/lead-capture';
 
 // Hero demo — dental (clean, universally relatable)
 const HERO_DEMO = {
@@ -136,6 +137,12 @@ export default function HomePage() {
             <p className="text-sm text-slate-500 mt-3">
               Free during beta · No credit card required · Works with GoHighLevel
             </p>
+
+            {/* Email capture for not-ready-to-signup visitors */}
+            <div className="mt-6 pt-6 border-t border-white/10">
+              <p className="text-xs text-slate-500 mb-2">Not ready yet? Get notified when we add new industries + features:</p>
+              <LeadCapture />
+            </div>
           </div>
 
           {/* Right: Animated phone mockup */}
