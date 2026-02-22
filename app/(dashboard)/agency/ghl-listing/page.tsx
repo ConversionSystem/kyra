@@ -70,27 +70,44 @@ function ScreenshotItem({ label }: { label: string }) {
   );
 }
 
-const longDescription = `Kyra is the AI Employee OS built for GHL agencies.
+const longDescription = `Kyra is the AI Employee Platform built for GHL agencies.
 
-While GoHighLevel gives you a powerful CRM and marketing platform, Kyra gives you AI employees that live inside your client accounts — answering leads, qualifying prospects, and handling conversations 24/7.
+While GoHighLevel gives you a powerful CRM and marketing platform, Kyra gives you AI employees that work inside your clients' GHL sub-accounts — responding to leads, qualifying prospects, booking appointments, and updating your CRM automatically.
 
-What makes Kyra different:
-\u2022 White-label AI employees — your brand, your clients, your revenue
-\u2022 One dashboard to manage all your clients' AI from anywhere
-\u2022 Heartbeat Protocol — AI employees check in hourly and work toward client-defined goals
-\u2022 Token Budget Manager — set monthly limits and model preferences per client
-\u2022 Performance Telemetry — automated weekly reports proving ROI to your clients
-\u2022 Native GHL integration — webhook triggers fire directly into your GHL workflows
-\u2022 Multi-channel — SMS, Telegram, web portal chat, and more
+✅ WHAT KYRA DOES (automatically, 24/7):
 
-How it works:
-1. Connect your GHL account in Kyra's Agency Dashboard
-2. Add your clients and pick an AI template (dental, real estate, cannabis, etc.)
-3. Set their North Star goal — the one outcome their AI works toward
-4. Go live in under 5 minutes
+📱 Responds to every GHL SMS within 60 seconds
+👋 Greets new contacts the moment they're added to GHL
+🧠 Knows who it's talking to — reads CRM tags, pipeline stage, and notes before every reply
+💬 Maintains conversation context — remembers the last 3 exchanges
+🏷️ Auto-tags contacts after every conversation (e.g. "appointment-requested", "price-inquiry")
+📝 Writes CRM notes automatically ("[Kyra AI] Customer asked about pricing. Offered Tuesday 2pm slot.")
+🚨 Detects frustrated customers and escalates to a human — with instant email alert to the agency
+⛔ Handles STOP/opt-outs automatically — never contacts opted-out leads again
+⏰ Respects business hours — no 3am texts
+📅 Includes your GHL booking link when customers ask to schedule
 
-Who it's for:
-GHL agencies who want to add a recurring AI revenue stream. Charge clients $500\u2013$5,000/mo for a white-labeled AI employee. Kyra costs a fraction of that.
+✅ FOR AGENCIES:
+
+• White-label AI employees under your agency brand
+• One dashboard to manage all your clients' AI
+• Per-client personality training (persona, greeting, instructions)
+• ✨ "Generate with AI" — auto-writes persona + instructions from business name
+• Setup score showing completion status per client
+• Weekly performance reports (optional, Resend-powered)
+• 7-day conversation analytics with bar charts
+• Escalation alerts to your email when human intervention needed
+
+✅ HOW IT WORKS:
+
+1. Connect your GHL Private Integration token (takes 2 minutes)
+2. Add your client, pick a template (dental, real estate, auto, cannabis, etc.)
+3. Customize the personality — or click "✨ Generate with AI"
+4. AI goes live immediately — responds to every GHL SMS automatically
+
+✅ WHO IT'S FOR:
+
+GHL agencies adding a recurring AI revenue stream. Charge clients $500–$5,000/mo for a white-labeled AI employee. Kyra costs a fraction of that — 98%+ gross margins.
 
 Get started at kyra.conversionsystem.com`;
 
@@ -113,7 +130,7 @@ export default function GHLListingPage() {
 
       <CopyField
         label="Short Description (160 chars)"
-        value="Deploy white-labeled AI employees for your clients in minutes. Each AI has its own personality, channels, and goals — managed from one agency dashboard."
+        value="AI employees for your GHL clients. Responds to SMS in 60s, books appointments, tags contacts, and escalates to humans — all automatically from one agency dashboard."
       />
 
       <CopyField
@@ -152,13 +169,15 @@ export default function GHLListingPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            <ScreenshotItem label="Agency Dashboard Overview" />
-            <ScreenshotItem label="Heartbeat Protocol page (show 3+ clients with status)" />
-            <ScreenshotItem label="Token Budget Manager (show usage bars)" />
-            <ScreenshotItem label="New Client creation (show template picker)" />
-            <ScreenshotItem label="Client detail with terminal access" />
-            <ScreenshotItem label="Performance Telemetry page" />
-            <ScreenshotItem label="GHL Webhook setup in Settings" />
+            <ScreenshotItem label="Agency Overview — Today at a Glance (conversations, greetings, escalations)" />
+            <ScreenshotItem label="Clients list — setup score bars + client cards" />
+            <ScreenshotItem label="Client detail — Personality tab with ✨ Generate with AI" />
+            <ScreenshotItem label="Client detail — Conversations tab showing GHL SMS exchanges" />
+            <ScreenshotItem label="GHL tab — Private Integration token setup wizard" />
+            <ScreenshotItem label="Conversations page — LIVE indicator + escalation/greeted badges" />
+            <ScreenshotItem label="Performance page — 7-day bar chart + top clients" />
+            <ScreenshotItem label="Settings — Escalation Alert Email field" />
+            <ScreenshotItem label="Demo page — /demo/dental animated SMS conversation" />
           </div>
         </CardContent>
       </Card>
