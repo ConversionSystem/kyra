@@ -23,7 +23,8 @@ export function AgencySignupWrapper() {
 function AgencySignupPage() {
   const router = useRouter();
   const supabase = createClient();
-  useSearchParams(); // keep for future use
+  const searchParams = useSearchParams();
+  const referralId = searchParams.get('ref') || '';
 
   const [step, setStep] = useState<1 | 2>(1);
   const [checkingAuth, setCheckingAuth] = useState(true);
@@ -92,7 +93,7 @@ function AgencySignupPage() {
       const res = await fetch('/api/agency', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: agencyName, slug, plan: 'free' }),
+        body: JSON.stringify({ name: agencyName, slug, plan: 'free', referralId: referralId || undefined }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Failed to create agency'); return; }
