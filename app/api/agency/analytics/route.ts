@@ -1,8 +1,9 @@
 // ============================================================================
 // GET /api/agency/analytics
 //
-// Cross-client analytics for the agency dashboard.
-// Aggregates ghl_message_log data across all clients.
+// Real analytics from client_conversations table.
+// Returns daily conversation counts, escalation rate, proactive greetings,
+// channel breakdown, and per-client stats.
 // ============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -19,151 +20,101 @@ export async function GET(request: NextRequest) {
 
   const { agency } = result.data;
   const url = new URL(request.url);
-  const days = Math.min(parseInt(url.searchParams.get('days') || '30'), 90);
+  const days = Math.min(parseInt(url.searchParams.get('days') || '7'), 90);
 
   const supabase = createServiceClientWithoutCookies();
-
-  // Get all active clients for this agency
-  const { data: clients } = await supabase
-    .from('agency_clients')
-    .select('id, name, status')
-    .eq('agency_id', agency.id)
-    .in('status', ['active', 'setup']);
-
-  if (!clients?.length) {
-    return NextResponse.json({
-      summary: { totalMessages: 0, aiHandled: 0, avgResponseTimeSec: 0, estimatedCostFormatted: '$0.00' },
-      dailyMessages: [],
-      channelBreakdown: {},
-      clientBreakdown: [],
-      topContacts: [],
-      hourlyDistribution: Array(24).fill(0),
-    });
-  }
-
-  const clientIds = clients.map(c => c.id);
-  const clientNameMap = Object.fromEntries(clients.map(c => [c.id, c.name]));
 
   const since = new Date();
   since.setDate(since.getDate() - days);
 
-  // Fetch all messages in date range for agency's clients
-  const { data: messages, count } = await supabase
-    .from('ghl_message_log')
-    .select('*', { count: 'exact' })
-    .in('agency_client_id', clientIds)
+  // Fetch all conversations in the window
+  const { data: convos, error } = await supabase
+    .from('client_conversations')
+    .select('id, client_id, channel, user_message, ai_response, created_at')
+    .eq('agency_id', agency.id)
     .gte('created_at', since.toISOString())
-    .order('created_at', { ascending: false })
-    .limit(5000);
+    .order('created_at', { ascending: true });
 
-  const allMsgs = messages || [];
-
-  // ── Daily message counts ──────────────────────────────────────────────
-  const dailyCounts: Record<string, number> = {};
-  for (let d = 0; d < days; d++) {
-    const date = new Date();
-    date.setDate(date.getDate() - d);
-    dailyCounts[date.toISOString().split('T')[0]] = 0;
+  if (error) {
+    // Table may not exist yet
+    return NextResponse.json({
+      migrationRequired: error.message.includes('does not exist'),
+      error: error.message,
+      days,
+      total: 0,
+      escalations: 0,
+      proactiveGreetings: 0,
+      daily: [],
+      byChannel: {},
+      byClient: [],
+    });
   }
-  allMsgs.forEach(m => {
-    const day = m.created_at?.split('T')[0];
-    if (day && dailyCounts[day] !== undefined) dailyCounts[day]++;
-  });
 
-  // ── Channel breakdown ─────────────────────────────────────────────────
-  const channelBreakdown: Record<string, number> = {};
-  allMsgs.forEach(m => {
-    const ch = m.message_type || 'Unknown';
-    channelBreakdown[ch] = (channelBreakdown[ch] || 0) + 1;
-  });
+  const all = convos ?? [];
+  const total = all.length;
 
-  // ── Client breakdown ──────────────────────────────────────────────────
-  const clientCounts: Record<string, number> = {};
-  allMsgs.forEach(m => {
-    clientCounts[m.agency_client_id] = (clientCounts[m.agency_client_id] || 0) + 1;
-  });
-  const clientBreakdown = Object.entries(clientCounts)
-    .map(([id, count]) => ({ id, name: clientNameMap[id] || 'Unknown', messages: count }))
-    .sort((a, b) => b.messages - a.messages);
+  // Escalations: AI said "I'll flag this for our team"
+  const escalations = all.filter(c =>
+    c.ai_response?.includes("I'll flag this for our team")
+  ).length;
 
-  // ── Top contacts ──────────────────────────────────────────────────────
-  const contactCounts: Record<string, { name: string; phone: string | null; count: number; lastAt: string }> = {};
-  allMsgs.forEach(m => {
-    const key = m.contact_id;
-    if (!contactCounts[key]) {
-      contactCounts[key] = {
-        name: m.contact_name || m.contact_phone || m.contact_email || 'Unknown',
-        phone: m.contact_phone,
-        count: 0,
-        lastAt: m.created_at,
-      };
+  // Proactive greetings: user_message starts with [NEW CONTACT]
+  const proactiveGreetings = all.filter(c =>
+    c.user_message?.startsWith('[NEW CONTACT]')
+  ).length;
+
+  // Daily breakdown
+  const dailyMap: Record<string, number> = {};
+  for (let i = 0; i < days; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() - (days - 1 - i));
+    dailyMap[d.toISOString().slice(0, 10)] = 0;
+  }
+  for (const c of all) {
+    const day = c.created_at.slice(0, 10);
+    if (day in dailyMap) dailyMap[day]++;
+  }
+  const daily = Object.entries(dailyMap).map(([date, count]) => ({ date, count }));
+
+  // Channel breakdown
+  const byChannel: Record<string, number> = {};
+  for (const c of all) {
+    byChannel[c.channel] = (byChannel[c.channel] ?? 0) + 1;
+  }
+
+  // Per-client breakdown
+  const clientMap: Record<string, { count: number; escalations: number; name?: string }> = {};
+  for (const c of all) {
+    if (!clientMap[c.client_id]) clientMap[c.client_id] = { count: 0, escalations: 0 };
+    clientMap[c.client_id].count++;
+    if (c.ai_response?.includes("I'll flag this for our team")) {
+      clientMap[c.client_id].escalations++;
     }
-    contactCounts[key].count++;
-  });
-  const topContacts = Object.entries(contactCounts)
-    .map(([id, data]) => ({ id, ...data }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 10);
+  }
 
-  // ── Hourly distribution ───────────────────────────────────────────────
-  const hourlyDistribution = Array(24).fill(0);
-  allMsgs.forEach(m => {
-    const h = new Date(m.created_at).getHours();
-    hourlyDistribution[h]++;
-  });
+  // Enrich with client names
+  const clientIds = Object.keys(clientMap);
+  if (clientIds.length > 0) {
+    const { data: clientRows } = await supabase
+      .from('agency_clients')
+      .select('id, name')
+      .in('id', clientIds);
+    for (const row of clientRows ?? []) {
+      if (clientMap[row.id]) clientMap[row.id].name = row.name;
+    }
+  }
 
-  // ── Response time stats ───────────────────────────────────────────────
-  const responseTimes = allMsgs
-    .map(m => m.response_time_ms)
-    .filter((t): t is number => t !== null && t > 0);
-  const avgResponseTimeMs = responseTimes.length > 0
-    ? Math.round(responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length)
-    : 0;
-  const medianResponseTimeMs = responseTimes.length > 0
-    ? responseTimes.sort((a, b) => a - b)[Math.floor(responseTimes.length / 2)]
-    : 0;
-
-  // ── Cost estimation (gpt-4o-mini: $0.15/M input, $0.60/M output) ─────
-  let estimatedInputTokens = 0;
-  let estimatedOutputTokens = 0;
-  allMsgs.forEach(m => {
-    estimatedInputTokens += Math.ceil((m.inbound_message?.length || 0) / 4) + 300;
-    estimatedOutputTokens += Math.ceil((m.ai_response?.length || 0) / 4);
-  });
-  const estimatedCostCents = Math.round(
-    (estimatedInputTokens * 0.15 / 1_000_000 + estimatedOutputTokens * 0.60 / 1_000_000) * 100
-  );
-
-  // ── Today / This Week counts ──────────────────────────────────────────
-  const now = new Date();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const weekStart = new Date(todayStart);
-  weekStart.setDate(weekStart.getDate() - 7);
-
-  const todayCount = allMsgs.filter(m => new Date(m.created_at) >= todayStart).length;
-  const weekCount = allMsgs.filter(m => new Date(m.created_at) >= weekStart).length;
+  const byClient = Object.entries(clientMap)
+    .map(([id, stats]) => ({ id, name: stats.name || id.slice(0, 8), ...stats }))
+    .sort((a, b) => b.count - a.count);
 
   return NextResponse.json({
-    summary: {
-      totalMessages: count || allMsgs.length,
-      today: todayCount,
-      thisWeek: weekCount,
-      aiHandled: allMsgs.length, // all messages in log were AI-handled
-      avgResponseTimeMs,
-      avgResponseTimeSec: Math.round(avgResponseTimeMs / 100) / 10,
-      medianResponseTimeMs,
-      estimatedInputTokens,
-      estimatedOutputTokens,
-      estimatedCostCents,
-      estimatedCostFormatted: `$${(estimatedCostCents / 100).toFixed(2)}`,
-    },
-    dailyMessages: Object.entries(dailyCounts)
-      .map(([date, count]) => ({ date, count }))
-      .sort((a, b) => a.date.localeCompare(b.date)),
-    channelBreakdown,
-    clientBreakdown,
-    topContacts,
-    hourlyDistribution,
-    period: { days, since: since.toISOString() },
+    days,
+    total,
+    escalations,
+    proactiveGreetings,
+    daily,
+    byChannel,
+    byClient,
   });
 }
