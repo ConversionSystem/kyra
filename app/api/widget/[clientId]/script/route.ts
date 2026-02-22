@@ -215,7 +215,7 @@ export async function GET(
     showTyping();
 
     try {
-      var res = await fetch(API_BASE + '/api/widget/chat', {
+      var res = await fetch(API_BASE.replace(/\/$/, '') + '/api/widget/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ clientId: CLIENT_ID, message: text, sessionId: sessionId }),
