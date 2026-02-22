@@ -107,7 +107,7 @@ While GoHighLevel gives you a powerful CRM and marketing platform, Kyra gives yo
 
 ✅ WHO IT'S FOR:
 
-GHL agencies adding a recurring AI revenue stream. Charge clients $500–$5,000/mo for a white-labeled AI employee. Kyra costs a fraction of that — 98%+ gross margins.
+GHL agencies adding a recurring AI revenue stream. Charge clients $500–$5,000/mo for a white-labeled AI employee. Kyra handles the infrastructure — you set the price and keep the margin.
 
 Get started at kyra.conversionsystem.com`;
 

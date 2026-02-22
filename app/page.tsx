@@ -108,7 +108,7 @@ export default function HomePage() {
               {[
                 { value: '< 60s', label: 'Response time' },
                 { value: '24/7', label: 'Always on' },
-                { value: '98%+', label: 'Gross margin' },
+                { value: 'BYOK', label: 'Bring your own keys' },
               ].map((s) => (
                 <div key={s.label} className="bg-white/10 border border-white/10 rounded-xl p-4 text-center">
                   <p className="text-2xl font-black text-white">{s.value}</p>
@@ -273,7 +273,7 @@ export default function HomePage() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 {[
-                  { value: '$0.48', label: 'Cost per client/month', sub: '98%+ gross margin' },
+                  { value: '< 10 min', label: 'Time to add a client', sub: 'Template → live' },
                   { value: '< 10 min', label: 'Setup per client', sub: 'Template → live' },
                   { value: '21', label: 'Industry templates', sub: 'Ready to deploy' },
                   { value: '100%', label: 'Follow-up rate', sub: 'Every lead answered' },
