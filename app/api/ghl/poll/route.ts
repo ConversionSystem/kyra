@@ -421,6 +421,54 @@ export async function GET(request: NextRequest) {
           continue;
         }
 
+        // ── SMS Opt-out Detection ─────────────────────────────────────────────
+        const msgBody = latestInbound.body?.trim().toUpperCase() ?? '';
+        const OPT_OUT_KEYWORDS = ['STOP', 'STOPALL', 'UNSUBSCRIBE', 'CANCEL', 'END', 'QUIT'];
+        if (OPT_OUT_KEYWORDS.includes(msgBody)) {
+          addLog(`    ⛔ Opt-out detected ("${latestInbound.body.trim()}") — tagging contact, skipping reply`);
+          const ghlTokenOptOut = client.ghl_private_token || client.ghl_access_token;
+          if (ghlTokenOptOut) {
+            // Tag the contact as opted out
+            void fetch(`${GHL_API_BASE}/contacts/${conv.contactId}/tags`, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${ghlTokenOptOut}`, Version: GHL_API_VERSION, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ tags: ['sms-opt-out', 'kyra-do-not-contact'] }),
+              signal: AbortSignal.timeout(5_000),
+            }).catch(() => {});
+            void fetch(`${GHL_API_BASE}/contacts/${conv.contactId}/notes`, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${ghlTokenOptOut}`, Version: GHL_API_VERSION, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ body: '[Kyra AI] Contact opted out of SMS messages. Marked do-not-contact.' }),
+              signal: AbortSignal.timeout(5_000),
+            }).catch(() => {});
+          }
+          continue; // never reply to opt-out messages
+        }
+
+        // Also skip if contact was previously opted out (tag check from CRM context fetched later)
+        // — handled below after contactCtx is available
+
+        // ── Business Hours Check ──────────────────────────────────────────────
+        const cfg2 = (client.container_config as Record<string, unknown>) ?? {};
+        const bhCfg = cfg2.business_hours as { enabled?: boolean; start?: string; end?: string; timezone?: string } | undefined;
+        if (bhCfg?.enabled && bhCfg.start && bhCfg.end) {
+          const tz = bhCfg.timezone || 'UTC';
+          const now = new Date();
+          const localTime = new Intl.DateTimeFormat('en-US', {
+            timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false
+          }).format(now);
+          const [hh, mm] = localTime.split(':').map(Number);
+          const currentMinutes = hh * 60 + mm;
+          const [startH, startM] = bhCfg.start.split(':').map(Number);
+          const [endH, endM] = bhCfg.end.split(':').map(Number);
+          const startMinutes = startH * 60 + startM;
+          const endMinutes = endH * 60 + endM;
+          if (currentMinutes < startMinutes || currentMinutes >= endMinutes) {
+            addLog(`    ⏰ Outside business hours (${localTime} in ${tz}, hours: ${bhCfg.start}-${bhCfg.end}) — skipping`);
+            continue;
+          }
+        }
+
         addLog(`    Inbound: "${latestInbound.body.slice(0, 60)}" — sending to gateway...`);
 
         // Fetch GHL contact context — gives AI CRM awareness (tags, pipeline, notes)
@@ -431,6 +479,12 @@ export async function GET(request: NextRequest) {
 
         if (contactCtx) {
           addLog(`    CRM: ${contactCtx.fullName} | tags=[${contactCtx.tags.join(', ')}] | pipeline=${contactCtx.pipelineStage || 'none'}`);
+          // Skip if contact previously opted out
+          const optedOut = contactCtx.tags.some(t => ['sms-opt-out', 'kyra-do-not-contact'].includes(t.toLowerCase()));
+          if (optedOut) {
+            addLog(`    ⛔ Contact previously opted out (tagged) — skipping`);
+            continue;
+          }
         }
 
       // Step 5: Call gateway
