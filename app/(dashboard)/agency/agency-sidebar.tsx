@@ -28,6 +28,7 @@ import {
   Mail,
   Rocket,
   Sparkles,
+  Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AgencySettings } from '@/lib/agency/types';
@@ -106,12 +107,28 @@ interface AgencySidebarProps {
 export function AgencySidebar({ agencyName, plan, settings }: AgencySidebarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [dashboardUrl, setDashboardUrl] = useState<string | null>(null);
+  const [agencyGatewayUrl, setAgencyGatewayUrl] = useState<string | null>(null);
+  const [provisioningGateway, setProvisioningGateway] = useState(false);
 
   useEffect(() => {
-    fetch('/api/openclaw/dashboard-url')
+    // Fetch the agency's OWN dedicated gateway (separate from client gateways)
+    fetch('/api/agency/gateway')
       .then((r) => r.json())
-      .then((data) => { if (data.url) setDashboardUrl(data.url); })
+      .then((data) => {
+        if (data.gatewayUrl && data.status === 'running') {
+          setAgencyGatewayUrl(data.gatewayUrl);
+        } else if (!data.gatewayUrl || data.status === 'not_provisioned') {
+          // Auto-provision the agency gateway on first load
+          setProvisioningGateway(true);
+          fetch('/api/agency/gateway', { method: 'POST' })
+            .then((r) => r.json())
+            .then((result) => {
+              if (result.gatewayUrl) setAgencyGatewayUrl(result.gatewayUrl);
+            })
+            .catch(() => {})
+            .finally(() => setProvisioningGateway(false));
+        }
+      })
       .catch(() => {});
   }, []);
 
@@ -222,16 +239,19 @@ export function AgencySidebar({ agencyName, plan, settings }: AgencySidebarProps
         ))}
       </nav>
 
-      {/* OpenClaw Terminal — opens in new tab */}
+      {/* Agency's Own OpenClaw Terminal — dedicated container, separate from clients */}
       <div className={cn('p-3 border-t', hasBranding ? 'border-white/10' : 'border-gray-800')}>
         <a
-          href={dashboardUrl || '#'}
+          href={agencyGatewayUrl || '#'}
           target="_blank"
           rel="noopener noreferrer"
-          onClick={(e) => { if (!dashboardUrl) e.preventDefault(); setMobileOpen(false); }}
+          onClick={(e) => {
+            if (!agencyGatewayUrl) e.preventDefault();
+            setMobileOpen(false);
+          }}
           className={cn(
             'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors',
-            dashboardUrl
+            agencyGatewayUrl
               ? hasBranding
                 ? 'text-white/70 hover:bg-white/10 hover:text-white'
                 : 'text-gray-400 hover:bg-gray-800 hover:text-white'
@@ -240,12 +260,17 @@ export function AgencySidebar({ agencyName, plan, settings }: AgencySidebarProps
                 : 'text-gray-600 cursor-not-allowed'
           )}
         >
-          <Terminal className="h-4 w-4 shrink-0" />
-          OpenClaw Terminal
-          {dashboardUrl && <ExternalLink className="h-3 w-3 ml-auto opacity-50" />}
+          {provisioningGateway
+            ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+            : <Terminal className="h-4 w-4 shrink-0" />
+          }
+          {provisioningGateway ? 'Starting your AI...' : 'My AI Terminal'}
+          {agencyGatewayUrl && !provisioningGateway && (
+            <ExternalLink className="h-3 w-3 ml-auto opacity-50" />
+          )}
         </a>
-        <div className={cn('px-3 mt-1 text-xs', hasBranding ? 'text-white/20' : 'text-gray-700')}>
-          Powered by OpenClaw
+        <div className={cn('px-3 mt-0.5 text-[10px]', hasBranding ? 'text-white/20' : 'text-gray-700')}>
+          Your personal AI · separate from clients
         </div>
       </div>
     </>
