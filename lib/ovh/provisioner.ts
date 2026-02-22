@@ -603,10 +603,10 @@ Be direct, strategic, and action-oriented. The agency owner is busy building a b
     const res = await provisionerFetch('/containers', {
       method: 'POST',
       body: JSON.stringify({
-        clientId: agencyId,          // reuse the provisioner's clientId param
+        clientId: agencyId,          // agency gateway uses agencyId as the container ID
         agencyId,
-        clientName: `${agencyName} Agency`,
-        containerPrefix: 'kyra-ag', // agency prefix so it's visually distinct
+        clientName: `${agencyName} Agency AI`,
+        // NOTE: uses default kyra-cl- prefix so Traefik/nginx routes it correctly
         config: { soulMd, userMd },
         resources: { memoryMb: 1024, cpuShares: 256 },
       }),
@@ -626,7 +626,6 @@ Be direct, strategic, and action-oriented. The agency owner is busy building a b
       .update({
         gateway_url: gatewayUrl,
         gateway_token: data.authToken || null,
-        gateway_container_id: data.containerId || null,
         gateway_status: 'running',
         gateway_provisioned_at: new Date().toISOString(),
         gateway_error: null,
