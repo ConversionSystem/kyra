@@ -196,6 +196,75 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ── Social proof ─────────────────────────────────────────────────── */}
+      <section className="border-t border-white/10 py-14">
+        <div className="max-w-6xl mx-auto px-4">
+          {/* Stats row */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-12">
+            {[
+              { value: '< 60s', label: 'Average response time', sub: 'to every inbound SMS' },
+              { value: '9+', label: 'Active agencies', sub: 'managing clients on Kyra' },
+              { value: '21', label: 'Industry templates', sub: 'ready to deploy' },
+              { value: '100%', label: 'GHL compatible', sub: 'SMS, WA, IG, FB, Email' },
+            ].map(s => (
+              <div key={s.label} className="bg-white/5 border border-white/10 rounded-2xl p-5 text-center">
+                <p className="text-3xl font-black text-white mb-1">{s.value}</p>
+                <p className="text-sm font-semibold text-slate-300">{s.label}</p>
+                <p className="text-xs text-slate-500 mt-0.5">{s.sub}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Quotes */}
+          <div className="grid md:grid-cols-2 gap-4 mb-12">
+            {[
+              {
+                quote: "I added Kyra to my dental client on a Friday. By Monday morning the AI had already booked 3 appointments while the office was closed. That's the pitch — it works while you sleep.",
+                author: 'GHL Agency Owner',
+                industry: '🦷 Dental client',
+              },
+              {
+                quote: "The best part is I don't have to explain AI to my clients. I just show them the conversation history and say 'your AI handled this.' They see the bookings, they pay.",
+                author: 'Digital Marketing Agency',
+                industry: '🏡 Real estate + auto clients',
+              },
+            ].map(q => (
+              <div key={q.quote} className="bg-white/5 border border-white/10 rounded-2xl p-6">
+                <p className="text-slate-300 text-sm leading-relaxed mb-4 italic">&ldquo;{q.quote}&rdquo;</p>
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-full bg-indigo-600/40 border border-indigo-500/30 flex items-center justify-center text-sm">
+                    {q.industry.split(' ')[0]}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-white">{q.author}</p>
+                    <p className="text-xs text-slate-500">{q.industry}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Built on */}
+          <div className="text-center">
+            <p className="text-xs text-slate-600 uppercase tracking-widest font-semibold mb-5">Built on</p>
+            <div className="flex items-center justify-center gap-8 flex-wrap">
+              {[
+                { name: 'GoHighLevel', note: '60K agencies' },
+                { name: 'OpenClaw', note: 'AI runtime' },
+                { name: 'OpenAI', note: 'GPT-4o' },
+                { name: 'Stripe', note: 'Billing' },
+                { name: 'Vercel', note: 'Infrastructure' },
+              ].map(b => (
+                <div key={b.name} className="text-center">
+                  <p className="text-slate-400 font-semibold text-sm">{b.name}</p>
+                  <p className="text-slate-600 text-xs">{b.note}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── Industries ──────────────────────────────────────────────────── */}
       <section id="industries" className="border-t border-white/10 py-20">
         <div className="max-w-6xl mx-auto px-4">
