@@ -295,6 +295,28 @@ export async function GET(request: NextRequest) {
           }).then(({ error: logErr }) => {
             if (logErr) addLog(`  ⚠️ Conversation log failed: ${logErr.message}`);
           });
+
+          // Increment usage_this_month so Overview/Heartbeat stats reflect GHL activity
+          void supabase
+            .rpc('increment_client_usage', { client_id: client.id })
+            .then(({ error: usageErr }) => {
+              if (usageErr) {
+                // Fallback: manual increment if RPC not available
+                void supabase
+                  .from('agency_clients')
+                  .select('usage_this_month')
+                  .eq('id', client.id)
+                  .single()
+                  .then(({ data: cur }) => {
+                    if (cur) {
+                      supabase
+                        .from('agency_clients')
+                        .update({ usage_this_month: (cur.usage_this_month || 0) + 1 })
+                        .eq('id', client.id);
+                    }
+                  });
+              }
+            });
         } else {
           const errText = await sendRes.text().catch(() => '');
           addLog(`  Send failed: ${sendRes.status} ${errText.slice(0, 100)}`);

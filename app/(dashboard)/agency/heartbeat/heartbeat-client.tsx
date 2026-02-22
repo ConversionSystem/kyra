@@ -191,7 +191,9 @@ export function HeartbeatClient({ clients }: HeartbeatClientProps) {
                   {/* Gateway link */}
                   {client.gateway_url && (
                     <a
-                      href={client.gateway_url}
+                      href={client.gateway_token
+                        ? `${client.gateway_url}?token=${client.gateway_token}`
+                        : client.gateway_url}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="mt-2 flex items-center gap-1 text-[10px] text-indigo-500 hover:text-indigo-700 transition-colors"
