@@ -512,7 +512,30 @@ function AIPersonalityTab({ client }: { client: AgencyClient }) {
   const [bhEnd, setBhEnd] = useState(bhCfg.end ?? '17:00');
   const [bhTimezone, setBhTimezone] = useState(bhCfg.timezone ?? 'America/New_York');
   const [isSaving, setIsSaving] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const handleGenerate = async () => {
+    setIsGenerating(true);
+    setMessage(null);
+    try {
+      const res = await fetch(`/api/agency/clients/${client.id}/generate-personality`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: client.name, industry: client.industry }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || 'Generation failed');
+      if (d.persona) setPersona(d.persona);
+      if (d.greeting) setGreeting(d.greeting);
+      if (d.instructions) setInstructions(d.instructions);
+      setMessage({ type: 'success', text: '✨ Personality generated! Review the fields below, then click Save.' });
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err.message });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -543,9 +566,24 @@ function AIPersonalityTab({ client }: { client: AgencyClient }) {
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-gray-500">
-        Define how this client&apos;s AI assistant behaves — its personality, greeting message, and detailed instructions.
-      </p>
+      <div className="flex items-start justify-between gap-4">
+        <p className="text-sm text-gray-500">
+          Define how this client&apos;s AI assistant behaves — its personality, greeting message, and detailed instructions.
+        </p>
+        <Button
+          onClick={handleGenerate}
+          disabled={isGenerating}
+          variant="outline"
+          size="sm"
+          className="shrink-0 gap-1.5 border-indigo-200 text-indigo-600 hover:bg-indigo-50"
+        >
+          {isGenerating ? (
+            <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Generating...</>
+          ) : (
+            <>✨ Generate with AI</>
+          )}
+        </Button>
+      </div>
 
       {message && (
         <div className={`rounded-md px-4 py-3 text-sm ${
