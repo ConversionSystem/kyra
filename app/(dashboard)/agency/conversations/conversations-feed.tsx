@@ -52,6 +52,8 @@ export function ConversationsFeed() {
   const [filterClient, setFilterClient] = useState('');
   const [filterChannel, setFilterChannel] = useState('');
   const [page, setPage] = useState(0);
+  const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
+  const [secondsSince, setSecondsSince] = useState(0);
   const LIMIT = 50;
 
   const load = useCallback(async (opts?: { reset?: boolean }) => {
@@ -75,6 +77,8 @@ export function ConversationsFeed() {
     } catch { /* ignore */ }
     setLoading(false);
     setRefreshing(false);
+    setLastRefresh(new Date());
+    setSecondsSince(0);
   }, [filterClient, filterChannel, page]);
 
   useEffect(() => { load({ reset: true }); }, [filterClient, filterChannel]); // eslint-disable-line
@@ -85,6 +89,12 @@ export function ConversationsFeed() {
     const t = setInterval(() => load({ reset: true }), 30_000);
     return () => clearInterval(t);
   }, [load]);
+
+  // Tick seconds-since counter
+  useEffect(() => {
+    const t = setInterval(() => setSecondsSince(s => s + 1), 1_000);
+    return () => clearInterval(t);
+  }, []);
 
   if (loading) {
     return (
@@ -134,9 +144,16 @@ CREATE POLICY "Service insert" ON client_conversations FOR INSERT WITH CHECK (tr
     <div className="space-y-4">
       {/* Filters + stats */}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-2 text-sm text-gray-500">
+        <div className="flex items-center gap-3 text-sm text-gray-500">
           <Filter className="h-4 w-4" />
           <span>{total} total</span>
+          {/* Live indicator */}
+          {lastRefresh && (
+            <div className="flex items-center gap-1.5 text-xs text-green-600 bg-green-50 border border-green-200 rounded-full px-2.5 py-0.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse inline-block" />
+              <span>LIVE · {secondsSince < 60 ? `${secondsSince}s ago` : `${Math.floor(secondsSince / 60)}m ago`}</span>
+            </div>
+          )}
         </div>
 
         {/* Client filter */}
@@ -184,11 +201,13 @@ CREATE POLICY "Service insert" ON client_conversations FOR INSERT WITH CHECK (tr
               const ch = CHANNEL_META[conv.channel] || { label: conv.channel, icon: MessageSquare, color: 'bg-gray-50 text-gray-500 border-gray-200' };
               const ChIcon = ch.icon;
               const isOpen = expanded === conv.id;
+              const isEscalated = conv.ai_response?.includes("I'll flag this for our team");
+              const isProactive = conv.user_message?.startsWith('[NEW CONTACT]');
 
               return (
                 <div
                   key={conv.id}
-                  className="rounded-xl border border-gray-200 bg-white hover:border-gray-300 transition-all cursor-pointer"
+                  className={`rounded-xl border transition-all cursor-pointer ${isEscalated ? 'border-red-200 bg-red-50 hover:border-red-300' : 'border-gray-200 bg-white hover:border-gray-300'}`}
                   onClick={() => setExpanded(isOpen ? null : conv.id)}
                 >
                   <div className="flex items-start gap-3 p-4">
@@ -210,6 +229,8 @@ CREATE POLICY "Service insert" ON client_conversations FOR INSERT WITH CHECK (tr
                         {conv.client_industry && (
                           <span className="text-[10px] text-gray-400">{conv.client_industry}</span>
                         )}
+                        {isEscalated && <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-medium">🚨 Escalated</span>}
+                        {isProactive && !isEscalated && <span className="text-[10px] bg-green-100 text-green-600 px-1.5 py-0.5 rounded font-medium">👋 Greeted</span>}
                       </div>
 
                       {/* User message */}
