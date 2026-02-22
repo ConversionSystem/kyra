@@ -215,6 +215,7 @@ export async function GET(request: NextRequest) {
         let latestInbound: any = null;
         let hasReply = false;
         let isFirstContact = false;
+        let messages: any[] = [];
         try {
           const msgRes = await fetch(
             `${GHL_API_BASE}/conversations/${conv.id}/messages?limit=5`,
@@ -228,7 +229,7 @@ export async function GET(request: NextRequest) {
             continue;
           }
           const msgData = await msgRes.json();
-          const messages = msgData.messages?.messages || [];
+          messages = msgData.messages?.messages || [];
 
           latestInbound = messages.find((m: any) => m.direction === 'inbound');
           if (!latestInbound?.body?.trim()) {
@@ -305,6 +306,21 @@ export async function GET(request: NextRequest) {
         if (systemContext) {
           chatMessages.push({ role: 'system', content: systemContext });
         }
+
+        // Inject conversation history (last 6 messages before this one)
+        // so the AI maintains context across multi-turn conversations
+        const historyMessages = messages
+          .filter((m: any) => m.id !== latestInbound.id && m.body?.trim())
+          .sort((a: any, b: any) => new Date(a.dateAdded).getTime() - new Date(b.dateAdded).getTime())
+          .slice(-6); // last 6 messages = up to 3 exchanges
+
+        for (const msg of historyMessages) {
+          chatMessages.push({
+            role: msg.direction === 'inbound' ? 'user' : 'assistant',
+            content: msg.body.trim(),
+          });
+        }
+
         chatMessages.push({ role: 'user', content: latestInbound.body });
 
         const chatRes = await fetch(`${gatewayUrl}/v1/chat/completions`, {
