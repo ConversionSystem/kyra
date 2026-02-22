@@ -1,6 +1,18 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
 import DemoChat from './demo/[industry]/demo-chat';
 import LeadCapture from '@/components/landing/lead-capture';
+
+export const metadata: Metadata = {
+  title: 'Kyra — AI Employees for GHL Agencies | Free to Start',
+  description: 'Deploy white-labeled AI employees inside GoHighLevel. Responds to every SMS in 60 seconds, books appointments, updates CRM, escalates frustrated leads. Manage all clients from one dashboard.',
+  openGraph: {
+    title: 'Kyra — Give every GHL client an AI employee that actually works',
+    description: 'Responds to every lead in 60 seconds. Books appointments. Updates CRM. Escalates to humans. One dashboard for all your agency clients. Free to start.',
+    url: 'https://kyra.conversionsystem.com',
+  },
+  alternates: { canonical: 'https://kyra.conversionsystem.com' },
+};
 
 // Hero demo — dental (clean, universally relatable)
 const HERO_DEMO = {
