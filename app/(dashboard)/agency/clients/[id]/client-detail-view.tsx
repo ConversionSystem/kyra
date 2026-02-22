@@ -516,6 +516,10 @@ function AIPersonalityTab({ client }: { client: AgencyClient }) {
   const [instructions, setInstructions] = useState(cfg.instructions as string || '');
   const [persona, setPersona] = useState(cfg.persona as string || '');
   const [calendarUrl, setCalendarUrl] = useState((cfg.calendar_url as string) || '');
+  // Widget appearance config
+  const [widgetTitle, setWidgetTitle] = useState((cfg.widget_title as string) || '');
+  const [widgetColor, setWidgetColor] = useState((cfg.widget_color as string) || '#6366f1');
+  const [widgetGreeting, setWidgetGreeting] = useState((cfg.widget_greeting as string) || '');
   const [bhEnabled, setBhEnabled] = useState(bhCfg.enabled ?? false);
   const [bhStart, setBhStart] = useState(bhCfg.start ?? '09:00');
   const [bhEnd, setBhEnd] = useState(bhCfg.end ?? '17:00');
@@ -561,6 +565,9 @@ function AIPersonalityTab({ client }: { client: AgencyClient }) {
             persona,
             business_hours: { enabled: bhEnabled, start: bhStart, end: bhEnd, timezone: bhTimezone },
             calendar_url: calendarUrl.trim() || undefined,
+            widget_title: widgetTitle.trim() || undefined,
+            widget_color: widgetColor || '#6366f1',
+            widget_greeting: widgetGreeting.trim() || undefined,
           },
         }),
       });
@@ -672,6 +679,116 @@ function AIPersonalityTab({ client }: { client: AgencyClient }) {
             placeholder="https://booking.leadconnectorhq.com/your-calendar-id"
             className="bg-gray-50 font-mono text-sm"
           />
+        </CardContent>
+      </Card>
+
+      {/* ── Web Chat Widget Appearance ──────────────────────────────────── */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Globe className="h-4 w-4 text-indigo-500" /> Web Chat Widget Appearance
+          </CardTitle>
+          <CardDescription>
+            Customise the chat bubble on your client&apos;s website. Changes take effect within 5 minutes (CDN cache).
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* Left — fields */}
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-600">Widget Title</label>
+                <Input
+                  value={widgetTitle}
+                  onChange={(e) => setWidgetTitle(e.target.value)}
+                  placeholder={`Chat with ${client.name}`}
+                  className="bg-gray-50 text-sm"
+                />
+                <p className="text-[11px] text-gray-400">Shown in the chat header. Defaults to &quot;Chat with [name]&quot;.</p>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-600">Brand Colour</label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="color"
+                    value={widgetColor}
+                    onChange={(e) => setWidgetColor(e.target.value)}
+                    className="h-9 w-12 rounded border border-gray-200 cursor-pointer bg-white p-0.5"
+                  />
+                  <Input
+                    value={widgetColor}
+                    onChange={(e) => setWidgetColor(e.target.value)}
+                    placeholder="#6366f1"
+                    className="bg-gray-50 font-mono text-sm flex-1"
+                    maxLength={7}
+                  />
+                </div>
+                <p className="text-[11px] text-gray-400">Chat bubble and header background. Hex code.</p>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-600">Opening Greeting</label>
+                <Textarea
+                  value={widgetGreeting}
+                  onChange={(e) => setWidgetGreeting(e.target.value)}
+                  placeholder="Hi! 👋 How can I help you today?"
+                  rows={2}
+                  className="bg-gray-50 text-sm"
+                />
+                <p className="text-[11px] text-gray-400">First message shown when widget opens.</p>
+              </div>
+            </div>
+
+            {/* Right — live preview */}
+            <div className="flex flex-col items-center justify-center gap-3">
+              <p className="text-xs font-medium text-gray-500 self-start">Preview</p>
+
+              {/* Mini chat panel */}
+              <div className="w-full rounded-xl overflow-hidden border border-gray-200 shadow-lg text-[11px]">
+                {/* Header */}
+                <div className="flex items-center gap-2 px-3 py-2.5" style={{ background: widgetColor }}>
+                  <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-white text-xs">🤖</div>
+                  <div className="flex-1">
+                    <div className="text-white font-semibold">{widgetTitle || `Chat with ${client.name}`}</div>
+                    <div className="text-white/70" style={{ fontSize: '9px' }}>Typically replies instantly</div>
+                  </div>
+                  <div className="text-white/70 text-base leading-none">✕</div>
+                </div>
+
+                {/* Messages */}
+                <div className="bg-gray-50 px-3 py-3 space-y-2 min-h-[80px]">
+                  <div className="flex items-end gap-1.5">
+                    <div className="w-5 h-5 rounded-full flex items-center justify-center text-white text-[9px] shrink-0" style={{ background: widgetColor }}>🤖</div>
+                    <div className="bg-white rounded-xl rounded-bl-sm px-2.5 py-1.5 shadow-sm text-gray-800 max-w-[80%]">
+                      {widgetGreeting || 'Hi! 👋 How can I help you today?'}
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <div className="rounded-xl rounded-br-sm px-2.5 py-1.5 text-white max-w-[70%]" style={{ background: widgetColor }}>
+                      Hi, I have a question!
+                    </div>
+                  </div>
+                </div>
+
+                {/* Input bar */}
+                <div className="bg-white border-t border-gray-100 px-3 py-2 flex items-center gap-2">
+                  <div className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-2 py-1.5 text-gray-400">Type a message...</div>
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center text-white shrink-0" style={{ background: widgetColor }}>
+                    <svg viewBox="0 0 24 24" width="10" height="10" fill="white"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                  </div>
+                </div>
+              </div>
+
+              {/* Floating bubble preview */}
+              <div className="flex items-center gap-2 self-end mt-1">
+                <span className="text-[11px] text-gray-400">Chat bubble:</span>
+                <div className="w-10 h-10 rounded-full flex items-center justify-center shadow-lg" style={{ background: widgetColor }}>
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+                </div>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -1267,12 +1384,16 @@ function ChannelsTab({ client }: { client: AgencyClient }) {
               <CardTitle className="text-base">Email Outreach</CardTitle>
               <CardDescription className="text-xs">AI-personalized emails via Resend — follow-ups, welcome emails, nurture sequences</CardDescription>
             </div>
-            <span className="ml-auto text-[10px] bg-green-100 text-green-700 font-medium px-2 py-0.5 rounded-full">✅ Ready</span>
+            <span className="ml-auto text-[10px] bg-amber-100 text-amber-700 font-medium px-2 py-0.5 rounded-full">⚙️ Needs API Key</span>
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
+          <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5 text-xs text-amber-800">
+            <span className="shrink-0 mt-0.5">⚠️</span>
+            <span>Add <code className="bg-amber-100 px-1 rounded font-mono">RESEND_API_KEY</code> to your <a href="https://vercel.com/dashboard" target="_blank" rel="noopener noreferrer" className="underline font-medium">Vercel env vars</a> to enable email sending. Get a free key at <a href="https://resend.com" target="_blank" rel="noopener noreferrer" className="underline font-medium">resend.com</a>.</span>
+          </div>
           <p className="text-sm text-gray-600">
-            Trigger AI-written, personalized emails from your GHL workflows or cron jobs. Uses the client AI's personality to craft each email.
+            Trigger AI-written, personalized emails from your GHL workflows or cron jobs. Uses the client AI&apos;s personality to craft each email.
           </p>
 
           <div>
