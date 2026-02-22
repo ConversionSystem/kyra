@@ -72,17 +72,8 @@ export async function POST(
       return new Response('Message is required', { status: 400 });
     }
 
-    // 5b. Fetch agency's API keys (BYOK)
-    const serviceClient = createServiceClientWithoutCookies();
-    const { data: agency } = await serviceClient
-      .from('agencies')
-      .select('api_keys')
-      .eq('id', client.agency_id)
-      .single();
-
-    const apiKeys = (agency?.api_keys as Record<string, string>) || {};
-    // Priority: anthropic > openrouter > openai (Claude is preferred model)
-    const llmApiKey = apiKeys.anthropic || apiKeys.openrouter || apiKeys.openai || '';
+    // 5b. (API key is now baked into the container's env at provision time,
+    //      and updated live when the agency saves new keys via /api/agency/api-keys)
 
     // 6. Build session key & context
     const typedClient = client as AgencyClient & { template?: AgencyTemplate | null };

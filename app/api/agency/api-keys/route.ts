@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { updateContainerApiKey } from '@/lib/ovh/provisioner';
 
 const VALID_PROVIDERS = ['anthropic', 'openai', 'google', 'openrouter'];
 
@@ -143,6 +144,53 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
+
+  // ── Fire-and-forget: push updated keys to all running containers ──────────
+  void (async () => {
+    try {
+      // Only push providers that have keys configured
+      const keysToPropagate: Record<string, string> = {};
+      for (const p of VALID_PROVIDERS) {
+        if (mergedKeys[p]) keysToPropagate[p] = mergedKeys[p];
+      }
+      if (Object.keys(keysToPropagate).length === 0) return;
+
+      // Get all running client containers for this agency
+      const { data: clients } = await serviceClient
+        .from('agency_clients')
+        .select('id')
+        .eq('agency_id', member.agency_id)
+        .eq('gateway_status', 'running');
+
+      // Get the agency's own container (if provisioned and running)
+      const { data: agencyRow } = await serviceClient
+        .from('agencies')
+        .select('id, gateway_status')
+        .eq('id', member.agency_id)
+        .single();
+
+      const containerIds: string[] = [
+        ...(clients?.map((c) => c.id) || []),
+        ...(agencyRow?.gateway_status === 'running' ? [agencyRow.id] : []),
+      ];
+
+      console.log(`[api-keys] Propagating keys to ${containerIds.length} containers for agency ${member.agency_id}`);
+
+      // Stagger updates — each container restarts briefly; too many at once = memory spike
+      for (const cId of containerIds) {
+        const result = await updateContainerApiKey(cId, keysToPropagate);
+        if (!result.ok) {
+          console.warn(`[api-keys] Failed to update container ${cId}:`, result.error);
+        }
+        // 3s gap between container recreations to avoid VPS memory spike
+        await new Promise((r) => setTimeout(r, 3000));
+      }
+
+      console.log(`[api-keys] Propagation complete for agency ${member.agency_id}`);
+    } catch (err) {
+      console.error('[api-keys] Background propagation error:', err);
+    }
+  })();
 
   return NextResponse.json({
     success: true,
