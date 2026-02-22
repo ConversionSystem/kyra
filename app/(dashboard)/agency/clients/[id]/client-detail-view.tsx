@@ -238,12 +238,14 @@ function TestChatTab({ client }: { client: AgencyClient }) {
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const gatewayUrl = (client as any).gateway_url as string | undefined;
-  const portalUrl = typeof window !== 'undefined'
+
+  // Clients get the real OpenClaw terminal — share the gateway URL directly
+  const shareUrl = gatewayUrl ?? (typeof window !== 'undefined'
     ? `${window.location.origin}/portal/${client.id}`
-    : `/portal/${client.id}`;
+    : `/portal/${client.id}`);
 
   const handleCopyPortalLink = async () => {
-    await navigator.clipboard.writeText(portalUrl);
+    await navigator.clipboard.writeText(shareUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -354,7 +356,7 @@ function TestChatTab({ client }: { client: AgencyClient }) {
             <button
               onClick={handleCopyPortalLink}
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 transition text-gray-700 text-xs font-semibold"
-              title="Copy client portal link"
+              title="Copy OpenClaw terminal link for your client"
             >
               {copied
                 ? <><CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> Copied</>
@@ -363,31 +365,18 @@ function TestChatTab({ client }: { client: AgencyClient }) {
             </button>
           </div>
         </div>
-        {/* Portal share URL — always visible */}
+        {/* Client's OpenClaw terminal URL */}
         <div className="mt-3 flex items-center gap-2 rounded-lg bg-indigo-50 border border-indigo-100 px-3 py-2">
-          <Share2 className="h-3.5 w-3.5 text-indigo-400 shrink-0" />
-          <span className="text-[10px] font-mono text-indigo-700 truncate flex-1">{portalUrl}</span>
+          <Terminal className="h-3.5 w-3.5 text-indigo-400 shrink-0" />
+          <span className="text-[10px] font-mono text-indigo-700 truncate flex-1">{shareUrl}</span>
           <button
             onClick={handleCopyPortalLink}
             className="shrink-0 text-indigo-400 hover:text-indigo-700"
-            title="Copy client portal link"
+            title="Copy OpenClaw terminal link"
           >
             {copied ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
           </button>
         </div>
-        {gatewayUrl && (
-          <div className="mt-1.5 flex items-center gap-2 rounded-lg bg-white border border-gray-200 px-3 py-2">
-            <Terminal className="h-3.5 w-3.5 text-gray-300 shrink-0" />
-            <span className="text-[10px] font-mono text-gray-400 truncate flex-1">{gatewayUrl}</span>
-            <button
-              onClick={() => navigator.clipboard.writeText(gatewayUrl)}
-              className="shrink-0 text-gray-400 hover:text-gray-700"
-              title="Copy gateway URL"
-            >
-              <Copy className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        )}
       </div>
 
       {/* ── Test Chat ── */}
