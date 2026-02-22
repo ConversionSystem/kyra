@@ -368,7 +368,7 @@ export function PerformanceClient({ clients, agencyId, agencySettings }: Perform
         <CardContent className="p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Preview Report</h2>
           <div className="rounded-xl border border-gray-200 bg-gray-50 p-6 space-y-4">
-            {/* Mock email header */}
+            {/* Report header */}
             <div className="border-b border-gray-200 pb-4">
               <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Weekly Performance Report</p>
               <p className="text-sm text-gray-500">{fmt(weekStart)} — {fmt(now)}</p>
