@@ -93,13 +93,52 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (template) {
+      // Replace all {{placeholder}} variables with the actual client name / industry.
+      // This ensures the AI never says "Hello from {{practice_name}}!" to real customers.
+      const replacePlaceholders = (text: string) =>
+        text
+          .replace(/\{\{[a-z_]*name[a-z_]*\}\}/gi, name)   // {{practice_name}}, {{business_name}}, etc.
+          .replace(/\{\{industry\}\}/gi, industry || template.industry || 'General')
+          // Leave other placeholders ({{office_hours}}, {{services_list}}, etc.) for agency to fill in
+          // but mark them visually so agencies know they need editing
+          .replace(/\{\{([^}]+)\}\}/g, '[Fill in: $1]');
+
+      const processedTemplate = template.soul_template
+        ? replacePlaceholders(String(template.soul_template))
+        : null;
+
+      // Extract persona: first non-header paragraph from the template
+      const firstParagraph = processedTemplate
+        ? processedTemplate
+            .split('\n')
+            .filter(l => l.trim() && !l.startsWith('#') && !l.startsWith('-'))
+            .slice(0, 2)
+            .join(' ')
+            .slice(0, 200)
+        : `AI assistant for ${name}`;
+
+      // Default greeting based on template type
+      const defaultGreeting = `Hi! Thanks for reaching out to ${name}. How can I help you today?`;
+
       containerConfig = {
-        soul_template: template.soul_template,
+        soul_template: processedTemplate,  // still stored for reference
+        persona: firstParagraph,           // shown in Personality tab
+        greeting: defaultGreeting,         // shown in Personality tab
+        instructions: processedTemplate || '', // full template = detailed instructions
         skills: template.skills,
         cron_config: template.cron_config,
         template_name: template.name,
       };
     }
+  }
+
+  // If no template, seed sensible defaults so Personality tab isn't empty
+  if (!template_id) {
+    containerConfig = {
+      persona: `Helpful AI assistant for ${name}${industry ? `, specializing in ${industry}` : ''}.`,
+      greeting: `Hi! Thanks for reaching out to ${name}. How can I help you today?`,
+      instructions: '',
+    };
   }
 
   // Create client
@@ -123,12 +162,23 @@ export async function POST(request: NextRequest) {
   }
 
   // Auto-provision per-client gateway on OVH (non-blocking)
-  // Build SOUL.md from template or default
-  const baseSoulMd = containerConfig.soul_template
-    ? String(containerConfig.soul_template)
-    : `You are an AI assistant for "${name}".\nIndustry: ${industry || 'General'}\nBe helpful, professional, and concise.`;
+  // Build SOUL.md from persona + greeting + instructions (same as Personality tab save)
+  const persona = (containerConfig.persona as string) || `AI assistant for ${name}`;
+  const greeting = (containerConfig.greeting as string) || '';
+  const instructions = (containerConfig.instructions as string) || '';
+
+  const soulLines: string[] = [`# SOUL.md — ${name}`, ''];
+  if (persona) { soulLines.push('## Who You Are', persona, ''); }
+  if (greeting) { soulLines.push('## Greeting', `When someone reaches out for the first time:`, `"${greeting}"`, ''); }
+  if (instructions) { soulLines.push('## Your Instructions & Knowledge', instructions, ''); }
+  soulLines.push('## Communication Style',
+    '- Keep replies concise and clear (SMS/messaging)',
+    '- Stay in character at all times',
+    '- Ask one focused question if you need more info',
+    '- Never reveal you are an AI unless directly asked');
+
   // Append prompt injection defense — non-negotiable security layer for all deployed agents
-  const soulMd = baseSoulMd + buildInjectionDefensePromptSuffix();
+  const soulMd = soulLines.join('\n') + buildInjectionDefensePromptSuffix();
 
   const userMd = `# ${name}\n\nClient of ${agency.name}.`;
 
