@@ -908,7 +908,14 @@ function ConversationsTab({ client }: { client: AgencyClient }) {
     portal: 'bg-purple-50 text-purple-600 border-purple-200',
     telegram: 'bg-sky-50 text-sky-600 border-sky-200',
     sms: 'bg-green-50 text-green-600 border-green-200',
+    ghl_sms: 'bg-green-50 text-green-600 border-green-200',
+    ghl_email: 'bg-orange-50 text-orange-600 border-orange-200',
     whatsapp: 'bg-emerald-50 text-emerald-600 border-emerald-200',
+  };
+
+  const channelLabel: Record<string, string> = {
+    test_chat: 'Test Chat', portal: 'Portal', telegram: 'Telegram',
+    sms: 'SMS', ghl_sms: 'GHL SMS', ghl_email: 'GHL Email', whatsapp: 'WhatsApp',
   };
 
   if (loading) {
@@ -967,15 +974,22 @@ CREATE POLICY "Service insert" ON client_conversations FOR INSERT WITH CHECK (tr
   return (
     <div className="space-y-3">
       <p className="text-sm text-gray-500">{conversations.length} conversation{conversations.length !== 1 ? 's' : ''} logged</p>
-      {conversations.map(conv => (
+      {conversations.map(conv => {
+        const isEscalated = conv.ai_response?.includes("I'll flag this for our team");
+        const isProactive = conv.user_message?.includes('[NEW CONTACT]');
+        return (
         <div
           key={conv.id}
-          className="rounded-xl border border-gray-200 bg-white hover:border-gray-300 transition cursor-pointer"
+          className={`rounded-xl border transition cursor-pointer ${isEscalated ? 'border-red-200 bg-red-50 hover:border-red-300' : 'border-gray-200 bg-white hover:border-gray-300'}`}
           onClick={() => setExpanded(expanded === conv.id ? null : conv.id)}
         >
           <div className="flex items-start gap-3 p-4">
             <User className="h-4 w-4 text-indigo-400 mt-0.5 shrink-0" />
             <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                {isEscalated && <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-medium">🚨 Escalated</span>}
+                {isProactive && !isEscalated && <span className="text-[10px] bg-green-100 text-green-600 px-1.5 py-0.5 rounded font-medium">👋 Proactive greeting</span>}
+              </div>
               <p className="text-sm text-gray-900 line-clamp-2">{conv.user_message}</p>
               {expanded === conv.id && (
                 <div className="mt-3 pt-3 border-t border-gray-100 space-y-3">
@@ -988,7 +1002,7 @@ CREATE POLICY "Service insert" ON client_conversations FOR INSERT WITH CHECK (tr
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${channelBadge[conv.channel] || 'bg-gray-50 text-gray-500 border-gray-200'}`}>
-                {conv.channel.replace('_', ' ')}
+                {channelLabel[conv.channel] || conv.channel}
               </span>
               <span className="text-[10px] text-gray-400 flex items-center gap-1">
                 <Clock className="h-3 w-3" />
@@ -997,7 +1011,8 @@ CREATE POLICY "Service insert" ON client_conversations FOR INSERT WITH CHECK (tr
             </div>
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
