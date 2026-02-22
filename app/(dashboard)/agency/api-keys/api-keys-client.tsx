@@ -18,7 +18,8 @@ import {
   Eye,
   EyeOff,
   ExternalLink,
-  AlertTriangle,
+  Zap,
+  Shield,
 } from 'lucide-react';
 
 // ── Provider definitions ──────────────────────────────────────────────────────
@@ -27,38 +28,46 @@ const AI_PROVIDERS = [
   {
     id: 'anthropic',
     name: 'Anthropic',
-    description: 'Claude models — Haiku, Sonnet, Opus',
+    description: 'Claude Haiku · Sonnet · Opus',
     placeholder: 'sk-ant-api03-...',
     docsUrl: 'https://console.anthropic.com/settings/keys',
     icon: '🧠',
-    models: ['Claude Haiku', 'Claude Sonnet', 'Claude Opus'],
+    recommendedModel: 'Claude Haiku',
+    badge: 'Recommended',
+    badgeColor: 'bg-violet-100 text-violet-700',
   },
   {
     id: 'openai',
     name: 'OpenAI',
-    description: 'GPT-4o, GPT-4, GPT-3.5',
+    description: 'GPT-4o · GPT-4o mini · o1',
     placeholder: 'sk-...',
     docsUrl: 'https://platform.openai.com/api-keys',
     icon: '🤖',
-    models: ['GPT-4o', 'GPT-4', 'GPT-3.5 Turbo'],
-  },
-  {
-    id: 'google',
-    name: 'Google AI',
-    description: 'Gemini Pro, Gemini Ultra',
-    placeholder: 'AIza...',
-    docsUrl: 'https://aistudio.google.com/app/apikey',
-    icon: '🔷',
-    models: ['Gemini Pro', 'Gemini Ultra'],
+    recommendedModel: 'GPT-4o mini',
+    badge: null,
+    badgeColor: '',
   },
   {
     id: 'openrouter',
     name: 'OpenRouter',
-    description: 'Access 100+ models through one API key',
+    description: 'Access 100+ models through one key',
     placeholder: 'sk-or-v1-...',
     docsUrl: 'https://openrouter.ai/keys',
     icon: '🌐',
-    models: ['Claude', 'GPT-4', 'Llama', 'Mistral', 'and 100+ more'],
+    recommendedModel: 'Any model',
+    badge: 'Most flexible',
+    badgeColor: 'bg-blue-100 text-blue-700',
+  },
+  {
+    id: 'google',
+    name: 'Google AI',
+    description: 'Gemini Flash · Gemini Pro',
+    placeholder: 'AIza...',
+    docsUrl: 'https://aistudio.google.com/app/apikey',
+    icon: '🔷',
+    recommendedModel: 'Gemini Flash',
+    badge: null,
+    badgeColor: '',
   },
 ] as const;
 
@@ -81,14 +90,15 @@ export function ApiKeysClient({ agencyId }: ApiKeysClientProps) {
     text: string;
   } | null>(null);
 
-  // Load existing keys on mount
+  const hasAnyCustomKey = Object.values(savedKeys).some(Boolean);
+  const configuredProviders = AI_PROVIDERS.filter((p) => savedKeys[p.id]);
+
   useEffect(() => {
     async function loadKeys() {
       try {
         const res = await fetch('/api/agency/api-keys');
         if (res.ok) {
           const data = await res.json();
-          // Backend returns which providers have keys set (not the actual keys)
           setSavedKeys(data.configured || {});
         }
       } catch {
@@ -101,7 +111,6 @@ export function ApiKeysClient({ agencyId }: ApiKeysClientProps) {
   }, []);
 
   const handleSave = async () => {
-    // Only send keys that have values
     const keysToSave = Object.fromEntries(
       Object.entries(keys).filter(([, v]) => v.trim())
     );
@@ -126,17 +135,17 @@ export function ApiKeysClient({ agencyId }: ApiKeysClientProps) {
         throw new Error(data.error || 'Failed to save');
       }
 
-      // Update saved state
       const newSaved = { ...savedKeys };
       for (const provider of Object.keys(keysToSave)) {
         newSaved[provider] = true;
       }
       setSavedKeys(newSaved);
-      setKeys({}); // Clear input fields after saving
+      setKeys({});
 
+      const count = Object.keys(keysToSave).length;
       setMessage({
         type: 'success',
-        text: `Saved ${Object.keys(keysToSave).length} API key(s). Your client AIs will use these keys for responses.`,
+        text: `✅ ${count} API key${count > 1 ? 's' : ''} saved. All your AI containers are being updated now — takes ~30 seconds.`,
       });
     } catch (err) {
       setMessage({
@@ -158,14 +167,72 @@ export function ApiKeysClient({ agencyId }: ApiKeysClientProps) {
 
   return (
     <div className="p-4 sm:p-6 md:p-8 max-w-3xl">
+      {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">API Keys</h1>
+        <h1 className="text-2xl font-bold text-gray-900">AI Model Keys</h1>
         <p className="mt-1 text-gray-500">
-          Connect your own AI provider keys. Your client AIs will use these
-          models — you pay your provider directly, no middlemen.
+          Control which AI model powers your terminals and your clients&apos; AIs.
         </p>
       </div>
 
+      {/* ── Current Status Card ── */}
+      {!hasAnyCustomKey ? (
+        /* Default state — Kyra's key is active */
+        <div className="rounded-xl border border-green-200 bg-green-50 p-5 mb-8">
+          <div className="flex items-start gap-4">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-100">
+              <Check className="h-5 w-5 text-green-600" />
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-green-900 text-base">
+                Your AI is live — no setup needed
+              </p>
+              <p className="mt-1 text-sm text-green-700">
+                Kyra provides a default <strong>OpenAI GPT-4o mini</strong> key for all your
+                terminals and your clients&apos; AIs. Everything works out of the box.
+              </p>
+              <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-green-200/60 px-3 py-1 text-xs font-medium text-green-800">
+                <Zap className="h-3 w-3" />
+                GPT-4o mini · Powered by Kyra
+              </div>
+            </div>
+          </div>
+          <div className="mt-4 rounded-lg bg-white/70 border border-green-200 px-4 py-3 text-sm text-green-800">
+            <strong>Want more power?</strong> Add your own API key below to switch to Claude, GPT-4o,
+            Gemini, or any other model — and pay your provider directly at cost.
+          </div>
+        </div>
+      ) : (
+        /* Custom key active */
+        <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-5 mb-8">
+          <div className="flex items-start gap-4">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-100">
+              <KeyRound className="h-5 w-5 text-indigo-600" />
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-indigo-900 text-base">
+                Using your own API key
+              </p>
+              <p className="mt-1 text-sm text-indigo-700">
+                Your terminals and client AIs are running on your own key — you pay your provider directly.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {configuredProviders.map((p) => (
+                  <span
+                    key={p.id}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-indigo-200/60 px-3 py-1 text-xs font-medium text-indigo-800"
+                  >
+                    <Check className="h-3 w-3" />
+                    {p.name} · {p.recommendedModel}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success / error message */}
       {message && (
         <div
           className={`rounded-md px-4 py-3 text-sm mb-6 ${
@@ -178,29 +245,17 @@ export function ApiKeysClient({ agencyId }: ApiKeysClientProps) {
         </div>
       )}
 
-      {/* Info card */}
-      <Card className="mb-6 border-blue-200 bg-blue-50/50">
-        <CardContent className="pt-5">
-          <div className="flex gap-3">
-            <KeyRound className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
-            <div className="text-sm text-blue-800 space-y-1">
-              <p className="font-medium">How it works</p>
-              <p>
-                Add your API key from any supported provider. When your client
-                AIs generate responses, they&apos;ll use your key and model. You
-                only need <strong>one provider</strong> — add whichever you
-                prefer.
-              </p>
-              <p className="text-blue-600">
-                Keys are encrypted and stored securely. We never share them.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* ── Add / Update Keys ── */}
+      <div className="mb-4">
+        <h2 className="text-base font-semibold text-gray-800">
+          {hasAnyCustomKey ? 'Update or add a provider' : 'Add your own key to upgrade'}
+        </h2>
+        <p className="text-sm text-gray-500 mt-0.5">
+          You only need one provider. Your choice of key determines the model used across all AI terminals.
+        </p>
+      </div>
 
-      {/* Provider cards */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         {AI_PROVIDERS.map((provider) => {
           const isConfigured = savedKeys[provider.id];
           const currentValue = keys[provider.id] || '';
@@ -209,27 +264,32 @@ export function ApiKeysClient({ agencyId }: ApiKeysClientProps) {
           return (
             <Card
               key={provider.id}
-              className={
+              className={`transition-colors ${
                 isConfigured
-                  ? 'border-green-200 bg-green-50/30'
-                  : 'border-gray-200'
-              }
+                  ? 'border-indigo-200 bg-indigo-50/20'
+                  : 'border-gray-200 hover:border-gray-300'
+              }`}
             >
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">{provider.icon}</span>
+                    <span className="text-xl">{provider.icon}</span>
                     <div>
-                      <CardTitle className="text-base flex items-center gap-2">
+                      <CardTitle className="text-sm font-semibold flex items-center gap-2">
                         {provider.name}
+                        {provider.badge && (
+                          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${provider.badgeColor}`}>
+                            {provider.badge}
+                          </span>
+                        )}
                         {isConfigured && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-700">
                             <Check className="h-3 w-3" />
                             Connected
                           </span>
                         )}
                       </CardTitle>
-                      <CardDescription className="text-xs">
+                      <CardDescription className="text-xs mt-0.5">
                         {provider.description}
                       </CardDescription>
                     </div>
@@ -238,7 +298,7 @@ export function ApiKeysClient({ agencyId }: ApiKeysClientProps) {
                     href={provider.docsUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1 transition-colors"
+                    className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1 transition-colors shrink-0"
                   >
                     Get key
                     <ExternalLink className="h-3 w-3" />
@@ -246,45 +306,30 @@ export function ApiKeysClient({ agencyId }: ApiKeysClientProps) {
                 </div>
               </CardHeader>
               <CardContent className="pt-0">
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <Input
-                      type={isVisible ? 'text' : 'password'}
-                      placeholder={
-                        isConfigured
-                          ? '••••••••••••••• (key saved — enter new to replace)'
-                          : provider.placeholder
-                      }
-                      value={currentValue}
-                      onChange={(e) =>
-                        setKeys((prev) => ({
-                          ...prev,
-                          [provider.id]: e.target.value,
-                        }))
-                      }
-                      className="font-mono text-sm pr-10"
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setShowKey((prev) => ({
-                          ...prev,
-                          [provider.id]: !prev[provider.id],
-                        }))
-                      }
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    >
-                      {isVisible ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                    </button>
-                  </div>
+                <div className="relative flex-1">
+                  <Input
+                    type={isVisible ? 'text' : 'password'}
+                    placeholder={
+                      isConfigured
+                        ? '••••••••••••••• (saved — enter new to replace)'
+                        : provider.placeholder
+                    }
+                    value={currentValue}
+                    onChange={(e) =>
+                      setKeys((prev) => ({ ...prev, [provider.id]: e.target.value }))
+                    }
+                    className="font-mono text-sm pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowKey((prev) => ({ ...prev, [provider.id]: !prev[provider.id] }))
+                    }
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {isVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
-                <p className="mt-2 text-xs text-gray-400">
-                  Models: {provider.models.join(', ')}
-                </p>
               </CardContent>
             </Card>
           );
@@ -293,43 +338,58 @@ export function ApiKeysClient({ agencyId }: ApiKeysClientProps) {
 
       {/* Save button */}
       <div className="mt-6 flex items-center justify-between">
-        <p className="text-xs text-gray-400">
-          You only need one provider configured. Add more for model flexibility.
-        </p>
+        <div className="flex items-center gap-1.5 text-xs text-gray-400">
+          <Shield className="h-3.5 w-3.5" />
+          Keys are encrypted and never shared
+        </div>
         <Button
           onClick={handleSave}
-          disabled={
-            isSaving ||
-            Object.values(keys).every((v) => !v.trim())
-          }
+          disabled={isSaving || Object.values(keys).every((v) => !v.trim())}
           className="gap-2"
         >
           {isSaving ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              Saving...
+              Saving & updating containers...
             </>
           ) : (
             <>
               <Save className="h-4 w-4" />
-              Save API Keys
+              Save & Apply Key
             </>
           )}
         </Button>
       </div>
 
-      {/* Warning */}
-      <div className="mt-8 rounded-lg border border-amber-200 bg-amber-50/50 p-4">
-        <div className="flex gap-3">
-          <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
-          <div className="text-sm text-amber-800">
-            <p className="font-medium mb-1">Beta Note</p>
-            <p>
-              During the beta, all your client AIs share the same API key(s) set
-              here. Per-client key configuration is coming soon. You are
-              responsible for usage costs on your own provider accounts.
-            </p>
-          </div>
+      {/* How it works */}
+      <div className="mt-8 rounded-lg border border-gray-200 bg-gray-50 p-4">
+        <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-3">How it works</p>
+        <div className="space-y-2.5">
+          {[
+            {
+              icon: '🟢',
+              title: 'Default (no key needed)',
+              desc: 'Kyra provides a shared OpenAI key — GPT-4o mini — for all your AIs. No cost to you.',
+            },
+            {
+              icon: '🔑',
+              title: 'Your own key',
+              desc: 'Add your key to switch models (Claude, GPT-4o, Gemini…). Costs billed directly to your provider account.',
+            },
+            {
+              icon: '⚡',
+              title: 'Instant rollout',
+              desc: 'When you save a key, all your running AI containers are updated automatically within ~30 seconds.',
+            },
+          ].map((item) => (
+            <div key={item.title} className="flex gap-3 text-sm">
+              <span className="text-base leading-5">{item.icon}</span>
+              <div>
+                <span className="font-medium text-gray-700">{item.title} — </span>
+                <span className="text-gray-500">{item.desc}</span>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>
