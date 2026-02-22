@@ -2,13 +2,17 @@ import { redirect } from 'next/navigation';
 import { createServiceClient } from '@/lib/supabase/server';
 import { Zap } from 'lucide-react';
 import Link from 'next/link';
+import PortalChat from './portal-chat';
 
 export default async function ClientPortalPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ clientId: string }>;
+  searchParams?: Promise<{ terminal?: string }>;
 }) {
   const { clientId } = await params;
+  const sp = await searchParams;
   const supabase = await createServiceClient();
 
   // Fetch client (public read — no auth required)
@@ -20,40 +24,49 @@ export default async function ClientPortalPage({
 
   if (error || !client) redirect('/');
 
-  // If the gateway is live, redirect straight to the real OpenClaw terminal
-  // Include ?token= so the browser auto-authenticates without device pairing
-  if (client.gateway_status === 'running' && client.gateway_url) {
-    const dest = client.gateway_token
-      ? `${client.gateway_url}?token=${client.gateway_token}`
-      : client.gateway_url;
-    redirect(dest);
-  }
-
-  // Fetch agency for branding (only shown on "not yet live" fallback)
+  // Fetch agency for branding
   const { data: agency } = await supabase
     .from('agencies')
     .select('id, name, settings')
     .eq('id', client.agency_id)
     .single();
 
-  const agencyLogoUrl = (agency?.settings as Record<string, unknown>)?.logo_url as string | undefined;
+  const agencySettings = (agency?.settings as Record<string, unknown>) || {};
+  const accentColor = (agencySettings.accent_color as string | undefined) || '#4f46e5';
 
-  // Gateway not running yet — show a friendly holding page
+  // ?terminal=1 → send to raw OpenClaw terminal (power user / agency testing)
+  if (sp?.terminal === '1' && client.gateway_status === 'running' && client.gateway_url) {
+    const dest = client.gateway_token
+      ? `${client.gateway_url}?token=${client.gateway_token}`
+      : client.gateway_url;
+    redirect(dest);
+  }
+
+  // Gateway running → show polished consumer chat UI
+  if (client.gateway_status === 'running' && client.gateway_url && client.gateway_token) {
+    return (
+      <PortalChat
+        clientName={client.name}
+        agencyName={agency?.name}
+        gatewayUrl={client.gateway_url}
+        gatewayToken={client.gateway_token}
+        accentColor={accentColor}
+      />
+    );
+  }
+
+  // Gateway not running yet — show holding page
   return (
     <div className="min-h-screen bg-gray-950 text-white flex flex-col">
       {/* Header */}
       <div className="border-b border-gray-800 bg-gray-900/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-3">
-          {agencyLogoUrl ? (
-            <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center overflow-hidden shrink-0">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={agencyLogoUrl} alt={`${agency?.name} logo`} className="h-full w-full object-contain p-0.5" />
-            </div>
-          ) : (
-            <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-lg font-bold">
-              {client.name.charAt(0).toUpperCase()}
-            </div>
-          )}
+          <div
+            className="w-9 h-9 rounded-xl flex items-center justify-center text-lg font-bold text-white"
+            style={{ backgroundColor: accentColor }}
+          >
+            {client.name.charAt(0).toUpperCase()}
+          </div>
           <div>
             <p className="font-bold text-white text-base">{client.name}</p>
             <p className="text-xs text-gray-400">
