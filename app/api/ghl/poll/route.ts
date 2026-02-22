@@ -17,6 +17,86 @@ export const maxDuration = 60; // Allow up to 60s for processing
 const GHL_API_BASE = 'https://services.leadconnectorhq.com';
 const GHL_API_VERSION = '2021-04-15';
 
+// ── GHL Contact Context ───────────────────────────────────────────────────────
+// Fetches the contact's CRM profile so the AI knows who it's talking to.
+
+interface GHLContactContext {
+  fullName: string;
+  email?: string;
+  tags: string[];
+  notes: string;
+  pipelineStage?: string;
+  source?: string;
+  customContext: string; // formatted string ready for injection
+}
+
+async function fetchGHLContactContext(
+  contactId: string,
+  token: string,
+): Promise<GHLContactContext | null> {
+  try {
+    const res = await fetch(`${GHL_API_BASE}/contacts/${contactId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Version: GHL_API_VERSION,
+      },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return null;
+
+    const { contact } = await res.json();
+    if (!contact) return null;
+
+    const fullName = [contact.firstName, contact.lastName].filter(Boolean).join(' ') || 'Unknown';
+    const email = contact.email || undefined;
+    const tags: string[] = contact.tags || [];
+    const source = contact.source || undefined;
+
+    // Pull notes (may be a string or array)
+    let notes = '';
+    if (contact.notes) {
+      if (Array.isArray(contact.notes)) {
+        notes = contact.notes
+          .slice(0, 3)
+          .map((n: any) => (typeof n === 'string' ? n : n.body || n.text || ''))
+          .filter(Boolean)
+          .join('; ');
+      } else if (typeof contact.notes === 'string') {
+        notes = contact.notes.slice(0, 300);
+      }
+    }
+
+    // Pipeline stage from opportunities (if present)
+    let pipelineStage: string | undefined;
+    if (contact.opportunities?.length) {
+      pipelineStage = contact.opportunities[0]?.pipelineStage || contact.opportunities[0]?.status;
+    }
+
+    // Build the formatted context string
+    const lines: string[] = [];
+    lines.push(`--- CRM Context ---`);
+    lines.push(`Contact: ${fullName}`);
+    if (email) lines.push(`Email: ${email}`);
+    if (tags.length) lines.push(`Tags: ${tags.join(', ')}`);
+    if (pipelineStage) lines.push(`Pipeline: ${pipelineStage}`);
+    if (source) lines.push(`Source: ${source}`);
+    if (notes) lines.push(`Notes: ${notes}`);
+    lines.push(`-------------------`);
+
+    return {
+      fullName,
+      email,
+      tags,
+      notes,
+      pipelineStage,
+      source,
+      customContext: lines.join('\n'),
+    };
+  } catch {
+    return null;
+  }
+}
+
 function getSupabase() {
   return createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -175,6 +255,16 @@ export async function GET(request: NextRequest) {
 
         addLog(`    Inbound: "${latestInbound.body.slice(0, 60)}" — sending to gateway...`);
 
+        // Fetch GHL contact context — gives AI CRM awareness (tags, pipeline, notes)
+        const ghlToken = client.ghl_private_token || client.ghl_access_token;
+        const contactCtx = ghlToken
+          ? await fetchGHLContactContext(conv.contactId, ghlToken)
+          : null;
+
+        if (contactCtx) {
+          addLog(`    CRM: ${contactCtx.fullName} | tags=[${contactCtx.tags.join(', ')}] | pipeline=${contactCtx.pipelineStage || 'none'}`);
+        }
+
       // Step 5: Call gateway
       try {
         // Use clean session key with daily rotation to prevent session bloat
@@ -200,7 +290,13 @@ export async function GET(request: NextRequest) {
           greeting && isFirstContact
             ? `This is the customer's FIRST message. Open your reply with this exact greeting: "${greeting}"`
             : '',
-          `Customer name: ${conv.contactName || conv.phone || 'Unknown'}.`,
+          // CRM context — inject what we know about this contact from GHL
+          contactCtx
+            ? contactCtx.customContext
+            : `Customer name: ${conv.contactName || conv.phone || 'Unknown'}.`,
+          contactCtx?.tags?.length
+            ? `Use the tags to personalise your response (e.g. if tagged 'hot-lead', be more proactive about next steps).`
+            : '',
           `Respond naturally and helpfully. Do not mention you are an AI unless directly asked.`,
         ].filter(Boolean).join('\n');
 
