@@ -70,6 +70,7 @@ export default function HomePage() {
             <a href="#how-it-works" className="hover:text-white transition">How it works</a>
             <a href="#industries" className="hover:text-white transition">Industries</a>
             <a href="#features" className="hover:text-white transition">Features</a>
+            <Link href="/pricing" className="hover:text-white transition">Pricing</Link>
           </div>
           <div className="flex items-center gap-3">
             <Link href="/login" className="text-sm text-slate-400 hover:text-white transition hidden sm:block">
@@ -338,6 +339,7 @@ export default function HomePage() {
           </div>
           <div className="flex items-center gap-6 text-sm text-slate-500">
             <Link href="/demo/dental" className="hover:text-white transition">Demo</Link>
+            <Link href="/pricing" className="hover:text-white transition">Pricing</Link>
             <Link href="/login" className="hover:text-white transition">Sign In</Link>
             <Link href="/signup/agency" className="hover:text-white transition">Sign Up</Link>
             <a href="https://conversionsystem.com" target="_blank" rel="noopener noreferrer" className="hover:text-white transition">
