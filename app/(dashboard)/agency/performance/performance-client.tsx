@@ -137,6 +137,23 @@ export function PerformanceClient({ clients, agencyId, agencySettings }: Perform
   const totalConversations = clients.reduce((sum, c) => sum + c.usage_this_month, 0);
   const avgConversations = totalClients > 0 ? Math.round(totalConversations / totalClients) : 0;
 
+  // Live analytics from client_conversations
+  const [analytics, setAnalytics] = useState<{
+    total: number;
+    escalations: number;
+    proactiveGreetings: number;
+    daily: { date: string; count: number }[];
+    byClient: { id: string; name: string; count: number; escalations: number }[];
+    byChannel: Record<string, number>;
+  } | null>(null);
+
+  useEffect(() => {
+    fetch('/api/agency/analytics?days=7')
+      .then(r => r.json())
+      .then(d => { if (!d.error && !d.migrationRequired) setAnalytics(d); })
+      .catch(() => {});
+  }, []);
+
   const [weeklyEnabled, setWeeklyEnabled] = useState(!!agencySettings.weekly_report_enabled);
   const [reportEmail, setReportEmail] = useState((agencySettings.weekly_report_email as string) || '');
   const [savingReport, setSavingReport] = useState(false);
@@ -235,6 +252,72 @@ export function PerformanceClient({ clients, agencyId, agencySettings }: Perform
           </Card>
         ))}
       </div>
+
+      {/* ── Real Analytics from client_conversations ── */}
+      {analytics && analytics.total > 0 && (
+        <div className="mb-8 space-y-4">
+          {/* Summary row */}
+          <div className="grid grid-cols-3 gap-4">
+            <div className="rounded-xl border border-gray-200 bg-white p-4 text-center">
+              <p className="text-3xl font-bold text-indigo-600">{analytics.total}</p>
+              <p className="text-xs text-gray-500 mt-1">Conversations (7d)</p>
+            </div>
+            <div className={`rounded-xl border p-4 text-center ${analytics.escalations > 0 ? 'border-red-200 bg-red-50' : 'border-gray-200 bg-white'}`}>
+              <p className={`text-3xl font-bold ${analytics.escalations > 0 ? 'text-red-600' : 'text-gray-400'}`}>{analytics.escalations}</p>
+              <p className={`text-xs mt-1 ${analytics.escalations > 0 ? 'text-red-500' : 'text-gray-500'}`}>🚨 Escalations</p>
+            </div>
+            <div className={`rounded-xl border p-4 text-center ${analytics.proactiveGreetings > 0 ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-white'}`}>
+              <p className={`text-3xl font-bold ${analytics.proactiveGreetings > 0 ? 'text-green-600' : 'text-gray-400'}`}>{analytics.proactiveGreetings}</p>
+              <p className={`text-xs mt-1 ${analytics.proactiveGreetings > 0 ? 'text-green-500' : 'text-gray-500'}`}>👋 Proactive greetings</p>
+            </div>
+          </div>
+
+          {/* Daily bar chart */}
+          {analytics.daily.length > 0 && (() => {
+            const maxCount = Math.max(...analytics.daily.map(d => d.count), 1);
+            return (
+              <div className="rounded-xl border border-gray-200 bg-white p-5">
+                <p className="text-sm font-semibold text-gray-700 mb-4">Conversations — Last 7 Days</p>
+                <div className="flex items-end gap-2 h-32">
+                  {analytics.daily.map((d) => {
+                    const pct = Math.max((d.count / maxCount) * 100, d.count > 0 ? 8 : 2);
+                    const label = new Date(d.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short' });
+                    return (
+                      <div key={d.date} className="flex-1 flex flex-col items-center gap-1">
+                        <span className="text-xs text-gray-500 font-medium">{d.count > 0 ? d.count : ''}</span>
+                        <div className="w-full rounded-t-md bg-indigo-500 transition-all" style={{ height: `${pct}%`, minHeight: '3px', opacity: d.count > 0 ? 1 : 0.2 }} />
+                        <span className="text-[10px] text-gray-400">{label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Top clients */}
+          {analytics.byClient.length > 1 && (
+            <div className="rounded-xl border border-gray-200 bg-white p-5">
+              <p className="text-sm font-semibold text-gray-700 mb-3">Top Clients This Week</p>
+              <div className="space-y-2">
+                {analytics.byClient.slice(0, 5).map((c) => {
+                  const maxC = analytics.byClient[0].count || 1;
+                  return (
+                    <div key={c.id} className="flex items-center gap-3">
+                      <span className="text-xs text-gray-600 w-32 truncate">{c.name}</span>
+                      <div className="flex-1 bg-gray-100 rounded-full h-2">
+                        <div className="bg-indigo-500 h-2 rounded-full" style={{ width: `${(c.count / maxC) * 100}%` }} />
+                      </div>
+                      <span className="text-xs font-semibold text-gray-700 w-6 text-right">{c.count}</span>
+                      {c.escalations > 0 && <span className="text-[10px] text-red-500">🚨{c.escalations}</span>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Performance table */}
       {clients.length > 0 && (
