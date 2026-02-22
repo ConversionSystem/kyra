@@ -98,6 +98,48 @@ const DEMOS: Record<string, {
       { label: 'Follow-up rate', value: '100%' },
     ],
   },
+  restaurant: {
+    title: 'AI Host for Restaurants',
+    subtitle: 'Takes reservations, answers menu questions, and handles catering inquiries — around the clock.',
+    contactName: 'Sophie Chen',
+    businessName: 'The Oak Room',
+    accentColor: '#f59e0b',
+    emoji: '🍽️',
+    conversation: [
+      { from: 'contact', text: 'Hi, do you have availability Saturday night for 6 people?', delay: 800 },
+      { from: 'ai', text: "Hi Sophie! 🍽️ We do have availability Saturday. Would 7pm or 8:30pm work better for your group?", delay: 1100 },
+      { from: 'contact', text: '7pm is perfect. Do you have vegetarian options?', delay: 800 },
+      { from: 'ai', text: "Absolutely — about 30% of our menu is vegetarian or vegan friendly. Chef's current favorites are the truffle risotto and butternut squash ravioli. Want me to confirm the 7pm reservation for 6?", delay: 1300 },
+      { from: 'contact', text: 'Yes please!', delay: 600 },
+      { from: 'ai', text: "✅ Confirmed! Saturday at 7pm for 6 guests under Sophie. You'll get a reminder Friday afternoon. We look forward to seeing you! 🥂", delay: 1200 },
+    ],
+    stats: [
+      { label: 'Reservations', value: 'Auto' },
+      { label: 'Unanswered calls', value: '0%' },
+      { label: 'No-shows reduced', value: '40%' },
+    ],
+  },
+  medspa: {
+    title: 'AI Concierge for Med Spas',
+    subtitle: 'Books consultations, explains treatments, and follows up with prospects — converting leads while you sleep.',
+    contactName: 'Jennifer Lee',
+    businessName: 'Glow Aesthetic Studio',
+    accentColor: '#ec4899',
+    emoji: '✨',
+    conversation: [
+      { from: 'contact', text: "Hi, I'm interested in Botox. How much does it cost?", delay: 800 },
+      { from: 'ai', text: "Hi Jennifer! ✨ Botox at our studio starts at $12/unit, with most patients needing 20–40 units per treatment area. Would you like a free consultation to get an exact quote?", delay: 1300 },
+      { from: 'contact', text: 'Yes, that sounds great. When are you available?', delay: 900 },
+      { from: 'ai', text: "We have openings Tuesday at 3pm, Wednesday at 10am, or Friday at 2pm. The consultation is about 20 minutes and completely free. Which works for you?", delay: 1200 },
+      { from: 'contact', text: 'Tuesday at 3pm works!', delay: 600 },
+      { from: 'ai', text: "Perfect! ✅ Tuesday at 3pm for Jennifer — free Botox consultation. You'll get a reminder Monday evening. We're excited to meet you! ✨", delay: 1100 },
+    ],
+    stats: [
+      { label: 'Consultations booked', value: 'Auto' },
+      { label: 'Response time', value: '< 60 sec' },
+      { label: 'Lead conversion', value: '+65%' },
+    ],
+  },
 };
 
 export function generateStaticParams() {
