@@ -30,6 +30,7 @@ import {
   Sparkles,
   Loader2,
   Briefcase,
+  Link2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AgencySettings } from '@/lib/agency/types';
@@ -76,6 +77,7 @@ const navSections: NavSection[] = [
     label: 'Sell',
     items: [
       { label: 'Biz in a Box', href: '/agency/biz-in-a-box', icon: Briefcase },
+      { label: 'Pitch Pages', href: '/agency/pitch-generator', icon: Link2 },
       { label: 'Sales Kit', href: '/agency/sales-kit', icon: Target },
       { label: 'Proposal', href: '/agency/proposal', icon: FileText },
       { label: 'Outreach', href: '/agency/outreach', icon: Mail },
