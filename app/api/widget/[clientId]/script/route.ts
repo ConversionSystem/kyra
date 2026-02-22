@@ -49,7 +49,7 @@ export async function GET(
   const widgetTitle = (cfg.widget_title as string) || `Chat with ${client.name}`;
   const widgetColor = (cfg.widget_color as string) || '#6366f1'; // indigo default
   const widgetGreeting = (cfg.widget_greeting as string) || `Hi! 👋 How can I help you today?`;
-  const apiBase = process.env.NEXT_PUBLIC_APP_URL || 'https://kyra.conversionsystem.com';
+  const apiBase = (process.env.NEXT_PUBLIC_APP_URL || 'https://kyra.conversionsystem.com').replace(/\/$/, '');
 
   // The entire widget as a self-contained IIFE
   const script = `
