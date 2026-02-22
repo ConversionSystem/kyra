@@ -500,15 +500,16 @@ function TestChatTab({ client }: { client: AgencyClient }) {
 // ── AI Personality Tab ────────────────────────────────────────────────────────
 
 function AIPersonalityTab({ client }: { client: AgencyClient }) {
-  const [greeting, setGreeting] = useState(
-    (client.container_config as Record<string, unknown>)?.greeting as string || ''
-  );
-  const [instructions, setInstructions] = useState(
-    (client.container_config as Record<string, unknown>)?.instructions as string || ''
-  );
-  const [persona, setPersona] = useState(
-    (client.container_config as Record<string, unknown>)?.persona as string || ''
-  );
+  const cfg = (client.container_config as Record<string, unknown>) || {};
+  const bhCfg = (cfg.business_hours as { enabled?: boolean; start?: string; end?: string; timezone?: string }) || {};
+
+  const [greeting, setGreeting] = useState(cfg.greeting as string || '');
+  const [instructions, setInstructions] = useState(cfg.instructions as string || '');
+  const [persona, setPersona] = useState(cfg.persona as string || '');
+  const [bhEnabled, setBhEnabled] = useState(bhCfg.enabled ?? false);
+  const [bhStart, setBhStart] = useState(bhCfg.start ?? '09:00');
+  const [bhEnd, setBhEnd] = useState(bhCfg.end ?? '17:00');
+  const [bhTimezone, setBhTimezone] = useState(bhCfg.timezone ?? 'America/New_York');
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -521,10 +522,11 @@ function AIPersonalityTab({ client }: { client: AgencyClient }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           container_config: {
-            ...(client.container_config as Record<string, unknown> || {}),
+            ...cfg,
             greeting,
             instructions,
             persona,
+            business_hours: { enabled: bhEnabled, start: bhStart, end: bhEnd, timezone: bhTimezone },
           },
         }),
       });
@@ -602,6 +604,60 @@ function AIPersonalityTab({ client }: { client: AgencyClient }) {
             rows={12}
             className="bg-gray-50 font-mono text-sm"
           />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            ⏰ Business Hours
+          </CardTitle>
+          <CardDescription>
+            AI only replies during these hours. Outside hours, messages are ignored until the next business day.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="bh-enabled"
+              checked={bhEnabled}
+              onChange={(e) => setBhEnabled(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-indigo-600"
+            />
+            <label htmlFor="bh-enabled" className="text-sm text-gray-700 font-medium">
+              Enable business hours restriction
+            </label>
+          </div>
+          {bhEnabled && (
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-500">Open</label>
+                <Input type="time" value={bhStart} onChange={(e) => setBhStart(e.target.value)} className="bg-gray-50" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-500">Close</label>
+                <Input type="time" value={bhEnd} onChange={(e) => setBhEnd(e.target.value)} className="bg-gray-50" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-500">Timezone</label>
+                <select
+                  value={bhTimezone}
+                  onChange={(e) => setBhTimezone(e.target.value)}
+                  className="w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm"
+                >
+                  <option value="America/New_York">Eastern (ET)</option>
+                  <option value="America/Chicago">Central (CT)</option>
+                  <option value="America/Denver">Mountain (MT)</option>
+                  <option value="America/Los_Angeles">Pacific (PT)</option>
+                  <option value="America/Phoenix">Arizona (AZ)</option>
+                  <option value="Europe/London">London (GMT/BST)</option>
+                  <option value="Europe/Bratislava">Bratislava (CET)</option>
+                  <option value="UTC">UTC</option>
+                </select>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
