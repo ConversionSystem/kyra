@@ -238,9 +238,15 @@ function TestChatTab({ client }: { client: AgencyClient }) {
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const gatewayUrl = (client as any).gateway_url as string | undefined;
+  const gatewayToken = (client as any).gateway_token as string | undefined;
 
-  // Clients get the real OpenClaw terminal — share the gateway URL directly
-  const shareUrl = gatewayUrl ?? (typeof window !== 'undefined'
+  // Include ?token= so the browser auto-authenticates (bypasses stale device identity)
+  const gatewayUrlWithToken = gatewayUrl && gatewayToken
+    ? `${gatewayUrl}?token=${gatewayToken}`
+    : gatewayUrl;
+
+  // Clients get the real OpenClaw terminal — share the gateway URL with token directly
+  const shareUrl = gatewayUrlWithToken ?? (typeof window !== 'undefined'
     ? `${window.location.origin}/portal/${client.id}`
     : `/portal/${client.id}`);
 
@@ -338,7 +344,7 @@ function TestChatTab({ client }: { client: AgencyClient }) {
           <div className="flex gap-2 shrink-0">
             {gatewayUrl ? (
               <a
-                href={gatewayUrl}
+                href={gatewayUrlWithToken || gatewayUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 transition text-white text-xs font-semibold"

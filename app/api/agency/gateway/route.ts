@@ -16,12 +16,13 @@ export async function GET() {
 
   const { data } = await supabase
     .from('agencies')
-    .select('gateway_url, gateway_status, gateway_error, gateway_provisioned_at')
+    .select('gateway_url, gateway_token, gateway_status, gateway_error, gateway_provisioned_at')
     .eq('id', agency.id)
     .single();
 
   return NextResponse.json({
     gatewayUrl: data?.gateway_url ?? null,
+    gatewayToken: data?.gateway_token ?? null,
     status: data?.gateway_status ?? 'not_provisioned',
     error: data?.gateway_error ?? null,
     provisionedAt: data?.gateway_provisioned_at ?? null,
@@ -46,7 +47,7 @@ export async function POST() {
   );
 
   if (result.success) {
-    return NextResponse.json({ ok: true, gatewayUrl: result.gatewayUrl });
+    return NextResponse.json({ ok: true, gatewayUrl: result.gatewayUrl, gatewayToken: result.authToken });
   }
   return NextResponse.json({ ok: false, error: result.error }, { status: 500 });
 }

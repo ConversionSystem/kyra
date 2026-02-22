@@ -108,6 +108,7 @@ export function AgencySidebar({ agencyName, plan, settings }: AgencySidebarProps
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [agencyGatewayUrl, setAgencyGatewayUrl] = useState<string | null>(null);
+  const [agencyGatewayToken, setAgencyGatewayToken] = useState<string | null>(null);
   const [provisioningGateway, setProvisioningGateway] = useState(false);
 
   useEffect(() => {
@@ -117,13 +118,17 @@ export function AgencySidebar({ agencyName, plan, settings }: AgencySidebarProps
       .then((data) => {
         if (data.gatewayUrl && data.status === 'running') {
           setAgencyGatewayUrl(data.gatewayUrl);
+          setAgencyGatewayToken(data.gatewayToken ?? null);
         } else if (!data.gatewayUrl || data.status === 'not_provisioned' || data.status === 'error') {
           // Auto-provision the agency gateway on first load (or retry after error)
           setProvisioningGateway(true);
           fetch('/api/agency/gateway', { method: 'POST' })
             .then((r) => r.json())
             .then((result) => {
-              if (result.gatewayUrl) setAgencyGatewayUrl(result.gatewayUrl);
+              if (result.gatewayUrl) {
+                setAgencyGatewayUrl(result.gatewayUrl);
+                setAgencyGatewayToken(result.gatewayToken ?? null);
+              }
             })
             .catch(() => {})
             .finally(() => setProvisioningGateway(false));
@@ -242,7 +247,9 @@ export function AgencySidebar({ agencyName, plan, settings }: AgencySidebarProps
       {/* Agency's Own OpenClaw Terminal — dedicated container, separate from clients */}
       <div className={cn('p-3 border-t', hasBranding ? 'border-white/10' : 'border-gray-800')}>
         <a
-          href={agencyGatewayUrl || '#'}
+          href={agencyGatewayUrl
+            ? (agencyGatewayToken ? `${agencyGatewayUrl}?token=${agencyGatewayToken}` : agencyGatewayUrl)
+            : '#'}
           target="_blank"
           rel="noopener noreferrer"
           onClick={(e) => {
