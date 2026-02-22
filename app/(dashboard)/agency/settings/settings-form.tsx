@@ -67,6 +67,7 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
   const [customDomain, setCustomDomain] = useState(settings.custom_domain ?? '');
   const [supportEmail, setSupportEmail] = useState(settings.support_email ?? '');
   const [escalationEmail, setEscalationEmail] = useState((settings as any).escalation_email ?? '');
+  const [escalationWebhookUrl, setEscalationWebhookUrl] = useState((settings as any).escalation_webhook_url ?? '');
   const [ghlWebhookUrl, setGhlWebhookUrl] = useState((settings as any).ghl_webhook_url ?? '');
   const [logoError, setLogoError] = useState(false);
 
@@ -105,6 +106,7 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
             custom_domain: customDomain.trim() || undefined,
             support_email: supportEmail.trim() || undefined,
               escalation_email: escalationEmail.trim() || undefined,
+              escalation_webhook_url: escalationWebhookUrl.trim() || undefined,
             ghl_webhook_url: ghlWebhookUrl.trim() || undefined,
           },
         }),
@@ -373,6 +375,23 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
                 />
                 <p className="text-xs text-gray-400">
                   When Kyra AI can't resolve a customer issue, you'll get an instant email alert so no lead slips through the cracks.
+                </p>
+              </div>
+
+              {/* Escalation webhook */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                  🔔 Escalation Webhook URL
+                </label>
+                <Input
+                  value={escalationWebhookUrl}
+                  onChange={(e) => setEscalationWebhookUrl(e.target.value)}
+                  placeholder="https://hooks.slack.com/services/... or https://discord.com/api/webhooks/..."
+                  disabled={!isAdmin}
+                  className="bg-gray-100 border-gray-200 font-mono text-xs"
+                />
+                <p className="text-xs text-gray-400">
+                  Slack, Discord, Zapier, or Make webhook. Fires instantly when Kyra escalates a customer to your team. Slack format supported natively.
                 </p>
               </div>
 
