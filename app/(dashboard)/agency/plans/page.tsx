@@ -126,7 +126,7 @@ export default async function PlansPage() {
             ))}
           </div>
           <p className="text-xs text-gray-500 mt-4 text-center">
-            + $0.48/mo per client container. Most agencies charge $1K–$5K/mo per client.
+            Most agencies charge $500–$5K/mo per client.
           </p>
         </CardContent>
       </Card>
