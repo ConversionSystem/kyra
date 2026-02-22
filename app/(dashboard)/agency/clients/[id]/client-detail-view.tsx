@@ -40,6 +40,58 @@ import GHLConnection from './ghl-connection';
 import { UsageAnalytics } from './usage-analytics';
 import PermissionsCard from './permissions-card';
 
+// ── Setup Nudge Banner ────────────────────────────────────────────────────────
+
+function SetupNudgeBanner({
+  client,
+  onTabChange,
+}: {
+  client: AgencyClient;
+  onTabChange: (tab: Tab) => void;
+}) {
+  const cc = (client.container_config as Record<string, unknown>) ?? {};
+  const hasPersonality = !!(cc.persona || cc.instructions);
+  const hasGHL = !!(
+    (client as any).ghl_location_id ||
+    (client as any).ghl_private_token ||
+    (client as any).ghl_access_token
+  );
+
+  const missing: { label: string; tab: Tab; desc: string }[] = [];
+  if (!hasPersonality) missing.push({ label: 'Add Personality', tab: 'personality', desc: 'Train the AI with persona, greeting, and instructions' });
+  if (!hasGHL) missing.push({ label: 'Connect GHL', tab: 'ghl', desc: 'Link a GHL sub-account so the AI responds to your contacts' });
+
+  if (missing.length === 0) return null;
+
+  return (
+    <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4">
+      <div className="flex items-start gap-3">
+        <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+        <div className="flex-1">
+          <p className="text-sm font-semibold text-amber-900">
+            Your AI needs training to work properly
+          </p>
+          <p className="text-xs text-amber-700 mt-0.5 mb-3">
+            Complete these steps so the AI knows who it is and who it works for.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {missing.map((step) => (
+              <button
+                key={step.tab}
+                onClick={() => onTabChange(step.tab)}
+                className="inline-flex flex-col items-start rounded-lg border border-amber-200 bg-white px-3 py-2 text-left hover:border-amber-400 hover:shadow-sm transition-all"
+              >
+                <span className="text-xs font-semibold text-amber-800">→ {step.label}</span>
+                <span className="text-[10px] text-amber-600 mt-0.5">{step.desc}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 const statusColors: Record<string, string> = {
@@ -201,6 +253,9 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
           })}
         </nav>
       </div>
+
+      {/* Setup nudge — shown when AI has no personality or GHL configured */}
+      <SetupNudgeBanner client={initialClient} onTabChange={setActiveTab} />
 
       {/* Tab content */}
       {activeTab === 'chat' && (

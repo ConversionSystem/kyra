@@ -134,6 +134,7 @@ export async function GET(request: NextRequest) {
         // Get messages
         let latestInbound: any = null;
         let hasReply = false;
+        let isFirstContact = false;
         try {
           const msgRes = await fetch(
             `${GHL_API_BASE}/conversations/${conv.id}/messages?limit=5`,
@@ -159,6 +160,9 @@ export async function GET(request: NextRequest) {
           hasReply = messages.some(
             (m: any) => m.direction === 'outbound' && new Date(m.dateAdded).getTime() > inboundTime
           );
+
+          // True first contact = no outbound messages at all in this conversation
+          isFirstContact = !messages.some((m: any) => m.direction === 'outbound');
         } catch (err: any) {
           addLog(`    Messages error: ${err.message}`);
           continue;
@@ -191,13 +195,10 @@ export async function GET(request: NextRequest) {
         const persona = (cfg.persona as string) || `AI assistant for ${client.name}`;
         const greeting = (cfg.greeting as string) || '';
 
-        // Detect first contact: no prior outbound messages in this conversation
-        const isFirstContact = !conv.unreadCount || conv.lastMessageDirection === 'inbound';
-
         const systemContext = [
           `You are ${persona}. You are responding via SMS — keep replies concise (1-3 sentences max).`,
           greeting && isFirstContact
-            ? `If this is a new contact, start your reply with your greeting: "${greeting}"`
+            ? `This is the customer's FIRST message. Open your reply with this exact greeting: "${greeting}"`
             : '',
           `Customer name: ${conv.contactName || conv.phone || 'Unknown'}.`,
           `Respond naturally and helpfully. Do not mention you are an AI unless directly asked.`,
