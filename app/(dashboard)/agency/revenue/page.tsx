@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
-const KYRA_COST_PER_CLIENT = 0.48; // per month
+const KYRA_COST_PER_CLIENT = null; // unknown — pricing TBD
 
 const PLAN_LIMITS = {
   starter: { clients: 5,  price: 0,   label: 'Starter (Beta)' },
@@ -25,8 +25,7 @@ export default function RevenuePage() {
   const [pricePerClient, setPricePerClient] = useState(500);
 
   const kyraFee = numClients <= 5 ? 0 : numClients <= 20 ? 249 : 499;
-  const containerCost = numClients * KYRA_COST_PER_CLIENT;
-  const totalCost = kyraFee + containerCost;
+  const totalCost = kyraFee;
   const grossRevenue = numClients * pricePerClient;
   const netRevenue = grossRevenue - totalCost;
   const margin = grossRevenue > 0 ? Math.round((netRevenue / grossRevenue) * 100) : 0;
@@ -114,8 +113,8 @@ export default function RevenuePage() {
                 <span className="text-gray-400">− {fmt(kyraFee)}</span>
               </div>
               <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-500">Container hosting ({numClients} × $0.48)</span>
-                <span className="text-gray-400">− {fmt(containerCost)}</span>
+                <span className="text-gray-500">Platform hosting</span>
+                <span className="text-gray-400">Included</span>
               </div>
             </div>
             <div className="border-t border-gray-700 pt-4">
@@ -170,7 +169,7 @@ export default function RevenuePage() {
           <h3 className="font-semibold text-gray-900 mb-4">Why agencies love the math</h3>
           <div className="grid md:grid-cols-3 gap-4">
             {[
-              { title: '98.7% margin', desc: 'Your cost is $0.48/client/mo. You charge $500–5K. The rest is yours.', icon: '💰' },
+              { title: 'High margins', desc: 'Your platform cost is a predictable low monthly fee. You charge clients $500–5,000/mo and keep the difference.', icon: '💰' },
               { title: 'Recurring revenue', desc: 'Clients pay every month. One sale = income for years.', icon: '🔄' },
               { title: 'No technical overhead', desc: 'Kyra manages all containers, updates, and infrastructure.', icon: '⚙️' },
             ].map((item) => (

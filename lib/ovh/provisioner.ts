@@ -105,7 +105,8 @@ export async function provisionClientGateway(
   resources: {
     memoryMb?: number;
     cpuShares?: number;
-  } = {}
+  } = {},
+  clientName?: string
 ): Promise<ProvisionClientResult> {
   const supabase = getSupabase();
 
@@ -127,6 +128,7 @@ export async function provisionClientGateway(
       body: JSON.stringify({
         clientId,
         agencyId,
+        clientName: clientName || undefined,
         config,
         resources: {
           memoryMb: resources.memoryMb || 1024,  // OpenClaw needs ~350MB min; 256 causes OOM crash
