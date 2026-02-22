@@ -27,6 +27,7 @@ import {
   Store,
   Mail,
   Rocket,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AgencySettings } from '@/lib/agency/types';
@@ -71,6 +72,7 @@ const navSections: NavSection[] = [
   {
     label: 'Resources',
     items: [
+      { label: 'Roles', href: '/agency/roles', icon: Sparkles },
       { label: 'Templates', href: '/agency/templates', icon: BookOpen },
       { label: 'Proposal', href: '/agency/proposal', icon: FileText },
       { label: 'Sales Kit', href: '/agency/sales-kit', icon: Target },

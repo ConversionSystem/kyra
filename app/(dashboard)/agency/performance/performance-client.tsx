@@ -1,15 +1,112 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
   BarChart3, Users, MessageSquare, Activity,
-  TrendingUp, Mail, Info,
+  TrendingUp, Mail, Info, X, ChevronRight, Copy, Check,
 } from 'lucide-react';
 import type { AgencyClient } from '@/lib/agency/types';
+
+const DISMISS_KEY = 'kyra_resend_dismissed';
+
+function ResendSetupBanner() {
+  const [dismissed, setDismissed] = useState(true); // start hidden, check localStorage
+  const [expanded, setExpanded] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
+
+  useEffect(() => {
+    setDismissed(localStorage.getItem(DISMISS_KEY) === '1');
+  }, []);
+
+  if (dismissed) return null;
+
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(text);
+    setTimeout(() => setCopied(null), 2000);
+  };
+
+  const steps = [
+    {
+      title: 'Get your free Resend API key',
+      desc: (
+        <>
+          Go to <a href="https://resend.com" target="_blank" rel="noopener noreferrer" className="underline font-medium">resend.com</a> → Sign up free → API Keys → Create API Key
+        </>
+      ),
+      copyText: 'RESEND_API_KEY',
+    },
+    {
+      title: 'Add it to Vercel',
+      desc: (
+        <>
+          Open your <a href="https://vercel.com" target="_blank" rel="noopener noreferrer" className="underline font-medium">Vercel dashboard</a> → kyra project → Settings → Environment Variables → Add New
+          <span className="block mt-1.5 text-xs text-indigo-500">
+            Name: <code className="bg-indigo-100 px-1 rounded">RESEND_API_KEY</code> · Value: (paste your key) · Click Save, then redeploy
+          </span>
+        </>
+      ),
+    },
+    {
+      title: 'Turn on reports here',
+      desc: 'Use the toggle below to enable weekly reports for your agency. Reports fire every Monday at 9am.',
+    },
+  ];
+
+  return (
+    <div className="mb-6 rounded-xl border border-indigo-200 bg-indigo-50 p-5 relative">
+      <button
+        onClick={() => { localStorage.setItem(DISMISS_KEY, '1'); setDismissed(true); }}
+        className="absolute top-3 right-3 text-indigo-400 hover:text-indigo-600 transition-colors"
+        aria-label="Dismiss"
+      >
+        <X className="h-4 w-4" />
+      </button>
+
+      <p className="text-sm font-semibold text-indigo-800">📧 Activate Weekly Performance Reports</p>
+      <p className="text-xs text-indigo-600 mt-0.5">
+        Get an automated email every Monday with your agency&apos;s stats. Takes 2 minutes.
+      </p>
+
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="mt-3 text-xs font-medium text-indigo-700 hover:text-indigo-900 flex items-center gap-1 transition-colors"
+      >
+        <ChevronRight className={`h-3.5 w-3.5 transition-transform ${expanded ? 'rotate-90' : ''}`} />
+        {expanded ? 'Hide steps' : 'Show me how →'}
+      </button>
+
+      {expanded && (
+        <ol className="mt-4 space-y-4">
+          {steps.map((step, i) => (
+            <li key={i} className="flex gap-3">
+              <span className="shrink-0 h-6 w-6 rounded-full bg-indigo-200 text-indigo-800 flex items-center justify-center text-xs font-bold">
+                {i + 1}
+              </span>
+              <div className="text-xs text-indigo-700">
+                <p className="font-semibold">{step.title}</p>
+                <p className="mt-0.5 leading-relaxed">{step.desc}</p>
+                {step.copyText && (
+                  <button
+                    onClick={() => handleCopy(step.copyText!)}
+                    className="mt-1.5 inline-flex items-center gap-1 text-[11px] bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-2 py-0.5 rounded transition-colors"
+                  >
+                    {copied === step.copyText ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                    {copied === step.copyText ? 'Copied!' : `Copy: ${step.copyText}`}
+                  </button>
+                )}
+              </div>
+            </li>
+          ))}
+        </ol>
+      )}
+    </div>
+  );
+}
 
 function performanceScore(usage: number): { label: string; color: string } {
   if (usage > 20) return { label: 'Excellent', color: 'border-green-200 bg-green-50 text-green-700' };
@@ -44,6 +141,36 @@ export function PerformanceClient({ clients, agencyId, agencySettings }: Perform
   const [reportEmail, setReportEmail] = useState((agencySettings.weekly_report_email as string) || '');
   const [savingReport, setSavingReport] = useState(false);
   const [reportSaved, setReportSaved] = useState(false);
+  const [sendingTestReport, setSendingTestReport] = useState(false);
+  const [testReportResult, setTestReportResult] = useState<{ ok: boolean; message: string } | null>(null);
+
+  const handleSendTestReport = async () => {
+    const emailToUse = reportEmail.trim();
+    if (!emailToUse) {
+      setTestReportResult({ ok: false, message: 'Enter a report email address first.' });
+      return;
+    }
+    setSendingTestReport(true);
+    setTestReportResult(null);
+    try {
+      const res = await fetch('/api/agency/performance/send-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: emailToUse }),
+      });
+      const json = await res.json();
+      if (res.ok) {
+        setTestReportResult({ ok: true, message: `Report sent to ${json.sentTo}!` });
+      } else {
+        const hint = json.hint ? ` ${json.hint}` : '';
+        setTestReportResult({ ok: false, message: json.error + hint });
+      }
+    } catch {
+      setTestReportResult({ ok: false, message: 'Network error — could not send report.' });
+    }
+    setSendingTestReport(false);
+    setTimeout(() => setTestReportResult(null), 6000);
+  };
 
   const handleSaveReport = async () => {
     setSavingReport(true);
@@ -79,6 +206,8 @@ export function PerformanceClient({ clients, agencyId, agencySettings }: Perform
 
   return (
     <div className="p-4 sm:p-6 md:p-8 max-w-6xl">
+      <ResendSetupBanner />
+
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
@@ -175,24 +304,48 @@ export function PerformanceClient({ clients, agencyId, agencySettings }: Perform
           </div>
 
           {weeklyEnabled && (
-            <div className="flex items-end gap-3">
-              <div>
-                <label className="text-xs text-gray-500 mb-1 block">Report email</label>
-                <Input
-                  type="email"
-                  value={reportEmail}
-                  onChange={(e) => setReportEmail(e.target.value)}
-                  placeholder="you@agency.com"
-                  className="h-9 w-64"
-                />
+            <div className="space-y-3">
+              <div className="flex items-end gap-3">
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Report email</label>
+                  <Input
+                    type="email"
+                    value={reportEmail}
+                    onChange={(e) => setReportEmail(e.target.value)}
+                    placeholder="you@agency.com"
+                    className="h-9 w-64"
+                  />
+                </div>
+                <Button
+                  size="sm"
+                  onClick={handleSaveReport}
+                  disabled={savingReport}
+                >
+                  {reportSaved ? 'Saved!' : 'Save'}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleSendTestReport}
+                  disabled={sendingTestReport || !reportEmail.trim()}
+                  className="flex items-center gap-1.5"
+                >
+                  <Mail className="h-3.5 w-3.5" />
+                  {sendingTestReport ? 'Sending…' : 'Send Test Report Now'}
+                </Button>
               </div>
-              <Button
-                size="sm"
-                onClick={handleSaveReport}
-                disabled={savingReport}
-              >
-                {reportSaved ? 'Saved!' : 'Save'}
-              </Button>
+              {testReportResult && (
+                <div className={`text-xs px-3 py-2 rounded-lg font-medium ${
+                  testReportResult.ok
+                    ? 'bg-green-50 text-green-700 border border-green-200'
+                    : 'bg-red-50 text-red-700 border border-red-200'
+                }`}>
+                  {testReportResult.ok ? '✅ ' : '❌ '}{testReportResult.message}
+                </div>
+              )}
+              <p className="text-xs text-gray-400">
+                Reports auto-send every Monday at 9:00 AM CET.
+              </p>
             </div>
           )}
 
