@@ -33,6 +33,11 @@ import {
   Clock,
   User,
   Bot,
+  Globe,
+  Mail,
+  Phone,
+  Radio,
+  MessageCircle,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { AgencyClient, AgencyMember } from '@/lib/agency/queries';
@@ -105,7 +110,7 @@ interface ChatMessage {
   content: string;
 }
 
-type Tab = 'chat' | 'personality' | 'settings' | 'ghl' | 'permissions' | 'usage' | 'conversations';
+type Tab = 'chat' | 'personality' | 'settings' | 'ghl' | 'permissions' | 'usage' | 'conversations' | 'channels';
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'chat', label: 'Test Chat', icon: MessageSquare },
@@ -115,6 +120,7 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'permissions', label: 'Permissions', icon: Shield },
   { id: 'usage', label: 'Usage', icon: BarChart3 },
   { id: 'conversations', label: 'Conversations', icon: Inbox },
+  { id: 'channels', label: 'Channels', icon: Radio },
 ];
 
 interface ClientDetailViewProps {
@@ -278,6 +284,9 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
       )}
       {activeTab === 'conversations' && (
         <ConversationsTab client={initialClient} />
+      )}
+      {activeTab === 'channels' && (
+        <ChannelsTab client={initialClient} />
       )}
     </div>
   );
@@ -1128,6 +1137,252 @@ CREATE POLICY "Service insert" ON client_conversations FOR INSERT WITH CHECK (tr
         </div>
         );
       })}
+    </div>
+  );
+}
+
+// ── Channels Tab ──────────────────────────────────────────────────────────────
+// Shows all available channels: web chat embed, email outreach, WhatsApp, voice.
+
+function ChannelsTab({ client }: { client: AgencyClient }) {
+  const [copied, setCopied] = useState<string | null>(null);
+  const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://kyra.conversionsystem.com';
+  const scriptTag = `<script src="${appUrl}/api/widget/${client.id}/script" defer></script>`;
+
+  const copy = (text: string, key: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(key);
+      setTimeout(() => setCopied(null), 2000);
+    });
+  };
+
+  return (
+    <div className="space-y-6 pb-8">
+      {/* Header */}
+      <div>
+        <h2 className="text-lg font-semibold text-gray-900">Channels</h2>
+        <p className="text-sm text-gray-500 mt-1">
+          Connect your client AI to every surface customers use — from your website to WhatsApp to voice calls.
+        </p>
+      </div>
+
+      {/* ── Web Chat Widget ─────────────────────────────────────────────── */}
+      <Card className="border-indigo-100">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-indigo-50 flex items-center justify-center">
+              <Globe className="h-5 w-5 text-indigo-600" />
+            </div>
+            <div>
+              <CardTitle className="text-base">Web Chat Widget</CardTitle>
+              <CardDescription className="text-xs">Embed a live chat bubble on any website — no GHL required</CardDescription>
+            </div>
+            <span className="ml-auto text-[10px] bg-green-100 text-green-700 font-medium px-2 py-0.5 rounded-full">✅ Ready</span>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-gray-600">
+            Drop one line of code on any webpage. A floating chat bubble appears — customers type, your AI responds instantly.
+            Sessions persist per browser via <code className="text-xs bg-gray-100 px-1 rounded">localStorage</code>.
+          </p>
+
+          <div>
+            <p className="text-xs font-medium text-gray-700 mb-2">Embed snippet — paste before <code className="bg-gray-100 px-1 rounded">&lt;/body&gt;</code></p>
+            <div className="flex items-start gap-2">
+              <div className="flex-1 bg-gray-900 rounded-lg p-3 font-mono text-xs text-green-400 overflow-x-auto">
+                {scriptTag}
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="shrink-0"
+                onClick={() => copy(scriptTag, 'script')}
+              >
+                {copied === 'script' ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+              </Button>
+            </div>
+          </div>
+
+          <div className="bg-indigo-50 rounded-lg p-3 text-xs text-indigo-700 space-y-1">
+            <p className="font-medium">Widget customization</p>
+            <p>To change the chat title, greeting, or brand color — update these in your client's <strong>Personality</strong> tab (coming soon to widget config). Current defaults use the client's name and indigo theme.</p>
+          </div>
+
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs"
+              onClick={() => window.open(`${appUrl}/api/widget/${client.id}/script`, '_blank')}
+            >
+              <ExternalLink className="h-3.5 w-3.5 mr-1.5" /> Preview script
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs"
+              onClick={() => copy(`${appUrl}/api/widget/chat`, 'api')}
+            >
+              {copied === 'api' ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500 mr-1.5" /> : <Copy className="h-3.5 w-3.5 mr-1.5" />}
+              Copy API endpoint
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── GHL (existing) ──────────────────────────────────────────────── */}
+      <Card className="border-green-100">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-green-50 flex items-center justify-center">
+              <MessageCircle className="h-5 w-5 text-green-600" />
+            </div>
+            <div>
+              <CardTitle className="text-base">GHL (SMS + Multi-channel)</CardTitle>
+              <CardDescription className="text-xs">SMS, WhatsApp, Instagram, FB Messenger, Live Chat, Google Business — all via GHL</CardDescription>
+            </div>
+            <span className="ml-auto text-[10px] bg-green-100 text-green-700 font-medium px-2 py-0.5 rounded-full">✅ Active</span>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-gray-600">
+            Connect GHL in the <strong>GHL tab</strong> and the AI automatically handles all channels your client has connected — SMS, WhatsApp, Instagram DMs, Facebook Messenger, Live Chat, and Google My Business. No extra setup needed per channel.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {['SMS', 'WhatsApp (via GHL)', 'Instagram DMs', 'FB Messenger', 'Live Chat', 'Google Business'].map(ch => (
+              <span key={ch} className="text-[11px] bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full">{ch}</span>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── Email Outreach ──────────────────────────────────────────────── */}
+      <Card className="border-blue-100">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center">
+              <Mail className="h-5 w-5 text-blue-600" />
+            </div>
+            <div>
+              <CardTitle className="text-base">Email Outreach</CardTitle>
+              <CardDescription className="text-xs">AI-personalized emails via Resend — follow-ups, welcome emails, nurture sequences</CardDescription>
+            </div>
+            <span className="ml-auto text-[10px] bg-green-100 text-green-700 font-medium px-2 py-0.5 rounded-full">✅ Ready</span>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-gray-600">
+            Trigger AI-written, personalized emails from your GHL workflows or cron jobs. Uses the client AI's personality to craft each email.
+          </p>
+
+          <div>
+            <p className="text-xs font-medium text-gray-700 mb-1.5">API call (from GHL workflow or cron)</p>
+            <div className="flex items-start gap-2">
+              <pre className="flex-1 bg-gray-900 rounded-lg p-3 font-mono text-xs text-green-400 overflow-x-auto whitespace-pre">{`POST ${appUrl}/api/channels/email
+Authorization: Bearer YOUR_KYRA_API_SECRET
+
+{
+  "clientId": "${client.id}",
+  "to": "customer@email.com",
+  "toName": "John",
+  "templateId": "follow_up",
+  "context": "they just booked a demo call"
+}`}</pre>
+              <Button
+                size="sm"
+                variant="outline"
+                className="shrink-0"
+                onClick={() => copy(`POST ${appUrl}/api/channels/email\nAuthorization: Bearer YOUR_KYRA_API_SECRET\n\n{\n  "clientId": "${client.id}",\n  "to": "customer@email.com",\n  "templateId": "follow_up"\n}`, 'email')}
+              >
+                {copied === 'email' ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+              </Button>
+            </div>
+          </div>
+
+          <div className="text-xs text-gray-500">
+            <span className="font-medium">Templates:</span> <code className="bg-gray-100 px-1 rounded">follow_up</code> · <code className="bg-gray-100 px-1 rounded">welcome</code> · <code className="bg-gray-100 px-1 rounded">nurture</code> · <code className="bg-gray-100 px-1 rounded">custom</code>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── WhatsApp Direct ─────────────────────────────────────────────── */}
+      <Card className="border-gray-200">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
+              <MessageSquare className="h-5 w-5 text-gray-500" />
+            </div>
+            <div>
+              <CardTitle className="text-base text-gray-700">WhatsApp Business API (Direct)</CardTitle>
+              <CardDescription className="text-xs">Meta Cloud API — no GHL dependency</CardDescription>
+            </div>
+            <span className="ml-auto text-[10px] bg-amber-100 text-amber-700 font-medium px-2 py-0.5 rounded-full">⚙️ Setup Required</span>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-gray-600">
+            Use this if your client wants WhatsApp without GHL. Requires a Meta Business account and phone number approval.
+          </p>
+          <div className="bg-amber-50 rounded-lg p-3 text-xs text-amber-800 space-y-1">
+            <p className="font-semibold">Setup steps:</p>
+            <ol className="list-decimal ml-4 space-y-1">
+              <li>Go to <a href="https://developers.facebook.com" target="_blank" rel="noopener noreferrer" className="underline">developers.facebook.com</a> → create app → add WhatsApp</li>
+              <li>Get a <strong>System User Access Token</strong> (permanent) + <strong>Phone Number ID</strong></li>
+              <li>Add to Vercel env: <code className="bg-amber-100 px-1 rounded">WHATSAPP_ACCESS_TOKEN</code>, <code className="bg-amber-100 px-1 rounded">WHATSAPP_PHONE_NUMBER_ID</code>, <code className="bg-amber-100 px-1 rounded">WHATSAPP_VERIFY_TOKEN</code> (any string), <code className="bg-amber-100 px-1 rounded">WHATSAPP_DEFAULT_CLIENT_ID={client.id}</code></li>
+              <li>Set webhook URL in Meta: <code className="bg-amber-100 px-1 rounded break-all">{appUrl}/api/channels/whatsapp-direct</code></li>
+              <li>Subscribe to: <strong>messages</strong></li>
+            </ol>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-xs"
+            onClick={() => copy(`${appUrl}/api/channels/whatsapp-direct`, 'wa')}
+          >
+            {copied === 'wa' ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500 mr-1.5" /> : <Copy className="h-3.5 w-3.5 mr-1.5" />}
+            Copy webhook URL
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* ── Voice ──────────────────────────────────────────────────────── */}
+      <Card className="border-gray-200">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
+              <Phone className="h-5 w-5 text-gray-500" />
+            </div>
+            <div>
+              <CardTitle className="text-base text-gray-700">Voice (Inbound Calls)</CardTitle>
+              <CardDescription className="text-xs">AI answers calls, records voicemails, follows up via SMS</CardDescription>
+            </div>
+            <span className="ml-auto text-[10px] bg-amber-100 text-amber-700 font-medium px-2 py-0.5 rounded-full">⚙️ Setup Required</span>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-gray-600">
+            When someone calls the client's number, the AI greets them, records a voicemail, transcribes it, and sends an AI follow-up SMS. Works with Twilio or GHL voice.
+          </p>
+          <div className="bg-amber-50 rounded-lg p-3 text-xs text-amber-800 space-y-1">
+            <p className="font-semibold">Setup steps (Twilio):</p>
+            <ol className="list-decimal ml-4 space-y-1">
+              <li>Get a <a href="https://twilio.com" target="_blank" rel="noopener noreferrer" className="underline">Twilio</a> account + phone number</li>
+              <li>On the phone number, set Voice webhook URL:</li>
+            </ol>
+            <div className="flex items-center gap-2 mt-1 ml-4">
+              <code className="bg-amber-100 px-1 rounded break-all">{appUrl}/api/channels/voice-webhook?clientId={client.id}</code>
+              <button onClick={() => copy(`${appUrl}/api/channels/voice-webhook?clientId=${client.id}`, 'voice')} className="shrink-0">
+                {copied === 'voice' ? '✅' : '📋'}
+              </button>
+            </div>
+            <ol className="list-decimal ml-4 space-y-1 mt-1" start={3}>
+              <li>Set HTTP method: <strong>POST</strong></li>
+              <li>For GHL: Settings → Phone → Voice → External webhook → paste the URL above</li>
+            </ol>
+          </div>
+          <p className="text-xs text-gray-400">Optional: Add <code className="bg-gray-100 px-1 rounded">voice_greeting</code> to Personality tab to customize the recorded greeting message.</p>
+        </CardContent>
+      </Card>
     </div>
   );
 }
