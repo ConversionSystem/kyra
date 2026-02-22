@@ -129,7 +129,7 @@ export async function GET(request: NextRequest) {
     const supabase = getSupabase();
     const { data: clients, error: dbError } = await supabase
       .from('agency_clients')
-      .select('id, name, status, ghl_location_id, ghl_private_token, ghl_access_token, agency_id, container_config')
+      .select('id, name, status, ghl_location_id, ghl_private_token, ghl_access_token, agency_id, container_config, ghl_last_contact_scan')
       .in('status', ['active', 'setup'])
       .or('ghl_access_token.not.is.null,ghl_private_token.not.is.null');
 
@@ -426,6 +426,121 @@ export async function GET(request: NextRequest) {
       } // end for conv of toProcess
     }
 
+    // ── Step 3: Proactive Lead Outreach ────────────────────────────────────
+    // For each client with a greeting configured, scan GHL for new contacts
+    // and send the greeting before they have a chance to message us first.
+    // Scans run at most every 5 minutes per client to avoid rate limits.
+    addLog('Starting proactive contact scan...');
+    let proactiveSent = 0;
+
+    for (const client of clients) {
+      const cfg = (client.container_config as Record<string, unknown>) ?? {};
+      const greeting = (cfg.greeting as string) || '';
+      if (!greeting) continue; // no greeting → skip
+
+      const token = client.ghl_private_token || client.ghl_access_token;
+      if (!token) continue;
+
+      // Only scan if enough time has passed (5 min cooldown)
+      const lastScan = (client as any).ghl_last_contact_scan
+        ? new Date((client as any).ghl_last_contact_scan)
+        : null;
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+      if (lastScan && lastScan > fiveMinutesAgo) continue;
+
+      try {
+        // Fetch contacts created since last scan (or last 5 min if first scan)
+        const scanSince = lastScan || fiveMinutesAgo;
+        const scanSinceStr = scanSince.toISOString();
+
+        const contactsRes = await fetch(
+          `${GHL_API_BASE}/contacts/?locationId=${client.ghl_location_id}&startDate=${encodeURIComponent(scanSinceStr)}&limit=10`,
+          {
+            headers: { Authorization: `Bearer ${token}`, Version: GHL_API_VERSION },
+            signal: AbortSignal.timeout(8_000),
+          }
+        );
+
+        if (!contactsRes.ok) {
+          addLog(`  [proactive] Contacts fetch failed for ${client.name}: ${contactsRes.status}`);
+          continue;
+        }
+
+        const contactsData = await contactsRes.json();
+        const newContacts: any[] = contactsData.contacts || [];
+        addLog(`  [proactive] ${client.name}: ${newContacts.length} new contacts since ${scanSinceStr.slice(11, 16)}`);
+
+        for (const contact of newContacts.slice(0, 5)) {
+          // Skip if contact has no phone (can't SMS)
+          if (!contact.phone) continue;
+
+          // Check if they already have a conversation with outbound messages
+          const convCheckRes = await fetch(
+            `${GHL_API_BASE}/conversations/search?locationId=${client.ghl_location_id}&contactId=${contact.id}&limit=1`,
+            {
+              headers: { Authorization: `Bearer ${token}`, Version: GHL_API_VERSION },
+              signal: AbortSignal.timeout(5_000),
+            }
+          );
+
+          if (convCheckRes.ok) {
+            const convData = await convCheckRes.json();
+            const existingConv = convData.conversations?.[0];
+            if (existingConv && existingConv.lastMessageType === 'TYPE_SMS') {
+              addLog(`    [proactive] ${contact.firstName || contact.id} — already in conversation, skipping`);
+              continue;
+            }
+          }
+
+          // Send proactive greeting
+          const greetMsg = greeting.replace(/\{\{name\}\}/gi, contact.firstName || 'there');
+          const outboundRes = await fetch(`${GHL_API_BASE}/conversations/messages/outbound`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Version: GHL_API_VERSION,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              type: 'SMS',
+              contactId: contact.id,
+              message: greetMsg,
+            }),
+            signal: AbortSignal.timeout(10_000),
+          });
+
+          if (outboundRes.ok) {
+            addLog(`  ✅ [proactive] Greeted ${contact.firstName || contact.phone} for ${client.name}`);
+            proactiveSent++;
+
+            void supabase.from('client_conversations').insert({
+              client_id: client.id,
+              agency_id: client.agency_id,
+              channel: 'ghl_sms',
+              user_message: `[NEW CONTACT] ${contact.firstName || ''} ${contact.lastName || ''} (${contact.phone})`.trim(),
+              ai_response: greetMsg,
+            }).then(() => {});
+          } else {
+            const err = await outboundRes.text().catch(() => '');
+            addLog(`  [proactive] Send failed for ${contact.id}: ${outboundRes.status} ${err.slice(0, 80)}`);
+          }
+
+          // Brief pause between messages
+          await new Promise(r => setTimeout(r, 500));
+        }
+
+        // Update last scan timestamp
+        await supabase
+          .from('agency_clients')
+          .update({ ghl_last_contact_scan: new Date().toISOString() })
+          .eq('id', client.id);
+
+      } catch (err: any) {
+        addLog(`  [proactive] Error for ${client.name}: ${err.message}`);
+      }
+    }
+
+    addLog(`Proactive: ${proactiveSent} greetings sent.`);
     addLog(`Done. Processed: ${totalProcessed}, Errors: ${errors.length}`);
 
     return NextResponse.json({
@@ -433,6 +548,7 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
       durationMs: Date.now() - startTime,
       messagesProcessed: totalProcessed,
+      proactiveGreetings: proactiveSent,
       errors,
       log,
     });
