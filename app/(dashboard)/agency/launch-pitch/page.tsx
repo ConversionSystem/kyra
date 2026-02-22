@@ -6,33 +6,70 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const emailTo = 'openclaw@launch.co';
-const emailSubject = 'Kyra — The AI Employee OS for 60,000 GHL Agencies';
+const emailSubject = 'Kyra — AI Employee Platform for 60,000 GHL Agencies (Live, Revenue, Demo Inside)';
 const emailBody = `Hi team,
 
-I'm Angel Castro, founder of Conversion System and creator of Kyra — an AI employee platform built on OpenClaw.
+I'm Angel Castro, founder of Conversion System. I'm applying for the Launch Accelerator with Kyra — a platform that deploys AI employees inside GoHighLevel agency accounts.
 
-What Kyra does: Agencies deploy white-labeled AI employees for their clients in minutes. Each AI has its own personality, channels, and goals — all managed from one dashboard. We're live with 9 agencies and 13 AI employees running 24/7.
+─── THE ONE-LINE PITCH ───────────────────────────────────────
 
-Why now: GoHighLevel (60,000 agencies) just integrated OpenClaw terminals. Every GHL agency is about to hit the ceiling of what a basic terminal can do. Kyra is the platform layer above that — the "Vercel for OpenClaw" built specifically for agencies.
+Kyra turns any GHL agency into an "AI employee agency" in minutes. Agencies add Kyra to their client's GHL account, pick an industry template, and the AI starts answering leads, booking appointments, and updating the CRM — automatically, 24/7.
 
-Traction:
-- Live platform: kyra.conversionsystem.com
-- 9 active agencies, 13 AI employees deployed
-- Industries: cannabis, dental, real estate, fitness, marketing
-- Built the Heartbeat Protocol, Token Budget Manager, and Performance Telemetry — features that answer the #1 agency question: "Is my AI actually working?"
+─── TRACTION ────────────────────────────────────────────────
 
-The ask: $125K to accelerate go-to-market with GHL's 60K agency base.
+• Live at kyra.conversionsystem.com (free to try)
+• 9 active agencies running 22 AI employees on dedicated infrastructure
+• 75 features shipped in the last 72 hours (solo founder + AI CEO build velocity)
+• Paid plans live: Starter $97/mo · Pro $247/mo · Scale $497/mo
+• Working Stripe billing, automated email sequences, referral program
+• Industries live: dental, real estate, auto, cannabis, restaurant, med spa, law, and 14 more templates
 
-Happy to do a 20-minute demo at your convenience.
+─── WHY NOW ─────────────────────────────────────────────────
+
+GoHighLevel (60,000 agencies) just integrated OpenClaw — the open-source AI agent runtime we're built on. Every GHL agency is being handed an AI terminal. They have no idea what to do with it.
+
+Kyra is the opinionated platform layer above that: one dashboard to deploy, manage, and monetize AI employees for multiple clients. It's the difference between a raw server and Vercel.
+
+─── WHAT MAKES IT DEFENSIBLE ────────────────────────────────
+
+1. GHL integration is our moat — we plug into their CRM, pipelines, conversations, and 7 channels (SMS, WhatsApp, Instagram, Facebook, Live Chat, Google Business, Email)
+2. 21 industry templates — AI personalities pre-built for dental, cannabis, auto, real estate, etc.
+3. White-label: agencies resell under their brand at $500–$2,000/mo per client
+4. Network effects: more agencies → more templates → better AI → more agencies
+
+─── THE BUSINESS MODEL ──────────────────────────────────────
+
+Kyra charges agencies a SaaS fee ($97–$497/mo) for the infrastructure.
+Agencies charge their clients $500–$2,000/mo per AI employee.
+At the Starter plan ($97/mo, 5 clients): agency revenue ~$5K/mo, Kyra revenue $97/mo.
+As they scale to Pro and Scale, margins compound on both sides.
+
+─── THE ASK ─────────────────────────────────────────────────
+
+$125K to:
+1. Accelerate GHL Marketplace listing (pending, we have agency status)
+2. Hire one growth operator to run agency outreach
+3. Expand infrastructure capacity for 200+ simultaneous clients
+
+Live demo (no login needed):
+• kyra.conversionsystem.com/demo/dental — animated AI demo
+• kyra.conversionsystem.com/roi — ROI calculator for prospects
+
+Happy to do a 20-minute live demo at your convenience.
 
 — Angel Castro
+Founder, Conversion System
 angel@conversionsystem.com
 kyra.conversionsystem.com`;
 
 const checklist = [
-  'Record a 60-second screen demo (show dashboard \u2192 new client \u2192 heartbeat \u2192 terminal)',
-  'Take 3 screenshots of the platform',
-  'Confirm traction numbers are up to date',
+  'Record a 60-second Loom: dashboard → add client → AI responds to SMS in 60 seconds',
+  'Screenshot 1: Overview with Today at a Glance stats',
+  'Screenshot 2: Client personality tab with ✨ Generate with AI',
+  'Screenshot 3: Live conversation feed (LIVE indicator)',
+  'Update traction numbers with latest agency/conversation counts from /admin',
+  'Confirm Stripe is working (test a checkout before sending)',
+  'Apply at launch.co — click "Apply Now" → select "SaaS" category',
 ];
 
 function ChecklistItem({ label }: { label: string }) {
