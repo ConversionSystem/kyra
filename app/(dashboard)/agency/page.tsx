@@ -430,26 +430,104 @@ export default async function AgencyOverviewPage() {
         </div>
       </div>
 
-      {/* ── Welcome Banner (empty state) ── */}
-      {clients.length === 0 && (
-        <div className="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-white p-8 text-center">
-          <div className="mx-auto rounded-xl bg-indigo-600 p-3 w-fit mb-4">
-            <Rocket className="h-6 w-6 text-white" />
+      {/* ── Onboarding Wizard (empty state) ── */}
+      {clients.length === 0 && (() => {
+        const ghlConnected = clients.some(c => c.ghl_private_token) || !!agency.ghl_agency_id;
+        const hasClient = clients.length > 0;
+        const isLive = clients.some(c => c.gateway_status === 'running');
+
+        const steps = [
+          {
+            n: 1,
+            title: 'Connect GoHighLevel',
+            desc: 'Link your GHL account so Kyra can respond to your clients\u2019 SMS messages.',
+            done: ghlConnected,
+            href: '/agency/ghl-setup',
+            cta: 'Connect GHL \u2192',
+          },
+          {
+            n: 2,
+            title: 'Add your first client',
+            desc: 'Pick an industry template. The AI personality is already written \u2014 just set the business name.',
+            done: hasClient,
+            href: '/agency/clients/new',
+            cta: 'Add Client \u2192',
+          },
+          {
+            n: 3,
+            title: 'Watch your AI go live',
+            desc: 'Your AI employee starts responding to GHL SMS within 60 seconds.',
+            done: isLive,
+            href: '/agency/conversations',
+            cta: 'View Conversations \u2192',
+          },
+        ];
+        const currentStep = steps.find(s => !s.done) ?? steps[steps.length - 1];
+
+        return (
+          <div className="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-white overflow-hidden">
+            {/* Header */}
+            <div className="p-6 border-b border-indigo-100 flex items-center gap-3">
+              <div className="rounded-xl bg-indigo-600 p-2.5">
+                <Rocket className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h2 className="font-bold text-gray-900">Welcome to Kyra! Let&apos;s get your first AI live.</h2>
+                <p className="text-xs text-gray-500 mt-0.5">3 steps · takes about 10 minutes</p>
+              </div>
+            </div>
+
+            {/* Steps */}
+            <div className="divide-y divide-indigo-50">
+              {steps.map((step) => (
+                <div key={step.n} className={`flex items-start gap-4 p-5 ${step.done ? 'opacity-60' : ''}`}>
+                  <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0 mt-0.5 ${
+                    step.done
+                      ? 'bg-green-100 text-green-600'
+                      : step.n === currentStep.n
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-gray-100 text-gray-400'
+                  }`}>
+                    {step.done ? '✓' : step.n}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`font-semibold text-sm ${step.done ? 'text-gray-500 line-through' : 'text-gray-900'}`}>
+                      {step.title}
+                    </p>
+                    {!step.done && (
+                      <p className="text-xs text-gray-500 mt-0.5">{step.desc}</p>
+                    )}
+                  </div>
+                  {!step.done && step.n === currentStep.n && (
+                    <Link href={step.href}>
+                      <Button size="sm" className="shrink-0 text-xs gap-1">
+                        {step.cta}
+                      </Button>
+                    </Link>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Footer */}
+            <div className="px-5 py-4 bg-white border-t border-indigo-100 flex items-center justify-between gap-4">
+              <p className="text-xs text-gray-400">
+                Need help? Check the{' '}
+                <Link href="/agency/biz-in-a-box" className="text-indigo-600 hover:underline font-medium">
+                  Business in a Box playbook
+                </Link>{' '}
+                for step-by-step scripts.
+              </p>
+              <Link href="/agency/ghl-setup">
+                <Button size="sm" variant="outline" className="text-xs shrink-0 gap-1">
+                  GHL Setup Guide
+                  <ArrowRight className="h-3 w-3" />
+                </Button>
+              </Link>
+            </div>
           </div>
-          <h2 className="text-lg font-bold text-gray-900 mb-2">
-            Welcome to Kyra!
-          </h2>
-          <p className="text-sm text-gray-500 mb-6 max-w-md mx-auto">
-            Create your first AI employee to get started. You&apos;ll have a live assistant running in minutes.
-          </p>
-          <Link href="/agency/clients/new">
-            <Button className="gap-2">
-              Create AI Employee
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          </Link>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
