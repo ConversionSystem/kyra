@@ -92,10 +92,11 @@ const navSections: NavSection[] = [
 ];
 
 const planColors: Record<string, string> = {
+  free:    'border-gray-200 bg-gray-50 text-gray-500',
   starter: 'border-blue-200 bg-blue-50 text-blue-600',
-  pro: 'border-indigo-200 bg-indigo-50 text-indigo-600',
-  scale: 'border-amber-200 bg-amber-50 text-amber-600',
-  beta: 'border-amber-200 bg-amber-50 text-amber-700',
+  pro:     'border-indigo-200 bg-indigo-50 text-indigo-600',
+  scale:   'border-amber-200 bg-amber-50 text-amber-600',
+  beta:    'border-amber-200 bg-amber-50 text-amber-700',
 };
 
 interface AgencySidebarProps {

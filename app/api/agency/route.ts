@@ -81,14 +81,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Missing required fields: name, slug, plan' }, { status: 400 });
   }
 
-  // Validate plan (beta = free full access during beta period, stored as 'scale' in DB)
-  const validPlans = ['starter', 'pro', 'scale', 'beta'];
+  // Validate plan
+  const validPlans = ['free', 'starter', 'pro', 'scale', 'beta'];
   if (!validPlans.includes(plan)) {
     return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });
   }
-  // Map 'beta' to 'scale' for DB storage (DB constraint only allows starter/pro/scale)
-  // All beta users get full access anyway (isPremium = true)
-  const dbPlan = plan === 'beta' ? 'scale' : plan;
+  // Map 'beta' → 'pro' for DB storage (legacy beta = full access)
+  const dbPlan = plan === 'beta' ? 'pro' : plan;
 
   // Validate slug
   if (!isValidSlug(slug)) {
