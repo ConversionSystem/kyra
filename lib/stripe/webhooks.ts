@@ -90,6 +90,7 @@ export async function handleSubscriptionUpdated(
   }
 
   const agencyId = (agency as { id: string }).id;
+  let updatedPlan: string | null = null;
 
   // Determine plan from subscription items
   for (const item of subscription.items.data) {
@@ -100,8 +101,18 @@ export async function handleSubscriptionUpdated(
         .from('agencies')
         .update({ plan, updated_at: new Date().toISOString() })
         .eq('id', agencyId);
+      updatedPlan = plan;
       break;
     }
+  }
+
+  // Mark referral as converted if this agency was referred and just upgraded
+  if (updatedPlan && updatedPlan !== 'free') {
+    await supabase
+      .from('agency_referrals')
+      .update({ status: 'converted', updated_at: new Date().toISOString() })
+      .eq('referred_id', agencyId)
+      .eq('status', 'signed_up');
   }
 }
 
