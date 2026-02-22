@@ -23,9 +23,13 @@ const DOMAIN_SUFFIX = 'gw.kyra.conversionsystem.com';
 const GATEWAY_IMAGE = 'kyra-gateway:latest';
 
 // Build the default openclaw.json for a new client container
-function buildOpenclawConfig(authToken, clientId, agencyId, clientName) {
+function buildOpenclawConfig(authToken, clientId, agencyId, clientName, agentModel) {
   const agentName = clientName ? clientName.trim() : 'AI Assistant';
   const gatewayUrl = 'https://' + clientId + '.gw.kyra.conversionsystem.com';
+  const model = agentModel || {
+    primary: 'openai/gpt-4o-mini',
+    fallbacks: ['openai/gpt-4o'],
+  };
   return {
     gateway: {
       auth: { mode: 'token', token: authToken },
@@ -44,12 +48,7 @@ function buildOpenclawConfig(authToken, clientId, agencyId, clientName) {
       }
     },
     agents: {
-      defaults: {
-        model: {
-          primary: 'openai/gpt-4o-mini',
-          fallbacks: ['openai/gpt-4o']
-        }
-      }
+      defaults: { model }
     },
     ui: {
       assistant: {
@@ -159,7 +158,8 @@ app.post('/containers', async (req, res) => {
       config = {},
       resources = {},
       tools = {},
-      autoStop = {}
+      autoStop = {},
+      agentModel,    // optional: { primary, fallbacks } — overrides default model
     } = req.body;
 
     if (!clientId || !agencyId) {
@@ -223,7 +223,7 @@ app.post('/containers', async (req, res) => {
 
     // Write openclaw.json to host filesystem (persists across container recreation)
     const openclawConfigPath = path.join(clientDataDir, 'openclaw', 'openclaw.json');
-    const openclawConfig = buildOpenclawConfig(authToken, clientId, agencyId, clientName || config.clientName);
+    const openclawConfig = buildOpenclawConfig(authToken, clientId, agencyId, clientName || config.clientName, agentModel);
     fs.writeFileSync(openclawConfigPath, JSON.stringify(openclawConfig, null, 2));
 
     // Store auth token and metadata
@@ -244,6 +244,24 @@ app.post('/containers', async (req, res) => {
     const memoryMb = resources.memoryMb || 1024;
     const cpuShares = resources.cpuShares || 256;
 
+    // Build API key env vars — use agency-provided keys if available, fall back to provisioner default
+    const PROVIDER_ENV_MAP = {
+      openai: 'OPENAI_API_KEY',
+      anthropic: 'ANTHROPIC_API_KEY',
+      openrouter: 'OPENROUTER_API_KEY',
+      google: 'GOOGLE_AI_API_KEY',
+    };
+    const providedApiKeys = req.body.apiKeys || {};
+    const apiKeyEnvs = [];
+    for (const [provider, key] of Object.entries(providedApiKeys)) {
+      const envName = PROVIDER_ENV_MAP[provider];
+      if (envName && key) apiKeyEnvs.push(`${envName}=${key}`);
+    }
+    // Fallback to provisioner's own key if agency hasn't set any
+    if (apiKeyEnvs.length === 0) {
+      apiKeyEnvs.push(`OPENAI_API_KEY=${process.env.OPENAI_API_KEY || ''}`);
+    }
+
     // Create container
     const container = await docker.createContainer({
       Image: GATEWAY_IMAGE,
@@ -256,7 +274,7 @@ app.post('/containers', async (req, res) => {
         `OPENCLAW_GATEWAY_TOKEN=${authToken}`,
         `KYRA_AUTH_TOKEN=${authToken}`,
         `NODE_OPTIONS=--max-old-space-size=${memoryMb}`,
-        `OPENAI_API_KEY=${process.env.OPENAI_API_KEY || ""}`
+        ...apiKeyEnvs,
       ],
       Labels: {
         'kyra.client.id': clientId,
@@ -456,6 +474,111 @@ app.delete('/containers/:id', async (req, res) => {
     console.log(`[DELETE] Container ${containerName} removed (data preserved)`);
     res.json({ status: 'deleted', clientId, dataPreserved: true });
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============ UPDATE API KEY (recreates container with new env vars) ============
+// PATCH /containers/:id/api-key
+// Body: { apiKeys: { openai?: string, anthropic?: string, openrouter?: string, google?: string }, model?: string }
+app.patch('/containers/:id/api-key', async (req, res) => {
+  const clientId = req.params.id;
+  const containerName = `kyra-cl-${clientId}`;
+
+  try {
+    const { apiKeys, model } = req.body;
+    if (!apiKeys || typeof apiKeys !== 'object' || Object.keys(apiKeys).length === 0) {
+      return res.status(400).json({ error: 'apiKeys object with at least one provider is required' });
+    }
+
+    const clientDataDir = path.join(DATA_DIR, clientId);
+    if (!fs.existsSync(clientDataDir)) {
+      return res.status(404).json({ error: 'Client data not found' });
+    }
+
+    // Inspect existing container to preserve its settings
+    let containerInfo;
+    try {
+      containerInfo = await docker.getContainer(containerName).inspect();
+    } catch (e) {
+      return res.status(404).json({ error: 'Container not found' });
+    }
+
+    // Build updated env map from existing env
+    const PROVIDER_ENV_MAP = {
+      openai: 'OPENAI_API_KEY',
+      anthropic: 'ANTHROPIC_API_KEY',
+      openrouter: 'OPENROUTER_API_KEY',
+      google: 'GOOGLE_AI_API_KEY',
+    };
+
+    const envMap = {};
+    for (const e of (containerInfo.Config.Env || [])) {
+      const idx = e.indexOf('=');
+      if (idx > 0) envMap[e.slice(0, idx)] = e.slice(idx + 1);
+    }
+
+    // Overlay new API keys
+    for (const [provider, key] of Object.entries(apiKeys)) {
+      const envName = PROVIDER_ENV_MAP[provider];
+      if (envName && key) envMap[envName] = key;
+    }
+
+    const newEnv = Object.entries(envMap).map(([k, v]) => `${k}=${v}`);
+
+    // Update openclaw.json model BEFORE recreating the container (file is on host)
+    if (model) {
+      const openclawConfigPath = path.join(clientDataDir, 'openclaw', 'openclaw.json');
+      if (fs.existsSync(openclawConfigPath)) {
+        try {
+          const cfg = JSON.parse(fs.readFileSync(openclawConfigPath, 'utf8'));
+          if (!cfg.agents) cfg.agents = {};
+          if (!cfg.agents.defaults) cfg.agents.defaults = {};
+          if (!cfg.agents.defaults.model) cfg.agents.defaults.model = {};
+          cfg.agents.defaults.model.primary = model;
+          fs.writeFileSync(openclawConfigPath, JSON.stringify(cfg, null, 2));
+        } catch (e) {
+          console.warn(`[API-KEY] Could not update openclaw.json model for ${clientId}:`, e.message);
+        }
+      }
+    }
+
+    // Recover auth token from env map (needed for CMD)
+    const authToken = envMap['OPENCLAW_GATEWAY_TOKEN'] || envMap['KYRA_AUTH_TOKEN'] || '';
+    const memoryMb = Math.round((containerInfo.HostConfig.Memory || 1024 * 1024 * 1024) / 1024 / 1024);
+    const cpuShares = containerInfo.HostConfig.CpuShares || 256;
+    const binds = containerInfo.HostConfig.Binds || [];
+    const labels = containerInfo.Config.Labels || {};
+
+    // Stop + remove old container (data directory is preserved)
+    const oldContainer = docker.getContainer(containerName);
+    try { await oldContainer.stop({ t: 10 }); } catch (e) { /* already stopped */ }
+    await oldContainer.remove({ force: true });
+
+    // Recreate with updated env
+    const newContainer = await docker.createContainer({
+      Image: GATEWAY_IMAGE,
+      name: containerName,
+      Hostname: containerName,
+      Cmd: ['openclaw', 'gateway', 'run', '--port', '18789', '--bind', 'lan', '--allow-unconfigured', '--token', authToken],
+      Env: newEnv,
+      Labels: labels,
+      HostConfig: {
+        Memory: memoryMb * 1024 * 1024,
+        CpuShares: cpuShares,
+        NetworkMode: NETWORK_NAME,
+        Binds: binds,
+        RestartPolicy: { Name: 'unless-stopped' },
+        ReadonlyRootfs: false,
+        CapDrop: ['NET_RAW', 'SYS_ADMIN', 'MKNOD'],
+      },
+    });
+
+    await newContainer.start();
+    console.log(`[API-KEY] Updated keys for ${clientId} (providers: ${Object.keys(apiKeys).join(', ')}, model: ${model || 'unchanged'})`);
+    res.json({ ok: true, clientId, providers: Object.keys(apiKeys), model: model || null });
+  } catch (err) {
+    console.error(`[API-KEY] Error updating ${clientId}:`, err.message);
     res.status(500).json({ error: err.message });
   }
 });
