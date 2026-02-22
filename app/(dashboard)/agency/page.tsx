@@ -58,16 +58,20 @@ export default async function AgencyOverviewPage() {
     (c) => c.gateway_status === 'running' && c.usage_this_month === 0,
   ).length;
 
-  // Recent activity — try fetching from client_conversations
+  // Recent activity + today stats — try fetching from client_conversations
   let recentConversations: {
     id: string;
     client_id: string;
     client_name: string;
     channel: string;
     user_message: string;
+    ai_response: string;
     created_at: string;
   }[] = [];
   let conversationsAvailable = true;
+  let conversationsToday = 0;
+  let escalationsToday = 0;
+  let proactiveGreetingsToday = 0;
 
   try {
     const { data: membership } = await supabase
@@ -77,9 +81,28 @@ export default async function AgencyOverviewPage() {
       .single();
 
     if (membership) {
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+
+      // Today's summary
+      const { data: todayConvos } = await supabase
+        .from('client_conversations')
+        .select('id, ai_response, user_message')
+        .eq('agency_id', membership.agency_id)
+        .gte('created_at', todayStart.toISOString());
+
+      conversationsToday = todayConvos?.length ?? 0;
+      escalationsToday = (todayConvos ?? []).filter(
+        (c) => c.ai_response?.includes("I'll flag this for our team") || c.user_message?.includes('[Kyra AI 🚨')
+      ).length;
+      proactiveGreetingsToday = (todayConvos ?? []).filter(
+        (c) => c.user_message?.includes('[NEW CONTACT]')
+      ).length;
+
+      // Recent 5 for activity feed
       const { data: convos, error } = await supabase
         .from('client_conversations')
-        .select('id, client_id, channel, user_message, created_at')
+        .select('id, client_id, channel, user_message, ai_response, created_at')
         .eq('agency_id', membership.agency_id)
         .order('created_at', { ascending: false })
         .limit(5);
@@ -87,7 +110,6 @@ export default async function AgencyOverviewPage() {
       if (error) {
         conversationsAvailable = false;
       } else {
-        // Map client names
         const clientMap = Object.fromEntries(clients.map((c) => [c.id, c.name]));
         recentConversations = (convos ?? []).map((conv) => ({
           ...conv,
@@ -182,6 +204,41 @@ export default async function AgencyOverviewPage() {
         </Card>
       </div>
 
+      {/* ── Today at a Glance ── */}
+      {conversationsAvailable && conversationsToday > 0 && (
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Today</h2>
+            <a href="/agency/conversations" className="text-xs text-indigo-500 hover:underline flex items-center gap-1">
+              View all <ArrowRight className="h-3 w-3" />
+            </a>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-indigo-50 rounded-xl p-4 flex items-center gap-3">
+              <div className="text-2xl">💬</div>
+              <div>
+                <p className="text-2xl font-bold text-indigo-700">{conversationsToday}</p>
+                <p className="text-xs text-indigo-500 font-medium">Conversations today</p>
+              </div>
+            </div>
+            <div className={`rounded-xl p-4 flex items-center gap-3 ${proactiveGreetingsToday > 0 ? 'bg-green-50' : 'bg-gray-50'}`}>
+              <div className="text-2xl">👋</div>
+              <div>
+                <p className={`text-2xl font-bold ${proactiveGreetingsToday > 0 ? 'text-green-700' : 'text-gray-400'}`}>{proactiveGreetingsToday}</p>
+                <p className={`text-xs font-medium ${proactiveGreetingsToday > 0 ? 'text-green-500' : 'text-gray-400'}`}>Leads greeted first</p>
+              </div>
+            </div>
+            <div className={`rounded-xl p-4 flex items-center gap-3 ${escalationsToday > 0 ? 'bg-red-50' : 'bg-gray-50'}`}>
+              <div className="text-2xl">{escalationsToday > 0 ? '🚨' : '✅'}</div>
+              <div>
+                <p className={`text-2xl font-bold ${escalationsToday > 0 ? 'text-red-700' : 'text-gray-400'}`}>{escalationsToday}</p>
+                <p className={`text-xs font-medium ${escalationsToday > 0 ? 'text-red-500' : 'text-gray-400'}`}>{escalationsToday > 0 ? 'Need human follow-up' : 'No escalations'}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Heartbeat Strip ── */}
       {clients.length > 0 && (
         <div className="mb-8">
@@ -272,10 +329,12 @@ export default async function AgencyOverviewPage() {
                       color: 'bg-gray-50 text-gray-500 border-gray-200',
                     };
                     const ChIcon = ch.icon;
+                    const isEscalated = conv.ai_response?.includes("I'll flag this for our team");
+                    const isProactive = conv.user_message?.includes('[NEW CONTACT]');
                     return (
                       <div
                         key={conv.id}
-                        className="flex items-start gap-3 rounded-lg border border-gray-100 bg-gray-50 p-3"
+                        className={`flex items-start gap-3 rounded-lg border p-3 ${isEscalated ? 'border-red-200 bg-red-50' : 'border-gray-100 bg-gray-50'}`}
                       >
                         <div className={`mt-0.5 shrink-0 rounded-md p-1 border ${ch.color}`}>
                           <ChIcon className="h-3 w-3" />
@@ -285,6 +344,8 @@ export default async function AgencyOverviewPage() {
                             <span className="text-xs font-semibold text-gray-700">
                               {conv.client_name}
                             </span>
+                            {isEscalated && <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-medium">🚨 Escalated</span>}
+                            {isProactive && !isEscalated && <span className="text-[10px] bg-green-100 text-green-600 px-1.5 py-0.5 rounded font-medium">👋 Greeted</span>}
                             <span className="text-[10px] text-gray-400 flex items-center gap-0.5">
                               <Clock className="h-2.5 w-2.5" />
                               {timeAgo(conv.created_at)}
