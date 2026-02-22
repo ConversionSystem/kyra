@@ -4,30 +4,13 @@ import { useState, useEffect, Suspense } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Building2,
-  Loader2,
-  CheckCircle,
-  ArrowLeft,
-  ArrowRight,
-  Check,
-  Rocket,
-} from 'lucide-react';
-
-// Plans hidden during beta — all users get full access
-
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
+import { Loader2, ArrowRight, ArrowLeft, Check, Rocket, CheckCircle, Zap } from 'lucide-react';
 
 export function AgencySignupWrapper() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <div className="flex min-h-screen items-center justify-center bg-slate-900">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
         </div>
       }
@@ -40,81 +23,56 @@ export function AgencySignupWrapper() {
 function AgencySignupPage() {
   const router = useRouter();
   const supabase = createClient();
-  const searchParams = useSearchParams();
+  useSearchParams(); // keep for future use
 
-  // Step tracking — check URL param and auth state
   const [step, setStep] = useState<1 | 2>(1);
   const [checkingAuth, setCheckingAuth] = useState(true);
 
-  // Step 1: auth
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
-  // Step 2: agency details
   const [agencyName, setAgencyName] = useState('');
   const [slug, setSlug] = useState('');
   const [slugEdited, setSlugEdited] = useState(false);
 
-  // State
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
 
-  // On mount: if user is already authenticated, skip to step 2
   useEffect(() => {
     async function checkAuth() {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // Authenticated → go straight to agency details (step 2)
-        setStep(2);
-      }
+      if (user) setStep(2);
       setCheckingAuth(false);
     }
     checkAuth();
   }, [supabase]);
 
-  // Auto-generate slug from agency name (unless manually edited)
   useEffect(() => {
     if (!slugEdited && agencyName) {
-      const generated = agencyName
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/[\s_]+/g, '-')
-        .replace(/-+/g, '-')
-        .replace(/^-|-$/g, '');
-      setSlug(generated);
+      setSlug(
+        agencyName.toLowerCase().trim()
+          .replace(/[^a-z0-9\s-]/g, '')
+          .replace(/[\s_]+/g, '-')
+          .replace(/-+/g, '-')
+          .replace(/^-|-$/g, '')
+      );
     }
   }, [agencyName, slugEdited]);
 
-  // ---- Step 1: Create account ----
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
-
     try {
-      const { data, error: signupError } = await supabase.auth.signUp({
-        email,
-        password,
+      const { data, error: err } = await supabase.auth.signUp({
+        email, password,
         options: {
           data: { signup_type: 'agency' },
           emailRedirectTo: `${window.location.origin}/api/auth/callback?redirect=${encodeURIComponent('/signup/agency?step=2')}`,
         },
       });
-
-      if (signupError) {
-        setError(signupError.message);
-        return;
-      }
-
-      // If email confirmation required
-      if (data.user && !data.session) {
-        setEmailSent(true);
-        return;
-      }
-
-      // Auto-confirmed (dev) → go to step 2
+      if (err) { setError(err.message); return; }
+      if (data.user && !data.session) { setEmailSent(true); return; }
       setStep(2);
     } catch {
       setError('An unexpected error occurred');
@@ -123,39 +81,21 @@ function AgencySignupPage() {
     }
   };
 
-  // ---- Step 2: Create agency ----
   const handleCreateAgency = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
-
     try {
-      // Verify we still have a valid session before submitting
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      if (!currentUser) {
-        setError('Your session has expired. Please log in again.');
-        setIsLoading(false);
-        return;
-      }
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setError('Session expired. Please log in again.'); return; }
 
       const res = await fetch('/api/agency', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: agencyName, slug, plan: 'beta' }),
+        body: JSON.stringify({ name: agencyName, slug, plan: 'free' }),
       });
-
       const data = await res.json();
-
-      if (!res.ok) {
-        if (res.status === 401) {
-          setError('Your session has expired. Please log in again.');
-        } else {
-          setError(data.error || 'Failed to create agency');
-        }
-        return;
-      }
-
-      // Success → redirect to agency dashboard
+      if (!res.ok) { setError(data.error || 'Failed to create agency'); return; }
       router.push('/agency');
       router.refresh();
     } catch {
@@ -165,295 +105,242 @@ function AgencySignupPage() {
     }
   };
 
-  // ---- Loading while checking auth ----
   if (checkingAuth) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+      <div className="flex min-h-screen items-center justify-center bg-slate-900">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
       </div>
     );
   }
 
-  // ---- Email confirmation screen ----
   if (emailSent) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-        <Card className="w-full max-w-md">
-          <CardContent className="pt-6 text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-50">
-              <CheckCircle className="h-6 w-6 text-green-600" />
-            </div>
-            <h2 className="mb-2 text-xl font-semibold text-gray-900">Check your email</h2>
-            <p className="text-gray-500">
-              We&apos;ve sent a confirmation link to <strong className="text-gray-800">{email}</strong>.
-              Click it to continue setting up your agency.
-            </p>
-            <Button variant="ghost" className="mt-4" asChild>
-              <Link href="/login">Back to login</Link>
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 px-4">
+        <div className="w-full max-w-md text-center">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-green-500/20 border border-green-500/30">
+            <CheckCircle className="h-7 w-7 text-green-400" />
+          </div>
+          <h2 className="mb-2 text-2xl font-bold text-white">Check your email</h2>
+          <p className="text-slate-400 mb-6">
+            We sent a confirmation link to{' '}
+            <strong className="text-white">{email}</strong>.
+            Click it to continue setting up your agency.
+          </p>
+          <Link href="/login" className="text-sm text-slate-500 hover:text-white transition">
+            Back to login
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12">
-      <div className="w-full max-w-3xl">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 text-white">
+      {/* Nav */}
+      <nav className="border-b border-white/10 px-4 py-4">
+        <div className="max-w-5xl mx-auto flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center font-black text-xs">K</div>
+            <span className="font-bold">Kyra AI</span>
+          </Link>
+          <Link href="/login" className="text-sm text-slate-400 hover:text-white transition">
+            Already have an account? <span className="text-indigo-400 font-medium">Sign in</span>
+          </Link>
+        </div>
+      </nav>
+
+      <div className="flex flex-col items-center justify-center px-4 py-16">
         {/* Header */}
-        <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600">
-            <Building2 className="h-7 w-7 text-white" />
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center gap-2 bg-white/10 border border-white/10 rounded-full px-4 py-1.5 text-sm font-medium mb-6">
+            <span className="h-2 w-2 rounded-full bg-green-400 animate-pulse inline-block" />
+            Free during beta — no credit card required
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Join the Kyra Beta</h1>
-          <p className="mt-2 text-gray-500">
-            Full platform access · Bring your own API keys · Free during beta
+          <h1 className="text-3xl sm:text-4xl font-black mb-3">
+            {step === 1 ? 'Create your account' : 'Name your agency'}
+          </h1>
+          <p className="text-slate-400 text-lg">
+            {step === 1
+              ? 'Deploy AI employees for your GHL clients in minutes.'
+              : 'Almost there. One more step.'}
           </p>
         </div>
 
         {/* Step indicator */}
-        <div className="mb-8 flex items-center justify-center gap-3">
-          <StepBadge number={1} label="Account" active={step === 1} completed={step > 1} />
-          <div className="h-px w-12 bg-gray-200" />
-          <StepBadge number={2} label="Agency" active={step === 2} completed={false} />
+        <div className="flex items-center gap-3 mb-8">
+          {[
+            { n: 1, label: 'Account' },
+            { n: 2, label: 'Agency' },
+          ].map(({ n, label }, i) => (
+            <div key={n} className="flex items-center gap-3">
+              {i > 0 && <div className="h-px w-10 bg-white/20" />}
+              <div className="flex items-center gap-2">
+                <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
+                  step > n ? 'bg-green-500 text-white' :
+                  step === n ? 'bg-indigo-600 text-white' :
+                  'bg-white/10 text-slate-400'
+                }`}>
+                  {step > n ? <Check className="h-4 w-4" /> : n}
+                </div>
+                <span className={`text-sm font-medium ${step >= n ? 'text-white' : 'text-slate-500'}`}>
+                  {label}
+                </span>
+              </div>
+            </div>
+          ))}
         </div>
 
-        {/* Step 1: Account creation */}
-        {step === 1 && (
-          <Card className="mx-auto w-full max-w-md">
-            <CardHeader className="text-center">
-              <CardTitle className="text-xl">Create your account</CardTitle>
-              <CardDescription>Start with your email and a secure password</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+        {/* Forms */}
+        <div className="w-full max-w-md">
+
+          {/* Step 1 */}
+          {step === 1 && (
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-7">
               {error && (
-                <div className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-600">
+                <div className="mb-4 rounded-xl bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-400">
                   {error}
                 </div>
               )}
-
               <form onSubmit={handleSignup} className="space-y-4">
-                <div className="space-y-2">
-                  <label htmlFor="email" className="text-sm font-medium text-gray-800">
-                    Email
-                  </label>
-                  <Input
-                    id="email"
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1.5">Email</label>
+                  <input
                     type="email"
                     placeholder="you@agency.com"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={e => setEmail(e.target.value)}
                     required
                     disabled={isLoading}
+                    className="w-full bg-slate-800 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 disabled:opacity-50"
                   />
                 </div>
-                <div className="space-y-2">
-                  <label htmlFor="password" className="text-sm font-medium text-gray-800">
-                    Password
-                  </label>
-                  <Input
-                    id="password"
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
+                  <input
                     type="password"
                     placeholder="••••••••"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={e => setPassword(e.target.value)}
                     required
                     minLength={8}
                     disabled={isLoading}
+                    className="w-full bg-slate-800 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 disabled:opacity-50"
                   />
-                  <p className="text-xs text-gray-400">Must be at least 8 characters</p>
+                  <p className="text-xs text-slate-500 mt-1.5">At least 8 characters</p>
                 </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <ArrowRight className="mr-2 h-4 w-4" />
-                  )}
-                  Continue
-                </Button>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 transition text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 text-sm"
+                >
+                  {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
+                  {isLoading ? 'Creating account...' : 'Continue'}
+                </button>
               </form>
+            </div>
+          )}
 
-              <div className="space-y-2 pt-2">
-                <p className="text-center text-sm text-gray-500">
-                  Already have an account?{' '}
-                  <Link href="/login" className="text-gray-900 hover:underline">
-                    Log in
-                  </Link>
-                </p>
-                <p className="text-center text-sm text-gray-400">
-                  <Link href="/signup" className="hover:text-gray-700 hover:underline">
-                    Sign up as individual instead
-                  </Link>
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Step 2: Agency details + plan selection */}
-        {step === 2 && (
-          <form onSubmit={handleCreateAgency} className="space-y-8">
-            {error && (
-              <div className="mx-auto max-w-md rounded-md bg-red-50 px-4 py-3 text-sm text-red-600">
-                <p>{error}</p>
-                {error.includes('session') && (
-                  <a href="/login?redirect=/signup/agency" className="mt-1 block text-red-700 underline font-medium">
-                    Log in again →
-                  </a>
+          {/* Step 2 */}
+          {step === 2 && (
+            <form onSubmit={handleCreateAgency}>
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-7 mb-4">
+                {error && (
+                  <div className="mb-4 rounded-xl bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-400">
+                    {error}
+                    {error.includes('session') && (
+                      <a href="/login?redirect=/signup/agency" className="block mt-1 underline text-red-300">
+                        Log in again →
+                      </a>
+                    )}
+                  </div>
                 )}
-              </div>
-            )}
-
-            {/* Agency name & slug */}
-            <Card className="mx-auto w-full max-w-md">
-              <CardHeader>
-                <CardTitle className="text-xl">Agency details</CardTitle>
-                <CardDescription>Tell us about your agency</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <label htmlFor="agencyName" className="text-sm font-medium text-gray-800">
-                    Agency name
-                  </label>
-                  <Input
-                    id="agencyName"
-                    type="text"
-                    placeholder="Acme AI Agency"
-                    value={agencyName}
-                    onChange={(e) => setAgencyName(e.target.value)}
-                    required
-                    disabled={isLoading}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label htmlFor="slug" className="text-sm font-medium text-gray-800">
-                    Agency URL
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-400">kyra.ai/</span>
-                    <Input
-                      id="slug"
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1.5">Agency name</label>
+                    <input
                       type="text"
-                      placeholder="acme-ai"
-                      value={slug}
-                      onChange={(e) => {
-                        setSlugEdited(true);
-                        setSlug(
-                          e.target.value
-                            .toLowerCase()
-                            .replace(/[^a-z0-9-]/g, '')
-                        );
-                      }}
+                      placeholder="Acme AI Agency"
+                      value={agencyName}
+                      onChange={e => setAgencyName(e.target.value)}
                       required
                       disabled={isLoading}
-                      className="flex-1"
+                      className="w-full bg-slate-800 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 disabled:opacity-50"
                     />
                   </div>
-                  <p className="text-xs text-gray-400">
-                    Lowercase letters, numbers, and hyphens only
-                  </p>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1.5">Agency URL slug</label>
+                    <div className="flex items-center bg-slate-800 border border-white/20 rounded-xl overflow-hidden focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-400/20">
+                      <span className="pl-4 pr-2 text-slate-500 text-sm whitespace-nowrap">kyra.ai/</span>
+                      <input
+                        type="text"
+                        placeholder="acme-ai"
+                        value={slug}
+                        onChange={e => {
+                          setSlugEdited(true);
+                          setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''));
+                        }}
+                        required
+                        disabled={isLoading}
+                        className="flex-1 bg-transparent py-3 pr-4 text-white placeholder-slate-500 text-sm focus:outline-none"
+                      />
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1.5">Lowercase, letters, numbers, hyphens</p>
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
 
-            {/* Beta access info */}
-            <Card className="mx-auto w-full max-w-md">
-              <CardContent className="pt-6">
+              {/* What you get */}
+              <div className="bg-indigo-600/10 border border-indigo-500/20 rounded-2xl p-5 mb-5">
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-xs font-semibold uppercase tracking-wider">
-                    Beta
-                  </span>
-                  <span className="text-sm font-medium text-gray-900">Full Access — Free</span>
+                  <Zap className="h-4 w-4 text-indigo-400" />
+                  <p className="text-sm font-semibold text-indigo-300">Free beta access includes:</p>
                 </div>
-                <p className="text-sm text-gray-500 mb-4">
-                  During the beta, you get full platform access at no cost. Connect your own AI provider API keys (Anthropic, OpenAI, Google, etc.) — you only pay your provider directly.
-                </p>
-                <ul className="space-y-2">
+                <ul className="space-y-1.5">
                   {[
-                    'Unlimited client AI instances',
-                    'GoHighLevel integration',
-                    'All channels (SMS, email, chat)',
-                    'Bring your own API keys (any LLM)',
-                    'Agency dashboard & templates',
-                    'White-label branding',
-                  ].map((feature) => (
-                    <li key={feature} className="flex items-start gap-2 text-sm text-gray-700">
-                      <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-green-600" />
-                      {feature}
+                    'AI employees for your GHL clients',
+                    'One agency dashboard for all clients',
+                    'GHL integration (SMS, email, CRM)',
+                    'Bring your own OpenAI API key',
+                    'White-label — your brand, your clients',
+                  ].map(f => (
+                    <li key={f} className="flex items-center gap-2 text-sm text-slate-300">
+                      <Check className="h-3.5 w-3.5 text-green-400 shrink-0" />
+                      {f}
                     </li>
                   ))}
                 </ul>
-              </CardContent>
-            </Card>
+              </div>
 
-            {/* Submit */}
-            <div className="flex items-center justify-between">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => {
-                  setStep(1);
-                  setError(null);
-                }}
-                disabled={isLoading}
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back
-              </Button>
-              <Button
-                type="submit"
-                disabled={isLoading || !agencyName || !slug}
-                className="min-w-[160px]"
-              >
-                {isLoading ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Rocket className="mr-2 h-4 w-4" />
-                )}
-                Launch Agency
-              </Button>
-            </div>
-          </form>
-        )}
-      </div>
-    </div>
-  );
-}
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => { setStep(1); setError(null); }}
+                  disabled={isLoading}
+                  className="flex items-center gap-2 px-4 py-3 rounded-xl border border-white/20 text-slate-300 hover:text-white hover:border-white/40 transition text-sm font-medium disabled:opacity-50"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Back
+                </button>
+                <button
+                  type="submit"
+                  disabled={isLoading || !agencyName || !slug}
+                  className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 transition text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 text-sm"
+                >
+                  {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Rocket className="h-4 w-4" />}
+                  {isLoading ? 'Launching...' : 'Launch My Agency'}
+                </button>
+              </div>
+            </form>
+          )}
 
-// ---------------------------------------------------------------------------
-// Step badge sub-component
-// ---------------------------------------------------------------------------
-function StepBadge({
-  number,
-  label,
-  active,
-  completed,
-}: {
-  number: number;
-  label: string;
-  active: boolean;
-  completed: boolean;
-}) {
-  return (
-    <div className="flex items-center gap-2">
-      <div
-        className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors ${
-          completed
-            ? 'bg-green-50 text-green-600'
-            : active
-              ? 'bg-indigo-500 text-white'
-              : 'bg-gray-100 text-gray-400'
-        }`}
-      >
-        {completed ? <Check className="h-4 w-4" /> : number}
+          <p className="text-center text-sm text-slate-500 mt-5">
+            Already have an account?{' '}
+            <Link href="/login" className="text-indigo-400 hover:text-indigo-300 transition font-medium">
+              Sign in
+            </Link>
+          </p>
+        </div>
       </div>
-      <span
-        className={`text-sm font-medium ${
-          active ? 'text-gray-900' : completed ? 'text-green-600' : 'text-gray-400'
-        }`}
-      >
-        {label}
-      </span>
     </div>
   );
 }

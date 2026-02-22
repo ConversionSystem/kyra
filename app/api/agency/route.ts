@@ -158,10 +158,107 @@ export async function POST(request: NextRequest) {
 
   console.log('[POST /api/agency] Success! Agency:', agency.id, 'User:', user.id);
 
-  // ── Gateway provisioning moved to per-client (OVH architecture) ──────────
-  // Gateways are now provisioned per-client when clients are created,
-  // not per-agency. See: POST /api/agency/clients
-  // Each client gets their own isolated Docker container on OVH.
+  // ── Send welcome email (fire-and-forget) ────────────────────────────────
+  const resendKey = process.env.RESEND_API_KEY;
+  if (resendKey && user.email) {
+    fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${resendKey}` },
+      body: JSON.stringify({
+        from: 'Kyra AI <welcome@kyra.conversionsystem.com>',
+        to: user.email,
+        subject: `Welcome to Kyra, ${agency.name} 🚀`,
+        html: `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#0f172a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <div style="max-width:580px;margin:0 auto;padding:40px 24px;">
 
+    <!-- Logo -->
+    <div style="margin-bottom:32px;">
+      <div style="display:inline-flex;align-items:center;gap:10px;">
+        <div style="width:32px;height:32px;background:#4f46e5;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+          <span style="color:white;font-weight:900;font-size:14px;">K</span>
+        </div>
+        <span style="color:white;font-weight:700;font-size:16px;">Kyra AI</span>
+      </div>
+    </div>
+
+    <!-- Hero -->
+    <div style="background:linear-gradient(135deg,#4f46e5,#7c3aed);border-radius:16px;padding:32px;margin-bottom:24px;">
+      <h1 style="color:white;font-size:24px;font-weight:900;margin:0 0 8px;">
+        ${agency.name} is live. 🎉
+      </h1>
+      <p style="color:#c7d2fe;font-size:15px;margin:0;line-height:1.6;">
+        Your agency dashboard is ready. Here's exactly what to do next to get your first AI employee live in the next 10 minutes.
+      </p>
+    </div>
+
+    <!-- Steps -->
+    <div style="background:#1e293b;border-radius:16px;padding:28px;margin-bottom:24px;border:1px solid rgba(255,255,255,0.08);">
+      <p style="color:#94a3b8;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 20px;">3 steps to your first AI employee</p>
+
+      ${[
+        { n: '01', title: 'Connect GoHighLevel', desc: 'Go to a client → GHL tab → paste your Private Integration token. Takes 2 minutes.', },
+        { n: '02', title: 'Add your first client', desc: 'Pick an industry template (dental, real estate, cannabis, auto + 17 more). The AI personality is pre-built.', },
+        { n: '03', title: 'Go live', desc: 'Your AI employee starts responding to SMS within 60 seconds. Watch it in the Conversations feed.', },
+      ].map(s => `
+        <div style="display:flex;gap:16px;margin-bottom:20px;">
+          <div style="width:32px;height:32px;background:#4f46e5;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <span style="color:white;font-weight:900;font-size:12px;">${s.n}</span>
+          </div>
+          <div>
+            <p style="color:white;font-weight:700;font-size:14px;margin:0 0 4px;">${s.title}</p>
+            <p style="color:#94a3b8;font-size:13px;margin:0;line-height:1.5;">${s.desc}</p>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+
+    <!-- CTA -->
+    <div style="text-align:center;margin-bottom:32px;">
+      <a href="https://kyra.conversionsystem.com/agency" style="display:inline-block;background:#4f46e5;color:white;font-weight:700;font-size:15px;text-decoration:none;padding:14px 32px;border-radius:12px;">
+        Open Your Dashboard →
+      </a>
+    </div>
+
+    <!-- Resources -->
+    <div style="background:#1e293b;border-radius:16px;padding:24px;margin-bottom:24px;border:1px solid rgba(255,255,255,0.08);">
+      <p style="color:#94a3b8;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 16px;">Useful links</p>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        ${[
+          { label: '📦 Business in a Box', url: 'https://kyra.conversionsystem.com/agency/biz-in-a-box', desc: 'Scripts + templates to sign your first 5 clients' },
+          { label: '🎬 Live Demo Pages', url: 'https://kyra.conversionsystem.com/demo/dental', desc: 'Share with prospects — no login required' },
+          { label: '💰 ROI Calculator', url: 'https://kyra.conversionsystem.com/roi', desc: 'Show prospects their specific return' },
+          { label: '📧 Cold Email Templates', url: 'https://kyra.conversionsystem.com/agency/sales-kit', desc: 'Ready-to-send outreach for every industry' },
+        ].map(r => `
+          <a href="${r.url}" style="text-decoration:none;">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:rgba(255,255,255,0.04);border-radius:8px;">
+              <div>
+                <p style="color:white;font-size:13px;font-weight:600;margin:0;">${r.label}</p>
+                <p style="color:#64748b;font-size:12px;margin:4px 0 0;">${r.desc}</p>
+              </div>
+              <span style="color:#4f46e5;font-size:14px;">→</span>
+            </div>
+          </a>
+        `).join('')}
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <p style="color:#334155;font-size:12px;text-align:center;line-height:1.6;">
+      Kyra AI by Conversion System · <a href="https://kyra.conversionsystem.com" style="color:#475569;">kyra.conversionsystem.com</a><br>
+      Reply to this email if you have any questions. We read every one.
+    </p>
+
+  </div>
+</body>
+</html>`,
+      }),
+    }).catch(err => console.warn('[welcome-email] Failed to send:', err));
+  }
+
+  // ── Gateway provisioning moved to per-client (OVH architecture) ──────────
   return NextResponse.json(agency, { status: 201 });
 }
