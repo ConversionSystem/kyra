@@ -54,6 +54,29 @@ const DEMOS: Record<string, {
       { label: 'Increase in showings', value: '3x faster' },
     ],
   },
+  cannabis: {
+    title: 'AI Budtender for Cannabis Dispensaries',
+    subtitle: 'Handles product questions, compliance checks, and order inquiries — with built-in age verification and state compliance.',
+    contactName: 'Alex Rivera',
+    businessName: 'Purple Lotus Dispensary',
+    accentColor: '#7c3aed',
+    emoji: '🌿',
+    conversation: [
+      { from: 'contact', text: "Hey, what's your best indica for sleep?", delay: 900 },
+      { from: 'ai', text: "Hi! Before I help, I need to quickly verify — are you 21 or older? (This is required by state law 🔒)", delay: 1100 },
+      { from: 'contact', text: "Yes, I'm 28", delay: 700 },
+      { from: 'ai', text: "Thanks Alex! 🌿 For sleep, our top picks are: **Granddaddy Purple** (22% THC, strong body relaxation, $45/eighth) and **Purple Kush** (18% THC, mellow sedating effect, $38/eighth). Both are consistently popular for evening use.", delay: 1500 },
+      { from: 'contact', text: "Which one is stronger?", delay: 800 },
+      { from: 'ai', text: "Granddaddy Purple is the stronger option at 22% THC — most customers describe it as deeply relaxing. Purple Kush is a bit milder and great if you're newer to indicas. Want me to set one aside for you for pickup today?", delay: 1400 },
+      { from: 'contact', text: "Yes, GDP please! What are your hours?", delay: 800 },
+      { from: 'ai', text: "We're open daily 9am–10pm. I've noted your interest in Granddaddy Purple! Our team will have it ready. Come in anytime today and show this text. See you soon! 🌿", delay: 1300 },
+    ],
+    stats: [
+      { label: 'Age verification', value: 'Automatic' },
+      { label: 'Products explained', value: 'Instantly' },
+      { label: 'Compliance', value: 'Built-in' },
+    ],
+  },
   auto: {
     title: 'AI Sales Assistant for Auto Dealerships',
     subtitle: 'Follows up on every lead, answers inventory questions, and books test drives automatically.',
@@ -80,6 +103,9 @@ const DEMOS: Record<string, {
 export function generateStaticParams() {
   return Object.keys(DEMOS).map((industry) => ({ industry }));
 }
+
+// Allow dynamic paths too (not just static)
+export const dynamicParams = true;
 
 export async function generateMetadata({ params }: { params: { industry: string } }) {
   const demo = DEMOS[params.industry];
