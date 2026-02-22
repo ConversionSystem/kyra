@@ -11,6 +11,7 @@ import {
   BarChart3, ClipboardList, ArrowRight, Rocket, Globe, Send, Smartphone,
   Clock,
 } from 'lucide-react';
+import CeoActionBoard from '@/components/dashboard/ceo-action-board';
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -49,6 +50,7 @@ export default async function AgencyOverviewPage() {
 
   const { agency } = result;
   const clients = await getAgencyClients(agency.id);
+  const isAdmin = ['angel@conversionsystem.com'].includes(user.email ?? '');
 
   // Stats
   const totalCount = clients.length;
@@ -139,6 +141,13 @@ export default async function AgencyOverviewPage() {
           </Button>
         </Link>
       </div>
+
+      {/* ── CEO Action Board (admin only) ── */}
+      {isAdmin && (
+        <div className="mb-6">
+          <CeoActionBoard />
+        </div>
+      )}
 
       {/* ── Stats Bar ── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-8">
