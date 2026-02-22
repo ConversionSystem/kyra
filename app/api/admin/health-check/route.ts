@@ -24,7 +24,7 @@ async function tableExists(sb: ReturnType<typeof getSupabase>, name: string): Pr
 }
 
 export async function GET() {
-  const checks: Array<{ id: string; title: string; desc: string; link: string; linkLabel: string; severity: 'critical' | 'warning' | 'info' }> = [];
+  const checks: Array<{ id: string; title: string; desc: string; link: string; linkLabel: string; severity: 'critical' | 'warning' | 'info'; sql?: string }> = [];
 
   // 1. RESEND_API_KEY
   if (!process.env.RESEND_API_KEY) {
@@ -47,9 +47,26 @@ export async function GET() {
       id: 'migration_referrals',
       title: 'Apply Supabase migration: agency_referrals',
       desc: 'The referral program is live but the DB table is missing. Referral links will fail silently until this is applied.',
-      link: 'https://supabase.com/dashboard/project/yaijdtsunxicuphrakcc/sql',
+      link: 'https://supabase.com/dashboard/project/yaijdtsunxicuphrakcc/sql/new',
       linkLabel: 'Open Supabase SQL Editor →',
       severity: 'critical',
+      sql: `CREATE TABLE IF NOT EXISTS agency_referrals (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  referrer_id UUID NOT NULL REFERENCES agencies(id) ON DELETE CASCADE,
+  referred_id UUID REFERENCES agencies(id) ON DELETE SET NULL,
+  referred_email TEXT,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','signed_up','converted','paid_out')),
+  reward_type TEXT NOT NULL DEFAULT 'free_month',
+  paid_out_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS agency_referrals_referrer ON agency_referrals(referrer_id);
+CREATE INDEX IF NOT EXISTS agency_referrals_referred ON agency_referrals(referred_id);
+CREATE INDEX IF NOT EXISTS agency_referrals_status ON agency_referrals(status);
+ALTER TABLE agency_referrals ENABLE ROW LEVEL SECURITY;
+CREATE POLICY IF NOT EXISTS "referrers read own" ON agency_referrals FOR SELECT USING (referrer_id IN (SELECT agency_id FROM agency_members WHERE user_id = auth.uid()));
+CREATE POLICY IF NOT EXISTS "service all" ON agency_referrals FOR ALL USING (true) WITH CHECK (true);`,
     });
   }
 
@@ -60,9 +77,19 @@ export async function GET() {
       id: 'migration_waitlist',
       title: 'Apply Supabase migration: kyra_waitlist',
       desc: 'Lead capture on the landing page is live but the DB table is missing. Submitted emails are being lost.',
-      link: 'https://supabase.com/dashboard/project/yaijdtsunxicuphrakcc/sql',
+      link: 'https://supabase.com/dashboard/project/yaijdtsunxicuphrakcc/sql/new',
       linkLabel: 'Open Supabase SQL Editor →',
       severity: 'critical',
+      sql: `CREATE TABLE IF NOT EXISTS kyra_waitlist (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email TEXT UNIQUE NOT NULL,
+  name TEXT,
+  industry TEXT,
+  source TEXT DEFAULT 'landing',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS kyra_waitlist_created_at ON kyra_waitlist(created_at DESC);
+ALTER TABLE kyra_waitlist ENABLE ROW LEVEL SECURITY;`,
     });
   }
 
