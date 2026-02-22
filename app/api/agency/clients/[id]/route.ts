@@ -1,7 +1,50 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { requireAgencyMember, requireAgencyAdmin, requireAgencyOwner } from '@/lib/agency/middleware';
+import { updateClientConfig } from '@/lib/ovh/provisioner';
 import type { UpdateClientRequest } from '@/lib/agency/types';
+
+/**
+ * Build a SOUL.md from Personality tab fields.
+ * This is the AI's core identity — OpenClaw reads it on every session start.
+ */
+function buildSoulMd(
+  clientName: string,
+  persona: string,
+  greeting: string,
+  instructions: string
+): string {
+  const lines: string[] = [];
+  lines.push(`# SOUL.md — ${clientName}`);
+  lines.push('');
+
+  if (persona) {
+    lines.push('## Who You Are');
+    lines.push(persona);
+    lines.push('');
+  }
+
+  if (greeting) {
+    lines.push('## Greeting');
+    lines.push(`When someone reaches out for the first time, greet them with:`);
+    lines.push(`"${greeting}"`);
+    lines.push('');
+  }
+
+  if (instructions) {
+    lines.push('## Your Instructions & Knowledge');
+    lines.push(instructions);
+    lines.push('');
+  }
+
+  lines.push('## Communication Style');
+  lines.push('- You are responding via SMS/messaging — keep replies concise and clear');
+  lines.push('- Stay in character as described above at all times');
+  lines.push('- If you need more information, ask one focused question');
+  lines.push('- Never reveal you are an AI unless directly asked');
+
+  return lines.join('\n');
+}
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -97,6 +140,32 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   if (error || !client) {
     console.error('Failed to update client:', error);
     return NextResponse.json({ error: 'Failed to update client' }, { status: 500 });
+  }
+
+  // ── Push personality to container SOUL.md (fire-and-forget) ──────────────
+  // When persona/instructions change, rebuild SOUL.md and push to the VPS
+  // container so OpenClaw uses the updated identity immediately.
+  if (body.container_config !== undefined) {
+    const cfg = client.container_config as Record<string, unknown> | null ?? {};
+    const persona = (cfg.persona as string) || '';
+    const greeting = (cfg.greeting as string) || '';
+    const instructions = (cfg.instructions as string) || '';
+
+    if (persona || instructions || greeting) {
+      void (async () => {
+        try {
+          const soulMd = buildSoulMd(client.name, persona, greeting, instructions);
+          const result = await updateClientConfig(client.id, { soulMd });
+          if (result.success) {
+            console.log(`[personality] SOUL.md pushed to container for client ${client.id}`);
+          } else {
+            console.warn(`[personality] Failed to push SOUL.md for ${client.id}:`, result.error);
+          }
+        } catch (err) {
+          console.error(`[personality] Error pushing SOUL.md for ${client.id}:`, err);
+        }
+      })();
+    }
   }
 
   return NextResponse.json(client);
