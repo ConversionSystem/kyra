@@ -506,6 +506,7 @@ function AIPersonalityTab({ client }: { client: AgencyClient }) {
   const [greeting, setGreeting] = useState(cfg.greeting as string || '');
   const [instructions, setInstructions] = useState(cfg.instructions as string || '');
   const [persona, setPersona] = useState(cfg.persona as string || '');
+  const [calendarUrl, setCalendarUrl] = useState((cfg.calendar_url as string) || '');
   const [bhEnabled, setBhEnabled] = useState(bhCfg.enabled ?? false);
   const [bhStart, setBhStart] = useState(bhCfg.start ?? '09:00');
   const [bhEnd, setBhEnd] = useState(bhCfg.end ?? '17:00');
@@ -527,6 +528,7 @@ function AIPersonalityTab({ client }: { client: AgencyClient }) {
             instructions,
             persona,
             business_hours: { enabled: bhEnabled, start: bhStart, end: bhEnd, timezone: bhTimezone },
+            calendar_url: calendarUrl.trim() || undefined,
           },
         }),
       });
@@ -602,6 +604,25 @@ function AIPersonalityTab({ client }: { client: AgencyClient }) {
             onChange={(e) => setInstructions(e.target.value)}
             placeholder={`e.g.,\n\nBusiness: Smile Dental Clinic\nHours: Mon-Fri 9am-5pm, Sat 9am-1pm\nAddress: 123 Main St, Springfield\n\nServices & Pricing:\n- Cleaning: $150\n- Whitening: $300\n- Crown: $800-1200\n\nRules:\n- Always offer to schedule an appointment\n- Never discuss competitor pricing\n- For emergencies, direct to call (555) 123-4567`}
             rows={12}
+            className="bg-gray-50 font-mono text-sm"
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            📅 Calendar Booking Link
+          </CardTitle>
+          <CardDescription>
+            When customers mention booking or scheduling, the AI automatically includes this link. Get it from GHL → Calendars → your calendar → share link.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Input
+            value={calendarUrl}
+            onChange={(e) => setCalendarUrl(e.target.value)}
+            placeholder="https://booking.leadconnectorhq.com/your-calendar-id"
             className="bg-gray-50 font-mono text-sm"
           />
         </CardContent>
