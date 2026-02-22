@@ -110,6 +110,7 @@ export async function GET(
   var isOpen = false;
   var isLoading = false;
   var greeted = false;
+  var history = []; // [{role:'user'|'assistant', content:string}] — last 10 turns
 
   // ── DOM ─────────────────────────────────────────────────────────────────────
   // Chat button
@@ -218,7 +219,7 @@ export async function GET(
       var res = await fetch(API_BASE.replace(/\/$/, '') + '/api/widget/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clientId: CLIENT_ID, message: text, sessionId: sessionId }),
+        body: JSON.stringify({ clientId: CLIENT_ID, message: text, sessionId: sessionId, history: history.slice(-10) }),
       });
       var data = await res.json();
       hideTyping();
@@ -227,6 +228,10 @@ export async function GET(
           sessionId = data.sessionId;
           try { localStorage.setItem(STORAGE_KEY, sessionId); } catch(e) {}
         }
+        // Track history for context continuity
+        history.push({ role: 'user', content: text });
+        history.push({ role: 'assistant', content: data.response });
+        if (history.length > 20) history = history.slice(-20);
         addMessage('bot', data.response);
       } else {
         addMessage('bot', 'Sorry, something went wrong. Please try again.');

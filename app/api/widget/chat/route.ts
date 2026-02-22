@@ -51,7 +51,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  const { clientId, message, sessionId } = body;
+  const { clientId, message, sessionId, history } = body as typeof body & {
+    history?: Array<{ role: 'user' | 'assistant'; content: string }>;
+  };
   if (!clientId || !message?.trim()) {
     return NextResponse.json({ error: 'clientId and message are required' }, { status: 400 });
   }
@@ -108,10 +110,11 @@ export async function POST(request: NextRequest) {
         model: 'openai/gpt-4o-mini',
         messages: [
           { role: 'system', content: systemPrompt },
+          // Inject conversation history so AI has context (last 10 turns)
+          ...(Array.isArray(history) ? history.slice(-10) : []),
           { role: 'user', content: message.trim() },
         ],
         stream: false,
-        session_key: resolvedSessionId, // Gateway uses this for conversation memory
       }),
       signal: AbortSignal.timeout(25_000),
     });
