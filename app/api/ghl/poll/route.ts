@@ -673,6 +673,33 @@ export async function GET(request: NextRequest) {
                     });
                     addLog(`    📧 Escalation alert sent to ${notifyEmail}`);
                   }
+                  // Escalation webhook (Slack / Zapier / Make / custom)
+                  const escalationWebhook = agencySettings.escalation_webhook_url as string | undefined;
+                  if (escalationWebhook) {
+                    void fetch(escalationWebhook, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        event: 'kyra.escalation',
+                        timestamp: new Date().toISOString(),
+                        agency: agencyRow?.name,
+                        client: client.name,
+                        contact: { name: conv.contactName || null, phone: conv.phone || null },
+                        reason: crmUpdate.escalationReason || 'Customer needs human assistance',
+                        summary: crmUpdate.note || null,
+                        // Slack-compatible fields
+                        text: `🚨 *Escalation* — ${client.name}\n*Contact:* ${conv.contactName || conv.phone || 'Unknown'}\n*Reason:* ${crmUpdate.escalationReason || 'Human needed'}`,
+                        attachments: [{
+                          color: '#dc2626',
+                          fields: [
+                            { title: 'Client', value: client.name, short: true },
+                            { title: 'Contact', value: conv.contactName || conv.phone || 'Unknown', short: true },
+                            { title: 'Reason', value: crmUpdate.escalationReason || 'Customer needs human assistance', short: false },
+                          ],
+                        }],
+                      }),
+                    }).then(() => addLog(`    🔔 Escalation webhook fired`)).catch(() => {});
+                  }
                 }
               } catch { /* best-effort, never block */ }
             })();
