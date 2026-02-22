@@ -14,15 +14,19 @@ export default async function ClientPortalPage({
   // Fetch client (public read — no auth required)
   const { data: client, error } = await supabase
     .from('agency_clients')
-    .select('id, name, industry, gateway_url, gateway_status, agency_id')
+    .select('id, name, industry, gateway_url, gateway_token, gateway_status, agency_id')
     .eq('id', clientId)
     .single();
 
   if (error || !client) redirect('/');
 
   // If the gateway is live, redirect straight to the real OpenClaw terminal
+  // Include ?token= so the browser auto-authenticates without device pairing
   if (client.gateway_status === 'running' && client.gateway_url) {
-    redirect(client.gateway_url);
+    const dest = client.gateway_token
+      ? `${client.gateway_url}?token=${client.gateway_token}`
+      : client.gateway_url;
+    redirect(dest);
   }
 
   // Fetch agency for branding (only shown on "not yet live" fallback)
