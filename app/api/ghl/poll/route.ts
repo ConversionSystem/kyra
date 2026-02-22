@@ -17,6 +17,111 @@ export const maxDuration = 60; // Allow up to 60s for processing
 const GHL_API_BASE = 'https://services.leadconnectorhq.com';
 const GHL_API_VERSION = '2021-04-15';
 
+// ── GHL Pipeline Automation ──────────────────────────────────────────────────
+// After each AI reply, fire-and-forget CRM updates:
+//   • Add relevant tags (e.g. "interested", "appointment-requested")
+//   • Add a concise note to the contact record summarising the exchange
+//   • Optionally move to a pipeline stage
+
+interface CRMUpdate {
+  tagsToAdd: string[];
+  note: string;
+  pipelineStageHint?: string; // 'new' | 'engaged' | 'qualified' | 'booked' | 'closed'
+}
+
+async function extractCRMUpdate(
+  gatewayUrl: string,
+  gatewayToken: string,
+  conversation: Array<{ role: string; content: string }>,
+): Promise<CRMUpdate | null> {
+  try {
+    const res = await fetch(`${gatewayUrl}/v1/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${gatewayToken}`,
+      },
+      body: JSON.stringify({
+        model: 'openai/gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: [
+              'You are a CRM assistant. Analyse this SMS conversation and output ONLY valid JSON (no markdown).',
+              'Schema: { "tagsToAdd": string[], "note": string, "pipelineStageHint": string | null }',
+              'tagsToAdd: 1-3 short lowercase tags describing intent (e.g. "appointment-requested", "price-inquiry", "not-interested", "hot-lead").',
+              'note: 1-2 sentence summary of what the customer wanted and what was resolved.',
+              'pipelineStageHint: one of "new" | "engaged" | "qualified" | "booked" | "closed" | null.',
+              'Output raw JSON only. No explanation.',
+            ].join('\n'),
+          },
+          ...conversation,
+        ],
+        stream: false,
+        max_tokens: 200,
+      }),
+      signal: AbortSignal.timeout(8_000),
+    });
+
+    if (!res.ok) return null;
+    const data = await res.json();
+    const raw = data?.choices?.[0]?.message?.content || '';
+    // Strip markdown code fences if present
+    const clean = raw.replace(/```json?\s*/gi, '').replace(/```/g, '').trim();
+    const parsed = JSON.parse(clean);
+    return {
+      tagsToAdd: Array.isArray(parsed.tagsToAdd) ? parsed.tagsToAdd.slice(0, 3) : [],
+      note: typeof parsed.note === 'string' ? parsed.note.slice(0, 500) : '',
+      pipelineStageHint: parsed.pipelineStageHint || null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function applyGHLCRMUpdates(
+  contactId: string,
+  token: string,
+  update: CRMUpdate,
+  addLog: (msg: string) => void,
+): Promise<void> {
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    Version: GHL_API_VERSION,
+    'Content-Type': 'application/json',
+  };
+
+  // 1. Add tags
+  if (update.tagsToAdd.length > 0) {
+    try {
+      const tagRes = await fetch(`${GHL_API_BASE}/contacts/${contactId}/tags`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ tags: update.tagsToAdd }),
+        signal: AbortSignal.timeout(5_000),
+      });
+      if (tagRes.ok) {
+        addLog(`    🏷️ Tags added: [${update.tagsToAdd.join(', ')}]`);
+      }
+    } catch { /* best-effort */ }
+  }
+
+  // 2. Add note
+  if (update.note) {
+    try {
+      const noteRes = await fetch(`${GHL_API_BASE}/contacts/${contactId}/notes`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ body: `[Kyra AI] ${update.note}` }),
+        signal: AbortSignal.timeout(5_000),
+      });
+      if (noteRes.ok) {
+        addLog(`    📝 Note added: "${update.note.slice(0, 60)}..."`);
+      }
+    } catch { /* best-effort */ }
+  }
+}
+
 // ── GHL Contact Context ───────────────────────────────────────────────────────
 // Fetches the contact's CRM profile so the AI knows who it's talking to.
 
@@ -396,6 +501,23 @@ export async function GET(request: NextRequest) {
         if (sendRes.ok) {
           addLog(`  ✅ Reply sent to ${conv.contactName || conv.phone}`);
           totalProcessed++;
+
+          // Fire-and-forget CRM update: tag + note the contact based on conversation
+          const ghlTokenForCRM = client.ghl_private_token || client.ghl_access_token;
+          if (ghlTokenForCRM && gatewayUrl && gateway?.gateway_token) {
+            void (async () => {
+              try {
+                const crmUpdate = await extractCRMUpdate(
+                  gatewayUrl,
+                  gateway.gateway_token,
+                  [...chatMessages, { role: 'assistant', content: aiResponse }],
+                );
+                if (crmUpdate && (crmUpdate.tagsToAdd.length > 0 || crmUpdate.note)) {
+                  await applyGHLCRMUpdates(conv.contactId, ghlTokenForCRM, crmUpdate, addLog);
+                }
+              } catch { /* best-effort, never block */ }
+            })();
+          }
 
           // Log to client_conversations so Kyra dashboard shows the exchange
           const contactLabel = conv.contactName || conv.phone || 'Unknown';
