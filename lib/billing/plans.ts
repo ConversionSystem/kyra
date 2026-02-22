@@ -1,169 +1,161 @@
 /**
- * Kyra Credits-Based Billing System
- * 
- * Credit costs per action:
- *   - Simple chat: 1 credit
- *   - Web search + response: 2 credits
- *   - Deep research (sub-agent): 5 credits
- *   - File analysis: 3 credits
- *   - Voice transcription: 2 credits
- *   - Voice TTS response: 2 credits
- *   - Calendar/reminder: 0 credits (free)
- *   - Memory operations: 0 credits (free)
- * 
- * Margin targets: 70%+ on all paid plans
+ * Kyra Plan Configuration
+ *
+ * Plans are based on the number of client AI employees an agency can deploy.
+ * Each plan has a hard client limit enforced at creation time.
  */
 
-export type Plan = 'free' | 'starter' | 'business' | 'max';
-
-export type CreditAction =
-  | 'chat'              // 1 credit
-  | 'web_search'        // 2 credits
-  | 'deep_research'     // 5 credits
-  | 'file_analysis'     // 3 credits
-  | 'image_analysis'    // 3 credits
-  | 'voice_transcribe'  // 2 credits
-  | 'voice_tts'         // 2 credits
-  | 'calendar'          // 0 credits
-  | 'reminder'          // 0 credits
-  | 'memory';           // 0 credits
+export type Plan = 'free' | 'starter' | 'pro' | 'scale';
 
 export interface PlanConfig {
   name: string;
-  price: number;
-  creditsPerMonth: number;
+  price: number;            // USD/month
+  maxClients: number;       // max client AI employees
+  description: string;
   features: string[];
   highlighted?: boolean;
+  badge?: string;
+  badgeColor?: string;
   cta: string;
-  href: string;
+  stripePriceKey: string;   // key in STRIPE_PRICE_IDS
 }
-
-export const CREDIT_COSTS: Record<CreditAction, number> = {
-  chat: 1,
-  web_search: 2,
-  deep_research: 5,
-  file_analysis: 3,
-  image_analysis: 3,
-  voice_transcribe: 2,
-  voice_tts: 2,
-  calendar: 0,
-  reminder: 0,
-  memory: 0,
-};
 
 export const PLANS: Record<Plan, PlanConfig> = {
   free: {
     name: 'Free',
     price: 0,
-    creditsPerMonth: 100,
+    maxClients: 1,
+    description: 'Try Kyra with your first client AI employee. No credit card needed.',
     features: [
-      '100 credits/month',
-      'Basic chat',
-      'Web interface',
-      'Basic memory',
+      '1 client AI employee',
+      '21 industry templates',
+      'Telegram, SMS, web chat',
+      'GHL integration',
+      'BYOK (Bring Your Own AI Keys)',
     ],
-    cta: 'Get Started',
-    href: '/signup',
+    badge: 'FREE',
+    badgeColor: 'bg-gray-100 text-gray-600',
+    cta: 'Get Started Free',
+    stripePriceKey: 'free',
   },
   starter: {
-    name: 'Lite',
-    price: 99,
-    creditsPerMonth: 500,
+    name: 'Starter',
+    price: 97,
+    maxClients: 5,
+    description: 'Launch your AI agency with your first 5 clients.',
     features: [
-      '500 credits/month',
-      'All chat features',
-      'Web search & research',
-      'WhatsApp + Telegram',
-      'Google Calendar',
-      'Full memory',
+      '5 client AI employees',
+      'Everything in Free',
+      'Full analytics dashboard',
+      'Proactive lead outreach',
+      'Smart escalation alerts',
+      'Client conversation history',
+      'Weekly performance reports',
+    ],
+    badge: 'STARTER',
+    badgeColor: 'bg-blue-100 text-blue-700',
+    cta: 'Start Starter',
+    stripePriceKey: 'starter',
+  },
+  pro: {
+    name: 'Pro',
+    price: 247,
+    maxClients: 15,
+    description: 'For growing agencies managing multiple clients.',
+    features: [
+      '15 client AI employees',
+      'Everything in Starter',
+      'White-label branding',
+      'Custom AI personalities',
+      'Priority support',
+      'Custom templates',
+      'Revenue tracking dashboard',
     ],
     highlighted: true,
-    cta: 'Start Free Trial',
-    href: '/signup?plan=starter',
+    badge: 'MOST POPULAR',
+    badgeColor: 'bg-indigo-100 text-indigo-700',
+    cta: 'Start Pro',
+    stripePriceKey: 'pro',
   },
-  business: {
-    name: 'Business',
-    price: 100,
-    creditsPerMonth: 3000,
+  scale: {
+    name: 'Scale',
+    price: 497,
+    maxClients: 50,
+    description: 'Built for high-volume agencies running 50+ AI employees.',
     features: [
-      '3,000 credits/month',
-      'Everything in Lite',
-      'AI sub-agents for complex tasks',
-      'Priority response times',
-      'Email integration',
-      'Custom instructions',
-      'Priority support',
-    ],
-    cta: 'Start Free Trial',
-    href: '/signup?plan=business',
-  },
-  max: {
-    name: 'Max',
-    price: 200,
-    creditsPerMonth: 8000,
-    features: [
-      '8,000 credits/month',
-      'Everything in Business',
-      'Unlimited memory',
-      'Dedicated AI workforce',
+      '50 client AI employees',
+      'Everything in Pro',
+      'Dedicated infrastructure',
+      'Custom domain per agency',
+      'SLA uptime guarantee',
+      'Dedicated Slack support',
       'API access',
-      'Custom integrations',
-      'Dedicated support + SLA',
+      'Monthly strategy call',
     ],
-    cta: 'Contact Sales',
-    href: '/signup?plan=max',
+    badge: 'FOR AGENCIES',
+    badgeColor: 'bg-purple-100 text-purple-700',
+    cta: 'Start Scale',
+    stripePriceKey: 'scale',
   },
 };
 
-/**
- * Get credit limit for a plan
- */
-export function getPlanLimit(plan: Plan): number {
-  return PLANS[plan]?.creditsPerMonth || PLANS.free.creditsPerMonth;
+/** All valid plan IDs */
+export const PLAN_IDS = Object.keys(PLANS) as Plan[];
+
+/** Get the max clients allowed for a plan */
+export function getPlanClientLimit(plan: Plan | string): number {
+  return PLANS[plan as Plan]?.maxClients ?? PLANS.free.maxClients;
 }
 
-/**
- * Get the credit cost for an action
- */
-export function getCreditCost(action: CreditAction): number {
-  return CREDIT_COSTS[action] ?? 1;
+/** Check if an agency can add another client given their current count */
+export function canAddClient(plan: Plan | string, currentClientCount: number): boolean {
+  return currentClientCount < getPlanClientLimit(plan);
 }
 
-/**
- * Check if user has enough credits for an action
- */
-export function hasCreditsFor(plan: Plan, currentUsage: number, action: CreditAction): boolean {
-  const limit = getPlanLimit(plan);
-  const cost = getCreditCost(action);
-  return (currentUsage + cost) <= limit;
+/** Get plan display name */
+export function getPlanName(plan: Plan | string): string {
+  return PLANS[plan as Plan]?.name ?? plan;
 }
 
-/**
- * Legacy compatibility — checks if within overall credit limit
- */
-export function isWithinLimit(plan: Plan, currentUsage: number): boolean {
-  const limit = getPlanLimit(plan);
-  return currentUsage < limit;
+/** Get plan price */
+export function getPlanPrice(plan: Plan | string): number {
+  return PLANS[plan as Plan]?.price ?? 0;
 }
 
-/**
- * Get usage percentage
- */
-export function getUsagePercentage(plan: Plan, currentUsage: number): number {
-  const limit = getPlanLimit(plan);
-  return Math.min(100, Math.round((currentUsage / limit) * 100));
+// ── Legacy compatibility (some files still reference credits) ─────────────────
+
+/** @deprecated — plans are now client-count based, not credit-based */
+export function getPlanLimit(plan: Plan | string): number {
+  return getPlanClientLimit(plan);
 }
 
-/**
- * Determine the credit action type from a chat message context
- */
+/** @deprecated */
+export function isWithinLimit(plan: Plan | string, currentUsage: number): boolean {
+  return canAddClient(plan, currentUsage);
+}
+
+// ── Backward-compatible credit stubs (plans are now client-count based) ───────
+// These are kept so existing chat/voice routes compile without changes.
+// Credits are no longer enforced; all calls return permissive values.
+
+export type CreditAction = 'chat' | 'web_search' | 'deep_research' | 'file_analysis'
+  | 'image_analysis' | 'voice_transcribe' | 'voice_tts' | 'calendar' | 'reminder' | 'memory';
+
+export const CREDIT_COSTS: Record<CreditAction, number> = {
+  chat: 1, web_search: 2, deep_research: 5, file_analysis: 3,
+  image_analysis: 3, voice_transcribe: 2, voice_tts: 2, calendar: 0, reminder: 0, memory: 0,
+};
+
+/** @deprecated — credits no longer enforced; always returns 1 */
+export function getCreditCost(_action: CreditAction): number { return 1; }
+
+/** @deprecated — usage percentage based on clients, not credits */
+export function getUsagePercentage(_plan: Plan | string, _currentUsage: number): number { return 0; }
+
+/** @deprecated — classify chat action; kept for API compat */
 export function classifyChatAction(opts: {
-  hasWebSearch?: boolean;
-  hasSubAgent?: boolean;
-  hasFileAnalysis?: boolean;
-  hasImageAnalysis?: boolean;
-  isCalendar?: boolean;
-  isReminder?: boolean;
+  hasWebSearch?: boolean; hasSubAgent?: boolean; hasFileAnalysis?: boolean;
+  hasImageAnalysis?: boolean; isCalendar?: boolean; isReminder?: boolean;
 }): CreditAction {
   if (opts.isCalendar) return 'calendar';
   if (opts.isReminder) return 'reminder';

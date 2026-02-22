@@ -18,11 +18,13 @@ export function getStripe(): Stripe {
 /**
  * Stripe Price IDs for each plan.
  * Set these in env vars after creating products in Stripe Dashboard.
+ *
+ * Plans: free (no Stripe needed), starter ($97), pro ($247), scale ($497)
  */
 export const STRIPE_PRICE_IDS: Record<string, string | undefined> = {
   starter: process.env.STRIPE_PRICE_STARTER,
-  business: process.env.STRIPE_PRICE_BUSINESS,
-  max: process.env.STRIPE_PRICE_MAX,
+  pro: process.env.STRIPE_PRICE_PRO,
+  scale: process.env.STRIPE_PRICE_SCALE,
 };
 
 /**
@@ -31,7 +33,7 @@ export const STRIPE_PRICE_IDS: Record<string, string | undefined> = {
 export async function createCheckoutSession(opts: {
   userId: string;
   email: string;
-  plan: 'starter' | 'business' | 'max';
+  plan: 'starter' | 'pro' | 'scale';
   successUrl: string;
   cancelUrl: string;
   customerId?: string;
