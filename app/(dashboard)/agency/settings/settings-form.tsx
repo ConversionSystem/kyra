@@ -66,6 +66,7 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
   const [companyName, setCompanyName] = useState(settings.company_name ?? '');
   const [customDomain, setCustomDomain] = useState(settings.custom_domain ?? '');
   const [supportEmail, setSupportEmail] = useState(settings.support_email ?? '');
+  const [escalationEmail, setEscalationEmail] = useState((settings as any).escalation_email ?? '');
   const [ghlWebhookUrl, setGhlWebhookUrl] = useState((settings as any).ghl_webhook_url ?? '');
   const [logoError, setLogoError] = useState(false);
 
@@ -103,6 +104,7 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
             company_name: companyName.trim() || undefined,
             custom_domain: customDomain.trim() || undefined,
             support_email: supportEmail.trim() || undefined,
+              escalation_email: escalationEmail.trim() || undefined,
             ghl_webhook_url: ghlWebhookUrl.trim() || undefined,
           },
         }),
@@ -355,6 +357,23 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
                   disabled={!isPremium || !isAdmin}
                   className="bg-gray-100 border-gray-200"
                 />
+              </div>
+
+              {/* Escalation alert email */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                  🚨 Escalation Alert Email
+                </label>
+                <Input
+                  value={escalationEmail}
+                  onChange={(e) => setEscalationEmail(e.target.value)}
+                  placeholder="you@youragency.com"
+                  disabled={!isAdmin}
+                  className="bg-gray-100 border-gray-200"
+                />
+                <p className="text-xs text-gray-400">
+                  When Kyra AI can't resolve a customer issue, you'll get an instant email alert so no lead slips through the cracks.
+                </p>
               </div>
 
               {/* Custom domain */}
