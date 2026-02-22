@@ -86,9 +86,11 @@ const statusFilters = ['all', 'active', 'paused', 'setup'] as const;
 
 interface ClientsListViewProps {
   clients: AgencyClient[];
+  plan?: string;
+  clientLimit?: number;
 }
 
-export function ClientsListView({ clients }: ClientsListViewProps) {
+export function ClientsListView({ clients, plan = 'free', clientLimit = 1 }: ClientsListViewProps) {
   const router = useRouter();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -151,7 +153,7 @@ export function ClientsListView({ clients }: ClientsListViewProps) {
   return (
     <div className="p-4 sm:p-6 md:p-8 max-w-5xl">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Clients</h1>
           <p className="text-sm text-gray-500 mt-1">
@@ -165,13 +167,51 @@ export function ClientsListView({ clients }: ClientsListViewProps) {
               <span className="hidden sm:inline">{isBulkExporting ? 'Exporting...' : 'Export All'}</span>
             </Button>
           )}
-          <Link href="/agency/clients/new">
-            <Button size="sm" className="gap-2">
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Add Client</span>
-            </Button>
-          </Link>
+          {clients.length >= clientLimit ? (
+            <Link href="/agency/plans">
+              <Button size="sm" className="gap-2 bg-amber-500 hover:bg-amber-600 text-white">
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Upgrade to Add More</span>
+                <span className="sm:hidden">Upgrade</span>
+              </Button>
+            </Link>
+          ) : (
+            <Link href="/agency/clients/new">
+              <Button size="sm" className="gap-2">
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Add Client</span>
+              </Button>
+            </Link>
+          )}
         </div>
+      </div>
+
+      {/* Plan usage bar */}
+      <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 flex items-center gap-3">
+        <div className="flex-1">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs text-gray-500 capitalize">
+              <span className="font-medium text-gray-700">{plan}</span> plan
+              &nbsp;·&nbsp; {clients.length} / {clientLimit} client{clientLimit === 1 ? '' : 's'} used
+            </span>
+            {clients.length >= clientLimit && (
+              <span className="text-xs font-semibold text-amber-600">Limit reached</span>
+            )}
+          </div>
+          <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all ${
+                clients.length >= clientLimit ? 'bg-amber-500' : 'bg-indigo-500'
+              }`}
+              style={{ width: `${Math.min(100, (clients.length / clientLimit) * 100)}%` }}
+            />
+          </div>
+        </div>
+        {clients.length >= clientLimit && (
+          <Link href="/agency/plans" className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 whitespace-nowrap">
+            View plans →
+          </Link>
+        )}
       </div>
 
       {/* Filters */}
