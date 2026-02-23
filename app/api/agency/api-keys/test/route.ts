@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
-import { DEFAULT_MODEL_ID } from '@/lib/agency/ai-models';
+import { resolveNativeModel } from '@/lib/agency/ai-models';
 
 const VALID_PROVIDERS = ['anthropic', 'openai', 'google', 'openrouter'] as const;
 type Provider = typeof VALID_PROVIDERS[number];
@@ -149,7 +149,8 @@ export async function POST(request: NextRequest) {
   const apiKeys = (agency?.api_keys as Record<string, unknown>) || {};
   const apiKey = apiKeys[provider] as string | undefined;
   const selectedModels = (apiKeys.selected_models as Record<string, string>) || {};
-  const modelId = selectedModels[provider] || DEFAULT_MODEL_ID[provider] || 'gpt-4o-mini';
+  // Use native model ID for direct API calls (no openrouter/ prefix)
+  const modelId = resolveNativeModel(provider, selectedModels[provider]);
 
   if (!apiKey) {
     return NextResponse.json({ ok: false, error: 'No key saved for this provider' });
