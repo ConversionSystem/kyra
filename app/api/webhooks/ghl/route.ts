@@ -24,6 +24,7 @@ import type {
 // ============================================================================
 
 import { getGatewayByClientId } from '@/lib/ovh/gateway-resolver';
+import { sendGHLMessage, getValidToken } from '@/lib/ghl/api';
 
 const API_SECRET = process.env.KYRA_API_SECRET;
 
@@ -248,8 +249,11 @@ async function handleInboundMessage(
     `[ghl-webhook] 📨 Inbound ${channelLabel} for "${client.name}" from ${name}: ${messageContent.slice(0, 100)}...`
   );
 
-  // Forward to the client's OpenClaw container — fire and forget
-  await forwardToContainer(client.id, formattedMessage, systemContext, client.agency_id);
+  // Forward to container and send reply back via GHL
+  await forwardToContainer(client.id, formattedMessage, systemContext, client.agency_id, {
+    contactId: contactId ?? undefined,
+    messageType: channel ?? 'TYPE_SMS',
+  });
 }
 
 /**
@@ -396,7 +400,8 @@ async function forwardToContainer(
   clientId: string,
   message: string,
   systemContext: string,
-  agencyId?: string
+  agencyId?: string,
+  reply?: { contactId?: string; messageType?: string }
 ): Promise<void> {
   // Resolve the client's own gateway (OVH per-client isolation)
   const clientGateway = await getGatewayByClientId(clientId);
@@ -441,8 +446,37 @@ async function forwardToContainer(
       console.error(
         `[ghl-webhook] Bridge returned ${response.status} for client ${clientId}: ${errorText}`
       );
-    } else {
-      console.log(`[ghl-webhook] ✅ Forwarded to container for client ${clientId}`);
+      return;
+    }
+
+    // Parse AI response and send back via GHL
+    const completion = await response.json() as {
+      choices?: Array<{ message?: { content?: string } }>;
+    };
+    const aiText = completion?.choices?.[0]?.message?.content?.trim();
+
+    if (!aiText) {
+      console.warn(`[ghl-webhook] Empty AI response for client ${clientId}`);
+      return;
+    }
+
+    console.log(`[ghl-webhook] ✅ AI response (${aiText.length} chars) for client ${clientId}`);
+
+    // Send reply back via GHL API if we have a contactId
+    if (reply?.contactId) {
+      try {
+        const accessToken = await getValidToken(clientId);
+        await sendGHLMessage(
+          clientId,
+          accessToken,
+          reply.contactId,
+          aiText,
+          reply.messageType ?? 'TYPE_SMS',
+        );
+        console.log(`[ghl-webhook] 📤 Sent AI reply to contact ${reply.contactId} via ${reply.messageType}`);
+      } catch (sendErr) {
+        console.error(`[ghl-webhook] Failed to send GHL reply for client ${clientId}:`, sendErr);
+      }
     }
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
