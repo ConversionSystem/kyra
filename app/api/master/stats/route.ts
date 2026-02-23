@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 
-const MASTER_EMAILS = ['angel@conversionsystem.com'];
+const MASTER_EMAILS = ['hello@conversionsystem.com', 'angel@conversionsystem.com'];
 
 export async function GET() {
   const sb = await createClient();

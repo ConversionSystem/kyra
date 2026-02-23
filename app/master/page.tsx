@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import MasterVpsHealth from './master-vps-health';
 
-const MASTER_EMAILS = ['angel@conversionsystem.com'];
+const MASTER_EMAILS = ['hello@conversionsystem.com', 'angel@conversionsystem.com'];
 
 function fmt(cents: number) {
   return `$${(cents / 100).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
