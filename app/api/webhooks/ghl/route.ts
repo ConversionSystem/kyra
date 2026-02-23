@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
 
   const { data: client, error: clientError } = await supabase
     .from('agency_clients')
-    .select('id, agency_id, name, slug, industry, status, container_config, template_id')
+    .select('id, agency_id, name, slug, industry, status, container_config, template_id, settings')
     .eq('ghl_location_id', locationId)
     .single();
 
@@ -178,6 +178,7 @@ interface ClientRecord {
   industry: string;
   status: string;
   container_config: Record<string, unknown>;
+  settings: Record<string, unknown>;
   template_id: string | null;
 }
 
@@ -232,10 +233,23 @@ async function handleInboundMessage(
   const channelLabel = formatChannelName(channel);
   const formattedMessage = `[GHL] Inbound ${channelLabel} from ${name}: ${messageContent}`;
 
-  // Build system context with all available contact info
+  // Pull recent conversation history for this contact (last 10 exchanges)
+  const supabaseForHistory = createServiceClientWithoutCookies();
+  const { data: recentHistory } = await supabaseForHistory
+    .from('client_conversations')
+    .select('user_message, ai_response, created_at')
+    .eq('client_id', client.id)
+    .order('created_at', { ascending: false })
+    .limit(10);
+
+  const conversationHistory = (recentHistory ?? []).reverse(); // oldest first
+
+  // Build system context with business persona + contact info + date
   const systemContext = buildInboundSystemContext({
     clientName: client.name,
     clientIndustry: client.industry,
+    containerConfig: client.container_config,
+    clientSettings: client.settings,
     contactName: name,
     contactEmail: email,
     contactPhone: phone,
@@ -253,7 +267,7 @@ async function handleInboundMessage(
   await forwardToContainer(client.id, formattedMessage, systemContext, client.agency_id, {
     contactId: contactId ?? undefined,
     messageType: channel ?? 'TYPE_SMS',
-  });
+  }, conversationHistory);
 }
 
 /**
@@ -401,7 +415,8 @@ async function forwardToContainer(
   message: string,
   systemContext: string,
   agencyId?: string,
-  reply?: { contactId?: string; messageType?: string }
+  reply?: { contactId?: string; messageType?: string },
+  history?: Array<{ user_message: string; ai_response: string }>
 ): Promise<void> {
   // Shared Supabase service client for conversation logging
   const supabase = createServiceClientWithoutCookies();
@@ -426,6 +441,15 @@ async function forwardToContainer(
     if (systemContext) {
       chatMessages.push({ role: 'system', content: systemContext });
     }
+
+    // Inject conversation history so AI remembers prior exchanges in this thread
+    if (history && history.length > 0) {
+      for (const turn of history) {
+        chatMessages.push({ role: 'user',      content: turn.user_message });
+        chatMessages.push({ role: 'assistant', content: turn.ai_response  });
+      }
+    }
+
     chatMessages.push({ role: 'user', content: message });
 
     const response = await fetch(`${workerUrl}/v1/chat/completions`, {
@@ -523,6 +547,8 @@ async function forwardToContainer(
 function buildInboundSystemContext(info: {
   clientName: string;
   clientIndustry: string;
+  containerConfig: Record<string, unknown>;
+  clientSettings: Record<string, unknown>;
   contactName: string;
   contactEmail?: string;
   contactPhone?: string;
@@ -531,69 +557,108 @@ function buildInboundSystemContext(info: {
   channel: string;
   messageId: string;
 }): string {
-  // Build accurate current date/time context so the AI knows exactly when it is
+  // ── Current date/time ─────────────────────────────────────────────────────
   const now = new Date();
-  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const months = ['January', 'February', 'March', 'April', 'May', 'June',
-                  'July', 'August', 'September', 'October', 'November', 'December'];
-  const dayName = days[now.getUTCDay()];
-  const monthName = months[now.getUTCMonth()];
-  const dateStr = `${dayName}, ${monthName} ${now.getUTCDate()}, ${now.getUTCFullYear()}`;
-  const timeStr = now.toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['January','February','March','April','May','June',
+                  'July','August','September','October','November','December'];
+  const dateStr = `${days[now.getUTCDay()]}, ${months[now.getUTCMonth()]} ${now.getUTCDate()}, ${now.getUTCFullYear()}`;
+  const timeStr = now.toISOString().replace('T',' ').substring(0,19) + ' UTC';
 
-  const lines = [
-    `You are the AI assistant for "${info.clientName}" (industry: ${info.clientIndustry}).`,
-    `This is an inbound ${info.channel} message from a customer via GoHighLevel.`,
-    '',
-    '--- Current Date & Time ---',
-    `Today is: ${dateStr}`,
-    `Current time: ${timeStr}`,
-    `ISO 8601: ${now.toISOString()}`,
-    'IMPORTANT: Always use the current year and date above when scheduling appointments.',
-    'Never use dates from the past. If a customer mentions a day like "Tuesday the 24th",',
-    'calculate the correct upcoming date relative to today\'s date shown above.',
-    '',
-    '--- Contact Info ---',
-    `Name: ${info.contactName}`,
-  ];
+  // ── Pull business config from container_config ────────────────────────────
+  const cfg = info.containerConfig;
+  const persona       = (cfg.persona       as string) || '';
+  const instructions  = (cfg.instructions  as string) || '';
+  const greeting      = (cfg.greeting      as string) || '';
+  const templateName  = (cfg.template_name as string) || '';
+  const bookingLink   = (cfg.calendar_url    as string)
+                     || (info.clientSettings.booking_link as string)
+                     || (cfg.booking_link   as string)
+                     || '';
+  const northStar     = (info.clientSettings.north_star  as string) || '';
+  // Business hours: check both raw string and structured object
+  const bhObj = cfg.business_hours as { enabled?: boolean; start?: string; end?: string; timezone?: string } | null;
+  const businessHours = (info.clientSettings.hours as string)
+                     || (cfg.hours as string)
+                     || (bhObj?.enabled ? `${bhObj.start ?? '09:00'}–${bhObj.end ?? '17:00'} ${bhObj.timezone ?? 'local time'}` : '')
+                     || '';
 
+  const lines: string[] = [];
+
+  // ── Identity ──────────────────────────────────────────────────────────────
+  if (persona) {
+    lines.push('# Who You Are');
+    lines.push(persona);
+  } else {
+    lines.push(`# Who You Are`);
+    lines.push(`You are the AI employee for ${info.clientName}${info.clientIndustry ? ` (${info.clientIndustry})` : ''}.`);
+  }
+  lines.push('');
+
+  // ── Business knowledge ────────────────────────────────────────────────────
+  if (instructions) {
+    lines.push('# Your Business Knowledge & Instructions');
+    lines.push(instructions);
+    lines.push('');
+  }
+
+  // ── Key business context ──────────────────────────────────────────────────
+  const contextLines: string[] = [];
+  if (northStar)     contextLines.push(`Mission: ${northStar}`);
+  if (bookingLink)   contextLines.push(`Booking link: ${bookingLink}`);
+  if (businessHours) contextLines.push(`Business hours: ${businessHours}`);
+  if (templateName)  contextLines.push(`Role: ${templateName}`);
+  if (greeting)      contextLines.push(`Preferred greeting: "${greeting}"`);
+
+  if (contextLines.length > 0) {
+    lines.push('# Business Context');
+    lines.push(...contextLines);
+    lines.push('');
+  }
+
+  // ── Current date/time ─────────────────────────────────────────────────────
+  lines.push('# Current Date & Time');
+  lines.push(`Today is: ${dateStr}`);
+  lines.push(`Current time: ${timeStr}`);
+  lines.push(`ISO 8601: ${now.toISOString()}`);
+  lines.push('IMPORTANT: Always use the current year when referencing dates.');
+  lines.push('Never schedule in the past. Calculate all dates relative to today above.');
+  lines.push('');
+
+  // ── Contact info ──────────────────────────────────────────────────────────
+  lines.push('# Customer Info');
+  lines.push(`Name: ${info.contactName}`);
   if (info.contactEmail) lines.push(`Email: ${info.contactEmail}`);
   if (info.contactPhone) lines.push(`Phone: ${info.contactPhone}`);
   lines.push(`GHL Contact ID: ${info.contactId}`);
   lines.push(`GHL Conversation ID: ${info.conversationId}`);
-  lines.push(`GHL Message ID: ${info.messageId}`);
-
   lines.push('');
-  lines.push('--- Scheduling & Appointments ---');
-  lines.push('If a customer asks to book, schedule, or set up a meeting/appointment:');
-  lines.push('1. DO NOT use any internal calendar or scheduling tools (schedule.at, cron, etc.)');
-  lines.push('2. DO NOT say "I will schedule your meeting" — you cannot book directly via SMS.');
-  lines.push('3. INSTEAD: Send them the booking link and invite them to pick a time.');
-  lines.push('4. Keep it short: "Great! Book here: [link] — takes 2 min."');
-  lines.push('5. NEVER include error messages, tool output, or system text in your reply.');
-  lines.push('6. Your reply must ONLY contain what the customer should read.');
-  lines.push('');
-  lines.push('--- Response Guidelines ---');
-  lines.push(`Channel: ${info.channel}`);
 
-  if (info.channel === 'SMS') {
-    lines.push('Keep your response SHORT — SMS has character limits. Be concise and actionable.');
-    lines.push('Max ~160 characters per segment. Stay under 320 characters if possible.');
-    lines.push('No markdown, no asterisks, no bullet points — plain text only for SMS.');
-  } else if (info.channel === 'Email') {
-    lines.push('You may write a longer, more detailed response for email.');
-    lines.push('Use professional formatting with greeting and sign-off.');
-  } else if (info.channel === 'WhatsApp') {
-    lines.push('WhatsApp allows longer messages but keep it conversational.');
-    lines.push('You can use basic formatting: *bold*, _italic_, ~strikethrough~.');
+  // ── Scheduling rules ──────────────────────────────────────────────────────
+  lines.push('# Appointment Booking Rules');
+  if (bookingLink) {
+    lines.push(`When a customer asks to book or schedule: send this link → ${bookingLink}`);
+    lines.push('Say something like: "You can book directly here: [link] — takes 2 min."');
   } else {
-    lines.push('Respond naturally and helpfully. Match the tone of the channel.');
+    lines.push('When a customer asks to book/schedule: ask for their preferred date and time,');
+    lines.push('then confirm you will have someone follow up to confirm.');
   }
-
+  lines.push('NEVER use internal scheduling tools (schedule.at, cron). NEVER show error messages.');
   lines.push('');
-  lines.push('CRITICAL: Your response is sent DIRECTLY to the customer. It must be clean,');
-  lines.push('professional, and contain ONLY what a human would want to read. No system');
-  lines.push('messages, no error text, no tool output, no internal notes. Just your reply.');
+
+  // ── Channel-specific rules ────────────────────────────────────────────────
+  lines.push(`# Response Rules (Channel: ${info.channel})`);
+  if (info.channel === 'SMS') {
+    lines.push('SMS rules: Keep replies SHORT. Max 320 characters. Plain text only.');
+    lines.push('No markdown, no bullet points, no asterisks. One idea per message.');
+  } else if (info.channel === 'Email') {
+    lines.push('Email: Professional tone. Include greeting and sign-off. Structured formatting OK.');
+  } else if (info.channel === 'WhatsApp') {
+    lines.push('WhatsApp: Conversational, friendly. Basic formatting OK (*bold*, _italic_).');
+  }
+  lines.push('');
+  lines.push('CRITICAL: Your reply goes DIRECTLY to the customer. Clean, professional, human.');
+  lines.push('No system text, no error messages, no tool output. Only what the customer should read.');
 
   return lines.join('\n');
 }
