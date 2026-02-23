@@ -99,8 +99,9 @@ export async function GET(
     '#kyra-widget-send { width:36px; height:36px; border-radius:50%; background:' + COLOR + '; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:opacity 0.2s; }',
     '#kyra-widget-send:disabled { opacity:0.5; cursor:not-allowed; }',
     '#kyra-widget-send svg { width:16px; height:16px; fill:white; }',
-    '#kyra-widget-powered { text-align:center; padding:4px; font-size:10px; color:#9ca3af; font-family:system-ui,sans-serif; background:#fff; }',
-    '#kyra-widget-powered a { color:#9ca3af; text-decoration:none; }',
+    '#kyra-widget-powered { text-align:center; padding:6px; font-size:11px; color:#6b7280; font-family:system-ui,sans-serif; background:#fff; border-top:1px solid #f3f4f6; }',
+    '#kyra-widget-powered a { color:#6366f1; text-decoration:none; font-weight:600; }',
+    '#kyra-widget-powered a:hover { text-decoration:underline; }',
   ].join('');
   document.head.appendChild(style);
 
@@ -137,7 +138,7 @@ export async function GET(
     '    <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>',
     '  </button>',
     '</div>',
-    '<div id="kyra-widget-powered">Powered by <a href="https://kyra.conversionsystem.com" target="_blank">Kyra AI</a></div>',
+    '<div id="kyra-widget-powered">⚡ AI by <a href="https://kyra.conversionsystem.com/signup/agency?utm_source=widget&utm_medium=powered_by&utm_campaign=viral" target="_blank" rel="noopener" title="Get your own AI employee — free to start">Kyra</a> · <a href="https://kyra.conversionsystem.com/signup/agency?utm_source=widget&utm_medium=powered_by&utm_campaign=viral" target="_blank" rel="noopener" style="color:#9ca3af;font-weight:normal">Get one free →</a></div>',
   ].join('');
   document.body.appendChild(panel);
 
