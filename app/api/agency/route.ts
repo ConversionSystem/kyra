@@ -5,6 +5,8 @@ import { isValidSlug } from '@/lib/agency/utils';
 // Per-client gateways are now provisioned on OVH when clients are created
 // No agency-level provisioning needed anymore
 import type { CreateAgencyRequest, AgencyWithCounts } from '@/lib/agency/types';
+import { addCredits } from '@/lib/billing/credit-engine';
+import { WELCOME_CREDITS, WELCOME_CREDIT_DESCRIPTION } from '@/lib/billing/credits';
 
 /**
  * GET /api/agency
@@ -158,6 +160,16 @@ export async function POST(request: NextRequest) {
 
   console.log('[POST /api/agency] Success! Agency:', agency.id, 'User:', user.id);
 
+  // ── Grant welcome credits ($2 free to test the platform) ────────────────
+  // 200 credits = $2 worth. Enough to test, not enough to abuse.
+  try {
+    await addCredits(agency.id, WELCOME_CREDITS, 'bonus', WELCOME_CREDIT_DESCRIPTION);
+    console.log(`[POST /api/agency] 🎁 Granted ${WELCOME_CREDITS} welcome credits to agency ${agency.id}`);
+  } catch (creditErr) {
+    // Non-fatal — don't block signup if credit grant fails
+    console.warn('[POST /api/agency] Failed to grant welcome credits (non-fatal):', creditErr);
+  }
+
   // ── Send welcome email (fire-and-forget) ────────────────────────────────
   const resendKey = process.env.RESEND_API_KEY;
   if (resendKey && user.email) {
@@ -167,7 +179,7 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         from: 'Kyra AI <welcome@kyra.conversionsystem.com>',
         to: user.email,
-        subject: `Welcome to Kyra, ${agency.name} 🚀`,
+        subject: `Welcome to Kyra — you have $2 in free credits 🎁`,
         html: `
 <!DOCTYPE html>
 <html>
@@ -191,8 +203,17 @@ export async function POST(request: NextRequest) {
         ${agency.name} is live. 🎉
       </h1>
       <p style="color:#c7d2fe;font-size:15px;margin:0;line-height:1.6;">
-        Your agency dashboard is ready. Here's exactly what to do next to get your first AI employee live in the next 10 minutes.
+        Your agency dashboard is ready. We've loaded <strong style="color:white;">$2 in free credits</strong> — enough to run ~200 AI conversations while you evaluate. Here's how to get live in 10 minutes.
       </p>
+    </div>
+
+    <!-- Free credits callout -->
+    <div style="background:#1e293b;border-radius:16px;padding:20px 24px;margin-bottom:24px;border:1px solid rgba(99,102,241,0.3);display:flex;align-items:center;gap:16px;">
+      <span style="font-size:28px;">🪙</span>
+      <div>
+        <p style="color:white;font-weight:700;font-size:14px;margin:0 0 4px;">200 Kyra Credits — already in your account</p>
+        <p style="color:#94a3b8;font-size:13px;margin:0;line-height:1.5;">That's ~200 AI conversations, on us. Add your own API key or top up when you're ready to scale.</p>
+      </div>
     </div>
 
     <!-- Steps -->
