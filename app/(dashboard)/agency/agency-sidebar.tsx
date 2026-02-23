@@ -124,6 +124,20 @@ export function AgencySidebar({ agencyName, plan, settings }: AgencySidebarProps
   const [agencyGatewayUrl, setAgencyGatewayUrl] = useState<string | null>(null);
   const [agencyGatewayToken, setAgencyGatewayToken] = useState<string | null>(null);
   const [provisioningGateway, setProvisioningGateway] = useState(false);
+  const [escalationCount, setEscalationCount] = useState(0);
+
+  // Poll for unread escalations every 2 minutes
+  useEffect(() => {
+    const fetchEscalations = () => {
+      fetch('/api/agency/analytics/overview')
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (d) setEscalationCount(d.escalations_week ?? 0); })
+        .catch(() => {});
+    };
+    fetchEscalations();
+    const interval = setInterval(fetchEscalations, 120_000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     // Fetch the agency's OWN dedicated gateway (separate from client gateways)
@@ -251,6 +265,11 @@ export function AgencySidebar({ agencyName, plan, settings }: AgencySidebarProps
                 >
                   <item.icon className="h-4 w-4 shrink-0" />
                   {item.label}
+                  {item.href === '/agency/conversations' && escalationCount > 0 && (
+                    <span className="ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 leading-none">
+                      {escalationCount > 9 ? '9+' : escalationCount}
+                    </span>
+                  )}
                 </Link>
               );
             })}
