@@ -2,9 +2,10 @@
 
 import { useState, useCallback } from 'react';
 import {
-  Target, Phone, Mail, Linkedin, MessageSquare,
-  ChevronRight, Check, X, Flame, Zap, Clock,
-  Plus, Search, Filter, BarChart3, Trophy, Copy, CheckCircle2,
+  Target, Mail, Linkedin,
+  ChevronRight, Flame, Zap,
+  Search, Trophy, Copy, CheckCircle2,
+  Send, Rocket, Loader2, AlertCircle, ExternalLink,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,13 +18,13 @@ export interface Lead {
   owner: string;
   niche: string;
   location: string;
-  clients: string;         // e.g. "20-50"
-  ghlTier: string;         // e.g. "Agency Pro"
+  clients: string;
+  ghlTier: string;
   warmth: 'hot' | 'warm' | 'cold';
   linkedin?: string;
   email?: string;
-  why: string;             // why this is a great fit
-  angle: string;           // personalized opening line
+  why: string;
+  angle: string;
 }
 
 const LEADS: Lead[] = [
@@ -221,11 +222,13 @@ const warmthConfig = {
   cold: { label: '🧊 Cold', className: 'bg-blue-100 text-blue-600' },
 };
 
-// ─── Props ────────────────────────────────────────────────────────────────────
-
 interface Props {
   initialPipelineState: Record<string, string>;
 }
+
+// ─── GHL Campaign Launch ──────────────────────────────────────────────────────
+
+type CampaignStatus = 'idle' | 'launching' | 'enrolled' | 'error' | 'no_webhook';
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -242,6 +245,11 @@ export function LeadsPipelineClient({ initialPipelineState }: Props) {
   const [filter, setFilter] = useState<'all' | 'hot' | 'warm' | 'cold'>('all');
   const [search, setSearch] = useState('');
   const [copied, setCopied] = useState<string | null>(null);
+
+  // ── Campaign state ──────────────────────────────────────────────────────────
+  const [campaignStatus, setCampaignStatus] = useState<Record<string, CampaignStatus>>({});
+  const [bulkLaunching, setBulkLaunching] = useState(false);
+  const [bulkResult, setBulkResult] = useState<{ enrolled: number; errors: number; noWebhook?: boolean } | null>(null);
 
   const updateStage = useCallback(async (leadId: string, stage: StageId) => {
     const next = { ...pipeline, [leadId]: stage };
@@ -264,6 +272,93 @@ export function LeadsPipelineClient({ initialPipelineState }: Props) {
     setTimeout(() => setCopied(null), 2000);
   };
 
+  // ── Enroll single lead in GHL campaign ──────────────────────────────────────
+  const enrollLead = async (lead: Lead, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (campaignStatus[lead.id] === 'launching' || campaignStatus[lead.id] === 'enrolled') return;
+
+    setCampaignStatus(prev => ({ ...prev, [lead.id]: 'launching' }));
+    try {
+      const res = await fetch('/api/agency/leads/push-ghl', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leads: [lead] }),
+      });
+      const data = await res.json();
+
+      if (data.status === 'no_webhook') {
+        setCampaignStatus(prev => ({ ...prev, [lead.id]: 'no_webhook' }));
+      } else if (data.enrolled > 0) {
+        setCampaignStatus(prev => ({ ...prev, [lead.id]: 'enrolled' }));
+        // Auto-advance to "outreach" stage
+        await updateStage(lead.id, 'outreach');
+      } else {
+        setCampaignStatus(prev => ({ ...prev, [lead.id]: 'error' }));
+      }
+    } catch {
+      setCampaignStatus(prev => ({ ...prev, [lead.id]: 'error' }));
+    }
+  };
+
+  // ── Bulk launch all hot leads ────────────────────────────────────────────────
+  const launchAllHotLeads = async () => {
+    if (bulkLaunching) return;
+    const hotLeadsList = LEADS.filter(l => l.warmth === 'hot' && pipeline[l.id] === 'new');
+    if (hotLeadsList.length === 0) return;
+
+    setBulkLaunching(true);
+    setBulkResult(null);
+
+    // Set all to launching
+    const statusUpdate: Record<string, CampaignStatus> = {};
+    for (const l of hotLeadsList) statusUpdate[l.id] = 'launching';
+    setCampaignStatus(prev => ({ ...prev, ...statusUpdate }));
+
+    try {
+      const res = await fetch('/api/agency/leads/push-ghl', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leads: hotLeadsList, bulkMode: true }),
+      });
+      const data = await res.json();
+
+      if (data.status === 'no_webhook') {
+        const noWebhookUpdate: Record<string, CampaignStatus> = {};
+        for (const l of hotLeadsList) noWebhookUpdate[l.id] = 'no_webhook';
+        setCampaignStatus(prev => ({ ...prev, ...noWebhookUpdate }));
+        setBulkResult({ enrolled: 0, errors: 0, noWebhook: true });
+      } else if (data.results) {
+        const resultUpdate: Record<string, CampaignStatus> = {};
+        for (const r of data.results as Array<{ id: string; status: string }>) {
+          resultUpdate[r.id] = r.status === 'enrolled' ? 'enrolled' : 'error';
+        }
+        setCampaignStatus(prev => ({ ...prev, ...resultUpdate }));
+
+        // Auto-advance enrolled leads to "outreach" stage
+        const newPipeline = { ...pipeline };
+        for (const r of data.results as Array<{ id: string; status: string }>) {
+          if (r.status === 'enrolled') newPipeline[r.id] = 'outreach';
+        }
+        setPipeline(newPipeline);
+        setSaving(true);
+        await fetch('/api/agency/sales-pipeline', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pipeline: newPipeline }),
+        }).finally(() => setSaving(false));
+
+        setBulkResult({ enrolled: data.enrolled ?? 0, errors: data.errors ?? 0 });
+      }
+    } catch {
+      const errUpdate: Record<string, CampaignStatus> = {};
+      for (const l of hotLeadsList) errUpdate[l.id] = 'error';
+      setCampaignStatus(prev => ({ ...prev, ...errUpdate }));
+      setBulkResult({ enrolled: 0, errors: hotLeadsList.length });
+    } finally {
+      setBulkLaunching(false);
+    }
+  };
+
   const filtered = LEADS.filter(l => {
     if (filter !== 'all' && l.warmth !== filter) return false;
     if (search && !l.agency.toLowerCase().includes(search.toLowerCase()) &&
@@ -272,17 +367,17 @@ export function LeadsPipelineClient({ initialPipelineState }: Props) {
     return true;
   });
 
-  // Stats
   const hotLeads = LEADS.filter(l => l.warmth === 'hot').length;
+  const hotNew = LEADS.filter(l => l.warmth === 'hot' && pipeline[l.id] === 'new').length;
   const inProgress = LEADS.filter(l => !['new', 'no'].includes(pipeline[l.id])).length;
   const closed = LEADS.filter(l => pipeline[l.id] === 'closed').length;
-  const notInterested = LEADS.filter(l => pipeline[l.id] === 'no').length;
+  const enrolled = Object.values(campaignStatus).filter(s => s === 'enrolled').length;
 
   return (
     <div className="p-4 sm:p-6 md:p-8 max-w-7xl space-y-6">
 
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
+      <div className="flex items-start justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <Target className="h-6 w-6 text-indigo-500" />
@@ -292,16 +387,62 @@ export function LeadsPipelineClient({ initialPipelineState }: Props) {
             25 curated GHL agencies — warm leads, personalized openers, one-click outreach.
           </p>
         </div>
-        {saving && <span className="text-xs text-gray-400 animate-pulse">Saving…</span>}
+
+        {/* 🚀 Bulk Launch Button */}
+        <div className="flex flex-col items-end gap-2">
+          <Button
+            onClick={launchAllHotLeads}
+            disabled={bulkLaunching || hotNew === 0}
+            className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-sm font-semibold text-sm px-4 py-2 flex items-center gap-2"
+          >
+            {bulkLaunching
+              ? <><Loader2 className="h-4 w-4 animate-spin" /> Launching…</>
+              : <><Rocket className="h-4 w-4" /> 🔥 Launch All Hot Leads ({hotNew})</>}
+          </Button>
+          {saving && <span className="text-xs text-gray-400 animate-pulse">Saving…</span>}
+        </div>
       </div>
+
+      {/* Bulk result banner */}
+      {bulkResult && (
+        <div className={`rounded-xl border px-4 py-3 text-sm flex items-start gap-3 ${
+          bulkResult.noWebhook
+            ? 'bg-amber-50 border-amber-200 text-amber-800'
+            : bulkResult.enrolled > 0
+            ? 'bg-green-50 border-green-200 text-green-800'
+            : 'bg-red-50 border-red-200 text-red-800'
+        }`}>
+          {bulkResult.noWebhook ? (
+            <div className="space-y-1">
+              <p className="font-semibold">⚠️ OUTREACH_WEBHOOK_URL not set</p>
+              <p>To auto-enroll leads in GHL email campaigns, add <code className="bg-amber-100 px-1 rounded text-xs">OUTREACH_WEBHOOK_URL</code> to Vercel env vars pointing to your GHL outreach workflow.</p>
+              <a
+                href="https://vercel.com/dashboard"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 underline mt-1"
+              >
+                Open Vercel Dashboard <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+          ) : (
+            <p>
+              <CheckCircle2 className="h-4 w-4 inline mr-1 text-green-600" />
+              <strong>{bulkResult.enrolled} leads enrolled</strong> in GHL campaign
+              {bulkResult.errors > 0 && ` · ${bulkResult.errors} failed`}.
+              {' '}Pipeline stages auto-advanced to "Outreach Sent".
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { icon: Flame, label: 'Hot leads', value: hotLeads, color: 'text-red-500' },
-          { icon: Zap, label: 'In progress', value: inProgress, color: 'text-indigo-500' },
-          { icon: Trophy, label: 'Closed', value: closed, color: 'text-green-600' },
-          { icon: BarChart3, label: 'Total pipeline', value: LEADS.length, color: 'text-gray-500' },
+          { icon: Flame,     label: 'Hot leads',     value: hotLeads,    color: 'text-red-500' },
+          { icon: Zap,       label: 'In progress',   value: inProgress,  color: 'text-indigo-500' },
+          { icon: Trophy,    label: 'Closed',        value: closed,      color: 'text-green-600' },
+          { icon: Send,      label: 'In Campaign',   value: enrolled,    color: 'text-blue-500' },
         ].map(({ icon: Icon, label, value, color }) => (
           <Card key={label}>
             <CardContent className="pt-4 pb-4 text-center">
@@ -357,6 +498,7 @@ export function LeadsPipelineClient({ initialPipelineState }: Props) {
           const stage = pipeline[lead.id] || 'new';
           const stageInfo = STAGES.find(s => s.id === stage)!;
           const warmth = warmthConfig[lead.warmth];
+          const cStatus = campaignStatus[lead.id] ?? 'idle';
 
           return (
             <div
@@ -376,13 +518,23 @@ export function LeadsPipelineClient({ initialPipelineState }: Props) {
                     <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${warmth.className}`}>
                       {warmth.label}
                     </span>
+                    {/* Campaign badge */}
+                    {cStatus === 'enrolled' && (
+                      <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 flex items-center gap-1">
+                        <Send className="h-2.5 w-2.5" /> In Campaign
+                      </span>
+                    )}
+                    {cStatus === 'error' && (
+                      <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-600 flex items-center gap-1">
+                        <AlertCircle className="h-2.5 w-2.5" /> Failed
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs text-gray-400 mt-0.5">
                     {lead.niche} · {lead.location} · {lead.clients} clients
                   </p>
                 </div>
 
-                {/* Stage selector */}
                 <div className="flex items-center gap-2">
                   <span className={`text-[11px] font-medium px-2.5 py-1 rounded-full ${stageInfo.color}`}>
                     {stageInfo.label}
@@ -418,15 +570,22 @@ export function LeadsPipelineClient({ initialPipelineState }: Props) {
                     </p>
                   </div>
 
-                  {/* Contact links + pitch link */}
+                  {/* Contact links + pitch link + GHL enroll */}
                   <div className="flex items-center gap-3 flex-wrap">
                     {lead.email && (
                       <a
-                        href={`mailto:${lead.email}`}
+                        href={(() => {
+                          const niche = lead.niche.toLowerCase().replace(/[^a-z]/g, '');
+                          const params = new URLSearchParams({ name: lead.owner, agency: lead.agency, niche });
+                          const pitchUrl = `https://kyra.conversionsystem.com/for?${params.toString()}`;
+                          const subject = encodeURIComponent(`Quick question about AI for your ${lead.niche} clients`);
+                          const body = encodeURIComponent(`${lead.angle}\n\nI put together a quick page just for you: ${pitchUrl}\n\nWorth a look? Happy to jump on a 15-minute call.\n\nAngel`);
+                          return `mailto:${lead.email}?subject=${subject}&body=${body}`;
+                        })()}
                         onClick={e => e.stopPropagation()}
-                        className="flex items-center gap-1.5 text-xs text-blue-600 hover:underline"
+                        className="flex items-center gap-1.5 text-xs text-blue-600 hover:underline font-medium"
                       >
-                        <Mail className="h-3.5 w-3.5" /> {lead.email}
+                        <Mail className="h-3.5 w-3.5" /> Send Email
                       </a>
                     )}
                     {lead.linkedin && (
@@ -458,7 +617,44 @@ export function LeadsPipelineClient({ initialPipelineState }: Props) {
                         ? <><CheckCircle2 className="h-3 w-3 text-green-500" /> Pitch link copied!</>
                         : <><Copy className="h-3 w-3" /> Copy pitch link</>}
                     </button>
+
+                    {/* GHL Campaign Enroll button */}
+                    <button
+                      onClick={e => enrollLead(lead, e)}
+                      disabled={cStatus === 'launching' || cStatus === 'enrolled'}
+                      className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg transition-all ${
+                        cStatus === 'enrolled'
+                          ? 'bg-blue-100 text-blue-700 cursor-default'
+                          : cStatus === 'launching'
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                          : cStatus === 'error'
+                          ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                          : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm'
+                      }`}
+                    >
+                      {cStatus === 'launching' && <Loader2 className="h-3 w-3 animate-spin" />}
+                      {cStatus === 'enrolled'  && <CheckCircle2 className="h-3 w-3 text-blue-600" />}
+                      {cStatus === 'error'     && <AlertCircle className="h-3 w-3" />}
+                      {cStatus === 'idle'      && <Send className="h-3 w-3" />}
+                      {cStatus === 'no_webhook' && <AlertCircle className="h-3 w-3" />}
+                      {cStatus === 'launching'  ? 'Enrolling…'
+                        : cStatus === 'enrolled'  ? 'In Campaign ✓'
+                        : cStatus === 'error'     ? 'Retry'
+                        : cStatus === 'no_webhook'? 'No Webhook'
+                        : '📧 Enroll in GHL'}
+                    </button>
                   </div>
+
+                  {/* No-webhook hint */}
+                  {cStatus === 'no_webhook' && (
+                    <div className="bg-amber-50 border border-amber-100 rounded-lg p-3 text-xs text-amber-800">
+                      <strong>Set up GHL outreach automation:</strong> Add <code>OUTREACH_WEBHOOK_URL</code> in{' '}
+                      <a href="https://vercel.com/dashboard" target="_blank" rel="noreferrer" className="underline">
+                        Vercel env vars
+                      </a>{' '}
+                      pointing to a GHL workflow that creates a contact + enrolls them in your cold email sequence.
+                    </div>
+                  )}
 
                   {/* Stage buttons */}
                   <div>
