@@ -18,10 +18,11 @@ export default async function AgencyLayout({
   if (!result) redirect('/signup/agency');
 
   const { agency, role } = result;
+  const isMaster = ['angel@conversionsystem.com'].includes(user.email ?? '');
 
   return (
     <div className="min-h-screen bg-gray-50 lg:flex">
-      <AgencySidebar agencyName={agency.name} plan={agency.plan} settings={agency.settings} />
+      <AgencySidebar agencyName={agency.name} plan={agency.plan} settings={agency.settings} isMaster={isMaster} />
       <main className="flex-1 min-h-screen overflow-y-auto bg-gray-50 pt-14 lg:pt-0">
         {children}
       </main>
