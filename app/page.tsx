@@ -89,6 +89,9 @@ export default function HomePage() {
             <Link href="/login" className="text-sm text-slate-400 hover:text-white transition hidden sm:block">
               Sign in
             </Link>
+            <Link href="/get-demo" className="text-sm text-slate-300 hover:text-white transition hidden md:block border border-white/20 px-4 py-2 rounded-lg hover:border-white/40">
+              Get a Demo
+            </Link>
             <Link
               href="/signup/agency"
               className="bg-indigo-600 hover:bg-indigo-500 transition text-white text-sm font-semibold px-4 py-2 rounded-lg"
