@@ -490,11 +490,26 @@ export async function chatViaGateway(
   }
 
   try {
+    // Detect Anthropic model for prompt caching
+    const isAnthropicModel = !!(
+      options.model?.startsWith('claude') ||
+      options.model?.startsWith('anthropic/claude')
+    );
+
     // Build message array: system → history → current user message
-    const messages: Array<{ role: string; content: string }> = [];
+    const messages: Array<{ role: string; content: string | Array<{ type: string; text: string; cache_control?: { type: string } }> }> = [];
 
     if (options.systemPrompt) {
-      messages.push({ role: 'system', content: options.systemPrompt });
+      if (isAnthropicModel) {
+        // Anthropic prompt caching: mark system prompt as ephemeral cache
+        // Cached tokens cost ~10% of normal — saves 60-90% on repeated system prompts
+        messages.push({
+          role: 'system',
+          content: [{ type: 'text', text: options.systemPrompt, cache_control: { type: 'ephemeral' } }],
+        });
+      } else {
+        messages.push({ role: 'system', content: options.systemPrompt });
+      }
     }
 
     if (options.history && options.history.length > 0) {
