@@ -72,8 +72,6 @@ const navSections: NavSection[] = [
       { label: 'Performance', href: '/agency/performance', icon: BarChart3 },
       { label: 'Budget', href: '/agency/budget', icon: Wallet },
       { label: 'Revenue', href: '/agency/revenue', icon: TrendingUp },
-      { label: 'Plans', href: '/agency/plans', icon: CreditCard },
-      { label: 'Billing', href: '/agency/billing', icon: CreditCard },
     ],
   },
   {
