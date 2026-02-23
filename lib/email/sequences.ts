@@ -150,12 +150,12 @@ function day5Email(agency: Agency): { subject: string; html: string } {
     <table style="width:100%;border-collapse:collapse;margin:0 0 24px;background:#f9fafb;border-radius:8px;">
       ${[
         ['Free', '1 client AI', '—'],
-        ['Starter — $97/mo', '5 client AIs', '🚀'],
-        ['Pro — $247/mo', '15 client AIs', '⚡'],
-        ['Scale — $497/mo', '50 client AIs', '🏆'],
+        ['Lite — $99/mo', '5 client AIs', '🚀'],
+        ['Pro — $249/mo', '15 client AIs', '⚡'],
+        ['Scale — $499/mo', '50 client AIs', '🏆'],
       ].map(([plan, clients, icon]) => `
-        <tr style="${plan.includes('Starter') ? 'background:#eef2ff;' : ''}">
-          <td style="padding:10px 12px;color:#374151;font-size:14px;font-weight:${plan.includes('Starter') ? '600' : '400'};">${plan}</td>
+        <tr style="${plan.includes('Lite') ? 'background:#eef2ff;' : ''}">
+          <td style="padding:10px 12px;color:#374151;font-size:14px;font-weight:${plan.includes('Lite') ? '600' : '400'};">${plan}</td>
           <td style="padding:10px 12px;color:#6366f1;font-size:14px;font-weight:600;">${clients}</td>
           <td style="padding:10px 12px;font-size:18px;">${icon}</td>
         </tr>`).join('')}
@@ -180,7 +180,7 @@ function day7Email(agency: Agency): { subject: string; html: string } {
   const body = `${h2(`Last message from me about upgrading`)}
     ${p(`${name}, I'm going to keep this short.`)}
     ${p(`You've been on Kyra's free plan for a week. If the AI handled even one conversation for you — it paid for itself.`)}
-    ${p(`Starter is <strong>$97/month</strong> for 5 client AIs. Most agencies charge their clients <strong>$500–$2,000/month</strong> per AI. The math is obvious.`)}
+    ${p(`Lite is <strong>$99/month</strong> for 5 client AIs. Most agencies charge their clients <strong>$500–$2,000/month</strong> per AI. The math is obvious.`)}
     ${btn('Start free trial — $0 today', `${APP_URL}/agency/billing?upgrade=starter`)}
     ${p(`30-day free trial. Cancel anytime. No credit card games.`)}
     ${p(`If this isn't the right time, no worries — your free account stays active and your 1 client AI keeps working.`, true)}

@@ -166,7 +166,7 @@ I've been running a white-label AI employee platform built specifically for GHL 
 → AI responds to every inbound SMS in <60 seconds, 24/7
 → Auto-updates CRM tags, notes, and pipeline stage after every conversation
 → Escalates frustrated customers to your team with a Slack/email alert
-→ You charge $500–$2,000/month per client. Your cost: as low as $97/month for 5 clients.
+→ You charge $500–$2,000/month per client. Your cost: as low as $99/month for 5 clients.
 
 It works across all 7 GHL channels: SMS, WhatsApp, Instagram, Facebook, email, Live Chat, and GMB.
 
