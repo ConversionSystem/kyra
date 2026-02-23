@@ -33,6 +33,7 @@ import {
   Link2,
   Gift,
   Crown,
+  Coins,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AgencySettings } from '@/lib/agency/types';
@@ -98,6 +99,7 @@ const navSections: NavSection[] = [
     label: 'Account',
     items: [
       { label: 'Billing', href: '/agency/billing', icon: CreditCard },
+      { label: 'Credits', href: '/agency/credits', icon: Coins },
       { label: 'API Keys', href: '/agency/api-keys', icon: KeyRound },
       { label: 'Settings', href: '/agency/settings', icon: Settings },
     ],
