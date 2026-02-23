@@ -46,6 +46,7 @@ import { UsageAnalytics } from './usage-analytics';
 import PermissionsCard from './permissions-card';
 import HealthScoreBadge from '@/components/dashboard/health-score-badge';
 import AISuggestionsCard from '@/components/dashboard/ai-suggestions-card';
+import ClientStatusBanner from '@/components/dashboard/client-status-banner';
 
 // ── Setup Nudge Banner ────────────────────────────────────────────────────────
 
@@ -261,6 +262,9 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
           })}
         </nav>
       </div>
+
+      {/* Status banners — gateway errors, GHL disconnect, missing API key */}
+      <ClientStatusBanner client={initialClient} />
 
       {/* Setup nudge — shown when AI has no personality or GHL configured */}
       <SetupNudgeBanner client={initialClient} onTabChange={setActiveTab} />
