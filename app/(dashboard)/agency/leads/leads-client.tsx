@@ -418,7 +418,7 @@ export function LeadsPipelineClient({ initialPipelineState }: Props) {
                     </p>
                   </div>
 
-                  {/* Contact links */}
+                  {/* Contact links + pitch link */}
                   <div className="flex items-center gap-3 flex-wrap">
                     {lead.email && (
                       <a
@@ -440,6 +440,24 @@ export function LeadsPipelineClient({ initialPipelineState }: Props) {
                         <Linkedin className="h-3.5 w-3.5" /> LinkedIn
                       </a>
                     )}
+                    <button
+                      onClick={e => {
+                        e.stopPropagation();
+                        const niche = lead.niche.toLowerCase().replace(/[^a-z]/g, '');
+                        const params = new URLSearchParams({
+                          name: lead.owner,
+                          agency: lead.agency,
+                          niche: niche,
+                        });
+                        const url = `https://kyra.conversionsystem.com/for?${params.toString()}`;
+                        copy(url, lead.id + '_pitch');
+                      }}
+                      className="flex items-center gap-1 text-xs text-purple-600 hover:text-purple-800 font-medium"
+                    >
+                      {copied === lead.id + '_pitch'
+                        ? <><CheckCircle2 className="h-3 w-3 text-green-500" /> Pitch link copied!</>
+                        : <><Copy className="h-3 w-3" /> Copy pitch link</>}
+                    </button>
                   </div>
 
                   {/* Stage buttons */}
