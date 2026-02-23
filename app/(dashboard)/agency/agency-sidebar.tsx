@@ -42,6 +42,7 @@ interface NavItem {
   label: string;
   href: string;
   icon: LucideIcon;
+  masterOnly?: boolean;
 }
 
 interface NavSection {
@@ -83,7 +84,7 @@ const navSections: NavSection[] = [
       { label: 'Referrals', href: '/agency/referrals', icon: Gift },
       { label: 'Sales Kit', href: '/agency/sales-kit', icon: Target },
       { label: 'Proposal', href: '/agency/proposal', icon: FileText },
-      { label: 'Outreach', href: '/agency/outreach', icon: Mail },
+      { label: 'Outreach', href: '/agency/outreach', icon: Mail, masterOnly: true },
     ],
   },
   {
@@ -91,8 +92,8 @@ const navSections: NavSection[] = [
     items: [
       { label: 'Templates', href: '/agency/templates', icon: BookOpen },
       { label: 'Roles', href: '/agency/roles', icon: Sparkles },
-      { label: 'GHL Listing', href: '/agency/ghl-listing', icon: Store },
-      { label: 'Launch Pitch', href: '/agency/launch-pitch', icon: Rocket },
+      { label: 'GHL Listing', href: '/agency/ghl-listing', icon: Store, masterOnly: true },
+      { label: 'Launch Pitch', href: '/agency/launch-pitch', icon: Rocket, masterOnly: true },
     ],
   },
   {
@@ -243,7 +244,7 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
                 {section.label}
               </div>
             )}
-            {section.items.map((item) => {
+            {section.items.filter(item => !item.masterOnly || isMaster).map((item) => {
               const isActive =
                 item.href === '/agency'
                   ? pathname === '/agency'
