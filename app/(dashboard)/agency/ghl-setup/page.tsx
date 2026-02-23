@@ -6,6 +6,7 @@ import { ExternalLink, ArrowRight, Copy, CheckCircle2, AlertCircle, Info, Zap } 
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import GHLWebhookConfig from '@/components/dashboard/ghl-webhook-config';
 
 export default async function GHLSetupPage() {
   const supabase = await createClient();
@@ -217,6 +218,15 @@ export default async function GHLSetupPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* GHL Webhook config */}
+      <div className="mb-8">
+        <h2 className="text-base font-bold text-gray-900 mb-3">Inbound Webhook (for GHL Workflows)</h2>
+        <p className="text-sm text-gray-500 mb-4">
+          Want GHL Workflows to route incoming messages directly to Kyra? Use this webhook URL in a "Custom Webhook" workflow action.
+        </p>
+        <GHLWebhookConfig />
+      </div>
 
       <div className="flex gap-3">
         <Button asChild>
