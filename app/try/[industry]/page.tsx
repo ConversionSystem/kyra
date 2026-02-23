@@ -68,9 +68,10 @@ const SUGGESTED: Record<string, string[]> = {
 };
 
 export default function TryPage({ params }: { params: Promise<{ industry: string }> }) {
-  const { industry } = use(params);
-  const config = INDUSTRIES[industry] ?? DEFAULT;
-  const suggestions = SUGGESTED[industry] ?? SUGGESTED.dental;
+  const { industry: initialIndustry } = use(params);
+  const [activeIndustry, setActiveIndustry] = useState(initialIndustry in INDUSTRIES ? initialIndustry : 'dental');
+  const config = INDUSTRIES[activeIndustry] ?? DEFAULT;
+  const suggestions = SUGGESTED[activeIndustry] ?? SUGGESTED.dental;
 
   const [messages, setMessages] = useState<Message[]>([
     { role: 'assistant', content: config.greeting },
@@ -80,6 +81,17 @@ export default function TryPage({ params }: { params: Promise<{ industry: string
   const [msgCount, setMsgCount] = useState(0);
   const [showShare, setShowShare] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+
+  // Switch industry: reset conversation with new greeting
+  const switchIndustry = (ind: string) => {
+    if (ind === activeIndustry || sending) return;
+    setActiveIndustry(ind);
+    setMessages([{ role: 'assistant', content: INDUSTRIES[ind].greeting }]);
+    setMsgCount(0);
+    setShowShare(false);
+    setInput('');
+    window.history.replaceState(null, '', `/try/${ind}`);
+  };
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -101,7 +113,7 @@ export default function TryPage({ params }: { params: Promise<{ industry: string
       const res = await fetch('/api/try', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ industry, message: msg, history }),
+        body: JSON.stringify({ industry: activeIndustry, message: msg, history }),
       });
 
       if (!res.ok) {
@@ -158,7 +170,7 @@ export default function TryPage({ params }: { params: Promise<{ industry: string
   const showSignupNudge = msgCount >= 3;
   const showShareButton = msgCount >= 3;
 
-  const demoUrl = typeof window !== 'undefined' ? window.location.href : `https://kyra.conversionsystem.com/try/${industry}`;
+  const demoUrl = typeof window !== 'undefined' ? window.location.href : `https://kyra.conversionsystem.com/try/${activeIndustry}`;
   const shareText = `I just tried this AI for ${config.businessName} — it answered like a real employee. Try it: ${demoUrl}`;
   const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(demoUrl)}`;
   const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
@@ -172,6 +184,22 @@ export default function TryPage({ params }: { params: Promise<{ industry: string
 
   return (
     <div className="min-h-screen bg-gray-950 flex flex-col">
+      {/* Industry switcher */}
+      <div className="bg-gray-900 border-b border-white/10 overflow-x-auto">
+        <div className="flex items-center gap-1 px-3 py-2 max-w-2xl mx-auto min-w-max">
+          {Object.entries(INDUSTRIES).map(([key, ind]) => (
+            <button key={key} onClick={() => switchIndustry(key)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition whitespace-nowrap ${
+                key === activeIndustry
+                  ? 'bg-white/15 text-white'
+                  : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
+              }`}>
+              <span>{ind.emoji}</span> {ind.name}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Header */}
       <header className={`bg-gradient-to-r ${config.gradient} px-4 py-4 shadow-lg`}>
         <div className="max-w-2xl mx-auto flex items-center justify-between gap-4">
