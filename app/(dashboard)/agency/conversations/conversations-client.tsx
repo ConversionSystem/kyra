@@ -233,9 +233,19 @@ export default function ConversationsClient({ clients }: { clients: Client[] }) 
           onClick={handleRefresh}
           disabled={refreshing}
           className="p-2 text-gray-500 hover:text-indigo-600 border border-gray-200 rounded-lg hover:border-indigo-300 transition-colors disabled:opacity-50"
+          title="Refresh"
         >
           <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
         </button>
+
+        <a
+          href={`/api/agency/conversations/export?days=30${clientFilter ? `&clientId=${clientFilter}` : ''}`}
+          download
+          className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-gray-600 hover:text-indigo-700 border border-gray-200 hover:border-indigo-300 rounded-lg transition-colors bg-white"
+          title="Download conversations as CSV"
+        >
+          <ChevronDown className="h-3.5 w-3.5" /> Export CSV
+        </a>
       </div>
 
       {error && (
