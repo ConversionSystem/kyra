@@ -97,7 +97,7 @@ function AgencySignupPage() {
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Failed to create agency'); return; }
-      router.push('/agency');
+      router.push('/onboarding');
       router.refresh();
     } catch {
       setError('An unexpected error occurred. Please try again.');
