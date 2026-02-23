@@ -82,6 +82,7 @@ const navSections: NavSection[] = [
       { label: 'Pitch Pages', href: '/agency/pitch-generator', icon: Link2 },
       { label: 'Referrals', href: '/agency/referrals', icon: Gift },
       { label: 'Sales Kit', href: '/agency/sales-kit', icon: Target },
+      { label: 'Pipeline', href: '/agency/leads', icon: Rocket, masterOnly: true },
       { label: 'Proposal', href: '/agency/proposal', icon: FileText },
       { label: 'Outreach', href: '/agency/outreach', icon: Mail, masterOnly: true },
     ],

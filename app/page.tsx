@@ -207,6 +207,26 @@ export default function HomePage() {
           {/* Live stats — fetched from /api/stats */}
           <LiveStats />
 
+          {/* Cannabis proof bar */}
+          <div className="flex flex-wrap items-center justify-center gap-8 bg-green-950/60 border border-green-800/40 rounded-2xl px-8 py-5 mb-8">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🌿</span>
+              <div>
+                <p className="text-2xl font-black text-green-400">$29M+</p>
+                <p className="text-xs text-green-300/70">Cannabis revenue generated</p>
+              </div>
+            </div>
+            <div className="hidden sm:block w-px h-8 bg-green-800/40" />
+            <div>
+              <p className="text-sm font-bold text-white">Purple Lotus · The Flower Shop</p>
+              <p className="text-xs text-slate-500">Powered by Kyra AI SMS</p>
+            </div>
+            <div className="hidden sm:block w-px h-8 bg-green-800/40" />
+            <Link href="/try/cannabis" className="text-xs bg-green-700 hover:bg-green-600 text-white font-semibold px-4 py-2 rounded-lg transition-colors">
+              See cannabis demo →
+            </Link>
+          </div>
+
           {/* Quotes */}
           <div className="grid md:grid-cols-2 gap-4 mb-12">
             {[
@@ -216,9 +236,19 @@ export default function HomePage() {
                 industry: '🦷 Dental client',
               },
               {
-                quote: "The best part is I don't have to explain AI to my clients. I just show them the conversation history and say 'your AI handled this.' They see the bookings, they pay.",
+                quote: "The best part is I don't have to explain AI to my clients. I just show them the conversation history and say 'your AI handled this.' They see the bookings, they pay. Then they refer their friends.",
                 author: 'Digital Marketing Agency',
                 industry: '🏡 Real estate + auto clients',
+              },
+              {
+                quote: "Set up a cannabis client in 20 minutes using the template. The AI handled a Friday night rush — 40+ inbound texts — while staff was at closing. Every single one got a real reply.",
+                author: 'Cannabis Agency',
+                industry: '🌿 Multi-location dispensary',
+              },
+              {
+                quote: "We white-label Kyra as our own product. Clients pay us $500-1,500/mo per AI employee. Kyra costs $249 flat for 15 clients. I don't need to explain the math to anyone.",
+                author: 'Agency Pro User',
+                industry: '💰 12 active clients on Pro',
               },
             ].map(q => (
               <div key={q.quote} className="bg-white/5 border border-white/10 rounded-2xl p-6">
@@ -360,8 +390,8 @@ export default function HomePage() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 {[
-                  { value: '< 10 min', label: 'Time to add a client', sub: 'Template → live' },
                   { value: '< 10 min', label: 'Setup per client', sub: 'Template → live' },
+                  { value: '$29M+', label: 'Revenue generated', sub: 'Across client verticals' },
                   { value: '21', label: 'Industry templates', sub: 'Ready to deploy' },
                   { value: '100%', label: 'Follow-up rate', sub: 'Every lead answered' },
                 ].map((s) => (
