@@ -67,7 +67,7 @@ export default function ReferralsClient({ agencyId: _agencyId, agencyName, refer
     });
   };
 
-  const potentialEarnings = stats.converted * 99; // Each converted = ~$99 credit value
+  const creditsEarned = (stats.signedUp + stats.converted) * 500;
 
   return (
     <div className="p-4 sm:p-6 md:p-8 max-w-4xl space-y-6">
@@ -78,22 +78,28 @@ export default function ReferralsClient({ agencyId: _agencyId, agencyName, refer
           Referral Program
         </h1>
         <p className="text-sm text-gray-500 mt-1">
-          Refer other agencies to Kyra. Get <strong>1 free month</strong> for every agency that upgrades to a paid plan.
+          Refer other agencies to Kyra. Earn <strong>500 credits ($5)</strong> the moment they sign up — no purchase required.
         </p>
       </div>
 
       {/* Reward banner */}
       <Card className="bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200">
         <CardContent className="pt-5 pb-5">
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="text-4xl">🎁</div>
+          <div className="flex flex-wrap items-center gap-6">
+            <div className="text-4xl">🪙</div>
             <div className="flex-1">
-              <p className="font-bold text-gray-900">Earn 1 free month per conversion</p>
-              <p className="text-sm text-gray-600 mt-0.5">
-                Every agency you refer that upgrades to Starter, Pro, or Scale gives you 1 free month on your plan.
-                No limit — refer 12 agencies, get a full year free.
+              <p className="font-bold text-gray-900 text-lg">500 credits per referral — instant, automatic</p>
+              <p className="text-sm text-gray-600 mt-1">
+                Share your link. The moment any agency signs up through it, you get 500 Kyra Credits ($5) automatically — no waiting for them to upgrade or pay.
+                Refer 20 agencies → 10,000 credits ($100) free.
               </p>
             </div>
+            {(stats.signedUp > 0 || stats.converted > 0) && (
+              <div className="text-right shrink-0">
+                <p className="text-3xl font-black text-indigo-700">{((stats.signedUp + stats.converted) * 500).toLocaleString()}</p>
+                <p className="text-xs text-gray-500">credits earned so far</p>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -104,7 +110,7 @@ export default function ReferralsClient({ agencyId: _agencyId, agencyName, refer
           { icon: Users, label: 'Total referred', value: stats.total, color: 'text-gray-600' },
           { icon: TrendingUp, label: 'Signed up', value: stats.signedUp, color: 'text-blue-600' },
           { icon: CheckCircle2, label: 'Converted', value: stats.converted, color: 'text-green-600' },
-          { icon: DollarSign, label: 'Value earned', value: `$${potentialEarnings}`, color: 'text-purple-600' },
+          { icon: DollarSign, label: 'Credits earned', value: creditsEarned > 0 ? `${creditsEarned.toLocaleString()} 🪙` : '—', color: 'text-purple-600' },
         ].map(({ icon: Icon, label, value, color }) => (
           <Card key={label}>
             <CardContent className="pt-4 pb-4 text-center">
@@ -155,12 +161,17 @@ export default function ReferralsClient({ agencyId: _agencyId, agencyName, refer
                 {
                   key: 'sms',
                   label: 'SMS / DM',
-                  text: `Hey! I've been using this AI employee platform for my agency clients — SMS responds in 60 seconds, books appointments, updates GHL automatically. Free to try: ${refUrl}`,
+                  text: `Hey! I've been using this AI employee platform for my agency clients — responds to SMS in 60 seconds, books appointments, updates GHL automatically. Sign up free and get $2 in credits to test it: ${refUrl}`,
                 },
                 {
                   key: 'email',
                   label: 'Cold Email',
-                  text: `Subject: Adding an AI employee to your GHL account\n\nHey [Name],\n\nI've been using a platform called Kyra that adds an AI employee to any GHL sub-account. It responds to every SMS in 60 seconds, books appointments, and tags contacts automatically.\n\nFree to get started: ${refUrl}\n\n[Your name]`,
+                  text: `Subject: AI employee for your GHL clients (60-sec SMS response)\n\nHey [Name],\n\nQuick one — I've been using a tool called Kyra that plugs into any GHL sub-account and acts as an AI employee. It:\n\n• Replies to every inbound SMS in under 60 seconds\n• Books appointments directly in GHL calendar\n• Tags and updates contacts automatically\n• Works for any industry (dental, real estate, cannabis, etc.)\n\nFree to start — you get $2 in credits just for signing up, no card required:\n${refUrl}\n\n[Your name]`,
+                },
+                {
+                  key: 'linkedin',
+                  label: 'LinkedIn / Facebook',
+                  text: `🤖 Been testing an AI employee platform for GHL agencies and the results are legit.\n\nKyra plugs into any sub-account and handles inbound SMS within 60 seconds — books appointments, tags contacts, the whole thing. Works across dental, real estate, cannabis, and more.\n\nIf you're running a GHL agency, worth checking out. They give you $2 free to test:\n${refUrl}`,
                 },
               ].map(({ key, label, text }) => (
                 <div key={key} className="bg-gray-50 border border-gray-200 rounded-lg p-3">
