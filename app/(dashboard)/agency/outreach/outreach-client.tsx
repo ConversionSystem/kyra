@@ -349,6 +349,406 @@ function EmailCard({ draft }: { draft: EmailDraft }) {
   );
 }
 
+// ── Cold Acquisition Emails ─────────────────────────────────────────────────
+
+interface ColdEmail {
+  niche: string;
+  emoji: string;
+  stage: 'initial' | 'followup' | 'breakup';
+  stageLabel: string;
+  subject: string;
+  body: string;
+}
+
+const COLD_EMAILS: ColdEmail[] = [
+  // ── DENTAL ──
+  {
+    niche: 'Dental', emoji: '🦷', stage: 'initial', stageLabel: 'Initial outreach',
+    subject: 'Your dental clients are losing appointments after hours',
+    body: `Hi [Name],
+
+Quick question — how many appointment request texts does your dental client get on evenings and weekends that nobody answers until Monday?
+
+I built an AI that responds to every one of those in under 60 seconds, checks availability, and books the appointment automatically. It works inside GoHighLevel — no new software your client needs to learn.
+
+Agencies using it are seeing 35–45% more booked appointments within 30 days.
+
+I'd love to show you what it looks like for a dental client specifically. 15 minutes on a call this week?
+
+— Angel Castro
+kyra.conversionsystem.com`,
+  },
+  {
+    niche: 'Dental', emoji: '🦷', stage: 'followup', stageLabel: 'Follow-up (3 days)',
+    subject: 'Re: dental AI → 3 appointments booked while office was closed',
+    body: `Hey [Name],
+
+Following up on my email. Sent it a few days ago about AI for your dental clients.
+
+Wanted to share a quick result: one of our dental agencies set Kyra up on a Friday. By Monday, 3 appointments were booked over the weekend while the office was closed. Client saw the conversation log and couldn't believe it.
+
+That's what I want to show you. 15 minutes?
+
+— Angel`,
+  },
+  {
+    niche: 'Dental', emoji: '🦷', stage: 'breakup', stageLabel: 'Break-up (7 days)',
+    subject: 'Last email on this — dental AI',
+    body: `Hey [Name],
+
+Last one from me on this. I know you're busy.
+
+If AI for your dental clients is something you want to explore in the future, just reply with "future" and I'll reach back out in 30 days.
+
+If you're open to a 15-minute demo now, just say "demo."
+
+Either way, no pressure and no more emails from me.
+
+— Angel`,
+  },
+
+  // ── REAL ESTATE ──
+  {
+    niche: 'Real Estate', emoji: '🏡', stage: 'initial', stageLabel: 'Initial outreach',
+    subject: 'Real estate leads go cold in 5 minutes — here\'s the fix',
+    body: `Hi [Name],
+
+Real estate leads have the shortest attention span of any industry. Studies show 78% of buyers go with the first agent who responds.
+
+I built an AI that replies to every inbound GHL lead in under 60 seconds — answers property questions, qualifies the buyer, books showings. It never sleeps, never misses a text, and costs less than a part-time VA.
+
+Running any real estate clients on GHL? Happy to show you how it works in 15 minutes.
+
+— Angel
+kyra.conversionsystem.com`,
+  },
+  {
+    niche: 'Real Estate', emoji: '🏡', stage: 'followup', stageLabel: 'Follow-up (3 days)',
+    subject: 'Re: real estate AI — quick thought',
+    body: `Hey [Name],
+
+Circling back on the real estate AI email.
+
+One thing I didn't mention: the AI also handles re-engagement. Leads that went cold 30, 60, 90 days ago — it reaches back out automatically with a personalized message based on their search history in GHL.
+
+Most agencies don't even know how many warm leads are sitting dead in their CRM. This thing wakes them up.
+
+Worth 15 minutes to see?
+
+— Angel`,
+  },
+  {
+    niche: 'Real Estate', emoji: '🏡', stage: 'breakup', stageLabel: 'Break-up (7 days)',
+    subject: 'Closing the loop — real estate AI',
+    body: `Hey [Name],
+
+Closing the loop here. Reached out a couple times about AI for your real estate clients — totally get it if the timing isn't right.
+
+When you're ready to explore it, you can try it free at:
+kyra.conversionsystem.com
+
+No credit card. Live in 10 minutes. If it doesn't blow you away, nothing lost.
+
+— Angel`,
+  },
+
+  // ── CANNABIS ──
+  {
+    niche: 'Cannabis', emoji: '🌿', stage: 'initial', stageLabel: 'Initial outreach',
+    subject: 'Cannabis AI that\'s generated $29M+ for dispensary clients',
+    body: `Hi [Name],
+
+I work with cannabis dispensaries that deal with constant inbound SMS — product questions, pricing, pickup ETA, compliance FAQs. Most of them are missing 30–40% of these messages.
+
+We've generated over $29M in cannabis revenue for our clients using AI SMS automation inside GoHighLevel. The AI knows the menu, handles compliance language, and drives repeat visits with personalized product recommendations.
+
+If you're running any dispensary clients on GHL, I'd love to show you what this looks like in practice.
+
+15 minutes this week?
+
+— Angel Castro
+kyra.conversionsystem.com`,
+  },
+  {
+    niche: 'Cannabis', emoji: '🌿', stage: 'followup', stageLabel: 'Follow-up (3 days)',
+    subject: 'Re: cannabis AI → Friday night rush handled while staff was closing',
+    body: `Hey [Name],
+
+Sending one more on this. A cannabis agency we work with recently set up Kyra for a multi-location client. The AI handled a Friday night rush — 40+ inbound texts — while the staff was at closing.
+
+Every message got a real, compliant, personalized reply. The client saw the log Saturday morning and called us immediately.
+
+Cannabis is where we're strongest. Want to see it?
+
+— Angel`,
+  },
+  {
+    niche: 'Cannabis', emoji: '🌿', stage: 'breakup', stageLabel: 'Break-up (7 days)',
+    subject: 'Last one on cannabis AI',
+    body: `Hey [Name],
+
+Last email on this — promise.
+
+I know cannabis agencies are busy and the last thing you need is another tool pitch. If this ever becomes relevant, the demo is live at:
+kyra.conversionsystem.com/try/cannabis
+
+Takes 60 seconds to see what your dispensary client's AI would look like. No sign-up required.
+
+Take care,
+— Angel`,
+  },
+
+  // ── LAW FIRMS ──
+  {
+    niche: 'Law Firms', emoji: '⚖️', stage: 'initial', stageLabel: 'Initial outreach',
+    subject: 'Law firms: whoever answers first wins the client',
+    body: `Hi [Name],
+
+Legal intake is brutal — people reaching out to law firms are often stressed, shopping multiple firms at once, and making a decision fast. Whoever answers first almost always wins.
+
+I built an AI that handles law firm intake via SMS in under 60 seconds. It collects the basics (practice area, case type, timeline), qualifies the lead, and schedules a consultation automatically.
+
+Your law firm clients never miss a potential client again — even at 11pm on a Sunday.
+
+Running any law firms on GHL? Happy to show you in 15 minutes.
+
+— Angel
+kyra.conversionsystem.com`,
+  },
+  {
+    niche: 'Law Firms', emoji: '⚖️', stage: 'followup', stageLabel: 'Follow-up (3 days)',
+    subject: 'Re: law firm AI — a stat that stopped me',
+    body: `Hey [Name],
+
+One more thought on the law firm AI — found a stat I can't stop thinking about:
+
+47% of legal consumers contact more than one attorney before making a decision. The average response time across law firms is 3+ hours. The AI I built responds in under 60 seconds.
+
+Simple math: every law firm client you have is probably losing cases to whoever answers faster.
+
+Worth 15 minutes to see how to fix it?
+
+— Angel`,
+  },
+  {
+    niche: 'Law Firms', emoji: '⚖️', stage: 'breakup', stageLabel: 'Break-up (7 days)',
+    subject: 'Closing the loop — law firm AI',
+    body: `Hey [Name],
+
+Last one on this. If AI intake for law firms ever becomes relevant, the tool is free to try at kyra.conversionsystem.com — no card, 10-minute setup.
+
+You can have a law firm client live before your next client meeting.
+
+— Angel`,
+  },
+
+  // ── HOME SERVICES ──
+  {
+    niche: 'Home Services', emoji: '🔧', stage: 'initial', stageLabel: 'Initial outreach',
+    subject: 'HVAC/roofing clients are missing emergency calls at night',
+    body: `Hi [Name],
+
+Homeowners have emergencies at midnight. Roof leaking. AC went out. Pipe burst. They text the first company they find on Google.
+
+Home services clients who don't respond within 5 minutes of those messages lose the job 90% of the time. The AI I built responds in under 60 seconds — triages urgency, routes emergencies to the on-call tech, books standard jobs automatically.
+
+If you have any HVAC, roofing, plumbing, or electrical clients on GHL, I'd love to show you what this looks like.
+
+15 minutes this week?
+
+— Angel
+kyra.conversionsystem.com`,
+  },
+  {
+    niche: 'Home Services', emoji: '🔧', stage: 'followup', stageLabel: 'Follow-up (3 days)',
+    subject: 'Re: home services AI — storm season is coming',
+    body: `Hey [Name],
+
+Following up on the home services AI. One angle I didn't mention: storm season.
+
+Roofing agencies that have AI in place going into storm season capture 3-5× more jobs than those that don't — because they respond to every single inquiry in under a minute while competitors are overwhelmed.
+
+Last year some of our home services clients had AI handling 100+ storm inquiries in a single weekend.
+
+Want to see how it works before the season hits?
+
+— Angel`,
+  },
+  {
+    niche: 'Home Services', emoji: '🔧', stage: 'breakup', stageLabel: 'Break-up (7 days)',
+    subject: 'Last one on home services AI',
+    body: `Hey [Name],
+
+Wrapping up here on the home services AI. If it ever makes sense to explore, live demo at kyra.conversionsystem.com — no sign-up needed to see how it works for HVAC or roofing clients specifically.
+
+— Angel`,
+  },
+];
+
+const SUBJECT_LINES = [
+  { label: 'Pain-focused', lines: [
+    'Your [niche] clients are losing leads after hours',
+    '[Niche] leads go cold in 5 minutes — here\'s the fix',
+    'How many [niche] leads went unanswered this weekend?',
+    'Your [niche] client missed 3 leads last night',
+  ]},
+  { label: 'Result-focused', lines: [
+    '[Niche] AI that generated $X in 30 days',
+    '40% more bookings — what we did for [niche] agencies',
+    'This GHL agency added $15K/mo with one AI employee',
+    '3 appointments booked while the office was closed',
+  ]},
+  { label: 'Curiosity', lines: [
+    'Quick question about your [niche] clients',
+    'Something I built for GHL agencies — 60 seconds to explain',
+    'What if every client reply happened in under 60 seconds?',
+    'The AI that handles 40+ inbound texts without a human',
+  ]},
+  { label: 'Direct', lines: [
+    'AI employee for your GHL clients — 10-minute setup',
+    'White-label AI for agencies running [niche] clients',
+    'Kyra + GHL = AI employee for every client',
+    'Free to test: AI that replies to your leads in 60s',
+  ]},
+];
+
+function ColdAcquisitionSection() {
+  const niches = Array.from(new Set(COLD_EMAILS.map(e => e.niche)));
+  const [activeNiche, setActiveNiche] = useState(niches[0]);
+  const [activeStage, setActiveStage] = useState<ColdEmail['stage']>('initial');
+  const [copied, setCopied] = useState(false);
+  const [subjectCopied, setSubjectCopied] = useState<string | null>(null);
+  const [openSubject, setOpenSubject] = useState<string | null>(null);
+
+  const niches_data = COLD_EMAILS.filter(
+    e => e.niche === activeNiche && e.stage === activeStage
+  );
+  const email = niches_data[0];
+
+  const handleCopy = async () => {
+    if (!email) return;
+    await navigator.clipboard.writeText(`Subject: ${email.subject}\n\n${email.body}`);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const copySubject = (line: string) => {
+    navigator.clipboard.writeText(line);
+    setSubjectCopied(line);
+    setTimeout(() => setSubjectCopied(null), 2000);
+  };
+
+  return (
+    <div className="mb-8">
+      <div className="mb-4">
+        <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
+          <Zap className="h-4 w-4 text-amber-500" />
+          Cold Acquisition Sequences
+        </h2>
+        <p className="text-xs text-gray-500 mt-0.5">
+          3-email sequences (initial → follow-up → break-up) for 5 key niches. Proven for GHL agency owners.
+        </p>
+      </div>
+
+      {/* Niche tabs */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        {niches.map(n => {
+          const e = COLD_EMAILS.find(x => x.niche === n)!;
+          return (
+            <button
+              key={n}
+              onClick={() => { setActiveNiche(n); setActiveStage('initial'); }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                activeNiche === n
+                  ? 'bg-gray-900 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              {e.emoji} {n}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Stage tabs */}
+      <div className="flex gap-2 mb-4">
+        {(['initial', 'followup', 'breakup'] as const).map(stage => {
+          const label = { initial: 'Initial', followup: 'Follow-up (day 3)', breakup: 'Break-up (day 7)' }[stage];
+          return (
+            <button
+              key={stage}
+              onClick={() => setActiveStage(stage)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                activeStage === stage
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
+              }`}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Email preview */}
+      {email && (
+        <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
+          <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-100">
+            <p className="text-xs font-semibold text-gray-700">
+              Subject: <span className="text-gray-900 font-normal">{email.subject}</span>
+            </p>
+            <button
+              onClick={handleCopy}
+              className={`shrink-0 inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                copied ? 'border-green-200 bg-green-50 text-green-700' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              {copied ? <><Check className="h-3 w-3" /> Copied!</> : <><Copy className="h-3 w-3" /> Copy email</>}
+            </button>
+          </div>
+          <pre className="text-sm text-gray-700 whitespace-pre-wrap font-sans leading-relaxed p-5">
+            {email.body}
+          </pre>
+        </div>
+      )}
+
+      {/* Subject line swipe file */}
+      <div className="mt-6">
+        <h3 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
+          <Mail className="h-4 w-4 text-gray-400" />
+          Subject line swipe file
+          <span className="text-xs text-gray-400 font-normal">(click to copy)</span>
+        </h3>
+        <div className="space-y-3">
+          {SUBJECT_LINES.map(group => (
+            <div key={group.label}>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">{group.label}</p>
+              <div className="space-y-1.5">
+                {group.lines.map(line => (
+                  <button
+                    key={line}
+                    onClick={() => copySubject(line)}
+                    className={`w-full text-left flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all border ${
+                      subjectCopied === line
+                        ? 'bg-green-50 border-green-200 text-green-800'
+                        : 'bg-gray-50 border-gray-100 text-gray-700 hover:bg-indigo-50 hover:border-indigo-200'
+                    }`}
+                  >
+                    <span className="italic">{line}</span>
+                    {subjectCopied === line
+                      ? <Check className="h-3.5 w-3.5 text-green-500 shrink-0" />
+                      : <Copy className="h-3.5 w-3.5 text-gray-400 shrink-0" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function OutreachPage() {
   return (
     <div className="max-w-3xl mx-auto p-4 sm:p-6 md:p-8">
@@ -356,8 +756,18 @@ export default function OutreachPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Outreach</h1>
         <p className="text-gray-500 text-sm mt-1">
-          Automated onboarding sequences + one-off outreach drafts for target agencies.
+          Cold acquisition sequences + automated onboarding + one-off drafts.
         </p>
+      </div>
+
+      {/* Cold acquisition — NEW */}
+      <ColdAcquisitionSection />
+
+      {/* Divider */}
+      <div className="flex items-center gap-3 mb-6">
+        <div className="flex-1 h-px bg-gray-200" />
+        <span className="text-xs text-gray-400 font-medium uppercase tracking-wider">Onboarding drip</span>
+        <div className="flex-1 h-px bg-gray-200" />
       </div>
 
       {/* Onboarding drip sequence */}
