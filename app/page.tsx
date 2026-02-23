@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import DemoChat from './demo/[industry]/demo-chat';
 import LeadCapture from '@/components/landing/lead-capture';
+import LiveStats from '@/components/landing/live-stats';
 
 export const metadata: Metadata = {
   title: 'Kyra — AI Employees for GHL Agencies | Free to Start',
@@ -203,21 +204,8 @@ export default function HomePage() {
       {/* ── Social proof ─────────────────────────────────────────────────── */}
       <section className="border-t border-white/10 py-14">
         <div className="max-w-6xl mx-auto px-4">
-          {/* Stats row */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-12">
-            {[
-              { value: '< 60s', label: 'Average response time', sub: 'to every inbound SMS' },
-              { value: '9+', label: 'Active agencies', sub: 'managing clients on Kyra' },
-              { value: '21', label: 'Industry templates', sub: 'ready to deploy' },
-              { value: '100%', label: 'GHL compatible', sub: 'SMS, WA, IG, FB, Email' },
-            ].map(s => (
-              <div key={s.label} className="bg-white/5 border border-white/10 rounded-2xl p-5 text-center">
-                <p className="text-3xl font-black text-white mb-1">{s.value}</p>
-                <p className="text-sm font-semibold text-slate-300">{s.label}</p>
-                <p className="text-xs text-slate-500 mt-0.5">{s.sub}</p>
-              </div>
-            ))}
-          </div>
+          {/* Live stats — fetched from /api/stats */}
+          <LiveStats />
 
           {/* Quotes */}
           <div className="grid md:grid-cols-2 gap-4 mb-12">
