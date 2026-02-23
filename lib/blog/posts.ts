@@ -246,6 +246,240 @@ export const POSTS: BlogPost[] = [
 <p>Ready to start? <a href="/signup/agency">Create your free agency account</a> — no credit card required.</p>
 `,
   },
+  {
+    slug: 'ghl-ai-employee-complete-guide',
+    title: 'GoHighLevel AI Employee: The Complete Guide for GHL Agencies (2026)',
+    description: 'Everything GHL agencies need to know about adding a real AI employee to every sub-account — not automations, not a chatbot. A real AI that talks, thinks, and books appointments.',
+    date: '2026-02-23',
+    readMins: 8,
+    category: 'GHL Integration',
+    emoji: '⚡',
+    content: `
+<p>If you're running a GoHighLevel agency, you've already heard the buzzword: "AI." GHL has started integrating AI features, and every agency is trying to figure out what to do with them. But most GHL agencies are doing AI wrong — and leaving serious money on the table.</p>
+
+<p>This guide explains how to add a <strong>real AI employee</strong> to every GHL sub-account — not a workflow automation, not a keyword chatbot, but a conversational AI that responds to every inbound SMS within 60 seconds, 24/7.</p>
+
+<h2>The Difference Between GHL Automations and a Real AI Employee</h2>
+
+<p>GHL automations are powerful. You can trigger SMS sequences, send follow-ups, move contacts through pipelines — all automatically. But automations are <em>scripts</em>. They match conditions and fire responses. They can't handle:</p>
+
+<ul>
+<li>Questions they weren't explicitly programmed for</li>
+<li>Natural conversation flow that goes off-script</li>
+<li>Emotional or frustrated customers who need nuance</li>
+<li>Open-ended questions like "what do you recommend?"</li>
+</ul>
+
+<p>A real AI employee — like Kyra — uses a large language model to <em>understand</em> what the customer is asking, then compose a contextually appropriate response. It reads the CRM, knows the contact's history, and replies like a trained team member would.</p>
+
+<h2>How Kyra Connects to GHL</h2>
+
+<p>Kyra connects to any GHL sub-account using a <strong>Private Integration Token</strong> — no marketplace approval, no waiting, no OAuth setup. You create the token inside the sub-account settings in about 2 minutes.</p>
+
+<p>Once connected, Kyra:</p>
+<ul>
+<li>Polls the GHL inbox for new inbound messages every 60 seconds</li>
+<li>Reads the contact's tags, pipeline stage, and recent notes for context</li>
+<li>Composes and sends a reply via the GHL conversations API</li>
+<li>Auto-updates the CRM: tags, pipeline stage, and notes after every conversation</li>
+<li>Escalates frustrated customers to your team via Slack/email webhook</li>
+</ul>
+
+<p>This works across all 7 GHL channels: SMS, WhatsApp, Instagram, Facebook, Live Chat, Email, and Google My Business.</p>
+
+<h2>What GHL Channel Does Kyra Cover?</h2>
+
+<p>Kyra uses GHL's unified conversations API, which means the AI sees messages from all channels in one inbox. The response goes back through whichever channel the customer used. Here's the channel map:</p>
+
+<table>
+<tr><th>GHL Channel</th><th>Kyra Support</th></tr>
+<tr><td>SMS</td><td>✅ Full support</td></tr>
+<tr><td>WhatsApp</td><td>✅ Full support</td></tr>
+<tr><td>Instagram DM</td><td>✅ Full support</td></tr>
+<tr><td>Facebook Messenger</td><td>✅ Full support</td></tr>
+<tr><td>Live Chat</td><td>✅ Full support</td></tr>
+<tr><td>Email</td><td>✅ Full support</td></tr>
+<tr><td>Google My Business</td><td>✅ Full support</td></tr>
+</table>
+
+<h2>Setting Up a GHL AI Employee in 10 Minutes</h2>
+
+<p>Here's the exact process:</p>
+
+<ol>
+<li><strong>Create your Kyra agency account</strong> at <a href="/signup/agency">kyra.conversionsystem.com/signup/agency</a> (free, no credit card)</li>
+<li><strong>Add a client</strong> — pick the industry (dental, real estate, auto, etc.) and the AI personality is pre-built</li>
+<li><strong>Customize the personality</strong> — add the business name, AI name, pricing, FAQs, booking link</li>
+<li><strong>Generate the GHL Private Integration Token</strong> — in the sub-account: Settings → Integrations → Private Integration Tokens → Create</li>
+<li><strong>Paste the token</strong> into Kyra — the AI goes live instantly</li>
+</ol>
+
+<p>From that point, every inbound message to that GHL sub-account will be handled by the AI within 60 seconds.</p>
+
+<h2>How Much Should You Charge?</h2>
+
+<p>Most GHL agencies are charging $500–$2,000/month per AI employee. The pricing depends on your client's industry and volume:</p>
+
+<ul>
+<li><strong>Dental/Med Spa:</strong> $750–$1,500/mo (high ticket, high volume, high impact)</li>
+<li><strong>Real Estate:</strong> $1,000–$2,000/mo (high lead value)</li>
+<li><strong>Auto Dealership:</strong> $1,000–$1,500/mo (high-volume, high-value leads)</li>
+<li><strong>Cannabis Dispensary:</strong> $500–$1,000/mo (compliance requirements = premium pricing)</li>
+<li><strong>Restaurant:</strong> $300–$600/mo (lower AOV but steady volume)</li>
+</ul>
+
+<p>Your cost to Kyra: $97/month for up to 5 clients. That's gross margin of $2,400–$9,900/month on the Starter plan alone.</p>
+
+<h2>The Proactive Outreach Feature</h2>
+
+<p>One underrated feature: Kyra watches for <em>new contacts</em> in GHL and proactively reaches out — even without an inbound message. Within ~60 seconds of a new lead being created, the AI sends a personalized greeting via SMS.</p>
+
+<p>This is the equivalent of your best salesperson immediately calling every new lead the moment they come in. For most clients, this alone recovers 20–30% of leads that would have gone cold.</p>
+
+<h2>CRM Automation That Happens Automatically</h2>
+
+<p>Every AI conversation updates the GHL CRM automatically. After each reply, Kyra:</p>
+<ul>
+<li>Adds a CRM note summarizing the conversation</li>
+<li>Tags the contact based on what they asked (e.g., "appointment-interest", "price-question")</li>
+<li>Moves them to the appropriate pipeline stage (e.g., "AI Qualified" → "Ready to Book")</li>
+</ul>
+
+<p>This means your clients get a cleaner CRM and better pipeline visibility — without any manual data entry.</p>
+
+<h2>Common Questions from GHL Agencies</h2>
+
+<p><strong>Does Kyra replace GHL automations?</strong> No — they complement each other. GHL automations handle rule-based sequences (appointment reminders, review requests, etc.). Kyra handles conversational replies that require understanding.</p>
+
+<p><strong>What if a client already has GHL workflows set up?</strong> Kyra only responds to inbound messages — it doesn't interfere with your outbound automations. They work in parallel.</p>
+
+<p><strong>Can I white-label this?</strong> Yes. The AI personality is fully configurable — you name it, set its personality, and it represents the client's business. There's no "Kyra" branding in client-facing messages.</p>
+
+<p>Ready to add AI employees to your GHL agency? <a href="/signup/agency">Create your free account</a> and have your first AI live in 10 minutes.</p>
+`,
+  },
+  {
+    slug: 'white-label-ai-platform-agencies',
+    title: 'White-Label AI Platform for Agencies: Build a $50K/mo AI Business in 2026',
+    description: 'The complete playbook for building a white-label AI employee business using Kyra. Pricing strategy, client onboarding, positioning, and how to scale to $50K/month.',
+    date: '2026-02-23',
+    readMins: 9,
+    category: 'Agency Growth',
+    emoji: '💰',
+    content: `
+<p>In 2026, the most profitable agencies aren't selling websites, ads, or even GHL setups. They're selling <strong>AI employees</strong>. And the ones who figured this out first are building $50,000/month businesses on autopilot.</p>
+
+<p>This guide is the complete playbook for building a white-label AI employee business using Kyra — the platform built specifically for agencies who want to resell AI without building anything from scratch.</p>
+
+<h2>Why AI Employees Are the Perfect Agency Product</h2>
+
+<p>Most agency revenue is project-based or tied to ad spend — both are unpredictable and client-churn-heavy. AI employees are different:</p>
+
+<ul>
+<li><strong>Monthly recurring revenue:</strong> The AI runs 24/7 whether or not you do anything</li>
+<li><strong>Near-zero churn:</strong> Clients don't cancel an AI that's booking their appointments</li>
+<li><strong>High gross margins:</strong> Your cost to provide the service is $5–15/client/month in API fees</li>
+<li><strong>Scalable:</strong> Going from 5 to 50 clients doesn't require hiring more staff</li>
+<li><strong>Defensible:</strong> The AI learns the client's business over time — switching costs increase</li>
+</ul>
+
+<h2>The White-Label Model</h2>
+
+<p>With Kyra, you're the agency. Your clients never see "Kyra" — they see an AI employee named whatever you've configured (Alex, Maya, Jordan — your choice). The AI is trained on their specific business, speaks their tone, and represents their brand.</p>
+
+<p>Your clients think you built this. You didn't have to — Kyra is the infrastructure, you're the relationship and the strategy.</p>
+
+<h2>Pricing Strategy</h2>
+
+<p>Positioning matters as much as price. Don't sell this as "AI" — sell it as an AI employee. Here's how to frame it:</p>
+
+<blockquote>
+<p>"We're adding a full-time AI employee to your business. It responds to every customer inquiry in under 60 seconds, 24/7. It books appointments, answers questions, updates your CRM, and escalates anything it can't handle. Most businesses see ROI in the first week."</p>
+</blockquote>
+
+<p>Suggested pricing by tier:</p>
+
+<table>
+<tr><th>Package</th><th>Price</th><th>Includes</th></tr>
+<tr><td>AI Starter</td><td>$500/mo</td><td>1 channel (SMS), basic personality, standard templates</td></tr>
+<tr><td>AI Pro</td><td>$1,000/mo</td><td>All 7 channels, custom personality, CRM automation, escalation alerts</td></tr>
+<tr><td>AI Enterprise</td><td>$2,000/mo</td><td>Everything in Pro + weekly performance reports, monthly strategy calls, priority support</td></tr>
+</table>
+
+<p>Your cost to Kyra: $247/month for up to 15 clients (Pro plan). At $1,000/client on 15 clients = $15,000/month revenue, $14,753/month gross margin.</p>
+
+<h2>Client Onboarding Playbook</h2>
+
+<p>The onboarding flow is where most agencies fumble. Here's the process that works:</p>
+
+<h3>Day 1: Kickoff Call (30 min)</h3>
+<ul>
+<li>Walk them through what the AI will do</li>
+<li>Collect: business name, AI name, pricing, FAQs, common objections, booking link</li>
+<li>Get their GHL Private Integration Token (show them exactly how to create it)</li>
+</ul>
+
+<h3>Day 2: Configuration + Live Test</h3>
+<ul>
+<li>Set up their AI in Kyra — takes ~15 minutes with the industry template</li>
+<li>Test it yourself: send 10 different test SMS messages</li>
+<li>Send a test to the client so they can see it live</li>
+</ul>
+
+<h3>Day 3: Go Live</h3>
+<ul>
+<li>Flip the switch — the AI starts responding to real customer messages</li>
+<li>Monitor for the first 48 hours; expect a few edge cases to tune</li>
+</ul>
+
+<h3>Week 1: First Performance Report</h3>
+<ul>
+<li>Share the performance report at /report/[clientId] — conversations handled, response time, resolution rate</li>
+<li>This is your proof of value — use it in retention conversations</li>
+</ul>
+
+<h2>Industries That Sell Best</h2>
+
+<p>Not all industries are equal. Here's where you'll have the easiest sales:</p>
+
+<ol>
+<li><strong>Dental practices</strong> — High urgency, appointment-driven, staff overwhelmed, new patient value $3K+</li>
+<li><strong>Real estate agents</strong> — Every missed lead is a $10K+ lost commission</li>
+<li><strong>Auto dealerships</strong> — High-volume, high-value, 24/7 customer inquiries</li>
+<li><strong>Med spas</strong> — High-ticket treatments ($500-5K), strong urgency, lots of questions</li>
+<li><strong>Cannabis dispensaries</strong> — Always-on business with compliance needs</li>
+</ol>
+
+<h2>How to Scale to $50K/Month</h2>
+
+<p>At $1,000/month average per client, you need 50 clients. Here's the path:</p>
+
+<ul>
+<li><strong>Month 1–2:</strong> Land 5 clients from your existing network. Get them results. Get testimonials.</li>
+<li><strong>Month 3–4:</strong> Use testimonials + the pitch deck at /pitch to close 5 more. Start outreach to cold prospects using the email templates.</li>
+<li><strong>Month 5–6:</strong> Referral machine — happy clients refer other businesses. Offer 1 free month per referral.</li>
+<li><strong>Month 7–12:</strong> Systemize. Hire a junior VA for onboarding. You focus on sales. Target: 50 clients.</li>
+</ul>
+
+<p>The key leverage: every client you add at month 6 is still paying at month 18. The churn is nearly zero because the AI is delivering daily, measurable value.</p>
+
+<h2>The Pitch That Closes</h2>
+
+<p>Stop pitching AI. Pitch the outcome:</p>
+
+<blockquote>
+<p>"Your business is missing 40% of inquiries after 6pm. That's revenue walking to your competitor. We'll put an AI employee on your phone line tonight. By Thursday morning, it will have handled 20+ conversations you would have missed. You'll see the report."</p>
+</blockquote>
+
+<p>Then show them the live demo: <a href="/try/dental">kyra.conversionsystem.com/try/dental</a>. Let them text it. Let them see a real AI reply in 10 seconds. Close rate goes up 3×.</p>
+
+<h2>Get Started</h2>
+
+<p>Kyra is free to start — no credit card, no commitment. Add your first client, run the demo, see the AI live. If it doesn't work, you haven't spent a dollar.</p>
+
+<p><a href="/signup/agency">Create your free agency account →</a></p>
+`,
+  },
 ];
 
 export function getPost(slug: string): BlogPost | undefined {
