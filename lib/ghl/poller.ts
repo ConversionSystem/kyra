@@ -22,7 +22,7 @@ import { getSessionKeyForClient } from '@/lib/agency/container';
 import { sendGHLMessage, getValidToken, refreshGHLToken } from './api';
 import { getClientPermissions, buildPermissionPrompt } from '@/lib/agency/permissions';
 import { resolveClientGateway, chatViaGateway } from '@/lib/ovh/provisioner';
-import { resolveOcModel } from '@/lib/agency/ai-models';
+import { resolveNativeModel } from '@/lib/agency/ai-models';
 import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
 
 const GHL_API_BASE = 'https://services.leadconnectorhq.com';
@@ -58,16 +58,17 @@ async function resolveAgencyApiKey(agencyId: string): Promise<ResolvedApiKey | n
     return {
       apiKey: keys.anthropic as string,
       provider: 'anthropic',
-      model: resolveOcModel('anthropic', selectedModelId),
+      model: resolveNativeModel('anthropic', selectedModelId),
     };
   }
   // OpenRouter — routes to any model via OpenAI-compatible API
+  // model = raw OpenRouter model ID (e.g. "anthropic/claude-sonnet-4-5"), no openrouter/ prefix
   if (keys.openrouter) {
     const selectedModelId = selectedModels.openrouter;
     return {
       apiKey: keys.openrouter as string,
       provider: 'openrouter',
-      model: resolveOcModel('openrouter', selectedModelId),
+      model: resolveNativeModel('openrouter', selectedModelId),
     };
   }
   // OpenAI native
@@ -76,7 +77,7 @@ async function resolveAgencyApiKey(agencyId: string): Promise<ResolvedApiKey | n
     return {
       apiKey: keys.openai as string,
       provider: 'openai',
-      model: resolveOcModel('openai', selectedModelId),
+      model: resolveNativeModel('openai', selectedModelId),
     };
   }
   // Google AI
@@ -85,7 +86,7 @@ async function resolveAgencyApiKey(agencyId: string): Promise<ResolvedApiKey | n
     return {
       apiKey: keys.google as string,
       provider: 'google',
-      model: resolveOcModel('google', selectedModelId),
+      model: resolveNativeModel('google', selectedModelId),
     };
   }
 
