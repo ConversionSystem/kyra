@@ -62,6 +62,6 @@ export async function POST(req: Request) {
     ok: true,
     clientId: invite.client_id,
     role: invite.role,
-    redirectTo: `/portal/${invite.client_id}`,
+    redirectTo: `/client-portal/${invite.client_id}`,
   });
 }

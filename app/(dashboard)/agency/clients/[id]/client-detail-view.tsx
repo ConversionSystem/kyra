@@ -1792,7 +1792,7 @@ function PortalTab({ client }: { client: AgencyClient }) {
   const [inviteError, setInviteError] = useState('');
   const [copied, setCopied] = useState(false);
 
-  const portalUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://kyra.conversionsystem.com'}/portal/${client.id}`;
+  const portalUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://kyra.conversionsystem.com'}/client-portal/${client.id}`;
 
   const handleInvite = async () => {
     if (!inviteEmail.trim()) return;
