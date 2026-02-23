@@ -39,8 +39,8 @@ export const PLANS: Record<Plan, PlanConfig> = {
     stripePriceKey: 'free',
   },
   starter: {
-    name: 'Starter',
-    price: 97,
+    name: 'Lite',
+    price: 99,
     maxClients: 5,
     description: 'Launch your AI agency with your first 5 clients.',
     features: [
@@ -52,19 +52,19 @@ export const PLANS: Record<Plan, PlanConfig> = {
       'Client conversation history',
       'Weekly performance reports',
     ],
-    badge: 'STARTER',
+    badge: 'LITE',
     badgeColor: 'bg-blue-100 text-blue-700',
-    cta: 'Start Starter',
+    cta: 'Start Lite',
     stripePriceKey: 'starter',
   },
   pro: {
     name: 'Pro',
-    price: 247,
+    price: 249,
     maxClients: 15,
     description: 'For growing agencies managing multiple clients.',
     features: [
       '15 client AI employees',
-      'Everything in Starter',
+      'Everything in Lite',
       'White-label branding',
       'Custom AI personalities',
       'Priority support',
@@ -79,7 +79,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
   },
   scale: {
     name: 'Scale',
-    price: 497,
+    price: 499,
     maxClients: 50,
     description: 'Built for high-volume agencies running 50+ AI employees.',
     features: [
