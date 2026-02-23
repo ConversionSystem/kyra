@@ -46,6 +46,36 @@ interface SettingsFormProps {
 // Settings Form (client component)
 // ============================================================================
 
+function TestWebhookButton({ url }: { url: string }) {
+  const [state, setState] = useState<'idle' | 'sending' | 'ok' | 'error'>('idle');
+  const test = async () => {
+    setState('sending');
+    try {
+      const res = await fetch('/api/agency/settings/test-webhook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+      });
+      setState(res.ok ? 'ok' : 'error');
+    } catch { setState('error'); }
+    setTimeout(() => setState('idle'), 4000);
+  };
+  return (
+    <button onClick={test} disabled={state === 'sending'}
+      className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border transition mt-1 ${
+        state === 'ok'    ? 'bg-green-50 border-green-200 text-green-700' :
+        state === 'error' ? 'bg-red-50 border-red-200 text-red-700' :
+        'bg-white border-gray-200 text-gray-600 hover:border-indigo-300 hover:text-indigo-700'
+      }`}>
+      {state === 'sending' && <Loader2 className="h-3 w-3 animate-spin" />}
+      {state === 'ok'    && '✅'}
+      {state === 'error' && '❌'}
+      {state === 'idle'  && '🔔'}
+      {state === 'ok' ? 'Webhook received!' : state === 'error' ? 'Failed — check URL' : state === 'sending' ? 'Sending...' : 'Send test ping'}
+    </button>
+  );
+}
+
 export function SettingsForm({ agency, currentRole, members: initialMembers }: SettingsFormProps) {
   const router = useRouter();
   const isAdmin = currentRole === 'owner' || currentRole === 'admin';
@@ -393,6 +423,9 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
                 <p className="text-xs text-gray-400">
                   Slack, Discord, Zapier, or Make webhook. Fires instantly when Kyra escalates a customer to your team. Slack format supported natively.
                 </p>
+                {escalationWebhookUrl && isAdmin && (
+                  <TestWebhookButton url={escalationWebhookUrl} />
+                )}
               </div>
 
               {/* Custom domain */}

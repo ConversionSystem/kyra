@@ -355,9 +355,9 @@ export function ClientsListView({ clients, plan = 'free', clientLimit = 1 }: Cli
                         <SetupScore client={client} />
                       </div>
                     </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-sm font-medium text-gray-700">{client.usage_this_month.toLocaleString()}</p>
-                      <p className="text-[10px] text-gray-400">messages</p>
+                    <div className="text-right shrink-0 space-y-1">
+                      <HealthScoreBadge clientId={client.id} />
+                      <p className="text-[10px] text-gray-400">{client.usage_this_month.toLocaleString()} msgs</p>
                     </div>
                   </div>
                 </div>
