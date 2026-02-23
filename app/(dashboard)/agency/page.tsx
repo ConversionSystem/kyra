@@ -18,6 +18,7 @@ import AgencyAnalyticsStrip from '@/components/dashboard/agency-analytics-strip'
 import WhatsNewBanner from '@/components/dashboard/whats-new-banner';
 import AgencyChecklist from '@/components/dashboard/agency-checklist';
 import ClientSparkline from '@/components/dashboard/client-sparkline';
+import { SalesLeadWidget } from '@/components/dashboard/sales-lead-widget';
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -60,6 +61,8 @@ export default async function AgencyOverviewPage() {
     getAgencyCredits(agency.id).catch(() => ({ balance: 0, lifetimePurchased: 0, lifetimeUsed: 0 })),
   ]);
   const isAdmin = ['hello@conversionsystem.com', 'angel@conversionsystem.com'].includes(user.email ?? '');
+  const agencySettings = (agency.settings as Record<string, unknown>) ?? {};
+  const salesPipelineState = (agencySettings.sales_pipeline as Record<string, string>) ?? {};
   // Show trial credits banner when: still on welcome credits, haven't purchased yet
   const showTrialCreditsBanner = agencyCredits.lifetimePurchased === 0 && agencyCredits.balance > 0;
 
@@ -204,6 +207,13 @@ export default async function AgencyOverviewPage() {
       {isAdmin && (
         <div className="mb-6">
           <CeoActionBoard />
+        </div>
+      )}
+
+      {/* ── Sales Lead Widget (admin only) ── */}
+      {isAdmin && (
+        <div className="mb-6">
+          <SalesLeadWidget pipelineState={salesPipelineState} />
         </div>
       )}
 
