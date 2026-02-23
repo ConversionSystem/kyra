@@ -1015,6 +1015,28 @@ function SettingsTab({
     }
   };
 
+  const handleExportHtml = async (range: string) => {
+    setIsExporting(true);
+    setShowExportMenu(false);
+    try {
+      const res = await fetch(
+        `/api/agency/clients/${client.id}/export?format=html&type=all&range=${range}`
+      );
+      if (!res.ok) throw new Error('Export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${client.name.toLowerCase().replace(/\s+/g, '-')}-report-${range}.html`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setSaveMessage({ type: 'error', text: 'Export failed.' });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {saveMessage && (
@@ -1075,7 +1097,7 @@ function SettingsTab({
       <Card>
         <CardHeader>
           <CardTitle>Export Data</CardTitle>
-          <CardDescription>Download conversation logs and reports as Markdown files.</CardDescription>
+          <CardDescription>Download a PDF-ready HTML report or Markdown conversation logs.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="relative inline-block" ref={exportMenuRef}>
@@ -1085,8 +1107,10 @@ function SettingsTab({
             {showExportMenu && (
               <div className="absolute left-0 top-full mt-2 w-56 rounded-lg border border-gray-200 bg-white shadow-lg z-50 py-1">
                 <p className="px-3 py-1.5 text-xs font-medium text-gray-400 uppercase tracking-wider">Conversations</p>
-                <button onClick={() => handleExport('conversations', '7d')} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">Last 7 days</button>
-                <button onClick={() => handleExport('conversations', '30d')} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">Last 30 days</button>
+                <button onClick={() => handleExportHtml('30d')} className="w-full text-left px-3 py-2 text-sm text-indigo-700 font-medium hover:bg-indigo-50 flex items-center gap-2">📄 PDF Report (30d)</button>
+                <div className="border-t border-gray-100 my-1" />
+                <button onClick={() => handleExport('conversations', '7d')} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">Last 7 days (MD)</button>
+                <button onClick={() => handleExport('conversations', '30d')} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">Last 30 days (MD)</button>
                 <div className="border-t border-gray-100 my-1" />
                 <p className="px-3 py-1.5 text-xs font-medium text-gray-400 uppercase tracking-wider">Reports</p>
                 <button onClick={() => handleExport('summary', '30d')} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">Summary (30d)</button>
