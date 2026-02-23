@@ -214,6 +214,20 @@ export default async function AgencyOverviewPage() {
         </Card>
       </div>
 
+      {/* ── Public profile sharelink ── */}
+      <div className="mb-6 flex items-center gap-3 bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-3">
+        <span className="text-sm text-indigo-700 flex-1">
+          🌐 Your public agency profile:{' '}
+          <span className="font-mono text-xs text-indigo-600">
+            kyra.conversionsystem.com/a/{agency.id}
+          </span>
+        </span>
+        <Link href={`/a/${agency.id}`} target="_blank" rel="noopener noreferrer"
+          className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 whitespace-nowrap flex items-center gap-1 shrink-0">
+          View →
+        </Link>
+      </div>
+
       {/* ── Agency Analytics Strip ── */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-3">
