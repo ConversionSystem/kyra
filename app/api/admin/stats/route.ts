@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 
-const ADMIN_EMAILS = ['angel@conversionsystem.com', 'steve@conversionsystem.com'];
+const ADMIN_EMAILS = ['hello@conversionsystem.com', 'angel@conversionsystem.com', 'steve@conversionsystem.com'];
 
 export async function GET(request: NextRequest) {
   // Auth check
