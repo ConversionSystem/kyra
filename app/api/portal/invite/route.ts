@@ -51,7 +51,7 @@ export async function POST(req: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  const portalUrl = `${process.env.NEXT_PUBLIC_APP_URL}/portal/invite/${invite!.token}`;
+  const portalUrl = `${process.env.NEXT_PUBLIC_APP_URL}/client-portal/invite/${invite!.token}`;
 
   return NextResponse.json({
     ok: true,
