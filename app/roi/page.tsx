@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { DollarSign, TrendingUp, Clock, Users, ArrowRight, CheckCircle } from 'lucide-react';
+import { DollarSign, TrendingUp, Clock, Users, ArrowRight, CheckCircle, Mail, Loader2 } from 'lucide-react';
 
 const INDUSTRIES = [
   { label: '🦷 Dental Practice', avgDeal: 800, missedRate: 0.35, responseBoost: 0.45 },
@@ -31,6 +31,9 @@ export default function ROICalculatorPage() {
   const [avgDealValue, setAvgDealValue] = useState(industry.avgDeal);
   const [currentCloseRate, setCurrentCloseRate] = useState(20);
   const [kyraPrice, setKyraPrice] = useState(997);
+  const [captureEmail, setCaptureEmail] = useState('');
+  const [captureSending, setCaptureSending] = useState(false);
+  const [captureSuccess, setCaptureSuccess] = useState(false);
 
   // Calculations
   const missedLeads = monthlyLeads * industry.missedRate;
@@ -45,6 +48,32 @@ export default function ROICalculatorPage() {
   const netMonthlyGain = monthlyGain - kyraPrice;
   const roi = kyraPrice > 0 ? Math.round((monthlyGain / kyraPrice) * 100) : 0;
   const daysToROI = monthlyGain > 0 ? Math.ceil((kyraPrice / (monthlyGain / 30))) : 0;
+
+  const handleCapture = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!captureEmail) return;
+    setCaptureSending(true);
+    try {
+      await fetch('/api/roi/capture', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: captureEmail,
+          industry: industry.label,
+          monthlyLeads,
+          avgDealValue,
+          currentCloseRate,
+          kyraPrice,
+          monthlyGain: Math.round(monthlyGain),
+          roi,
+          daysToROI,
+        }),
+      });
+      setCaptureSuccess(true);
+    } finally {
+      setCaptureSending(false);
+    }
+  };
 
   const handleIndustryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selected = INDUSTRIES.find(i => i.label === e.target.value) || INDUSTRIES[0];
@@ -250,21 +279,52 @@ export default function ROICalculatorPage() {
               </ul>
             </div>
 
-            {/* CTA */}
-            <div className="bg-white rounded-2xl p-5 text-center">
-              <p className="font-black text-gray-900 text-lg mb-1">Ready to capture {fmt(monthlyGain)}/mo?</p>
-              <p className="text-sm text-gray-500 mb-4">
-                Setup takes under 10 minutes. Works with GoHighLevel. Cancel anytime.
-              </p>
-              <Link
-                href="/signup/agency"
-                className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 transition text-white font-bold px-6 py-3 rounded-xl w-full justify-center"
-              >
-                Get Started Free
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-              <p className="text-xs text-gray-400 mt-2">Free during beta · No credit card required</p>
-            </div>
+            {/* Lead capture + CTA */}
+            {captureSuccess ? (
+              <div className="bg-green-500/10 border border-green-500/20 rounded-2xl p-5 text-center">
+                <CheckCircle className="h-8 w-8 text-green-400 mx-auto mb-3" />
+                <p className="font-bold text-white mb-1">Your ROI report is on the way!</p>
+                <p className="text-sm text-slate-400 mb-4">Check your inbox for the full breakdown + implementation guide.</p>
+                <Link href="/signup/agency" className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-3 rounded-xl w-full justify-center transition">
+                  Start Free — Deploy in 10 Minutes <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl p-5">
+                <p className="font-black text-gray-900 text-lg mb-1">
+                  Capture {fmt(monthlyGain)}/mo — get the plan
+                </p>
+                <p className="text-sm text-gray-500 mb-4">
+                  Enter your email and we'll send you this exact ROI breakdown + a 10-step implementation guide.
+                </p>
+                <form onSubmit={handleCapture} className="space-y-3 mb-4">
+                  <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl overflow-hidden focus-within:border-indigo-400">
+                    <Mail className="h-4 w-4 text-gray-400 ml-3 shrink-0" />
+                    <input
+                      type="email" required
+                      value={captureEmail}
+                      onChange={e => setCaptureEmail(e.target.value)}
+                      placeholder="you@agency.com"
+                      className="flex-1 bg-transparent py-3 pr-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={captureSending}
+                    className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-white font-bold py-3 rounded-xl transition flex items-center justify-center gap-2"
+                  >
+                    {captureSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                    {captureSending ? 'Sending…' : 'Send Me the Report'}
+                  </button>
+                </form>
+                <div className="border-t border-gray-100 pt-3 text-center">
+                  <Link href="/signup/agency" className="inline-flex items-center gap-1.5 text-sm text-indigo-600 hover:text-indigo-800 font-semibold">
+                    Or start free now → <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                </div>
+                <p className="text-xs text-gray-400 mt-2 text-center">No spam. Unsubscribe anytime.</p>
+              </div>
+            )}
           </div>
         </div>
 
