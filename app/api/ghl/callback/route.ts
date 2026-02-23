@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { decodeOAuthState, exchangeCodeForTokens } from '@/lib/ghl/oauth';
+import { registerWebhooks, getKyraWebhookUrl } from '@/lib/ghl/webhooks';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -97,6 +98,27 @@ export async function GET(request: NextRequest) {
   console.log(
     `[ghl/callback] Successfully connected GHL for client ${clientId} (location: ${tokens.locationId})`,
   );
+
+  // ── Auto-register Kyra webhooks with GHL ─────────────────────────────
+  // Fire-and-forget: don't block the redirect if webhook registration fails.
+  // The agency can re-trigger via the GHL Setup tab if needed.
+  void (async () => {
+    try {
+      const webhookUrl = getKyraWebhookUrl();
+      const registration = await registerWebhooks(
+        tokens.access_token,
+        tokens.locationId,
+        webhookUrl,
+      );
+      if (registration) {
+        console.log(
+          `[ghl/callback] ✅ Auto-registered GHL webhooks for location ${tokens.locationId} (id=${registration.id})`,
+        );
+      }
+    } catch (err) {
+      console.warn('[ghl/callback] Webhook auto-registration failed (non-fatal):', err);
+    }
+  })();
 
   // ── Redirect back to client page with success ────────────────────────
   return NextResponse.redirect(
