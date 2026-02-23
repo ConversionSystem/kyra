@@ -88,15 +88,6 @@ export default function AgencyChecklist({
       cta: 'View plans →',
       priority: 'nice',
     },
-    {
-      id: 'ghl-marketplace',
-      label: 'Submit to GHL Marketplace',
-      description: 'List Kyra on the GHL Marketplace to reach 60,000+ agencies.',
-      done: false, // always a goal — hard to detect completion
-      href: '/agency/ghl-listing',
-      cta: 'View listing draft →',
-      priority: 'nice',
-    },
   ];
 
   const doneCount = items.filter((i) => i.done).length;
