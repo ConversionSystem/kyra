@@ -5,7 +5,7 @@
 import { NextResponse } from 'next/server';
 import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
 
-const ADMIN_EMAILS = ['angel@conversionsystem.com'];
+const ADMIN_EMAILS = ['hello@conversionsystem.com', 'angel@conversionsystem.com'];
 
 const PLAN_MRR: Record<string, number> = {
   free: 0, starter: 97, pro: 247, scale: 497, beta: 247,

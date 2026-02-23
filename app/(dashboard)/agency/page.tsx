@@ -54,7 +54,7 @@ export default async function AgencyOverviewPage() {
 
   const { agency } = result;
   const clients = await getAgencyClients(agency.id);
-  const isAdmin = ['angel@conversionsystem.com'].includes(user.email ?? '');
+  const isAdmin = ['hello@conversionsystem.com', 'angel@conversionsystem.com'].includes(user.email ?? '');
 
   // Stats
   const totalCount = clients.length;

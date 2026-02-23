@@ -49,7 +49,7 @@ export default async function PortalPage({ params }: Props) {
     .maybeSingle();
 
   // Master emails always have access
-  const isMaster = ['angel@conversionsystem.com'].includes(user.email ?? '');
+  const isMaster = ['hello@conversionsystem.com', 'angel@conversionsystem.com'].includes(user.email ?? '');
 
   if (!isMaster && !agencyMembership && !portalMembership) {
     redirect(`/client-portal/${clientId}/request-access`);
