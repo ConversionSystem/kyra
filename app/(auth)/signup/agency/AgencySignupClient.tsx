@@ -76,6 +76,12 @@ function AgencySignupPage() {
       });
       if (err) { setError(err.message); return; }
       if (data.user && !data.session) { setEmailSent(true); return; }
+      // Fire abandoned signup webhook — GHL can follow up if agency never created
+      fetch('/api/auth/signup-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      }).catch(() => {});
       setStep(2);
     } catch {
       setError('An unexpected error occurred');
