@@ -25,6 +25,7 @@ import { resolveClientGateway, chatViaGateway } from '@/lib/ovh/provisioner';
 import { resolveNativeModel } from '@/lib/agency/ai-models';
 import { GHL_TOOL_DEFINITIONS, executeTool, type ToolContext } from './ghl-tools';
 import { getConversationHistory, saveConversationTurn } from './conversation-memory';
+import { deductCredit } from '@/lib/billing/credit-engine';
 import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
 
 const GHL_API_BASE = 'https://services.leadconnectorhq.com';
@@ -572,6 +573,23 @@ async function processConversation(
         }),
       }).catch(() => {});
     }
+  }
+
+  // ── Deduct 1 credit per conversation ─────────────────────────────────
+  try {
+    const creditResult = await deductCredit(
+      client.agency_id,
+      client.id,
+      `AI reply to ${contactName} via ${formatChannelName(messageType)}`,
+    );
+    if (creditResult.insufficient) {
+      console.warn(`[ghl/poller] ⚠️ Agency ${client.agency_id} has 0 credits — consider topping up`);
+    } else {
+      console.log(`[ghl/poller] 🪙 Credit deducted | balance: ${creditResult.newBalance}`);
+    }
+  } catch (creditErr) {
+    // Non-fatal — never block a reply over a credit issue
+    console.warn('[ghl/poller] Credit deduction failed (non-fatal):', creditErr);
   }
 
   console.log(`[ghl/poller] ✅ Reply sent to ${contactName} for "${client.name}" (${processingTimeMs}ms)`);
