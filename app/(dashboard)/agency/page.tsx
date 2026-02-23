@@ -13,7 +13,9 @@ import {
 } from 'lucide-react';
 import CeoActionBoard from '@/components/dashboard/ceo-action-board';
 import AgencyAnalyticsStrip from '@/components/dashboard/agency-analytics-strip';
+<<<<<<< HEAD
 import WhatsNewBanner from '@/components/dashboard/whats-new-banner';
+import AgencyChecklist from '@/components/dashboard/agency-checklist';
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -61,6 +63,19 @@ export default async function AgencyOverviewPage() {
   const needAttention = clients.filter(
     (c) => c.gateway_status === 'running' && c.usage_this_month === 0,
   ).length;
+
+  // Checklist props
+  const checklistProps = {
+    hasClients: clients.length > 0,
+    hasRunningClient: clients.some((c) => c.gateway_status === 'running'),
+    hasGhlConnected: clients.some((c) => !!(c.ghl_private_token || c.ghl_access_token)),
+    hasPersonalitySet: clients.some((c) => {
+      const cfg = (c.container_config as Record<string, unknown>) ?? {};
+      return !!(cfg.persona || cfg.instructions);
+    }),
+    hasConversations: totalUsage > 0,
+    hasBilling: !!(agency.stripe_customer_id) || agency.plan !== 'free',
+  };
 
   // Recent activity + today stats — try fetching from client_conversations
   let recentConversations: {
@@ -146,6 +161,9 @@ export default async function AgencyOverviewPage() {
 
       {/* ── What's New Banner ── */}
       <WhatsNewBanner />
+
+      {/* ── Setup Checklist ── */}
+      <AgencyChecklist {...checklistProps} />
 
       {/* ── CEO Action Board (admin only) ── */}
       {isAdmin && (
