@@ -51,6 +51,7 @@ import HealthScoreBadge from '@/components/dashboard/health-score-badge';
 import AISuggestionsCard from '@/components/dashboard/ai-suggestions-card';
 import ClientStatusBanner from '@/components/dashboard/client-status-banner';
 import ClientActivityHeatmap from '@/components/dashboard/client-activity-heatmap';
+import { VoiceChannelCard } from '@/components/dashboard/voice-channel-card';
 
 // ── Setup Nudge Banner ────────────────────────────────────────────────────────
 
@@ -1740,44 +1741,8 @@ Authorization: Bearer YOUR_KYRA_API_SECRET
         </CardContent>
       </Card>
 
-      {/* ── Voice ──────────────────────────────────────────────────────── */}
-      <Card className="border-gray-200">
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-              <Phone className="h-5 w-5 text-gray-500" />
-            </div>
-            <div>
-              <CardTitle className="text-base text-gray-700">Voice (Inbound Calls)</CardTitle>
-              <CardDescription className="text-xs">AI answers calls, records voicemails, follows up via SMS</CardDescription>
-            </div>
-            <span className="ml-auto text-[10px] bg-amber-100 text-amber-700 font-medium px-2 py-0.5 rounded-full">⚙️ Setup Required</span>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-sm text-gray-600">
-            When someone calls the client's number, the AI greets them, records a voicemail, transcribes it, and sends an AI follow-up SMS. Works with Twilio or GHL voice.
-          </p>
-          <div className="bg-amber-50 rounded-lg p-3 text-xs text-amber-800 space-y-1">
-            <p className="font-semibold">Setup steps (Twilio):</p>
-            <ol className="list-decimal ml-4 space-y-1">
-              <li>Get a <a href="https://twilio.com" target="_blank" rel="noopener noreferrer" className="underline">Twilio</a> account + phone number</li>
-              <li>On the phone number, set Voice webhook URL:</li>
-            </ol>
-            <div className="flex items-center gap-2 mt-1 ml-4">
-              <code className="bg-amber-100 px-1 rounded break-all">{appUrl}/api/channels/voice-webhook?clientId={client.id}</code>
-              <button onClick={() => copy(`${appUrl}/api/channels/voice-webhook?clientId=${client.id}`, 'voice')} className="shrink-0">
-                {copied === 'voice' ? '✅' : '📋'}
-              </button>
-            </div>
-            <ol className="list-decimal ml-4 space-y-1 mt-1" start={3}>
-              <li>Set HTTP method: <strong>POST</strong></li>
-              <li>For GHL: Settings → Phone → Voice → External webhook → paste the URL above</li>
-            </ol>
-          </div>
-          <p className="text-xs text-gray-400">Optional: Add <code className="bg-gray-100 px-1 rounded">voice_greeting</code> to Personality tab to customize the recorded greeting message.</p>
-        </CardContent>
-      </Card>
+      {/* ── Voice AI — VAPI / Synthflow / Retell ─────────────────────── */}
+      <VoiceChannelCard client={client} />
     </div>
   );
 }
