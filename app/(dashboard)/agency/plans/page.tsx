@@ -111,9 +111,9 @@ export default async function PlansPage() {
           <h3 className="text-lg font-bold text-white mb-4">The agency math 💰</h3>
           <div className="grid sm:grid-cols-3 gap-4">
             {[
-              { plan: 'Starter ($97/mo)', clients: 5, charge: 500, kyra: 97 },
-              { plan: 'Pro ($247/mo)', clients: 15, charge: 1000, kyra: 247 },
-              { plan: 'Scale ($497/mo)', clients: 50, charge: 1500, kyra: 497 },
+              { plan: 'Lite ($99/mo)', clients: 5, charge: 500, kyra: 99 },
+              { plan: 'Pro ($249/mo)', clients: 15, charge: 1000, kyra: 249 },
+              { plan: 'Scale ($499/mo)', clients: 50, charge: 1500, kyra: 499 },
             ].map((item) => (
               <div key={item.plan} className="rounded-lg bg-gray-800 p-4">
                 <p className="text-xs text-gray-400 mb-1">{item.plan}</p>

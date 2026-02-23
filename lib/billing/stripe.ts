@@ -19,7 +19,7 @@ export function getStripe(): Stripe {
  * Stripe Price IDs for each plan.
  * Set these in env vars after creating products in Stripe Dashboard.
  *
- * Plans: free (no Stripe needed), starter ($97), pro ($247), scale ($497)
+ * Plans: free (no Stripe needed), starter ($99), pro ($249), scale ($499)
  */
 export const STRIPE_PRICE_IDS: Record<string, string | undefined> = {
   starter: process.env.STRIPE_PRICE_STARTER,

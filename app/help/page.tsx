@@ -96,7 +96,7 @@ const SECTIONS = [
     faqs: [
       {
         q: 'What does each plan include?',
-        a: 'Free: 1 AI employee, all features. Starter ($97/mo): 5 AI employees + BYOK + weekly reports. Pro ($247/mo): 15 AI employees + white-label + pitch pages + referral program. Scale ($497/mo): 50 AI employees + everything. All paid plans include a 30-day free trial.',
+        a: 'Free: 1 AI employee, all features. Lite ($99/mo): 5 AI employees + BYOK + weekly reports. Pro ($249/mo): 15 AI employees + white-label + pitch pages + referral program. Scale ($499/mo): 50 AI employees + everything. All paid plans include a 30-day free trial.',
       },
       {
         q: 'What is BYOK (Bring Your Own Key)?',

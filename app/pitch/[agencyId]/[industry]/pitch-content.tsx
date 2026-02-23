@@ -129,7 +129,7 @@ function ROISection({ roi, accentColor }: { roi: ROI; accentColor: string }) {
           { label: 'Leads the AI handles', value: `${Math.round(leads * responseRate)}`, sub: '85% response rate' },
           { label: 'Extra sales per month', value: `+${extraConversions}`, sub: 'from faster follow-up' },
           { label: 'Extra revenue / month', value: `$${extraRevenue.toLocaleString()}`, sub: 'conservative estimate' },
-          { label: 'AI cost / month', value: '$97', sub: 'Starter plan' },
+          { label: 'AI cost / month', value: '$99', sub: 'Lite plan' },
         ].map(card => (
           <div key={card.label} className="bg-white/5 rounded-xl p-3 text-center">
             <p className="text-white font-bold text-xl tabular-nums">{card.value}</p>
