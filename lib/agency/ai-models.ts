@@ -57,7 +57,7 @@ export const PROVIDER_MODELS: Record<string, ModelDef[]> = {
   openrouter: [
     {
       id: 'anthropic/claude-haiku-4-5',
-      ocModel: 'anthropic/claude-haiku-4-5',
+      ocModel: 'openrouter/anthropic/claude-haiku-4-5',
       label: 'Claude Haiku',
       desc: 'Fast Anthropic model via OpenRouter',
       badge: 'Cheapest',
@@ -65,7 +65,7 @@ export const PROVIDER_MODELS: Record<string, ModelDef[]> = {
     },
     {
       id: 'anthropic/claude-sonnet-4-5',
-      ocModel: 'anthropic/claude-sonnet-4-5',
+      ocModel: 'openrouter/anthropic/claude-sonnet-4-5',
       label: 'Claude Sonnet',
       desc: 'Balanced Anthropic model via OpenRouter',
       badge: 'Recommended',
@@ -73,37 +73,37 @@ export const PROVIDER_MODELS: Record<string, ModelDef[]> = {
     },
     {
       id: 'anthropic/claude-opus-4',
-      ocModel: 'anthropic/claude-opus-4',
+      ocModel: 'openrouter/anthropic/claude-opus-4',
       label: 'Claude Opus',
       desc: 'Most powerful Anthropic model',
     },
     {
       id: 'openai/gpt-4o',
-      ocModel: 'openai/gpt-4o',
+      ocModel: 'openrouter/openai/gpt-4o',
       label: 'GPT-4o',
       desc: 'OpenAI flagship via OpenRouter',
     },
     {
       id: 'openai/gpt-4o-mini',
-      ocModel: 'openai/gpt-4o-mini',
+      ocModel: 'openrouter/openai/gpt-4o-mini',
       label: 'GPT-4o mini',
       desc: 'Fast and affordable OpenAI model',
     },
     {
       id: 'google/gemini-flash-1.5',
-      ocModel: 'google/gemini-flash-1.5',
+      ocModel: 'openrouter/google/gemini-flash-1.5',
       label: 'Gemini 1.5 Flash',
       desc: 'Google fast model via OpenRouter',
     },
     {
       id: 'meta-llama/llama-3.3-70b-instruct',
-      ocModel: 'meta-llama/llama-3.3-70b-instruct',
+      ocModel: 'openrouter/meta-llama/llama-3.3-70b-instruct',
       label: 'Llama 3.3 70B',
       desc: 'Open source · Low cost',
     },
     {
       id: 'deepseek/deepseek-r1',
-      ocModel: 'deepseek/deepseek-r1',
+      ocModel: 'openrouter/deepseek/deepseek-r1',
       label: 'DeepSeek R1',
       desc: 'Strong reasoning · Very affordable',
     },
@@ -209,4 +209,19 @@ export function resolveModelLabel(provider: string, selectedModelId?: string): s
   const modelId = selectedModelId || fallbackId;
   const found = models.find((m) => m.id === modelId);
   return found?.label || modelId || provider;
+}
+
+/**
+ * Resolve the native API model ID for direct API calls (poller, test route).
+ * For OpenRouter this is the raw model ID (e.g. "anthropic/claude-sonnet-4-5").
+ * For Anthropic this is the native model ID (e.g. "claude-sonnet-4-5").
+ * This is NOT the OpenClaw model string — use resolveOcModel() for containers.
+ */
+export function resolveNativeModel(provider: string, selectedModelId?: string): string {
+  const models = PROVIDER_MODELS[provider] || [];
+  const fallbackId = DEFAULT_MODEL_ID[provider] || 'gpt-4o-mini';
+  const modelId = selectedModelId || fallbackId;
+  // id is always the native/raw model ID for each provider
+  const found = models.find((m) => m.id === modelId);
+  return found?.id || modelId;
 }
