@@ -45,6 +45,7 @@ import GHLConnection from './ghl-connection';
 import { UsageAnalytics } from './usage-analytics';
 import PermissionsCard from './permissions-card';
 import HealthScoreBadge from '@/components/dashboard/health-score-badge';
+import AISuggestionsCard from '@/components/dashboard/ai-suggestions-card';
 
 // ── Setup Nudge Banner ────────────────────────────────────────────────────────
 
@@ -623,6 +624,8 @@ function AIPersonalityTab({ client }: { client: AgencyClient }) {
           )}
         </Button>
       </div>
+
+      <AISuggestionsCard clientId={client.id} />
 
       {message && (
         <div className={`rounded-md px-4 py-3 text-sm ${
