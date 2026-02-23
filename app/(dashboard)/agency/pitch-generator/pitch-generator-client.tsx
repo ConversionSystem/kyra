@@ -33,10 +33,28 @@ export default function PitchGeneratorClient({ agencyId, agencyName }: Props) {
 
   return (
     <div className="p-4 sm:p-6 md:p-8 max-w-4xl space-y-6">
+      {/* General pitch deck (not white-labeled) */}
+      <div className="bg-indigo-600 rounded-2xl p-5 flex items-center justify-between gap-4">
+        <div>
+          <p className="font-bold text-white text-sm">🎯 General Sales Pitch Deck</p>
+          <p className="text-indigo-200 text-xs mt-0.5">10-slide interactive deck — share this URL in any sales call or email</p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <a href="/pitch" target="_blank" rel="noopener noreferrer"
+            className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 text-white text-xs font-medium px-3 py-2 rounded-lg transition">
+            <ExternalLink className="h-3.5 w-3.5" /> Preview
+          </a>
+          <button onClick={() => copy(`${BASE_URL}/pitch`, 'pitch-deck')}
+            className="flex items-center gap-1.5 bg-white text-indigo-600 hover:bg-indigo-50 text-xs font-bold px-3 py-2 rounded-lg transition">
+            {copied === 'pitch-deck' ? <><CheckCircle2 className="h-3.5 w-3.5" /> Copied!</> : <><Copy className="h-3.5 w-3.5" /> Copy link</>}
+          </button>
+        </div>
+      </div>
+
       <div>
         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
           <Link2 className="h-6 w-6 text-indigo-500" />
-          Pitch Pages
+          White-Label Pitch Pages
         </h1>
         <p className="text-sm text-gray-500 mt-1">
           Send these links to prospects. Each page shows an animated AI demo for their industry, a ROI calculator, and your agency's branding — no login required.
