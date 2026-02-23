@@ -158,6 +158,116 @@ const OBJECTIONS = [
   },
 ];
 
+// ── Quick Win Templates ────────────────────────────────────────────────────────
+
+const QUICK_WIN_TEMPLATES = [
+  {
+    label: '⚡ Universal (any industry)',
+    tag: 'SEND THIS TODAY',
+    tagColor: 'bg-amber-100 text-amber-800',
+    subject: 'Quick question about [Business Name]',
+    body: `Hi [Name],
+
+I work with local businesses to deploy AI employees that respond to customer inquiries 24/7 — so you never miss a lead, even at 2am.
+
+Takes about a week to set up. Worth a quick 15-minute call to see if it's a fit?
+
+— [Your Name]
+[Agency Name] | [Phone]`,
+    note: 'Works for any industry. Short = more replies. Add 1 specific detail about their business to triple your response rate.',
+  },
+  {
+    label: '🌿 Cannabis (highest margin)',
+    tag: 'HIGHEST ROI',
+    tagColor: 'bg-green-100 text-green-800',
+    subject: 'How many texts is your budtender answering right now?',
+    body: `Hi [Owner Name],
+
+Most dispensaries get 50–100 customer texts a day asking about hours, strains, and deals. Staff answers every single one manually.
+
+We deploy AI employees that handle all of it automatically — within 60 seconds, 24/7, compliance-aware. Your budtenders stay on the floor.
+
+15 minutes to show you a live demo?
+
+— [Your Name]`,
+    note: 'Cannabis is the best vertical. High volume, clear pain point, compliance anxiety = they want this.',
+  },
+  {
+    label: '🔁 Follow-up (no reply after 3+ days)',
+    tag: 'HIGH OPEN RATE',
+    tagColor: 'bg-blue-100 text-blue-800',
+    subject: 'Re: [Original Subject]',
+    body: `Hi [Name] — just bumping this up.
+
+Happy to show you a 5-minute demo this week — no slides, just live AI responding to a real customer inquiry.
+
+Still interested?
+
+— [Your Name]`,
+    note: 'Short follow-ups outperform long ones. One sentence of context, one soft ask.',
+  },
+];
+
+function QuickWinSection() {
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+
+  const handleCopy = async (idx: number, text: string) => {
+    await navigator.clipboard.writeText(text);
+    setCopiedIdx(idx);
+    setTimeout(() => setCopiedIdx(null), 2000);
+  };
+
+  return (
+    <div className="mb-8 rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 via-white to-orange-50 overflow-hidden">
+      {/* Header */}
+      <div className="px-5 py-4 border-b border-amber-100 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="rounded-xl bg-amber-500 p-2">
+            <Zap className="h-4 w-4 text-white" />
+          </div>
+          <div>
+            <h2 className="font-bold text-gray-900 text-sm">Quick Win Templates</h2>
+            <p className="text-xs text-amber-600 font-medium">Copy → paste → send. 5 minutes of work, potential $500/mo client.</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Templates */}
+      <div className="divide-y divide-amber-50">
+        {QUICK_WIN_TEMPLATES.map((t, i) => (
+          <div key={i} className="px-5 py-4">
+            <div className="flex items-center justify-between gap-3 mb-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-semibold text-gray-900">{t.label}</span>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${t.tagColor}`}>{t.tag}</span>
+              </div>
+              <button
+                onClick={() => handleCopy(i, `Subject: ${t.subject}\n\n${t.body}`)}
+                className={`shrink-0 inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  copiedIdx === i
+                    ? 'border-green-200 bg-green-50 text-green-700'
+                    : 'border-amber-200 bg-white text-amber-800 hover:bg-amber-50'
+                }`}
+              >
+                {copiedIdx === i
+                  ? <><CheckCircle2 className="h-3.5 w-3.5" /> Copied!</>
+                  : <><Copy className="h-3.5 w-3.5" /> Copy email</>}
+              </button>
+            </div>
+            <p className="text-[11px] text-gray-400 font-mono mb-2">Subject: {t.subject}</p>
+            <pre className="text-xs text-gray-700 whitespace-pre-wrap font-sans leading-relaxed bg-white/70 rounded-lg p-3 border border-amber-100">
+              {t.body}
+            </pre>
+            <p className="mt-2 text-[11px] text-amber-700 bg-amber-50 rounded-md px-2 py-1.5 border border-amber-100">
+              💡 {t.note}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
   const handleCopy = async () => {
@@ -220,6 +330,9 @@ export default function SalesKitPage() {
           Done-for-you email templates, LinkedIn DMs, SMS scripts, and objection handling. Copy, customize, close.
         </p>
       </div>
+
+      {/* ── Quick Win Templates ─────────────────────────────────────── */}
+      <QuickWinSection />
 
       {/* Tabs */}
       <div className="flex gap-1 mb-6 border border-gray-200 rounded-xl p-1 bg-gray-50">
