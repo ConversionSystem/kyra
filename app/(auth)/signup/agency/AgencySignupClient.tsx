@@ -152,7 +152,7 @@ function AgencySignupPage() {
         </div>
       </nav>
 
-      <div className="flex flex-col items-center justify-center px-4 py-16">
+      <div className="flex flex-col items-center justify-center px-4 py-10 lg:py-16">
         {/* Invite banner */}
         {fromAgency && (
           <div className="w-full max-w-md mb-8 rounded-xl bg-indigo-500/20 border border-indigo-500/30 px-5 py-4 flex items-start gap-3">
@@ -357,6 +357,56 @@ function AgencySignupPage() {
               Sign in
             </Link>
           </p>
+
+          {/* Trust signals */}
+          <div className="mt-10 border-t border-white/10 pt-8 space-y-6">
+            {/* Stats */}
+            <div className="grid grid-cols-3 gap-4 text-center">
+              {[
+                { value: '$29M+', label: 'Revenue generated for clients' },
+                { value: '< 60s', label: 'AI response time' },
+                { value: '100%', label: 'Leads responded to' },
+              ].map(s => (
+                <div key={s.label}>
+                  <p className="text-xl font-black text-indigo-400">{s.value}</p>
+                  <p className="text-xs text-slate-500 mt-0.5 leading-snug">{s.label}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Mini testimonials */}
+            <div className="space-y-3">
+              {[
+                {
+                  quote: "Set it up Friday. Monday morning 3 appointments were already booked — while the office was closed.",
+                  niche: '🦷 Dental agency',
+                },
+                {
+                  quote: "Clients don't care how it works. They see the bookings. They pay the invoice. That's the pitch.",
+                  niche: '🏡 Real estate agency',
+                },
+                {
+                  quote: "Our cannabis client was doing $27M a year. Kyra's AI SMS was a big part of why. It never sleeps.",
+                  niche: '🌿 Cannabis agency',
+                },
+              ].map(t => (
+                <div key={t.niche} className="bg-white/5 border border-white/10 rounded-xl p-4">
+                  <p className="text-sm text-slate-300 italic leading-relaxed">"{t.quote}"</p>
+                  <p className="text-xs text-slate-500 mt-2">{t.niche}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Logos / integrations */}
+            <div className="text-center">
+              <p className="text-xs text-slate-600 mb-3">Works natively with</p>
+              <div className="flex items-center justify-center gap-6 flex-wrap">
+                {['GoHighLevel', 'OpenAI', 'Anthropic', 'Stripe'].map(logo => (
+                  <span key={logo} className="text-xs font-bold text-slate-500 tracking-wide">{logo}</span>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
