@@ -23,7 +23,7 @@ export default async function AcceptInvitePage({ params }: Props) {
 
   // Not logged in — send to login with redirect back
   if (!user) {
-    redirect(`/login?next=/portal/invite/${token}`);
+    redirect(`/login?next=/client-portal/invite/${token}`);
   }
 
   // Look up client + agency for display
