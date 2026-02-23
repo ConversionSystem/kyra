@@ -1,7 +1,7 @@
 /**
  * Agency Conversations Feed
  * GET /api/agency/conversations — all conversations across all clients for the agency
- * Query params: ?limit=50&page=0&clientId=xxx&channel=telegram
+ * Query params: ?limit=50&page=0&clientId=xxx&channel=telegram&q=keyword
  */
 import { NextRequest } from 'next/server';
 import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
@@ -12,6 +12,7 @@ export async function GET(request: NextRequest) {
   const page = parseInt(searchParams.get('page') || '0');
   const filterClientId = searchParams.get('clientId') || null;
   const filterChannel = searchParams.get('channel') || null;
+  const filterQuery = searchParams.get('q')?.trim() || null;
 
   try {
     const supabase = await createClient();
@@ -46,6 +47,10 @@ export async function GET(request: NextRequest) {
 
     if (filterClientId) query = query.eq('client_id', filterClientId);
     if (filterChannel) query = query.eq('channel', filterChannel);
+    if (filterQuery) {
+      const escaped = filterQuery.replace(/[%_]/g, '\\$&');
+      query = query.or(`user_message.ilike.%${escaped}%,ai_response.ilike.%${escaped}%`);
+    }
 
     const { data, error, count } = await query;
 
