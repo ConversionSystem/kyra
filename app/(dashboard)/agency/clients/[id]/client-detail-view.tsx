@@ -516,6 +516,7 @@ function AIPersonalityTab({ client }: { client: AgencyClient }) {
   const [instructions, setInstructions] = useState(cfg.instructions as string || '');
   const [persona, setPersona] = useState(cfg.persona as string || '');
   const [calendarUrl, setCalendarUrl] = useState((cfg.calendar_url as string) || '');
+  const [responseLanguage, setResponseLanguage] = useState((cfg.response_language as string) || 'English');
   // Widget appearance config
   const [widgetTitle, setWidgetTitle] = useState((cfg.widget_title as string) || '');
   const [widgetColor, setWidgetColor] = useState((cfg.widget_color as string) || '#6366f1');
@@ -565,6 +566,7 @@ function AIPersonalityTab({ client }: { client: AgencyClient }) {
             persona,
             business_hours: { enabled: bhEnabled, start: bhStart, end: bhEnd, timezone: bhTimezone },
             calendar_url: calendarUrl.trim() || undefined,
+            response_language: responseLanguage || 'English',
             widget_title: widgetTitle.trim() || undefined,
             widget_color: widgetColor || '#6366f1',
             widget_greeting: widgetGreeting.trim() || undefined,
@@ -679,6 +681,37 @@ function AIPersonalityTab({ client }: { client: AgencyClient }) {
             placeholder="https://booking.leadconnectorhq.com/your-calendar-id"
             className="bg-gray-50 font-mono text-sm"
           />
+        </CardContent>
+      </Card>
+
+      {/* ── Response Language ──────────────────────────────────────────── */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            🌐 Response Language
+          </CardTitle>
+          <CardDescription>
+            The AI will always respond in this language, regardless of what language the customer uses.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <select
+            value={responseLanguage}
+            onChange={(e) => setResponseLanguage(e.target.value)}
+            className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm"
+          >
+            {[
+              'English', 'Spanish (Español)', 'Portuguese (Português)', 'French (Français)',
+              'German (Deutsch)', 'Italian (Italiano)', 'Chinese (中文)', 'Japanese (日本語)',
+              'Korean (한국어)', 'Arabic (العربية)', 'Hindi (हिन्दी)', 'Russian (Русский)',
+              'Dutch (Nederlands)', 'Polish (Polski)', 'Turkish (Türkçe)',
+            ].map(lang => (
+              <option key={lang} value={lang}>{lang}</option>
+            ))}
+          </select>
+          <p className="text-xs text-gray-400 mt-2">
+            💡 Spanish is the most common choice for US GHL agencies — dental, cannabis, restaurants, and home services all serve large Spanish-speaking customer bases.
+          </p>
         </CardContent>
       </Card>
 
