@@ -49,6 +49,7 @@ import PermissionsCard from './permissions-card';
 import HealthScoreBadge from '@/components/dashboard/health-score-badge';
 import AISuggestionsCard from '@/components/dashboard/ai-suggestions-card';
 import ClientStatusBanner from '@/components/dashboard/client-status-banner';
+import ClientActivityHeatmap from '@/components/dashboard/client-activity-heatmap';
 
 // ── Setup Nudge Banner ────────────────────────────────────────────────────────
 
@@ -1379,6 +1380,7 @@ function UsageTab({ client }: { client: AgencyClient }) {
         Messages handled, response times, and costs for this client&apos;s AI assistant.
       </p>
       <HealthScoreBadge clientId={client.id} showDetails />
+      <ClientActivityHeatmap clientId={client.id} />
       <UsageAnalytics clientId={client.id} />
     </div>
   );
