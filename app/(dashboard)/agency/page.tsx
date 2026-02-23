@@ -461,13 +461,13 @@ export default async function AgencyOverviewPage() {
                     href: '/agency/clients/new',
                     color: 'text-purple-600 bg-purple-50',
                   },
-                  {
+                  ...(isAdmin ? [{
                     icon: ClipboardList,
                     label: 'GHL Listing Draft',
                     subtitle: 'Submit to GHL Marketplace',
                     href: '/agency/ghl-listing',
                     color: 'text-amber-600 bg-amber-50',
-                  },
+                  }] : []),
                 ].map((action) => (
                   <Link
                     key={action.href}
