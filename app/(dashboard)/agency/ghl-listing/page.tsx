@@ -190,6 +190,34 @@ export default function GHLListingPage() {
       <CopyField label="GHL Integration Type" value="Private Integration Token (no OAuth required)" />
       <CopyField label="Webhook / Poll URL" value={WEBHOOK_URL} />
 
+      <CopyField
+        label="🎬 60-Second Demo Video Script (record your screen while reading this)"
+        note="Open /try/dental in one window, start recording, and read the script while clicking. 1 minute is enough for GHL."
+        value={`[0:00 — Show the landing page kyra.conversionsystem.com]
+"This is Kyra — an AI employee platform built for GHL agencies."
+
+[0:06 — Navigate to /try/dental]
+"I'm going to show you a live AI right now — no demo mode, real responses."
+
+[0:10 — Type: "Hi, how much is a cleaning?"]
+[Wait for AI response]
+"See that? Under 60 seconds. The AI answered, offered insurance info, and is ready to book."
+
+[0:25 — Type: "Can I book Tuesday?"]
+[Wait for response]
+"It's booking an appointment — in a real conversation. No flows, no scripts, no keyword matching."
+
+[0:38 — Switch to agency dashboard]
+"In the dashboard, I can manage AI employees for every one of my clients. Each one has its own personality, channels, and analytics."
+
+[0:48 — Show conversations tab]
+"I can see every conversation across all clients, flag escalations, and check performance — from one place."
+
+[0:56 — Show CTA]
+"Free to start at kyra.conversionsystem.com. Works with your existing GHL account in under 10 minutes."`}
+        mono
+      />
+
       <Card>
         <CardHeader>
           <CardTitle className="text-sm">Required Screenshots Checklist</CardTitle>
