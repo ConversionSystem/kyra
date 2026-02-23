@@ -184,10 +184,9 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
   }, [mobileOpen]);
 
   const logoUrl = settings?.logo_url;
-  const primaryColor = settings?.primary_color;
   const companyName = settings?.company_name || agencyName;
-  const isPremium = true; // All features unlocked during beta
-  const hasBranding = isPremium && primaryColor;
+  // Sidebar is always dark — branding only applies to logo/name, not background
+  const hasBranding = false;
 
   const sidebarContent = (
     <>
@@ -200,7 +199,7 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
-            {isPremium && logoUrl ? (
+            {logoUrl ? (
               <div className="h-9 w-9 rounded-lg bg-white/20 flex items-center justify-center overflow-hidden shrink-0">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -370,22 +369,16 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
       {/* Mobile sidebar (slide-in) */}
       <aside
         className={cn(
-          'lg:hidden fixed top-0 left-0 bottom-0 z-50 w-72 flex flex-col transition-transform duration-200 ease-in-out',
+          'lg:hidden fixed top-0 left-0 bottom-0 z-50 w-72 flex flex-col transition-transform duration-200 ease-in-out bg-gray-900',
           mobileOpen ? 'translate-x-0' : '-translate-x-full',
-          hasBranding ? '' : 'bg-gray-900'
         )}
-        style={hasBranding ? { backgroundColor: primaryColor } : undefined}
       >
         {sidebarContent}
       </aside>
 
       {/* Desktop sidebar (always visible) */}
       <aside
-        className={cn(
-          'hidden lg:flex w-64 border-r flex-col shrink-0',
-          hasBranding ? 'border-white/10' : 'border-gray-800 bg-gray-900'
-        )}
-        style={hasBranding ? { backgroundColor: primaryColor } : undefined}
+        className="hidden lg:flex w-64 border-r border-gray-800 bg-gray-900 flex-col shrink-0"
       >
         {sidebarContent}
       </aside>
