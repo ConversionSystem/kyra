@@ -32,6 +32,7 @@ import {
   Briefcase,
   Link2,
   Gift,
+  Crown,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AgencySettings } from '@/lib/agency/types';
@@ -116,9 +117,10 @@ interface AgencySidebarProps {
   agencyName: string;
   plan: string;
   settings?: AgencySettings;
+  isMaster?: boolean;
 }
 
-export function AgencySidebar({ agencyName, plan, settings }: AgencySidebarProps) {
+export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySidebarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [agencyGatewayUrl, setAgencyGatewayUrl] = useState<string | null>(null);
@@ -275,6 +277,29 @@ export function AgencySidebar({ agencyName, plan, settings }: AgencySidebarProps
             })}
           </div>
         ))}
+        {/* Master Control link — only for ConversionSystem */}
+        {isMaster && (
+          <div className="pt-3">
+            <div className={cn('text-[10px] uppercase tracking-widest font-medium px-3 pb-1', hasBranding ? 'text-white/40' : 'text-gray-500')}>
+              Platform
+            </div>
+            <Link
+              href="/master"
+              onClick={() => setMobileOpen(false)}
+              className={cn(
+                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
+                pathname.startsWith('/master')
+                  ? 'bg-yellow-500/20 text-yellow-300 font-medium'
+                  : hasBranding
+                    ? 'text-white/70 hover:bg-white/10 hover:text-white'
+                    : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+              )}
+            >
+              <Crown className="h-4 w-4 shrink-0 text-yellow-400" />
+              Master Control
+            </Link>
+          </div>
+        )}
       </nav>
 
       {/* Agency's Own OpenClaw Terminal — dedicated container, separate from clients */}
