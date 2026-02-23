@@ -469,8 +469,14 @@ export async function chatViaGateway(
     sessionId?: string;
     apiKey?: string;
     model?: string;
+    /** Full persona + business context system prompt */
+    systemPrompt?: string;
+    /** Prior conversation turns (oldest first) */
+    history?: Array<{ role: 'user' | 'assistant'; content: string }>;
+    /** OpenAI-compatible tool definitions for function calling */
+    tools?: Array<{ type: string; function: { name: string; description: string; parameters: unknown } }>;
   } = {}
-): Promise<{ reply: string; sessionId: string } | { error: string }> {
+): Promise<{ reply: string; sessionId: string; toolCalls?: Array<{ name: string; args: Record<string, unknown> }> } | { error: string }> {
   const supabase = getSupabase();
 
   const { data: client } = await supabase
@@ -484,9 +490,32 @@ export async function chatViaGateway(
   }
 
   try {
-    // Use OpenClaw's /v1/chat/completions (OpenAI-compatible) HTTP API
+    // Build message array: system → history → current user message
     const messages: Array<{ role: string; content: string }> = [];
+
+    if (options.systemPrompt) {
+      messages.push({ role: 'system', content: options.systemPrompt });
+    }
+
+    if (options.history && options.history.length > 0) {
+      for (const turn of options.history) {
+        messages.push({ role: turn.role, content: turn.content });
+      }
+    }
+
     messages.push({ role: 'user', content: message });
+
+    const requestBody: Record<string, unknown> = {
+      model: options.model || 'openai/gpt-4o-mini',
+      messages,
+      stream: false,
+    };
+
+    // Add tools if provided (function calling)
+    if (options.tools && options.tools.length > 0) {
+      requestBody.tools = options.tools;
+      requestBody.tool_choice = 'auto';
+    }
 
     const res = await fetch(`${client.gateway_url}/v1/chat/completions`, {
       method: 'POST',
@@ -494,11 +523,7 @@ export async function chatViaGateway(
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${client.gateway_token}`,
       },
-      body: JSON.stringify({
-        model: options.model || 'openai/gpt-4o-mini',
-        messages,
-        stream: false,
-      }),
+      body: JSON.stringify(requestBody),
       signal: AbortSignal.timeout(30_000),
     });
 
@@ -508,7 +533,20 @@ export async function chatViaGateway(
     }
 
     const data = await res.json();
-    const reply = data?.choices?.[0]?.message?.content || '';
+    const choice = data?.choices?.[0];
+    const reply = choice?.message?.content || '';
+
+    // Return tool calls if present (caller handles execution)
+    const toolCalls = choice?.message?.tool_calls;
+    if (toolCalls && toolCalls.length > 0) {
+      const calls = toolCalls.map((tc: { function: { name: string; arguments: string } }) => ({
+        name: tc.function.name,
+        args: JSON.parse(tc.function.arguments || '{}'),
+        id: (tc as { id?: string }).id,
+      }));
+      return { reply: reply || '', sessionId: options.sessionId || 'default', toolCalls: calls };
+    }
+
     return { reply, sessionId: options.sessionId || 'default' };
   } catch (error) {
     return { error: error instanceof Error ? error.message : String(error) };
