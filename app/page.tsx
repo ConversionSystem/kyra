@@ -419,21 +419,51 @@ export default function HomePage() {
       </section>
 
       {/* ── Footer ──────────────────────────────────────────────────────── */}
-      <footer className="border-t border-white/10 py-8">
-        <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5">
-            <div className="w-6 h-6 rounded bg-indigo-600 flex items-center justify-center font-black text-xs">K</div>
-            <span className="font-bold text-sm">Kyra AI</span>
-            <span className="text-slate-500 text-sm">by Conversion System</span>
+      <footer className="border-t border-white/10 py-16">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 mb-12">
+            <div>
+              <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Product</h4>
+              <ul className="space-y-2">
+                {[{ href: '/try/dental', label: '💬 Try Live Demo' }, { href: '/pricing', label: 'Pricing' }, { href: '/changelog', label: 'Changelog' }, { href: '/vs', label: 'vs. Chatbots' }, { href: '/roi', label: 'ROI Calculator' }, { href: '/get-demo', label: 'Get a Demo' }].map(l => (
+                  <li key={l.href}><Link href={l.href} className="text-sm text-slate-500 hover:text-white transition">{l.label}</Link></li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Live Demos</h4>
+              <ul className="space-y-2">
+                {[{ href: '/try/dental', label: '🦷 Dental AI' }, { href: '/try/realestate', label: '🏡 Real Estate AI' }, { href: '/try/auto', label: '🚗 Auto AI' }, { href: '/try/cannabis', label: '🌿 Cannabis AI' }, { href: '/try/restaurant', label: '🍽️ Restaurant AI' }, { href: '/try/medspa', label: '✨ Med Spa AI' }].map(l => (
+                  <li key={l.href}><Link href={l.href} className="text-sm text-slate-500 hover:text-white transition">{l.label}</Link></li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Resources</h4>
+              <ul className="space-y-2">
+                {[{ href: '/blog', label: 'Blog' }, { href: '/help', label: 'Help & FAQ' }, { href: '/blog/ghl-ai-employee-agency', label: 'Agency Playbook' }, { href: '/blog/agency-recurring-revenue-ai', label: '$10K/mo Guide' }, { href: '/blog/ai-for-dental-practices', label: 'Dental AI Guide' }].map(l => (
+                  <li key={l.href}><Link href={l.href} className="text-sm text-slate-500 hover:text-white transition">{l.label}</Link></li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Company</h4>
+              <ul className="space-y-2">
+                {[{ href: '/privacy', label: 'Privacy Policy' }, { href: '/terms', label: 'Terms of Service' }, { href: '/signup/agency', label: 'Sign Up Free' }, { href: '/login', label: 'Sign In' }].map(l => (
+                  <li key={l.href}><Link href={l.href} className="text-sm text-slate-500 hover:text-white transition">{l.label}</Link></li>
+                ))}
+                <li><a href="mailto:angel@conversionsystem.com" className="text-sm text-slate-500 hover:text-white transition">Contact Support</a></li>
+                <li><a href="https://conversionsystem.com" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-500 hover:text-white transition">Conversion System</a></li>
+              </ul>
+            </div>
           </div>
-          <div className="flex items-center gap-6 text-sm text-slate-500">
-            <Link href="/demo/dental" className="hover:text-white transition">Demo</Link>
-            <Link href="/pricing" className="hover:text-white transition">Pricing</Link>
-            <Link href="/login" className="hover:text-white transition">Sign In</Link>
-            <Link href="/signup/agency" className="hover:text-white transition">Sign Up</Link>
-            <a href="https://conversionsystem.com" target="_blank" rel="noopener noreferrer" className="hover:text-white transition">
-              conversionsystem.com
-            </a>
+          <div className="border-t border-white/10 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-6 h-6 rounded bg-indigo-600 flex items-center justify-center font-black text-xs">K</div>
+              <span className="font-bold text-sm">Kyra AI</span>
+              <span className="text-slate-600 text-sm">by Conversion System</span>
+            </div>
+            <p className="text-slate-600 text-xs">© 2026 Conversion System. All rights reserved.</p>
           </div>
         </div>
       </footer>
