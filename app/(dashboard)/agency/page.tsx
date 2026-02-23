@@ -12,6 +12,7 @@ import {
   Clock,
 } from 'lucide-react';
 import CeoActionBoard from '@/components/dashboard/ceo-action-board';
+import AgencyAnalyticsStrip from '@/components/dashboard/agency-analytics-strip';
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -211,6 +212,17 @@ export default async function AgencyOverviewPage() {
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* ── Agency Analytics Strip ── */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">All Clients · This Week</h2>
+          <a href="/agency/conversations" className="text-xs text-indigo-500 hover:underline flex items-center gap-1">
+            View conversations <ArrowRight className="h-3 w-3" />
+          </a>
+        </div>
+        <AgencyAnalyticsStrip />
       </div>
 
       {/* ── Today at a Glance ── */}
