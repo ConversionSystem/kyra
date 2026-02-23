@@ -25,6 +25,8 @@ function AgencySignupPage() {
   const supabase = createClient();
   const searchParams = useSearchParams();
   const referralId = searchParams.get('ref') || '';
+  const fromAgency = searchParams.get('from') || '';
+  const trialDays = searchParams.get('trial') || '';
 
   const [step, setStep] = useState<1 | 2>(1);
   const [checkingAuth, setCheckingAuth] = useState(true);
@@ -151,11 +153,26 @@ function AgencySignupPage() {
       </nav>
 
       <div className="flex flex-col items-center justify-center px-4 py-16">
+        {/* Invite banner */}
+        {fromAgency && (
+          <div className="w-full max-w-md mb-8 rounded-xl bg-indigo-500/20 border border-indigo-500/30 px-5 py-4 flex items-start gap-3">
+            <span className="text-2xl shrink-0">🎉</span>
+            <div>
+              <p className="font-semibold text-white text-sm">
+                {fromAgency} invited you to Kyra
+              </p>
+              <p className="text-indigo-300 text-xs mt-0.5">
+                {trialDays ? `You get a free ${trialDays}-day trial — no credit card required.` : 'Sign up to get started with your free trial.'}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2 bg-white/10 border border-white/10 rounded-full px-4 py-1.5 text-sm font-medium mb-6">
             <span className="h-2 w-2 rounded-full bg-green-400 animate-pulse inline-block" />
-            Free during beta — no credit card required
+            {fromAgency ? `${trialDays || '30'}-day free trial — invited by ${fromAgency}` : 'Free during beta — no credit card required'}
           </div>
           <h1 className="text-3xl sm:text-4xl font-black mb-3">
             {step === 1 ? 'Create your account' : 'Name your agency'}

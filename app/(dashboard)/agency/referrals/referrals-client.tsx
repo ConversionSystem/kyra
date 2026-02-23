@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Copy, CheckCircle2, Gift, Users, DollarSign, TrendingUp, ExternalLink } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Copy, CheckCircle2, Gift, Users, DollarSign, TrendingUp, ExternalLink, RefreshCw, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -35,11 +35,30 @@ const statusLabels: Record<string, string> = {
   paid_out:  '💰 Paid Out',
 };
 
-export default function ReferralsClient({ agencyId, agencyName, referrals, stats }: Props) {
+export default function ReferralsClient({ agencyId: _agencyId, agencyName, referrals, stats }: Props) {
   const [copied, setCopied] = useState<string | null>(null);
-  const BASE = typeof window !== 'undefined' ? window.location.origin : 'https://kyra.conversionsystem.com';
+  const [inviteUrl, setInviteUrl] = useState<string>('');
+  const [inviteClicks, setInviteClicks] = useState(0);
+  const [loadingInvite, setLoadingInvite] = useState(true);
+  const [rotatingCode, setRotatingCode] = useState(false);
 
-  const refUrl = `${BASE}/ref/${agencyId}`;
+  useEffect(() => {
+    fetch('/api/agency/invite')
+      .then((r) => r.json())
+      .then((d) => { setInviteUrl(d.url ?? ''); setInviteClicks(d.clicks ?? 0); })
+      .finally(() => setLoadingInvite(false));
+  }, []);
+
+  const rotateCode = async () => {
+    setRotatingCode(true);
+    const res = await fetch('/api/agency/invite', { method: 'POST' });
+    const d = await res.json();
+    setInviteUrl(d.url ?? '');
+    setInviteClicks(0);
+    setRotatingCode(false);
+  };
+
+  const refUrl = inviteUrl;
 
   const copy = (text: string, key: string) => {
     navigator.clipboard.writeText(text).then(() => {
@@ -106,16 +125,25 @@ export default function ReferralsClient({ agencyId, agencyName, referrals, stats
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex items-center gap-2">
-            <div className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 font-mono text-sm text-gray-700 truncate">
-              {refUrl}
+          {/* Invite clicks stat */}
+          {inviteClicks > 0 && (
+            <div className="text-xs text-indigo-600 bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-1.5 inline-flex items-center gap-1.5 mb-2">
+              👀 {inviteClicks} people clicked your invite link
             </div>
-            <Button size="sm" variant="outline" className="shrink-0 gap-1.5" onClick={() => copy(refUrl, 'link')}>
+          )}
+          <div className="flex items-center gap-2">
+            <div className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 font-mono text-xs text-gray-700 truncate">
+              {loadingInvite ? 'Generating your link...' : (refUrl || 'Loading...')}
+            </div>
+            <Button size="sm" variant="outline" className="shrink-0 gap-1.5" onClick={() => copy(refUrl, 'link')} disabled={loadingInvite || !refUrl}>
               {copied === 'link' ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
               {copied === 'link' ? 'Copied' : 'Copy'}
             </Button>
-            <Button size="sm" variant="outline" className="shrink-0" onClick={() => window.open(refUrl, '_blank')}>
+            <Button size="sm" variant="outline" className="shrink-0" onClick={() => window.open(refUrl, '_blank')} disabled={!refUrl}>
               <ExternalLink className="h-3.5 w-3.5" />
+            </Button>
+            <Button size="sm" variant="ghost" className="shrink-0 text-gray-400 hover:text-gray-600" onClick={rotateCode} disabled={rotatingCode} title="Generate new link">
+              {rotatingCode ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
             </Button>
           </div>
 
