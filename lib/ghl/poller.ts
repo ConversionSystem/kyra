@@ -26,6 +26,7 @@ import { resolveNativeModel } from '@/lib/agency/ai-models';
 import { GHL_TOOL_DEFINITIONS, executeTool, type ToolContext } from './ghl-tools';
 import { getConversationHistory, saveConversationTurn } from './conversation-memory';
 import { deductCredit } from '@/lib/billing/credit-engine';
+import { routeMessage } from './model-router';
 import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
 
 const GHL_API_BASE = 'https://services.leadconnectorhq.com';
@@ -429,6 +430,18 @@ async function processConversation(
     pipelineId: (cc.pipeline_id as string) || undefined,
   };
 
+  // ── Smart model routing: pick cheapest model for this message ────────
+  let routedModel = byokKey?.model;
+  if (byokKey?.provider && byokKey?.model) {
+    const route = routeMessage(byokKey.provider, byokKey.model, latestInbound.body);
+    routedModel = route.model;
+    if (route.complexity !== 'complex') {
+      console.log(
+        `[ghl/poller] 🧠 Model routing: "${route.complexity}" → ${route.model} (saves ~${route.savingsPct}% vs top model)`,
+      );
+    }
+  }
+
   // ── Call AI with system prompt + history + tools ─────────────────────
   let aiResponse = '';
   let escalation: { reason: string; urgency: string } | null = null;
@@ -436,7 +449,7 @@ async function processConversation(
   const firstResult = await chatViaGateway(client.id, latestInbound.body, {
     sessionId: sessionKey,
     apiKey: byokKey?.apiKey,
-    model: byokKey?.model,
+    model: routedModel,
     systemPrompt,
     history: historyMessages,
     tools: GHL_TOOL_DEFINITIONS,
@@ -480,11 +493,11 @@ async function processConversation(
       });
     }
 
-    // Get final response after tool execution
+    // Get final response after tool execution (use same routed model)
     const finalResult = await chatViaGateway(client.id, '', {
       sessionId: sessionKey,
       apiKey: byokKey?.apiKey,
-      model: byokKey?.model,
+      model: routedModel,
       systemPrompt,
       history: [
         ...historyMessages,
