@@ -18,7 +18,7 @@ export default async function AgencyLayout({
   if (!result) redirect('/signup/agency');
 
   const { agency, role } = result;
-  const isMaster = ['angel@conversionsystem.com'].includes(user.email ?? '');
+  const isMaster = ['hello@conversionsystem.com', 'angel@conversionsystem.com'].includes(user.email ?? '');
 
   return (
     <div className="min-h-screen bg-gray-50 lg:flex">
