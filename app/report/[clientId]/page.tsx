@@ -8,6 +8,7 @@ import { Zap, MessageSquare, Clock, CheckCircle2, AlertTriangle, TrendingUp, Loa
 interface Report {
   client: { id: string; name: string; industry: string; since: string };
   period: string;
+  branding?: { name: string; logoUrl: string | null; primaryColor: string };
   stats: {
     total_conversations: number;
     escalations: number;
@@ -15,6 +16,7 @@ interface Report {
     avg_response_seconds: number;
     channels_active: number;
     channel_breakdown: Record<string, number>;
+    hours_saved?: number;
   };
   sparkline: { date: string; count: number }[];
   generated_at: string;
@@ -82,7 +84,9 @@ export default function ReportPage({ params }: { params: Promise<{ clientId: str
     </div>
   );
 
-  const { client, stats, sparkline } = report;
+  const { client, stats, sparkline, branding } = report;
+  const agencyName = branding?.name ?? 'Kyra AI';
+  const brandColor = branding?.primaryColor ?? '#4f46e5';
   const emoji = INDUSTRY_EMOJIS[client.industry?.toLowerCase()] ?? INDUSTRY_EMOJIS.default;
   const since = new Date(client.since).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
@@ -103,16 +107,38 @@ export default function ReportPage({ params }: { params: Promise<{ clientId: str
       icon: AlertTriangle, label: 'Escalations', value: stats.escalations.toLocaleString(),
       sub: 'Handed to human team', color: 'text-amber-600', bg: 'bg-amber-50',
     },
+    ...(stats.hours_saved
+      ? [{
+          icon: TrendingUp, label: 'Staff Hours Saved', value: `${stats.hours_saved}h`,
+          sub: 'Estimated at 4.5 min/conversation', color: 'text-purple-600', bg: 'bg-purple-50',
+        }]
+      : []),
   ];
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Agency brand bar */}
+      <div className="border-b border-gray-200 bg-white px-6 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {branding?.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={branding.logoUrl} alt={agencyName} className="h-7 w-auto max-w-[120px] object-contain" />
+          ) : (
+            <div className="h-7 w-7 rounded-lg flex items-center justify-center text-white text-xs font-black" style={{ backgroundColor: brandColor }}>
+              {agencyName.charAt(0).toUpperCase()}
+            </div>
+          )}
+          <span className="font-bold text-sm text-gray-800">{agencyName}</span>
+        </div>
+        <span className="text-xs text-gray-400">AI Performance Report</span>
+      </div>
+
       {/* Header */}
-      <div className="bg-gradient-to-br from-indigo-600 to-violet-700 text-white px-6 py-12 text-center">
+      <div className="text-white px-6 py-12 text-center" style={{ background: `linear-gradient(135deg, ${brandColor}, ${brandColor}cc)` }}>
         <div className="text-5xl mb-3">{emoji}</div>
         <h1 className="text-3xl font-black mb-1">{client.name}</h1>
-        <p className="text-indigo-200 text-sm">AI Employee Performance Report · Last 30 Days</p>
-        <p className="text-indigo-300 text-xs mt-1">Active since {since}</p>
+        <p className="text-white/80 text-sm">AI Employee Performance Report · Last 30 Days</p>
+        <p className="text-white/60 text-xs mt-1">Active since {since}</p>
       </div>
 
       <div className="max-w-3xl mx-auto px-4 py-10">
@@ -195,7 +221,7 @@ export default function ReportPage({ params }: { params: Promise<{ clientId: str
         <div className="text-center border-t border-gray-200 pt-8">
           <div className="flex items-center justify-center gap-2 text-gray-400 text-sm mb-2">
             <Zap className="h-4 w-4 text-indigo-400" />
-            <span>Powered by <Link href="https://kyra.conversionsystem.com" className="text-indigo-600 hover:underline">Kyra AI</Link></span>
+            <span>Report by <strong className="text-gray-700">{agencyName}</strong>{branding?.name && branding.name !== 'Kyra AI' ? '' : <> · <Link href="https://kyra.conversionsystem.com" className="text-indigo-500 hover:underline">Kyra AI</Link></>}</span>
           </div>
           <p className="text-xs text-gray-400">
             Report generated {new Date(report.generated_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}

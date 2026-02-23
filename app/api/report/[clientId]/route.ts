@@ -27,7 +27,7 @@ export async function GET(_req: NextRequest, ctx: Context) {
   // ── Client info ────────────────────────────────────────────────────────────
   const { data: client, error: clientErr } = await sb
     .from('agency_clients')
-    .select('id, name, industry, created_at, status')
+    .select('id, name, industry, created_at, status, agency_id')
     .eq('id', clientId)
     .eq('status', 'active') // only share reports for active clients
     .single();
@@ -35,6 +35,29 @@ export async function GET(_req: NextRequest, ctx: Context) {
   if (clientErr || !client) {
     return NextResponse.json({ error: 'Report not found' }, { status: 404 });
   }
+
+  // ── Agency branding (for white-label report) ──────────────────────────────
+  let branding = {
+    name: 'Kyra AI',
+    logoUrl: null as string | null,
+    primaryColor: '#4f46e5',
+  };
+  if (client.agency_id) {
+    const { data: agency } = await sb
+      .from('agencies')
+      .select('name, settings')
+      .eq('id', client.agency_id)
+      .single();
+    if (agency) {
+      const s = (agency.settings ?? {}) as Record<string, unknown>;
+      branding = {
+        name: agency.name ?? 'Kyra AI',
+        logoUrl: (s.logo_url as string | null) ?? null,
+        primaryColor: (s.primary_color as string | null) ?? '#4f46e5',
+      };
+    }
+  }
+
 
   // ── Message stats (last 30 days) ───────────────────────────────────────────
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
@@ -93,6 +116,7 @@ export async function GET(_req: NextRequest, ctx: Context) {
         industry: client.industry,
         since: client.created_at,
       },
+      branding,
       period: '30 days',
       stats: {
         total_conversations: totalConvs,
