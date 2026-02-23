@@ -1,4 +1,13 @@
 // ============================================================================
+// Kyra Credits — Welcome Grant
+// New agencies get $2 in free credits to test the platform.
+// Enough for ~200 AI conversations. Not enough to run a real business.
+// ============================================================================
+
+export const WELCOME_CREDITS = 200; // $2 worth at $0.01/credit
+export const WELCOME_CREDIT_DESCRIPTION = 'Welcome gift — $2 in free credits to test Kyra 🎁';
+
+// ============================================================================
 // Kyra Credits — Pack Definitions
 // 1 Credit = 1 AI conversation (~1,500 tokens)
 // Our cost: ~0.45 credits/conv. Agency pays 1. ~55% margin.

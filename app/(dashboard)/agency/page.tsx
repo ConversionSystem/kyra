@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { getAgencyForUser, getAgencyClients } from '@/lib/agency/queries';
+import { getAgencyCredits } from '@/lib/billing/credit-engine';
+import { WELCOME_CREDITS } from '@/lib/billing/credits';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -53,8 +55,13 @@ export default async function AgencyOverviewPage() {
   if (!result) redirect('/signup/agency');
 
   const { agency } = result;
-  const clients = await getAgencyClients(agency.id);
+  const [clients, agencyCredits] = await Promise.all([
+    getAgencyClients(agency.id),
+    getAgencyCredits(agency.id).catch(() => ({ balance: 0, lifetimePurchased: 0, lifetimeUsed: 0 })),
+  ]);
   const isAdmin = ['hello@conversionsystem.com', 'angel@conversionsystem.com'].includes(user.email ?? '');
+  // Show trial credits banner when: still on welcome credits, haven't purchased yet
+  const showTrialCreditsBanner = agencyCredits.lifetimePurchased === 0 && agencyCredits.balance > 0;
 
   // Stats
   const totalCount = clients.length;
@@ -161,6 +168,34 @@ export default async function AgencyOverviewPage() {
 
       {/* ── What's New Banner ── */}
       <WhatsNewBanner />
+
+      {/* ── Trial Credits Banner ── */}
+      {showTrialCreditsBanner && (
+        <div className="flex items-center gap-4 rounded-xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-purple-50 px-4 py-3.5">
+          <span className="text-2xl shrink-0">🪙</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-indigo-900">
+              You have {agencyCredits.balance} free credits in your account — ${(agencyCredits.balance * 0.01).toFixed(0)} worth
+            </p>
+            <p className="text-xs text-indigo-600 mt-0.5">
+              Enough for ~{agencyCredits.balance} AI conversations to test Kyra.
+              Top up or add your own API key when ready to scale.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Link href="/agency/credits">
+              <Button size="sm" variant="outline" className="border-indigo-300 text-indigo-700 hover:bg-indigo-100 text-xs h-8 px-3">
+                Top up
+              </Button>
+            </Link>
+            <Link href="/agency/api-keys">
+              <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-xs h-8 px-3">
+                Add API Key
+              </Button>
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* ── Setup Checklist ── */}
       <AgencyChecklist {...checklistProps} />
