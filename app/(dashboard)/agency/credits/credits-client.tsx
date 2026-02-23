@@ -280,6 +280,22 @@ export function CreditsClient({
         </p>
       </div>
 
+      {/* Trial credits banner — shown when still on free welcome credits */}
+      {lifetimePurchased === 0 && balance > 0 && checkoutStatus !== 'success' && (
+        <div className="flex items-start gap-3 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3.5 text-sm">
+          <span className="text-2xl leading-none mt-0.5">🎁</span>
+          <div className="flex-1">
+            <p className="font-semibold text-indigo-900">You have ${(balance / 100).toFixed(0) === '0' ? '<1' : (balance * 0.01).toFixed(0)} in free trial credits — {balance} credits remaining</p>
+            <p className="text-indigo-700 text-xs mt-0.5">
+              Enough to run ~{balance} AI conversations while you evaluate Kyra.
+              Top up when you&apos;re ready to scale, or add your own API key in{' '}
+              <a href="/agency/api-keys" className="underline font-medium">API Keys</a>.
+            </p>
+          </div>
+          <span className="text-xs text-indigo-400 whitespace-nowrap">Free trial</span>
+        </div>
+      )}
+
       {/* Status banners */}
       {checkoutStatus === 'success' && (
         <div className="flex items-center gap-3 bg-green-50 border border-green-200 text-green-800 rounded-xl px-4 py-3 text-sm">
