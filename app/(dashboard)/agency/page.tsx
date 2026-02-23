@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import CeoActionBoard from '@/components/dashboard/ceo-action-board';
 import AgencyAnalyticsStrip from '@/components/dashboard/agency-analytics-strip';
+import WhatsNewBanner from '@/components/dashboard/whats-new-banner';
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -142,6 +143,9 @@ export default async function AgencyOverviewPage() {
           </Button>
         </Link>
       </div>
+
+      {/* ── What's New Banner ── */}
+      <WhatsNewBanner />
 
       {/* ── CEO Action Board (admin only) ── */}
       {isAdmin && (
