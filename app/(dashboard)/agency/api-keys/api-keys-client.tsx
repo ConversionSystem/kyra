@@ -26,7 +26,9 @@ import {
   AlertCircle,
   CheckCircle2,
   Crown,
+  ChevronDown,
 } from 'lucide-react';
+import { PROVIDER_MODELS, DEFAULT_MODEL_ID } from '@/lib/agency/ai-models';
 
 // ── Provider definitions ──────────────────────────────────────────────────────
 
@@ -38,40 +40,36 @@ const AI_PROVIDERS = [
     placeholder: 'sk-ant-api03-...',
     docsUrl: 'https://console.anthropic.com/settings/keys',
     icon: '🧠',
-    activeModel: 'Claude Haiku',
     badge: 'Highest Priority',
     badgeColor: 'bg-violet-100 text-violet-700',
   },
   {
     id: 'openrouter',
     name: 'OpenRouter',
-    description: 'Access 100+ models through one key',
+    description: '100+ models through one key',
     placeholder: 'sk-or-v1-...',
     docsUrl: 'https://openrouter.ai/keys',
     icon: '🌐',
-    activeModel: 'Claude Sonnet (via OpenRouter)',
     badge: 'Most flexible',
     badgeColor: 'bg-blue-100 text-blue-700',
   },
   {
     id: 'openai',
     name: 'OpenAI',
-    description: 'GPT-4o · GPT-4o mini · o1',
+    description: 'GPT-4o · GPT-4o mini · o1 · o3',
     placeholder: 'sk-...',
     docsUrl: 'https://platform.openai.com/api-keys',
     icon: '🤖',
-    activeModel: 'GPT-4o mini',
     badge: null,
     badgeColor: '',
   },
   {
     id: 'google',
     name: 'Google AI',
-    description: 'Gemini Flash · Gemini Pro',
+    description: 'Gemini Flash · Gemini Pro · Gemini 2.0',
     placeholder: 'AIza...',
     docsUrl: 'https://aistudio.google.com/app/apikey',
     icon: '🔷',
-    activeModel: 'Gemini Flash',
     badge: null,
     badgeColor: '',
   },
@@ -82,6 +80,7 @@ type ProviderId = (typeof AI_PROVIDERS)[number]['id'];
 interface ActiveProvider {
   provider: ProviderId;
   model: string;
+  modelId: string;
 }
 
 interface TestState {
@@ -100,6 +99,9 @@ export function ApiKeysClient({ agencyId: _agencyId }: ApiKeysClientProps) {
   const [keys, setKeys] = useState<Record<string, string>>({});
   const [savedKeys, setSavedKeys] = useState<Record<string, boolean>>({});
   const [activeProvider, setActiveProvider] = useState<ActiveProvider | null>(null);
+  // selectedModels tracks what's saved; pendingModels tracks UI selections not yet saved
+  const [selectedModels, setSelectedModels] = useState<Record<string, string>>({});
+  const [pendingModels, setPendingModels] = useState<Record<string, string>>({});
   const [showKey, setShowKey] = useState<Record<string, boolean>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -113,6 +115,7 @@ export function ApiKeysClient({ agencyId: _agencyId }: ApiKeysClientProps) {
       if (res.ok) {
         const data = await res.json();
         setSavedKeys(data.configured || {});
+        setSelectedModels(data.selectedModels || {});
         setActiveProvider(data.active || null);
       }
     } catch {
@@ -126,15 +129,21 @@ export function ApiKeysClient({ agencyId: _agencyId }: ApiKeysClientProps) {
     loadKeys();
   }, [loadKeys]);
 
-  // ── Save keys ──────────────────────────────────────────────────────────────
+  // ── Save ──────────────────────────────────────────────────────────────────
 
   const handleSave = async () => {
     const keysToSave = Object.fromEntries(
       Object.entries(keys).filter(([, v]) => v.trim())
     );
 
-    if (Object.keys(keysToSave).length === 0) {
-      setSaveMessage({ type: 'error', text: 'Enter at least one API key to save.' });
+    // Collect model changes: pending overrides + any new keys' model choices
+    const modelsToSave: Record<string, string> = { ...pendingModels };
+
+    const hasKeyChanges = Object.keys(keysToSave).length > 0;
+    const hasModelChanges = Object.keys(modelsToSave).length > 0;
+
+    if (!hasKeyChanges && !hasModelChanges) {
+      setSaveMessage({ type: 'error', text: 'Nothing to save. Enter a key or change a model.' });
       return;
     }
 
@@ -145,7 +154,7 @@ export function ApiKeysClient({ agencyId: _agencyId }: ApiKeysClientProps) {
       const res = await fetch('/api/agency/api-keys', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ keys: keysToSave }),
+        body: JSON.stringify({ keys: keysToSave, selectedModels: modelsToSave }),
       });
 
       if (!res.ok) {
@@ -155,16 +164,15 @@ export function ApiKeysClient({ agencyId: _agencyId }: ApiKeysClientProps) {
 
       const data = await res.json();
       setSavedKeys(data.configured || {});
+      setSelectedModels(data.selectedModels || {});
       setActiveProvider(data.active || null);
       setKeys({});
+      setPendingModels({});
 
-      const count = Object.keys(keysToSave).length;
       setSaveMessage({
         type: 'success',
-        text: `${count} key${count > 1 ? 's' : ''} saved. Containers are being updated (~30s).`,
+        text: `Saved! Active model: ${data.active?.model || 'Kyra default'}. Containers updating (~30s).`,
       });
-
-      // Clear success after 8s
       setTimeout(() => setSaveMessage(null), 8000);
     } catch (err) {
       setSaveMessage({
@@ -176,33 +184,25 @@ export function ApiKeysClient({ agencyId: _agencyId }: ApiKeysClientProps) {
     }
   };
 
-  // ── Test a saved key ───────────────────────────────────────────────────────
+  // ── Test ──────────────────────────────────────────────────────────────────
 
   const handleTest = async (providerId: string) => {
     setTestStates((prev) => ({ ...prev, [providerId]: { status: 'testing' } }));
-
     try {
       const res = await fetch('/api/agency/api-keys/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ provider: providerId }),
       });
-
       const data = await res.json();
 
-      if (data.ok) {
-        setTestStates((prev) => ({
-          ...prev,
-          [providerId]: { status: 'ok', latencyMs: data.latencyMs },
-        }));
-      } else {
-        setTestStates((prev) => ({
-          ...prev,
-          [providerId]: { status: 'fail', error: data.error || 'Connection failed' },
-        }));
-      }
+      setTestStates((prev) => ({
+        ...prev,
+        [providerId]: data.ok
+          ? { status: 'ok', latencyMs: data.latencyMs }
+          : { status: 'fail', error: data.error || 'Connection failed' },
+      }));
 
-      // Reset after 10s
       setTimeout(() => {
         setTestStates((prev) => ({ ...prev, [providerId]: { status: 'idle' } }));
       }, 10000);
@@ -214,13 +214,13 @@ export function ApiKeysClient({ agencyId: _agencyId }: ApiKeysClientProps) {
     }
   };
 
-  // ── Delete a saved key ─────────────────────────────────────────────────────
+  // ── Delete ────────────────────────────────────────────────────────────────
 
   const handleDelete = async (providerId: string) => {
-    if (!window.confirm(`Remove the ${AI_PROVIDERS.find((p) => p.id === providerId)?.name} key? Your AI will fall back to the next configured provider.`)) return;
+    const providerName = AI_PROVIDERS.find((p) => p.id === providerId)?.name;
+    if (!window.confirm(`Remove the ${providerName} key? Your AI will fall back to the next configured provider.`)) return;
 
     setDeletingProvider(providerId);
-
     try {
       const res = await fetch('/api/agency/api-keys', {
         method: 'DELETE',
@@ -232,6 +232,7 @@ export function ApiKeysClient({ agencyId: _agencyId }: ApiKeysClientProps) {
 
       const data = await res.json();
       setSavedKeys(data.configured || {});
+      setSelectedModels(data.selectedModels || {});
       setActiveProvider(data.active || null);
     } catch {
       setSaveMessage({ type: 'error', text: 'Failed to remove key. Try again.' });
@@ -240,12 +241,14 @@ export function ApiKeysClient({ agencyId: _agencyId }: ApiKeysClientProps) {
     }
   };
 
-  // ── Derived state ──────────────────────────────────────────────────────────
+  // ── Derived ───────────────────────────────────────────────────────────────
 
   const hasAnyCustomKey = Object.values(savedKeys).some(Boolean);
-  const hasUnsavedKeys = Object.values(keys).some((v) => v.trim());
+  const hasUnsavedChanges =
+    Object.values(keys).some((v) => v.trim()) ||
+    Object.keys(pendingModels).length > 0;
 
-  // ── Loading state ──────────────────────────────────────────────────────────
+  // ── Loading ───────────────────────────────────────────────────────────────
 
   if (isLoading) {
     return (
@@ -257,12 +260,13 @@ export function ApiKeysClient({ agencyId: _agencyId }: ApiKeysClientProps) {
 
   return (
     <div className="p-4 sm:p-6 md:p-8 max-w-3xl">
+
       {/* Header */}
       <div className="mb-8 flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">AI Model Keys</h1>
           <p className="mt-1 text-gray-500">
-            Control which AI model powers your terminals and your clients&apos; AIs.
+            Pick the provider and exact model that powers your AI employees.
           </p>
         </div>
         <button
@@ -274,11 +278,9 @@ export function ApiKeysClient({ agencyId: _agencyId }: ApiKeysClientProps) {
         </button>
       </div>
 
-      {/* ── ACTIVE MODEL BANNER ── */}
+      {/* ── Active Model Banner ── */}
       <div className={`rounded-xl border p-5 mb-8 ${
-        activeProvider
-          ? 'border-indigo-200 bg-indigo-50'
-          : 'border-green-200 bg-green-50'
+        activeProvider ? 'border-indigo-200 bg-indigo-50' : 'border-green-200 bg-green-50'
       }`}>
         <div className="flex items-start gap-4">
           <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
@@ -291,43 +293,40 @@ export function ApiKeysClient({ agencyId: _agencyId }: ApiKeysClientProps) {
           </div>
           <div className="flex-1">
             <p className={`font-semibold text-base ${activeProvider ? 'text-indigo-900' : 'text-green-900'}`}>
-              {activeProvider ? 'Your AI is using your key' : 'Your AI is live — using Kyra\'s key'}
+              {activeProvider ? 'Using your own key' : 'Using Kyra\'s default key'}
             </p>
             <p className={`mt-1 text-sm ${activeProvider ? 'text-indigo-700' : 'text-green-700'}`}>
               {activeProvider
-                ? `Currently routing all AI conversations through your ${AI_PROVIDERS.find(p => p.id === activeProvider.provider)?.name} key.`
-                : 'Kyra provides a shared OpenAI key for all your AIs. Add your own to switch models and pay at cost.'}
+                ? `All AI conversations route through your ${AI_PROVIDERS.find((p) => p.id === activeProvider.provider)?.name} key.`
+                : 'Kyra provides a shared OpenAI key. Add your own to pick any model and pay at cost.'}
             </p>
 
             {/* Active model pill */}
             <div className="mt-3 flex items-center gap-2 flex-wrap">
               <div className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold ${
-                activeProvider
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-green-600 text-white'
+                activeProvider ? 'bg-indigo-600 text-white' : 'bg-green-600 text-white'
               }`}>
                 <Crown className="h-3.5 w-3.5" />
-                Active model: {activeProvider ? activeProvider.model : 'GPT-4o mini (Kyra default)'}
+                {activeProvider ? activeProvider.model : 'GPT-4o mini (Kyra default)'}
               </div>
               {activeProvider && (
                 <span className="text-xs text-indigo-500">
-                  via {AI_PROVIDERS.find(p => p.id === activeProvider.provider)?.name}
+                  via {AI_PROVIDERS.find((p) => p.id === activeProvider.provider)?.name}
                 </span>
               )}
             </div>
           </div>
         </div>
 
-        {/* Priority note */}
         {hasAnyCustomKey && (
           <div className="mt-4 rounded-lg bg-white/70 border border-indigo-100 px-4 py-3 text-xs text-indigo-800">
-            <strong>Priority order:</strong> Anthropic → OpenRouter → OpenAI → Google.
-            The first configured provider always wins. Remove lower-priority keys if you only want one active.
+            <strong>Priority:</strong> Anthropic → OpenRouter → OpenAI → Google.
+            The first configured provider always wins. Use the model selector on each card to choose the exact model.
           </div>
         )}
       </div>
 
-      {/* Success / error message */}
+      {/* Save message */}
       {saveMessage && (
         <div className={`rounded-md px-4 py-3 text-sm mb-6 flex items-start gap-2 ${
           saveMessage.type === 'success'
@@ -342,25 +341,31 @@ export function ApiKeysClient({ agencyId: _agencyId }: ApiKeysClientProps) {
         </div>
       )}
 
-      {/* Section title */}
       <div className="mb-4">
         <h2 className="text-base font-semibold text-gray-800">
-          {hasAnyCustomKey ? 'Manage your API keys' : 'Add your own key to upgrade'}
+          {hasAnyCustomKey ? 'Manage your keys & models' : 'Add your own key'}
         </h2>
         <p className="text-sm text-gray-500 mt-0.5">
-          You only need one provider. The highest-priority configured key will be used.
+          You only need one provider. Change the model at any time — no need to re-enter the key.
         </p>
       </div>
 
-      {/* ── Provider cards ── */}
+      {/* ── Provider Cards ── */}
       <div className="space-y-3">
         {AI_PROVIDERS.map((provider) => {
           const isConfigured = savedKeys[provider.id];
           const isActive = activeProvider?.provider === provider.id;
-          const currentValue = keys[provider.id] || '';
+          const currentKeyValue = keys[provider.id] || '';
           const isVisible = showKey[provider.id];
           const testState = testStates[provider.id] || { status: 'idle' };
           const isDeleting = deletingProvider === provider.id;
+          const models = PROVIDER_MODELS[provider.id] || [];
+
+          // Current model: pending change > saved > default
+          const savedModelId = selectedModels[provider.id] || DEFAULT_MODEL_ID[provider.id];
+          const pendingModelId = pendingModels[provider.id];
+          const displayModelId = pendingModelId || savedModelId;
+          const hasModelChange = pendingModelId && pendingModelId !== savedModelId;
 
           return (
             <Card
@@ -392,17 +397,14 @@ export function ApiKeysClient({ agencyId: _agencyId }: ApiKeysClientProps) {
                           </span>
                         )}
                         {isConfigured && !isActive && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">
                             <Check className="h-3 w-3" />
-                            Saved (not active)
+                            Saved
                           </span>
                         )}
                       </CardTitle>
                       <CardDescription className="text-xs mt-0.5">
                         {provider.description}
-                        {isConfigured && (
-                          <span className="ml-2 text-gray-400">→ routes to <strong>{provider.activeModel}</strong></span>
-                        )}
                       </CardDescription>
                     </div>
                   </div>
@@ -410,17 +412,16 @@ export function ApiKeysClient({ agencyId: _agencyId }: ApiKeysClientProps) {
                     href={provider.docsUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1 transition-colors shrink-0"
+                    className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1 shrink-0"
                   >
-                    Get key
-                    <ExternalLink className="h-3 w-3" />
+                    Get key <ExternalLink className="h-3 w-3" />
                   </a>
                 </div>
               </CardHeader>
 
-              <CardContent className="pt-0 space-y-2">
+              <CardContent className="pt-0 space-y-3">
                 {/* Key input */}
-                <div className="relative flex-1">
+                <div className="relative">
                   <Input
                     type={isVisible ? 'text' : 'password'}
                     placeholder={
@@ -428,7 +429,7 @@ export function ApiKeysClient({ agencyId: _agencyId }: ApiKeysClientProps) {
                         ? '••••••••••••••• (saved — enter new to replace)'
                         : provider.placeholder
                     }
-                    value={currentValue}
+                    value={currentKeyValue}
                     onChange={(e) =>
                       setKeys((prev) => ({ ...prev, [provider.id]: e.target.value }))
                     }
@@ -445,10 +446,57 @@ export function ApiKeysClient({ agencyId: _agencyId }: ApiKeysClientProps) {
                   </button>
                 </div>
 
-                {/* Test + Delete buttons (only when key is saved) */}
+                {/* Model selector — shown when key is saved OR being added */}
+                {(isConfigured || currentKeyValue.trim()) && models.length > 0 && (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                      Model
+                      {hasModelChange && (
+                        <span className="ml-2 text-amber-600 font-medium">● unsaved change</span>
+                      )}
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={displayModelId}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setPendingModels((prev) => ({ ...prev, [provider.id]: val }));
+                        }}
+                        className="w-full appearance-none rounded-md border border-gray-200 bg-white px-3 py-2 pr-8 text-sm text-gray-800 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                      >
+                        {models.map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.label}
+                            {m.badge ? ` — ${m.badge}` : ''}
+                            {' · '}
+                            {m.desc}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    </div>
+
+                    {/* Selected model detail */}
+                    {(() => {
+                      const sel = models.find((m) => m.id === displayModelId);
+                      if (!sel) return null;
+                      return (
+                        <div className="mt-1.5 flex items-center gap-2 flex-wrap">
+                          {sel.badge && (
+                            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${sel.badgeColor}`}>
+                              {sel.badge}
+                            </span>
+                          )}
+                          <span className="text-xs text-gray-500">{sel.desc}</span>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+
+                {/* Test + Delete buttons */}
                 {isConfigured && (
-                  <div className="flex items-center gap-2">
-                    {/* Test button */}
+                  <div className="flex items-center gap-2 pt-1">
                     <button
                       onClick={() => handleTest(provider.id)}
                       disabled={testState.status === 'testing'}
@@ -471,7 +519,6 @@ export function ApiKeysClient({ agencyId: _agencyId }: ApiKeysClientProps) {
                       )}
                     </button>
 
-                    {/* Delete button */}
                     <button
                       onClick={() => handleDelete(provider.id)}
                       disabled={isDeleting}
@@ -498,19 +545,13 @@ export function ApiKeysClient({ agencyId: _agencyId }: ApiKeysClientProps) {
         </div>
         <Button
           onClick={handleSave}
-          disabled={isSaving || !hasUnsavedKeys}
+          disabled={isSaving || !hasUnsavedChanges}
           className="gap-2"
         >
           {isSaving ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Saving & updating containers…
-            </>
+            <><Loader2 className="h-4 w-4 animate-spin" /> Saving & updating…</>
           ) : (
-            <>
-              <Save className="h-4 w-4" />
-              Save & Apply Key
-            </>
+            <><Save className="h-4 w-4" /> Save & Apply</>
           )}
         </Button>
       </div>
@@ -522,23 +563,23 @@ export function ApiKeysClient({ agencyId: _agencyId }: ApiKeysClientProps) {
           {[
             {
               icon: '🟢',
-              title: 'Default (no key needed)',
-              desc: 'Kyra provides a shared OpenAI key — GPT-4o mini — for all your AIs. No cost to you.',
+              title: 'Default',
+              desc: 'Kyra provides a shared GPT-4o mini key. No setup needed — your AI works immediately.',
             },
             {
               icon: '🔑',
-              title: 'Your own key',
-              desc: 'Add your key to switch models (Claude, GPT-4o, Gemini…). Costs billed directly to your provider account.',
+              title: 'Your key + model',
+              desc: 'Add a key and pick any model (Claude Opus, GPT-4o, Gemini 2.0…). Billed directly by your provider.',
             },
             {
               icon: '⚡',
               title: 'Instant rollout',
-              desc: 'When you save or remove a key, all your running AI containers update automatically (~30s). Use "Test connection" to verify.',
+              desc: 'Save a key or change a model → all containers update automatically in ~30s.',
             },
             {
               icon: '🏆',
-              title: 'Priority order',
-              desc: 'If you add multiple keys, Anthropic wins first, then OpenRouter, then OpenAI, then Google.',
+              title: 'Priority',
+              desc: 'Anthropic → OpenRouter → OpenAI → Google. First configured provider wins. Active model shown at top.',
             },
           ].map((item) => (
             <div key={item.title} className="flex gap-3 text-sm">
