@@ -23,6 +23,8 @@ import { sendGHLMessage, getValidToken, refreshGHLToken } from './api';
 import { getClientPermissions, buildPermissionPrompt } from '@/lib/agency/permissions';
 import { resolveClientGateway, chatViaGateway } from '@/lib/ovh/provisioner';
 import { resolveNativeModel } from '@/lib/agency/ai-models';
+import { GHL_TOOL_DEFINITIONS, executeTool, type ToolContext } from './ghl-tools';
+import { getConversationHistory, saveConversationTurn } from './conversation-memory';
 import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
 
 const GHL_API_BASE = 'https://services.leadconnectorhq.com';
@@ -391,21 +393,21 @@ async function processConversation(
   // Fetch contact details from GHL for richer context
   const contactInfo = await fetchContactInfo(token, conv.contactId).catch(() => null);
 
-  // Build conversation history string from recent messages
-  const conversationHistory = buildConversationHistory(messages);
+  // ── DB Conversation Memory (last 10 turns for this contact) ──────────
+  const dbHistory = await getConversationHistory(client.id, conv.contactId, 10).catch(() => []);
 
-  // Build enriched system prompt
-  const systemContext = buildEnrichedSystemPrompt(
-    client,
-    client.agency_templates,
-    {
-      messageType: formatChannelName(messageType),
-      contactName,
-      contactInfo,
-      conversationHistory,
-    },
-    permissionPrompt,
-  );
+  // Fallback: if no DB history, use GHL messages as seed
+  const historyMessages: Array<{ role: 'user' | 'assistant'; content: string }> =
+    dbHistory.length > 0
+      ? dbHistory.map((t) => ({ role: t.role, content: t.content }))
+      : buildHistoryFromGHL(messages);
+
+  // ── Build enriched system prompt ─────────────────────────────────────
+  const systemPrompt = buildPersonaSystemPrompt(client, client.agency_templates, {
+    messageType: formatChannelName(messageType),
+    contactName,
+    contactInfo,
+  }, permissionPrompt);
 
   const sessionKey = `${getSessionKeyForClient(client.id)}:contact:${conv.contactId}`;
 
@@ -415,18 +417,90 @@ async function processConversation(
     throw new Error(`No isolated gateway provisioned for client ${client.id} (${client.name})`);
   }
 
-  // Call the client's own gateway via OVH provisioner
-  const chatResult = await chatViaGateway(client.id, latestInbound.body, {
+  // ── Tool context (for GHL function calling) ──────────────────────────
+  const cc = (client.container_config as Record<string, unknown>) || {};
+  const toolCtx: ToolContext = {
+    token,
+    contactId: conv.contactId,
+    locationId: client.ghl_location_id || '',
+    clientId: client.id,
+    calendarId: (cc.calendar_id as string) || undefined,
+    pipelineId: (cc.pipeline_id as string) || undefined,
+  };
+
+  // ── Call AI with system prompt + history + tools ─────────────────────
+  let aiResponse = '';
+  let escalation: { reason: string; urgency: string } | null = null;
+
+  const firstResult = await chatViaGateway(client.id, latestInbound.body, {
     sessionId: sessionKey,
     apiKey: byokKey?.apiKey,
     model: byokKey?.model,
+    systemPrompt,
+    history: historyMessages,
+    tools: GHL_TOOL_DEFINITIONS,
   });
 
-  if ('error' in chatResult) {
-    throw new Error(`Gateway error: ${chatResult.error}`);
+  if ('error' in firstResult) {
+    throw new Error(`Gateway error: ${firstResult.error}`);
   }
 
-  const aiResponse = chatResult.reply;
+  // ── Tool call execution loop ─────────────────────────────────────────
+  if (firstResult.toolCalls && firstResult.toolCalls.length > 0) {
+    console.log(`[ghl/poller] 🔧 Executing ${firstResult.toolCalls.length} tool call(s)...`);
+
+    // Build messages for the second turn (after tool results)
+    const toolMessages: Array<{ role: string; content: string; tool_call_id?: string; name?: string }> = [];
+
+    // Add assistant message with tool calls
+    toolMessages.push({
+      role: 'assistant',
+      content: firstResult.reply || '',
+    });
+
+    // Execute each tool and collect results
+    for (const toolCall of firstResult.toolCalls) {
+      const result = await executeTool(toolCall.name, toolCall.args as Record<string, unknown>, toolCtx);
+
+      console.log(`[ghl/poller] Tool "${toolCall.name}" → ${result.success ? '✅' : '❌'} ${result.error || JSON.stringify(result.data || {}).slice(0, 80)}`);
+
+      // Check for escalation
+      if (result.escalate) {
+        escalation = result.escalate;
+      }
+
+      toolMessages.push({
+        role: 'tool',
+        content: result.success
+          ? JSON.stringify(result.data || { success: true })
+          : JSON.stringify({ error: result.error }),
+        tool_call_id: (toolCall as { name: string; args: Record<string, unknown>; id?: string }).id,
+        name: toolCall.name,
+      });
+    }
+
+    // Get final response after tool execution
+    const finalResult = await chatViaGateway(client.id, '', {
+      sessionId: sessionKey,
+      apiKey: byokKey?.apiKey,
+      model: byokKey?.model,
+      systemPrompt,
+      history: [
+        ...historyMessages,
+        { role: 'user', content: latestInbound.body },
+        ...toolMessages.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+      ],
+    });
+
+    if (!('error' in finalResult)) {
+      aiResponse = finalResult.reply;
+    } else {
+      // Fallback to any partial response
+      aiResponse = firstResult.reply || "I'm looking into this for you. A team member will follow up shortly.";
+    }
+  } else {
+    aiResponse = firstResult.reply;
+  }
 
   if (!aiResponse?.trim()) {
     console.warn('[ghl/poller] Empty AI response, skipping');
@@ -434,12 +508,31 @@ async function processConversation(
   }
 
   const processingTimeMs = Date.now() - processingStart;
-  console.log(`[ghl/poller] AI response (${aiResponse.length} chars, ${processingTimeMs}ms), sending to ${contactName}`);
+  console.log(`[ghl/poller] 🤖 AI response (${aiResponse.length} chars, ${processingTimeMs}ms)${escalation ? ' 🚨 ESCALATION' : ''}, sending to ${contactName}`);
 
   // ── Send reply back through GHL ─────────────────────────────────────
   await sendGHLMessage(client.id, token, conv.contactId, aiResponse, messageType);
 
-  // ── Log the interaction ─────────────────────────────────────────────
+  // ── Save to DB (client_conversations for memory) ──────────────────────
+  try {
+    await saveConversationTurn({
+      clientId: client.id,
+      agencyId: client.agency_id,
+      contactId: conv.contactId,
+      contactName,
+      contactPhone: conv.phone || contactInfo?.phone || null,
+      contactEmail: contactInfo?.email || null,
+      conversationId: conv.id,
+      userMessage: latestInbound.body,
+      aiResponse,
+      channel: formatChannelName(messageType),
+      responseTimeMs: processingTimeMs,
+    });
+  } catch (saveErr) {
+    console.warn('[ghl/poller] Failed to save conversation:', saveErr);
+  }
+
+  // ── Log to ghl_message_log ─────────────────────────────────────────
   try {
     const supabase = createServiceClientWithoutCookies();
     await supabase.from('ghl_message_log').insert({
@@ -453,10 +546,32 @@ async function processConversation(
       ai_response: aiResponse,
       message_type: formatChannelName(messageType),
       response_time_ms: processingTimeMs,
+      escalated: !!escalation,
+      escalation_reason: escalation?.reason || null,
     });
   } catch (logErr) {
-    // Non-fatal — don't let logging failures stop the flow
     console.warn('[ghl/poller] Failed to log message:', logErr);
+  }
+
+  // ── Handle escalation ──────────────────────────────────────────────
+  if (escalation) {
+    console.warn(`[ghl/poller] 🚨 Escalation triggered for "${client.name}" / ${contactName}: ${escalation.reason} (${escalation.urgency})`);
+    // TODO: fire ESCALATION_WEBHOOK_URL if configured
+    const escalationWebhookUrl = process.env.ESCALATION_WEBHOOK_URL;
+    if (escalationWebhookUrl) {
+      fetch(escalationWebhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          client_name: client.name,
+          contact_name: contactName,
+          contact_phone: conv.phone,
+          reason: escalation.reason,
+          urgency: escalation.urgency,
+          last_message: latestInbound.body,
+        }),
+      }).catch(() => {});
+    }
   }
 
   console.log(`[ghl/poller] ✅ Reply sent to ${contactName} for "${client.name}" (${processingTimeMs}ms)`);
@@ -554,114 +669,142 @@ async function fetchContactInfo(
   };
 }
 
-// ── Conversation History Builder ──────────────────────────────────────────────
+// ── GHL Message History → AI Message Format ──────────────────────────────────
 
 /**
- * Build a formatted conversation history string from recent messages.
- * This gives the AI context about the conversation so far.
+ * Convert GHL messages (newest-first) into chronological AI history array.
+ * Used as a seed when no DB history exists yet.
  */
-function buildConversationHistory(messages: GHLMessageItem[]): string {
-  if (messages.length <= 1) return '';
+function buildHistoryFromGHL(
+  messages: GHLMessageItem[],
+): Array<{ role: 'user' | 'assistant'; content: string }> {
+  if (messages.length <= 1) return [];
 
-  // Messages come newest-first, reverse for chronological order
-  const chronological = [...messages].reverse();
+  // Reverse to chronological (oldest first), skip the last (current) message
+  const chronological = [...messages].reverse().slice(0, -1);
 
-  const lines: string[] = [];
-  for (const msg of chronological) {
-    if (!msg.body?.trim()) continue;
-    const sender = msg.direction === 'inbound' ? 'Customer' : 'AI';
-    const time = new Date(msg.dateAdded).toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-    lines.push(`[${time}] ${sender}: ${msg.body}`);
-  }
-
-  return lines.length > 0 ? lines.join('\n') : '';
+  return chronological
+    .filter((m) => m.body?.trim())
+    .map((m) => ({
+      role: m.direction === 'inbound' ? 'user' : 'assistant',
+      content: m.body,
+    }));
 }
 
-// ── Enriched System Prompt ────────────────────────────────────────────────────
+// ── Persona System Prompt ─────────────────────────────────────────────────────
 
-interface EnrichedContext {
+interface PromptContext {
   messageType: string;
   contactName: string;
   contactInfo: ContactInfo | null;
-  conversationHistory: string;
 }
 
 /**
- * Build a rich system prompt that includes:
- * - Client/business identity
- * - Contact details (who the customer is)
- * - Recent conversation history
- * - Behavioral instructions
+ * Build the AI employee's full system prompt.
+ *
+ * Priority of instructions:
+ * 1. container_config.persona (agency-written AI personality)
+ * 2. container_config.instructions (business-specific rules)
+ * 3. template.soul_template (industry default persona)
+ * 4. Sensible behavioral defaults
+ *
+ * Also injects: channel, date/time, contact details, business metadata.
  */
-function buildEnrichedSystemPrompt(
+function buildPersonaSystemPrompt(
   client: AgencyClient & { agency_templates?: AgencyTemplate | null },
   template: AgencyTemplate | null | undefined,
-  ctx: EnrichedContext,
+  ctx: PromptContext,
   permissionPrompt?: string,
 ): string {
+  const cc = (client.container_config as Record<string, unknown>) || {};
   const lines: string[] = [];
 
-  // ── Identity
-  lines.push(`You are an AI assistant for "${client.name}".`);
-  lines.push(`Industry: ${client.industry || 'General'}`);
-  lines.push(`You are responding to customer messages via ${ctx.messageType}.`);
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-US', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+  });
+  const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+  // ── Identity & persona ────────────────────────────────────────────────
+  const aiName = (cc.ai_name as string) || (cc.persona_name as string) || 'AI Assistant';
+  const businessName = client.name;
+
+  lines.push(`You are ${aiName}, an AI employee for ${businessName}.`);
+  lines.push(`Today is ${dateStr} at ${timeStr}.`);
+  lines.push(`You are responding via ${ctx.messageType}.`);
   lines.push('');
 
-  // ── Contact context
-  if (ctx.contactInfo) {
-    lines.push('--- Customer Information ---');
-    if (ctx.contactInfo.name && ctx.contactInfo.name !== ctx.contactName) {
-      lines.push(`Name: ${ctx.contactInfo.name}`);
-    } else {
-      lines.push(`Name: ${ctx.contactName}`);
-    }
-    if (ctx.contactInfo.email) lines.push(`Email: ${ctx.contactInfo.email}`);
-    if (ctx.contactInfo.companyName) lines.push(`Company: ${ctx.contactInfo.companyName}`);
-    if (ctx.contactInfo.city || ctx.contactInfo.state) {
-      lines.push(`Location: ${[ctx.contactInfo.city, ctx.contactInfo.state].filter(Boolean).join(', ')}`);
-    }
-    if (ctx.contactInfo.tags && ctx.contactInfo.tags.length > 0) {
-      lines.push(`Tags: ${ctx.contactInfo.tags.join(', ')}`);
-    }
-    if (ctx.contactInfo.source) lines.push(`Lead source: ${ctx.contactInfo.source}`);
-    if (ctx.contactInfo.customFields && ctx.contactInfo.customFields.length > 0) {
-      for (const f of ctx.contactInfo.customFields.slice(0, 5)) {
-        lines.push(`${f.key}: ${f.value}`);
-      }
-    }
+  // ── Persona (agency-written) — highest priority ───────────────────────
+  const persona = (cc.persona as string)?.trim();
+  if (persona) {
+    lines.push('--- Your Personality & Role ---');
+    lines.push(persona);
     lines.push('');
-  } else {
-    lines.push(`Customer: ${ctx.contactName}`);
-    lines.push('');
-  }
-
-  // ── Conversation history
-  if (ctx.conversationHistory) {
-    lines.push('--- Recent Conversation ---');
-    lines.push(ctx.conversationHistory);
-    lines.push('');
-  }
-
-  // ── Template instructions
-  if (template?.soul_template) {
-    lines.push('--- Business Instructions ---');
+  } else if (template?.soul_template) {
+    // Fall back to industry template
+    lines.push('--- Your Personality & Role ---');
     lines.push(template.soul_template);
     lines.push('');
   }
 
-  // ── Behavioral rules
-  lines.push('--- Response Guidelines ---');
-  lines.push('- Keep responses helpful, professional, and concise.');
-  lines.push('- Use the customer\'s name when you know it.');
-  lines.push('- Reference their previous messages when relevant for continuity.');
-  lines.push('- When you don\'t know something specific about the business, be honest and offer to connect them with a team member.');
-  lines.push('- For SMS: keep responses under 300 characters when possible. Be direct.');
-  lines.push('- Never make up specific business details (prices, hours, addresses) unless provided in your instructions.');
+  // ── Business context ──────────────────────────────────────────────────
+  const instructions = (cc.instructions as string)?.trim();
+  const services = (cc.services as string)?.trim();
+  const businessHours = (cc.business_hours as string)?.trim();
+  const calendarUrl = (cc.calendar_url as string)?.trim();
+  const pricing = (cc.pricing as string)?.trim();
+  const location = (cc.location as string)?.trim();
 
-  // ── Permission constraints
+  const hasBusinessContext = instructions || services || businessHours || calendarUrl || pricing || location;
+  if (hasBusinessContext) {
+    lines.push('--- Business Context ---');
+    if (instructions) lines.push(`Instructions: ${instructions}`);
+    if (services) lines.push(`Services offered: ${services}`);
+    if (pricing) lines.push(`Pricing: ${pricing}`);
+    if (businessHours) lines.push(`Business hours: ${businessHours}`);
+    if (location) lines.push(`Location: ${location}`);
+    if (calendarUrl) lines.push(`Booking link: ${calendarUrl}`);
+    lines.push('');
+  }
+
+  // ── Contact context ───────────────────────────────────────────────────
+  lines.push('--- Customer ---');
+  const ci = ctx.contactInfo;
+  if (ci) {
+    lines.push(`Name: ${ci.name || ctx.contactName}`);
+    if (ci.email) lines.push(`Email: ${ci.email}`);
+    if (ci.companyName) lines.push(`Company: ${ci.companyName}`);
+    if (ci.city || ci.state) lines.push(`Location: ${[ci.city, ci.state].filter(Boolean).join(', ')}`);
+    if (ci.tags && ci.tags.length > 0) lines.push(`Tags: ${ci.tags.join(', ')}`);
+    if (ci.source) lines.push(`Lead source: ${ci.source}`);
+    for (const f of (ci.customFields || []).slice(0, 5)) {
+      lines.push(`${f.key}: ${f.value}`);
+    }
+  } else {
+    lines.push(`Name: ${ctx.contactName}`);
+  }
+  lines.push('');
+
+  // ── Tool usage guidance ───────────────────────────────────────────────
+  lines.push('--- Tools Available ---');
+  lines.push('You have access to tools to take action:');
+  lines.push('- book_appointment: When a customer wants to schedule/book. Confirm the time first.');
+  lines.push('- tag_contact: Add relevant tags (e.g. "hot-lead", "pricing-requested", "booked").');
+  lines.push('- create_opportunity: When a customer shows clear buying intent.');
+  lines.push('- escalate_to_human: When the customer needs a real person. Always tell them you are connecting them.');
+  lines.push('');
+
+  // ── Response rules ────────────────────────────────────────────────────
+  lines.push('--- Response Rules ---');
+  lines.push('- Be warm, professional, and concise.');
+  lines.push('- Use the customer\'s first name when you know it.');
+  lines.push(`- For SMS: keep replies under 160 characters when possible. Never use markdown.`);
+  lines.push('- Never fabricate prices, hours, addresses, or services not listed above.');
+  lines.push('- Never mention that you are an AI unless directly asked. If asked, be honest.');
+  lines.push('- Do not include error messages, debug info, or technical language in replies.');
+  lines.push('- Reply ONLY with your message to the customer — no meta-commentary.');
+
+  // ── Permissions ───────────────────────────────────────────────────────
   if (permissionPrompt) {
     lines.push('');
     lines.push(permissionPrompt);
