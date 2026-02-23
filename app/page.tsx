@@ -83,6 +83,7 @@ export default function HomePage() {
             <a href="#industries" className="hover:text-white transition">Industries</a>
             <a href="#features" className="hover:text-white transition">Features</a>
             <Link href="/pricing" className="hover:text-white transition">Pricing</Link>
+            <Link href="/blog" className="hover:text-white transition">Blog</Link>
           </div>
           <div className="flex items-center gap-3">
             <Link href="/login" className="text-sm text-slate-400 hover:text-white transition hidden sm:block">
