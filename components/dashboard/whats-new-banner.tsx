@@ -54,7 +54,7 @@ export default function WhatsNewBanner() {
           </div>
           <div>
             <h3 className="font-bold text-gray-900 text-sm">What&apos;s New 🎉</h3>
-            <p className="text-xs text-indigo-500 font-medium">Feb 22–23 · 40+ features shipped</p>
+            <p className="text-xs text-indigo-500 font-medium">Latest updates just landed</p>
           </div>
         </div>
         <button
@@ -79,7 +79,7 @@ export default function WhatsNewBanner() {
       {/* Footer */}
       <div className="px-5 py-3 bg-white border-t border-indigo-100 flex items-center justify-between gap-4">
         <p className="text-xs text-gray-400">
-          65+ total PRs shipped since Feb 22. The platform is production-ready.
+          Fresh updates to help your agency grow.
         </p>
         <div className="flex items-center gap-3 shrink-0">
           <Link
