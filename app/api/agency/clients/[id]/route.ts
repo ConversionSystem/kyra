@@ -12,7 +12,8 @@ function buildSoulMd(
   clientName: string,
   persona: string,
   greeting: string,
-  instructions: string
+  instructions: string,
+  responseLanguage?: string
 ): string {
   const lines: string[] = [];
   lines.push(`# SOUL.md — ${clientName}`);
@@ -42,6 +43,13 @@ function buildSoulMd(
   lines.push('- Stay in character as described above at all times');
   lines.push('- If you need more information, ask one focused question');
   lines.push('- Never reveal you are an AI unless directly asked');
+
+  // Language instruction
+  if (responseLanguage && responseLanguage !== 'English') {
+    lines.push('');
+    lines.push('## Language');
+    lines.push(`ALWAYS respond in ${responseLanguage}, regardless of the language the customer uses. Every single message must be in ${responseLanguage}.`);
+  }
 
   return lines.join('\n');
 }
@@ -150,11 +158,12 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     const persona = (cfg.persona as string) || '';
     const greeting = (cfg.greeting as string) || '';
     const instructions = (cfg.instructions as string) || '';
+    const responseLanguage = (cfg.response_language as string) || 'English';
 
     if (persona || instructions || greeting) {
       void (async () => {
         try {
-          const soulMd = buildSoulMd(client.name, persona, greeting, instructions);
+          const soulMd = buildSoulMd(client.name, persona, greeting, instructions, responseLanguage);
           const result = await updateClientConfig(client.id, { soulMd });
           if (result.success) {
             console.log(`[personality] SOUL.md pushed to container for client ${client.id}`);
