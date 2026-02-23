@@ -316,7 +316,7 @@ Worth a quick call to get it set up?`}
             <div className="grid sm:grid-cols-3 gap-3">
               <PackageTier
                 name="Starter AI"
-                price="$497"
+                price="$499"
                 color="border-gray-200"
                 pitch="Just getting started / lower-volume business"
                 features={[
@@ -404,7 +404,7 @@ Which of those feels right for what you're trying to do?"`}
                 },
                 {
                   objection: '"Can you just lower the price?"',
-                  response: 'I appreciate you asking directly. Here\'s why I don\'t discount: every client gets the same infrastructure, the same dedicated AI, and the same support. If I lowered it for one person, I\'d have to do it for everyone. What I CAN do is start you on the Starter tier at $497 and upgrade once you see the results. Does that work?',
+                  response: 'I appreciate you asking directly. Here\'s why I don\'t discount: every client gets the same infrastructure, the same dedicated AI, and the same support. If I lowered it for one person, I\'d have to do it for everyone. What I CAN do is start you on the Lite tier at $499 and upgrade once you see the results. Does that work?',
                 },
               ].map(item => (
                 <ObjectionCard key={item.objection} {...item} />
@@ -608,7 +608,7 @@ This is what it looks like when your business has an AI employee."
         <Star className="h-8 w-8 text-indigo-300 mx-auto mb-3" />
         <h3 className="text-lg font-black mb-2">Your goal: 5 clients in 30 days</h3>
         <p className="text-indigo-200 text-sm mb-4">
-          5 clients at $997/mo = $4,985 MRR. Your Kyra cost: $97/mo. Net: $4,888/mo.
+          5 clients at $997/mo = $4,985 MRR. Your Kyra cost: $99/mo. Net: $4,888/mo.
           <br />
           That's what this entire playbook is designed to get you to.
         </p>

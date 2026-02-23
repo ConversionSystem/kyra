@@ -4,7 +4,7 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Pricing — Kyra AI Employee Platform',
-  description: 'Deploy AI employees for your GHL agency clients. Free to start, paid plans from $97/mo. No credit card required.',
+  description: 'Deploy AI employees for your GHL agency clients. Free to start, paid plans from $99/mo. No credit card required.',
 };
 
 const PLANS = [
@@ -31,8 +31,8 @@ const PLANS = [
     ],
   },
   {
-    name: 'Starter',
-    price: '$97',
+    name: 'Lite',
+    price: '$99',
     period: '/month',
     desc: 'For agencies adding AI to their first 5 clients.',
     cta: 'Start 30-Day Trial',
@@ -51,7 +51,7 @@ const PLANS = [
   },
   {
     name: 'Pro',
-    price: '$247',
+    price: '$249',
     period: '/month',
     desc: 'When you\'re selling AI employees as a core offer.',
     cta: 'Start 30-Day Trial',
@@ -60,7 +60,7 @@ const PLANS = [
     badge: '🔥 Best for growing agencies',
     features: [
       '15 AI employees',
-      'Everything in Starter',
+      'Everything in Lite',
       'White-label branding',
       'Business-in-a-Box playbook',
       'Referral program',
@@ -70,7 +70,7 @@ const PLANS = [
   },
   {
     name: 'Scale',
-    price: '$497',
+    price: '$499',
     period: '/month',
     desc: 'Full agency operation — 50 clients, maximum output.',
     cta: 'Start 30-Day Trial',
@@ -100,11 +100,11 @@ const FAQ = [
   },
   {
     q: 'How do agencies make money with Kyra?',
-    a: 'Agencies charge clients $500–$2,000/month per AI employee (as a retainer or add-on). At the Pro plan ($247/mo, 15 clients), even billing $500/client generates $7,500/mo with $7,253/mo margin. Most agencies charge $997–$1,497/mo per client.',
+    a: 'Agencies charge clients $500–$2,000/month per AI employee (as a retainer or add-on). At the Pro plan ($249/mo, 15 clients), even billing $500/client generates $7,500/mo with $7,251/mo margin. Most agencies charge $997–$1,497/mo per client.',
   },
   {
     q: 'What is BYOK (Bring Your Own Key)?',
-    a: 'On Starter+ plans, you can connect your own OpenAI API key. This gives you full control over AI costs and model selection. On the Free plan, Kyra\'s default key is used (GPT-4o mini).',
+    a: 'On Lite+ plans, you can connect your own OpenAI API key. This gives you full control over AI costs and model selection. On the Free plan, Kyra\'s default key is used (GPT-4o mini).',
   },
   {
     q: 'Is there a long-term contract?',
@@ -147,7 +147,7 @@ export default function PricingPage() {
           <span className="text-indigo-400">Massive ROI.</span>
         </h1>
         <p className="text-slate-400 text-lg max-w-xl mx-auto">
-          You pay $97–$497/mo. You bill clients $500–$2,000/mo each. The math works from day one.
+          You pay $99–$499/mo. You bill clients $500–$2,000/mo each. The math works from day one.
         </p>
       </section>
 
@@ -212,8 +212,8 @@ export default function PricingPage() {
 
         {/* ROI callout */}
         <div className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-6 sm:p-8 text-center">
-          <p className="text-slate-400 text-sm mb-1">At Pro plan ($247/mo) with 10 clients billed at $997/mo each:</p>
-          <p className="text-2xl font-black text-green-400">$9,970/mo agency revenue · $9,723/mo gross margin</p>
+          <p className="text-slate-400 text-sm mb-1">At Pro plan ($249/mo) with 10 clients billed at $997/mo each:</p>
+          <p className="text-2xl font-black text-green-400">$9,970/mo agency revenue · $9,721/mo gross margin</p>
           <p className="text-slate-500 text-xs mt-1">Before your API key costs (typically $0.50–$2/client/mo at moderate volume)</p>
         </div>
       </section>

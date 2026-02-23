@@ -129,9 +129,9 @@ While GoHighLevel gives you the CRM, pipeline, and marketing infrastructure — 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 • Free: 1 client AI employee
-• Starter: $97/mo — 5 client AI employees
-• Pro: $247/mo — 15 client AI employees  
-• Scale: $497/mo — 50 client AI employees
+• Lite: $99/mo — 5 client AI employees
+• Pro: $249/mo — 15 client AI employees  
+• Scale: $499/mo — 50 client AI employees
 • All paid plans include 30-day free trial
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -140,14 +140,14 @@ While GoHighLevel gives you the CRM, pipeline, and marketing infrastructure — 
 
 GHL agencies who want to add a recurring AI revenue stream. Charge clients $500–$5,000/month for a white-labeled AI employee. Kyra handles all the infrastructure — you set the price and keep the margin.
 
-Most agencies bill $997–$1,997/month per AI employee. At $97/month for 5 client slots, your margin starts on day 1.
+Most agencies bill $997–$1,997/month per AI employee. At $99/month for 5 client slots, your margin starts on day 1.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Get started free: kyra.conversionsystem.com`;
 
 const CATEGORY = 'AI / Automation';
-const PRICING_TIER = 'Freemium — Free plan available. Paid plans from $97/mo (Starter, 5 clients) to $497/mo (Scale, 50 clients). 30-day free trial on all paid plans.';
+const PRICING_TIER = 'Freemium — Free plan available. Paid plans from $99/mo (Lite, 5 clients) to $499/mo (Scale, 50 clients). 30-day free trial on all paid plans.';
 const WEBSITE = 'https://kyra.conversionsystem.com';
 const SUPPORT_EMAIL = 'angel@conversionsystem.com';
 const WEBHOOK_URL = 'https://kyra.conversionsystem.com/api/ghl/poll (Vercel cron — polls every minute)';
