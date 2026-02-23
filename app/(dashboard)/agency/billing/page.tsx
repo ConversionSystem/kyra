@@ -28,17 +28,26 @@ export default async function AgencyBillingPage({
 
   if (!agency) redirect('/agency');
 
-  // Get client count for usage bar
-  const { count: clientCount } = await supabase
+  // Get client count and total conversation usage for cost estimate
+  const { data: clientRows } = await supabase
     .from('agency_clients')
-    .select('id', { count: 'exact', head: true })
-    .eq('agency_id', result.agency.id)
-    .in('status', ['active', 'setup']);
+    .select('id, status, usage_this_month')
+    .eq('agency_id', result.agency.id);
+
+  const clientCount = (clientRows ?? []).filter(
+    (c) => c.status === 'active' || c.status === 'setup'
+  ).length;
+
+  const totalConversationsThisMonth = (clientRows ?? []).reduce(
+    (sum: number, c: { usage_this_month: number }) => sum + (c.usage_this_month ?? 0),
+    0
+  );
 
   return (
     <BillingPageClient
       agency={agency as { id: string; name: string; plan: string; stripe_customer_id: string | null }}
-      clientCount={clientCount ?? 0}
+      clientCount={clientCount}
+      totalConversationsThisMonth={totalConversationsThisMonth}
       checkoutStatus={checkout ?? null}
       autoUpgradePlan={upgrade ?? null}
     />
