@@ -19,6 +19,9 @@ import {
   Users,
   BarChart3,
   Star,
+  DollarSign,
+  MessageSquare,
+  Info,
 } from 'lucide-react';
 import { PLANS, type Plan } from '@/lib/billing/plans';
 
@@ -30,6 +33,7 @@ interface Props {
     stripe_customer_id: string | null;
   };
   clientCount: number;
+  totalConversationsThisMonth: number;
   checkoutStatus: string | null;  // 'success' | 'cancelled' | null
   autoUpgradePlan: string | null; // plan to auto-trigger on mount
 }
@@ -40,7 +44,19 @@ function planIndex(p: string) {
   return PLAN_ORDER.indexOf(p as Plan);
 }
 
-export function BillingPageClient({ agency, clientCount, checkoutStatus, autoUpgradePlan }: Props) {
+// ── Cost estimation helpers ────────────────────────────────────────────────────
+// Rough estimate: avg conversation = 500 input tokens + 200 output tokens (GPT-4o pricing)
+// Input: $2.50/M tokens → 500 * 2.50 / 1_000_000 = $0.00125
+// Output: $10/M tokens → 200 * 10.00 / 1_000_000 = $0.00200
+// Total per conversation ≈ $0.0033 (conservative estimate)
+const COST_PER_CONVERSATION_USD = 0.0033;
+
+function formatUsd(n: number): string {
+  if (n < 1) return `$${(n).toFixed(2)}`;
+  return `$${Math.round(n).toLocaleString()}`;
+}
+
+export function BillingPageClient({ agency, clientCount, totalConversationsThisMonth, checkoutStatus, autoUpgradePlan }: Props) {
   const router = useRouter();
   const currentPlan = agency.plan as Plan;
   const [loading, setLoading] = useState<Plan | null>(null);
@@ -94,6 +110,11 @@ export function BillingPageClient({ agency, clientCount, checkoutStatus, autoUpg
   const limit = PLANS[currentPlan]?.maxClients ?? 1;
   const usagePct = Math.min(100, Math.round((clientCount / limit) * 100));
   const nearLimit = usagePct >= 80;
+
+  // Estimated cost breakdown
+  const platformFee = PLANS[currentPlan]?.price ?? 0;
+  const estimatedApiCost = Math.round(totalConversationsThisMonth * COST_PER_CONVERSATION_USD * 100) / 100;
+  const estimatedTotal = platformFee + estimatedApiCost;
 
   return (
     <div className="p-4 sm:p-6 md:p-8 max-w-5xl space-y-8">
@@ -174,6 +195,54 @@ export function BillingPageClient({ agency, clientCount, checkoutStatus, autoUpg
                 <BarChart3 className="h-3.5 w-3.5 mr-1.5" /> Manage Billing
               </Button>
             )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Estimated Monthly Cost */}
+      <Card className="border-green-100 bg-gradient-to-br from-green-50/50 to-white">
+        <CardHeader className="pb-2">
+          <div className="flex items-center gap-2">
+            <DollarSign className="h-4 w-4 text-green-600" />
+            <CardTitle className="text-base">Estimated Cost This Month</CardTitle>
+          </div>
+          <CardDescription className="text-xs">
+            Based on {totalConversationsThisMonth.toLocaleString()} conversations processed across your clients.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid sm:grid-cols-3 gap-4 mb-4">
+            {/* Kyra platform fee */}
+            <div className="rounded-xl border border-gray-100 bg-white p-4 text-center">
+              <p className="text-xs text-gray-400 mb-1 font-medium uppercase tracking-wide">Kyra Platform</p>
+              <p className="text-2xl font-black text-gray-900">{platformFee === 0 ? 'Free' : `$${platformFee}`}</p>
+              <p className="text-xs text-gray-400 mt-0.5">{PLANS[currentPlan]?.name ?? currentPlan} plan / mo</p>
+            </div>
+
+            {/* Estimated API cost */}
+            <div className="rounded-xl border border-gray-100 bg-white p-4 text-center">
+              <p className="text-xs text-gray-400 mb-1 font-medium uppercase tracking-wide">AI API Usage</p>
+              <p className="text-2xl font-black text-gray-900">{formatUsd(estimatedApiCost)}</p>
+              <div className="flex items-center justify-center gap-1 mt-0.5">
+                <MessageSquare className="h-3 w-3 text-gray-300" />
+                <p className="text-xs text-gray-400">{totalConversationsThisMonth.toLocaleString()} conversations</p>
+              </div>
+            </div>
+
+            {/* Total */}
+            <div className="rounded-xl border border-green-200 bg-green-50 p-4 text-center">
+              <p className="text-xs text-green-600 mb-1 font-medium uppercase tracking-wide">Total Estimate</p>
+              <p className="text-2xl font-black text-green-700">{formatUsd(estimatedTotal)}</p>
+              <p className="text-xs text-green-500 mt-0.5">this month so far</p>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-2 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
+            <Info className="h-3.5 w-3.5 text-blue-400 shrink-0 mt-0.5" />
+            <p className="text-xs text-blue-600">
+              AI API costs (~$0.003/conversation based on GPT-4o) are billed directly by OpenAI to your API key — they don&apos;t appear on your Kyra invoice.
+              BYOK clients are billed to their own key.
+            </p>
           </div>
         </CardContent>
       </Card>
