@@ -22,6 +22,7 @@ import { getSessionKeyForClient } from '@/lib/agency/container';
 import { sendGHLMessage, getValidToken, refreshGHLToken } from './api';
 import { getClientPermissions, buildPermissionPrompt } from '@/lib/agency/permissions';
 import { resolveClientGateway, chatViaGateway } from '@/lib/ovh/provisioner';
+import { resolveOcModel } from '@/lib/agency/ai-models';
 import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
 
 const GHL_API_BASE = 'https://services.leadconnectorhq.com';
@@ -38,6 +39,7 @@ interface ResolvedApiKey {
 /**
  * Look up the agency's BYOK API keys from Supabase.
  * Priority: anthropic → openrouter → openai → google → fallback to env var.
+ * Respects per-provider selected_models override.
  */
 async function resolveAgencyApiKey(agencyId: string): Promise<ResolvedApiKey | null> {
   const supabase = createServiceClientWithoutCookies();
@@ -47,26 +49,45 @@ async function resolveAgencyApiKey(agencyId: string): Promise<ResolvedApiKey | n
     .eq('id', agencyId)
     .single();
 
-  const keys = (agency?.api_keys as Record<string, string>) || {};
+  const keys = (agency?.api_keys as Record<string, unknown>) || {};
+  const selectedModels = (keys.selected_models as Record<string, string>) || {};
 
   // Prefer Anthropic (native bridge support)
   if (keys.anthropic) {
-    return { apiKey: keys.anthropic, provider: 'anthropic' };
-  }
-  // OpenRouter can route to Claude models via OpenAI-compatible API
-  if (keys.openrouter) {
+    const selectedModelId = selectedModels.anthropic;
     return {
-      apiKey: keys.openrouter,
+      apiKey: keys.anthropic as string,
+      provider: 'anthropic',
+      model: resolveOcModel('anthropic', selectedModelId),
+    };
+  }
+  // OpenRouter — routes to any model via OpenAI-compatible API
+  if (keys.openrouter) {
+    const selectedModelId = selectedModels.openrouter;
+    return {
+      apiKey: keys.openrouter as string,
       provider: 'openrouter',
-      model: 'anthropic/claude-sonnet-4-20250514',
+      model: resolveOcModel('openrouter', selectedModelId),
     };
   }
   // OpenAI native
   if (keys.openai) {
-    return { apiKey: keys.openai, provider: 'openai', model: 'gpt-4o' };
+    const selectedModelId = selectedModels.openai;
+    return {
+      apiKey: keys.openai as string,
+      provider: 'openai',
+      model: resolveOcModel('openai', selectedModelId),
+    };
   }
-  // Google AI — not yet supported in bridge, skip for now
-  // if (keys.google) { ... }
+  // Google AI
+  if (keys.google) {
+    const selectedModelId = selectedModels.google;
+    return {
+      apiKey: keys.google as string,
+      provider: 'google',
+      model: resolveOcModel('google', selectedModelId),
+    };
+  }
 
   return null; // No BYOK keys — caller should fall back to env var
 }

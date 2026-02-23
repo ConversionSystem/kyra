@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { DEFAULT_MODEL_ID } from '@/lib/agency/ai-models';
 
 const VALID_PROVIDERS = ['anthropic', 'openai', 'google', 'openrouter'] as const;
 type Provider = typeof VALID_PROVIDERS[number];
@@ -16,7 +17,7 @@ const TEST_PROMPT = 'Reply with only the word: CONNECTED';
 
 // ── Test functions per provider ───────────────────────────────────────────────
 
-async function testAnthropic(apiKey: string): Promise<{ ok: boolean; model?: string; error?: string }> {
+async function testAnthropic(apiKey: string, modelId: string): Promise<{ ok: boolean; model?: string; error?: string }> {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -25,7 +26,7 @@ async function testAnthropic(apiKey: string): Promise<{ ok: boolean; model?: str
       'content-type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'claude-haiku-4-5',
+      model: modelId,
       max_tokens: 10,
       messages: [{ role: 'user', content: TEST_PROMPT }],
     }),
@@ -37,10 +38,10 @@ async function testAnthropic(apiKey: string): Promise<{ ok: boolean; model?: str
     return { ok: false, error: data?.error?.message || `HTTP ${res.status}` };
   }
 
-  return { ok: true, model: 'Claude Haiku' };
+  return { ok: true, model: modelId };
 }
 
-async function testOpenAI(apiKey: string): Promise<{ ok: boolean; model?: string; error?: string }> {
+async function testOpenAI(apiKey: string, modelId: string): Promise<{ ok: boolean; model?: string; error?: string }> {
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -48,7 +49,7 @@ async function testOpenAI(apiKey: string): Promise<{ ok: boolean; model?: string
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
+      model: modelId,
       max_tokens: 10,
       messages: [{ role: 'user', content: TEST_PROMPT }],
     }),
@@ -60,10 +61,10 @@ async function testOpenAI(apiKey: string): Promise<{ ok: boolean; model?: string
     return { ok: false, error: data?.error?.message || `HTTP ${res.status}` };
   }
 
-  return { ok: true, model: 'GPT-4o mini' };
+  return { ok: true, model: modelId };
 }
 
-async function testOpenRouter(apiKey: string): Promise<{ ok: boolean; model?: string; error?: string }> {
+async function testOpenRouter(apiKey: string, modelId: string): Promise<{ ok: boolean; model?: string; error?: string }> {
   const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -73,7 +74,7 @@ async function testOpenRouter(apiKey: string): Promise<{ ok: boolean; model?: st
       'X-Title': 'Kyra',
     },
     body: JSON.stringify({
-      model: 'anthropic/claude-haiku-4-5',
+      model: modelId,
       max_tokens: 10,
       messages: [{ role: 'user', content: TEST_PROMPT }],
     }),
@@ -85,12 +86,12 @@ async function testOpenRouter(apiKey: string): Promise<{ ok: boolean; model?: st
     return { ok: false, error: data?.error?.message || `HTTP ${res.status}` };
   }
 
-  return { ok: true, model: 'Claude Haiku (via OpenRouter)' };
+  return { ok: true, model: modelId };
 }
 
-async function testGoogle(apiKey: string): Promise<{ ok: boolean; model?: string; error?: string }> {
+async function testGoogle(apiKey: string, modelId: string): Promise<{ ok: boolean; model?: string; error?: string }> {
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -107,7 +108,7 @@ async function testGoogle(apiKey: string): Promise<{ ok: boolean; model?: string
     return { ok: false, error: data?.error?.message || `HTTP ${res.status}` };
   }
 
-  return { ok: true, model: 'Gemini Flash' };
+  return { ok: true, model: modelId };
 }
 
 // ── Route handler ─────────────────────────────────────────────────────────────
@@ -145,8 +146,10 @@ export async function POST(request: NextRequest) {
     .eq('id', member.agency_id)
     .single();
 
-  const apiKeys = (agency?.api_keys as Record<string, string>) || {};
-  const apiKey = apiKeys[provider];
+  const apiKeys = (agency?.api_keys as Record<string, unknown>) || {};
+  const apiKey = apiKeys[provider] as string | undefined;
+  const selectedModels = (apiKeys.selected_models as Record<string, string>) || {};
+  const modelId = selectedModels[provider] || DEFAULT_MODEL_ID[provider] || 'gpt-4o-mini';
 
   if (!apiKey) {
     return NextResponse.json({ ok: false, error: 'No key saved for this provider' });
@@ -158,16 +161,16 @@ export async function POST(request: NextRequest) {
   try {
     switch (provider) {
       case 'anthropic':
-        result = await testAnthropic(apiKey);
+        result = await testAnthropic(apiKey, modelId);
         break;
       case 'openai':
-        result = await testOpenAI(apiKey);
+        result = await testOpenAI(apiKey, modelId);
         break;
       case 'openrouter':
-        result = await testOpenRouter(apiKey);
+        result = await testOpenRouter(apiKey, modelId);
         break;
       case 'google':
-        result = await testGoogle(apiKey);
+        result = await testGoogle(apiKey, modelId);
         break;
       default:
         result = { ok: false, error: 'Unknown provider' };
