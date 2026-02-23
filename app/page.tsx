@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import DemoChat from './demo/[industry]/demo-chat';
 import LeadCapture from '@/components/landing/lead-capture';
 import LiveStats from '@/components/landing/live-stats';
+import ActivityTicker from '@/components/landing/activity-ticker';
 
 export const metadata: Metadata = {
   title: 'Kyra — AI Employees for GHL Agencies | Free to Start',
@@ -157,6 +158,16 @@ export default function HomePage() {
             <p className="text-sm text-slate-500 mt-3">
               Free during beta · No credit card required · Works with GoHighLevel
             </p>
+            <div className="flex items-center gap-2 mt-4">
+              <div className="flex -space-x-2">
+                {['🦷', '🌿', '🏡', '🔧', '💪'].map((e, i) => (
+                  <div key={i} className="w-7 h-7 rounded-full bg-indigo-700 border-2 border-slate-900 flex items-center justify-center text-xs">{e}</div>
+                ))}
+              </div>
+              <p className="text-xs text-slate-400">
+                <span className="text-white font-semibold">9 agencies</span> managing AI employees right now
+              </p>
+            </div>
 
             {/* Email capture for not-ready-to-signup visitors */}
             <div className="mt-6 pt-6 border-t border-white/10">
@@ -206,6 +217,9 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto px-4">
           {/* Live stats — fetched from /api/stats */}
           <LiveStats />
+
+          {/* Activity ticker */}
+          <ActivityTicker />
 
           {/* Cannabis proof bar */}
           <div className="flex flex-wrap items-center justify-center gap-8 bg-green-950/60 border border-green-800/40 rounded-2xl px-8 py-5 mb-8">

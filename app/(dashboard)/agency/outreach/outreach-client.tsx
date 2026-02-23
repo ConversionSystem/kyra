@@ -349,6 +349,383 @@ function EmailCard({ draft }: { draft: EmailDraft }) {
   );
 }
 
+// ── Social Content Calendar ───────────────────────────────────────────────────
+
+interface ContentPost {
+  platform: 'linkedin' | 'twitter' | 'ghl-community' | 'instagram';
+  angle: string;
+  label: string;
+  content: string;
+  hook: string;  // first line — the hook
+}
+
+const CONTENT_POSTS: ContentPost[] = [
+  {
+    platform: 'linkedin', angle: 'Case Study', label: '$29M cannabis result',
+    hook: 'We generated $29M for a cannabis client. Here\'s what actually did it.',
+    content: `We generated $29M for a cannabis client. Here's what actually did it.
+
+Not funnels. Not ads. Not a rebrand.
+
+It was SMS response time.
+
+Their dispensary was getting 200+ text messages a day — product questions, pickup times, compliance FAQs. They were answering maybe 40% of them. The rest went cold.
+
+We plugged in an AI employee that:
+→ Replies to every text in under 60 seconds
+→ Knows the entire menu + current specials
+→ Handles compliance messaging automatically
+→ Books consultations for high-ticket products
+→ Escalates angry customers to a human immediately
+
+In 90 days, their repeat customer rate went up 34%. Revenue followed.
+
+The tool we use is called Kyra. It runs inside GoHighLevel and takes about 20 minutes to set up per client.
+
+If you're a GHL agency with cannabis clients, DM me "CANNABIS" and I'll show you what the setup looks like.
+
+——
+Follow for more on using AI to generate real business results (not just hype).
+
+#GHL #GoHighLevel #CannabisMarketing #AIEmployee #AgencyGrowth`,
+  },
+  {
+    platform: 'linkedin', angle: 'Insight', label: 'Speed-to-lead is the only metric',
+    hook: 'Speed-to-lead is the only marketing metric that matters in 2026.',
+    content: `Speed-to-lead is the only marketing metric that matters in 2026.
+
+Not CPL. Not ROAS. Not open rates.
+
+How fast you respond to a new lead determines whether you get the sale.
+
+The data is brutal:
+• 78% of buyers go with whoever responds first
+• 50% of leads buy from the first company that follows up
+• Leads contacted in under 5 minutes are 100x more likely to close than leads contacted in 30 minutes
+
+Most of my agency clients' businesses were responding in 2-4 hours. Some weren't responding at all on evenings and weekends.
+
+We fixed that with AI. Every inbound SMS gets a reply in under 60 seconds now — 24/7, including 2am on Sunday.
+
+The clients who made this change saw:
+→ 35–45% more booked appointments
+→ Lower cost per acquisition (same ads, more conversions)
+→ Happier clients who stopped complaining about slow follow-up
+
+Speed is a product feature now. Treat it like one.
+
+What's your current lead response time?
+
+#MarketingStrategy #LeadGeneration #GHL #AIMarketing #AgencyLife`,
+  },
+  {
+    platform: 'linkedin', angle: 'Story', label: 'Friday AI booking story',
+    hook: 'I set up an AI for a dental client on a Friday afternoon.',
+    content: `I set up an AI for a dental client on a Friday afternoon.
+
+By Monday morning, the AI had booked 3 appointments. While the office was closed.
+
+Here's exactly what happened:
+
+Friday 5pm: I connected the AI to their GoHighLevel account. Took 20 minutes.
+
+Friday 7pm: First inbound text. Someone asking about a cleaning appointment. AI replies in 45 seconds, answers the pricing question, offers two available slots. Patient books Thursday 2pm.
+
+Saturday 11am: Another text. AI handles it. Appointment booked.
+
+Sunday 9pm: Third appointment request. AI books it. Tags the contact. Updates the CRM note.
+
+Monday 8am: The office manager opens GHL. Sees 3 new appointments she didn't have to do anything for.
+
+Her message to me: "What is happening? Did you do this?"
+
+That's the pitch. The AI worked all weekend. The staff walked in to three more patients.
+
+I'm building this for GHL agencies who want to offer it to their clients. DM me "DEMO" and I'll show you how it works in 10 minutes.
+
+#Dental #GoHighLevel #AIEmployee #AgencyOwner #LeadResponse`,
+  },
+  {
+    platform: 'linkedin', angle: 'Education', label: 'How to respond to every lead in 60s',
+    hook: 'How to respond to every inbound lead in under 60 seconds — without hiring anyone.',
+    content: `How to respond to every inbound lead in under 60 seconds — without hiring anyone.
+
+Step 1: Pick a trigger
+Every new contact added to GHL, every new SMS received, every form fill. These are your trigger events.
+
+Step 2: Connect an AI to that trigger
+The AI needs three things: a personality (name, tone, industry knowledge), a knowledge base (services, pricing, hours, FAQs), and a channel (SMS, WhatsApp, email).
+
+Step 3: Let it handle the first response
+The AI's job isn't to close the deal. It's to:
+→ Respond immediately
+→ Qualify the lead
+→ Book the appointment or request
+→ Pass warm leads to a human
+
+Step 4: You step in at the right moment
+When the AI flags a hot lead or an escalation, you take over. You're no longer spending time on cold responses — only on leads that are already engaged.
+
+Result: 100% of your leads get responded to. You only talk to the ones that matter.
+
+This is what I've been building for GHL agencies. It's called Kyra. Free to try at kyra.conversionsystem.com.
+
+What's your current process for responding to leads?
+
+#LeadResponse #AIAutomation #GHL #GoHighLevel #AgencyStrategy`,
+  },
+  {
+    platform: 'linkedin', angle: 'Hot Take', label: 'AI chatbots are dead',
+    hook: 'AI chatbots are dead. AI employees are the new category.',
+    content: `AI chatbots are dead. AI employees are the new category.
+
+Here's the difference:
+
+Chatbots:
+→ Answer FAQs
+→ Live on a widget
+→ Get abandoned when questions get complex
+→ Don't connect to your CRM
+→ Have no memory of past conversations
+
+AI Employees:
+→ Have a name, personality, and role
+→ Operate across SMS, WhatsApp, email, and chat
+→ Update your CRM in real-time
+→ Remember every conversation
+→ Know when to escalate to a human
+→ Work 24/7 without complaining
+
+The businesses winning in 2026 aren't the ones with a chatbot on their website. They're the ones who've added an AI employee to their sales and customer service team.
+
+The difference isn't technology. It's framing.
+
+Your clients aren't buying a chatbot. They're hiring a digital employee who works for $500/month and never calls in sick.
+
+Sell it that way.
+
+#AIEmployee #GoHighLevel #AgencyModel #SalesStrategy #AITrends`,
+  },
+  {
+    platform: 'linkedin', angle: 'Product', label: 'White-label AI employees for agencies',
+    hook: 'GHL agencies: you can now offer AI employees as a white-labeled service.',
+    content: `GHL agencies: you can now offer AI employees as a white-labeled service.
+
+Here's what that looks like:
+
+1. You connect a client's GHL account to our platform (2 minutes)
+2. You pick an industry template — dental, real estate, cannabis, etc. (the AI personality is pre-built)
+3. You customize the AI name and business info (5 minutes)
+4. The AI goes live — handling their inbound SMS, booking appointments, updating the CRM
+
+From your client's perspective, they have their own AI employee. It has a name. It knows their business. It responds to every text in under 60 seconds.
+
+From your perspective, you manage all your clients' AIs from one dashboard. You bill them $500–$2,000/month. Your platform cost is flat regardless of how many conversations the AI handles.
+
+At Pro plan ($249/mo) with 15 clients at $997/mo:
+→ Revenue: $14,955/mo
+→ Platform cost: $249/mo
+→ Margin: $14,706/mo
+
+We built this for GHL agencies. It's called Kyra.
+
+Free to start at kyra.conversionsystem.com. DM me if you want to see a demo first.
+
+#GHL #GoHighLevel #WhiteLabel #AgencyRevenue #AIEmployee`,
+  },
+  {
+    platform: 'linkedin', angle: 'Question', label: 'What your clients actually need',
+    hook: 'Quick question for GHL agency owners:',
+    content: `Quick question for GHL agency owners:
+
+What's the #1 complaint you hear from clients about their marketing?
+
+For the agencies I talk to, it's almost always the same answer:
+
+"Leads come in and nothing happens."
+
+They're spending $2,000/month on ads. Getting 80 new leads. And responding to maybe 40% of them because:
+• Staff doesn't see the texts fast enough
+• Evenings and weekends go unanswered
+• The team is handling everything manually
+
+The cost of this problem is enormous. If your dental client closes 1 in 5 leads and the average patient is worth $1,200, missing 40 leads/month = $9,600/month in lost revenue.
+
+The fix is simple: AI that responds in under 60 seconds, 24/7.
+
+That's what I've been building. And the agencies deploying it are watching their clients' revenue go up without changing a single ad campaign.
+
+What problem do your clients complain about most? Drop it in the comments — I'm curious.
+
+#GHL #AgencyOwner #ClientResults #LeadGeneration #GoHighLevel`,
+  },
+  {
+    platform: 'twitter', angle: 'Thread', label: 'Speed-to-lead thread (Twitter)',
+    hook: 'Speed-to-lead math that will hurt your soul:',
+    content: `Speed-to-lead math that will hurt your soul: 🧵
+
+A dental practice gets 80 leads/month.
+Average value per patient: $1,200/year.
+They respond to 60% within 24 hours.
+Close rate: 20%.
+
+Monthly revenue from leads: $14,400.
+
+Now watch what happens when response time drops to 60 seconds:
+
+→ 95% of leads reached (vs 60%)
+→ Close rate improves to 28% (better engagement → more trust)
+
+Monthly revenue: $31,920.
+
+Same ads. Same leads. Same team.
+
++$17,520/month from one change: response speed.
+
+This is why I built an AI that replies to every GHL lead in under 60 seconds.
+
+Every niche. Every size. 24/7.
+
+kyra.conversionsystem.com — free to test.`,
+  },
+  {
+    platform: 'ghl-community', angle: 'Community Post', label: 'GHL Facebook group post',
+    hook: 'Built something for GHL agencies — wanted to share before I talk to anyone about it.',
+    content: `Built something for GHL agencies — wanted to share before I talk to anyone about it.
+
+I've been running a GHL agency for years and kept running into the same problem: clients spend $2k/month on leads and then don't respond to half of them. Nights, weekends, busy seasons — leads go cold.
+
+So I built Kyra — a platform that lets you add an AI employee to any GHL sub-account. It:
+
+✅ Responds to every inbound SMS in under 60 seconds
+✅ Books appointments directly into GHL calendar
+✅ Tags contacts and updates the CRM automatically
+✅ Works for dental, real estate, cannabis, home services, med spa, and 15+ more
+✅ White-labeled — your brand, your client, your pricing
+
+We've generated $29M+ for cannabis clients alone using AI SMS. Now I'm packaging this for other agencies.
+
+Free to start (includes $2 in credits to test): kyra.conversionsystem.com
+
+If you want to see it in action for a specific niche, comment below or DM me. Happy to do a quick demo.
+
+Not selling anything in this post — just sharing in case it's useful. Would love feedback from people who've tried similar tools.`,
+  },
+  {
+    platform: 'ghl-community', angle: 'Community Value Post', label: 'GHL community: AI response time guide',
+    hook: 'Sharing a quick framework we use to evaluate whether a client needs AI response time automation.',
+    content: `Sharing a quick framework we use to evaluate whether a client needs AI response time automation.
+
+We call it the "Friday Night Test":
+
+→ What happens when a lead texts your client at 9pm on a Friday?
+→ When is the first human who sees that text going to respond?
+→ What percentage of Friday night leads turn into booked appointments?
+
+For most clients, the answer is: nothing happens until Monday. And by Monday, that lead has already hired someone else, found another service, or forgotten why they reached out.
+
+The ROI of fixing this is immediate and measurable.
+
+Here's the math we show clients:
+- How many leads do you get/month?
+- What % are you currently responding to same-day?
+- What's your average deal value?
+- What's your current close rate?
+
+Plug those in and the missed revenue number is almost always shocking.
+
+We then show them what happens when AI handles every inbound text in under 60 seconds. The math does the selling.
+
+If anyone wants the calculator we use (it's free), it's here: kyra.conversionsystem.com/roi
+
+Would love to know — what's your current "Friday Night Test" score for your best client?`,
+  },
+];
+
+function ContentCalendarSection() {
+  const platforms = ['linkedin', 'twitter', 'ghl-community'] as const;
+  const [activePlatform, setActivePlatform] = useState<typeof platforms[number]>('linkedin');
+  const [copied, setCopied] = useState<string | null>(null);
+
+  const posts = CONTENT_POSTS.filter(p => p.platform === activePlatform);
+
+  const platformConfig = {
+    linkedin: { label: 'LinkedIn', emoji: 'in', color: 'bg-blue-700', textColor: 'text-blue-700' },
+    twitter: { label: 'Twitter / X', emoji: '𝕏', color: 'bg-gray-900', textColor: 'text-gray-900' },
+    'ghl-community': { label: 'GHL Community', emoji: '🏘️', color: 'bg-orange-600', textColor: 'text-orange-700' },
+    instagram: { label: 'Instagram', emoji: '📸', color: 'bg-pink-600', textColor: 'text-pink-700' },
+  };
+
+  const copyPost = (post: ContentPost) => {
+    navigator.clipboard.writeText(post.content);
+    setCopied(post.hook);
+    setTimeout(() => setCopied(null), 2000);
+  };
+
+  return (
+    <div className="mb-8">
+      <div className="mb-4">
+        <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
+          <Zap className="h-4 w-4 text-purple-500" />
+          Social Content Calendar
+        </h2>
+        <p className="text-xs text-gray-500 mt-0.5">
+          10 ready-to-post pieces across LinkedIn, Twitter, and GHL community. Each tuned to drive agency signups.
+        </p>
+      </div>
+
+      {/* Platform tabs */}
+      <div className="flex gap-2 mb-5">
+        {platforms.map(platform => {
+          const cfg = platformConfig[platform];
+          return (
+            <button
+              key={platform}
+              onClick={() => setActivePlatform(platform)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                activePlatform === platform
+                  ? `${cfg.color} text-white`
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              {platformConfig[platform].label}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="space-y-4">
+        {posts.map(post => (
+          <div key={post.hook} className="border border-gray-200 rounded-xl overflow-hidden bg-white">
+            <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-100">
+              <div>
+                <span className={`inline-block text-xs font-bold px-2 py-0.5 rounded ${platformConfig[post.platform].textColor} bg-opacity-10 border border-current mr-2`}>
+                  {post.angle}
+                </span>
+                <span className="text-xs text-gray-500">{post.label}</span>
+              </div>
+              <button
+                onClick={() => copyPost(post)}
+                className={`shrink-0 inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  copied === post.hook ? 'border-green-200 bg-green-50 text-green-700' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                {copied === post.hook ? <><Check className="h-3 w-3" /> Copied!</> : <><Copy className="h-3 w-3" /> Copy post</>}
+              </button>
+            </div>
+            <div className="p-4">
+              <p className="text-xs font-semibold text-indigo-600 mb-2 italic">Hook: "{post.hook}"</p>
+              <pre className="text-sm text-gray-700 whitespace-pre-wrap font-sans leading-relaxed bg-gray-50 rounded-lg p-3 border border-gray-100 max-h-48 overflow-y-auto">
+                {post.content}
+              </pre>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Cold Acquisition Emails ─────────────────────────────────────────────────
 
 interface ColdEmail {
@@ -760,7 +1137,17 @@ export default function OutreachPage() {
         </p>
       </div>
 
-      {/* Cold acquisition — NEW */}
+      {/* Social content calendar — NEW */}
+      <ContentCalendarSection />
+
+      {/* Divider */}
+      <div className="flex items-center gap-3 mb-6">
+        <div className="flex-1 h-px bg-gray-200" />
+        <span className="text-xs text-gray-400 font-medium uppercase tracking-wider">Cold email sequences</span>
+        <div className="flex-1 h-px bg-gray-200" />
+      </div>
+
+      {/* Cold acquisition */}
       <ColdAcquisitionSection />
 
       {/* Divider */}
