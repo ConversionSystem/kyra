@@ -19,27 +19,26 @@ const PROVISIONER_URL = process.env.OVH_PROVISIONER_URL || 'http://192.99.43.7:9
 const PROVISIONER_SECRET = process.env.OVH_PROVISIONER_SECRET || '';
 const GATEWAY_DOMAIN = 'gw.kyra.conversionsystem.com';
 
-// Provider → OpenClaw model string
-const PROVIDER_MODEL_MAP: Record<string, string> = {
-  anthropic: 'anthropic/claude-haiku-4-5',
-  openrouter: 'openai/gpt-4o-mini',   // openrouter can handle openai models
-  openai: 'openai/gpt-4o-mini',
-  google: 'google/gemini-flash-1.5',
-};
+import { resolveOcModel } from '@/lib/agency/ai-models';
 
 /**
- * Given an agencies.api_keys record, return the winning provider + key.
+ * Given an agencies.api_keys record, return the winning provider + key + model.
  * Priority: anthropic > openrouter > openai > google
+ * Respects selected_models override if set.
  */
 function resolveWinningKey(
-  apiKeys: Record<string, string>
+  apiKeys: Record<string, unknown>
 ): { provider: string; key: string; model: string } | null {
+  const selectedModels = (apiKeys.selected_models as Record<string, string>) || {};
+
   for (const provider of ['anthropic', 'openrouter', 'openai', 'google']) {
-    if (apiKeys[provider]) {
+    const key = apiKeys[provider] as string | undefined;
+    if (key) {
+      const selectedModelId = selectedModels[provider];
       return {
         provider,
-        key: apiKeys[provider],
-        model: PROVIDER_MODEL_MAP[provider] || 'openai/gpt-4o-mini',
+        key,
+        model: resolveOcModel(provider, selectedModelId),
       };
     }
   }
