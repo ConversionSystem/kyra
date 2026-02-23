@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import {
   Inbox, Loader2, User, Bot, Clock, RefreshCw,
   AlertTriangle, Filter, ChevronDown, ChevronUp,
-  MessageSquare, Send, Smartphone, Globe,
+  MessageSquare, Send, Smartphone, Globe, Search, X,
 } from 'lucide-react';
 
 interface Conversation {
@@ -51,6 +51,9 @@ export function ConversationsFeed() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [filterClient, setFilterClient] = useState('');
   const [filterChannel, setFilterChannel] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [searchQuery, setSearchQuery] = useState(''); // debounced
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [page, setPage] = useState(0);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const [secondsSince, setSecondsSince] = useState(0);
@@ -64,6 +67,7 @@ export function ConversationsFeed() {
       const params = new URLSearchParams({ limit: String(LIMIT), page: String(currentPage) });
       if (filterClient) params.set('clientId', filterClient);
       if (filterChannel) params.set('channel', filterChannel);
+      if (searchQuery) params.set('q', searchQuery);
       const res = await fetch(`/api/agency/conversations?${params}`);
       const d = await res.json();
       if (d.migrationRequired) { setMigrationRequired(true); setLoading(false); setRefreshing(false); return; }
@@ -79,10 +83,22 @@ export function ConversationsFeed() {
     setRefreshing(false);
     setLastRefresh(new Date());
     setSecondsSince(0);
-  }, [filterClient, filterChannel, page]);
+  }, [filterClient, filterChannel, searchQuery, page]);
 
-  useEffect(() => { load({ reset: true }); }, [filterClient, filterChannel]); // eslint-disable-line
+  useEffect(() => { load({ reset: true }); }, [filterClient, filterChannel, searchQuery]); // eslint-disable-line
   useEffect(() => { if (!loading) load(); }, [page]); // eslint-disable-line
+
+  // Debounce search input → searchQuery
+  useEffect(() => {
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => {
+      setSearchQuery(searchInput);
+      setPage(0);
+    }, 400);
+    return () => {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    };
+  }, [searchInput]);
 
   // Auto-refresh every 30s
   useEffect(() => {
@@ -146,13 +162,37 @@ CREATE POLICY "Service insert" ON client_conversations FOR INSERT WITH CHECK (tr
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-3 text-sm text-gray-500">
           <Filter className="h-4 w-4" />
-          <span>{total} total</span>
+          {searchQuery ? (
+            <span className="font-medium text-indigo-600">{total} result{total !== 1 ? 's' : ''} for &ldquo;{searchQuery}&rdquo;</span>
+          ) : (
+            <span>{total} total</span>
+          )}
           {/* Live indicator */}
           {lastRefresh && (
             <div className="flex items-center gap-1.5 text-xs text-green-600 bg-green-50 border border-green-200 rounded-full px-2.5 py-0.5">
               <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse inline-block" />
               <span>LIVE · {secondsSince < 60 ? `${secondsSince}s ago` : `${Math.floor(secondsSince / 60)}m ago`}</span>
             </div>
+          )}
+        </div>
+
+        {/* Keyword search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Search messages…"
+            value={searchInput}
+            onChange={e => setSearchInput(e.target.value)}
+            className="pl-8 pr-7 py-1.5 text-sm border border-gray-200 rounded-lg bg-white text-gray-700 focus:outline-none focus:border-indigo-400 w-48"
+          />
+          {searchInput && (
+            <button
+              onClick={() => { setSearchInput(''); setSearchQuery(''); }}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
           )}
         </div>
 
