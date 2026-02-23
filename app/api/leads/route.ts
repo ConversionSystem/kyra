@@ -17,7 +17,7 @@ function getSupabase() {
 }
 
 export async function POST(request: NextRequest) {
-  let body: { email?: string; name?: string; industry?: string; source?: string };
+  let body: { email?: string; name?: string; industry?: string; source?: string; company?: string; size?: string; how?: string; message?: string };
   try { body = await request.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
 
   const email = body.email?.trim().toLowerCase();
@@ -49,8 +49,16 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         from: 'Kyra AI <alerts@kyra.conversionsystem.com>',
         to: 'angel@conversionsystem.com',
-        subject: `🔔 New lead: ${email}`,
-        html: `<p>New landing page lead:<br><strong>${email}</strong>${body.name ? ` (${body.name})` : ''}${body.industry ? ` — ${body.industry}` : ''}</p><p>Source: ${body.source || 'landing'}</p>`,
+        subject: body.source === 'get-demo' ? `🎯 Demo request: ${body.name || email}` : `🔔 New lead: ${email}`,
+        html: `<b>${body.source === 'get-demo' ? '🎯 Demo Request' : '🔔 New Lead'}</b><br><br>
+<b>Email:</b> ${email}<br>
+${body.name ? `<b>Name:</b> ${body.name}<br>` : ''}
+${body.company ? `<b>Company:</b> ${body.company}<br>` : ''}
+${body.industry ? `<b>Industry:</b> ${body.industry}<br>` : ''}
+${body.size ? `<b>GHL clients:</b> ${body.size}<br>` : ''}
+${body.how ? `<b>How they heard:</b> ${body.how}<br>` : ''}
+${body.message ? `<b>Message:</b> ${body.message}<br>` : ''}
+<b>Source:</b> ${body.source || 'landing'}`,
       }),
     }).catch(() => {});
   }
