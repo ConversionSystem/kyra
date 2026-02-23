@@ -280,20 +280,36 @@ export async function POST(request: NextRequest) {
     }).catch(err => console.warn('[welcome-email] Failed to send:', err));
   }
 
-  // ── Referral tracking (fire-and-forget) ─────────────────────────────────
+  // ── Referral tracking + reward (fire-and-forget) ────────────────────────
   if (referralId && referralId !== agency.id) {
-    void serviceClient
-      .from('agency_referrals')
-      .insert({
-        referrer_id: referralId,
-        referred_id: agency.id,
-        referred_email: user.email,
-        status: 'signed_up',
-      })
-      .then(({ error }) => {
-        if (error) console.warn('[referral] Failed to log:', error.message);
-        else console.log(`[referral] Agency ${agency.id} referred by ${referralId}`);
-      });
+    void (async () => {
+      const { error } = await serviceClient
+        .from('agency_referrals')
+        .insert({
+          referrer_id: referralId,
+          referred_id: agency.id,
+          referred_email: user.email,
+          status: 'signed_up',
+        });
+      if (error) {
+        console.warn('[referral] Failed to log:', error.message);
+        return;
+      }
+      console.log(`[referral] Agency ${agency.id} referred by ${referralId}`);
+
+      // 🎁 Reward the referrer with 500 credits ($5 value)
+      try {
+        await addCredits(
+          referralId,
+          500,
+          'bonus',
+          `Referral reward — ${agency.name} signed up via your link 🎉`,
+        );
+        console.log(`[referral] Granted 500 credits to referrer ${referralId}`);
+      } catch (e) {
+        console.warn('[referral] Failed to grant reward credits:', e);
+      }
+    })();
   }
 
   // ── New signup webhook (fire-and-forget) ────────────────────────────────
