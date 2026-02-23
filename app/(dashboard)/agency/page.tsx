@@ -13,9 +13,9 @@ import {
 } from 'lucide-react';
 import CeoActionBoard from '@/components/dashboard/ceo-action-board';
 import AgencyAnalyticsStrip from '@/components/dashboard/agency-analytics-strip';
-<<<<<<< HEAD
 import WhatsNewBanner from '@/components/dashboard/whats-new-banner';
 import AgencyChecklist from '@/components/dashboard/agency-checklist';
+import ClientSparkline from '@/components/dashboard/client-sparkline';
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -336,6 +336,9 @@ export default async function AgencyOverviewPage() {
                   </div>
                   <div className="flex items-center justify-between text-xs text-gray-500">
                     <span>{client.usage_this_month.toLocaleString()} conversations</span>
+                  </div>
+                  <div className="mt-2">
+                    <ClientSparkline clientId={client.id} />
                   </div>
                   <p className={`text-xs mt-1.5 truncate ${
                     northStar ? 'text-gray-400' : 'text-gray-300 italic'
