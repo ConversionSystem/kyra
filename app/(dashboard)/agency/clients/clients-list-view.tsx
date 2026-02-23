@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Plus, Search, FileDown, Loader2, Sparkles } from 'lucide-react';
 import type { AgencyClient } from '@/lib/agency/queries';
+import HealthScoreBadge from '@/components/dashboard/health-score-badge';
 
 // ── Setup Score ──────────────────────────────────────────────────────────────
 // 3 pillars: Personality configured, GHL connected, AI tested/active
@@ -290,6 +291,7 @@ export function ClientsListView({ clients, plan = 'free', clientLimit = 1 }: Cli
                   <th className="p-4 font-medium">Status</th>
                   <th className="p-4 font-medium">Template</th>
                   <th className="p-4 font-medium">Setup</th>
+                  <th className="p-4 font-medium">Health</th>
                   <th className="p-4 font-medium text-right">Usage</th>
                   <th className="p-4 font-medium">Created</th>
                 </tr>
@@ -317,6 +319,7 @@ export function ClientsListView({ clients, plan = 'free', clientLimit = 1 }: Cli
                     </td>
                     <td className="p-4 text-gray-500 text-xs">{client.template?.name ?? '—'}</td>
                     <td className="p-4"><SetupScore client={client} /></td>
+                    <td className="p-4"><HealthScoreBadge clientId={client.id} /></td>
                     <td className="p-4 text-right text-gray-700">{client.usage_this_month.toLocaleString()}</td>
                     <td className="p-4 text-gray-500 text-xs">
                       {new Date(client.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}

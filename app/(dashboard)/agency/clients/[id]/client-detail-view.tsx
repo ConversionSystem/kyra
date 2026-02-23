@@ -44,6 +44,7 @@ import type { AgencyClient, AgencyMember } from '@/lib/agency/queries';
 import GHLConnection from './ghl-connection';
 import { UsageAnalytics } from './usage-analytics';
 import PermissionsCard from './permissions-card';
+import HealthScoreBadge from '@/components/dashboard/health-score-badge';
 
 // ── Setup Nudge Banner ────────────────────────────────────────────────────────
 
@@ -449,8 +450,28 @@ function TestChatTab({ client }: { client: AgencyClient }) {
         </div>
       </div>
 
+      {/* Performance Report link */}
+      <div className="mt-3 flex items-center gap-2 rounded-lg bg-green-50 border border-green-100 px-3 py-2">
+        <span className="text-[10px] text-green-700 flex-1">📊 Share performance report with your client</span>
+        <a
+          href={`/report/${client.id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="shrink-0 text-[10px] font-semibold text-green-700 hover:text-green-900 flex items-center gap-1"
+        >
+          View <ExternalLink className="h-3 w-3" />
+        </a>
+        <button
+          onClick={() => { navigator.clipboard.writeText(`${typeof window !== 'undefined' ? window.location.origin : ''}/report/${client.id}`); }}
+          className="shrink-0 text-green-500 hover:text-green-700"
+          title="Copy performance report link"
+        >
+          <Copy className="h-3.5 w-3.5" />
+        </button>
+      </div>
+
       {/* ── Test Chat ── */}
-      <p className="text-sm text-gray-500 mb-3">
+      <p className="text-sm text-gray-500 mb-3 mt-4">
         Test the AI below — or share the portal link with your client so they can control it directly.
       </p>
       <div className="rounded-lg border border-gray-200 bg-white shadow-sm h-96 overflow-y-auto mb-3 p-4 space-y-3">
@@ -1145,6 +1166,7 @@ function UsageTab({ client }: { client: AgencyClient }) {
       <p className="text-sm text-gray-500">
         Messages handled, response times, and costs for this client&apos;s AI assistant.
       </p>
+      <HealthScoreBadge clientId={client.id} showDetails />
       <UsageAnalytics clientId={client.id} />
     </div>
   );
