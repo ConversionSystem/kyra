@@ -1,16 +1,14 @@
-import Link from 'next/link';
-import { Check, Zap } from 'lucide-react';
-import type { Metadata } from 'next';
+'use client';
 
-export const metadata: Metadata = {
-  title: 'Pricing — Kyra AI Employee Platform',
-  description: 'Deploy AI employees for your GHL agency clients. Free to start, paid plans from $99/mo. No credit card required.',
-};
+import Link from 'next/link';
+import { useState } from 'react';
+import { Check, Zap, BadgePercent } from 'lucide-react';
 
 const PLANS = [
   {
     name: 'Free',
-    price: '$0',
+    monthly: 0, annual: 0,
+    annualSave: null,
     period: 'forever',
     desc: 'Try Kyra with one real client. No credit card.',
     cta: 'Get Started Free',
@@ -32,7 +30,8 @@ const PLANS = [
   },
   {
     name: 'Lite',
-    price: '$99',
+    monthly: 99, annual: 79,
+    annualSave: 240,
     period: '/month',
     desc: 'For agencies adding AI to their first 5 clients.',
     cta: 'Start 30-Day Trial',
@@ -51,7 +50,8 @@ const PLANS = [
   },
   {
     name: 'Pro',
-    price: '$249',
+    monthly: 249, annual: 199,
+    annualSave: 600,
     period: '/month',
     desc: 'When you\'re selling AI employees as a core offer.',
     cta: 'Start 30-Day Trial',
@@ -70,7 +70,8 @@ const PLANS = [
   },
   {
     name: 'Scale',
-    price: '$499',
+    monthly: 499, annual: 399,
+    annualSave: 1200,
     period: '/month',
     desc: 'Full agency operation — 50 clients, maximum output.',
     cta: 'Start 30-Day Trial',
@@ -92,31 +93,33 @@ const PLANS = [
 const FAQ = [
   {
     q: 'Do I need GoHighLevel to use Kyra?',
-    a: 'GHL is required for SMS and multi-channel features (WhatsApp, Instagram DMs, Facebook, etc.). Kyra\'s web chat widget works on any website without GHL. Most agency use cases need GHL for the full feature set.',
+    a: 'GHL is required for SMS and multi-channel features. Kyra\'s web chat widget works on any website without GHL. Most agency use cases need GHL for the full feature set.',
   },
   {
     q: 'What does "AI employee" mean exactly?',
-    a: 'Each AI employee is an isolated AI agent with its own personality, memory, and channels — configured for one client business. It responds to their leads, books appointments, updates their CRM, and escalates to humans when needed. It\'s not a chatbot template — it\'s a fully autonomous agent.',
+    a: 'Each AI employee is an isolated AI agent with its own personality, memory, and channels — configured for one client business. It responds to their leads, books appointments, updates their CRM, and escalates to humans when needed.',
   },
   {
     q: 'How do agencies make money with Kyra?',
-    a: 'Agencies charge clients $500–$2,000/month per AI employee (as a retainer or add-on). At the Pro plan ($249/mo, 15 clients), even billing $500/client generates $7,500/mo with $7,251/mo margin. Most agencies charge $997–$1,497/mo per client.',
+    a: 'Agencies charge clients $500–$2,000/month per AI employee. At Pro ($249/mo, 15 clients), billing $997/client = $14,955/mo revenue — $14,706/mo gross margin. Most agencies start at $497–$997/mo per client.',
   },
   {
     q: 'What is BYOK (Bring Your Own Key)?',
-    a: 'On Lite+ plans, you can connect your own OpenAI API key. This gives you full control over AI costs and model selection. On the Free plan, Kyra\'s default key is used (GPT-4o mini).',
+    a: 'On Lite+ plans, connect your own OpenAI or Anthropic API key. Full control over AI costs and model selection. On Free, Kyra\'s shared key is used.',
   },
   {
     q: 'Is there a long-term contract?',
-    a: 'No. Monthly billing, cancel anytime. 30-day free trial on all paid plans — no credit card required to start.',
+    a: 'Monthly plans cancel anytime. Annual plans are billed upfront for the year and save 20%. 30-day free trial on all paid plans.',
   },
   {
     q: 'What happens if my client count exceeds my plan?',
-    a: 'You\'ll see a prompt to upgrade before you can add more clients. Existing clients are never interrupted.',
+    a: 'You\'ll see a prompt to upgrade before adding more clients. Existing clients are never interrupted.',
   },
 ];
 
 export default function PricingPage() {
+  const [annual, setAnnual] = useState(false);
+
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white">
       {/* Nav */}
@@ -146,75 +149,133 @@ export default function PricingPage() {
           Simple pricing.<br />
           <span className="text-indigo-400">Massive ROI.</span>
         </h1>
-        <p className="text-slate-400 text-lg max-w-xl mx-auto">
+        <p className="text-slate-400 text-lg max-w-xl mx-auto mb-10">
           You pay $99–$499/mo. You bill clients $500–$2,000/mo each. The math works from day one.
         </p>
+
+        {/* Billing toggle */}
+        <div className="inline-flex items-center gap-3 bg-white/10 rounded-full p-1.5 border border-white/10">
+          <button
+            onClick={() => setAnnual(false)}
+            className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${!annual ? 'bg-white text-gray-900 shadow' : 'text-slate-400 hover:text-white'}`}
+          >
+            Monthly
+          </button>
+          <button
+            onClick={() => setAnnual(true)}
+            className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold transition-all ${annual ? 'bg-white text-gray-900 shadow' : 'text-slate-400 hover:text-white'}`}
+          >
+            Annual
+            <span className={`text-xs font-bold px-2 py-0.5 rounded-full transition-colors ${annual ? 'bg-green-500 text-white' : 'bg-green-800/60 text-green-300'}`}>
+              Save 20%
+            </span>
+          </button>
+        </div>
       </section>
 
       {/* Plans */}
       <section className="max-w-6xl mx-auto px-4 pb-20">
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {PLANS.map((plan) => (
-            <div
-              key={plan.name}
-              className={`relative rounded-2xl border flex flex-col ${
-                plan.featured
-                  ? 'border-indigo-500 bg-indigo-950/50'
-                  : 'border-white/10 bg-white/5'
-              }`}
-            >
-              {plan.badge && (
-                <div className={`text-xs font-semibold px-3 py-1.5 rounded-t-2xl text-center ${
-                  plan.featured ? 'bg-indigo-600 text-white' : 'bg-white/10 text-slate-300'
-                }`}>
-                  {plan.badge}
-                </div>
-              )}
-              <div className="p-6 flex flex-col flex-1">
-                <div className="mb-4">
-                  <h2 className="text-lg font-bold">{plan.name}</h2>
-                  <div className="flex items-baseline gap-1 mt-1">
-                    <span className="text-3xl font-black">{plan.price}</span>
-                    <span className="text-slate-400 text-sm">{plan.period}</span>
+          {PLANS.map((plan) => {
+            const price = annual && plan.annual > 0 ? plan.annual : plan.monthly;
+            const displayPrice = price === 0 ? '$0' : `$${price}`;
+            const hrefWithBilling = annual && plan.annual > 0
+              ? plan.href + (plan.href.includes('?') ? '&billing=annual' : '?billing=annual')
+              : plan.href;
+
+            return (
+              <div
+                key={plan.name}
+                className={`relative rounded-2xl border flex flex-col ${
+                  plan.featured
+                    ? 'border-indigo-500 bg-indigo-950/50'
+                    : 'border-white/10 bg-white/5'
+                }`}
+              >
+                {plan.badge && (
+                  <div className={`text-xs font-semibold px-3 py-1.5 rounded-t-2xl text-center ${
+                    plan.featured ? 'bg-indigo-600 text-white' : 'bg-white/10 text-slate-300'
+                  }`}>
+                    {plan.badge}
                   </div>
-                  <p className="text-slate-400 text-sm mt-2">{plan.desc}</p>
+                )}
+                <div className="p-6 flex flex-col flex-1">
+                  <div className="mb-4">
+                    <h2 className="text-lg font-bold">{plan.name}</h2>
+                    <div className="flex items-baseline gap-1 mt-1">
+                      <span className="text-3xl font-black">{displayPrice}</span>
+                      <span className="text-slate-400 text-sm">{price === 0 ? plan.period : '/month'}</span>
+                    </div>
+                    {annual && plan.annualSave && (
+                      <div className="flex items-center gap-1.5 mt-1.5">
+                        <BadgePercent className="h-3.5 w-3.5 text-green-400" />
+                        <span className="text-xs text-green-400 font-semibold">
+                          Save ${plan.annualSave}/year · billed annually
+                        </span>
+                      </div>
+                    )}
+                    {!annual && plan.annualSave && (
+                      <p className="text-xs text-slate-600 mt-1.5">
+                        Switch to annual → save ${plan.annualSave}/year
+                      </p>
+                    )}
+                    <p className="text-slate-400 text-sm mt-2">{plan.desc}</p>
+                  </div>
+
+                  <ul className="space-y-2 mb-6 flex-1">
+                    {plan.features.map((f) => (
+                      <li key={f} className="flex items-start gap-2 text-sm">
+                        <Check className="h-4 w-4 text-green-400 shrink-0 mt-0.5" />
+                        <span>{f}</span>
+                      </li>
+                    ))}
+                    {plan.limits.map((l) => (
+                      <li key={l} className="flex items-start gap-2 text-sm text-slate-500">
+                        <span className="text-slate-600 shrink-0 mt-0.5">—</span>
+                        <span>{l}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <Link
+                    href={hrefWithBilling}
+                    className={`block text-center py-3 px-4 rounded-xl font-bold text-sm transition ${
+                      plan.featured
+                        ? 'bg-indigo-600 hover:bg-indigo-500 text-white'
+                        : 'bg-white/10 hover:bg-white/15 border border-white/10 text-white'
+                    }`}
+                  >
+                    {plan.cta}
+                  </Link>
                 </div>
+              </div>
+            );
+          })}
+        </div>
 
-                <ul className="space-y-2 mb-6 flex-1">
-                  {plan.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2 text-sm">
-                      <Check className="h-4 w-4 text-green-400 shrink-0 mt-0.5" />
-                      <span>{f}</span>
-                    </li>
-                  ))}
-                  {plan.limits.map((l) => (
-                    <li key={l} className="flex items-start gap-2 text-sm text-slate-500">
-                      <span className="text-slate-600 shrink-0 mt-0.5">—</span>
-                      <span>{l}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <Link
-                  href={plan.href}
-                  className={`block text-center py-3 px-4 rounded-xl font-bold text-sm transition ${
-                    plan.featured
-                      ? 'bg-indigo-600 hover:bg-indigo-500 text-white'
-                      : 'bg-white/10 hover:bg-white/15 border border-white/10 text-white'
-                  }`}
-                >
-                  {plan.cta}
-                </Link>
+        {/* Annual savings summary bar */}
+        {annual && (
+          <div className="mt-6 rounded-2xl border border-green-800/40 bg-green-950/30 p-5 flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <BadgePercent className="h-6 w-6 text-green-400" />
+              <div>
+                <p className="font-bold text-white">Annual billing saves you real money</p>
+                <p className="text-sm text-green-300/70">Pro plan: save $600/yr · Scale: save $1,200/yr</p>
               </div>
             </div>
-          ))}
-        </div>
+            <span className="text-xs text-green-400 border border-green-700 rounded-full px-3 py-1">
+              Billed as one annual payment
+            </span>
+          </div>
+        )}
 
         {/* ROI callout */}
         <div className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-6 sm:p-8 text-center">
-          <p className="text-slate-400 text-sm mb-1">At Pro plan ($249/mo) with 10 clients billed at $997/mo each:</p>
-          <p className="text-2xl font-black text-green-400">$9,970/mo agency revenue · $9,721/mo gross margin</p>
-          <p className="text-slate-500 text-xs mt-1">Before your API key costs (typically $0.50–$2/client/mo at moderate volume)</p>
+          <p className="text-slate-400 text-sm mb-1">At Pro plan {annual ? '($199/mo annual)' : '($249/mo)'} with 10 clients billed at $997/mo each:</p>
+          <p className="text-2xl font-black text-green-400">
+            $9,970/mo revenue · ${annual ? '9,771' : '9,721'}/mo gross margin
+          </p>
+          <p className="text-slate-500 text-xs mt-1">Before API key costs (typically $0.50–$2/client/mo)</p>
         </div>
       </section>
 
