@@ -403,6 +403,9 @@ async function forwardToContainer(
   agencyId?: string,
   reply?: { contactId?: string; messageType?: string }
 ): Promise<void> {
+  // Shared Supabase service client for conversation logging
+  const supabase = createServiceClientWithoutCookies();
+
   // Resolve the client's own gateway (OVH per-client isolation)
   const clientGateway = await getGatewayByClientId(clientId);
   const workerUrl = clientGateway?.url;
@@ -435,6 +438,8 @@ async function forwardToContainer(
         model: 'openai/gpt-4o-mini',
         messages: chatMessages,
         stream: false,
+        tool_choice: 'none',  // Disable tool/function calls — GHL responses must be plain text
+        max_tokens: 500,       // Keep responses concise for SMS/messaging channels
       }),
       signal: controller.signal,
     });
@@ -462,7 +467,32 @@ async function forwardToContainer(
 
     console.log(`[ghl-webhook] ✅ AI response (${aiText.length} chars) for client ${clientId}`);
 
-    // Send reply back via GHL API if we have a contactId
+    // ── Log conversation to client_conversations ──────────────────────────────
+    if (agencyId) {
+      const channelLabel = reply?.messageType
+        ? (reply.messageType.replace('TYPE_', '').toLowerCase())
+        : 'sms';
+      const tokensUsed = (completion as { usage?: { total_tokens?: number } })
+        .usage?.total_tokens ?? null;
+
+      supabase
+        .from('client_conversations')
+        .insert({
+          client_id: clientId,
+          agency_id: agencyId,
+          channel: channelLabel,
+          user_message: message,
+          ai_response: aiText,
+          tokens_used: tokensUsed,
+          created_at: new Date().toISOString(),
+        })
+        .then(({ error: logErr }) => {
+          if (logErr) console.warn('[ghl-webhook] Failed to log conversation:', logErr.message);
+          else console.log(`[ghl-webhook] 📝 Conversation logged for client ${clientId}`);
+        });
+    }
+
+    // ── Send reply back via GHL ───────────────────────────────────────────────
     if (reply?.contactId) {
       try {
         const accessToken = await getValidToken(clientId);
@@ -501,9 +531,27 @@ function buildInboundSystemContext(info: {
   channel: string;
   messageId: string;
 }): string {
+  // Build accurate current date/time context so the AI knows exactly when it is
+  const now = new Date();
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const months = ['January', 'February', 'March', 'April', 'May', 'June',
+                  'July', 'August', 'September', 'October', 'November', 'December'];
+  const dayName = days[now.getUTCDay()];
+  const monthName = months[now.getUTCMonth()];
+  const dateStr = `${dayName}, ${monthName} ${now.getUTCDate()}, ${now.getUTCFullYear()}`;
+  const timeStr = now.toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
+
   const lines = [
     `You are the AI assistant for "${info.clientName}" (industry: ${info.clientIndustry}).`,
     `This is an inbound ${info.channel} message from a customer via GoHighLevel.`,
+    '',
+    '--- Current Date & Time ---',
+    `Today is: ${dateStr}`,
+    `Current time: ${timeStr}`,
+    `ISO 8601: ${now.toISOString()}`,
+    'IMPORTANT: Always use the current year and date above when scheduling appointments.',
+    'Never use dates from the past. If a customer mentions a day like "Tuesday the 24th",',
+    'calculate the correct upcoming date relative to today\'s date shown above.',
     '',
     '--- Contact Info ---',
     `Name: ${info.contactName}`,
@@ -516,12 +564,22 @@ function buildInboundSystemContext(info: {
   lines.push(`GHL Message ID: ${info.messageId}`);
 
   lines.push('');
+  lines.push('--- Scheduling & Appointments ---');
+  lines.push('If a customer asks to book, schedule, or set up a meeting/appointment:');
+  lines.push('1. DO NOT use any internal calendar or scheduling tools (schedule.at, cron, etc.)');
+  lines.push('2. DO NOT say "I will schedule your meeting" — you cannot book directly via SMS.');
+  lines.push('3. INSTEAD: Send them the booking link and invite them to pick a time.');
+  lines.push('4. Keep it short: "Great! Book here: [link] — takes 2 min."');
+  lines.push('5. NEVER include error messages, tool output, or system text in your reply.');
+  lines.push('6. Your reply must ONLY contain what the customer should read.');
+  lines.push('');
   lines.push('--- Response Guidelines ---');
   lines.push(`Channel: ${info.channel}`);
 
   if (info.channel === 'SMS') {
     lines.push('Keep your response SHORT — SMS has character limits. Be concise and actionable.');
     lines.push('Max ~160 characters per segment. Stay under 320 characters if possible.');
+    lines.push('No markdown, no asterisks, no bullet points — plain text only for SMS.');
   } else if (info.channel === 'Email') {
     lines.push('You may write a longer, more detailed response for email.');
     lines.push('Use professional formatting with greeting and sign-off.');
@@ -533,8 +591,9 @@ function buildInboundSystemContext(info: {
   }
 
   lines.push('');
-  lines.push('To reply, use the GHL send message tool with the conversation ID above.');
-  lines.push('IMPORTANT: Always respond to the customer. Do not leave messages unanswered.');
+  lines.push('CRITICAL: Your response is sent DIRECTLY to the customer. It must be clean,');
+  lines.push('professional, and contain ONLY what a human would want to read. No system');
+  lines.push('messages, no error text, no tool output, no internal notes. Just your reply.');
 
   return lines.join('\n');
 }
