@@ -10,6 +10,7 @@ export interface Agency {
   name: string;
   slug: string;
   plan: 'free' | 'starter' | 'pro' | 'scale';
+  account_level: 'master' | 'agency';
   stripe_customer_id: string | null;
   stripe_connect_account_id: string | null;
   stripe_onboarding_complete: boolean;
@@ -18,6 +19,30 @@ export interface Agency {
   settings: Record<string, unknown>;
   created_at: string;
   updated_at: string;
+}
+
+export interface SubAccountMember {
+  id: string;
+  client_id: string;
+  agency_id: string;
+  user_id: string | null;
+  email: string;
+  role: 'owner' | 'admin' | 'viewer';
+  invited_by: string | null;
+  accepted_at: string | null;
+  created_at: string;
+}
+
+export interface SubAccountInvitation {
+  id: string;
+  client_id: string;
+  agency_id: string;
+  email: string;
+  role: 'owner' | 'admin' | 'viewer';
+  token: string;
+  expires_at: string;
+  accepted_at: string | null;
+  created_at: string;
 }
 
 export interface AgencyMember {
