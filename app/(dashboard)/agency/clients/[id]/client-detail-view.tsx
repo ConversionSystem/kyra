@@ -38,6 +38,8 @@ import {
   Phone,
   Radio,
   MessageCircle,
+  X,
+  Plus,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { AgencyClient, AgencyMember } from '@/lib/agency/queries';
@@ -555,6 +557,26 @@ function AIPersonalityTab({ client }: { client: AgencyClient }) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  // Proactive greeting
+  const [proactiveEnabled, setProactiveEnabled] = useState((cfg.proactive_enabled as boolean) ?? false);
+  const [proactiveGreeting, setProactiveGreeting] = useState((cfg.proactive_greeting as string) ?? '');
+
+  // Wake words — keyword → action pairs
+  type WakeWordAction = 'pause' | 'escalate' | 'custom';
+  interface WakeWord { keyword: string; action: WakeWordAction; response: string }
+  const [wakeWords, setWakeWords] = useState<WakeWord[]>(
+    (cfg.wake_words as WakeWord[]) ?? []
+  );
+
+  const addWakeWord = () =>
+    setWakeWords((prev) => [...prev, { keyword: '', action: 'escalate', response: '' }]);
+
+  const removeWakeWord = (i: number) =>
+    setWakeWords((prev) => prev.filter((_, idx) => idx !== i));
+
+  const updateWakeWord = (i: number, patch: Partial<WakeWord>) =>
+    setWakeWords((prev) => prev.map((w, idx) => idx === i ? { ...w, ...patch } : w));
+
   const handleGenerate = async () => {
     setIsGenerating(true);
     setMessage(null);
@@ -596,6 +618,9 @@ function AIPersonalityTab({ client }: { client: AgencyClient }) {
             widget_title: widgetTitle.trim() || undefined,
             widget_color: widgetColor || '#6366f1',
             widget_greeting: widgetGreeting.trim() || undefined,
+            proactive_enabled: proactiveEnabled,
+            proactive_greeting: proactiveGreeting.trim() || undefined,
+            wake_words: wakeWords.filter((w) => w.keyword.trim()),
           },
         }),
       });
@@ -904,6 +929,104 @@ function AIPersonalityTab({ client }: { client: AgencyClient }) {
               </div>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Proactive first message + Wake words */}
+      <Card>
+        <CardHeader>
+          <CardTitle>🚀 Proactive Greeting</CardTitle>
+          <CardDescription>
+            When a new GHL contact is added, should the AI reach out first? Enable this and set the opening message.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setProactiveEnabled(!proactiveEnabled)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${proactiveEnabled ? 'bg-indigo-600' : 'bg-gray-200'}`}
+            >
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${proactiveEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+            </button>
+            <label className="text-sm font-medium text-gray-700">
+              {proactiveEnabled ? 'AI reaches out to new contacts' : 'Proactive greeting disabled'}
+            </label>
+          </div>
+          {proactiveEnabled && (
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-gray-700">Opening message</label>
+              <Textarea
+                value={proactiveGreeting}
+                onChange={(e) => setProactiveGreeting(e.target.value)}
+                placeholder={`Hi {{firstName}}, this is ${client.name}'s AI assistant! How can I help you today?`}
+                className="bg-gray-50 min-h-[80px] text-sm"
+              />
+              <p className="text-xs text-gray-400">Use {'{{firstName}}'} and {'{{lastName}}'} to personalize with GHL contact data.</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>⚡ Wake Words</CardTitle>
+          <CardDescription>
+            Keywords that trigger a specific AI behavior. When a customer says one of these words, the AI takes the configured action.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {wakeWords.length === 0 && (
+            <p className="text-sm text-gray-400 italic">No wake words configured. Add one below.</p>
+          )}
+          {wakeWords.map((w, i) => (
+            <div key={i} className="flex items-start gap-2 p-3 rounded-lg border border-gray-100 bg-gray-50">
+              <div className="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <input
+                  type="text"
+                  placeholder="Keyword (e.g. STOP)"
+                  value={w.keyword}
+                  onChange={(e) => updateWakeWord(i, { keyword: e.target.value })}
+                  className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-400 uppercase"
+                />
+                <select
+                  value={w.action}
+                  onChange={(e) => updateWakeWord(i, { action: e.target.value as WakeWordAction })}
+                  className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-400"
+                >
+                  <option value="pause">Pause AI responses</option>
+                  <option value="escalate">Escalate to human</option>
+                  <option value="custom">Reply with custom text</option>
+                </select>
+                {w.action === 'custom' && (
+                  <input
+                    type="text"
+                    placeholder="Custom reply text…"
+                    value={w.response}
+                    onChange={(e) => updateWakeWord(i, { response: e.target.value })}
+                    className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-400"
+                  />
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => removeWakeWord(i)}
+                className="shrink-0 mt-1 text-gray-400 hover:text-red-500 transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={addWakeWord}
+            className="flex items-center gap-1.5 text-sm text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
+          >
+            <Plus className="h-4 w-4" /> Add wake word
+          </button>
+          <p className="text-xs text-gray-400">
+            Common wake words: STOP (pause), UNSUBSCRIBE (pause), HUMAN / AGENT (escalate), PRICE (custom reply).
+          </p>
         </CardContent>
       </Card>
 
