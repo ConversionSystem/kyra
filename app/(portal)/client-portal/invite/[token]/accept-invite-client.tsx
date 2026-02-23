@@ -31,7 +31,7 @@ export default function AcceptInviteClient({ token, invite, client, branding, us
     return <InviteError title="Invalid invite link" message="This invite link doesn't exist or has already been deleted." />;
   }
   if (invite.accepted_at) {
-    return <InviteError title="Already accepted" message="This invite link has already been used." actionHref={`/portal/${invite.client_id}`} actionLabel="Go to portal" />;
+    return <InviteError title="Already accepted" message="This invite link has already been used." actionHref={`/client-portal/${invite.client_id}`} actionLabel="Go to portal" />;
   }
   if (new Date(invite.expires_at) < new Date()) {
     return <InviteError title="Invite expired" message="This invite link expired. Ask your agency to send a new one." />;

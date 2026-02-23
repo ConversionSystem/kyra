@@ -13,7 +13,7 @@ export default async function PortalPage({ params }: Props) {
   const { data: { user } } = await sb.auth.getUser();
 
   // Must be logged in
-  if (!user) redirect(`/login?next=/portal/${clientId}`);
+  if (!user) redirect(`/login?next=/client-portal/${clientId}`);
 
   const service = createServiceClientWithoutCookies();
 
@@ -52,7 +52,7 @@ export default async function PortalPage({ params }: Props) {
   const isMaster = ['angel@conversionsystem.com'].includes(user.email ?? '');
 
   if (!isMaster && !agencyMembership && !portalMembership) {
-    redirect(`/portal/${clientId}/request-access`);
+    redirect(`/client-portal/${clientId}/request-access`);
   }
 
   const isAgencyMember = !!agencyMembership;
