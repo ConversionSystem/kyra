@@ -940,6 +940,12 @@ function SettingsTab({
   const [industry, setIndustry] = useState(client.industry);
   const [status, setStatus] = useState(client.status);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Internal agency notes — stored in settings.agency_notes
+  const [notes, setNotes] = useState<string>(
+    ((client.settings as Record<string, unknown>)?.agency_notes as string) ?? ''
+  );
+  const [isSavingNotes, setIsSavingNotes] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -982,6 +988,24 @@ function SettingsTab({
       setSaveMessage({ type: 'error', text: 'Failed to save.' });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleSaveNotes = async () => {
+    setIsSavingNotes(true);
+    setSaveMessage(null);
+    try {
+      const res = await fetch(`/api/agency/clients/${client.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ settings: { agency_notes: notes } }),
+      });
+      if (!res.ok) throw new Error('Failed to save notes');
+      setSaveMessage({ type: 'success', text: 'Notes saved.' });
+    } catch {
+      setSaveMessage({ type: 'error', text: 'Failed to save notes.' });
+    } finally {
+      setIsSavingNotes(false);
     }
   };
 
@@ -1072,6 +1096,40 @@ function SettingsTab({
           <Button onClick={handleSave} disabled={isSaving} className="gap-2">
             {isSaving ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving...</> : <><Save className="h-4 w-4" /> Save Changes</>}
           </Button>
+        </CardContent>
+      </Card>
+
+      {/* Private Notes */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Private Notes</CardTitle>
+          <CardDescription>
+            Internal notes visible only to your agency team. Great for context, onboarding details, client preferences, or follow-up reminders.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="e.g. Client prefers Spanish. Using their own OpenAI key (Tier 1). Key contact: Maria at (555) 234-5678. GHL setup completed Feb 2026..."
+            className="min-h-[120px] bg-gray-50 text-sm resize-y"
+          />
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs text-gray-400">
+              {notes.length > 0 ? `${notes.length} characters` : 'No notes yet'}
+            </p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleSaveNotes}
+              disabled={isSavingNotes}
+              className="gap-2"
+            >
+              {isSavingNotes
+                ? <><Loader2 className="h-3 w-3 animate-spin" /> Saving...</>
+                : <><Save className="h-3 w-3" /> Save Notes</>}
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
