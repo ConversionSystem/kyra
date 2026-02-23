@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Search, FileDown, Loader2, Sparkles } from 'lucide-react';
+import { Plus, Search, FileDown, Loader2, Sparkles, Pause, Play, Trash2, CheckSquare, Square } from 'lucide-react';
 import type { AgencyClient } from '@/lib/agency/queries';
 import HealthScoreBadge from '@/components/dashboard/health-score-badge';
 
@@ -97,6 +97,58 @@ export function ClientsListView({ clients, plan = 'free', clientLimit = 1 }: Cli
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isBulkExporting, setIsBulkExporting] = useState(false);
   const [demoCreating, setDemoCreating] = useState(false);
+
+  // Bulk selection
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isBulkActing, setIsBulkActing] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = (currentFiltered: AgencyClient[]) => {
+    const allSelected = currentFiltered.length > 0 && currentFiltered.every((c) => selectedIds.has(c.id));
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(currentFiltered.map((c) => c.id)));
+    }
+  };
+
+  const handleBulkStatus = async (status: 'active' | 'paused') => {
+    setIsBulkActing(true);
+    await Promise.all(
+      [...selectedIds].map((id) =>
+        fetch(`/api/agency/clients/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status }),
+        })
+      )
+    );
+    setSelectedIds(new Set());
+    setIsBulkActing(false);
+    router.refresh();
+  };
+
+  const handleBulkDelete = async () => {
+    if (!confirmingDelete) { setConfirmingDelete(true); return; }
+    setIsBulkActing(true);
+    setConfirmingDelete(false);
+    await Promise.all(
+      [...selectedIds].map((id) =>
+        fetch(`/api/agency/clients/${id}`, { method: 'DELETE' })
+      )
+    );
+    setSelectedIds(new Set());
+    setIsBulkActing(false);
+    router.refresh();
+  };
 
   const handleCreateDemo = async () => {
     setDemoCreating(true);
@@ -243,6 +295,49 @@ export function ClientsListView({ clients, plan = 'free', clientLimit = 1 }: Cli
         </div>
       </div>
 
+      {/* Bulk action toolbar */}
+      {selectedIds.size > 0 && (
+        <div className="mb-4 flex items-center gap-3 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2.5">
+          <span className="text-sm font-semibold text-indigo-700">
+            {selectedIds.size} client{selectedIds.size !== 1 ? 's' : ''} selected
+          </span>
+          <div className="flex-1" />
+          <button
+            onClick={() => { setSelectedIds(new Set()); setConfirmingDelete(false); }}
+            className="text-xs text-indigo-400 hover:text-indigo-700 transition-colors"
+          >
+            Deselect all
+          </button>
+          <button
+            onClick={() => handleBulkStatus('active')}
+            disabled={isBulkActing}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-green-200 bg-white px-3 py-1.5 text-xs font-semibold text-green-700 hover:bg-green-50 transition-colors disabled:opacity-50"
+          >
+            <Play className="h-3 w-3" /> Resume
+          </button>
+          <button
+            onClick={() => handleBulkStatus('paused')}
+            disabled={isBulkActing}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 bg-white px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-50 transition-colors disabled:opacity-50"
+          >
+            <Pause className="h-3 w-3" /> Pause
+          </button>
+          <button
+            onClick={handleBulkDelete}
+            disabled={isBulkActing}
+            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
+              confirmingDelete
+                ? 'border-red-400 bg-red-600 text-white hover:bg-red-700'
+                : 'border-red-200 bg-white text-red-600 hover:bg-red-50'
+            }`}
+          >
+            <Trash2 className="h-3 w-3" />
+            {confirmingDelete ? 'Confirm delete?' : 'Delete'}
+          </button>
+          {isBulkActing && <Loader2 className="h-4 w-4 animate-spin text-indigo-500 shrink-0" />}
+        </div>
+      )}
+
       {/* Empty state */}
       {filtered.length === 0 ? (
         <Card>
@@ -286,6 +381,13 @@ export function ClientsListView({ clients, plan = 'free', clientLimit = 1 }: Cli
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-gray-500 text-left border-b border-gray-200">
+                  <th className="pl-4 pr-2 py-4 w-8">
+                    <button onClick={() => toggleAll(filtered)} className="text-gray-400 hover:text-gray-700 transition-colors">
+                      {filtered.length > 0 && filtered.every((c) => selectedIds.has(c.id))
+                        ? <CheckSquare className="h-4 w-4 text-indigo-600" />
+                        : <Square className="h-4 w-4" />}
+                    </button>
+                  </th>
                   <th className="p-4 font-medium">Client</th>
                   <th className="p-4 font-medium">Industry</th>
                   <th className="p-4 font-medium">Status</th>
@@ -298,7 +400,17 @@ export function ClientsListView({ clients, plan = 'free', clientLimit = 1 }: Cli
               </thead>
               <tbody>
                 {filtered.map((client) => (
-                  <tr key={client.id} className="border-b border-gray-200 last:border-0 hover:bg-gray-50 transition-colors">
+                  <tr key={client.id} className={`border-b border-gray-200 last:border-0 hover:bg-gray-50 transition-colors ${selectedIds.has(client.id) ? 'bg-indigo-50/50' : ''}`}>
+                    <td className="pl-4 pr-2 py-4 w-8">
+                      <button
+                        onClick={(e) => { e.preventDefault(); toggleSelect(client.id); }}
+                        className="text-gray-400 hover:text-indigo-600 transition-colors"
+                      >
+                        {selectedIds.has(client.id)
+                          ? <CheckSquare className="h-4 w-4 text-indigo-600" />
+                          : <Square className="h-4 w-4" />}
+                      </button>
+                    </td>
                     <td className="p-4">
                       <Link href={`/agency/clients/${client.id}`} className="flex items-center gap-3 hover:text-indigo-600 transition-colors">
                         <div className="h-8 w-8 rounded-lg bg-gray-200 flex items-center justify-center text-xs font-semibold text-gray-700 shrink-0">
@@ -333,8 +445,18 @@ export function ClientsListView({ clients, plan = 'free', clientLimit = 1 }: Cli
           {/* Mobile card list */}
           <div className="md:hidden space-y-3">
             {filtered.map((client) => (
-              <Link key={client.id} href={`/agency/clients/${client.id}`}>
-                <div className="rounded-xl border border-gray-200 bg-white p-4 hover:border-indigo-300 hover:shadow-sm transition-all active:scale-[0.99]">
+              <div key={client.id} className={`relative rounded-xl border bg-white transition-all ${selectedIds.has(client.id) ? 'border-indigo-300 bg-indigo-50/30' : 'border-gray-200'}`}>
+                {/* Checkbox */}
+                <button
+                  onClick={() => toggleSelect(client.id)}
+                  className="absolute top-3 right-3 z-10 text-gray-400 hover:text-indigo-600 transition-colors p-1"
+                >
+                  {selectedIds.has(client.id)
+                    ? <CheckSquare className="h-4 w-4 text-indigo-600" />
+                    : <Square className="h-4 w-4" />}
+                </button>
+              <Link href={`/agency/clients/${client.id}`}>
+                <div className="rounded-xl p-4 hover:bg-gray-50 transition-all active:scale-[0.99]">
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-700 shrink-0">
                       {client.name.charAt(0).toUpperCase()}
@@ -362,6 +484,7 @@ export function ClientsListView({ clients, plan = 'free', clientLimit = 1 }: Cli
                   </div>
                 </div>
               </Link>
+              </div>
             ))}
           </div>
         </>
