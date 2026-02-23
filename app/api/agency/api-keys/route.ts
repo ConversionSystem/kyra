@@ -1,8 +1,8 @@
 // ============================================================================
 // GET/POST/DELETE /api/agency/api-keys
 //
-// GET    → Returns which providers have keys configured + which is ACTIVE
-// POST   → Saves API keys for the agency (encrypted in Supabase)
+// GET    → Returns which providers are configured, active provider + model
+// POST   → Saves API keys + selected models for the agency
 // DELETE → Removes a specific provider key
 // ============================================================================
 
@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { updateContainerApiKey } from '@/lib/ovh/provisioner';
+import { resolveModelLabel, DEFAULT_MODEL_ID } from '@/lib/agency/ai-models';
 
 const VALID_PROVIDERS = ['anthropic', 'openai', 'google', 'openrouter'] as const;
 type Provider = typeof VALID_PROVIDERS[number];
@@ -17,20 +18,18 @@ type Provider = typeof VALID_PROVIDERS[number];
 // Priority order — first match wins
 const PROVIDER_PRIORITY: Provider[] = ['anthropic', 'openrouter', 'openai', 'google'];
 
-// What model each provider resolves to (mirrors provisioner.ts)
-const PROVIDER_MODEL_LABELS: Record<Provider, string> = {
-  anthropic: 'Claude Haiku',
-  openrouter: 'Claude Sonnet (via OpenRouter)',
-  openai: 'GPT-4o mini',
-  google: 'Gemini Flash',
-};
-
 function resolveActiveProvider(
-  keys: Record<string, string>
-): { provider: Provider; model: string } | null {
+  keys: Record<string, unknown>,
+  selectedModels: Record<string, string>,
+): { provider: Provider; model: string; modelId: string } | null {
   for (const p of PROVIDER_PRIORITY) {
     if (keys[p]) {
-      return { provider: p, model: PROVIDER_MODEL_LABELS[p] };
+      const modelId = selectedModels[p] || DEFAULT_MODEL_ID[p] || '';
+      return {
+        provider: p,
+        model: resolveModelLabel(p, modelId),
+        modelId,
+      };
     }
   }
   return null;
@@ -53,13 +52,11 @@ async function getAuthenticatedAgency() {
   return { member };
 }
 
-// ── GET: Check which providers are configured + active provider ───────────────
+// ── GET ───────────────────────────────────────────────────────────────────────
 
 export async function GET() {
   const auth = await getAuthenticatedAgency();
-  if ('error' in auth) {
-    return NextResponse.json({ error: auth.error }, { status: auth.status });
-  }
+  if ('error' in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const serviceClient = createServiceClientWithoutCookies();
   const { data: agency } = await serviceClient
@@ -68,42 +65,40 @@ export async function GET() {
     .eq('id', auth.member.agency_id)
     .single();
 
-  const apiKeys = (agency?.api_keys as Record<string, string>) || {};
+  const apiKeys = (agency?.api_keys as Record<string, unknown>) || {};
+  const selectedModels = (apiKeys.selected_models as Record<string, string>) || {};
 
   const configured: Record<string, boolean> = {};
-  for (const provider of VALID_PROVIDERS) {
-    configured[provider] = !!apiKeys[provider];
+  for (const p of VALID_PROVIDERS) {
+    configured[p] = !!apiKeys[p];
   }
 
-  const active = resolveActiveProvider(apiKeys);
+  const active = resolveActiveProvider(apiKeys, selectedModels);
 
-  return NextResponse.json({ configured, active });
+  return NextResponse.json({ configured, selectedModels, active });
 }
 
-// ── POST: Save API keys ───────────────────────────────────────────────────────
+// ── POST ──────────────────────────────────────────────────────────────────────
 
 export async function POST(request: NextRequest) {
   const auth = await getAuthenticatedAgency();
-  if ('error' in auth) {
-    return NextResponse.json({ error: auth.error }, { status: auth.status });
-  }
+  if ('error' in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   if (auth.member.role !== 'owner' && auth.member.role !== 'admin') {
     return NextResponse.json({ error: 'Only owners and admins can manage API keys' }, { status: 403 });
   }
 
-  let body: { keys?: Record<string, string> };
+  let body: { keys?: Record<string, string>; selectedModels?: Record<string, string> };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   }
 
-  const newKeys = body.keys;
-  if (!newKeys || typeof newKeys !== 'object') {
-    return NextResponse.json({ error: 'Keys object is required' }, { status: 400 });
-  }
+  const newKeys = body.keys || {};
+  const newSelectedModels = body.selectedModels || {};
 
+  // Validate provider names for keys
   for (const provider of Object.keys(newKeys)) {
     if (!VALID_PROVIDERS.includes(provider as Provider)) {
       return NextResponse.json({ error: `Invalid provider: ${provider}` }, { status: 400 });
@@ -117,15 +112,29 @@ export async function POST(request: NextRequest) {
     .eq('id', auth.member.agency_id)
     .single();
 
-  const existingKeys = (agency?.api_keys as Record<string, string>) || {};
-  const mergedKeys = { ...existingKeys, ...newKeys };
+  const existingKeys = (agency?.api_keys as Record<string, unknown>) || {};
+  const existingSelectedModels = (existingKeys.selected_models as Record<string, string>) || {};
 
-  // Remove empty keys
-  for (const [key, value] of Object.entries(mergedKeys)) {
-    if (!value || !value.trim()) {
-      delete mergedKeys[key];
+  // Merge keys
+  const mergedKeys: Record<string, unknown> = { ...existingKeys };
+  for (const [provider, value] of Object.entries(newKeys)) {
+    if (value && value.trim()) {
+      mergedKeys[provider] = value.trim();
     }
   }
+
+  // Remove empty keys
+  for (const p of VALID_PROVIDERS) {
+    if (mergedKeys[p] === '') delete mergedKeys[p];
+  }
+
+  // Merge selected models
+  const mergedSelectedModels = { ...existingSelectedModels, ...newSelectedModels };
+  // Remove model selections for providers that no longer have keys
+  for (const p of Object.keys(mergedSelectedModels)) {
+    if (!mergedKeys[p]) delete mergedSelectedModels[p];
+  }
+  mergedKeys.selected_models = mergedSelectedModels;
 
   const { error } = await serviceClient
     .from('agencies')
@@ -137,25 +146,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to save API keys' }, { status: 500 });
   }
 
-  // Fire-and-forget: propagate to all running containers
+  // Fire-and-forget propagation
   void propagateToContainers(auth.member.agency_id, mergedKeys, serviceClient);
 
-  const active = resolveActiveProvider(mergedKeys);
+  const active = resolveActiveProvider(mergedKeys, mergedSelectedModels);
+  const configured = Object.fromEntries(VALID_PROVIDERS.map((p) => [p, !!mergedKeys[p]]));
 
-  return NextResponse.json({
-    success: true,
-    configured: Object.fromEntries(VALID_PROVIDERS.map((p) => [p, !!mergedKeys[p]])),
-    active,
-  });
+  return NextResponse.json({ success: true, configured, selectedModels: mergedSelectedModels, active });
 }
 
-// ── DELETE: Remove a specific provider key ────────────────────────────────────
+// ── DELETE ────────────────────────────────────────────────────────────────────
 
 export async function DELETE(request: NextRequest) {
   const auth = await getAuthenticatedAgency();
-  if ('error' in auth) {
-    return NextResponse.json({ error: auth.error }, { status: auth.status });
-  }
+  if ('error' in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   if (auth.member.role !== 'owner' && auth.member.role !== 'admin') {
     return NextResponse.json({ error: 'Only owners and admins can manage API keys' }, { status: 403 });
@@ -180,42 +184,45 @@ export async function DELETE(request: NextRequest) {
     .eq('id', auth.member.agency_id)
     .single();
 
-  const existingKeys = (agency?.api_keys as Record<string, string>) || {};
+  const existingKeys = (agency?.api_keys as Record<string, unknown>) || {};
   delete existingKeys[provider];
+
+  // Also remove model selection for that provider
+  const selectedModels = (existingKeys.selected_models as Record<string, string>) || {};
+  delete selectedModels[provider];
+  existingKeys.selected_models = selectedModels;
 
   const { error } = await serviceClient
     .from('agencies')
     .update({ api_keys: existingKeys, updated_at: new Date().toISOString() })
     .eq('id', auth.member.agency_id);
 
-  if (error) {
-    return NextResponse.json({ error: 'Failed to remove key' }, { status: 500 });
-  }
+  if (error) return NextResponse.json({ error: 'Failed to remove key' }, { status: 500 });
 
-  // Propagate removal to containers
   void propagateToContainers(auth.member.agency_id, existingKeys, serviceClient);
 
-  const active = resolveActiveProvider(existingKeys);
+  const active = resolveActiveProvider(existingKeys, selectedModels);
+  const configured = Object.fromEntries(VALID_PROVIDERS.map((p) => [p, !!existingKeys[p]]));
 
-  return NextResponse.json({
-    success: true,
-    configured: Object.fromEntries(VALID_PROVIDERS.map((p) => [p, !!existingKeys[p]])),
-    active,
-  });
+  return NextResponse.json({ success: true, configured, selectedModels, active });
 }
 
-// ── Shared: propagate keys to all running containers ─────────────────────────
+// ── Shared: propagate to containers ──────────────────────────────────────────
 
 async function propagateToContainers(
   agencyId: string,
-  keys: Record<string, string>,
+  keys: Record<string, unknown>,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   serviceClient: any,
 ) {
   try {
     const keysToPropagate: Record<string, string> = {};
     for (const p of VALID_PROVIDERS) {
-      if (keys[p]) keysToPropagate[p] = keys[p];
+      if (keys[p]) keysToPropagate[p] = keys[p] as string;
+    }
+    // Pass selected_models through so provisioner can pick the right model
+    if (keys.selected_models) {
+      (keysToPropagate as Record<string, unknown>).selected_models = keys.selected_models;
     }
 
     const { data: clients } = await serviceClient
@@ -235,21 +242,18 @@ async function propagateToContainers(
       ...(agencyRow?.gateway_status === 'running' ? [agencyRow.id] : []),
     ];
 
-    console.log(`[api-keys] Propagating to ${containerIds.length} containers for agency ${agencyId}`);
+    console.log(`[api-keys] Propagating to ${containerIds.length} containers`);
 
     for (const cId of containerIds) {
-      const result = Object.keys(keysToPropagate).length > 0
-        ? await updateContainerApiKey(cId, keysToPropagate)
-        : { ok: true }; // Nothing to push — container will fall back to default
-
-      if (!result.ok) {
-        console.warn(`[api-keys] Failed to update container ${cId}:`, (result as { ok: false; error: string }).error);
+      if (Object.keys(keysToPropagate).length > 0) {
+        const result = await updateContainerApiKey(cId, keysToPropagate);
+        if (!result.ok) {
+          console.warn(`[api-keys] Failed container ${cId}:`, (result as { ok: false; error: string }).error);
+        }
       }
       await new Promise((r) => setTimeout(r, 3000));
     }
-
-    console.log(`[api-keys] Propagation complete for agency ${agencyId}`);
   } catch (err) {
-    console.error('[api-keys] Background propagation error:', err);
+    console.error('[api-keys] Propagation error:', err);
   }
 }
