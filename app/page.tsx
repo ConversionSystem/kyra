@@ -376,7 +376,7 @@ export default function HomePage() {
               <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
                 <p className="text-sm text-slate-400 mb-1">Typical agency revenue on Pro plan</p>
                 <p className="text-3xl font-black text-green-400">$15,000/mo</p>
-                <p className="text-sm text-slate-500 mt-1">15 clients × $1,000/mo — $247 Kyra cost = $14,753 profit</p>
+                <p className="text-sm text-slate-500 mt-1">15 clients × $1,000/mo — $249 Kyra cost = $14,751 profit</p>
               </div>
             </div>
           </div>

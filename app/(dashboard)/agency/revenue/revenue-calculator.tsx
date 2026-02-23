@@ -9,7 +9,7 @@ import Link from 'next/link';
 
 const PLAN_LIMITS = {
   free:    { clients: 1,  price: 0,   label: 'Free'    },
-  starter: { clients: 5,  price: 97,  label: 'Starter' },
+  starter: { clients: 5,  price: 99,  label: 'Lite' },
   pro:     { clients: 15, price: 247, label: 'Pro'     },
   scale:   { clients: 50, price: 497, label: 'Scale'   },
 };

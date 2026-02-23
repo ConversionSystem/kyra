@@ -67,7 +67,7 @@ export default function ReferralsClient({ agencyId: _agencyId, agencyName, refer
     });
   };
 
-  const potentialEarnings = stats.converted * 97; // Each converted = ~$97 credit value
+  const potentialEarnings = stats.converted * 99; // Each converted = ~$99 credit value
 
   return (
     <div className="p-4 sm:p-6 md:p-8 max-w-4xl space-y-6">

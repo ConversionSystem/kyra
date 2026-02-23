@@ -20,7 +20,7 @@ Kyra turns any GHL agency into an "AI employee agency" in minutes. Agencies add 
 • Live at kyra.conversionsystem.com (free to try)
 • 9 active agencies running 22 AI employees on dedicated infrastructure
 • 75 features shipped in the last 72 hours (solo founder + AI CEO build velocity)
-• Paid plans live: Starter $97/mo · Pro $247/mo · Scale $497/mo
+• Paid plans live: Lite $99/mo · Pro $249/mo · Scale $499/mo
 • Working Stripe billing, automated email sequences, referral program
 • Industries live: dental, real estate, auto, cannabis, restaurant, med spa, law, and 14 more templates
 
@@ -39,9 +39,9 @@ Kyra is the opinionated platform layer above that: one dashboard to deploy, mana
 
 ─── THE BUSINESS MODEL ──────────────────────────────────────
 
-Kyra charges agencies a SaaS fee ($97–$497/mo) for the infrastructure.
+Kyra charges agencies a SaaS fee ($99–$499/mo) for the infrastructure.
 Agencies charge their clients $500–$2,000/mo per AI employee.
-At the Starter plan ($97/mo, 5 clients): agency revenue ~$5K/mo, Kyra revenue $97/mo.
+At the Lite plan ($99/mo, 5 clients): agency revenue ~$5K/mo, Kyra revenue $99/mo.
 As they scale to Pro and Scale, margins compound on both sides.
 
 ─── THE ASK ─────────────────────────────────────────────────
