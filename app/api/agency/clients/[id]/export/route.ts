@@ -249,9 +249,85 @@ export async function GET(request: NextRequest, context: RouteContext) {
   }
 
   const allMessages = (messages || []) as MessageRow[];
-
-  // Build Markdown
   const today = new Date().toISOString().split('T')[0];
+  const format = searchParams.get('format') || 'md';
+
+  // ── HTML Report ────────────────────────────────────────────────────────────
+  if (format === 'html') {
+    const totalMessages = allMessages.length;
+    const responseTimes = allMessages.map((m) => m.response_time_ms).filter((t): t is number => t !== null && t > 0);
+    const avgMs = responseTimes.length > 0 ? Math.round(responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length) : 0;
+    const avgSec = (avgMs / 1000).toFixed(1);
+    const period = rangeStart ? `${formatDate(rangeStart)} – ${formatDate(new Date().toISOString())}` : 'All time';
+
+    const conversationRows = allMessages.slice(0, 200).map((msg) => `
+      <div class="conv">
+        <div class="conv-meta">
+          <span class="contact">${msg.contact_name || msg.contact_phone || 'Unknown'}</span>
+          <span class="date">${formatDateShort(msg.created_at)}</span>
+          <span class="channel">${msg.message_type || 'SMS'}</span>
+        </div>
+        <div class="bubble user">${msg.inbound_message?.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>') || ''}</div>
+        <div class="bubble ai">${msg.ai_response?.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>') || ''}</div>
+      </div>`).join('\n');
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${client.name} — AI Report — ${today}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #111; background: #fff; padding: 32px; max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 24px; font-weight: 800; color: #1e1b4b; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: #6b7280; margin-bottom: 32px; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 32px; }
+  .stat { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; text-align: center; }
+  .stat-value { font-size: 28px; font-weight: 900; color: #4f46e5; }
+  .stat-label { font-size: 11px; color: #9ca3af; margin-top: 2px; }
+  h2 { font-size: 16px; font-weight: 700; color: #111; margin: 24px 0 16px; padding-bottom: 8px; border-bottom: 1px solid #e5e7eb; }
+  .conv { margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid #f3f4f6; }
+  .conv-meta { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
+  .contact { font-weight: 600; font-size: 13px; color: #1f2937; }
+  .date { font-size: 11px; color: #9ca3af; }
+  .channel { font-size: 10px; background: #ede9fe; color: #5b21b6; padding: 2px 8px; border-radius: 99px; font-weight: 600; }
+  .bubble { padding: 10px 14px; border-radius: 12px; font-size: 13px; line-height: 1.6; max-width: 80%; margin-bottom: 6px; }
+  .bubble.user { background: #f3f4f6; color: #374151; border-radius: 12px 12px 12px 2px; }
+  .bubble.ai { background: #ede9fe; color: #1e1b4b; margin-left: auto; border-radius: 12px 12px 2px 12px; }
+  footer { margin-top: 48px; font-size: 11px; color: #d1d5db; text-align: center; }
+  @media print {
+    body { padding: 16px; }
+    .bubble { break-inside: avoid; }
+    .conv { break-inside: avoid; page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<h1>${client.name}</h1>
+<p class="subtitle">AI Conversation Report &mdash; ${period} &mdash; Generated ${today} by Kyra</p>
+<div class="stats">
+  <div class="stat"><div class="stat-value">${totalMessages.toLocaleString()}</div><div class="stat-label">Total conversations</div></div>
+  <div class="stat"><div class="stat-value">${avgSec}s</div><div class="stat-label">Avg AI response time</div></div>
+  <div class="stat"><div class="stat-value">${client.industry || '—'}</div><div class="stat-label">Industry</div></div>
+</div>
+<h2>Conversations${allMessages.length > 200 ? ' (most recent 200)' : ''}</h2>
+${conversationRows || '<p style="color:#9ca3af;font-size:13px">No conversations in this period.</p>'}
+<footer>Powered by Kyra AI &bull; kyra.conversionsystem.com</footer>
+</body>
+</html>`;
+
+    const filename = `${client.slug || client.name.toLowerCase().replace(/\s+/g, '-')}-report-${today}.html`;
+    return new NextResponse(html, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Content-Disposition': `attachment; filename="${filename}"`,
+      },
+    });
+  }
+
+  // ── Build Markdown (default) ───────────────────────────────────────────────
   const mdLines: string[] = [
     `# ${client.name} — AI Assistant Report`,
     `> Exported from Kyra on ${today}`,
