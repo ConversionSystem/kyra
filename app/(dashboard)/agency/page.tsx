@@ -21,6 +21,7 @@ import ClientSparkline from '@/components/dashboard/client-sparkline';
 import { SalesLeadWidget } from '@/components/dashboard/sales-lead-widget';
 import RevenueUnlockCard from '@/components/dashboard/revenue-unlock-card';
 import TrialCountdownBanner from '@/components/dashboard/trial-countdown-banner';
+import ReferralShareWidget from '@/components/dashboard/referral-share-widget';
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -58,9 +59,15 @@ export default async function AgencyOverviewPage() {
   if (!result) redirect('/signup/agency');
 
   const { agency } = result;
-  const [clients, agencyCredits] = await Promise.all([
+  const [clients, agencyCredits, referralData] = await Promise.all([
     getAgencyClients(agency.id),
     getAgencyCredits(agency.id).catch(() => ({ balance: 0, lifetimePurchased: 0, lifetimeUsed: 0 })),
+    supabase
+      .from('agency_referrals')
+      .select('id')
+      .eq('referrer_id', agency.id)
+      .neq('status', 'pending')
+      .then(r => ({ count: r.data?.length ?? 0 })),
   ]);
   const isAdmin = ['hello@conversionsystem.com', 'angel@conversionsystem.com'].includes(user.email ?? '');
   const agencySettings = (agency.settings as Record<string, unknown>) ?? {};
@@ -219,6 +226,15 @@ export default async function AgencyOverviewPage() {
           <RevenueUnlockCard plan={agency.plan || 'free'} clientCount={totalCount} />
         </div>
       )}
+
+      {/* ── Referral Share Widget ── */}
+      <div className="mb-6">
+        <ReferralShareWidget
+          agencyId={agency.id}
+          referralCount={referralData.count}
+          creditsEarned={referralData.count * 500}
+        />
+      </div>
 
       {/* ── CEO Action Board (admin only) ── */}
       {isAdmin && (
