@@ -9,6 +9,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { deductCredit } from '@/lib/billing/credit-engine';
 
 // Vercel cron config — run every minute
 export const dynamic = 'force-dynamic';
@@ -634,6 +635,17 @@ export async function GET(request: NextRequest) {
         if (sendRes.ok) {
           addLog(`  ✅ Reply sent to ${conv.contactName || conv.phone}`);
           totalProcessed++;
+
+          // Deduct 1 credit for this AI conversation (fire-and-forget — never blocks reply)
+          void deductCredit(
+            client.agency_id as string,
+            client.id,
+            `GHL ${sendType} reply to ${conv.contactName || conv.phone || 'contact'}`,
+          ).then(result => {
+            if (result.insufficient) {
+              addLog(`  ⚠️ Credits exhausted for agency ${client.agency_id} — reply still sent`);
+            }
+          });
 
           // Fire-and-forget CRM update: tag + note the contact based on conversation
           const ghlTokenForCRM = client.ghl_private_token || client.ghl_access_token;
