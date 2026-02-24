@@ -147,9 +147,97 @@ export default function PricingPage() {
         </div>
         <h1 className="text-4xl sm:text-5xl font-black mb-4">
           Simple pricing.<br />
-          <span className="text-indigo-400">Massive ROI.</span>
+          <span className="text-indigo-400">For every business.</span>
         </h1>
-        <p className="text-slate-400 text-lg max-w-xl mx-auto mb-10">
+        <p className="text-slate-400 text-lg max-w-xl mx-auto mb-6">
+          Running your own business? Start at $49/mo. Building an agency? Plans from $99/mo — bill clients $500–$2,000/mo each.
+        </p>
+
+        {/* Audience toggle */}
+        <div className="inline-flex items-center gap-2 bg-white/10 rounded-full p-1.5 border border-white/10 mb-4">
+          <a href="#business" className="px-5 py-2 rounded-full text-sm font-semibold text-white bg-white/15 hover:bg-white/20 transition">
+            For my business
+          </a>
+          <a href="#agency" className="px-5 py-2 rounded-full text-sm font-semibold text-slate-400 hover:text-white transition">
+            For agencies
+          </a>
+        </div>
+      </section>
+
+      {/* Direct-to-business plans */}
+      <section id="business" className="max-w-4xl mx-auto px-4 pb-16">
+        <div className="text-center mb-10">
+          <span className="inline-block bg-green-600 text-white text-xs font-bold px-3 py-1 rounded-full mb-3">For your own business</span>
+          <h2 className="text-2xl font-black text-white mb-2">No agency. No white-label. Just your AI.</h2>
+          <p className="text-slate-400 text-sm max-w-md mx-auto">
+            Dental practice, real estate office, HVAC company, cannabis dispensary — any business can have an AI employee.
+          </p>
+        </div>
+        <div className="grid sm:grid-cols-2 gap-4 mb-8">
+          {[
+            {
+              name: 'Business Starter',
+              price: annual ? '$39' : '$49',
+              period: '/month',
+              desc: '1 AI employee for your business. All channels — voice, SMS, web chat.',
+              badge: 'Perfect for solo businesses',
+              cta: 'Start Free →',
+              href: '/signup/agency?tier=business-starter' + (annual ? '&billing=annual' : ''),
+              features: ['1 AI employee', 'Phone number (VAPI/Retell)', 'SMS + web chat', 'Appointment booking', 'All industry templates', 'Zapier webhook integration'],
+            },
+            {
+              name: 'Business Pro',
+              price: annual ? '$79' : '$97',
+              period: '/month',
+              desc: '3 AI employees — multiple locations, departments, or use cases.',
+              badge: '🔥 Best for multi-location',
+              cta: 'Start Free →',
+              href: '/signup/agency?tier=business-pro' + (annual ? '&billing=annual' : ''),
+              features: ['3 AI employees', 'Everything in Starter', 'WhatsApp + Instagram DM', 'Advanced analytics', 'Custom personality per AI', 'Priority support'],
+            },
+          ].map(plan => (
+            <div key={plan.name} className="rounded-2xl border border-white/10 bg-white/5 p-6">
+              <span className="inline-block text-xs font-semibold bg-green-900/50 text-green-300 border border-green-800/50 px-2 py-0.5 rounded-full mb-3">
+                {plan.badge}
+              </span>
+              <p className="font-bold text-white text-lg">{plan.name}</p>
+              <div className="flex items-baseline gap-1 mt-1.5 mb-1">
+                <span className="text-3xl font-black text-white">{plan.price}</span>
+                <span className="text-slate-400 text-sm">{plan.period}</span>
+              </div>
+              {annual && (
+                <p className="text-xs text-green-400 mb-2">Billed annually — save 20%</p>
+              )}
+              <p className="text-slate-400 text-sm mb-4">{plan.desc}</p>
+              <ul className="space-y-1.5 mb-6">
+                {plan.features.map(f => (
+                  <li key={f} className="flex items-center gap-2 text-sm text-slate-300">
+                    <Check className="h-3.5 w-3.5 text-green-400 shrink-0" /> {f}
+                  </li>
+                ))}
+              </ul>
+              <Link href={plan.href} className="block text-center bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl transition text-sm">
+                {plan.cta}
+              </Link>
+            </div>
+          ))}
+        </div>
+        <p className="text-center text-slate-600 text-xs">
+          No GoHighLevel required · Works with Zapier, Twilio, WhatsApp, or your existing tools
+        </p>
+      </section>
+
+      {/* Divider */}
+      <div className="max-w-5xl mx-auto px-4 pb-8">
+        <div className="flex items-center gap-4">
+          <div className="flex-1 h-px bg-white/10" />
+          <span id="agency" className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Agency Plans — Resell AI employees to your clients</span>
+          <div className="flex-1 h-px bg-white/10" />
+        </div>
+      </div>
+
+      <section className="max-w-6xl mx-auto px-4 pb-4 text-center">
+        <p className="text-slate-400 text-lg mb-10">
           You pay $99–$499/mo. You bill clients $500–$2,000/mo each. The math works from day one.
         </p>
 
@@ -173,7 +261,7 @@ export default function PricingPage() {
         </div>
       </section>
 
-      {/* Plans */}
+      {/* Agency Plans */}
       <section className="max-w-6xl mx-auto px-4 pb-20">
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {PLANS.map((plan) => {
