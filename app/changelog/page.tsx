@@ -4,7 +4,7 @@ import PublicNav from '@/components/layout/public-nav';
 import PublicFooter from '@/components/layout/public-footer';
 
 export const metadata: Metadata = {
-  title: 'Changelog — Kyra AI',
+  title: 'Kyra Changelog — AI Workforce Platform',
   description: 'See what\'s new in Kyra. Regular updates, new features, and improvements to the AI employee platform.',
 };
 
