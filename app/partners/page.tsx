@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { PartnerApplicationForm } from './partner-form';
+import PublicNav from '@/components/layout/public-nav';
+import PublicFooter from '@/components/layout/public-footer';
 
 export const metadata: Metadata = {
   title: 'Partner Program — Kyra AI | 20% Recurring Monthly Commission',
@@ -68,23 +70,10 @@ export default function PartnersPage() {
   return (
     <div className="bg-white min-h-screen text-gray-900 font-sans">
 
-      {/* Nav */}
-      <nav className="border-b border-gray-100 px-4 py-4 sticky top-0 bg-white z-40">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 font-black text-xl">
-            <span className="text-indigo-600">⚡</span> Kyra
-          </Link>
-          <div className="flex items-center gap-4 text-sm">
-            <Link href="/pricing" className="text-gray-500 hover:text-gray-900 transition">Pricing</Link>
-            <Link href="/signup/agency" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-lg transition">
-              Sign up free →
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <PublicNav />
 
       {/* Hero */}
-      <section className="bg-gradient-to-br from-indigo-900 to-purple-900 text-white px-4 py-20 text-center">
+      <section className="bg-gradient-to-br from-indigo-700 to-indigo-900 text-white px-4 py-20 text-center">
         <div className="max-w-3xl mx-auto">
           <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 text-sm mb-6">
             💰 No cap · No expiry · Monthly payouts
@@ -208,10 +197,7 @@ export default function PartnersPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-gray-100 py-8 text-center text-gray-400 text-sm">
-        <p>© 2026 Conversion System · <Link href="/privacy" className="hover:text-gray-600">Privacy</Link> · <Link href="/terms" className="hover:text-gray-600">Terms</Link></p>
-      </footer>
+      <PublicFooter />
     </div>
   );
 }
