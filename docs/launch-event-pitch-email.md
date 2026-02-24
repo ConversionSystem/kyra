@@ -40,7 +40,7 @@ Kyra solves that. It's the command center for agencies running OpenClaw at scale
 - **Fully built on OpenClaw** — every client gets a dedicated OpenClaw instance
 
 **The numbers that matter:**
-- $29M+ revenue generated for cannabis and retail clients
+- Built from real cannabis and retail deployments (pre-Kyra)
 - Under 60 seconds average first response across all deployments
 - Agencies charging $200-500/mo per AI worker at ~85% margin
 

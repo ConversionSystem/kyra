@@ -22,6 +22,7 @@ import { SalesLeadWidget } from '@/components/dashboard/sales-lead-widget';
 import RevenueUnlockCard from '@/components/dashboard/revenue-unlock-card';
 import TrialCountdownBanner from '@/components/dashboard/trial-countdown-banner';
 import ReferralShareWidget from '@/components/dashboard/referral-share-widget';
+import { UltronSummaryCard } from '@/components/dashboard/ultron-summary-card';
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -251,7 +252,7 @@ export default async function AgencyOverviewPage() {
       )}
 
       {/* ── Stats Bar ── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-4">
         {/* AI Employees */}
         <Card>
           <CardContent className="p-5">
@@ -313,6 +314,9 @@ export default async function AgencyOverviewPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* ── Ultron: Agency Ops Brief ── */}
+      <UltronSummaryCard />
 
       {/* ── Public profile sharelink ── */}
       <div className="mb-6 flex items-center gap-3 bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-3">

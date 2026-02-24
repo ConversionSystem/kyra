@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 const NICHES = [
   { slug: 'dental', emoji: '🦷', name: 'Dental Practices', result: '+40% appointment bookings' },
-  { slug: 'cannabis', emoji: '🌿', name: 'Cannabis Dispensaries', result: '$29M+ revenue generated' },
+  { slug: 'cannabis', emoji: '🌿', name: 'Cannabis Dispensaries', result: 'Proven on high-volume SMS' },
   { slug: 'real-estate', emoji: '🏡', name: 'Real Estate', result: '100% of leads contacted in <5 min' },
   { slug: 'fitness', emoji: '💪', name: 'Gyms & Fitness Studios', result: '80% fewer lost leads' },
   { slug: 'home-services', emoji: '🔧', name: 'Home Services', result: '0 missed service calls' },

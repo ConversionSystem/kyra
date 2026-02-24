@@ -38,7 +38,7 @@ Hey [Name] — saw you're running a GHL agency. Quick question:
 
 Are you getting requests from clients for AI yet? We built a platform that deploys autonomous AI workers to GHL sub-accounts in under 5 minutes. One command center for all your clients.
 
-$29M+ generated for our clients so far. Mind if I send you a quick demo?
+We've already used AI SMS to drive significant revenue for clients. Mind if I send you a quick demo?
 ```
 
 **DM 2 (Day 4, if no reply):**

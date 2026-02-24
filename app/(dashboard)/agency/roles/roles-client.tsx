@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowRight, ChevronDown, ChevronUp, Mail, UserCheck, UserPlus, CheckCircle, Loader2, X } from 'lucide-react';
-import { agentRoles, type AgentRole } from './roles-data';
+import { agentRoles, PRODUCT_ROLE_IDS, type AgentRole } from './roles-data';
 
 const colorMap: Record<string, { border: string; bg: string; text: string; pill: string }> = {
   indigo: { border: 'border-l-indigo-500', bg: 'bg-indigo-50', text: 'text-indigo-700', pill: 'border-indigo-200 bg-indigo-50 text-indigo-600' },
@@ -274,24 +274,44 @@ function DeployModal({
 // ─────────────────────────────────────────────────────────────────────────────
 // Role Card
 // ─────────────────────────────────────────────────────────────────────────────
+type Plan = 'free' | 'starter' | 'pro' | 'scale' | 'beta';
+
 function RoleCard({
   role,
+  plan,
   onDeploy,
 }: {
   role: AgentRole;
+  plan: Plan;
   onDeploy: (role: AgentRole) => void;
 }) {
   const [showSoul, setShowSoul] = useState(false);
   const colors = colorMap[role.color] ?? colorMap.indigo;
+
+  const isProductRole = PRODUCT_ROLE_IDS.includes(role.id as (typeof PRODUCT_ROLE_IDS)[number]);
+  const isProOrScale = plan === 'pro' || plan === 'scale';
 
   return (
     <div className={`rounded-xl border border-gray-200 bg-white border-l-4 ${colors.border} overflow-hidden`}>
       <div className="p-5">
         <div className="flex items-start gap-3 mb-3">
           <span className="text-3xl">{role.emoji}</span>
-          <div>
-            <h3 className="font-bold text-gray-900 text-lg">{role.name}</h3>
-            <p className="text-sm font-semibold text-gray-600">{role.tagline}</p>
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="font-bold text-gray-900 text-lg break-words">{role.name}</h3>
+              {isProductRole && (
+                <span
+                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                    isProOrScale
+                      ? 'bg-indigo-50 text-indigo-700 border border-indigo-100'
+                      : 'bg-gray-100 text-gray-500 border border-gray-200'
+                  }`}
+                >
+                  {isProOrScale ? 'Included in Pro & Scale' : 'Upgrade to Pro/Scale to deploy'}
+                </span>
+              )}
+            </div>
+            <p className="text-sm font-semibold text-gray-600 mt-0.5">{role.tagline}</p>
           </div>
         </div>
 
@@ -322,8 +342,9 @@ function RoleCard({
             size="sm"
             className="flex-1 gap-2 text-xs"
             onClick={() => onDeploy(role)}
+            disabled={isProductRole && !isProOrScale}
           >
-            Deploy for Client
+            {isProductRole && !isProOrScale ? 'Upgrade to Pro/Scale to deploy' : 'Deploy for Client'}
             <ArrowRight className="h-3 w-3" />
           </Button>
           <Button
@@ -352,7 +373,7 @@ function RoleCard({
 // ─────────────────────────────────────────────────────────────────────────────
 // Page
 // ─────────────────────────────────────────────────────────────────────────────
-export function RolesPageClient() {
+export function RolesPageClient({ plan }: { plan: Plan }) {
   const [activeRole, setActiveRole] = useState<AgentRole | null>(null);
 
   return (
@@ -369,7 +390,7 @@ export function RolesPageClient() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
         {agentRoles.map((role) => (
-          <RoleCard key={role.id} role={role} onDeploy={setActiveRole} />
+          <RoleCard key={role.id} role={role} plan={plan} onDeploy={setActiveRole} />
         ))}
       </div>
 
