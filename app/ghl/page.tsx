@@ -1,9 +1,11 @@
 import Link from 'next/link';
 import { Metadata } from 'next';
 import {
-  Zap, Users, MessageSquare, BarChart3, Shield, Globe,
-  CheckCircle2, ArrowRight, Layers, Bot, TrendingUp, Star,
+  Users, MessageSquare, BarChart3, Globe,
+  CheckCircle2, ArrowRight, Layers, Bot, TrendingUp, Star, Zap,
 } from 'lucide-react';
+import PublicNav from '@/components/layout/public-nav';
+import PublicFooter from '@/components/layout/public-footer';
 
 export const metadata: Metadata = {
   title: 'Kyra for GoHighLevel Agencies — The AI Employee Platform',
@@ -71,24 +73,7 @@ export default function GHLPage() {
   return (
     <div className="min-h-screen bg-white">
 
-      {/* Nav */}
-      <nav className="flex items-center justify-between px-6 py-4 border-b border-gray-100 max-w-6xl mx-auto">
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center">
-            <Bot className="h-5 w-5 text-white" />
-          </div>
-          <span className="font-bold text-gray-900 text-lg">Kyra</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <Link href="/login" className="text-sm text-gray-500 hover:text-gray-700">Sign in</Link>
-          <Link
-            href="/signup"
-            className="text-sm font-semibold bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-500 transition"
-          >
-            Start free →
-          </Link>
-        </div>
-      </nav>
+      <PublicNav />
 
       {/* Hero */}
       <section className="max-w-5xl mx-auto px-6 pt-20 pb-16 text-center">
@@ -110,7 +95,7 @@ export default function GHLPage() {
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
-            href="/signup"
+            href="/signup/agency"
             className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-8 py-4 rounded-xl transition text-lg"
           >
             Deploy your first AI employee free
@@ -233,7 +218,7 @@ export default function GHLPage() {
             and shape the roadmap. GHL + Kyra is a powerful combination — let&apos;s build it together.
           </p>
           <Link
-            href="/signup"
+            href="/signup/agency"
             className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-8 py-3.5 rounded-xl transition"
           >
             Apply for early access
@@ -254,7 +239,7 @@ export default function GHLPage() {
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
-            href="/signup"
+            href="/signup/agency"
             className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-10 py-4 rounded-xl transition text-lg"
           >
             Start free
@@ -270,17 +255,7 @@ export default function GHLPage() {
         <p className="mt-4 text-sm text-gray-400">Free plan available · No credit card required</p>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-gray-100 py-8 text-center text-sm text-gray-400">
-        <p>
-          Kyra by{' '}
-          <a href="https://conversionsystem.com" className="hover:text-gray-600">Conversion System</a>
-          {' '}· Built for GHL agencies ·{' '}
-          <Link href="/login" className="hover:text-gray-600">Sign in</Link>
-          {' · '}
-          <Link href="/signup" className="hover:text-gray-600">Sign up</Link>
-        </p>
-      </footer>
+      <PublicFooter />
     </div>
   );
 }

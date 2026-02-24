@@ -343,7 +343,7 @@ export default function TryPage({ params }: { params: Promise<{ industry: string
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
             placeholder={`Message ${config.businessName}…`}
-            className="flex-1 bg-gray-800 border border-white/10 text-white placeholder-gray-500 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 transition"
+            className="flex-1 bg-gray-800 border border-white/10 text-white placeholder-gray-500 rounded-xl px-4 py-3 text-base focus:outline-none focus:border-indigo-500 transition"
             autoFocus
             disabled={sending}
           />

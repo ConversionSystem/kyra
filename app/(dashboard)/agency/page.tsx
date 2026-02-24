@@ -348,7 +348,7 @@ export default async function AgencyOverviewPage() {
               View all <ArrowRight className="h-3 w-3" />
             </a>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="bg-indigo-50 rounded-xl p-4 flex items-center gap-3">
               <div className="text-2xl">💬</div>
               <div>

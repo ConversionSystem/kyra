@@ -120,7 +120,7 @@ function ActualMrrCard({ clients }: { clients: ClientRate[] }) {
         </div>
 
         {totalMrr > 0 && (
-          <div className="mt-4 pt-4 border-t border-green-100 grid grid-cols-3 gap-3 text-center">
+          <div className="mt-4 pt-4 border-t border-green-100 grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
             <div>
               <p className="text-lg font-bold text-gray-900">{fmt(totalMrr)}</p>
               <p className="text-[10px] text-gray-400">MRR</p>

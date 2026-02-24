@@ -1,6 +1,8 @@
 import Link from 'next/link';
-import { Check, X, Zap, ArrowRight } from 'lucide-react';
+import { Check, X, ArrowRight } from 'lucide-react';
 import type { Metadata } from 'next';
+import PublicNav from '@/components/layout/public-nav';
+import PublicFooter from '@/components/layout/public-footer';
 
 export const metadata: Metadata = {
   title: 'Kyra vs. Basic Chatbots & GHL Automations — What\'s the Difference?',
@@ -84,18 +86,9 @@ function Cell({ value }: { value: boolean | string }) {
 export default function VsPage() {
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white">
-      <nav className="border-b border-white/10 px-4 py-4">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 font-black text-xl">
-            <Zap className="h-5 w-5 text-indigo-400" /> Kyra
-          </Link>
-          <Link href="/signup/agency" className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg font-semibold transition text-sm">
-            Get Started Free
-          </Link>
-        </div>
-      </nav>
+      <PublicNav />
 
-      <div className="max-w-5xl mx-auto px-4 py-16">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         {/* Header */}
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 text-sm font-medium mb-4">
@@ -209,6 +202,7 @@ export default function VsPage() {
           </div>
         </div>
       </div>
+      <PublicFooter />
     </div>
   );
 }
