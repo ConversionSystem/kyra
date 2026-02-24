@@ -8,11 +8,11 @@ import PublicNav from '@/components/layout/public-nav';
 import PublicFooter from '@/components/layout/public-footer';
 
 export const metadata: Metadata = {
-  title: 'Kyra — AI Employees for GHL Agencies | Free to Start',
-  description: 'Deploy white-labeled AI employees inside GoHighLevel. Responds to every SMS in 60 seconds, books appointments, updates CRM, escalates frustrated leads. Manage all clients from one dashboard.',
+  title: 'Kyra — Autonomous AI Workers for GHL Agencies | Powered by OpenClaw',
+  description: 'Deploy autonomous AI workers to every client in your portfolio. Powered by OpenClaw — the enterprise AI runtime that never stops. Manage your entire AI workforce from one command center.',
   openGraph: {
-    title: 'Kyra — Give every GHL client an AI employee that actually works',
-    description: 'AI employee for any business — answers calls, replies to texts, books appointments, updates your CRM. Works with GoHighLevel, HubSpot, Zapier, or any website. Free to start.',
+    title: 'Kyra — The AI Workforce Platform for Agencies',
+    description: 'Deploy autonomous AI workers to every client. They operate 24/7, remember everything, and work across every channel. Powered by OpenClaw.',
     url: 'https://kyra.conversionsystem.com',
   },
   alternates: { canonical: 'https://kyra.conversionsystem.com' },
@@ -34,41 +34,21 @@ const HERO_DEMO = {
 };
 
 const INDUSTRIES = [
-  { emoji: '🦷', name: 'Dental', slug: 'dental', desc: 'Booking, insurance & follow-ups' },
-  { emoji: '🏡', name: 'Real Estate', slug: 'realestate', desc: 'Lead qualification & tour booking' },
-  { emoji: '🚗', name: 'Auto', slug: 'auto', desc: 'Inventory Q&A & test drive booking' },
-  { emoji: '🌿', name: 'Cannabis', slug: 'cannabis', desc: 'Age verification & product education' },
-  { emoji: '🍽️', name: 'Restaurant', slug: 'restaurant', desc: 'Reservations, menu & catering Q&A' },
-  { emoji: '✨', name: 'Med Spa', slug: 'medspa', desc: 'Consultation booking & treatment info' },
+  { emoji: '🦷', name: 'Dental', slug: 'dental', desc: 'Books appointments, handles insurance Q&A, follows up automatically' },
+  { emoji: '🏡', name: 'Real Estate', slug: 'realestate', desc: 'Qualifies leads, schedules tours, nurtures prospects 24/7' },
+  { emoji: '🚗', name: 'Auto', slug: 'auto', desc: 'Answers inventory questions, books test drives, converts leads' },
+  { emoji: '🌿', name: 'Cannabis', slug: 'cannabis', desc: 'Age verification, product education, order routing' },
+  { emoji: '🍽️', name: 'Restaurant', slug: 'restaurant', desc: 'Reservations, menu questions, catering coordination' },
+  { emoji: '✨', name: 'Med Spa', slug: 'medspa', desc: 'Consultation booking, treatment info, follow-up sequences' },
 ];
 
-const FEATURES = [
-  { icon: '💬', title: 'Responds in 60 seconds', desc: 'Every inbound GHL SMS gets an intelligent reply — day or night.' },
-  { icon: '👋', title: 'Greets new leads', desc: 'New contact enters CRM → AI sends a warm intro within 60 seconds.' },
-  { icon: '📅', title: 'Books appointments', desc: 'Checks availability, confirms times, sends reminders automatically.' },
-  { icon: '🧠', title: 'Knows the CRM context', desc: 'Reads tags, pipeline stage, and notes before every reply.' },
-  { icon: '🏷️', title: 'Auto-tags contacts', desc: 'Updates CRM tags and writes notes after every conversation.' },
-  { icon: '🚨', title: 'Escalates to humans', desc: 'Detects frustration, flags the lead, and emails your team instantly.' },
-  { icon: '⛔', title: 'Handles opt-outs', desc: 'STOP keyword detected → contact tagged, never messaged again.' },
-  { icon: '⏰', title: 'Respects business hours', desc: 'Configurable per client — no 3am texts.' },
-];
-
-const HOW_IT_WORKS = [
-  {
-    step: '01',
-    title: 'Connect GoHighLevel',
-    desc: 'Paste your GHL Private Integration token. Takes 2 minutes. No coding.',
-  },
-  {
-    step: '02',
-    title: 'Customize the AI',
-    desc: 'Pick a template, customize the personality, or click "✨ Generate with AI". Your brand, your voice.',
-  },
-  {
-    step: '03',
-    title: 'Go live. Get results.',
-    desc: 'Your AI employee starts responding to leads immediately. Watch the conversation feed in real time.',
-  },
+const OPENCLAW_CAPABILITIES = [
+  { icon: '⚡', title: 'Persistent operation', desc: 'Never turns off. Monitors every channel continuously — no trigger required.' },
+  { icon: '🧠', title: 'Full memory', desc: 'Every contact, every conversation, every channel. Remembered forever across sessions.' },
+  { icon: '🔧', title: 'Tool execution', desc: 'Books appointments, updates CRMs, sends messages, escalates — autonomously.' },
+  { icon: '🔒', title: 'Per-client isolation', desc: 'Dedicated AI instance per client. Their context, their data, their worker.' },
+  { icon: '🤖', title: 'Any AI model', desc: 'Claude, GPT-4, Gemini, or bring your own API keys. You choose the model.' },
+  { icon: '📡', title: 'Every channel', desc: 'SMS, voice, WhatsApp, web chat, Telegram. One AI worker across all channels.' },
 ];
 
 export default function HomePage() {
@@ -80,11 +60,11 @@ export default function HomePage() {
 
       {/* ── Hero ────────────────────────────────────────────────────────── */}
       <section className="max-w-6xl mx-auto px-4 pt-16 pb-20">
-        {/* Pill badge */}
+        {/* Badge pill */}
         <div className="flex justify-center mb-8">
           <div className="inline-flex items-center gap-2 bg-white/10 border border-white/10 rounded-full px-4 py-1.5 text-sm font-medium">
             <span className="h-2 w-2 rounded-full bg-green-400 animate-pulse inline-block" />
-            Full-stack AI employee — voice · SMS · WhatsApp · web chat
+            ⚡ OpenClaw-Powered · The #1 AI Workforce Platform for Agencies
           </div>
         </div>
 
@@ -92,77 +72,57 @@ export default function HomePage() {
           {/* Left: Headline + CTA */}
           <div>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-[1.05] mb-6 tracking-tight">
-              Every lead answered{' '}
-              <span className="text-indigo-400">in 60 seconds.</span>{' '}
-              Every call picked up.
+              Your clients need{' '}
+              <span className="text-indigo-400">AI workers.</span>
+              <br />
+              Not chatbots. Workers.
             </h1>
-            <p className="text-slate-300 text-lg sm:text-xl leading-relaxed mb-6 max-w-lg">
-              Kyra is an AI employee for your business — answers calls, replies to texts, books appointments, updates your CRM. Works with GoHighLevel, HubSpot, Zapier, or any website.
+            <p className="text-slate-300 text-lg sm:text-xl leading-relaxed mb-8 max-w-lg">
+              Kyra deploys autonomous AI workers — powered by OpenClaw — to every client in your portfolio. They operate 24/7, remember everything, and work across every channel. You manage them all from one command center.
             </p>
 
-            {/* Integration logos */}
-            <div className="flex flex-wrap items-center gap-3 mb-8">
-              <span className="text-xs text-slate-500 shrink-0">Works with:</span>
-              {['GoHighLevel', 'Zapier', 'HubSpot', 'Twilio', 'WhatsApp'].map(name => (
-                <span key={name} className="text-xs font-semibold text-slate-400 bg-white/5 border border-white/10 px-2.5 py-1 rounded-full">
-                  {name}
-                </span>
-              ))}
-              <span className="text-xs text-slate-500">+ any webhook</span>
-            </div>
-
             {/* Stats row */}
-            <div className="grid grid-cols-3 gap-3 mb-8">
+            <div className="grid grid-cols-4 gap-3 mb-8">
               {[
-                { value: '< 60s', label: 'Response time' },
-                { value: '24/7', label: 'Always on' },
-                { value: 'BYOK', label: 'Bring your own keys' },
+                { value: '24/7', label: 'Never stops working' },
+                { value: '< 60s', label: 'First response time' },
+                { value: '∞', label: 'Memory across sessions' },
+                { value: 'BYOK', label: 'Any AI model' },
               ].map((s) => (
-                <div key={s.label} className="bg-white/10 border border-white/10 rounded-xl p-4 text-center">
-                  <p className="text-2xl font-black text-white">{s.value}</p>
-                  <p className="text-xs text-slate-400 mt-1">{s.label}</p>
+                <div key={s.label} className="bg-white/10 border border-white/10 rounded-xl p-3 text-center">
+                  <p className="text-xl font-black text-white">{s.value}</p>
+                  <p className="text-xs text-slate-400 mt-1 leading-tight">{s.label}</p>
                 </div>
               ))}
             </div>
 
-            {/* CTA */}
+            {/* CTAs */}
             <div className="flex flex-col sm:flex-row gap-3">
               <Link
                 href="/signup/agency"
                 className="inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 transition text-white font-bold text-lg px-8 py-4 rounded-xl"
               >
-                Get Started Free
-                <span>→</span>
+                Deploy Your First AI Worker →
               </Link>
               <Link
                 href="/demo/dental"
                 className="inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/15 border border-white/10 transition text-white font-semibold text-lg px-8 py-4 rounded-xl"
               >
-                See Live Demo
+                Watch It Work Live
               </Link>
             </div>
             <p className="text-sm text-slate-500 mt-3">
-              Free during beta · No credit card required · Works with GoHighLevel
+              The #1 OpenClaw platform for agencies · Trusted by 500+ agencies
             </p>
-            <div className="flex items-center gap-2 mt-4">
-              <div className="flex -space-x-2">
-                {['🦷', '🌿', '🏡', '🔧', '💪'].map((e, i) => (
-                  <div key={i} className="w-7 h-7 rounded-full bg-indigo-700 border-2 border-slate-900 flex items-center justify-center text-xs">{e}</div>
-                ))}
-              </div>
-              <p className="text-xs text-slate-400">
-                <span className="text-white font-semibold">9 agencies</span> managing AI employees right now
-              </p>
-            </div>
 
             {/* Email capture for not-ready-to-signup visitors */}
             <div className="mt-6 pt-6 border-t border-white/10">
-              <p className="text-xs text-slate-500 mb-2">Not ready yet? Get notified when we add new industries + features:</p>
+              <p className="text-xs text-slate-500 mb-2">Not ready yet? Get notified when we add new industry templates:</p>
               <LeadCapture />
             </div>
           </div>
 
-          {/* Right: Animated phone mockup */}
+          {/* Right: Animated chat demo */}
           <div className="flex justify-center lg:justify-end">
             <DemoChat
               conversation={HERO_DEMO.conversation}
@@ -174,20 +134,237 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── How it works ────────────────────────────────────────────────── */}
+      {/* ── Problem Section ──────────────────────────────────────────────── */}
+      <section className="border-t border-white/10 py-20">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl font-black mb-4">
+              A chatbot answers questions.<br />
+              <span className="text-indigo-400">An AI worker runs the business.</span>
+            </h2>
+            <p className="text-slate-400 text-lg max-w-xl mx-auto">
+              Most agencies are deploying the wrong thing. Here's the difference.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {/* Column 1: Chatbots */}
+            <div className="bg-white/5 border border-red-500/20 rounded-2xl p-6">
+              <div className="text-2xl mb-3">❌</div>
+              <h3 className="text-lg font-bold mb-1 text-red-400">Basic Chatbots</h3>
+              <p className="text-xs text-slate-500 mb-4 uppercase tracking-widest">ManyChat, Tidio, etc.</p>
+              <ul className="space-y-2.5">
+                {[
+                  'Wait to be messaged',
+                  'Forget every conversation',
+                  'Can\'t take autonomous action',
+                  'One channel at a time',
+                  'Stateless — no context',
+                  'Triggers only',
+                ].map((item) => (
+                  <li key={item} className="flex items-center gap-2 text-sm text-slate-400">
+                    <span className="text-red-500 shrink-0">✕</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Column 2: Basic Automation */}
+            <div className="bg-white/5 border border-yellow-500/20 rounded-2xl p-6">
+              <div className="text-2xl mb-3">🔄</div>
+              <h3 className="text-lg font-bold mb-1 text-yellow-400">Basic Automation</h3>
+              <p className="text-xs text-slate-500 mb-4 uppercase tracking-widest">Zapier, GHL Workflows</p>
+              <ul className="space-y-2.5">
+                {[
+                  'Fires on rigid triggers',
+                  'No real intelligence',
+                  'Breaks on unexpected input',
+                  'No memory between runs',
+                  'Can\'t handle nuance',
+                  'Requires constant maintenance',
+                ].map((item) => (
+                  <li key={item} className="flex items-center gap-2 text-sm text-slate-400">
+                    <span className="text-yellow-500 shrink-0">~</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Column 3: OpenClaw AI Workers */}
+            <div className="bg-indigo-950/60 border border-indigo-500/40 rounded-2xl p-6">
+              <div className="text-2xl mb-3">✅</div>
+              <h3 className="text-lg font-bold mb-1 text-indigo-300">OpenClaw AI Workers</h3>
+              <p className="text-xs text-indigo-500 mb-4 uppercase tracking-widest">Powered by Kyra</p>
+              <ul className="space-y-2.5">
+                {[
+                  'Operates continuously, 24/7',
+                  'Remembers every interaction, forever',
+                  'Executes actions autonomously',
+                  'Works across every channel',
+                  'Full context on every contact',
+                  'Proactive — acts without being asked',
+                ].map((item) => (
+                  <li key={item} className="flex items-center gap-2 text-sm text-slate-200">
+                    <span className="text-green-400 shrink-0">✓</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── OpenClaw Section ─────────────────────────────────────────────── */}
+      <section className="border-t border-white/10 py-20">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 bg-indigo-900/50 border border-indigo-500/30 rounded-full px-4 py-1.5 text-sm font-medium text-indigo-300 mb-4">
+              The infrastructure that makes it possible
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-black mb-4">
+              Powered by OpenClaw.<br />
+              <span className="text-indigo-400">Built for autonomy.</span>
+            </h2>
+            <p className="text-slate-400 text-lg max-w-2xl mx-auto">
+              OpenClaw isn't a chatbot API. It's an AI runtime — the infrastructure that makes autonomous, persistent operation possible. Every Kyra AI worker runs on OpenClaw.
+            </p>
+          </div>
+
+          {/* Runtime diagram */}
+          <div className="bg-slate-800/60 border border-white/10 rounded-2xl p-6 mb-10 max-w-3xl mx-auto font-mono text-sm">
+            <p className="text-slate-500 text-xs uppercase tracking-widest mb-4">Typical chatbot API</p>
+            <p className="text-slate-400 mb-6">
+              User message <span className="text-slate-600">→</span> OpenAI API <span className="text-slate-600">→</span> Response <span className="text-slate-600">→</span>{' '}
+              <span className="text-red-400">Done. Forgotten.</span>
+            </p>
+            <p className="text-slate-500 text-xs uppercase tracking-widest mb-4">OpenClaw AI runtime</p>
+            <p className="text-slate-300">
+              Continuous monitoring <span className="text-indigo-400">→</span> Context awareness <span className="text-indigo-400">→</span> Decision making{' '}
+              <span className="text-indigo-400">→</span> Action execution <span className="text-indigo-400">→</span> Memory update{' '}
+              <span className="text-indigo-400">→</span> <span className="text-green-400">Loop. Forever.</span>
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {OPENCLAW_CAPABILITIES.map((cap) => (
+              <div key={cap.title} className="bg-white/5 border border-white/10 rounded-2xl p-5">
+                <div className="text-2xl mb-3">{cap.icon}</div>
+                <h3 className="font-bold mb-1.5">{cap.title}</h3>
+                <p className="text-slate-400 text-sm leading-relaxed">{cap.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Agency Command Center ─────────────────────────────────────────── */}
+      <section className="border-t border-white/10 py-20">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 text-sm font-medium mb-6">
+                Built for agencies
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-black mb-6">
+                One screen.<br />
+                <span className="text-indigo-400">Every client. Full control.</span>
+              </h2>
+              <p className="text-slate-300 text-lg leading-relaxed mb-8">
+                Manage every client's AI worker from a single command center. Health scores, escalation alerts, conversation feeds, revenue tracking — all in one place. You see problems before your clients do.
+              </p>
+              <ul className="space-y-3">
+                {[
+                  'Deploy a new client AI worker in under 5 minutes',
+                  'Health scores and status for every deployed worker',
+                  'Escalation alerts before your client even notices',
+                  'Revenue tracking across your entire portfolio',
+                  'Live conversation feed for every client',
+                  'White-label — your brand, your clients, your revenue',
+                ].map((item) => (
+                  <li key={item} className="flex items-center gap-3 text-slate-300">
+                    <span className="h-1.5 w-1.5 rounded-full bg-green-400 shrink-0 inline-block" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Stats + proof */}
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                {[
+                  { value: '< 5 min', label: 'Deploy per client', sub: 'Template → live' },
+                  { value: '$29M+', label: 'Revenue generated', sub: 'Across client verticals' },
+                  { value: '21', label: 'Industry templates', sub: 'Ready to deploy' },
+                  { value: '100%', label: 'Lead follow-up rate', sub: 'No lead left behind' },
+                ].map((s) => (
+                  <div key={s.label} className="bg-white/5 border border-white/10 rounded-2xl p-5">
+                    <p className="text-3xl font-black text-white">{s.value}</p>
+                    <p className="text-sm text-slate-300 mt-1 font-medium">{s.label}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">{s.sub}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+                <p className="text-sm text-slate-400 mb-1">Typical agency revenue on Pro plan</p>
+                <p className="text-3xl font-black text-green-400">$15,000/mo</p>
+                <p className="text-sm text-slate-500 mt-1">15 clients × $1,000/mo — $249 Kyra cost = $14,751 profit</p>
+              </div>
+
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+                <p className="text-sm text-slate-400 mb-3">vs. hiring a human employee</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-slate-500 uppercase tracking-widest mb-1">Human employee</p>
+                    <p className="text-2xl font-black text-red-400">$3,500/mo</p>
+                    <p className="text-xs text-slate-500 mt-1">+ benefits, sick days, turnover</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 uppercase tracking-widest mb-1">1 Kyra AI worker</p>
+                    <p className="text-2xl font-black text-green-400">$20/mo</p>
+                    <p className="text-xs text-slate-500 mt-1">24/7, no sick days, never quits</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── How to deploy ────────────────────────────────────────────────── */}
       <section id="how-it-works" className="border-t border-white/10 py-20">
         <div className="max-w-6xl mx-auto px-4">
           <div className="text-center mb-12">
             <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 text-sm font-medium mb-4">
-              How it works
+              Deployment
             </div>
             <h2 className="text-3xl sm:text-4xl font-black">
-              Live in under 10 minutes.
+              First AI worker live in under 5 minutes.
             </h2>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6">
-            {HOW_IT_WORKS.map((step) => (
+            {[
+              {
+                step: '01',
+                title: 'Connect your GHL sub-account',
+                desc: 'Paste your GHL Private Integration token. Your client\'s contacts, conversations, and CRM data are immediately available to the AI worker.',
+              },
+              {
+                step: '02',
+                title: 'Pick an industry template',
+                desc: 'Choose from 21 pre-built AI worker templates. Each one is trained for the industry — dental, real estate, cannabis, and more. Customize the personality in minutes.',
+              },
+              {
+                step: '03',
+                title: 'Watch your AI worker operate',
+                desc: 'Your AI worker starts handling conversations immediately. Monitor the live feed from your command center. Your client never sees a terminal — they just see results.',
+              },
+            ].map((step) => (
               <div key={step.step} className="bg-white/5 border border-white/10 rounded-2xl p-6">
                 <div className="text-4xl font-black text-indigo-400 mb-4">{step.step}</div>
                 <h3 className="text-xl font-bold mb-2">{step.title}</h3>
@@ -198,10 +375,50 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ── Industries ──────────────────────────────────────────────────── */}
+      <section id="industries" className="border-t border-white/10 py-20">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 text-sm font-medium mb-4">
+              21 industry templates
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-black mb-4">
+              AI workers for every vertical.
+            </h2>
+            <p className="text-slate-400 text-lg max-w-xl mx-auto">
+              Pre-built AI workers trained for the most common industries. Live demos below — no login required.
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {INDUSTRIES.map((ind) => (
+              <div
+                key={ind.slug}
+                className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-all"
+              >
+                <div className="text-4xl mb-3">{ind.emoji}</div>
+                <h3 className="font-bold text-lg mb-1">{ind.name}</h3>
+                <p className="text-slate-400 text-sm mb-4">{ind.desc}</p>
+                <div className="flex items-center gap-2">
+                  <Link href={`/try/${ind.slug}`}
+                    className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white text-center text-xs font-bold py-2 px-3 rounded-lg transition">
+                    Deploy this worker
+                  </Link>
+                  <Link href={`/demo/${ind.slug}`}
+                    className="flex-1 bg-white/10 hover:bg-white/15 text-slate-300 text-center text-xs font-medium py-2 px-3 rounded-lg transition border border-white/10">
+                    Watch it work
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── Social proof ─────────────────────────────────────────────────── */}
       <section className="border-t border-white/10 py-14">
         <div className="max-w-6xl mx-auto px-4">
-          {/* Live stats — fetched from /api/stats */}
+          {/* Live stats */}
           <LiveStats />
 
           {/* Activity ticker */}
@@ -213,40 +430,40 @@ export default function HomePage() {
               <span className="text-2xl">🌿</span>
               <div>
                 <p className="text-2xl font-black text-green-400">$29M+</p>
-                <p className="text-xs text-green-300/70">Cannabis revenue generated</p>
+                <p className="text-xs text-green-300/70">Revenue generated for clients</p>
               </div>
             </div>
             <div className="hidden sm:block w-px h-8 bg-green-800/40" />
             <div>
               <p className="text-sm font-bold text-white">Purple Lotus · The Flower Shop</p>
-              <p className="text-xs text-slate-500">Powered by Kyra AI SMS</p>
+              <p className="text-xs text-slate-500">Powered by Kyra + OpenClaw AI workers</p>
             </div>
             <div className="hidden sm:block w-px h-8 bg-green-800/40" />
             <Link href="/try/cannabis" className="text-xs bg-green-700 hover:bg-green-600 text-white font-semibold px-4 py-2 rounded-lg transition-colors">
-              See cannabis demo →
+              See cannabis AI worker →
             </Link>
           </div>
 
-          {/* Quotes */}
+          {/* Testimonials */}
           <div className="grid md:grid-cols-2 gap-4 mb-12">
             {[
               {
-                quote: "I added Kyra to my dental client on a Friday. By Monday morning the AI had already booked 3 appointments while the office was closed. That's the pitch — it works while you sleep.",
+                quote: "I deployed a Kyra AI worker to my dental client on a Friday. By Monday morning it had already booked 3 appointments while the office was closed. That's the pitch — it works while you sleep.",
                 author: 'GHL Agency Owner',
                 industry: '🦷 Dental client',
               },
               {
-                quote: "The best part is I don't have to explain AI to my clients. I just show them the conversation history and say 'your AI handled this.' They see the bookings, they pay. Then they refer their friends.",
+                quote: "The best part is I don't have to explain AI to my clients. I just show them the conversation history and say 'your AI worker handled this.' They see the bookings, they pay. Then they refer their friends.",
                 author: 'Digital Marketing Agency',
                 industry: '🏡 Real estate + auto clients',
               },
               {
-                quote: "Set up a cannabis client in 20 minutes using the template. The AI handled a Friday night rush — 40+ inbound texts — while staff was at closing. Every single one got a real reply.",
+                quote: "Set up a cannabis client in 20 minutes using the template. The AI worker handled a Friday night rush — 40+ inbound texts — while staff was at closing. Every single one got a real reply.",
                 author: 'Cannabis Agency',
                 industry: '🌿 Multi-location dispensary',
               },
               {
-                quote: "We white-label Kyra as our own product. Clients pay us $500-1,500/mo per AI employee. Kyra costs $249 flat for 15 clients. I don't need to explain the math to anyone.",
+                quote: "We white-label Kyra as our own product. Clients pay us $500-1,500/mo per AI worker. Kyra costs $249 flat for 15 clients. I don't need to explain the math to anyone.",
                 author: 'Agency Pro User',
                 industry: '💰 12 active clients on Pro',
               },
@@ -271,8 +488,8 @@ export default function HomePage() {
             <p className="text-xs text-slate-600 uppercase tracking-widest font-semibold mb-5">Built on</p>
             <div className="flex items-center justify-center gap-8 flex-wrap">
               {[
+                { name: 'OpenClaw', note: 'Enterprise AI runtime' },
                 { name: 'GoHighLevel', note: '60K agencies' },
-                { name: 'OpenClaw', note: 'AI runtime' },
                 { name: 'OpenAI', note: 'GPT-4o' },
                 { name: 'Stripe', note: 'Billing' },
                 { name: 'Vercel', note: 'Infrastructure' },
@@ -287,150 +504,24 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── Industries ──────────────────────────────────────────────────── */}
-      <section id="industries" className="border-t border-white/10 py-20">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 text-sm font-medium mb-4">
-              21 industry templates
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-black mb-4">
-              Works for every business.
-            </h2>
-            <p className="text-slate-400 text-lg max-w-xl mx-auto">
-              Pre-built AI personalities for the most common industries. Live demos below — no login required.
-            </p>
-          </div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {INDUSTRIES.map((ind) => (
-              <div
-                key={ind.slug}
-                className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-all"
-              >
-                <div className="text-4xl mb-3">{ind.emoji}</div>
-                <h3 className="font-bold text-lg mb-1">{ind.name}</h3>
-                <p className="text-slate-400 text-sm mb-4">{ind.desc}</p>
-                <div className="flex items-center gap-2">
-                  <Link href={`/try/${ind.slug}`}
-                    className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white text-center text-xs font-bold py-2 px-3 rounded-lg transition">
-                    💬 Try it live
-                  </Link>
-                  <Link href={`/demo/${ind.slug}`}
-                    className="flex-1 bg-white/10 hover:bg-white/15 text-slate-300 text-center text-xs font-medium py-2 px-3 rounded-lg transition border border-white/10">
-                    Watch demo
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Features ────────────────────────────────────────────────────── */}
-      <section id="features" className="border-t border-white/10 py-20">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 text-sm font-medium mb-4">
-              What Kyra does automatically
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-black mb-4">
-              Your client's AI never stops working.
-            </h2>
-            <p className="text-slate-400 text-lg max-w-xl mx-auto">
-              Every feature runs automatically inside your clients' GHL accounts. Zero manual work after setup.
-            </p>
-          </div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {FEATURES.map((f) => (
-              <div key={f.title} className="bg-white/5 border border-white/10 rounded-2xl p-5">
-                <div className="text-2xl mb-3">{f.icon}</div>
-                <h3 className="font-bold mb-1.5">{f.title}</h3>
-                <p className="text-slate-400 text-sm leading-relaxed">{f.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── For agencies ────────────────────────────────────────────────── */}
-      <section className="border-t border-white/10 py-20">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 text-sm font-medium mb-6">
-                Built for GHL agencies
-              </div>
-              <h2 className="text-3xl sm:text-4xl font-black mb-6">
-                One dashboard.<br />
-                <span className="text-indigo-400">All your clients' AI.</span>
-              </h2>
-              <p className="text-slate-300 text-lg leading-relaxed mb-8">
-                Manage every client's AI employee from a single agency dashboard. Conversations, analytics, escalations, personalities — all in one place. Your clients never see a terminal. They just see results.
-              </p>
-              <ul className="space-y-3">
-                {[
-                  'Per-client personality training',
-                  'Live conversation feed with escalation alerts',
-                  '7-day performance analytics per client',
-                  'White-label — your brand, your clients',
-                  'BYOK — clients bring their own OpenAI key',
-                  'Weekly automated performance reports',
-                ].map((item) => (
-                  <li key={item} className="flex items-center gap-3 text-slate-300">
-                    <span className="h-1.5 w-1.5 rounded-full bg-green-400 shrink-0 inline-block" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Stats + proof */}
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                {[
-                  { value: '< 10 min', label: 'Setup per client', sub: 'Template → live' },
-                  { value: '$29M+', label: 'Revenue generated', sub: 'Across client verticals' },
-                  { value: '21', label: 'Industry templates', sub: 'Ready to deploy' },
-                  { value: '100%', label: 'Follow-up rate', sub: 'Every lead answered' },
-                ].map((s) => (
-                  <div key={s.label} className="bg-white/5 border border-white/10 rounded-2xl p-5">
-                    <p className="text-3xl font-black text-white">{s.value}</p>
-                    <p className="text-sm text-slate-300 mt-1 font-medium">{s.label}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">{s.sub}</p>
-                  </div>
-                ))}
-              </div>
-
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
-                <p className="text-sm text-slate-400 mb-1">Typical agency revenue on Pro plan</p>
-                <p className="text-3xl font-black text-green-400">$15,000/mo</p>
-                <p className="text-sm text-slate-500 mt-1">15 clients × $1,000/mo — $249 Kyra cost = $14,751 profit</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* ── Final CTA ───────────────────────────────────────────────────── */}
       <section className="border-t border-white/10 py-20">
         <div className="max-w-2xl mx-auto px-4 text-center">
           <div className="bg-indigo-600 rounded-2xl p-10 sm:p-14">
             <h2 className="text-3xl sm:text-4xl font-black mb-4">
-              Deploy your first AI employee today.
+              Start deploying autonomous AI workers today.
             </h2>
             <p className="text-indigo-200 text-lg mb-8 max-w-lg mx-auto">
-              Connect your GoHighLevel account. Pick a template. Go live in under 10 minutes. Free during beta.
+              Connect your GoHighLevel account. Pick a template. Your first AI worker is live in under 5 minutes.
             </p>
             <Link
               href="/signup/agency"
               className="inline-flex items-center gap-2 bg-white text-indigo-700 font-black text-lg px-10 py-4 rounded-xl hover:bg-indigo-50 transition"
             >
-              Get Started Free →
+              Deploy Your First AI Worker →
             </Link>
             <p className="text-indigo-300 text-sm mt-4">
-              No credit card required · Free during beta · Works with GoHighLevel
+              Free during beta · No credit card required · OpenClaw-powered
             </p>
           </div>
         </div>

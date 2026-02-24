@@ -5,7 +5,7 @@ import PublicNav from '@/components/layout/public-nav';
 import PublicFooter from '@/components/layout/public-footer';
 
 export const metadata: Metadata = {
-  title: 'Blog — Kyra AI | Agency Growth & AI Employee Guides',
+  title: 'Kyra Blog — AI Workforce Strategy for Agencies',
   description: 'Learn how to grow your GHL agency with AI employees. Guides on deployment, pricing, and industry-specific use cases.',
   openGraph: { title: 'Kyra AI Blog — Agency Growth Guides', url: 'https://kyra.conversionsystem.com/blog' },
 };

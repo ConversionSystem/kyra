@@ -56,12 +56,16 @@ export default function PublicFooter() {
         </div>
 
         <div className="border-t border-gray-200 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5">
-            <div className="w-6 h-6 rounded bg-indigo-600 flex items-center justify-center font-black text-xs text-white">
-              K
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2.5">
+              <div className="w-6 h-6 rounded bg-indigo-600 flex items-center justify-center font-black text-xs text-white">
+                K
+              </div>
+              <span className="font-bold text-sm text-gray-900">Kyra</span>
+              <span className="text-gray-400 text-sm">by Conversion System</span>
             </div>
-            <span className="font-bold text-sm text-gray-900">Kyra</span>
-            <span className="text-gray-400 text-sm">by Conversion System</span>
+            <p className="text-xs text-gray-500">The #1 AI Workforce Platform for agencies. Deploy autonomous AI workers powered by OpenClaw.</p>
+            <p className="text-xs text-indigo-500 font-medium">Powered by OpenClaw</p>
           </div>
           <div className="flex items-center gap-4 text-xs text-gray-400">
             <p>© 2026 Conversion System. All rights reserved.</p>

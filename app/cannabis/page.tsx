@@ -17,8 +17,8 @@ import {
 } from 'lucide-react';
 
 export const metadata = {
-  title: 'AI Employee for Cannabis Dispensaries | Kyra',
-  description: 'The only AI employee built for cannabis dispensaries. Handle 100s of daily inquiries, recommend products, book consultations — compliance-aware, 24/7. $29M+ generated for cannabis clients.',
+  title: 'AI Worker for Cannabis Dispensaries | Kyra — OpenClaw-Powered',
+  description: 'The only OpenClaw-powered autonomous AI worker built for cannabis dispensaries. Handle 100s of daily inquiries, recommend products, book consultations — compliance-aware, 24/7. $29M+ generated for cannabis clients.',
 };
 
 function StatCard({ stat, label, sub }: { stat: string; label: string; sub: string }) {
@@ -55,12 +55,12 @@ export default function CannabisPage() {
         <div className="container mx-auto px-4 md:px-6">
           <div className="max-w-3xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-green-800 border border-green-700 text-green-200 text-sm font-medium mb-6">
-              🌿 Built for Cannabis Dispensaries
+              🌿 OpenClaw-Powered · Cannabis AI Workers
             </div>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white leading-tight mb-6">
               Your dispensary needs
               <br />
-              <span className="text-green-300">an AI that never sleeps</span>
+              <span className="text-green-300">an autonomous AI worker that never sleeps</span>
             </h1>
             <p className="text-lg text-green-100 max-w-2xl mx-auto mb-8 leading-relaxed">
               Handle hundreds of daily product inquiries, recommend strains by effect, answer compliance questions, 
@@ -82,6 +82,9 @@ export default function CannabisPage() {
               </Link>
             </div>
             <p className="text-xs text-green-600 mt-4">Free during beta · Live in 72 hours · Cancel anytime</p>
+            <p className="text-xs text-green-500 mt-2">
+              OpenClaw&apos;s per-client isolation means each cannabis client&apos;s data stays separate. Compliance-aware by design.
+            </p>
           </div>
         </div>
       </section>

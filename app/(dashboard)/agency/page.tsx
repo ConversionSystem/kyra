@@ -331,7 +331,7 @@ export default async function AgencyOverviewPage() {
       {/* ── Agency Analytics Strip ── */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">All Clients · This Week</h2>
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">AI Workforce · This Week</h2>
           <a href="/agency/conversations" className="text-xs text-indigo-500 hover:underline flex items-center gap-1">
             View conversations <ArrowRight className="h-3 w-3" />
           </a>
@@ -610,8 +610,8 @@ export default async function AgencyOverviewPage() {
                 <Rocket className="h-5 w-5 text-white" />
               </div>
               <div>
-                <h2 className="font-bold text-gray-900">Welcome to Kyra! Let&apos;s get your first AI live.</h2>
-                <p className="text-xs text-gray-500 mt-0.5">3 steps · takes about 10 minutes</p>
+                <h2 className="font-bold text-gray-900">Deploy your first AI worker</h2>
+                <p className="text-xs text-gray-500 mt-0.5">Connect a GHL sub-account, pick a template, and your OpenClaw-powered AI worker is live in under 5 minutes.</p>
               </div>
             </div>
 
