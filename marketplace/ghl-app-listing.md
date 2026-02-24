@@ -1,32 +1,26 @@
-# Kyra — AI Service Management for GHL Agencies
-*GHL Marketplace Listing — Rewritten Feb 24, 2026*
-*Positioning: Complementary agency management layer. Never competing with GHL's native AI.*
+# Kyra — Autonomous AI Workers for GHL Agencies
+*GHL Marketplace Listing — Version 3.0, Feb 24, 2026*
+*Core positioning: OpenClaw-powered autonomous AI. Not chatbots. Actual workers.*
 
 ---
 
 ## App Name
 
-**Kyra — AI Service Management**
-
-*(NOT "AI Employee" — avoids direct conflict with GHL's AI Employee product)*
+**Kyra — Autonomous AI Workers**
 
 ---
 
-## Category (Primary)
+## Category
 
-**Agency Management**
+**AI & Automation**
 
-*(NOT "AI & Automation" — that's GHL's own territory. "Agency Management" is a gap GHL doesn't fill.)*
-
-## Category (Secondary)
-
-**Client Reporting & Analytics**
+*(This positions Kyra as an AI capability EXTENSION — more powerful AI engine for agencies who need autonomous agents, not just chatbot responses.)*
 
 ---
 
 ## Short Description (150 chars)
 
-Manage, white-label, and monetize AI services across all your GHL sub-accounts — one dashboard, your brand, your pricing, automated billing.
+Deploy autonomous AI workers to your GHL clients — powered by OpenClaw. They don't wait to be messaged. They monitor, decide, and act on their own.
 
 ---
 
@@ -34,260 +28,245 @@ Manage, white-label, and monetize AI services across all your GHL sub-accounts �
 
 ---
 
-### The Problem Every GHL Agency Faces
+### The Difference Between a Chatbot and an AI Worker
 
-You've got 10, 20, maybe 50 GHL sub-accounts. Each one needs to be configured, monitored, customized, and billed separately. GoHighLevel gives you incredible tools inside each sub-account. But managing those tools *across* all your clients? That's where agencies get buried.
+A chatbot waits.
 
-You're jumping between sub-accounts. You're losing track of which clients' AI is active. You're manually chasing down invoices. You're rebuilding the same AI setup from scratch every time you onboard a new client.
+Your client's lead submits a form at 11pm. The chatbot sits idle until that lead sends a message. Maybe they will. Probably they won't. The lead goes cold.
 
-**Kyra solves the multi-client management problem that GHL doesn't.**
+An AI worker doesn't wait.
 
----
+An AI worker sees the form submission, qualifies the lead based on their history in the CRM, sends a personalized follow-up within 60 seconds, books a call in the calendar, updates the pipeline stage, and logs a summary — all before your client's team sits down for morning coffee.
 
-### What Kyra Does
-
-Kyra is the **agency operations dashboard** that sits on top of your GHL accounts. It gives you:
-
-**One place to manage all your clients' AI services** — instead of logging in and out of 20 sub-accounts, you see every client's AI status, conversation health, and performance from a single screen.
-
-**A white-label AI service business** — your clients see your agency's logo, domain, and branding. You set your own pricing. Stripe Connect handles billing automatically. You keep the margin.
-
-**5-minute client onboarding** — connect a new GHL sub-account via OAuth, pick an industry template (dental, real estate, home services, restaurants, and more), customize the AI personality, and that client is live. No rebuilding from scratch.
-
-**Cross-client intelligence** — see which clients have high conversation volume, which AIs are performing, which clients need attention, and where your agency is generating the most ROI.
+That's the difference. And that's what Kyra brings to your GHL sub-accounts.
 
 ---
 
-### How Kyra + GoHighLevel Work Together
+### What Powers Kyra: OpenClaw
 
-GHL powers the CRM, contacts, calendar, workflows, and messaging inside each sub-account. Kyra layers agency-level management on top:
+Kyra is built on **OpenClaw** — the only enterprise AI infrastructure designed from the ground up for autonomous agents, not chatbots.
 
-| What GHL Does | What Kyra Adds |
-|---------------|----------------|
-| AI conversations inside each sub-account | Cross-account visibility — monitor all clients from one dashboard |
-| Per-sub-account AI configuration | Agency-wide templates — deploy a new client in 5 minutes |
-| GHL's native billing | White-label client billing via Stripe Connect — set your price, automate invoices |
-| Contact and conversation data in GHL | Performance analytics — health scores, response rates, lead conversion by client |
-| GHL sub-account branding | Your agency's white-label portal — clients see your brand, not GHL's |
-| One sub-account at a time | Multi-client operations — manage 5, 15, or 50 clients from one screen |
+Most AI tools (including the majority of what you'll find in the marketplace) are built on the same pattern: receive input → call an AI API → return output. They're request-response systems dressed up with a persona.
 
-Kyra doesn't replace anything inside GHL. It gives agencies the business infrastructure to turn GHL into a scalable AI service offering.
+OpenClaw is architecturally different. It's a **persistent AI gateway** — a continuously running process that:
 
----
+- **Watches** your client's contacts, conversations, and CRM data in real time
+- **Decides** when to act, based on context and rules you configure
+- **Acts** — sends messages, books appointments, updates the pipeline, triggers workflows, escalates to humans
+- **Remembers** every interaction across every session, every channel, forever
 
-### The Agency Revenue Opportunity
-
-The agencies winning in AI aren't the ones with the best AI — they're the ones who can deploy, manage, and bill for it at scale.
-
-Kyra gives you the operational infrastructure to do that:
-
-- **Connect a new client** in under 5 minutes (OAuth, template, done)
-- **Set your own pricing** — $197/mo, $497/mo, whatever fits your market
-- **Stripe Connect handles billing** — automated invoices, recurring payments, no chasing
-- **Manage everything from one dashboard** — no sub-account hopping
-
-10 clients × $297/mo average = **$2,970/mo new revenue**
-50 clients × $297/mo = **$14,850/mo new revenue**
-
-That's a service line you can grow without adding headcount.
+Each of your clients gets their own isolated OpenClaw instance. Their AI worker runs 24/7, aware of everything happening in their GHL account, and acts without waiting for a trigger.
 
 ---
 
-### Built for Agency Scale
+### What Your Clients' AI Workers Actually Do
 
-**Multi-Client Dashboard**
-One screen shows every client's AI status, active conversations, performance scores, and alerts. Filter by plan, health score, or activity level. Spot problems before your clients do.
+**Inbound Conversations (All GHL Channels)**
+When a lead messages — SMS, email, Instagram, WhatsApp, Live Chat — the AI worker responds with full context. It knows who this person is, their history, what they've asked before, what stage they're in. Not a generic response. A continuation of the relationship.
 
-**White-Label Client Portals**
-Each client gets a branded portal at your domain with your logo and colors. They log in to view conversation history, AI performance, and reports — all under your agency brand.
+**Proactive Lead Follow-Up**
+No trigger needed. The AI worker monitors leads who've gone quiet and initiates outreach at the right moment. It decides when, what to say, and how to frame it based on the lead's history.
 
-**Industry Templates**
-Pre-configured AI setups for dental practices, real estate, home services, restaurants, auto dealers, law firms, medical spas, and more. Customizable for any niche. New clients go live in minutes, not days.
+**Appointment Booking**
+Full multi-step booking. Checks calendar availability, proposes times, handles reschedules, sends confirmations, and reminds — across the conversation, without human intervention.
 
-**Agency Billing via Stripe Connect**
-Set per-client pricing. Stripe invoices automatically on your schedule. Revenue routes to your bank account. You keep the margin, Kyra handles the infrastructure.
+**Pipeline Management**
+As conversations progress, the AI worker moves pipeline stages, applies tags, updates contact records, and creates notes. Your client's CRM stays clean without anyone touching it.
 
-**Performance Analytics**
-Track conversation volume, response rates, booking rates, and lead conversion per client. Generate branded PDF reports for client reviews. Show clients the ROI of their AI service.
+**Escalation Intelligence**
+The AI worker knows when it's out of its depth. Pricing negotiations, complex complaints, legal questions — it flags these for human follow-up and notifies the right person immediately. It doesn't guess. It hands off.
 
-**Conversation Oversight**
-Search, filter, and review any conversation across all clients. Flag conversations for human follow-up. Export for compliance. Full audit trail.
+**Background Monitoring**
+Between conversations, the AI worker is still working. Scanning for opportunities, drafting follow-ups, preparing context for upcoming interactions. Not idle. Working.
+
+---
+
+### Your Agency Command Center
+
+Kyra gives your agency one screen to manage every AI worker you've deployed across every GHL sub-account.
+
+Not just status lights. Intelligence:
+
+**AI Worker Health Scores**
+See which clients' AI workers are performing and which need attention. Response quality, resolution rates, escalation frequency — across all your clients, instantly visible.
+
+**Cross-Client Conversation Monitor**
+Review any conversation across any client without logging into sub-accounts. Flag conversations. Export for compliance. Intervene when needed.
+
+**One-Click Deployment**
+21 industry templates: dental, real estate, cannabis, restaurant, home services, legal intake, med spa, auto dealer, and more. Connect a GHL sub-account, pick a template, and that client's AI worker is live in under 5 minutes.
 
 **AI Personality Editor**
-Customize the tone, knowledge base, greeting, and behavior for each client without touching their GHL account. Changes apply instantly.
+Train each client's AI worker on their specific business — services, pricing, tone, hours, booking rules, escalation contacts. Configure from your agency dashboard without touching their sub-account.
 
-**Escalation Management**
-When a conversation needs human attention, Kyra flags it and notifies the right person. Your team sees it in the agency dashboard. The client's team sees it in their portal.
+**Escalation Hub**
+Every conversation flagged for human attention, across all clients, in one feed. Your team sees it. The client's team sees it in their branded portal. Nobody falls through the cracks.
+
+---
+
+### The OpenClaw Difference (Technical)
+
+For agencies who want to understand what's under the hood:
+
+| | Standard AI Chatbots | Kyra (OpenClaw) |
+|--|---------------------|-----------------|
+| **Architecture** | Request-response (reactive) | Persistent gateway (autonomous) |
+| **Memory** | Conversation window only | Full history across all sessions, all channels |
+| **Operation** | Waits for a trigger | Monitors continuously, acts proactively |
+| **Model** | Fixed provider, fixed model | Any model — Claude Sonnet, GPT-4, Gemini — BYOK |
+| **Isolation** | Shared infrastructure | Dedicated instance per client |
+| **Channels** | Platform-dependent | SMS, WhatsApp, Instagram, Telegram, Discord, Web, Voice |
+| **Audit trail** | Conversation logs | Full action log — every decision, every action |
+| **Context** | Current conversation | Entire contact history + CRM data |
+
+OpenClaw isn't just a better AI model. It's a different category of infrastructure. Built for autonomous operation, not just better responses.
+
+---
+
+### Why Agencies Choose Kyra
+
+**You're already managing AI across clients. It's chaos.**
+
+You're logging into sub-account A to check if the AI is configured. Sub-account B to see why a conversation went wrong. Sub-account C to update the booking rules. Sub-account D because a client complained their AI sent a weird message.
+
+Multiply that by 20 clients. That's 4-6 hours a week of sub-account hopping just to keep everyone's AI running.
+
+Kyra ends that. One screen. Every client. Every conversation. Every AI worker — visible, configurable, and monitored from your agency dashboard.
+
+**You want to sell AI as a service. You need infrastructure that scales.**
+
+Deploying AI to one client is easy. Deploying it to 20 clients and maintaining quality across all of them — without adding headcount — requires a system.
+
+Kyra is that system.
+
+**The revenue math:**
+
+- 10 clients × $297/mo AI worker service = **$2,970/mo new revenue**
+- Management overhead: ~10 minutes per client per week (not 4+ hours)
+- Profit margin: 85%+
+
+That's a service you can grow to 50 clients without hiring another person.
+
+---
+
+### Who This Is For
+
+**Agencies with 5+ GHL sub-accounts who are deploying AI** and need a unified management layer.
+
+**Agencies who want to offer AI as a premium service** — not just "we set up GHL's AI for you" but a fully managed, continuously monitored AI worker service under their agency brand.
+
+**Agencies serving complex industries** — cannabis (compliance-aware AI), healthcare (sensitive conversation handling), legal (intake + qualification), high-volume businesses — where standard chatbot behavior isn't enough.
+
+**Agencies who want model flexibility** — Claude Sonnet's reasoning, GPT-4's consistency, Gemini's multimodal capability. Bring your own keys. Use the right model for the right client.
 
 ---
 
 ### Use Cases
 
-**Growing Agency Managing 20+ Sub-Accounts**
-Instead of logging into each GHL sub-account to check AI status, review conversations, and fix issues — the agency sees everything in one dashboard. When a client's AI has a drop in response quality, they see it immediately and fix it before the client notices.
+**The AI Agency Service Line**
+A 15-person marketing agency adds "AI Worker" as a $397/mo managed service. They onboard each client in 5 minutes with an industry template, customize the AI personality, and monitor everything from Kyra's dashboard. They earn $5,955/mo in new recurring revenue. One team member spends 2 hours/week on AI management. No new hires.
 
-**Agency Launching an "AI Employee" Service Tier**
-An agency adds "AI Employee" as a $297/mo service to their existing GHL retainer clients. They onboard 10 clients using Kyra templates in a single afternoon. Stripe Connect auto-invoices. The agency earns $2,970/mo in new recurring revenue with no new hires.
+**Cannabis Dispensary Chain (Multi-Location)**
+A cannabis marketing agency manages 8 dispensary clients. Each has strict compliance requirements. Kyra's AI workers are configured with compliance guardrails — they know what to say and what never to say. The agency monitors all 8 from one screen. When a conversation gets close to a compliance edge, the AI escalates. The agency gets the alert. The client never sees the risk.
 
-**White-Label Reseller**
-An agency white-labels Kyra under their own brand — their domain, their logo, their pricing. Their clients never see GHL's interface or Kyra's brand. The agency controls the entire client experience.
+**Real Estate Team: Speed-to-Lead**
+A real estate agency has clients spending $5,000/mo on Facebook leads. Most go cold because agents can't respond in under 10 minutes. Kyra's AI workers respond in under 60 seconds — qualifying, engaging, booking. Lead-to-appointment rate triples. The AI doesn't sleep. The agency's clients stop losing deals to faster competitors.
 
-**Multi-Location Business Scaling**
-A franchise operator with 15 GHL sub-accounts (one per location) uses Kyra to standardize AI behavior across all locations, monitor which locations are getting the most conversations, and generate individual performance reports for each franchise owner.
+**High-Volume Service Business**
+A home services company gets 200 inbound texts per week — estimates, scheduling, follow-ups. One AI worker handles all of it. Every lead gets a response. Every appointment gets booked. Every job gets a follow-up review request. The business owner looks at their Kyra dashboard once a week and sees the numbers.
 
 ---
 
 ### FAQ
 
-**Does Kyra work with GoHighLevel's native AI features?**
-Yes — Kyra and GHL's native AI work in parallel. GHL handles conversations inside each sub-account. Kyra gives agencies the management layer to operate those AI services across all their clients from one place, package them as a billable service, and track performance across their entire client base.
+**How does Kyra work with GHL's native AI features?**
+Kyra and GHL's AI work in parallel — Kyra adds autonomous agent capability and multi-model flexibility for clients who need more than standard conversation AI. Both can run in the same sub-account. GHL handles what it handles. Kyra's AI worker handles the complex, multi-step, proactive scenarios.
 
-**Do I need to change anything inside my GHL accounts?**
-No. Kyra connects via GHL's standard OAuth — same as any other marketplace app. It reads conversation and contact data to power the agency dashboard and analytics. Your GHL setup stays exactly as it is.
+**What is OpenClaw?**
+OpenClaw is an enterprise AI gateway — the infrastructure Kyra runs on. It's purpose-built for autonomous AI agents: persistent operation, multi-channel management, full memory, and tool execution. It's what separates an AI worker from a chatbot.
 
-**Can my clients tell they're using Kyra?**
-No. White-label is included on Pro and Scale plans. Your clients see your agency's logo, domain, and color scheme everywhere — the dashboard, the portal, reports, and notifications. Kyra is invisible.
+**Do my clients need to install anything?**
+No. Kyra connects to GHL sub-accounts via OAuth. Your client's AI worker runs on Kyra's infrastructure. Nothing changes inside their GHL account.
 
-**How long does it take to onboard a new client?**
-Under 5 minutes. Connect the sub-account via OAuth, pick an industry template, customize the AI name and greeting if you want, and that client is live. The AI handles inbound messages immediately.
+**Can I bring my own AI model?**
+Yes. On Pro and Scale plans, agencies can configure which AI model powers each client's AI worker — Claude Sonnet (Anthropic), GPT-4 (OpenAI), Gemini (Google), and more. Bring your own API keys and control costs directly.
 
-**How does billing for my clients work?**
-Stripe Connect powers agency billing. You set whatever price you want per client. Stripe invoices automatically on whatever schedule you choose (monthly, quarterly, annually). Revenue routes directly to your bank account minus Kyra's platform fee.
+**Can my clients see Kyra's branding?**
+No. White-label is built into Pro and Scale. Your clients access their AI worker data through your agency's branded portal — your domain, your logo, your colors. Kyra is invisible.
 
-**What data does Kyra access from GHL?**
-Kyra uses OAuth 2.0 to access conversation and contact data for the sub-accounts you connect. This powers the analytics dashboard and conversation oversight features. All data access follows GHL's standard API permissions. Nothing is shared with third parties or used for training.
+**What industries have templates?**
+Dental, real estate, cannabis, home services, restaurant, legal intake, med spa, auto dealer, fitness, insurance, e-commerce, hotel, education, and more — 21 templates. Any can be customized for a specific client.
 
-**How is client data protected?**
-Each GHL sub-account has isolated access via OAuth 2.0. Tokens are encrypted and stored separately per client. No cross-client data access is possible by design. Conversation data is stored in EU-hosted infrastructure with encrypted connections end-to-end.
+**How long to onboard a new client?**
+Under 5 minutes from OAuth connection to AI worker live. Template picks the configuration. You customize the personality. The AI worker starts handling conversations immediately.
 
-**What if I already have AI set up inside GHL for a client?**
-Kyra adds the agency management layer on top — it doesn't replace your existing GHL setup. Your GHL AI configurations remain untouched. Kyra layers on cross-client visibility, analytics, white-label billing, and centralized management.
-
----
-
-## Key Features (Bullet Format for Marketplace)
-
-1. **Multi-Client Dashboard** — Monitor every GHL sub-account's AI status, conversation health, and performance from one agency-level screen
-2. **White-Label Client Portals** — Clients access AI reports and conversation history under your agency's branding — no GHL or Kyra visible
-3. **Automated Agency Billing** — Stripe Connect lets you set per-client pricing and collect recurring revenue automatically
-4. **5-Minute Client Onboarding** — Industry templates (dental, real estate, home services, and more) let you deploy new clients without starting from scratch
-5. **Cross-Client Analytics** — Health scores, response rates, booking rates, and lead conversion tracked across your entire client portfolio
-6. **AI Personality Editor** — Customize tone, knowledge base, and behavior per client from the agency dashboard — no sub-account access required
-7. **Conversation Oversight** — Search, filter, review, and export conversations across all clients. Full audit trail for compliance
-8. **Escalation Alerts** — Flagged conversations notify the right people instantly. Agency sees it. Client team sees it. Nobody falls through the cracks
-9. **Branded PDF Reports** — Generate client-facing performance reports in your agency's branding for monthly reviews
-10. **Industry Templates** — Pre-configured setups for 15+ industries. New clients go live in minutes
+**Is there a free trial?**
+30 days, no credit card required. Full feature access.
 
 ---
 
 ## Pricing
 
-**Starter — $99/mo**
-Up to 5 GHL sub-accounts, core dashboard, industry templates, conversation oversight
+**Starter — $99/mo** — Up to 5 clients, core AI worker deployment, agency dashboard
 
-**Pro — $249/mo**
-Up to 15 sub-accounts, white-label portals, Stripe Connect billing, analytics, branded reports
+**Pro — $249/mo** — Up to 15 clients, BYOK, white-label portals, full analytics
 
-**Scale — $499/mo**
-Unlimited sub-accounts, priority support, custom onboarding, volume discounts
+**Scale — $499/mo** — Unlimited clients, priority support, custom onboarding
 
-**30-day free trial. No credit card required.**
-
-Full pricing: [kyra.conversionsystem.com/pricing](https://kyra.conversionsystem.com/pricing)
+See full pricing: **kyra.conversionsystem.com/pricing**
 
 ---
 
-## Support
+## Key Features (Marketplace Bullets)
 
-- **Email:** support@conversionsystem.com
-- **Documentation:** kyra.conversionsystem.com/help
-- **Onboarding call** included for agencies with 5+ sub-accounts on Pro/Scale
+1. **Autonomous AI Workers** — Powered by OpenClaw enterprise infrastructure. Not reactive chatbots — continuously operating agents that monitor, decide, and act.
+2. **Agency Command Center** — One dashboard for every client's AI worker. Health scores, conversation monitor, escalation hub — across all sub-accounts.
+3. **Persistent AI Memory** — Full contact history across all channels, all sessions. The AI worker knows every customer.
+4. **BYOK Model Flexibility** — Claude Sonnet, GPT-4, Gemini. Bring your own API keys. Use the right model per client.
+5. **21 Industry Templates** — Cannabis, dental, real estate, legal, home services, and more. New client live in 5 minutes.
+6. **Proactive Follow-Up** — AI workers initiate outreach without being triggered. Monitors leads who've gone quiet and acts.
+7. **Multi-Channel Operation** — SMS, WhatsApp, Instagram, email, web chat, Telegram, Discord, Voice — all channels, one AI worker.
+8. **White-Label Client Portals** — Your brand, your domain. Clients see your agency, never Kyra.
+9. **Escalation Intelligence** — AI knows when to hand off. Flags conversations for human review. Notifies the right person immediately.
+10. **Per-Client AI Isolation** — Each client runs in a dedicated OpenClaw instance. Data separation by design.
 
 ---
 
 ## Categories
 
-- **Primary:** Agency Management
-- **Secondary:** Client Reporting & Analytics
-- **Tertiary:** CRM & Pipeline
-
-*(Avoiding "AI & Automation" — GHL's native territory)*
+- **Primary:** AI & Automation
+- **Secondary:** Communication Tools
 
 ---
 
-## Screenshots to Capture
+## Submission Notes (Internal)
 
-1. **Agency dashboard** — multi-client grid showing health scores, status badges, conversation counts
-2. **Client onboarding** — the 3-step flow: OAuth connect → template pick → go live
-3. **Performance analytics** — graphs showing response rate, booking rate per client
-4. **White-label portal** — client view showing agency branding (use a demo brand name)
-5. **AI personality editor** — the customization panel
-6. **Billing dashboard** — Stripe Connect view with per-client revenue
-7. **Conversation oversight** — the cross-client conversation feed with filters
+### The Angle That Works:
+GHL has AI employees. GHL does NOT have:
+- Autonomous (proactive) AI — GHL's AI is reactive. OpenClaw is autonomous.
+- Multi-model flexibility / BYOK — GHL locks to their AI. Kyra lets agencies choose.
+- Per-client dedicated AI infrastructure — GHL is shared. OpenClaw is isolated per client.
+- Non-GHL channels at the AI level — Telegram, Discord (no native GHL support)
+- The specific enterprise use cases: cannabis compliance, HIPAA-adjacent, legal intake
 
----
+### How to Frame in Loom:
+Show the PROACTIVE behavior — don't just show a chatbot responding. Show the AI worker initiating a follow-up, monitoring a lead who went cold, completing a multi-step booking autonomously. That's the visual proof that this is different.
 
-## Loom Video Script (Required for Submission)
-
-### Video 1: App Demo (Full walkthrough)
-
-*Open on Kyra dashboard (branded as "DemoAgency AI")*
-
-**[0:00–0:20]**
-"I'm going to show you how Kyra works as an agency management layer on top of GoHighLevel. This is the agency dashboard — from here I can see all my GHL clients' AI services in one place."
-
-**[0:20–0:45]**
-"Let me connect a new GHL sub-account. I'll click Add Client, authenticate via GHL OAuth [show OAuth flow], select an industry template — let's use Real Estate — and that client is live. Under 5 minutes."
-
-**[0:45–1:15]**
-"Here's what I see for an existing client. Conversation health score, response rate, booking rate, last 30 days. I can open any conversation, review it, flag it for follow-up, or export it."
-
-**[1:15–1:40]**
-"The client portal — this is what my client sees when they log in. It's under my agency's domain and branding. They see their performance data, conversation history, and reports. They never see GHL or Kyra."
-
-**[1:40–2:00]**
-"Billing: I set the price, Stripe invoices automatically. Revenue goes to my account. This is what turns AI services into recurring agency revenue."
-
-### Video 2: Scope Justification
-
-*Explain each OAuth scope requested and why it's needed*
-
-- `contacts.readonly` — used to pull contact history for AI context and analytics
-- `conversations.readonly` + `conversations/message.readonly` — powers the conversation oversight dashboard
-- `conversations/message.write` — needed when AI sends responses through GHL's messaging system
-- `opportunities.readonly/write` — tracks and updates pipeline stages based on conversation outcomes
-- `calendars.readonly/write` — enables appointment booking from within conversations
-- `locations.readonly` — needed to identify which sub-account is connecting
-- `workflows.readonly` — used to show available workflows in the escalation config
-
----
-
-## Approval Strategy Notes (Internal — Do Not Submit)
-
-### What We Avoid Saying:
+### What NOT to Say:
 - ❌ "Better than GHL's AI"
 - ❌ "Replaces GHL Conversation AI"
-- ❌ "GHL's AI is rule-based / limited / unreliable"
-- ❌ Any comparison table that frames GHL negatively
-- ❌ Calling ourselves an "AI Employee" (GHL's own product name)
+- ❌ "GHL's AI is limited/reactive"
 
-### What We Emphasize:
-- ✅ Agency management layer — the gap GHL doesn't fill
-- ✅ "Works WITH GoHighLevel" — complementary, not competing
-- ✅ White-label agency service packaging (GHL has no answer for this)
-- ✅ Multi-client billing automation (Stripe Connect — GHL doesn't do this)
-- ✅ Cross-client analytics (GHL is per-sub-account only)
-- ✅ Data stays in GHL infrastructure
-- ✅ Standard OAuth — no unusual permissions
+### What TO Say:
+- ✅ "Extends GHL with autonomous AI capability"
+- ✅ "For agencies whose clients need more than conversation AI — they need workers"
+- ✅ "Built on OpenClaw enterprise infrastructure"
+- ✅ "Works alongside GHL's native AI"
 
-### The Core Insight:
-GHL gives agencies great AI tools per sub-account.
-GHL has NO solution for managing those tools across 20+ clients, packaging them as a billable service, or operating them at agency scale.
-**That's the gap. That's Kyra.**
-
-GHL WANTS this in their marketplace — it makes agencies more likely to stay on GHL and grow their sub-account count. Kyra makes GHL more valuable, not less.
+### Why GHL Should Approve This:
+Kyra makes agencies deploy AI to MORE sub-accounts. Every Kyra client = a GHL sub-account. More sub-accounts = more GHL revenue. Kyra's success = GHL's growth. That's the business case GHL should see clearly.
 
 ---
 
 *Rewritten by Steve (AI CEO) — Feb 24, 2026*
-*Strategy: Position as agency management layer, not AI competitor*
+*Version 3.0 — OpenClaw autonomous agent positioning*
