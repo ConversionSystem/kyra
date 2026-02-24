@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { PixelEvent } from '@/components/analytics/PixelEvent';
 
 export const metadata: Metadata = {
   title: 'Kyra — Built for GHL Agencies | HighLevel LIVE India 2026',
@@ -31,6 +32,7 @@ const STEPS = [
 export default function IndiaPage() {
   return (
     <div className="min-h-screen bg-gray-950 text-white font-sans">
+      <PixelEvent event="ViewContent" params={{ content_name: 'HighLevel LIVE India 2026', content_category: 'Landing Page' }} />
 
       {/* ── Hero ── */}
       <section className="px-4 pt-12 pb-16 text-center max-w-2xl mx-auto">
