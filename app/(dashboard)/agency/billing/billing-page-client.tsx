@@ -130,13 +130,32 @@ export function BillingPageClient({ agency, clientCount, totalConversationsThisM
         </p>
       </div>
 
-      {/* Checkout status banner */}
+      {/* Checkout status banner — upgrade celebration */}
       {checkoutStatus === 'success' && (
-        <div className="flex items-center gap-3 bg-green-50 border border-green-200 text-green-800 rounded-xl px-4 py-3 text-sm">
-          <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
-          <div>
-            <p className="font-semibold">Payment successful — welcome to {PLANS[currentPlan]?.name ?? 'your new plan'}! 🎉</p>
-            <p className="text-xs text-green-600 mt-0.5">Your client slots and features are now active.</p>
+        <div className="rounded-2xl overflow-hidden border border-green-200">
+          <div className="bg-gradient-to-br from-green-600 to-emerald-700 text-white p-6">
+            <div className="flex items-start gap-4 mb-4">
+              <div className="text-4xl">🎉</div>
+              <div>
+                <p className="text-xl font-black">You&apos;re on {PLANS[currentPlan]?.name ?? 'your new plan'}!</p>
+                <p className="text-green-200 text-sm mt-1">Your client slots are live. Start adding AI employees right now.</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3 mb-5">
+              {[
+                { label: 'Client slots', value: PLANS[currentPlan]?.maxClients === 50 ? '50' : String(PLANS[currentPlan]?.maxClients ?? '?') },
+                { label: 'Revenue potential', value: `$${((PLANS[currentPlan]?.maxClients ?? 1) * 997).toLocaleString()}/mo` },
+                { label: 'ROI at 1 client', value: `${Math.round((997 - (PLANS[currentPlan]?.price ?? 99)) / (PLANS[currentPlan]?.price ?? 99))}×` },
+              ].map(s => (
+                <div key={s.label} className="bg-white/15 rounded-xl p-3 text-center">
+                  <p className="text-xl font-black text-white">{s.value}</p>
+                  <p className="text-[10px] text-green-200 mt-0.5 font-medium">{s.label}</p>
+                </div>
+              ))}
+            </div>
+            <a href="/agency/clients/new" className="block w-full text-center bg-white text-green-700 font-black py-3 rounded-xl hover:bg-green-50 transition text-sm">
+              Add Your First Client Now →
+            </a>
           </div>
         </div>
       )}
