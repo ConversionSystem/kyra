@@ -369,7 +369,7 @@ function AgencySignupPage() {
             {/* Stats */}
             <div className="grid grid-cols-3 gap-4 text-center">
               {[
-                { value: '$29M+', label: 'Revenue generated for clients' },
+                { value: '24/7', label: 'Coverage across channels' },
                 { value: '< 60s', label: 'AI response time' },
                 { value: '100%', label: 'Leads responded to' },
               ].map(s => (

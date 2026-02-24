@@ -91,7 +91,7 @@ export default function March16Page() {
         <div className="grid sm:grid-cols-3 gap-6">
           {[
             { value: '60,000+', label: 'GHL agencies needing this', sub: 'The exact audience at Launch' },
-            { value: '$29M+', label: 'Revenue generated for clients', sub: 'Across real deployments' },
+            { value: 'Real-world', label: 'Deployments powering revenue', sub: 'Based on prior client work (pre-Kyra)' },
             { value: '5 min', label: 'To deploy a new AI worker', sub: 'Template → live, instantly' },
           ].map((s) => (
             <div key={s.label} className="border border-slate-200 rounded-2xl p-6 text-center">

@@ -218,9 +218,9 @@ export default function OpenClawPage() {
         <div className="max-w-4xl mx-auto px-4">
           <div className="grid sm:grid-cols-3 gap-6 text-center">
             {[
-              { value: '$29M+', label: 'Revenue generated for clients', emoji: '💰' },
+              { value: '24/7', label: 'Coverage across channels', emoji: '🌙' },
               { value: '< 60s', label: 'Average first response time', emoji: '⚡' },
-              { value: '40+', label: 'Messages handled in one shift', emoji: '📲' },
+              { value: '40+', label: 'Messages handled in one rush', emoji: '📲' },
             ].map((s) => (
               <div key={s.label} className="bg-white/5 border border-white/10 rounded-2xl p-6">
                 <div className="text-2xl mb-2">{s.emoji}</div>

@@ -6,8 +6,9 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Kyra — AI Employee for Your GHL Clients',
-  description: 'Kyra adds an autonomous AI employee to any GHL sub-account. Responds in 60 seconds, books appointments, updates CRM. Free to start.',
+  title: 'Kyra — AI Workforce for Your GHL Clients',
+  description:
+    'Kyra adds an autonomous AI worker to any GHL sub-account. Responds in 60 seconds, books appointments, updates CRM. Free to start.',
 };
 
 const NICHE_DATA: Record<string, {
@@ -38,10 +39,12 @@ const NICHE_DATA: Record<string, {
   cannabis: {
     emoji: '🌿', label: 'cannabis',
     pain: 'Cannabis dispensaries get flooded with product, pricing, and pickup questions — especially on weekends.',
-    result: 'We\'ve generated $29M+ for cannabis clients using AI SMS. The AI handles every inquiry, recommends products, and stays compliant.',
-    demoStat: '$29M+ revenue for cannabis clients',
+    result:
+      "We've used AI SMS to drive significant revenue for cannabis clients in previous deployments. The AI handles every inquiry, recommends products, and stays compliant.",
+    demoStat: 'Proven on high-volume cannabis SMS',
     demoSlug: 'cannabis',
-    callout: 'The cannabis AI knows every menu item, handles age verification messaging, and drives repeat visits with personalized recommendations.',
+    callout:
+      'The cannabis AI knows every menu item, handles age verification messaging, and drives repeat visits with personalized recommendations.',
   },
   auto: {
     emoji: '🚗', label: 'auto dealership',
