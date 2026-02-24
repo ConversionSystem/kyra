@@ -297,9 +297,9 @@ export default function HomePage() {
               <div className="grid grid-cols-2 gap-4">
                 {[
                   { value: '< 5 min', label: 'Deploy per client', sub: 'Template → live' },
-                  { value: '$29M+', label: 'Revenue generated', sub: 'Across client verticals' },
+                  { value: '24/7', label: 'Coverage across channels', sub: 'Never misses a lead' },
                   { value: '21', label: 'Industry templates', sub: 'Ready to deploy' },
-                  { value: '100%', label: 'Lead follow-up rate', sub: 'No lead left behind' },
+                  { value: '100%', label: 'Lead follow-up rate', sub: 'Designed for no missed leads' },
                 ].map((s) => (
                   <div key={s.label} className="bg-white/5 border border-white/10 rounded-2xl p-5">
                     <p className="text-3xl font-black text-white">{s.value}</p>
@@ -429,8 +429,8 @@ export default function HomePage() {
             <div className="flex items-center gap-3">
               <span className="text-2xl">🌿</span>
               <div>
-                <p className="text-2xl font-black text-green-400">$29M+</p>
-                <p className="text-xs text-green-300/70">Revenue generated for clients</p>
+                <p className="text-2xl font-black text-green-400">High volume</p>
+                <p className="text-xs text-green-300/70">Cannabis + retail deployments</p>
               </div>
             </div>
             <div className="hidden sm:block w-px h-8 bg-green-800/40" />
@@ -450,9 +450,9 @@ export default function HomePage() {
             <div className="grid sm:grid-cols-3 gap-4">
               {[
                 {
-                  stat: '$29M+',
-                  label: 'Revenue generated',
-                  desc: 'Across cannabis and retail client deployments — AI workers responding 24/7 while staff focused on in-store customers.',
+                  stat: 'High volume',
+                  label: 'Cannabis + retail deployments',
+                  desc: 'AI workers handling heavy nightly text traffic while staff focused on in-store customers.',
                   emoji: '💰',
                 },
                 {

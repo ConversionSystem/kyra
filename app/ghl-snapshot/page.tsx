@@ -27,7 +27,7 @@ const WORKFLOWS = [
 ];
 
 const STATS = [
-  { value: '$29M+', label: 'Revenue driven by these workflows' },
+  { value: 'High volume', label: 'Built from real deployments' },
   { value: '< 60s', label: 'Average AI response time' },
   { value: '10', label: 'Pre-built automation workflows' },
   { value: '4', label: 'Niche-specific packages included' },
@@ -52,7 +52,7 @@ export default function GHLSnapshotPage() {
             10 pre-built workflows that turn your GHL account into an AI employee. Handles leads, books appointments, and follows up — all automatically.
           </p>
           <p className="text-sm text-gray-500 mb-10">
-            Powered by Kyra AI · Used by 50+ agencies · $29M+ in revenue driven
+            Powered by Kyra AI · Built from real agency deployments
           </p>
 
           {/* Stats */}
@@ -131,7 +131,7 @@ export default function GHLSnapshotPage() {
             {[
               { emoji: '🦷', name: 'Dental', metrics: '+$23K/mo average', detail: 'New patient acquisition, appointment booking, recall campaigns' },
               { emoji: '🏠', name: 'Real Estate', metrics: '+180 leads/mo', detail: 'Buyer/seller qualification, showing scheduling, follow-up cadence' },
-              { emoji: '🌿', name: 'Cannabis', metrics: '$29M+ generated', detail: 'Menu inquiries, compliance disclaimers, loyalty programs, reorders' },
+              { emoji: '🌿', name: 'Cannabis', metrics: 'High-volume SMS performance', detail: 'Menu inquiries, compliance disclaimers, loyalty programs, reorders' },
               { emoji: '🔧', name: 'Home Services', metrics: '2,967% ROI', detail: 'Quote requests, scheduling, technician dispatch, review collection' },
             ].map(n => (
               <div key={n.name} className="bg-white/10 border border-white/15 rounded-xl p-5 text-center">

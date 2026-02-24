@@ -45,7 +45,8 @@ const HOT_LEADS: Lead[] = [
   },
   {
     id: 'l03', agency: 'GreenLeaf Marketing', owner: 'Tyler Brooks', niche: 'Cannabis', location: 'Denver, CO', warmth: 'hot',
-    angle: 'Tyler — we\'ve generated $29M+ in cannabis revenue for clients using AI SMS automation. Would love to show you what it looks like inside GHL.',
+    angle:
+      "Tyler — we've used AI SMS to drive significant revenue for cannabis clients. Would love to show you what that looks like inside GHL.",
   },
   {
     id: 'l22', agency: 'Impact Media Group', owner: 'Carlos Ruiz', niche: 'Mortgage / Lending', location: 'Miami, FL', warmth: 'hot', email: 'carlos@impactmedia.group',

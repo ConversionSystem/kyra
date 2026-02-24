@@ -11,5 +11,7 @@ export default async function AgencyRolesPage() {
   const result = await getAgencyForUser(user.id);
   if (!result) redirect('/signup/agency');
 
-  return <RolesPageClient />;
+  const { agency } = result;
+
+  return <RolesPageClient plan={agency.plan} />;
 }

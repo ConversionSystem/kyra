@@ -45,8 +45,9 @@ const LEADS: Lead[] = [
   {
     id: 'l03', agency: 'GreenLeaf Marketing', owner: 'Tyler Brooks', niche: 'Cannabis', location: 'Denver, CO',
     clients: '8-15', ghlTier: 'Agency Starter', warmth: 'hot',
-    why: 'Cannabis = our strongest vertical. $29M generated. Easy pitch.',
-    angle: 'Tyler — we\'ve generated $29M+ in cannabis revenue for clients using AI SMS automation. Would love to show you what it looks like inside GHL.',
+    why: 'Cannabis = our strongest vertical. Proven AI SMS results. Easy pitch.',
+    angle:
+      "Tyler — we've used AI SMS to drive significant revenue for cannabis clients. Would love to show you what that looks like inside GHL.",
   },
   {
     id: 'l04', agency: 'ScaleUp Agency', owner: 'Jordan Kim', niche: 'Home Services', location: 'Atlanta, GA',

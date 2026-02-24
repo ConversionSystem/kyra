@@ -18,7 +18,8 @@ import {
 
 export const metadata = {
   title: 'AI Worker for Cannabis Dispensaries | Kyra — OpenClaw-Powered',
-  description: 'The only OpenClaw-powered autonomous AI worker built for cannabis dispensaries. Handle 100s of daily inquiries, recommend products, book consultations — compliance-aware, 24/7. $29M+ generated for cannabis clients.',
+  description:
+    'The only OpenClaw-powered autonomous AI worker built for cannabis dispensaries. Handle 100s of daily inquiries, recommend products, book consultations — compliance-aware, 24/7. Built from real high-volume deployments.',
 };
 
 function StatCard({ stat, label, sub }: { stat: string; label: string; sub: string }) {
@@ -93,10 +94,10 @@ export default function CannabisPage() {
       <section className="bg-green-900 py-14">
         <div className="container mx-auto px-4 md:px-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
-            <StatCard stat="$29M+" label="Revenue generated" sub="Across cannabis clients" />
+            <StatCard stat="24/7" label="Availability" sub="Always on — no missed texts" />
             <StatCard stat="70%" label="Fewer phone calls" sub="Staff handles 30% vs 100%" />
             <StatCard stat="< 60s" label="Response time" sub="SMS, Telegram, web chat" />
-            <StatCard stat="24/7" label="Always available" sub="No sick days, no overtime" />
+            <StatCard stat="100%" label="Designed coverage" sub="Built to catch every inbound lead" />
           </div>
         </div>
       </section>
@@ -215,7 +216,7 @@ export default function CannabisPage() {
             <div className="space-y-4">
               {[
                 { step: '1', title: 'Tell us about your dispensary', desc: 'Products you carry, hours, location, your brand voice. 15 minutes.' },
-                { step: '2', title: 'We configure your AI employee', desc: 'Pre-built on our cannabis template with $29M+ of industry training. We customize it for your specific store.' },
+                { step: '2', title: 'We configure your AI employee', desc: 'Pre-built on our cannabis template based on years of high-volume deployments. We customize it for your specific store.' },
                 { step: '3', title: 'You test it and approve', desc: 'Test every scenario — strain questions, compliance edge cases, competitor questions. Approve when you\'re happy.' },
                 { step: '4', title: 'Connect your phone number', desc: 'Your existing dispensary text number, or we set up a new one. Takes 10 minutes.' },
                 { step: '5', title: 'Your AI employee goes live', desc: 'Every customer text handled automatically. You see every conversation. Staff only touches the exceptions.' },

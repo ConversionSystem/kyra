@@ -69,15 +69,19 @@ const NICHES: Record<string, NicheData> = {
   cannabis: {
     slug: 'cannabis',
     title: 'AI Employee for Cannabis Dispensaries',
-    metaTitle: 'AI Employee for Cannabis Dispensaries | $29M+ Generated | SMS Automation',
-    metaDesc: 'Kyra AI has generated $29M+ for cannabis dispensary clients. Handles every inbound SMS — product questions, compliance FAQs, pickup status — in under 60 seconds. Compliance-aware, 24/7.',
+    metaTitle: 'AI Employee for Cannabis Dispensaries | Proven SMS Automation',
+    metaDesc:
+      'Kyra AI was originally built for high-volume cannabis dispensary clients. Handles every inbound SMS — product questions, compliance FAQs, pickup status — in under 60 seconds. Compliance-aware, 24/7.',
     emoji: '🌿',
     hero: 'AI Employee for Cannabis Dispensaries',
-    subhero: 'We\'ve generated $29M+ for cannabis clients using AI SMS. Product questions, compliance FAQs, pickup status — handled automatically in under 60 seconds.',
+    subhero:
+      'Built from years of AI SMS work with cannabis clients. Product questions, compliance FAQs, pickup status — handled automatically in under 60 seconds.',
     pain: 'Cannabis dispensaries are drowning in repetitive SMS messages.',
-    painDetail: 'Menu questions. Pickup ETA. Compliance FAQs. New strain recommendations. Hours. Locations. Your staff answers the same 20 questions 100 times a day — while actually important customer relationships go unmanaged.',
-    result: '$29M+ in cannabis client revenue powered by Kyra AI SMS.',
-    resultStat: '$29M+ revenue generated',
+    painDetail:
+      'Menu questions. Pickup ETA. Compliance FAQs. New strain recommendations. Hours. Locations. Your staff answers the same 20 questions 100 times a day — while actually important customer relationships go unmanaged.',
+    result:
+      'Cannabis clients using this AI SMS architecture have seen meaningful revenue lifts from faster response and better follow-up.',
+    resultStat: 'High-volume cannabis deployments',
     features: [
       { icon: '📋', title: 'Full menu knowledge', desc: 'AI knows your entire menu — strains, edibles, concentrates, current specials. Recommends products based on customer preference.' },
       { icon: '⚖️', title: 'Compliance-aware messaging', desc: 'Pre-configured to avoid prohibited language and stay within state-specific SMS marketing regulations.' },
@@ -97,7 +101,10 @@ const NICHES: Record<string, NicheData> = {
     faq: [
       { q: 'Is AI SMS marketing legal for cannabis businesses?', a: 'Kyra handles SMS responses to inbound messages from existing customers — this is legally different from outbound promotional SMS. We pre-configure the AI to stay within TCPA and state compliance guidelines.' },
       { q: 'Can the AI handle compliant language requirements?', a: 'Yes. You set the AI\'s compliance rules (no specific health claims, age verification language, etc.). The AI stays within those guardrails in every response.' },
-      { q: 'Do you have experience with cannabis clients?', a: 'We\'ve generated $29M+ in revenue for cannabis clients including Purple Lotus ($27M/yr) and The Flower Shop ($1.95M/mo). Cannabis is our strongest vertical.' },
+      {
+        q: 'Do you have experience with cannabis clients?',
+        a: "Yes — we've run AI SMS for cannabis clients including Purple Lotus and The Flower Shop. Cannabis is our strongest vertical, and those deployments informed how Kyra is designed.",
+      },
       { q: 'What if a customer asks about delivery?', a: 'You configure the AI\'s knowledge of your delivery zones, minimums, and ETA. It handles delivery questions accurately or routes to your delivery team.' },
     ],
     keywords: ['cannabis dispensary AI', 'dispensary SMS automation', 'cannabis AI employee', 'dispensary chatbot', 'cannabis marketing automation GHL'],
