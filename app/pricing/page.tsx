@@ -12,7 +12,7 @@ const PLANS = [
     monthly: 0, annual: 0,
     annualSave: null,
     period: 'forever',
-    desc: 'Try Kyra with one real client. No credit card.',
+    desc: 'Deploy your first OpenClaw AI worker. Free forever.',
     cta: 'Get Started Free',
     href: '/signup/agency',
     featured: false,
@@ -35,7 +35,7 @@ const PLANS = [
     monthly: 99, annual: 79,
     annualSave: 240,
     period: '/month',
-    desc: 'For agencies adding AI to their first 5 clients.',
+    desc: 'Run up to 5 autonomous AI workers across your clients.',
     cta: 'Start 30-Day Trial',
     href: '/signup/agency?plan=starter',
     featured: false,
@@ -55,7 +55,7 @@ const PLANS = [
     monthly: 249, annual: 199,
     annualSave: 600,
     period: '/month',
-    desc: 'When you\'re selling AI employees as a core offer.',
+    desc: 'Full AI workforce — up to 15 autonomous workers.',
     cta: 'Start 30-Day Trial',
     href: '/signup/agency?plan=pro',
     featured: true,
@@ -75,7 +75,7 @@ const PLANS = [
     monthly: 499, annual: 399,
     annualSave: 1200,
     period: '/month',
-    desc: 'Full agency operation — 50 clients, maximum output.',
+    desc: 'Unlimited autonomous AI worker deployments.',
     cta: 'Start 30-Day Trial',
     href: '/signup/agency?plan=scale',
     featured: false,
@@ -132,11 +132,10 @@ export default function PricingPage() {
           30-day free trial · No credit card required
         </div>
         <h1 className="text-4xl sm:text-5xl font-black mb-4">
-          Simple pricing.<br />
-          <span className="text-indigo-400">For every business.</span>
+          Pricing for agencies that mean business.
         </h1>
         <p className="text-slate-400 text-lg max-w-xl mx-auto mb-6">
-          Running your own business? Start at $49/mo. Building an agency? Plans from $99/mo — bill clients $500–$2,000/mo each.
+          Every plan includes OpenClaw-powered autonomous AI workers. Not chatbots. Workers.
         </p>
 
         {/* Audience toggle */}
@@ -325,6 +324,13 @@ export default function PricingPage() {
               </div>
             );
           })}
+        </div>
+
+        {/* OpenClaw math callout */}
+        <div className="mt-6 rounded-2xl border border-indigo-500/30 bg-indigo-950/40 p-5 text-center">
+          <p className="text-indigo-200 text-sm font-semibold">
+            💡 The math: 1 human receptionist ≈ $3,200/mo + benefits. 1 Kyra AI worker ≈ $20/mo. 15 workers + full platform = $249/mo.
+          </p>
         </div>
 
         {/* Annual savings summary bar */}

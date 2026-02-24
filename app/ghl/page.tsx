@@ -8,8 +8,8 @@ import PublicNav from '@/components/layout/public-nav';
 import PublicFooter from '@/components/layout/public-footer';
 
 export const metadata: Metadata = {
-  title: 'Kyra for GoHighLevel Agencies — The AI Employee Platform',
-  description: 'GHL gave you an AI terminal. Kyra gives you an AI employee business. White-label, multi-client, conversation logging, GHL workflow triggers. For serious GHL agencies.',
+  title: 'Kyra for GoHighLevel Agencies — OpenClaw-Powered Autonomous AI Workers',
+  description: 'Kyra adds OpenClaw-powered autonomous AI workers to every GHL sub-account. White-label, multi-client, conversation logging, GHL workflow triggers. For serious GHL agencies.',
 };
 
 const features = [
@@ -83,14 +83,11 @@ export default function GHLPage() {
         </div>
 
         <h1 className="text-5xl sm:text-6xl font-extrabold text-gray-900 leading-tight tracking-tight mb-6">
-          GHL gave you an AI terminal.
-          <br />
-          <span className="text-indigo-600">Kyra gives you an AI employee business.</span>
+          The autonomous AI layer every GHL agency needs.
         </h1>
 
         <p className="text-xl text-gray-500 max-w-2xl mx-auto mb-10">
-          Manage 20 clients&apos; AI employees from one white-label dashboard. Log every conversation.
-          Trigger GHL workflows from AI conversations. Bill your clients on autopilot.
+          GHL gives your clients the best CRM and marketing infrastructure available. Kyra adds the OpenClaw-powered AI workers that operate inside it — 24/7, without you touching anything.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -204,6 +201,38 @@ export default function GHLPage() {
           <p className="text-sm text-indigo-200">
             Setup: Agency Settings → GHL Workflow Trigger → paste webhook URL. Done in 60 seconds.
           </p>
+        </div>
+      </section>
+
+      {/* How it works together */}
+      <section className="max-w-4xl mx-auto px-6 pb-20">
+        <h2 className="text-2xl font-bold text-gray-900 text-center mb-8">How GHL + OpenClaw + Kyra work together</h2>
+        <div className="grid sm:grid-cols-3 gap-5">
+          {[
+            {
+              label: 'GHL handles',
+              desc: 'CRM, pipeline, SMS routing, calendar, contacts — the infrastructure.',
+              color: 'border-orange-200 bg-orange-50',
+              labelColor: 'text-orange-700',
+            },
+            {
+              label: 'OpenClaw handles',
+              desc: 'Autonomous decisions, persistent memory, multi-channel operation — the brain.',
+              color: 'border-indigo-200 bg-indigo-50',
+              labelColor: 'text-indigo-700',
+            },
+            {
+              label: 'Kyra handles',
+              desc: 'Deploying, managing, and scaling the AI workforce — the platform.',
+              color: 'border-green-200 bg-green-50',
+              labelColor: 'text-green-700',
+            },
+          ].map((item) => (
+            <div key={item.label} className={`rounded-xl border-2 ${item.color} p-5`}>
+              <p className={`font-bold text-sm mb-2 ${item.labelColor}`}>{item.label}:</p>
+              <p className="text-sm text-gray-600 leading-relaxed">{item.desc}</p>
+            </div>
+          ))}
         </div>
       </section>
 

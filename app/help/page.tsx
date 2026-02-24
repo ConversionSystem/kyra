@@ -6,7 +6,7 @@ import PublicFooter from '@/components/layout/public-footer';
 
 export const metadata: Metadata = {
   title: 'Help & FAQ — Kyra AI',
-  description: 'Answers to common questions about Kyra AI employee platform — setup, GHL integration, billing, and troubleshooting.',
+  description: 'Answers to common questions about Kyra — OpenClaw-powered autonomous AI workers for agencies. Setup, GHL integration, billing, and troubleshooting.',
 };
 
 const SECTIONS = [

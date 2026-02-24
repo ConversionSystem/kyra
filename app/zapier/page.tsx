@@ -5,7 +5,7 @@ import PublicFooter from '@/components/layout/public-footer';
 
 export const metadata: Metadata = {
   title: 'Kyra + Zapier Integration | Connect Any CRM to AI in 2 Minutes',
-  description: 'Connect Kyra AI to HubSpot, Salesforce, Typeform, Google Sheets, and 5,000+ apps via Zapier. New lead → AI responds in 60 seconds. No code.',
+  description: 'Connect Kyra to HubSpot, Salesforce, Typeform, Google Sheets, and 5,000+ apps via Zapier. OpenClaw-powered autonomous AI responds to every new lead in 60 seconds. No code.',
 };
 
 const INTEGRATIONS = [
