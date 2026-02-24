@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Check, BadgePercent } from 'lucide-react';
+import { pixel } from '@/components/analytics/MetaPixel';
 import PublicNav from '@/components/layout/public-nav';
 import PublicFooter from '@/components/layout/public-footer';
 
@@ -121,6 +122,10 @@ const FAQ = [
 
 export default function PricingPage() {
   const [annual, setAnnual] = useState(false);
+
+  useEffect(() => {
+    pixel.viewContent('Pricing Page');
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white">

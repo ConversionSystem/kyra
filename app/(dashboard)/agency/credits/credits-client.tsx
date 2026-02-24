@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { CREDIT_PACKS, type CreditPack } from '@/lib/billing/credits';
 import type { CreditTransaction } from '@/lib/billing/credit-engine';
+import { pixel } from '@/components/analytics/MetaPixel';
 import {
   Coins, Zap, ShoppingBag, Gift, RotateCcw,
   CheckCircle2, AlertCircle, AlertTriangle, Crown,
@@ -247,8 +248,17 @@ export function CreditsClient({
 
   const isLow = balance < 100;
 
+  // Fire Purchase event on successful Stripe checkout return
+  useEffect(() => {
+    if (checkoutStatus === 'success') {
+      pixel.purchase(0, 'USD', { content_name: 'Credit Pack Purchase', content_category: 'Credits' });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checkoutStatus]);
+
   const handleBuy = async (pack: CreditPack) => {
     setLoadingPack(pack.id);
+    pixel.initiateCheckout({ content_name: pack.name, value: pack.price, currency: 'USD' });
     setError(null);
     try {
       const res = await fetch('/api/stripe/credits', {
