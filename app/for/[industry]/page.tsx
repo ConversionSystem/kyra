@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import PublicNav from '@/components/layout/public-nav';
+import PublicFooter from '@/components/layout/public-footer';
 
 type Params = { params: Promise<{ industry: string }> };
 
@@ -180,21 +182,7 @@ export default async function ForIndustryPage({ params }: Params) {
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white">
-      {/* Nav */}
-      <nav className="border-b border-white/10 px-6 py-4 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 font-black">
-          <span className="text-lg">⚡</span> Kyra AI
-        </Link>
-        <div className="flex items-center gap-4">
-          <Link href="/pricing" className="text-sm text-slate-400 hover:text-white transition">Pricing</Link>
-          <Link href={`/try/${page.demo}`} className="text-sm bg-white/10 hover:bg-white/15 border border-white/10 text-white px-3 py-1.5 rounded-lg font-semibold transition">
-            Try Live Demo
-          </Link>
-          <Link href="/signup/agency" className="text-sm bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-1.5 rounded-lg font-bold transition">
-            Get Started Free
-          </Link>
-        </div>
-      </nav>
+      <PublicNav />
 
       {/* Hero */}
       <section className="py-20 px-6 text-center max-w-4xl mx-auto">
@@ -302,20 +290,7 @@ export default async function ForIndustryPage({ params }: Params) {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-white/10 py-8 px-6 text-center">
-        <p className="text-slate-600 text-sm">
-          <Link href="/" className="hover:text-white transition">Kyra AI</Link>
-          {' · '}
-          <Link href="/blog" className="hover:text-white transition">Blog</Link>
-          {' · '}
-          <Link href="/pricing" className="hover:text-white transition">Pricing</Link>
-          {' · '}
-          <Link href="/vs" className="hover:text-white transition">vs. Chatbots</Link>
-          {' · '}
-          <Link href="/help" className="hover:text-white transition">Help</Link>
-        </p>
-      </footer>
+      <PublicFooter />
     </div>
   );
 }

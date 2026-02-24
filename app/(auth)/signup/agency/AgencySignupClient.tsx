@@ -235,7 +235,7 @@ function AgencySignupPage() {
                     onChange={e => setEmail(e.target.value)}
                     required
                     disabled={isLoading}
-                    className="w-full bg-slate-800 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 disabled:opacity-50"
+                    className="w-full bg-slate-800 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-base focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 disabled:opacity-50"
                   />
                 </div>
                 <div>
@@ -248,7 +248,7 @@ function AgencySignupPage() {
                     required
                     minLength={8}
                     disabled={isLoading}
-                    className="w-full bg-slate-800 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 disabled:opacity-50"
+                    className="w-full bg-slate-800 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-base focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 disabled:opacity-50"
                   />
                   <p className="text-xs text-slate-500 mt-1.5">At least 8 characters</p>
                 </div>
@@ -288,7 +288,7 @@ function AgencySignupPage() {
                       onChange={e => setAgencyName(e.target.value)}
                       required
                       disabled={isLoading}
-                      className="w-full bg-slate-800 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 disabled:opacity-50"
+                      className="w-full bg-slate-800 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-base focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 disabled:opacity-50"
                     />
                   </div>
                   <div>
@@ -305,7 +305,7 @@ function AgencySignupPage() {
                         }}
                         required
                         disabled={isLoading}
-                        className="flex-1 bg-transparent py-3 pr-4 text-white placeholder-slate-500 text-sm focus:outline-none"
+                        className="flex-1 bg-transparent py-3 pr-4 text-white placeholder-slate-500 text-base focus:outline-none"
                       />
                     </div>
                     <p className="text-xs text-slate-500 mt-1.5">Lowercase, letters, numbers, hyphens</p>

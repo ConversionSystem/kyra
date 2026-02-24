@@ -1,7 +1,9 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Zap, ArrowLeft, Clock } from 'lucide-react';
+import { ArrowLeft, Clock } from 'lucide-react';
 import type { Metadata } from 'next';
+import PublicNav from '@/components/layout/public-nav';
+import PublicFooter from '@/components/layout/public-footer';
 import { getPost, generateStaticParams as getStaticParams, POSTS } from '@/lib/blog/posts';
 
 export { getStaticParams as generateStaticParams };
@@ -57,16 +59,7 @@ export default async function BlogPostPage({
         }}
       />
 
-      <nav className="border-b border-white/10 px-4 py-4">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 font-black text-xl">
-            <Zap className="h-5 w-5 text-indigo-400" /> Kyra
-          </Link>
-          <Link href="/signup/agency" className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg font-semibold transition text-sm">
-            Get Started Free
-          </Link>
-        </div>
-      </nav>
+      <PublicNav />
 
       <article className="max-w-3xl mx-auto px-4 py-16">
         {/* Back */}
@@ -138,6 +131,7 @@ export default async function BlogPostPage({
           </div>
         )}
       </article>
+      <PublicFooter />
     </div>
   );
 }
