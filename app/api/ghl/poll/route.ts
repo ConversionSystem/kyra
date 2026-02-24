@@ -560,6 +560,7 @@ export async function GET(request: NextRequest) {
             model: 'openai/gpt-4o-mini',
             messages: chatMessages,
             stream: false,
+            max_tokens: 400,
           }),
           signal: AbortSignal.timeout(30_000),
         });
@@ -627,6 +628,7 @@ export async function GET(request: NextRequest) {
           body: JSON.stringify({
             type: sendType,
             contactId: conv.contactId,
+            conversationId: conv.id,
             message: aiResponse,
           }),
           signal: AbortSignal.timeout(10_000),
