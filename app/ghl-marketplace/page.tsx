@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import PublicNav from '@/components/layout/public-nav';
 import PublicFooter from '@/components/layout/public-footer';
+import { PixelEvent } from '@/components/analytics/PixelEvent';
 
 export const metadata: Metadata = {
   title: 'Kyra — AI Workforce Platform for GHL Agencies',
@@ -121,6 +122,7 @@ const PLANS = [
 export default function GhlMarketplacePage() {
   return (
     <div className="bg-white text-gray-900 min-h-screen font-sans">
+      <PixelEvent event="ViewContent" params={{ content_name: 'GHL Marketplace Page', content_category: 'Landing Page' }} />
       <PublicNav />
 
       {/* ── Hero ── */}

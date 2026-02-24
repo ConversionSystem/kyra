@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { use } from 'react';
 import { Send, Zap, ArrowRight, Loader2, Share2, Copy, Check as CheckIcon, Linkedin, Mail } from 'lucide-react';
+import { pixel } from '@/components/analytics/MetaPixel';
 
 // ── Industry config ───────────────────────────────────────────────────────────
 const INDUSTRIES: Record<string, {
@@ -98,6 +99,12 @@ export default function TryPage({ params }: { params: Promise<{ industry: string
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Fire ViewContent when demo loads — high-intent signal for Meta ads
+  useEffect(() => {
+    pixel.viewContent(`Demo: ${activeIndustry}`, { content_category: 'Live Demo' });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const send = async (text?: string) => {
     const msg = (text ?? input).trim();
