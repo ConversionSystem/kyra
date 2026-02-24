@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import OutreachWebhookSetup from '@/components/dashboard/outreach-webhook-setup';
 
 // ─── Lead Data ────────────────────────────────────────────────────────────────
 
@@ -415,16 +416,8 @@ export function LeadsPipelineClient({ initialPipelineState }: Props) {
         }`}>
           {bulkResult.noWebhook ? (
             <div className="space-y-1">
-              <p className="font-semibold">⚠️ OUTREACH_WEBHOOK_URL not set</p>
-              <p>To auto-enroll leads in GHL email campaigns, add <code className="bg-amber-100 px-1 rounded text-xs">OUTREACH_WEBHOOK_URL</code> to Vercel env vars pointing to your GHL outreach workflow.</p>
-              <a
-                href="https://vercel.com/dashboard"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 underline mt-1"
-              >
-                Open Vercel Dashboard <ExternalLink className="h-3 w-3" />
-              </a>
+              <p className="font-semibold">⚠️ GHL webhook not connected</p>
+              <p className="text-sm">Connect the webhook in the setup panel above to auto-enroll leads in GHL email campaigns.</p>
             </div>
           ) : (
             <p>
@@ -436,6 +429,9 @@ export function LeadsPipelineClient({ initialPipelineState }: Props) {
           )}
         </div>
       )}
+
+      {/* Outreach Webhook Setup — shows only when GHL webhook not connected */}
+      <OutreachWebhookSetup compact />
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -649,11 +645,8 @@ export function LeadsPipelineClient({ initialPipelineState }: Props) {
                   {/* No-webhook hint */}
                   {cStatus === 'no_webhook' && (
                     <div className="bg-amber-50 border border-amber-100 rounded-lg p-3 text-xs text-amber-800">
-                      <strong>Set up GHL outreach automation:</strong> Add <code>OUTREACH_WEBHOOK_URL</code> in{' '}
-                      <a href="https://vercel.com/dashboard" target="_blank" rel="noreferrer" className="underline">
-                        Vercel env vars
-                      </a>{' '}
-                      pointing to a GHL workflow that creates a contact + enrolls them in your cold email sequence.
+                      <strong>GHL webhook not connected.</strong>{' '}
+                      Use the setup panel at the top of this page to connect your GHL outreach workflow in ~5 minutes.
                     </div>
                   )}
 
