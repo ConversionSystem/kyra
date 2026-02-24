@@ -6,7 +6,7 @@ import { isValidSlug } from '@/lib/agency/utils';
 // No agency-level provisioning needed anymore
 import type { CreateAgencyRequest, AgencyWithCounts } from '@/lib/agency/types';
 import { addCredits } from '@/lib/billing/credit-engine';
-import { WELCOME_CREDITS, WELCOME_CREDIT_DESCRIPTION } from '@/lib/billing/credits';
+import { WELCOME_CREDITS, WELCOME_CREDIT_DESCRIPTION, getPromoCode } from '@/lib/billing/credits';
 
 /**
  * GET /api/agency
@@ -76,7 +76,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const { name, slug, plan, referralId } = body as typeof body & { referralId?: string };
+  const { name, slug, plan, referralId, promoCode, referralSource } = body as typeof body & {
+    referralId?: string;
+    promoCode?: string;
+    referralSource?: string;
+  };
 
   // Validate required fields
   if (!name || !slug || !plan) {
@@ -165,6 +169,31 @@ export async function POST(request: NextRequest) {
   try {
     await addCredits(agency.id, WELCOME_CREDITS, 'bonus', WELCOME_CREDIT_DESCRIPTION);
     console.log(`[POST /api/agency] 🎁 Granted ${WELCOME_CREDITS} welcome credits to agency ${agency.id}`);
+
+    // ── Apply promo code bonus ───────────────────────────────────────────
+    const promo = promoCode ? getPromoCode(promoCode) : null;
+    if (promo) {
+      await addCredits(agency.id, promo.bonusCredits, 'bonus', promo.description);
+      console.log(`[POST /api/agency] 🎁 Promo ${promoCode}: +${promo.bonusCredits} bonus credits`);
+
+      // Store promo + referral source in agency settings for analytics
+      await serviceClient
+        .from('agencies')
+        .update({
+          settings: {
+            promo_code: promoCode?.toUpperCase(),
+            referral_source: referralSource ?? null,
+            trial_days: promo.trialDays,
+          },
+        })
+        .eq('id', agency.id);
+    } else if (referralSource) {
+      // Store referral source even without a promo code
+      await serviceClient
+        .from('agencies')
+        .update({ settings: { referral_source: referralSource } })
+        .eq('id', agency.id);
+    }
   } catch (creditErr) {
     // Non-fatal — don't block signup if credit grant fails
     console.warn('[POST /api/agency] Failed to grant welcome credits (non-fatal):', creditErr);
