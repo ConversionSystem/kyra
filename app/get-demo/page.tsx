@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Zap, CheckCircle2, Loader2, ArrowRight } from 'lucide-react';
+import { CheckCircle2, Loader2, ArrowRight } from 'lucide-react';
+import PublicNav from '@/components/layout/public-nav';
+import PublicFooter from '@/components/layout/public-footer';
 
 const INDUSTRIES = [
   'Dental', 'Real Estate', 'Auto Dealership', 'Cannabis / Dispensary',
@@ -75,21 +77,14 @@ export default function GetDemoPage() {
     );
   }
 
-  const inputCls = "w-full bg-white/5 border border-white/10 text-white placeholder-slate-500 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 focus:bg-white/8 transition";
+  const inputCls = "w-full bg-white/5 border border-white/10 text-white placeholder-slate-500 rounded-xl px-4 py-3 text-base focus:outline-none focus:border-indigo-500 focus:bg-white/8 transition";
   const selectCls = `${inputCls} appearance-none`;
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white">
-      <nav className="border-b border-white/10 px-4 py-4">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 font-black text-xl">
-            <Zap className="h-5 w-5 text-indigo-400" /> Kyra
-          </Link>
-          <Link href="/try/dental" className="text-sm text-slate-400 hover:text-white transition">Try free demo →</Link>
-        </div>
-      </nav>
+      <PublicNav />
 
-      <div className="max-w-5xl mx-auto px-4 py-16 grid lg:grid-cols-2 gap-12 items-start">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16 grid lg:grid-cols-2 gap-12 items-start">
         {/* Left: Info */}
         <div>
           <div className="inline-flex items-center gap-2 bg-indigo-600/20 border border-indigo-500/30 rounded-full px-4 py-1.5 text-sm text-indigo-300 font-medium mb-6">
@@ -203,6 +198,7 @@ export default function GetDemoPage() {
           </form>
         </div>
       </div>
+      <PublicFooter />
     </div>
   );
 }
