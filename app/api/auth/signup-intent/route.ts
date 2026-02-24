@@ -12,13 +12,27 @@
 //   → If NO: send "Complete your setup" email
 
 import { NextRequest, NextResponse } from 'next/server';
+import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 
 export async function POST(req: NextRequest) {
   const { email } = await req.json();
   if (!email) return NextResponse.json({ ok: false }, { status: 400 });
 
+  // Always log the intent to Supabase so we never "lose" a signup
+  try {
+    const service = createServiceClientWithoutCookies();
+    await service
+      .from('kyra_waitlist')
+      .upsert({ email, source: 'signup_intent' }, { onConflict: 'email' });
+  } catch (e) {
+    console.warn('[signup-intent] Failed to log to kyra_waitlist (non-fatal):', (e as Error).message);
+  }
+
   const webhookUrl = process.env.SIGNUP_WEBHOOK_URL;
-  if (!webhookUrl) return NextResponse.json({ ok: true, skipped: true });
+  if (!webhookUrl) {
+    // No GHL webhook configured — we still logged the intent above
+    return NextResponse.json({ ok: true, webhook: 'skipped' });
+  }
 
   try {
     await fetch(webhookUrl, {
