@@ -4,6 +4,8 @@ import DemoChat from './demo/[industry]/demo-chat';
 import LeadCapture from '@/components/landing/lead-capture';
 import LiveStats from '@/components/landing/live-stats';
 import ActivityTicker from '@/components/landing/activity-ticker';
+import PublicNav from '@/components/layout/public-nav';
+import PublicFooter from '@/components/layout/public-footer';
 
 export const metadata: Metadata = {
   title: 'Kyra — AI Employees for GHL Agencies | Free to Start',
@@ -74,35 +76,7 @@ export default function HomePage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 text-white">
 
       {/* ── Nav ─────────────────────────────────────────────────────────── */}
-      <nav className="border-b border-white/10 backdrop-blur-sm sticky top-0 z-50 bg-slate-900/80">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center font-black text-sm">K</div>
-            <span className="font-bold text-lg tracking-tight">Kyra AI</span>
-          </div>
-          <div className="hidden sm:flex items-center gap-8 text-sm text-slate-400">
-            <a href="#how-it-works" className="hover:text-white transition">How it works</a>
-            <a href="#industries" className="hover:text-white transition">Industries</a>
-            <a href="#features" className="hover:text-white transition">Features</a>
-            <Link href="/pricing" className="hover:text-white transition">Pricing</Link>
-            <Link href="/blog" className="hover:text-white transition">Blog</Link>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link href="/login" className="text-sm text-slate-400 hover:text-white transition hidden sm:block">
-              Sign in
-            </Link>
-            <Link href="/get-demo" className="text-sm text-slate-300 hover:text-white transition hidden md:block border border-white/20 px-4 py-2 rounded-lg hover:border-white/40">
-              Get a Demo
-            </Link>
-            <Link
-              href="/signup/agency"
-              className="bg-indigo-600 hover:bg-indigo-500 transition text-white text-sm font-semibold px-4 py-2 rounded-lg"
-            >
-              Get Started Free
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <PublicNav />
 
       {/* ── Hero ────────────────────────────────────────────────────────── */}
       <section className="max-w-6xl mx-auto px-4 pt-16 pb-20">
@@ -462,55 +436,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── Footer ──────────────────────────────────────────────────────── */}
-      <footer className="border-t border-white/10 py-16">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 mb-12">
-            <div>
-              <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Product</h4>
-              <ul className="space-y-2">
-                {[{ href: '/try/dental', label: '💬 Try Live Demo' }, { href: '/pricing', label: 'Pricing' }, { href: '/changelog', label: 'Changelog' }, { href: '/vs', label: 'vs. Chatbots' }, { href: '/roi', label: 'ROI Calculator' }, { href: '/get-demo', label: 'Get a Demo' }].map(l => (
-                  <li key={l.href}><Link href={l.href} className="text-sm text-slate-500 hover:text-white transition">{l.label}</Link></li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Live Demos</h4>
-              <ul className="space-y-2">
-                {[{ href: '/try/dental', label: '🦷 Dental AI' }, { href: '/try/realestate', label: '🏡 Real Estate AI' }, { href: '/try/auto', label: '🚗 Auto AI' }, { href: '/try/cannabis', label: '🌿 Cannabis AI' }, { href: '/try/restaurant', label: '🍽️ Restaurant AI' }, { href: '/try/medspa', label: '✨ Med Spa AI' }].map(l => (
-                  <li key={l.href}><Link href={l.href} className="text-sm text-slate-500 hover:text-white transition">{l.label}</Link></li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Resources</h4>
-              <ul className="space-y-2">
-                {[{ href: '/blog', label: 'Blog' }, { href: '/help', label: 'Help & FAQ' }, { href: '/blog/ghl-ai-employee-agency', label: 'Agency Playbook' }, { href: '/blog/agency-recurring-revenue-ai', label: '$10K/mo Guide' }, { href: '/blog/ai-for-dental-practices', label: 'Dental AI Guide' }].map(l => (
-                  <li key={l.href}><Link href={l.href} className="text-sm text-slate-500 hover:text-white transition">{l.label}</Link></li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Company</h4>
-              <ul className="space-y-2">
-                {[{ href: '/privacy', label: 'Privacy Policy' }, { href: '/terms', label: 'Terms of Service' }, { href: '/signup/agency', label: 'Sign Up Free' }, { href: '/login', label: 'Sign In' }].map(l => (
-                  <li key={l.href}><Link href={l.href} className="text-sm text-slate-500 hover:text-white transition">{l.label}</Link></li>
-                ))}
-                <li><a href="mailto:angel@conversionsystem.com" className="text-sm text-slate-500 hover:text-white transition">Contact Support</a></li>
-                <li><a href="https://conversionsystem.com" target="_blank" rel="noopener noreferrer" className="text-sm text-slate-500 hover:text-white transition">Conversion System</a></li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-white/10 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2.5">
-              <div className="w-6 h-6 rounded bg-indigo-600 flex items-center justify-center font-black text-xs">K</div>
-              <span className="font-bold text-sm">Kyra AI</span>
-              <span className="text-slate-600 text-sm">by Conversion System</span>
-            </div>
-            <p className="text-slate-600 text-xs">© 2026 Conversion System. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
+      <PublicFooter />
 
     </div>
   );

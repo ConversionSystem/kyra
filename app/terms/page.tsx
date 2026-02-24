@@ -1,6 +1,7 @@
 import Link from 'next/link';
-import { Zap } from 'lucide-react';
 import type { Metadata } from 'next';
+import PublicNav from '@/components/layout/public-nav';
+import PublicFooter from '@/components/layout/public-footer';
 
 export const metadata: Metadata = {
   title: 'Terms of Service — Kyra AI',
@@ -14,17 +15,9 @@ const EMAIL = 'angel@conversionsystem.com';
 export default function TermsPage() {
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white">
-      <nav className="border-b border-white/10 px-4 py-4">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 font-black text-xl">
-            <Zap className="h-5 w-5 text-indigo-400" />
-            Kyra
-          </Link>
-          <Link href="/" className="text-sm text-slate-400 hover:text-white transition">← Back to home</Link>
-        </div>
-      </nav>
+      <PublicNav />
 
-      <div className="max-w-3xl mx-auto px-4 py-16">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-16">
         <h1 className="text-3xl font-black mb-2">Terms of Service</h1>
         <p className="text-slate-400 text-sm mb-10">Last updated: {LAST_UPDATED}</p>
 
@@ -158,6 +151,7 @@ export default function TermsPage() {
           </p>
         </div>
       </div>
+      <PublicFooter />
     </div>
   );
 }
