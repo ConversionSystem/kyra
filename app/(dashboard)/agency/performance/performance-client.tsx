@@ -257,7 +257,7 @@ export function PerformanceClient({ clients, agencyId, agencySettings }: Perform
       {analytics && analytics.total > 0 && (
         <div className="mb-8 space-y-4">
           {/* Summary row */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="rounded-xl border border-gray-200 bg-white p-4 text-center">
               <p className="text-3xl font-bold text-indigo-600">{analytics.total}</p>
               <p className="text-xs text-gray-500 mt-1">Conversations (7d)</p>
