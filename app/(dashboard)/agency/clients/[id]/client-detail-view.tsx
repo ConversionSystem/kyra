@@ -12,6 +12,7 @@ import {
   ArrowLeft,
   Loader2,
   Send,
+  Zap,
   Trash2,
   Save,
   FileDown,
@@ -1533,6 +1534,119 @@ CREATE POLICY "Service insert" ON client_conversations FOR INSERT WITH CHECK (tr
   );
 }
 
+// ── Zapier Channel Card ───────────────────────────────────────────────────────
+
+function ZapierChannelCard({
+  client, appUrl, copy, copied,
+}: {
+  client: AgencyClient;
+  appUrl: string;
+  copy: (text: string, key: string) => void;
+  copied: string | null;
+}) {
+  const [showDetail, setShowDetail] = useState(false);
+  const webhookUrl = `${appUrl}/api/inbound/webhook?clientId=${client.id}`;
+  const webhookWithToken = `${webhookUrl}&token=YOUR_TOKEN`;
+
+  return (
+    <Card className="border-orange-100">
+      <CardHeader className="pb-3">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-orange-50 flex items-center justify-center">
+            <Zap className="h-5 w-5 text-orange-600" />
+          </div>
+          <div>
+            <CardTitle className="text-base">Zapier · Make · n8n · Any Webhook</CardTitle>
+            <CardDescription className="text-xs">Connect any CRM, form, or app — HubSpot, Salesforce, Typeform, Airtable, and 5,000+ more</CardDescription>
+          </div>
+          <span className="ml-auto text-[10px] bg-green-100 text-green-700 font-medium px-2 py-0.5 rounded-full">✅ Ready</span>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <p className="text-sm text-gray-600">
+          No GHL? No problem. Any lead source can trigger the AI — paste this URL into Zapier's Webhooks action, Make's HTTP module, or any POST request.
+          The AI responds instantly and returns the response text for your next automation step.
+        </p>
+
+        <div>
+          <p className="text-xs font-medium text-gray-700 mb-2">Webhook URL</p>
+          <div className="flex items-start gap-2">
+            <code className="flex-1 bg-gray-900 text-green-400 rounded-lg px-3 py-2.5 text-xs font-mono break-all">
+              {webhookUrl}
+            </code>
+            <Button size="sm" variant="outline" className="shrink-0" onClick={() => copy(webhookUrl, 'zapier_url')}>
+              {copied === 'zapier_url' ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+            </Button>
+          </div>
+        </div>
+
+        <button
+          onClick={() => setShowDetail(!showDetail)}
+          className="text-xs text-indigo-600 hover:underline flex items-center gap-1"
+        >
+          {showDetail ? '▲' : '▼'} {showDetail ? 'Hide' : 'Show'} setup guide + example payload
+        </button>
+
+        {showDetail && (
+          <div className="space-y-3">
+            <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 text-xs text-indigo-800 space-y-2">
+              <p className="font-bold">Zapier setup (2 minutes):</p>
+              <ol className="list-decimal ml-4 space-y-1.5 leading-relaxed">
+                <li>Create a Zap with any trigger (new HubSpot contact, Typeform submission, Google Sheet row, etc.)</li>
+                <li>Add action: <strong>Webhooks by Zapier → POST</strong></li>
+                <li>URL: paste the webhook URL above</li>
+                <li>Payload type: <strong>JSON</strong></li>
+                <li>Map your fields: <code className="bg-indigo-100 px-1 rounded">name</code>, <code className="bg-indigo-100 px-1 rounded">phone</code>, <code className="bg-indigo-100 px-1 rounded">email</code>, <code className="bg-indigo-100 px-1 rounded">message</code></li>
+                <li>The Zap response contains <code className="bg-indigo-100 px-1 rounded">ai_response</code> — use it in a next step to send SMS or email</li>
+              </ol>
+            </div>
+
+            <div>
+              <p className="text-xs font-medium text-gray-700 mb-2">Example payload (JSON)</p>
+              <pre className="bg-gray-900 text-green-400 rounded-xl p-4 text-xs overflow-x-auto">{`{
+  "name": "Sarah Johnson",
+  "phone": "+14155551234",
+  "email": "sarah@example.com",
+  "message": "Hi, I'm interested in booking a consultation",
+  "source": "website-contact-form"
+}`}</pre>
+            </div>
+
+            <div>
+              <p className="text-xs font-medium text-gray-700 mb-2">Response (use in next Zap step)</p>
+              <pre className="bg-gray-900 text-blue-300 rounded-xl p-4 text-xs overflow-x-auto">{`{
+  "ok": true,
+  "ai_response": "Hi Sarah! Thanks for reaching out to Downtown Dental...",
+  "sms_response": "Hi Sarah! Thanks for reaching out...",
+  "sender_phone": "+14155551234",
+  "sender_email": "sarah@example.com"
+}`}</pre>
+            </div>
+
+            <div className="flex gap-2 flex-wrap">
+              <Button size="sm" variant="outline" className="text-xs gap-1.5"
+                onClick={() => copy(webhookWithToken, 'zapier_full')}>
+                {copied === 'zapier_full' ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                Copy URL with token placeholder
+              </Button>
+              <Button size="sm" variant="outline" className="text-xs gap-1.5"
+                onClick={() => window.open('https://zapier.com/apps/webhooks', '_blank')}>
+                <ExternalLink className="h-3.5 w-3.5" />
+                Open Zapier
+              </Button>
+              <Button size="sm" variant="outline" className="text-xs gap-1.5"
+                onClick={() => window.open('https://make.com', '_blank')}>
+                <ExternalLink className="h-3.5 w-3.5" />
+                Open Make
+              </Button>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 // ── Channels Tab ──────────────────────────────────────────────────────────────
 // Shows all available channels: web chat embed, email outreach, WhatsApp, voice.
 
@@ -1647,6 +1761,9 @@ function ChannelsTab({ client }: { client: AgencyClient }) {
           </div>
         </CardContent>
       </Card>
+
+      {/* ── Zapier / Make / n8n ─────────────────────────────────────────── */}
+      <ZapierChannelCard client={client} appUrl={appUrl} copy={copy} copied={copied} />
 
       {/* ── Email Outreach ──────────────────────────────────────────────── */}
       <Card className="border-blue-100">

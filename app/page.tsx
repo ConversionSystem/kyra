@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   description: 'Deploy white-labeled AI employees inside GoHighLevel. Responds to every SMS in 60 seconds, books appointments, updates CRM, escalates frustrated leads. Manage all clients from one dashboard.',
   openGraph: {
     title: 'Kyra — Give every GHL client an AI employee that actually works',
-    description: 'Responds to every lead in 60 seconds. Books appointments. Updates CRM. Escalates to humans. One dashboard for all your agency clients. Free to start.',
+    description: 'AI employee for any business — answers calls, replies to texts, books appointments, updates your CRM. Works with GoHighLevel, HubSpot, Zapier, or any website. Free to start.',
     url: 'https://kyra.conversionsystem.com',
   },
   alternates: { canonical: 'https://kyra.conversionsystem.com' },
@@ -110,7 +110,7 @@ export default function HomePage() {
         <div className="flex justify-center mb-8">
           <div className="inline-flex items-center gap-2 bg-white/10 border border-white/10 rounded-full px-4 py-1.5 text-sm font-medium">
             <span className="h-2 w-2 rounded-full bg-green-400 animate-pulse inline-block" />
-            AI employees for your GoHighLevel clients
+            Full-stack AI employee — voice · SMS · WhatsApp · web chat
           </div>
         </div>
 
@@ -118,12 +118,24 @@ export default function HomePage() {
           {/* Left: Headline + CTA */}
           <div>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-[1.05] mb-6 tracking-tight">
-              Give every client an AI employee that{' '}
-              <span className="text-indigo-400">actually works.</span>
+              Every lead answered{' '}
+              <span className="text-indigo-400">in 60 seconds.</span>{' '}
+              Every call picked up.
             </h1>
-            <p className="text-slate-300 text-lg sm:text-xl leading-relaxed mb-8 max-w-lg">
-              Responds to every GHL SMS in 60 seconds. Books appointments. Updates the CRM. Escalates to humans. All automatic — from one agency dashboard.
+            <p className="text-slate-300 text-lg sm:text-xl leading-relaxed mb-6 max-w-lg">
+              Kyra is an AI employee for your business — answers calls, replies to texts, books appointments, updates your CRM. Works with GoHighLevel, HubSpot, Zapier, or any website.
             </p>
+
+            {/* Integration logos */}
+            <div className="flex flex-wrap items-center gap-3 mb-8">
+              <span className="text-xs text-slate-500 shrink-0">Works with:</span>
+              {['GoHighLevel', 'Zapier', 'HubSpot', 'Twilio', 'WhatsApp'].map(name => (
+                <span key={name} className="text-xs font-semibold text-slate-400 bg-white/5 border border-white/10 px-2.5 py-1 rounded-full">
+                  {name}
+                </span>
+              ))}
+              <span className="text-xs text-slate-500">+ any webhook</span>
+            </div>
 
             {/* Stats row */}
             <div className="grid grid-cols-3 gap-3 mb-8">
