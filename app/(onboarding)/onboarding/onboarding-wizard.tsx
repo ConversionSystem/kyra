@@ -56,10 +56,10 @@ function StepWelcome({ agencyName, onNext }: { agencyName: string; onNext: () =>
         <Sparkles className="h-8 w-8 text-white" />
       </div>
       <h1 className="text-3xl font-black text-gray-900 mb-3">
-        Welcome to Kyra, {agencyName}! 🎉
+        Welcome to Kyra — the AI workforce platform.
       </h1>
       <p className="text-gray-500 text-base mb-8 max-w-sm mx-auto">
-        You&apos;re about to deploy your first AI employee. This takes about 3 minutes.
+        You&apos;re about to deploy your first AI worker. This takes about 3 minutes.
       </p>
       <div className="grid grid-cols-3 gap-3 mb-8 text-left">
         {[
@@ -119,7 +119,7 @@ function StepGHL({
         </div>
         <div>
           <h2 className="text-xl font-bold text-gray-900">Connect GoHighLevel</h2>
-          <p className="text-sm text-gray-500">So your AI can read and reply in GHL conversations.</p>
+          <p className="text-sm text-gray-500">Connect your first GHL sub-account to deploy an AI worker.</p>
         </div>
       </div>
 
@@ -231,7 +231,7 @@ function StepClient({
         </div>
         <div>
           <h2 className="text-xl font-bold text-gray-900">Deploy your first AI client</h2>
-          <p className="text-sm text-gray-500">Pick a template, set a name — done.</p>
+          <p className="text-sm text-gray-500">Pick an industry template. Your OpenClaw AI worker goes live in 5 minutes.</p>
         </div>
       </div>
 
@@ -342,7 +342,7 @@ function StepDone({ clientId, agencyName }: { clientId: string | null; agencyNam
       </h2>
       <p className="text-gray-500 mb-8 max-w-sm mx-auto">
         {clientId
-          ? 'Your AI employee is deploying. It handles conversations in about 60 seconds.'
+          ? 'Your AI worker is live. Watch it operate autonomously.'
           : `Welcome to ${agencyName}'s dashboard. Add your first AI client whenever you're ready.`}
       </p>
 
