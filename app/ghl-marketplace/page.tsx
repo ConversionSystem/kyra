@@ -5,7 +5,7 @@ import PublicFooter from '@/components/layout/public-footer';
 
 export const metadata: Metadata = {
   title: 'Kyra AI — GoHighLevel Marketplace App | AI Employee for GHL Agencies',
-  description: 'Kyra adds a fully autonomous AI employee to any GHL sub-account. Responds to every lead in 60 seconds, books appointments, updates the CRM, escalates hot leads. White-labeled for agencies.',
+  description: 'Kyra adds an OpenClaw-powered autonomous AI worker to any GHL sub-account. Responds to every lead in 60 seconds, books appointments, updates the CRM, escalates hot leads. White-labeled for agencies.',
 };
 
 const FEATURES = [
