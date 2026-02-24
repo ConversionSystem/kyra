@@ -1,6 +1,8 @@
 import Link from 'next/link';
-import { Zap, MessageSquare, Settings, CreditCard, Wrench, Users } from 'lucide-react';
+import { MessageSquare, Settings, CreditCard, Wrench, Users } from 'lucide-react';
 import type { Metadata } from 'next';
+import PublicNav from '@/components/layout/public-nav';
+import PublicFooter from '@/components/layout/public-footer';
 
 export const metadata: Metadata = {
   title: 'Help & FAQ — Kyra AI',
@@ -149,21 +151,9 @@ const SECTIONS = [
 export default function HelpPage() {
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white">
-      <nav className="border-b border-white/10 px-4 py-4">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 font-black text-xl">
-            <Zap className="h-5 w-5 text-indigo-400" /> Kyra
-          </Link>
-          <div className="flex items-center gap-4 text-sm text-slate-400">
-            <Link href="/changelog" className="hover:text-white transition">Changelog</Link>
-            <Link href="mailto:angel@conversionsystem.com" className="bg-white/10 hover:bg-white/15 border border-white/10 px-4 py-2 rounded-lg transition">
-              Contact Support
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <PublicNav />
 
-      <div className="max-w-4xl mx-auto px-4 py-16">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="mb-12">
           <h1 className="text-3xl sm:text-4xl font-black mb-3">Help & FAQ</h1>
           <p className="text-slate-400 text-lg">Common questions about Kyra AI employees, GHL integration, and billing.</p>
@@ -217,6 +207,7 @@ export default function HelpPage() {
           </Link>
         </div>
       </div>
+      <PublicFooter />
     </div>
   );
 }

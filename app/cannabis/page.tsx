@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import PublicNav from '@/components/layout/public-nav';
+import PublicFooter from '@/components/layout/public-footer';
 import {
   ArrowRightIcon,
   MessageSquareIcon,
@@ -46,24 +48,7 @@ function FeatureRow({ icon: Icon, title, desc }: { icon: any; title: string; des
 export default function CannabisPage() {
   return (
     <div className="min-h-screen bg-white text-gray-900">
-      {/* Nav */}
-      <nav className="border-b border-gray-100 sticky top-0 bg-white/95 backdrop-blur z-50">
-        <div className="container mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="font-bold text-xl text-gray-900">
-            Kyra
-            <span className="ml-2 text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700">
-              🌿 Cannabis
-            </span>
-          </Link>
-          <Link
-            href="/signup/agency"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-green-600 hover:bg-green-500 transition text-white font-semibold text-sm"
-          >
-            Deploy Free
-            <ArrowRightIcon className="h-4 w-4" />
-          </Link>
-        </div>
-      </nav>
+      <PublicNav />
 
       {/* Hero */}
       <section className="bg-green-950 py-20 md:py-28">
@@ -316,17 +301,7 @@ export default function CannabisPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-gray-100 py-8 bg-white">
-        <div className="container mx-auto px-4 md:px-6 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-gray-400">© 2026 Conversion System. All rights reserved.</p>
-          <div className="flex gap-6 text-sm text-gray-400">
-            <Link href="/" className="hover:text-gray-700 transition">Home</Link>
-            <Link href="/signup/agency" className="hover:text-gray-700 transition">Sign Up</Link>
-            <Link href="mailto:angel@conversionsystem.com" className="hover:text-gray-700 transition">Contact</Link>
-          </div>
-        </div>
-      </footer>
+      <PublicFooter />
     </div>
   );
 }

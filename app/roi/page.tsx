@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import PublicNav from '@/components/layout/public-nav';
+import PublicFooter from '@/components/layout/public-footer';
 import { DollarSign, TrendingUp, Clock, Users, ArrowRight, CheckCircle, Mail, Loader2 } from 'lucide-react';
 
 const INDUSTRIES = [
@@ -83,21 +85,7 @@ export default function ROICalculatorPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 text-white">
-      {/* Nav */}
-      <nav className="border-b border-white/10 px-4 py-4">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center font-black text-xs">K</div>
-            <span className="font-bold">Kyra AI</span>
-          </Link>
-          <Link
-            href="/signup/agency"
-            className="text-sm bg-indigo-600 hover:bg-indigo-500 transition text-white font-semibold px-4 py-2 rounded-lg"
-          >
-            Get Started Free
-          </Link>
-        </div>
-      </nav>
+      <PublicNav />
 
       <div className="max-w-5xl mx-auto px-4 py-12">
         {/* Header */}
@@ -332,6 +320,7 @@ export default function ROICalculatorPage() {
           * Estimates based on industry averages. Individual results vary. ROI calculator assumes improved response rate leads to proportionally higher close rates.
         </p>
       </div>
+      <PublicFooter />
     </div>
   );
 }

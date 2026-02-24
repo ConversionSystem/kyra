@@ -141,7 +141,7 @@ export function BillingPageClient({ agency, clientCount, totalConversationsThisM
                 <p className="text-green-200 text-sm mt-1">Your client slots are live. Start adding AI employees right now.</p>
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-3 mb-5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
               {[
                 { label: 'Client slots', value: PLANS[currentPlan]?.maxClients === 50 ? '50' : String(PLANS[currentPlan]?.maxClients ?? '?') },
                 { label: 'Revenue potential', value: `$${((PLANS[currentPlan]?.maxClients ?? 1) * 997).toLocaleString()}/mo` },
