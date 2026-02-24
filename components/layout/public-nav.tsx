@@ -8,6 +8,7 @@ const NAV_LINKS = [
   { href: '/pricing', label: 'Pricing' },
   { href: '/blog', label: 'Blog' },
   { href: '/ghl', label: 'For GHL' },
+  { href: '/openclaw', label: 'OpenClaw →' },
   { href: '/help', label: 'Help' },
 ];
 

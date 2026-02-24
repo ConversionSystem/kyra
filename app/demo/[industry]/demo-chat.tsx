@@ -110,7 +110,7 @@ export default function DemoChat({ conversation, contactName, businessName, acce
         {/* Kyra badge */}
         <div className="text-center py-2 text-[10px] text-slate-500 flex items-center justify-center gap-1">
           <span className="inline-block h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
-          Kyra AI is managing this conversation
+          Kyra AI · Powered by OpenClaw
         </div>
       </div>
 
