@@ -5,6 +5,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import PublicNav from '@/components/layout/public-nav';
+import PublicFooter from '@/components/layout/public-footer';
 
 interface NicheData {
   slug: string;
@@ -250,21 +252,7 @@ export default async function AiForNichePage({ params }: Props) {
 
   return (
     <div className="min-h-screen bg-white text-gray-900 font-sans">
-      {/* Nav */}
-      <nav className="border-b border-gray-100 px-4 py-4 sticky top-0 bg-white z-40">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 font-black text-xl">
-            <span className="text-indigo-600">⚡</span> Kyra
-          </Link>
-          <div className="flex items-center gap-4 text-sm">
-            <Link href="/pricing" className="text-gray-500 hover:text-gray-900">Pricing</Link>
-            <Link href={`/try/${data.demoSlug}`} className="text-gray-500 hover:text-gray-900">Live Demo</Link>
-            <Link href="/signup/agency" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-lg transition">
-              Start Free →
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <PublicNav />
 
       {/* Hero */}
       <section className="max-w-5xl mx-auto px-4 pt-16 pb-20">
@@ -404,6 +392,7 @@ export default async function AiForNichePage({ params }: Props) {
           <p className="text-indigo-400 text-sm mt-4">No credit card · Works with GoHighLevel · Cancel anytime</p>
         </div>
       </section>
+      <PublicFooter />
     </div>
   );
 }

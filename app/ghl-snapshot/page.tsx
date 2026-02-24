@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import PublicNav from '@/components/layout/public-nav';
+import PublicFooter from '@/components/layout/public-footer';
 
 export const metadata: Metadata = {
   title: 'Free Kyra GHL Snapshot — AI Employee Automation Pack for GoHighLevel Agencies',
@@ -34,20 +36,7 @@ const STATS = [
 export default function GHLSnapshotPage() {
   return (
     <div className="bg-white text-gray-900 min-h-screen">
-      {/* Nav */}
-      <nav className="border-b border-gray-100 px-4 py-4 sticky top-0 bg-white/95 backdrop-blur z-40">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <Link href="/" className="font-black text-xl flex items-center gap-2">
-            <span className="text-indigo-600">⚡</span> Kyra
-          </Link>
-          <div className="flex items-center gap-3">
-            <Link href="/login" className="text-sm text-gray-600 hover:text-gray-900">Sign in</Link>
-            <Link href="/signup/agency" className="bg-indigo-600 text-white font-bold px-4 py-2 rounded-lg text-sm hover:bg-indigo-700 transition">
-              Get Snapshot Free
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <PublicNav />
 
       {/* Hero */}
       <section className="bg-gradient-to-br from-gray-900 via-indigo-950 to-gray-900 text-white px-4 py-20">
@@ -183,10 +172,7 @@ export default function GHLSnapshotPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-gray-100 py-8 px-4 text-center text-sm text-gray-400">
-        <p>Kyra by Conversion System · <Link href="/" className="hover:text-indigo-600">kyra.conversionsystem.com</Link></p>
-      </footer>
+      <PublicFooter />
     </div>
   );
 }

@@ -2,7 +2,9 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { Check, Zap, BadgePercent } from 'lucide-react';
+import { Check, BadgePercent } from 'lucide-react';
+import PublicNav from '@/components/layout/public-nav';
+import PublicFooter from '@/components/layout/public-footer';
 
 const PLANS = [
   {
@@ -122,23 +124,7 @@ export default function PricingPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white">
-      {/* Nav */}
-      <nav className="border-b border-white/10 px-4 py-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 font-black text-xl">
-            <Zap className="h-5 w-5 text-indigo-400" />
-            Kyra
-          </Link>
-          <div className="flex items-center gap-4 text-sm text-slate-400">
-            <Link href="/" className="hover:text-white transition">Home</Link>
-            <Link href="/demo/dental" className="hover:text-white transition">Demo</Link>
-            <Link href="/login" className="hover:text-white transition">Log in</Link>
-            <Link href="/signup/agency" className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg font-semibold transition text-sm">
-              Get Started Free
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <PublicNav />
 
       {/* Header */}
       <section className="py-20 text-center px-4">
@@ -393,10 +379,7 @@ export default function PricingPage() {
         <p className="text-slate-600 text-sm mt-4">No credit card · 30-day trial on paid plans · Cancel anytime</p>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-white/10 py-8 text-center text-slate-600 text-sm px-4">
-        <p>© 2026 Conversion System · <Link href="/privacy" className="hover:text-slate-400">Privacy</Link> · <Link href="/terms" className="hover:text-slate-400">Terms</Link></p>
-      </footer>
+      <PublicFooter />
     </div>
   );
 }

@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import PublicNav from '@/components/layout/public-nav';
+import PublicFooter from '@/components/layout/public-footer';
 
 export const metadata: Metadata = {
   title: 'Kyra AI — GoHighLevel Marketplace App | AI Employee for GHL Agencies',
@@ -61,6 +63,8 @@ const PLANS = [
 export default function GhlMarketplacePage() {
   return (
     <div className="bg-white text-gray-900 min-h-screen font-sans">
+
+      <PublicNav />
 
       {/* ── Hero ── */}
       <section className="bg-gradient-to-br from-indigo-900 via-indigo-800 to-purple-900 text-white px-4 py-20 text-center">
@@ -326,6 +330,7 @@ export default function GhlMarketplacePage() {
           </p>
         </div>
       </section>
+      <PublicFooter />
     </div>
   );
 }
