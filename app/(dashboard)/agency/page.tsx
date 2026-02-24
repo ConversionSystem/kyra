@@ -19,6 +19,8 @@ import WhatsNewBanner from '@/components/dashboard/whats-new-banner';
 import AgencyChecklist from '@/components/dashboard/agency-checklist';
 import ClientSparkline from '@/components/dashboard/client-sparkline';
 import { SalesLeadWidget } from '@/components/dashboard/sales-lead-widget';
+import RevenueUnlockCard from '@/components/dashboard/revenue-unlock-card';
+import TrialCountdownBanner from '@/components/dashboard/trial-countdown-banner';
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -172,6 +174,14 @@ export default async function AgencyOverviewPage() {
       {/* ── What's New Banner ── */}
       <WhatsNewBanner />
 
+      {/* ── Trial Countdown Banner ── */}
+      <TrialCountdownBanner
+        createdAt={agency.created_at ?? new Date().toISOString()}
+        plan={agency.plan || 'free'}
+        clientCount={totalCount}
+        totalConversations={totalUsage}
+      />
+
       {/* ── Trial Credits Banner ── */}
       {showTrialCreditsBanner && (
         <div className="flex items-center gap-4 rounded-xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-purple-50 px-4 py-3.5">
@@ -202,6 +212,13 @@ export default async function AgencyOverviewPage() {
 
       {/* ── Setup Checklist ── */}
       <AgencyChecklist {...checklistProps} />
+
+      {/* ── Revenue Unlock Card (non-scale plans only) ── */}
+      {agency.plan !== 'scale' && (
+        <div className="mb-6">
+          <RevenueUnlockCard plan={agency.plan || 'free'} clientCount={totalCount} />
+        </div>
+      )}
 
       {/* ── CEO Action Board (admin only) ── */}
       {isAdmin && (
