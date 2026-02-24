@@ -755,7 +755,10 @@ export async function GET(request: NextRequest) {
         } else {
           const errText = await sendRes.text().catch(() => '');
           addLog(`  Send failed: ${sendRes.status} ${errText.slice(0, 100)}`);
-          errors.push(`Send failed for ${client.name}: ${sendRes.status}`);
+          // 422 "Missing phone number" = test contact with no phone — not a real error
+          if (sendRes.status !== 422) {
+            errors.push(`Send failed for ${client.name}: ${sendRes.status}`);
+          }
         }
       } catch (err: any) {
         addLog(`    Gateway/send error: ${err.message}`);
@@ -866,7 +869,7 @@ export async function GET(request: NextRequest) {
 
           // Step 3: Send greeting via the conversation
           const greetMsg = greeting.replace(/\{\{name\}\}/gi, contact.firstName || 'there');
-          const outboundRes = await fetch(`${GHL_API_BASE}/conversations/${conversationId}/messages`, {
+          const outboundRes = await fetch(`${GHL_API_BASE}/conversations/messages`, {
             method: 'POST',
             headers: {
               Authorization: `Bearer ${token}`,
@@ -875,6 +878,8 @@ export async function GET(request: NextRequest) {
             },
             body: JSON.stringify({
               type: 'SMS',
+              contactId: contact.id,
+              conversationId,
               message: greetMsg,
             }),
             signal: AbortSignal.timeout(10_000),
