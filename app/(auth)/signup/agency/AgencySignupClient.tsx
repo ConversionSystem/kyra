@@ -185,7 +185,7 @@ function AgencySignupPage() {
           </h1>
           <p className="text-slate-400 text-lg">
             {step === 1
-              ? 'Powered by OpenClaw — the enterprise AI infrastructure trusted by 500+ agencies.'
+              ? 'Powered by OpenClaw — enterprise AI infrastructure built for autonomous agents.'
               : 'Almost there. One more step.'}
           </p>
         </div>

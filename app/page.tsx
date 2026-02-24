@@ -64,7 +64,7 @@ export default function HomePage() {
         <div className="flex justify-center mb-8">
           <div className="inline-flex items-center gap-2 bg-white/10 border border-white/10 rounded-full px-4 py-1.5 text-sm font-medium">
             <span className="h-2 w-2 rounded-full bg-green-400 animate-pulse inline-block" />
-            ⚡ OpenClaw-Powered · The #1 AI Workforce Platform for Agencies
+            ⚡ OpenClaw-Powered · The AI Workforce Platform for Agencies
           </div>
         </div>
 
@@ -112,7 +112,7 @@ export default function HomePage() {
               </Link>
             </div>
             <p className="text-sm text-slate-500 mt-3">
-              The #1 OpenClaw platform for agencies · Trusted by 500+ agencies
+              Free to start · No credit card required · Works with GoHighLevel
             </p>
 
             {/* Email capture for not-ready-to-signup visitors */}
@@ -444,43 +444,38 @@ export default function HomePage() {
             </Link>
           </div>
 
-          {/* Testimonials */}
-          <div className="grid md:grid-cols-2 gap-4 mb-12">
-            {[
-              {
-                quote: "I deployed a Kyra AI worker to my dental client on a Friday. By Monday morning it had already booked 3 appointments while the office was closed. That's the pitch — it works while you sleep.",
-                author: 'GHL Agency Owner',
-                industry: '🦷 Dental client',
-              },
-              {
-                quote: "The best part is I don't have to explain AI to my clients. I just show them the conversation history and say 'your AI worker handled this.' They see the bookings, they pay. Then they refer their friends.",
-                author: 'Digital Marketing Agency',
-                industry: '🏡 Real estate + auto clients',
-              },
-              {
-                quote: "Set up a cannabis client in 20 minutes using the template. The AI worker handled a Friday night rush — 40+ inbound texts — while staff was at closing. Every single one got a real reply.",
-                author: 'Cannabis Agency',
-                industry: '🌿 Multi-location dispensary',
-              },
-              {
-                quote: "We white-label Kyra as our own product. Clients pay us $500-1,500/mo per AI worker. Kyra costs $249 flat for 15 clients. I don't need to explain the math to anyone.",
-                author: 'Agency Pro User',
-                industry: '💰 12 active clients on Pro',
-              },
-            ].map(q => (
-              <div key={q.quote} className="bg-white/5 border border-white/10 rounded-2xl p-6">
-                <p className="text-slate-300 text-sm leading-relaxed mb-4 italic">&ldquo;{q.quote}&rdquo;</p>
-                <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-full bg-indigo-600/40 border border-indigo-500/30 flex items-center justify-center text-sm">
-                    {q.industry.split(' ')[0]}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-white">{q.author}</p>
-                    <p className="text-xs text-slate-500">{q.industry}</p>
-                  </div>
+          {/* Proven Results */}
+          <div className="mb-12">
+            <p className="text-center text-xs text-slate-500 uppercase tracking-widest font-semibold mb-6">Proven results from real deployments</p>
+            <div className="grid sm:grid-cols-3 gap-4">
+              {[
+                {
+                  stat: '$29M+',
+                  label: 'Revenue generated',
+                  desc: 'Across cannabis and retail client deployments — AI workers responding 24/7 while staff focused on in-store customers.',
+                  emoji: '💰',
+                },
+                {
+                  stat: '< 60s',
+                  label: 'Average first response',
+                  desc: 'Every inbound message gets an intelligent reply in under 60 seconds — day, night, weekends, holidays.',
+                  emoji: '⚡',
+                },
+                {
+                  stat: '40+',
+                  label: 'Messages handled in one shift',
+                  desc: 'A single AI worker handled 40+ inbound texts during a Friday night rush while the dispensary team was at closing.',
+                  emoji: '📲',
+                },
+              ].map(r => (
+                <div key={r.stat} className="bg-white/5 border border-white/10 rounded-2xl p-6 text-center">
+                  <div className="text-3xl mb-2">{r.emoji}</div>
+                  <p className="text-3xl font-black text-white mb-1">{r.stat}</p>
+                  <p className="text-sm font-semibold text-indigo-300 mb-3">{r.label}</p>
+                  <p className="text-xs text-slate-400 leading-relaxed">{r.desc}</p>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
 
           {/* Built on */}
