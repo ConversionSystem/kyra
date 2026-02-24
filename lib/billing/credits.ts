@@ -8,6 +8,27 @@ export const WELCOME_CREDITS = 200; // $2 worth at $0.01/credit
 export const WELCOME_CREDIT_DESCRIPTION = 'Welcome gift — $2 in free credits to test Kyra 🎁';
 
 // ============================================================================
+// Promo Codes
+// ============================================================================
+export interface PromoCode {
+  bonusCredits: number;
+  description: string;
+  trialDays: number; // 0 = use default
+}
+
+export const PROMO_CODES: Record<string, PromoCode> = {
+  INDIA2026: {
+    bonusCredits: 500,
+    description: 'HighLevel LIVE India 2026 — 500 bonus credits 🇮🇳',
+    trialDays: 60,
+  },
+};
+
+export function getPromoCode(code: string): PromoCode | null {
+  return PROMO_CODES[code?.toUpperCase()] ?? null;
+}
+
+// ============================================================================
 // Kyra Credits — Pack Definitions
 // 1 Credit = 1 AI conversation (~1,500 tokens)
 // Our cost: ~0.45 credits/conv. Agency pays 1. ~55% margin.
