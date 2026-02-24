@@ -5,12 +5,36 @@ import PublicNav from '@/components/layout/public-nav';
 import PublicFooter from '@/components/layout/public-footer';
 
 export const metadata: Metadata = {
-  title: 'Kyra vs. Basic Chatbots & GHL Automations — What\'s the Difference?',
+  title: 'Kyra vs. Chatbots — AI Workers Are a Different Category | OpenClaw-Powered',
   description: 'Why AI employees are different from chatbots, canned response bots, and basic GHL automation workflows. Side-by-side comparison.',
   keywords: ['GHL AI employee vs chatbot', 'stammer.ai alternative', 'AI employee for GHL', 'GoHighLevel chatbot vs AI'],
 };
 
 const rows = [
+  {
+    feature: 'Operates continuously — no trigger needed',
+    kyra: true, chatbot: false, ghlAutomation: false,
+  },
+  {
+    feature: 'Persistent memory across ALL sessions and channels',
+    kyra: true, chatbot: false, ghlAutomation: false,
+  },
+  {
+    feature: 'Powered by OpenClaw enterprise AI runtime',
+    kyra: true, chatbot: false, ghlAutomation: false,
+  },
+  {
+    feature: 'Per-client dedicated AI instance (full data isolation)',
+    kyra: true, chatbot: false, ghlAutomation: false,
+  },
+  {
+    feature: 'BYOK — bring your own Claude, GPT-4, or Gemini key',
+    kyra: true, chatbot: false, ghlAutomation: false,
+  },
+  {
+    feature: 'Telegram, Discord, Slack support (non-GHL channels)',
+    kyra: true, chatbot: false, ghlAutomation: false,
+  },
   {
     feature: 'Responds to any message (not just pre-programmed ones)',
     kyra: true, chatbot: false, ghlAutomation: false,
@@ -95,11 +119,18 @@ export default function VsPage() {
             AI Employee vs. Everything Else
           </div>
           <h1 className="text-3xl sm:text-4xl font-black mb-4">
-            Why an AI employee beats a chatbot.<br />
-            <span className="text-indigo-400">Every time.</span>
+            AI workers vs. chatbots vs. automation.<br />
+            <span className="text-indigo-400">Not the same category.</span>
           </h1>
           <p className="text-slate-400 text-lg max-w-2xl mx-auto">
             Chatbots respond to keywords. GHL automations follow scripts. An AI employee understands context, adapts to each conversation, and operates like a real team member — without the salary.
+          </p>
+        </div>
+
+        {/* Intro paragraph */}
+        <div className="max-w-2xl mx-auto mb-8 text-center">
+          <p className="text-slate-300 text-base leading-relaxed">
+            Most agencies are comparing the wrong things. The question is not which chatbot is better. The question is whether you want a chatbot or an AI worker. There is no comparison.
           </p>
         </div>
 
@@ -111,7 +142,7 @@ export default function VsPage() {
                 <th className="text-left p-4 text-sm font-semibold text-slate-400 w-1/2">Capability</th>
                 <th className="p-4 text-center">
                   <div className="flex flex-col items-center gap-1">
-                    <div className="bg-indigo-600 rounded-lg px-3 py-1 text-sm font-black">Kyra AI</div>
+                    <div className="bg-indigo-600 rounded-lg px-3 py-1 text-sm font-black">Kyra + OpenClaw</div>
                     <span className="text-xs text-slate-500">AI Employee</span>
                   </div>
                 </th>

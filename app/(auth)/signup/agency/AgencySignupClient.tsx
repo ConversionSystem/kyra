@@ -181,11 +181,11 @@ function AgencySignupPage() {
             {fromAgency ? `${trialDays || '30'}-day free trial — invited by ${fromAgency}` : 'Free during beta — no credit card required'}
           </div>
           <h1 className="text-3xl sm:text-4xl font-black mb-3">
-            {step === 1 ? 'Create your account' : 'Name your agency'}
+            {step === 1 ? 'Deploy your first autonomous AI worker.' : 'Name your agency'}
           </h1>
           <p className="text-slate-400 text-lg">
             {step === 1
-              ? 'Deploy AI employees for your GHL clients in minutes.'
+              ? 'Powered by OpenClaw — the enterprise AI infrastructure trusted by 500+ agencies.'
               : 'Almost there. One more step.'}
           </p>
         </div>

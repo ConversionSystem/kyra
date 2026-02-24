@@ -5,7 +5,7 @@ import PublicNav from '@/components/layout/public-nav';
 import PublicFooter from '@/components/layout/public-footer';
 
 export const metadata: Metadata = {
-  title: 'Partner Program — Kyra AI | 20% Recurring Monthly Commission',
+  title: 'Kyra Partner Program — Resell Autonomous AI Workers',
   description: 'Join the Kyra Partner Program. Refer GHL agencies and earn 20% monthly recurring revenue for the lifetime of each account. No cap, no expiry.',
 };
 
