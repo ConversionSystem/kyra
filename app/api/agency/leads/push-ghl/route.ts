@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await getAgencyForUser(user.id); // ensure agency exists
+    const agencyResult = await getAgencyForUser(user.id); // ensure agency exists
 
     const body = await req.json();
     const { leads, bulkMode = false } = body as {
@@ -74,13 +74,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No leads provided' }, { status: 400 });
     }
 
-    const webhookUrl = process.env.OUTREACH_WEBHOOK_URL;
+    // Prefer webhook URL stored in agency settings (no Vercel env var required),
+    // fall back to the env var for backwards-compat.
+    const agencySettings = (agencyResult?.agency?.settings ?? {}) as Record<string, unknown>;
+    const webhookUrl =
+      (agencySettings.outreach_webhook_url as string | undefined) ||
+      process.env.OUTREACH_WEBHOOK_URL ||
+      '';
+
     if (!webhookUrl) {
       // Graceful degradation: return setup instructions
       return NextResponse.json({
         status: 'no_webhook',
-        message: 'OUTREACH_WEBHOOK_URL is not set. Add it to Vercel env vars pointing to your GHL outreach workflow.',
-        setupUrl: 'https://app.gohighlevel.com/settings/integrations',
+        message: 'OUTREACH_WEBHOOK_URL is not configured. Set it in Outreach → Setup inside your Kyra dashboard.',
+        setupUrl: '/agency/leads?tab=setup',
         leadsCount: leads.length,
       });
     }
