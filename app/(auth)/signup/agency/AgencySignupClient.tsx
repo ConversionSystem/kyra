@@ -27,6 +27,8 @@ function AgencySignupPage() {
   const referralId = searchParams.get('ref') || '';
   const fromAgency = searchParams.get('from') || '';
   const trialDays = searchParams.get('trial') || '';
+  const promoCode = searchParams.get('promo') || '';
+  const referralSource = searchParams.get('src') || '';
 
   const [step, setStep] = useState<1 | 2>(1);
   const [checkingAuth, setCheckingAuth] = useState(true);
@@ -101,7 +103,14 @@ function AgencySignupPage() {
       const res = await fetch('/api/agency', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: agencyName, slug, plan: 'free', referralId: referralId || undefined }),
+        body: JSON.stringify({
+          name: agencyName,
+          slug,
+          plan: 'free',
+          referralId: referralId || undefined,
+          promoCode: promoCode || undefined,
+          referralSource: referralSource || undefined,
+        }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Failed to create agency'); return; }
