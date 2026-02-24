@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2, ArrowRight, ArrowLeft, Check, Rocket, CheckCircle, Zap } from 'lucide-react';
+import { pixel } from '@/components/analytics/MetaPixel';
 
 export function AgencySignupWrapper() {
   return (
@@ -84,6 +85,7 @@ function AgencySignupPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       }).catch(() => {});
+      pixel.lead({ content_name: 'Agency Signup Step 1', referral_source: referralSource || undefined });
       setStep(2);
     } catch {
       setError('An unexpected error occurred');
@@ -114,6 +116,11 @@ function AgencySignupPage() {
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Failed to create agency'); return; }
+      pixel.completeRegistration({
+        content_name: 'Agency Created',
+        promo_code: promoCode || undefined,
+        referral_source: referralSource || undefined,
+      });
       router.push('/onboarding');
       router.refresh();
     } catch {
