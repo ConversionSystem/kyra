@@ -223,15 +223,19 @@ export default async function DemoPage({ params }: { params: Promise<{ industry:
 
           {/* CTA */}
           <div className="bg-indigo-600 rounded-xl p-6 text-center space-y-3">
-            <p className="font-bold text-lg">Ready to deploy your AI employee?</p>
-            <p className="text-indigo-200 text-sm">Set up takes under 10 minutes. Connects to your existing GoHighLevel account.</p>
+            <div className="inline-flex items-center gap-1.5 bg-white/15 rounded-full px-3 py-1 text-xs font-medium text-indigo-100 mb-1">
+              <span className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse inline-block" />
+              Powered by OpenClaw
+            </div>
+            <p className="font-bold text-lg">Deploy this AI worker to your clients.</p>
+            <p className="text-indigo-200 text-sm">Template → live in 5 minutes. Connects to your existing GoHighLevel account.</p>
             <a
-              href="https://kyra.conversionsystem.com/signup/agency"
+              href="/signup/agency"
               className="block bg-white text-indigo-700 font-bold py-3 px-6 rounded-lg hover:bg-indigo-50 transition"
             >
-              Get Started Free →
+              Deploy Your First AI Worker →
             </a>
-            <p className="text-indigo-300 text-xs">No credit card required · Works with GoHighLevel</p>
+            <p className="text-indigo-300 text-xs">Free to start · No credit card required</p>
           </div>
         </div>
       </div>
