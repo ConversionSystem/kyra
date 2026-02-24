@@ -179,8 +179,8 @@ export default async function AgencyOverviewPage() {
         </Link>
       </div>
 
-      {/* ── What's New Banner ── */}
-      <WhatsNewBanner />
+      {/* ── What's New Banner (platform admin only) ── */}
+      {isAdmin && <WhatsNewBanner />}
 
       {/* ── Trial Countdown Banner ── */}
       <TrialCountdownBanner
