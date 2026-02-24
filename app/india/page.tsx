@@ -212,7 +212,7 @@ export default function IndiaPage() {
           </Link>
           <p className="text-gray-500 text-sm mt-3">60-day trial · 500 bonus credits · No credit card needed</p>
           <p className="text-gray-600 text-xs mt-4">
-            Questions? Email <a href="mailto:angel@conversionsystem.com" className="text-indigo-400 hover:underline">angel@conversionsystem.com</a>
+            Questions? Email <a href="mailto:support@conversionsystem.com" className="text-indigo-400 hover:underline">support@conversionsystem.com</a>
           </p>
         </div>
       </section>
