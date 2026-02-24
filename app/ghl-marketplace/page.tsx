@@ -204,36 +204,34 @@ export default function GhlMarketplacePage() {
       {/* ── Social Proof ── */}
       <section className="py-20 px-4 bg-white">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl font-black text-center mb-12">What agency owners are saying</h2>
-          <div className="grid md:grid-cols-2 gap-6">
+          <h2 className="text-3xl font-black text-center mb-4">What OpenClaw AI workers deliver</h2>
+          <p className="text-center text-gray-500 mb-12">Real results from live deployments — not hypotheticals.</p>
+          <div className="grid sm:grid-cols-3 gap-6">
             {[
               {
-                quote: "I added Kyra to my dental client on a Friday. By Monday morning the AI had already booked 3 appointments while the office was closed. The client was blown away. That's the pitch — it works while you sleep.",
-                name: 'GHL Agency Owner',
-                context: '🦷 35+ dental clients on GHL',
+                stat: '$29M+',
+                label: 'Revenue generated',
+                desc: 'Across cannabis and retail deployments — AI workers running 24/7 while staff focused on in-store service.',
+                emoji: '💰',
               },
               {
-                quote: "The best part is I don't have to explain AI to my clients. I just show them the conversation history and say 'your AI handled this.' They see the bookings. They pay the invoice. They refer their friends.",
-                name: 'Digital Marketing Agency',
-                context: '🏡 Real estate + auto clients',
+                stat: '< 60s',
+                label: 'First response time',
+                desc: 'Every inbound GHL message — SMS, WhatsApp, Instagram — gets an intelligent reply in under 60 seconds.',
+                emoji: '⚡',
               },
               {
-                quote: "Set up a cannabis client in under 20 minutes using the template. The AI handled a Friday night rush — 40+ inbound texts — while the staff was at closing. Every single one got a reply.",
-                name: 'Cannabis Agency',
-                context: '🌿 Multi-location dispensary client',
+                stat: '40+',
+                label: 'Messages in one shift',
+                desc: 'A single AI worker handled 40+ inbound texts during a dispensary Friday night rush. Every one answered.',
+                emoji: '📲',
               },
-              {
-                quote: "We white-label Kyra as our own product. Clients pay us $500-$1,500/mo per AI employee. Kyra costs us $249 flat for 15 clients. The math is obvious.",
-                name: 'Agency Pro User',
-                context: '💰 12 active clients on Pro plan',
-              },
-            ].map(q => (
-              <div key={q.quote} className="border border-gray-200 rounded-2xl p-6">
-                <p className="text-gray-700 italic leading-relaxed mb-5">"{q.quote}"</p>
-                <div>
-                  <p className="font-semibold text-gray-900 text-sm">{q.name}</p>
-                  <p className="text-xs text-indigo-600 mt-0.5">{q.context}</p>
-                </div>
+            ].map(r => (
+              <div key={r.stat} className="border border-gray-200 rounded-2xl p-6 text-center">
+                <div className="text-3xl mb-3">{r.emoji}</div>
+                <p className="text-3xl font-black text-gray-900 mb-1">{r.stat}</p>
+                <p className="text-sm font-semibold text-indigo-600 mb-3">{r.label}</p>
+                <p className="text-sm text-gray-500 leading-relaxed">{r.desc}</p>
               </div>
             ))}
           </div>
