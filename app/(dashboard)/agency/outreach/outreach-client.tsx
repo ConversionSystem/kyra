@@ -361,9 +361,9 @@ interface ContentPost {
 
 const CONTENT_POSTS: ContentPost[] = [
   {
-    platform: 'linkedin', angle: 'Case Study', label: '$29M cannabis result',
-    hook: 'We generated $29M for a cannabis client. Here\'s what actually did it.',
-    content: `We generated $29M for a cannabis client. Here's what actually did it.
+    platform: 'linkedin', angle: 'Case Study', label: 'Cannabis AI SMS result',
+    hook: "We used AI SMS to materially move the needle for a cannabis client. Here's what actually did it.",
+    content: `We used AI SMS to materially move the needle for a cannabis client. Here's what actually did it.
 
 Not funnels. Not ads. Not a rebrand.
 
@@ -603,7 +603,7 @@ So I built Kyra — a platform that lets you add an AI employee to any GHL sub-a
 ✅ Works for dental, real estate, cannabis, home services, med spa, and 15+ more
 ✅ White-labeled — your brand, your client, your pricing
 
-We've generated $29M+ for cannabis clients alone using AI SMS. Now I'm packaging this for other agencies.
+We've used AI SMS to drive significant revenue for cannabis clients. Now I'm packaging that playbook for other agencies.
 
 Free to start (includes $2 in credits to test): kyra.conversionsystem.com
 
@@ -832,12 +832,12 @@ No credit card. Live in 10 minutes. If it doesn't blow you away, nothing lost.
   // ── CANNABIS ──
   {
     niche: 'Cannabis', emoji: '🌿', stage: 'initial', stageLabel: 'Initial outreach',
-    subject: 'Cannabis AI that\'s generated $29M+ for dispensary clients',
+    subject: 'Cannabis AI built from real dispensary deployments',
     body: `Hi [Name],
 
 I work with cannabis dispensaries that deal with constant inbound SMS — product questions, pricing, pickup ETA, compliance FAQs. Most of them are missing 30–40% of these messages.
 
-We've generated over $29M in cannabis revenue for our clients using AI SMS automation inside GoHighLevel. The AI knows the menu, handles compliance language, and drives repeat visits with personalized product recommendations.
+We've used AI SMS automation inside GoHighLevel to drive meaningful revenue for cannabis clients. The AI knows the menu, handles compliance language, and drives repeat visits with personalized product recommendations.
 
 If you're running any dispensary clients on GHL, I'd love to show you what this looks like in practice.
 

@@ -42,7 +42,7 @@ Best,
 
 Cannabis customers have zero patience. If your client's dispensary doesn't respond to a product question or hours inquiry within a few minutes, they're ordering from the competitor down the street.
 
-We've built an AI budtender that handles product questions, checks inventory, and follows up on loyalty customers — 24/7, compliantly. Our system has already helped cannabis clients generate over $29M in attributed revenue.
+We've built an AI budtender that handles product questions, checks inventory, and follows up on loyalty customers — 24/7, compliantly. Our previous AI SMS deployments have already helped cannabis clients generate significant attributable revenue.
 
 Here's what a conversation looks like: https://kyra.conversionsystem.com/try/cannabis
 

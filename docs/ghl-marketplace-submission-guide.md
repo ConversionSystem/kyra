@@ -76,7 +76,7 @@ While GoHighLevel gives you the CRM, pipeline, and marketing infrastructure — 
 ✅ Works with any GHL sub-account in 10 minutes
 ✅ 21 industry templates (dental, cannabis, real estate, restaurant, med spa, and more)
 ✅ Full conversation logs with AI health scores and analytics
-✅ Proven: $29M+ generated for cannabis and restaurant clients
+✅ Proven: built from real cannabis and restaurant deployments (pre-Kyra)
 
 ━━━ HOW IT WORKS ━━━
 

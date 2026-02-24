@@ -5,7 +5,7 @@
 
 ## The One-Sentence Truth
 
-**Kyra is the #1 platform for agencies that deploy autonomous AI workers — powered by OpenClaw, the enterprise AI infrastructure that never sleeps.**
+**Kyra is the AI workforce platform for agencies that deploy autonomous AI workers — powered by OpenClaw, the enterprise AI infrastructure that never sleeps.**
 
 ---
 
@@ -86,7 +86,7 @@ A chatbot answers. An OpenClaw AI worker *works*.
 > "Deploy AI workers to every client. Manage them all from one dashboard. Build a business around it."
 
 ### Level 4: The Proof
-> "$29M+ generated for clients. Response time under 60 seconds. Zero missed leads."
+> "Built from real client deployments. Response time under 60 seconds. Designed for no missed leads."
 
 ---
 
@@ -158,7 +158,7 @@ A chatbot answers. An OpenClaw AI worker *works*.
 ## Homepage Structure (Content Blueprint)
 
 ### Hero
-**Badge:** `OpenClaw-Powered · The #1 AI Workforce Platform for Agencies`
+**Badge:** `OpenClaw-Powered · The AI Workforce Platform for Agencies`
 
 **H1:** "Your clients need AI workers.
 Not chatbots. Workers."
@@ -167,7 +167,7 @@ Not chatbots. Workers."
 
 **CTAs:** "Deploy Your First AI Worker →" | "See It Work Live"
 
-**Social proof line:** "The #1 OpenClaw platform for agencies. Trusted by agencies managing 1,000+ client deployments."
+**Social proof line:** "The AI workforce platform for agencies. Built on OpenClaw and informed by real deployments."
 
 ### The Problem Section
 **H2:** "A chatbot answers questions. An AI worker runs the business."
@@ -203,7 +203,7 @@ Show the dashboard concept:
 Show the demo by vertical — dental, real estate, cannabis, etc.
 
 ### Results / Social Proof
-$29M+ generated. Response time. Industries served.
+Real deployments. Response time. Industries served.
 
 ### Pricing CTA
 "Start deploying autonomous AI workers today."

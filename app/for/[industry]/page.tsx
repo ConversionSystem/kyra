@@ -52,7 +52,7 @@ const PAGES: Record<string, {
       'High-value customers churn when they can\'t get fast answers on new products',
     ],
     stats: [
-      { value: '$29M+', label: 'Generated for cannabis clients using this system' },
+      { value: 'High volume', label: 'Proven on thousands of cannabis conversations' },
       { value: '< 60s', label: 'Response time for every customer inquiry' },
       { value: '4.8×', label: 'Higher repeat visit rate with AI follow-up' },
     ],
