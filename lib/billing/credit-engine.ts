@@ -14,7 +14,10 @@ export interface DeductResult {
   ok: boolean;
   newBalance: number;
   insufficient: boolean;
+  lowBalance: boolean; // true when balance just crossed below LOW_BALANCE_THRESHOLD
 }
+
+export const LOW_BALANCE_THRESHOLD = 50;
 
 export interface CreditTransaction {
   id: string;
@@ -76,7 +79,7 @@ export async function deductCredit(
     const currentBalance = current?.balance ?? 0;
 
     if (currentBalance <= 0) {
-      return { ok: false, newBalance: 0, insufficient: true };
+      return { ok: false, newBalance: 0, insufficient: true, lowBalance: true };
     }
 
     // Decrement balance
@@ -91,7 +94,45 @@ export async function deductCredit(
       .single();
 
     if (error || !updated) {
-      return { ok: false, newBalance: currentBalance, insufficient: false };
+      return { ok: false, newBalance: currentBalance, insufficient: false, lowBalance: false };
+    }
+
+    const newBalance = updated.balance as number;
+    const justCrossedLowThreshold =
+      currentBalance >= LOW_BALANCE_THRESHOLD && newBalance < LOW_BALANCE_THRESHOLD;
+
+    // Fire low-balance email notification when threshold is first crossed
+    if (justCrossedLowThreshold) {
+      void (async () => {
+        try {
+          const { data: agency } = await supabase
+            .from('agencies')
+            .select('name, settings')
+            .eq('id', agencyId)
+            .single();
+          const settings = (agency?.settings ?? {}) as Record<string, unknown>;
+          const notifyEmail =
+            (settings.escalation_email as string | undefined) ||
+            (settings.weekly_report_email as string | undefined);
+          if (notifyEmail && process.env.ESCALATION_WEBHOOK_URL) {
+            await fetch(process.env.ESCALATION_WEBHOOK_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                type: 'low_credits',
+                agencyId,
+                agencyName: agency?.name || 'Your agency',
+                balance: newBalance,
+                threshold: LOW_BALANCE_THRESHOLD,
+                notifyEmail,
+                message: `⚠️ Your Kyra credits are running low (${newBalance} remaining). Top up now to keep your AI workers running: https://kyra.conversionsystem.com/agency/credits`,
+              }),
+            });
+          }
+        } catch (e) {
+          console.warn('[credit-engine] Failed to send low-balance notification:', e);
+        }
+      })();
     }
 
     // Update lifetime_used (best-effort, non-blocking)
@@ -119,10 +160,10 @@ export async function deductCredit(
       client_id: clientId || null,
     });
 
-    return { ok: true, newBalance: updated.balance, insufficient: false };
+    return { ok: true, newBalance, insufficient: false, lowBalance: justCrossedLowThreshold };
   } catch (err) {
     console.warn('[credit-engine] deductCredit error:', err);
-    return { ok: false, newBalance: 0, insufficient: false };
+    return { ok: false, newBalance: 0, insufficient: false, lowBalance: false };
   }
 }
 
