@@ -64,7 +64,7 @@ export default function PublicFooter() {
               <span className="font-bold text-sm text-gray-900">Kyra</span>
               <span className="text-gray-400 text-sm">by Conversion System</span>
             </div>
-            <p className="text-xs text-gray-500">The #1 AI Workforce Platform for agencies. Deploy autonomous AI workers powered by OpenClaw.</p>
+            <p className="text-xs text-gray-500">The AI Workforce Platform for agencies. Deploy autonomous AI workers powered by OpenClaw.</p>
             <p className="text-xs text-indigo-500 font-medium">Powered by OpenClaw</p>
           </div>
           <div className="flex items-center gap-4 text-xs text-gray-400">
