@@ -30,18 +30,25 @@
 
 ### App Name
 ```
-Kyra — AI Employee Platform
+Kyra — AI Service Management
 ```
 
-### Category
-```
-Automation & AI
-```
-*(Or "AI Tools" if that's a separate category)*
+⚠️ NOT "AI Employee Platform" — GHL has a product called "AI Employee". Using that name risks rejection.
 
-### Tagline / Short Description (160 chars max)
+### Category (Primary)
 ```
-Deploy a 24/7 AI employee inside any GHL sub-account. Responds in 60s, books appointments, updates CRM — managed from one agency dashboard.
+Agency Management
+```
+*(NOT "AI & Automation" — that's GHL's territory. "Agency Management" is the gap we fill.)*
+
+### Category (Secondary)
+```
+Client Reporting & Analytics
+```
+
+### Tagline / Short Description (150 chars max)
+```
+Manage, white-label, and monetize AI services across all your GHL sub-accounts — one dashboard, your brand, your pricing, automated billing.
 ```
 
 ### Full Description
