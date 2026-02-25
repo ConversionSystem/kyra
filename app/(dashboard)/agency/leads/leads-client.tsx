@@ -274,6 +274,27 @@ export function LeadsPipelineClient({ initialPipelineState }: Props) {
     setTimeout(() => setCopied(null), 2000);
   };
 
+  // ── Push via direct GHL API (no webhook workflow needed) ─────────────────────
+  const pushDirectToGhl = async (leads: Lead[]): Promise<{ enrolled: number; errors: number; results: Array<{ id: string; status: string }> }> => {
+    const res = await fetch('/api/agency/leads/push-ghl-direct', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ leads }),
+    });
+    const data = await res.json();
+    if (data.status === 'no_ghl_token') throw new Error(data.message ?? 'No GHL token');
+    // Map created/updated → "enrolled" for UI consistency
+    const results = (data.results ?? []).map((r: { id: string; status: string }) => ({
+      id: r.id,
+      status: r.status === 'error' ? 'error' : 'enrolled',
+    }));
+    return {
+      enrolled: (data.created ?? 0) + (data.updated ?? 0),
+      errors: data.errors ?? 0,
+      results,
+    };
+  };
+
   // ── Enroll single lead in GHL campaign ──────────────────────────────────────
   const enrollLead = async (lead: Lead, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -281,6 +302,7 @@ export function LeadsPipelineClient({ initialPipelineState }: Props) {
 
     setCampaignStatus(prev => ({ ...prev, [lead.id]: 'launching' }));
     try {
+      // Try webhook path first; fall back to direct API if not configured
       const res = await fetch('/api/agency/leads/push-ghl', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -289,10 +311,16 @@ export function LeadsPipelineClient({ initialPipelineState }: Props) {
       const data = await res.json();
 
       if (data.status === 'no_webhook') {
-        setCampaignStatus(prev => ({ ...prev, [lead.id]: 'no_webhook' }));
+        // Auto-fallback: push contact directly via GHL REST API
+        const directResult = await pushDirectToGhl([lead]);
+        if (directResult.enrolled > 0) {
+          setCampaignStatus(prev => ({ ...prev, [lead.id]: 'enrolled' }));
+          await updateStage(lead.id, 'outreach');
+        } else {
+          setCampaignStatus(prev => ({ ...prev, [lead.id]: 'error' }));
+        }
       } else if (data.enrolled > 0) {
         setCampaignStatus(prev => ({ ...prev, [lead.id]: 'enrolled' }));
-        // Auto-advance to "outreach" stage
         await updateStage(lead.id, 'outreach');
       } else {
         setCampaignStatus(prev => ({ ...prev, [lead.id]: 'error' }));
@@ -311,10 +339,31 @@ export function LeadsPipelineClient({ initialPipelineState }: Props) {
     setBulkLaunching(true);
     setBulkResult(null);
 
-    // Set all to launching
     const statusUpdate: Record<string, CampaignStatus> = {};
     for (const l of hotLeadsList) statusUpdate[l.id] = 'launching';
     setCampaignStatus(prev => ({ ...prev, ...statusUpdate }));
+
+    const applyResults = async (results: Array<{ id: string; status: string }>, enrolled: number, errors: number) => {
+      const resultUpdate: Record<string, CampaignStatus> = {};
+      for (const r of results) {
+        resultUpdate[r.id] = r.status === 'enrolled' ? 'enrolled' : 'error';
+      }
+      setCampaignStatus(prev => ({ ...prev, ...resultUpdate }));
+
+      const newPipeline = { ...pipeline };
+      for (const r of results) {
+        if (r.status === 'enrolled') newPipeline[r.id] = 'outreach';
+      }
+      setPipeline(newPipeline);
+      setSaving(true);
+      await fetch('/api/agency/sales-pipeline', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pipeline: newPipeline }),
+      }).finally(() => setSaving(false));
+
+      setBulkResult({ enrolled, errors });
+    };
 
     try {
       const res = await fetch('/api/agency/leads/push-ghl', {
@@ -325,31 +374,15 @@ export function LeadsPipelineClient({ initialPipelineState }: Props) {
       const data = await res.json();
 
       if (data.status === 'no_webhook') {
-        const noWebhookUpdate: Record<string, CampaignStatus> = {};
-        for (const l of hotLeadsList) noWebhookUpdate[l.id] = 'no_webhook';
-        setCampaignStatus(prev => ({ ...prev, ...noWebhookUpdate }));
-        setBulkResult({ enrolled: 0, errors: 0, noWebhook: true });
+        // Auto-fallback to direct GHL API — no webhook workflow needed
+        const direct = await pushDirectToGhl(hotLeadsList);
+        await applyResults(direct.results, direct.enrolled, direct.errors);
       } else if (data.results) {
-        const resultUpdate: Record<string, CampaignStatus> = {};
-        for (const r of data.results as Array<{ id: string; status: string }>) {
-          resultUpdate[r.id] = r.status === 'enrolled' ? 'enrolled' : 'error';
-        }
-        setCampaignStatus(prev => ({ ...prev, ...resultUpdate }));
-
-        // Auto-advance enrolled leads to "outreach" stage
-        const newPipeline = { ...pipeline };
-        for (const r of data.results as Array<{ id: string; status: string }>) {
-          if (r.status === 'enrolled') newPipeline[r.id] = 'outreach';
-        }
-        setPipeline(newPipeline);
-        setSaving(true);
-        await fetch('/api/agency/sales-pipeline', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ pipeline: newPipeline }),
-        }).finally(() => setSaving(false));
-
-        setBulkResult({ enrolled: data.enrolled ?? 0, errors: data.errors ?? 0 });
+        const results = (data.results as Array<{ id: string; status: string }>).map(r => ({
+          id: r.id,
+          status: r.status === 'enrolled' ? 'enrolled' : 'error',
+        }));
+        await applyResults(results, data.enrolled ?? 0, data.errors ?? 0);
       }
     } catch {
       const errUpdate: Record<string, CampaignStatus> = {};
