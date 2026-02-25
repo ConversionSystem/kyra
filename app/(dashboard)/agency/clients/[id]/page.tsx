@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { redirect, notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getAgencyForUser, getAgencyClient } from '@/lib/agency/queries';
@@ -19,5 +20,9 @@ export default async function ClientDetailPage({ params }: ClientDetailPageProps
   const client = await getAgencyClient(id);
   if (!client || client.agency_id !== result.agency.id) notFound();
 
-  return <ClientDetailView client={client} role={result.role} />;
+  return (
+    <Suspense fallback={<div className="p-8 text-gray-400">Loading...</div>}>
+      <ClientDetailView client={client} role={result.role} />
+    </Suspense>
+  );
 }
