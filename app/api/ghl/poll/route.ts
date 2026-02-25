@@ -11,6 +11,102 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { deductCredit } from '@/lib/billing/credit-engine';
 
+// ── Pipeline Lead Context ──────────────────────────────────────────────────
+// When a contact replies, check if they're a pipeline lead and inject context
+interface PipelineContext {
+  leadId: string;
+  campaignName: string;
+  stage: string;
+  fullName: string;
+  company: string;
+  title: string;
+  industry: string;
+  valueProp: string;
+  enrichment: {
+    company_context?: string;
+    likely_pain_points?: string;
+    opportunity_angle?: string;
+    icebreaker?: string;
+  };
+  personalizedOpener: string | null;
+}
+
+async function lookupPipelineLead(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  ghlContactId: string,
+): Promise<PipelineContext | null> {
+  try {
+    const { data: lead } = await supabase
+      .from('pipeline_leads')
+      .select('id, full_name, company, title, industry, stage, enrichment_data, personalized_opener, campaign_id, pipeline_campaigns!inner(name, value_prop)')
+      .eq('ghl_contact_id', ghlContactId)
+      .limit(1)
+      .single();
+
+    if (!lead) return null;
+
+    const row = lead as Record<string, unknown>;
+    const campaign = row.pipeline_campaigns as Record<string, string> | undefined;
+    return {
+      leadId: row.id as string,
+      campaignName: campaign?.name || '',
+      stage: row.stage as string,
+      fullName: (row.full_name as string) || '',
+      company: (row.company as string) || '',
+      title: (row.title as string) || '',
+      industry: (row.industry as string) || '',
+      valueProp: campaign?.value_prop || '',
+      enrichment: (row.enrichment_data || {}) as PipelineContext['enrichment'],
+      personalizedOpener: (row.personalized_opener as string) || null,
+    };
+  } catch {
+    return null; // best-effort, never block the reply
+  }
+}
+
+async function updatePipelineStage(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  leadId: string,
+  currentStage: string,
+  aiResponse: string,
+  customerMessage: string,
+): Promise<void> {
+  try {
+    // Don't downgrade stages
+    const stageOrder = ['found', 'researched', 'approved', 'messaged', 'replied', 'interested', 'booked', 'closed'];
+    const currentIdx = stageOrder.indexOf(currentStage);
+
+    // Detect intent signals from the conversation
+    const combined = `${customerMessage}\n${aiResponse}`.toLowerCase();
+
+    let newStage: string | null = null;
+
+    // Booked detection
+    const bookSignals = ['booked', 'scheduled', 'confirmed', 'looking forward to the demo', 'see you', 'appointment set', 'calendar'];
+    if (bookSignals.some(s => combined.includes(s)) && stageOrder.indexOf('booked') > currentIdx) {
+      newStage = 'booked';
+    }
+    // Interest detection
+    else if (['interested', 'tell me more', 'sounds good', 'how does it work', 'pricing', 'how much', 'demo', 'show me', 'sign me up', 'let\'s talk'].some(s => combined.includes(s)) && stageOrder.indexOf('interested') > currentIdx) {
+      newStage = 'interested';
+    }
+    // Basic reply detection (only upgrade from messaged)
+    else if (currentStage === 'messaged') {
+      newStage = 'replied';
+    }
+
+    if (newStage) {
+      const updates: Record<string, unknown> = { stage: newStage };
+      if (newStage === 'replied') updates.replied_at = new Date().toISOString();
+      await supabase.from('pipeline_leads').update(updates).eq('id', leadId);
+    }
+  } catch {
+    // best-effort
+  }
+}
+
 // Vercel cron config — run every minute
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // Allow up to 60s for processing
@@ -478,6 +574,13 @@ export async function GET(request: NextRequest) {
           ? await fetchGHLContactContext(conv.contactId, ghlToken)
           : null;
 
+        // ── Pipeline Lead Context ───────────────────────────────────────────
+        // Check if this contact is a pipeline lead — if so, inject sales context
+        const pipelineCtx = await lookupPipelineLead(supabase, conv.contactId);
+        if (pipelineCtx) {
+          addLog(`    🎯 Pipeline lead: ${pipelineCtx.fullName} (${pipelineCtx.company}) — stage: ${pipelineCtx.stage} — campaign: ${pipelineCtx.campaignName}`);
+        }
+
         if (contactCtx) {
           addLog(`    CRM: ${contactCtx.fullName} | tags=[${contactCtx.tags.join(', ')}] | pipeline=${contactCtx.pipelineStage || 'none'}`);
           // Skip if contact previously opted out
@@ -526,6 +629,28 @@ export async function GET(request: NextRequest) {
           cfg.calendar_url
             ? `When a customer wants to schedule, book, or make an appointment, include this booking link in your reply: ${cfg.calendar_url}`
             : '',
+          // ── Pipeline Lead Sales Context ────────────────────────────────────
+          // If this contact is a pipeline lead, inject everything the AI needs to close
+          pipelineCtx ? [
+            `\n--- SALES CONTEXT (this is a qualified prospect from our outreach pipeline) ---`,
+            `Prospect: ${pipelineCtx.fullName}, ${pipelineCtx.title} at ${pipelineCtx.company} (${pipelineCtx.industry})`,
+            `What we're selling: ${pipelineCtx.valueProp}`,
+            pipelineCtx.enrichment.company_context ? `About their company: ${pipelineCtx.enrichment.company_context}` : '',
+            pipelineCtx.enrichment.likely_pain_points ? `Their likely pain points: ${pipelineCtx.enrichment.likely_pain_points}` : '',
+            pipelineCtx.enrichment.opportunity_angle ? `Our angle: ${pipelineCtx.enrichment.opportunity_angle}` : '',
+            pipelineCtx.enrichment.icebreaker ? `Icebreaker: ${pipelineCtx.enrichment.icebreaker}` : '',
+            ``,
+            `YOUR GOAL: Qualify this prospect and book a demo with Angel Castro (Founder).`,
+            `APPROACH:`,
+            `- Be conversational, not salesy. They already showed interest by replying.`,
+            `- Ask ONE qualifying question per message (don't overwhelm them).`,
+            `- Good qualifying questions: "How many clients are you managing right now?" / "What tools are you using for AI currently?" / "What's the biggest bottleneck in your agency?"`,
+            `- When they express clear interest, push toward booking: "Want to jump on a quick 15-minute call with Angel? He can walk you through exactly how it works for ${pipelineCtx.industry} agencies."`,
+            `- Booking link: https://kyra.conversionsystem.com/get-demo`,
+            `- Keep SMS replies SHORT — 1-3 sentences max.`,
+            `- If they say not interested, be gracious: "No worries at all, appreciate the reply! We're here if anything changes."`,
+            `--- END SALES CONTEXT ---`,
+          ].filter(Boolean).join('\n') : '',
         ].filter(Boolean).join('\n');
 
         // Build OpenAI-compatible messages for /v1/chat/completions
@@ -648,6 +773,20 @@ export async function GET(request: NextRequest) {
               addLog(`  ⚠️ Credits exhausted for agency ${client.agency_id} — reply still sent`);
             }
           });
+
+          // ── Pipeline stage auto-update ────────────────────────────────────
+          // If this contact is a pipeline lead, update their stage based on the conversation
+          if (pipelineCtx) {
+            void updatePipelineStage(
+              supabase,
+              pipelineCtx.leadId,
+              pipelineCtx.stage,
+              aiResponse,
+              latestInbound.body || '',
+            ).then(() => {
+              addLog(`    🎯 Pipeline stage check for ${pipelineCtx.fullName}`);
+            });
+          }
 
           // Fire-and-forget CRM update: tag + note the contact based on conversation
           const ghlTokenForCRM = client.ghl_private_token || client.ghl_access_token;
