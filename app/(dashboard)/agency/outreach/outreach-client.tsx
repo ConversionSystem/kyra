@@ -53,7 +53,7 @@ Founder, Conversion System`,
     trigger: 'Sends 24h after signup — if no client added yet',
     triggerIcon: Clock,
     label: 'First client nudge',
-    subject: 'One step standing between you and your first AI employee',
+    subject: 'One step standing between you and your first AI worker',
     body: `Hi {{agency_name}},
 
 You signed up for Kyra yesterday but haven't added your first client yet.
@@ -79,7 +79,7 @@ Still have questions? I'll personally walk you through it — just reply with "d
     subject: 'Your AI just had its first conversation 🎉',
     body: `Hi {{agency_name}},
 
-Your AI employee just handled its first real customer conversation.
+Your AI worker just handled its first real customer conversation.
 
 That's not a test. That's a real customer who got a response within 60 seconds — automatically, without anyone on your team lifting a finger.
 
@@ -204,12 +204,12 @@ const drafts: EmailDraft[] = [
   {
     agency: 'Purple Lotus',
     recipient: 'Paul Rivera',
-    subject: 'White-label AI for Purple Lotus — your own AI employee',
+    subject: 'White-label AI for Purple Lotus — your own AI worker',
     body: `Hi Paul,
 
 Quick one — you know the AI setup I've been building for Conversion System? I've turned it into a full platform called Kyra.
 
-Idea: we white-label it for Purple Lotus so your dispensary has its own AI employee handling customer questions, compliance FAQs, and product recs 24/7. Branded as yours, managed by me.
+Idea: we white-label it for Purple Lotus so your dispensary has its own AI worker handling customer questions, compliance FAQs, and product recs 24/7. Branded as yours, managed by me.
 
 Cannabis is the industry I know best. The compliance nuances, the customer sensitivity, the volume of repetitive questions — Kyra handles all of it.
 
@@ -220,10 +220,10 @@ Takes about a week to set up. Happy to show you a demo — 15 minutes on a call?
   {
     agency: 'Webblex',
     recipient: 'Webblex team',
-    subject: 'Add AI employees to your client packages',
+    subject: 'Add AI workers to your client packages',
     body: `Hi Webblex team,
 
-You build websites for clients. What if every site you ship also came with an AI employee?
+You build websites for clients. What if every site you ship also came with an AI worker?
 
 With Kyra, you'd offer each client a white-labeled AI that handles their inquiries, qualifies leads, and works 24/7 — all managed from your agency dashboard. Your brand, your pricing, your recurring revenue.
 
@@ -252,12 +252,12 @@ Happy to walk you through a demo this week?
   {
     agency: 'mk',
     recipient: 'mk team',
-    subject: 'AI employee platform for your agency clients',
+    subject: 'AI workforce platform for your agency clients',
     body: `Hi mk team,
 
 Building on our work together — I wanted to show you what I've been building.
 
-Kyra is a white-label AI employee platform for agencies. You add it to your client packages, set up their AI in minutes, and collect recurring revenue while the AI handles their day-to-day conversations.
+Kyra is a white-label AI workforce platform for agencies. You add it to your client packages, set up their AI in minutes, and collect recurring revenue while the AI handles their day-to-day conversations.
 
 Dashboard gives you full visibility across all clients. Each AI has its own personality, channels, and goals.
 
@@ -371,7 +371,7 @@ It was SMS response time.
 
 Their dispensary was getting 200+ text messages a day — product questions, pickup times, compliance FAQs. They were answering maybe 40% of them. The rest went cold.
 
-We plugged in an AI employee that:
+We plugged in an AI worker that:
 → Replies to every text in under 60 seconds
 → Knows the entire menu + current specials
 → Handles compliance messaging automatically
@@ -476,8 +476,8 @@ What's your current process for responding to leads?
   },
   {
     platform: 'linkedin', angle: 'Hot Take', label: 'AI chatbots are dead',
-    hook: 'AI chatbots are dead. AI employees are the new category.',
-    content: `AI chatbots are dead. AI employees are the new category.
+    hook: 'AI chatbots are dead. AI workers are the new category.',
+    content: `AI chatbots are dead. AI workers are the new category.
 
 Here's the difference:
 
@@ -488,7 +488,7 @@ Chatbots:
 → Don't connect to your CRM
 → Have no memory of past conversations
 
-AI Employees:
+AI Workers:
 → Have a name, personality, and role
 → Operate across SMS, WhatsApp, email, and chat
 → Update your CRM in real-time
@@ -496,7 +496,7 @@ AI Employees:
 → Know when to escalate to a human
 → Work 24/7 without complaining
 
-The businesses winning in 2026 aren't the ones with a chatbot on their website. They're the ones who've added an AI employee to their sales and customer service team.
+The businesses winning in 2026 aren't the ones with a chatbot on their website. They're the ones who've added an AI worker to their sales and customer service team.
 
 The difference isn't technology. It's framing.
 
@@ -507,9 +507,9 @@ Sell it that way.
 #AIEmployee #GoHighLevel #AgencyModel #SalesStrategy #AITrends`,
   },
   {
-    platform: 'linkedin', angle: 'Product', label: 'White-label AI employees for agencies',
-    hook: 'GHL agencies: you can now offer AI employees as a white-labeled service.',
-    content: `GHL agencies: you can now offer AI employees as a white-labeled service.
+    platform: 'linkedin', angle: 'Product', label: 'White-label AI workers for agencies',
+    hook: 'GHL agencies: you can now offer AI workers as a white-labeled service.',
+    content: `GHL agencies: you can now offer AI workers as a white-labeled service.
 
 Here's what that looks like:
 
@@ -518,7 +518,7 @@ Here's what that looks like:
 3. You customize the AI name and business info (5 minutes)
 4. The AI goes live — handling their inbound SMS, booking appointments, updating the CRM
 
-From your client's perspective, they have their own AI employee. It has a name. It knows their business. It responds to every text in under 60 seconds.
+From your client's perspective, they have their own AI worker. It has a name. It knows their business. It responds to every text in under 60 seconds.
 
 From your perspective, you manage all your clients' AIs from one dashboard. You bill them $500–$2,000/month. Your platform cost is flat regardless of how many conversations the AI handles.
 
@@ -595,7 +595,7 @@ kyra.conversionsystem.com — free to test.`,
 
 I've been running a GHL agency for years and kept running into the same problem: clients spend $2k/month on leads and then don't respond to half of them. Nights, weekends, busy seasons — leads go cold.
 
-So I built Kyra — a platform that lets you add an AI employee to any GHL sub-account. It:
+So I built Kyra — a platform that lets you add an AI worker to any GHL sub-account. It:
 
 ✅ Responds to every inbound SMS in under 60 seconds
 ✅ Books appointments directly into GHL calendar
@@ -972,7 +972,7 @@ const SUBJECT_LINES = [
   { label: 'Result-focused', lines: [
     '[Niche] AI that generated $X in 30 days',
     '40% more bookings — what we did for [niche] agencies',
-    'This GHL agency added $15K/mo with one AI employee',
+    'This GHL agency added $15K/mo with one AI worker',
     '3 appointments booked while the office was closed',
   ]},
   { label: 'Curiosity', lines: [
@@ -982,9 +982,9 @@ const SUBJECT_LINES = [
     'The AI that handles 40+ inbound texts without a human',
   ]},
   { label: 'Direct', lines: [
-    'AI employee for your GHL clients — 10-minute setup',
+    'AI worker for your GHL clients — 10-minute setup',
     'White-label AI for agencies running [niche] clients',
-    'Kyra + GHL = AI employee for every client',
+    'Kyra + GHL = AI worker for every client',
     'Free to test: AI that replies to your leads in 60s',
   ]},
 ];

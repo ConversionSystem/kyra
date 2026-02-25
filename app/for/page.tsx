@@ -135,7 +135,7 @@ export default async function ForPage({ searchParams }: Props) {
             <h1 className="text-4xl sm:text-5xl font-black leading-tight mb-6">
               {name ? `Hi ${firstName} —` : 'Hey —'}<br />
               your {niche.emoji} clients<br />
-              need an <span className="text-indigo-600">AI employee.</span>
+              need an <span className="text-indigo-600">AI worker.</span>
             </h1>
             <p className="text-xl text-gray-500 leading-relaxed mb-8">
               {niche.pain}
@@ -193,7 +193,7 @@ export default async function ForPage({ searchParams }: Props) {
       <section className="bg-gray-50 py-16 px-4">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-3xl font-black text-center mb-12">
-            Add an AI employee to{agency ? ` ${agency}'s` : ' your'} {niche.label} clients in 3 steps
+            Add an AI worker to{agency ? ` ${agency}'s` : ' your'} {niche.label} clients in 3 steps
           </h2>
           <div className="grid sm:grid-cols-3 gap-8">
             {[
@@ -220,7 +220,7 @@ export default async function ForPage({ searchParams }: Props) {
             {agency ? `${agency}'s` : 'Your'} revenue with Kyra
           </h2>
           <p className="text-center text-gray-500 mb-10">
-            Most agencies charge $500–$1,500/month per AI employee — white-labeled as their own service.
+            Most agencies charge $500–$1,500/month per AI worker — white-labeled as their own service.
           </p>
           <div className="border-2 border-indigo-200 rounded-2xl overflow-hidden">
             <div className="bg-indigo-50 px-6 py-4 border-b border-indigo-100">

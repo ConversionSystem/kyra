@@ -461,7 +461,7 @@ export function VoiceChannelCard({ client }: Props) {
             {/* AI name + area code */}
             <div className="grid sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1.5">AI Employee Name</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5">AI Worker Name</label>
                 <input
                   value={aiName}
                   onChange={e => setAiName(e.target.value)}

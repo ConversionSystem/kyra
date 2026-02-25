@@ -70,7 +70,7 @@ export default async function ClientPortalPage({
           <div>
             <p className="font-bold text-white text-base">{client.name}</p>
             <p className="text-xs text-gray-400">
-              {client.industry || 'AI Employee'} · {agency?.name || 'Kyra'}
+              {client.industry || 'AI Worker'} · {agency?.name || 'Kyra'}
             </p>
           </div>
         </div>
@@ -80,7 +80,7 @@ export default async function ClientPortalPage({
       <div className="flex-1 flex items-center justify-center p-12 text-center">
         <div>
           <Zap className="h-10 w-10 text-gray-600 mx-auto mb-4" />
-          <p className="text-sm font-semibold text-gray-400">AI Employee Coming Soon</p>
+          <p className="text-sm font-semibold text-gray-400">AI Worker Coming Soon</p>
           <p className="text-xs text-gray-600 mt-2">Contact your agency to get set up.</p>
         </div>
       </div>

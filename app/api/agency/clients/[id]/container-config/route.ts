@@ -35,7 +35,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   // Build AGENTS.md
   const agentsMd = `# Kyra Agent — ${client.name}
-You are an AI employee working for ${client.name}.
+You are an AI worker working for ${client.name}.
 Follow the instructions in SOUL.md for personality and behavior.
 Use GHL tools to manage the CRM when needed.
 `;

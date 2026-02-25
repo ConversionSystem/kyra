@@ -139,7 +139,7 @@ export async function generateMetadata({
 }) {
   const { industry } = await params;
   const demo = INDUSTRIES[industry];
-  if (!demo) return { title: 'AI Employee Demo' };
+  if (!demo) return { title: 'AI Worker Demo' };
   return {
     title: `${demo.emoji} ${demo.title}`,
     description: demo.subtitle,

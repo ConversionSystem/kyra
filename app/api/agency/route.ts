@@ -247,12 +247,12 @@ export async function POST(request: NextRequest) {
 
     <!-- Steps -->
     <div style="background:#1e293b;border-radius:16px;padding:28px;margin-bottom:24px;border:1px solid rgba(255,255,255,0.08);">
-      <p style="color:#94a3b8;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 20px;">3 steps to your first AI employee</p>
+      <p style="color:#94a3b8;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 20px;">3 steps to your first AI worker</p>
 
       ${[
         { n: '01', title: 'Connect GoHighLevel', desc: 'Go to a client → GHL tab → paste your Private Integration token. Takes 2 minutes.', },
         { n: '02', title: 'Add your first client', desc: 'Pick an industry template (dental, real estate, cannabis, auto + 17 more). The AI personality is pre-built.', },
-        { n: '03', title: 'Go live', desc: 'Your AI employee starts responding to SMS within 60 seconds. Watch it in the Conversations feed.', },
+        { n: '03', title: 'Go live', desc: 'Your AI worker starts responding to SMS within 60 seconds. Watch it in the Conversations feed.', },
       ].map(s => `
         <div style="display:flex;gap:16px;margin-bottom:20px;">
           <div style="width:32px;height:32px;background:#4f46e5;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
