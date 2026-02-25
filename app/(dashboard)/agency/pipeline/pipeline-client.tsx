@@ -45,9 +45,18 @@ interface Lead {
   website: string | null;
   enrichment_data: {
     company_context?: string;
+    services_offered?: string;
+    clients_mentioned?: string;
+    tech_stack?: string;
+    years_in_business?: string;
+    number_of_employees?: string;
     likely_pain_points?: string;
     opportunity_angle?: string;
     icebreaker?: string;
+    emails_found?: string[];
+    phones_found?: string[];
+    socials?: Record<string, string>;
+    person_source?: string;
   };
   personalized_subject: string | null;
   personalized_email: string | null;
@@ -431,20 +440,25 @@ export default function PipelineClient() {
                     rel="noopener"
                     onClick={e => e.stopPropagation()}
                     className="text-gray-400 hover:text-gray-600"
+                    title={lead.website}
                   >
                     <Globe className="h-3.5 w-3.5" />
                   </a>
                 )}
-                {lead.linkedin_url && (
-                  <a
-                    href={lead.linkedin_url.startsWith('http') ? lead.linkedin_url : `https://${lead.linkedin_url}`}
-                    target="_blank"
-                    rel="noopener"
-                    onClick={e => e.stopPropagation()}
-                    className="text-gray-400 hover:text-blue-600"
-                  >
-                    <Linkedin className="h-3.5 w-3.5" />
+                {lead.email && (
+                  <a href={`mailto:${lead.email}`} onClick={e => e.stopPropagation()} className="text-gray-400 hover:text-indigo-600" title={lead.email}>
+                    <Mail className="h-3.5 w-3.5" />
                   </a>
+                )}
+                {lead.phone && (
+                  <a href={`tel:${lead.phone}`} onClick={e => e.stopPropagation()} className="text-gray-400 hover:text-green-600" title={lead.phone}>
+                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                  </a>
+                )}
+                {lead.enrichment_data?.socials && Object.keys(lead.enrichment_data.socials).length > 0 && (
+                  <span className="text-[9px] text-gray-400 font-medium" title={Object.keys(lead.enrichment_data.socials).join(', ')}>
+                    +{Object.keys(lead.enrichment_data.socials).length} social
+                  </span>
                 )}
                 <div className="flex-1" />
                 {lead.stage === 'found' && (
@@ -632,7 +646,13 @@ export default function PipelineClient() {
               )}
               {selectedLead.email && (
                 <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Mail className="h-4 w-4 text-gray-400" /> {selectedLead.email}
+                  <Mail className="h-4 w-4 text-gray-400" /> <a href={`mailto:${selectedLead.email}`} className="text-indigo-600 hover:underline">{selectedLead.email}</a>
+                </div>
+              )}
+              {selectedLead.phone && (
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                  <a href={`tel:${selectedLead.phone}`} className="text-indigo-600 hover:underline">{selectedLead.phone}</a>
                 </div>
               )}
               {selectedLead.website && (
@@ -640,10 +660,37 @@ export default function PipelineClient() {
                   <Globe className="h-4 w-4" /> {selectedLead.website}
                 </a>
               )}
-              {selectedLead.linkedin_url && (
-                <a href={selectedLead.linkedin_url.startsWith('http') ? selectedLead.linkedin_url : `https://${selectedLead.linkedin_url}`} target="_blank" rel="noopener" className="flex items-center gap-2 text-sm text-blue-600 hover:underline">
-                  <Linkedin className="h-4 w-4" /> LinkedIn
-                </a>
+              {/* Social Media Profiles */}
+              {selectedLead.enrichment_data?.socials && Object.keys(selectedLead.enrichment_data.socials).length > 0 && (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {Object.entries(selectedLead.enrichment_data.socials).map(([platform, url]) => (
+                    <a key={platform} href={url} target="_blank" rel="noopener"
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors">
+                      {platform === 'facebook' && '📘'}
+                      {platform === 'instagram' && '📸'}
+                      {platform === 'twitter' && '🐦'}
+                      {platform === 'youtube' && '▶️'}
+                      {platform === 'tiktok' && '🎵'}
+                      {platform === 'linkedin' && '💼'}
+                      {platform === 'yelp' && '⭐'}
+                      {platform === 'google_business' && '📍'}
+                      {!['facebook','instagram','twitter','youtube','tiktok','linkedin','yelp','google_business'].includes(platform) && '🔗'}
+                      {' '}{platform.charAt(0).toUpperCase() + platform.slice(1).replace('_', ' ')}
+                    </a>
+                  ))}
+                </div>
+              )}
+              {/* Additional emails found */}
+              {selectedLead.enrichment_data?.emails_found && selectedLead.enrichment_data.emails_found.length > 1 && (
+                <div className="text-xs text-gray-500 pt-1">
+                  Also found: {selectedLead.enrichment_data.emails_found.filter(e => e !== selectedLead.email).join(', ')}
+                </div>
+              )}
+              {/* Additional phones found */}
+              {selectedLead.enrichment_data?.phones_found && selectedLead.enrichment_data.phones_found.length > 1 && (
+                <div className="text-xs text-gray-500">
+                  Other phones: {selectedLead.enrichment_data.phones_found.filter(p => p !== selectedLead.phone).join(', ')}
+                </div>
               )}
             </div>
 
@@ -651,9 +698,31 @@ export default function PipelineClient() {
             {selectedLead.enrichment_data?.company_context && (
               <div className="space-y-3 mb-4">
                 <div className="bg-purple-50 border border-purple-100 rounded-lg p-3">
-                  <p className="text-xs font-bold text-purple-700 mb-1">🏢 Company Context</p>
+                  <p className="text-xs font-bold text-purple-700 mb-1">🏢 About</p>
                   <p className="text-sm text-gray-700">{selectedLead.enrichment_data.company_context}</p>
                 </div>
+                {selectedLead.enrichment_data.services_offered && (
+                  <div className="bg-slate-50 border border-slate-100 rounded-lg p-3">
+                    <p className="text-xs font-bold text-slate-700 mb-1">🛠️ Services</p>
+                    <p className="text-sm text-gray-700">{selectedLead.enrichment_data.services_offered}</p>
+                  </div>
+                )}
+                {(selectedLead.enrichment_data.clients_mentioned || selectedLead.enrichment_data.tech_stack || selectedLead.enrichment_data.years_in_business) && (
+                  <div className="bg-gray-50 border border-gray-100 rounded-lg p-3 grid grid-cols-1 gap-1.5">
+                    {selectedLead.enrichment_data.clients_mentioned && (
+                      <div><span className="text-xs font-semibold text-gray-500">Clients: </span><span className="text-xs text-gray-700">{selectedLead.enrichment_data.clients_mentioned}</span></div>
+                    )}
+                    {selectedLead.enrichment_data.tech_stack && (
+                      <div><span className="text-xs font-semibold text-gray-500">Tech: </span><span className="text-xs text-gray-700">{selectedLead.enrichment_data.tech_stack}</span></div>
+                    )}
+                    {selectedLead.enrichment_data.years_in_business && (
+                      <div><span className="text-xs font-semibold text-gray-500">Est: </span><span className="text-xs text-gray-700">{selectedLead.enrichment_data.years_in_business}</span></div>
+                    )}
+                    {selectedLead.enrichment_data.number_of_employees && (
+                      <div><span className="text-xs font-semibold text-gray-500">Team: </span><span className="text-xs text-gray-700">{selectedLead.enrichment_data.number_of_employees}</span></div>
+                    )}
+                  </div>
+                )}
                 <div className="bg-red-50 border border-red-100 rounded-lg p-3">
                   <p className="text-xs font-bold text-red-700 mb-1">🔥 Pain Points</p>
                   <p className="text-sm text-gray-700">{selectedLead.enrichment_data.likely_pain_points}</p>
@@ -667,6 +736,9 @@ export default function PipelineClient() {
                     <p className="text-xs font-bold text-blue-700 mb-1">🧊 Icebreaker</p>
                     <p className="text-sm text-gray-700">{selectedLead.enrichment_data.icebreaker}</p>
                   </div>
+                )}
+                {selectedLead.enrichment_data.person_source === 'website' && (
+                  <p className="text-[10px] text-green-600 font-medium">✅ Contact found on their actual website</p>
                 )}
               </div>
             )}
