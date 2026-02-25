@@ -108,6 +108,71 @@ async function updatePipelineStage(
   }
 }
 
+// ── Knowledge Base Context ─────────────────────────────────────────────────
+// Fetches enabled knowledge documents for a client + agency-wide docs.
+// Injects relevant business knowledge (services, FAQ, pricing, hours) into the
+// AI system prompt so workers actually know the business they represent.
+
+const KNOWLEDGE_MAX_CHARS = 3000; // ~750 tokens — fits comfortably in context window
+
+async function fetchKnowledgeContext(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  agencyId: string,
+  clientId: string,
+): Promise<string | null> {
+  try {
+    // Get enabled docs: client-specific + agency-wide (null client_id)
+    const { data: docs } = await supabase
+      .from('knowledge_documents')
+      .select('title, content, client_id')
+      .eq('agency_id', agencyId)
+      .eq('enabled', true)
+      .or(`client_id.eq.${clientId},client_id.is.null`)
+      .order('client_id', { ascending: false, nullsFirst: false }) // client-specific first
+      .order('created_at', { ascending: true });
+
+    if (!docs?.length) return null;
+
+    // Build condensed knowledge block, respecting token budget
+    const sections: string[] = ['--- BUSINESS KNOWLEDGE ---'];
+    let totalChars = sections[0].length;
+
+    for (const doc of docs) {
+      const title = (doc.title as string) || 'Untitled';
+      const content = (doc.content as string) || '';
+      // Trim to first meaningful chunk — skip empty/tiny docs
+      const trimmed = content.trim();
+      if (trimmed.length < 10) continue;
+
+      const header = `[${title}]`;
+      // Smart truncation: prefer complete paragraphs
+      let body = trimmed;
+      const remaining = KNOWLEDGE_MAX_CHARS - totalChars - header.length - 2;
+      if (remaining <= 0) break; // budget exhausted
+      if (body.length > remaining) {
+        // Find last paragraph break within budget
+        const cutPoint = body.lastIndexOf('\n\n', remaining);
+        body = cutPoint > 100 ? body.slice(0, cutPoint) : body.slice(0, remaining);
+        body += '…';
+      }
+
+      sections.push(header);
+      sections.push(body);
+      totalChars += header.length + body.length + 2;
+    }
+
+    if (sections.length <= 1) return null; // only header, no actual content
+
+    sections.push('--- END KNOWLEDGE ---');
+    sections.push('Use this knowledge to answer customer questions accurately. If a question isn\'t covered, say you\'ll check and follow up.');
+
+    return sections.join('\n');
+  } catch {
+    return null; // best-effort, never block the reply
+  }
+}
+
 // Vercel cron config — run every minute
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // Allow up to 60s for processing
@@ -582,6 +647,14 @@ export async function GET(request: NextRequest) {
           addLog(`    🎯 Pipeline lead: ${pipelineCtx.fullName} (${pipelineCtx.company}) — stage: ${pipelineCtx.stage} — campaign: ${pipelineCtx.campaignName}`);
         }
 
+        // ── Knowledge Base Context ───────────────────────────────────────────
+        // Fetch business knowledge (services, FAQ, pricing, hours) so the AI
+        // actually knows about the business it represents.
+        const knowledgeCtx = await fetchKnowledgeContext(supabase, client.agency_id as string, client.id);
+        if (knowledgeCtx) {
+          addLog(`    📚 Knowledge base injected (${knowledgeCtx.length} chars)`);
+        }
+
         if (contactCtx) {
           addLog(`    CRM: ${contactCtx.fullName} | tags=[${contactCtx.tags.join(', ')}] | pipeline=${contactCtx.pipelineStage || 'none'}`);
           // Skip if contact previously opted out
@@ -630,6 +703,9 @@ export async function GET(request: NextRequest) {
           cfg.calendar_url
             ? `When a customer wants to schedule, book, or make an appointment, include this booking link in your reply: ${cfg.calendar_url}`
             : '',
+          // ── Knowledge Base ─────────────────────────────────────────────────
+          // Business-specific knowledge: services, FAQ, pricing, hours, etc.
+          knowledgeCtx || '',
           // ── Pipeline Lead Sales Context ────────────────────────────────────
           // If this contact is a pipeline lead, inject everything the AI needs to close
           pipelineCtx ? [
