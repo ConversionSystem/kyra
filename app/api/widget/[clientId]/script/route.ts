@@ -138,7 +138,7 @@ export async function GET(
     '    <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>',
     '  </button>',
     '</div>',
-    '<div id="kyra-widget-powered">⚡ AI by <a href="https://kyra.conversionsystem.com/signup/agency?utm_source=widget&utm_medium=powered_by&utm_campaign=viral" target="_blank" rel="noopener" title="Get your own AI employee — free to start">Kyra</a> · <a href="https://kyra.conversionsystem.com/signup/agency?utm_source=widget&utm_medium=powered_by&utm_campaign=viral" target="_blank" rel="noopener" style="color:#9ca3af;font-weight:normal">Get one free →</a></div>',
+    '<div id="kyra-widget-powered">⚡ AI by <a href="https://kyra.conversionsystem.com/signup/agency?utm_source=widget&utm_medium=powered_by&utm_campaign=viral" target="_blank" rel="noopener" title="Get your own AI worker — free to start">Kyra</a> · <a href="https://kyra.conversionsystem.com/signup/agency?utm_source=widget&utm_medium=powered_by&utm_campaign=viral" target="_blank" rel="noopener" style="color:#9ca3af;font-weight:normal">Get one free →</a></div>',
   ].join('');
   document.body.appendChild(panel);
 

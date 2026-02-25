@@ -105,7 +105,7 @@ export default async function MasterDashboard() {
               <div className="rounded-lg bg-green-600/20 p-2">
                 <Zap className="h-4 w-4 text-green-400" />
               </div>
-              <span className="text-xs text-gray-400 uppercase tracking-wider">AI Employees</span>
+              <span className="text-xs text-gray-400 uppercase tracking-wider">AI Workers</span>
             </div>
             <p className="text-3xl font-bold text-white">{allClients.length}</p>
             <p className="text-xs text-gray-500 mt-1">{activeClients} running now</p>
@@ -206,7 +206,7 @@ export default async function MasterDashboard() {
                 {[
                   { level: 'Master', count: 1, color: 'bg-yellow-500', desc: 'ConversionSystem' },
                   { level: 'Agency', count: realAgencies.length, color: 'bg-indigo-500', desc: 'Platform customers' },
-                  { level: 'Sub-account', count: allClients.length, color: 'bg-blue-500', desc: 'AI employees' },
+                  { level: 'Sub-account', count: allClients.length, color: 'bg-blue-500', desc: 'AI workers' },
                   { level: 'Users', count: 0, color: 'bg-gray-600', desc: 'Portal users (pending)' },
                 ].map(({ level, count, color, desc }) => (
                   <div key={level} className="flex items-center gap-3">

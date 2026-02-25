@@ -264,7 +264,7 @@ export default async function ForIndustryPage({ params }: Params) {
         <div className="bg-indigo-950/40 border border-indigo-900/40 rounded-2xl p-8">
           <h2 className="text-2xl font-black mb-4">Built for {page.agencies}</h2>
           <p className="text-slate-300 mb-6 leading-relaxed">
-            Kyra is a white-label AI employee platform. You sign up as an agency, add your {page.title.toLowerCase().replace('AI for ', '').replace('s', '')} clients, and each one gets their own dedicated AI trained on their specific business, pricing, and policies. You bill them $500–$2,000/month. Your cost to Kyra: as low as $97/month for up to 5 clients.
+            Kyra is a white-label AI workforce platform. You sign up as an agency, add your {page.title.toLowerCase().replace('AI for ', '').replace('s', '')} clients, and each one gets their own dedicated AI trained on their specific business, pricing, and policies. You bill them $500–$2,000/month. Your cost to Kyra: as low as $97/month for up to 5 clients.
           </p>
           <div className="grid sm:grid-cols-3 gap-4 mb-6">
             {[

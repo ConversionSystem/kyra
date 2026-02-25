@@ -42,7 +42,7 @@ export default function PrivacyPage() {
             title: '2. How We Use Your Information',
             content: [
               'To provide, operate, and improve the Kyra platform.',
-              'To generate AI responses on behalf of your configured AI employees.',
+              'To generate AI responses on behalf of your configured AI workers.',
               'To send transactional emails (account confirmations, escalation alerts, weekly reports) when a Resend API key is configured.',
               'To process payments and manage subscriptions via Stripe.',
               'To monitor platform health and debug issues.',

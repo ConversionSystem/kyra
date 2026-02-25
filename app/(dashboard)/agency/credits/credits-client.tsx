@@ -286,7 +286,7 @@ export function CreditsClient({
           <h1 className="text-2xl font-bold text-gray-900">Kyra Credits</h1>
         </div>
         <p className="text-sm text-gray-500">
-          Power your AI employees. 1 credit = 1 AI conversation.
+          Power your AI workers. 1 credit = 1 AI conversation.
         </p>
       </div>
 
@@ -312,7 +312,7 @@ export function CreditsClient({
           <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
           <div>
             <p className="font-semibold">Payment successful — credits added to your balance! 🎉</p>
-            <p className="text-xs text-green-600 mt-0.5">Your AI employees are powered up.</p>
+            <p className="text-xs text-green-600 mt-0.5">Your AI workers are powered up.</p>
           </div>
         </div>
       )}
@@ -334,7 +334,7 @@ export function CreditsClient({
           <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0" />
           <p>
             <strong>Running low</strong> — {balance} credit{balance !== 1 ? 's' : ''} remaining.
-            Top up to keep your AI employees responding.
+            Top up to keep your AI workers responding.
           </p>
         </div>
       )}

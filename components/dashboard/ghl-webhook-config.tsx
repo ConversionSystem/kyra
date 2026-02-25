@@ -98,7 +98,7 @@ export default function GHLWebhookConfig() {
         <div>
           <h3 className="font-bold text-gray-900 text-sm">GHL Inbound Webhook</h3>
           <p className="text-xs text-gray-500 mt-0.5">
-            Add this URL to a GHL Workflow to route incoming SMS/messages to your AI employees.
+            Add this URL to a GHL Workflow to route incoming SMS/messages to your AI workers.
           </p>
         </div>
       </div>

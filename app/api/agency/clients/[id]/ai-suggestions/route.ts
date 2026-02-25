@@ -51,7 +51,7 @@ export async function GET(_req: NextRequest, ctx: Context) {
       messages: [
         {
           role: 'system',
-          content: `You are an AI performance analyst. Analyze conversations from a ${client.industry ?? 'business'} AI employee named "${config.aiName ?? 'Kyra'}" at "${config.businessName ?? client.name}". 
+          content: `You are an AI performance analyst. Analyze conversations from a ${client.industry ?? 'business'} AI worker named "${config.aiName ?? 'Kyra'}" at "${config.businessName ?? client.name}". 
 
 Return EXACTLY 3 specific, actionable suggestions to improve the AI's performance. Each suggestion must be:
 1. Specific to what you observed in the conversations

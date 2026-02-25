@@ -17,7 +17,7 @@ const SECTIONS = [
     bg: 'bg-indigo-500/10',
     faqs: [
       {
-        q: 'How long does it take to get my first AI employee live?',
+        q: 'How long does it take to get my first AI worker live?',
         a: 'Under 10 minutes for most agencies. The steps are: (1) Create your free account, (2) Connect your GHL private integration token, (3) Add a client and pick an industry template, (4) Click "Generate with AI" to write the personality, (5) Done — the AI starts responding automatically.',
       },
       {
@@ -98,7 +98,7 @@ const SECTIONS = [
     faqs: [
       {
         q: 'What does each plan include?',
-        a: 'Free: 1 AI employee, all features. Lite ($99/mo): 5 AI employees + BYOK + weekly reports. Pro ($249/mo): 15 AI employees + white-label + pitch pages + referral program. Scale ($499/mo): 50 AI employees + everything. All paid plans include a 30-day free trial.',
+        a: 'Free: 1 AI worker, all features. Lite ($99/mo): 5 AI workers + BYOK + weekly reports. Pro ($249/mo): 15 AI workers + white-label + pitch pages + referral program. Scale ($499/mo): 50 AI workers + everything. All paid plans include a 30-day free trial.',
       },
       {
         q: 'What is BYOK (Bring Your Own Key)?',
@@ -126,7 +126,7 @@ const SECTIONS = [
     faqs: [
       {
         q: 'My client\'s container shows "stopped" — what do I do?',
-        a: 'Click the "Reprovision" button in the client detail page (three-dot menu). This restarts the AI employee\'s infrastructure. If it still shows stopped after 2 minutes, contact support.',
+        a: 'Click the "Reprovision" button in the client detail page (three-dot menu). This restarts the AI worker\'s infrastructure. If it still shows stopped after 2 minutes, contact support.',
       },
       {
         q: 'The web chat widget isn\'t showing on my client\'s website.',
@@ -156,7 +156,7 @@ export default function HelpPage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="mb-12">
           <h1 className="text-3xl sm:text-4xl font-black mb-3">Help & FAQ</h1>
-          <p className="text-slate-400 text-lg">Common questions about Kyra AI employees, GHL integration, and billing.</p>
+          <p className="text-slate-400 text-lg">Common questions about Kyra AI workers, GHL integration, and billing.</p>
           <p className="text-sm text-slate-500 mt-2">
             Can&apos;t find your answer?{' '}
             <Link href="mailto:angel@conversionsystem.com" className="text-indigo-400 hover:underline">

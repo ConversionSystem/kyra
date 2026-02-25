@@ -29,11 +29,11 @@ const HOT_LEADS: Lead[] = [
   },
   {
     id: 'l10', agency: 'Pinnacle Agency Group', owner: 'Micah Gaudio', niche: 'Multi-Niche', location: 'Austin, TX', warmth: 'hot',
-    angle: 'Micah — love what you\'re building in the GHL space. We built a platform specifically for agencies at your scale to offer AI employees to every client. Worth a quick call?',
+    angle: 'Micah — love what you\'re building in the GHL space. We built a platform specifically for agencies at your scale to offer AI workers to every client. Worth a quick call?',
   },
   {
     id: 'l11', agency: 'Funnel Gator', owner: 'Asma Ishaq', niche: 'E-commerce / Info Products', location: 'Tampa, FL', warmth: 'hot',
-    angle: 'Asma — saw your GHL work. We built something that plugs directly into GHL and acts as an AI employee for every client — SMS, follow-up, booking, the works. Curious?',
+    angle: 'Asma — saw your GHL work. We built something that plugs directly into GHL and acts as an AI worker for every client — SMS, follow-up, booking, the works. Curious?',
   },
   {
     id: 'l13', agency: 'Leverage Marketing', owner: 'Natalie Cruz', niche: 'Med Spa / Aesthetics', location: 'Scottsdale, AZ', warmth: 'hot',

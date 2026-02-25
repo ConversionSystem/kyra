@@ -402,7 +402,7 @@ export function RolesPageClient({ plan }: { plan: Plan }) {
           <div>
             <h3 className="font-semibold text-gray-900 mb-1">Want a custom role?</h3>
             <p className="text-sm text-gray-500">
-              Every AI employee can have a fully custom persona configured in their workspace files.
+              Every AI worker can have a fully custom persona configured in their workspace files.
               Contact us to build a bespoke role for your agency.
             </p>
           </div>

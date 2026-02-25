@@ -26,7 +26,7 @@ Quick question: how many texts does your dispensary get per day asking about str
 
 Most dispensaries we work with get 50–100+ texts daily. Their staff handles every single one manually. It's killing productivity during peak hours.
 
-We've deployed AI employees for cannabis dispensaries that answer those texts automatically — within 60 seconds, 24/7. Compliance-aware, so they never make medical claims.
+We've deployed AI workers for cannabis dispensaries that answer those texts automatically — within 60 seconds, 24/7. Compliance-aware, so they never make medical claims.
 
 One of our dispensary clients reduced phone interruptions by 70% in the first month.
 
@@ -87,7 +87,7 @@ Want to see a 5-minute demo?
 
 Studies show 40% of car buyers research and contact dealerships after 6pm. Most dealerships miss all of those leads.
 
-We deploy AI employees for dealerships that respond to every inquiry 24/7 — answers questions about inventory, financing, and trade-ins, then books test drives.
+We deploy AI workers for dealerships that respond to every inquiry 24/7 — answers questions about inventory, financing, and trade-ins, then books test drives.
 
 One dealership we work with added 12 booked appointments in the first week just from after-hours leads they were previously missing.
 
@@ -100,7 +100,7 @@ Quick call to see if it makes sense for your store?
 const LINKEDIN_TEMPLATES: Template[] = [
   {
     industry: '🌿 Cannabis / Dispensary',
-    body: `Hey [Name] — saw you're running [Dispensary Name]. Quick question: how are you handling the 50+ product inquiries you probably get by text every day? We've built AI employees specifically for dispensaries that handle those automatically. Happy to show you a live demo if you're curious.`,
+    body: `Hey [Name] — saw you're running [Dispensary Name]. Quick question: how are you handling the 50+ product inquiries you probably get by text every day? We've built AI workers specifically for dispensaries that handle those automatically. Happy to show you a live demo if you're curious.`,
   },
   {
     industry: '⚖️ Legal',
@@ -112,18 +112,18 @@ const LINKEDIN_TEMPLATES: Template[] = [
   },
   {
     industry: '💊 Medical/Aesthetics',
-    body: `Hi [Name] — Do you find your staff spends a lot of time answering the same questions about procedures and pricing? We deploy AI employees for medical aesthetics practices that handle those automatically — so your team focuses on patients, not phone calls. Happy to show you how it works.`,
+    body: `Hi [Name] — Do you find your staff spends a lot of time answering the same questions about procedures and pricing? We deploy AI workers for medical aesthetics practices that handle those automatically — so your team focuses on patients, not phone calls. Happy to show you how it works.`,
   },
 ];
 
 const SMS_TEMPLATES: Template[] = [
   {
     industry: 'Cold outreach follow-up',
-    body: `Hi [Name], this is [Your Name] from [Agency]. I sent you an email about AI employees for [their industry]. Worth a 10-minute call? Can do any time this week — just say when.`,
+    body: `Hi [Name], this is [Your Name] from [Agency]. I sent you an email about AI workers for [their industry]. Worth a 10-minute call? Can do any time this week — just say when.`,
   },
   {
     industry: 'After demo follow-up',
-    body: `Hi [Name] — great talking with you! Here's the proposal I mentioned: [link]. Main thing: your AI employee can be live in 72 hours. Questions? Just text back.`,
+    body: `Hi [Name] — great talking with you! Here's the proposal I mentioned: [link]. Main thing: your AI worker can be live in 72 hours. Questions? Just text back.`,
   },
   {
     industry: 'Referral ask',
@@ -134,7 +134,7 @@ const SMS_TEMPLATES: Template[] = [
 const OBJECTIONS = [
   {
     objection: '"We already have a chatbot."',
-    response: `"Totally get it. Most chatbots are glorified FAQ pages — they match keywords and give canned responses. What we build is a genuine AI employee: it understands context, recommends products, books appointments, and handles multi-turn conversations. The difference is whether it actually replaces staff time or just sits there. Want to see the difference in a live demo?"`,
+    response: `"Totally get it. Most chatbots are glorified FAQ pages — they match keywords and give canned responses. What we build is a genuine AI worker: it understands context, recommends products, books appointments, and handles multi-turn conversations. The difference is whether it actually replaces staff time or just sits there. Want to see the difference in a live demo?"`,
   },
   {
     objection: '"Our customers prefer talking to real people."',
@@ -168,7 +168,7 @@ const QUICK_WIN_TEMPLATES = [
     subject: 'Quick question about [Business Name]',
     body: `Hi [Name],
 
-I work with local businesses to deploy AI employees that respond to customer inquiries 24/7 — so you never miss a lead, even at 2am.
+I work with local businesses to deploy AI workers that respond to customer inquiries 24/7 — so you never miss a lead, even at 2am.
 
 Takes about a week to set up. Worth a quick 15-minute call to see if it's a fit?
 
@@ -185,7 +185,7 @@ Takes about a week to set up. Worth a quick 15-minute call to see if it's a fit?
 
 Most dispensaries get 50–100 customer texts a day asking about hours, strains, and deals. Staff answers every single one manually.
 
-We deploy AI employees that handle all of it automatically — within 60 seconds, 24/7, compliance-aware. Your budtenders stay on the floor.
+We deploy AI workers that handle all of it automatically — within 60 seconds, 24/7, compliance-aware. Your budtenders stay on the floor.
 
 15 minutes to show you a live demo?
 

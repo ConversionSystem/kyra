@@ -161,17 +161,17 @@ export default function ReferralsClient({ agencyId: _agencyId, agencyName, refer
                 {
                   key: 'sms',
                   label: 'SMS / DM',
-                  text: `Hey! I've been using this AI employee platform for my agency clients — responds to SMS in 60 seconds, books appointments, updates GHL automatically. Sign up free and get $2 in credits to test it: ${refUrl}`,
+                  text: `Hey! I've been using this AI workforce platform for my agency clients — responds to SMS in 60 seconds, books appointments, updates GHL automatically. Sign up free and get $2 in credits to test it: ${refUrl}`,
                 },
                 {
                   key: 'email',
                   label: 'Cold Email',
-                  text: `Subject: AI employee for your GHL clients (60-sec SMS response)\n\nHey [Name],\n\nQuick one — I've been using a tool called Kyra that plugs into any GHL sub-account and acts as an AI employee. It:\n\n• Replies to every inbound SMS in under 60 seconds\n• Books appointments directly in GHL calendar\n• Tags and updates contacts automatically\n• Works for any industry (dental, real estate, cannabis, etc.)\n\nFree to start — you get $2 in credits just for signing up, no card required:\n${refUrl}\n\n[Your name]`,
+                  text: `Subject: AI worker for your GHL clients (60-sec SMS response)\n\nHey [Name],\n\nQuick one — I've been using a tool called Kyra that plugs into any GHL sub-account and acts as an AI worker. It:\n\n• Replies to every inbound SMS in under 60 seconds\n• Books appointments directly in GHL calendar\n• Tags and updates contacts automatically\n• Works for any industry (dental, real estate, cannabis, etc.)\n\nFree to start — you get $2 in credits just for signing up, no card required:\n${refUrl}\n\n[Your name]`,
                 },
                 {
                   key: 'linkedin',
                   label: 'LinkedIn / Facebook',
-                  text: `🤖 Been testing an AI employee platform for GHL agencies and the results are legit.\n\nKyra plugs into any sub-account and handles inbound SMS within 60 seconds — books appointments, tags contacts, the whole thing. Works across dental, real estate, cannabis, and more.\n\nIf you're running a GHL agency, worth checking out. They give you $2 free to test:\n${refUrl}`,
+                  text: `🤖 Been testing an AI workforce platform for GHL agencies and the results are legit.\n\nKyra plugs into any sub-account and handles inbound SMS within 60 seconds — books appointments, tags contacts, the whole thing. Works across dental, real estate, cannabis, and more.\n\nIf you're running a GHL agency, worth checking out. They give you $2 free to test:\n${refUrl}`,
                 },
               ].map(({ key, label, text }) => (
                 <div key={key} className="bg-gray-50 border border-gray-200 rounded-lg p-3">

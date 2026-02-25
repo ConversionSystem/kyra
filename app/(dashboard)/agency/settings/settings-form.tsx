@@ -598,7 +598,7 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
             GHL Workflow Trigger
           </CardTitle>
           <CardDescription>
-            Fire a GoHighLevel workflow automatically whenever your AI employee handles a conversation.
+            Fire a GoHighLevel workflow automatically whenever your AI worker handles a conversation.
             Add a webhook trigger URL from any GHL workflow — Kyra will POST conversation data to it in real time.
           </CardDescription>
         </CardHeader>

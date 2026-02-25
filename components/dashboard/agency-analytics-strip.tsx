@@ -55,7 +55,7 @@ export default function AgencyAnalyticsStrip() {
     },
     {
       icon: Users,
-      label: 'Active AI Employees',
+      label: 'Active AI Workers',
       value: data.active_clients.toLocaleString(),
       sub: 'Running 24/7',
       color: 'text-blue-600', bg: 'bg-blue-50',
@@ -81,7 +81,7 @@ export default function AgencyAnalyticsStrip() {
         <div className="flex items-center gap-3 bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-3">
           <TrendingUp className="h-4 w-4 text-indigo-500 shrink-0" />
           <p className="text-sm text-indigo-800">
-            <span className="font-semibold">{data.busiest_client.name}</span> is your busiest AI employee this week with{' '}
+            <span className="font-semibold">{data.busiest_client.name}</span> is your busiest AI worker this week with{' '}
             <span className="font-semibold">{data.busiest_client.count} conversations</span>.
           </p>
         </div>

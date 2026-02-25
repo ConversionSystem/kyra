@@ -87,7 +87,7 @@ export function buildWeeklyReportHtml(data: AgencyReportData): string {
           <td style="background:#ffffff;padding:28px 40px;">
             <table width="100%" cellpadding="0" cellspacing="0">
               <tr>
-                ${statCell(String(totalClients), 'Total AI Employees', '#6366f1')}
+                ${statCell(String(totalClients), 'Total AI Workers', '#6366f1')}
                 ${statCell(String(activeClients), 'Active This Week', '#10b981')}
                 ${statCell(String(totalConversations), 'Conversations', '#3b82f6')}
                 ${statCell(String(runningClients), 'Online Now', '#f59e0b')}
@@ -102,7 +102,7 @@ export function buildWeeklyReportHtml(data: AgencyReportData): string {
         <!-- Client Table -->
         <tr>
           <td style="background:#ffffff;padding:24px 40px 8px;">
-            <h2 style="margin:0 0 16px;font-size:16px;font-weight:700;color:#1e293b;">AI Employee Breakdown</h2>
+            <h2 style="margin:0 0 16px;font-size:16px;font-weight:700;color:#1e293b;">AI Worker Breakdown</h2>
             <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
               <thead>
                 <tr style="background:#f8fafc;">
@@ -114,15 +114,15 @@ export function buildWeeklyReportHtml(data: AgencyReportData): string {
                 </tr>
               </thead>
               <tbody>
-                ${clientRows || '<tr><td colspan="5" style="padding:20px 16px;text-align:center;color:#94a3b8;">No clients yet — add your first AI employee.</td></tr>'}
+                ${clientRows || '<tr><td colspan="5" style="padding:20px 16px;text-align:center;color:#94a3b8;">No clients yet — add your first AI worker.</td></tr>'}
               </tbody>
             </table>
           </td>
         </tr>
 
         <!-- Insight Banner -->
-        ${totalConversations === 0 ? infoBox('💡 Tip: Your AI employees are deployed but haven\'t had conversations yet. Share the client portal URL with your clients to get started.') : ''}
-        ${activeClients < totalClients && totalClients > 0 ? infoBox(`💡 ${totalClients - activeClients} of your AI employees had no conversations this week. Consider reviewing their knowledge base or sharing their portal URL.`) : ''}
+        ${totalConversations === 0 ? infoBox('💡 Tip: Your AI workers are deployed but haven\'t had conversations yet. Share the client portal URL with your clients to get started.') : ''}
+        ${activeClients < totalClients && totalClients > 0 ? infoBox(`💡 ${totalClients - activeClients} of your AI workers had no conversations this week. Consider reviewing their knowledge base or sharing their portal URL.`) : ''}
 
         <!-- CTA -->
         <tr>

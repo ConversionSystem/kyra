@@ -74,7 +74,7 @@ function day1Email(agency: Agency): { subject: string; html: string } {
   const hasGHL = agency.ghlConnected;
 
   const body = hasClient && hasGHL
-    ? `${h2(`${name}, your first AI employee is live 🎉`)}
+    ? `${h2(`${name}, your first AI worker is live 🎉`)}
        ${p(`You've connected <strong>${agency.clientCount} client${agency.clientCount > 1 ? 's' : ''}</strong> and linked GHL. Your AI is already handling conversations.`)}
        ${p(`Next step: share the web chat widget with your client so their website visitors can talk to the AI too.`)}
        ${btn('See embed code', `${APP_URL}/agency/clients`)}
@@ -90,7 +90,7 @@ function day1Email(agency: Agency): { subject: string; html: string } {
        ${btn('Add your first client', `${APP_URL}/agency/clients/new`)}`;
 
   return {
-    subject: hasClient ? `${name}, your AI employee is live 🎉` : `${name}, your AI employee is waiting`,
+    subject: hasClient ? `${name}, your AI worker is live 🎉` : `${name}, your AI worker is waiting`,
     html: wrapHtml(body),
   };
 }

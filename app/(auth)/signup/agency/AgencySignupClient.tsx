@@ -337,7 +337,7 @@ function AgencySignupPage() {
                 </div>
                 <ul className="space-y-1.5">
                   {[
-                    'AI employees for your GHL clients',
+                    'AI workers for your GHL clients',
                     'One agency dashboard for all clients',
                     'GHL integration (SMS, email, CRM)',
                     'Bring your own OpenAI API key',

@@ -1,5 +1,5 @@
 // Programmatic SEO page — /ai-for/[niche]
-// Targets searches like "AI for dental practices", "AI employee for real estate"
+// Targets searches like "AI for dental practices", "AI worker for real estate"
 // Each niche gets a fully unique, keyword-rich page
 
 import type { Metadata } from 'next';
@@ -30,11 +30,11 @@ interface NicheData {
 const NICHES: Record<string, NicheData> = {
   dental: {
     slug: 'dental',
-    title: 'AI Employee for Dental Practices',
-    metaTitle: 'AI Employee for Dental Practices | Automated SMS, Booking & Follow-Up',
-    metaDesc: 'Add an AI employee to your dental practice that responds to every patient inquiry in 60 seconds, books appointments automatically, and handles insurance questions 24/7. Works inside GoHighLevel.',
+    title: 'AI Worker for Dental Practices',
+    metaTitle: 'AI Worker for Dental Practices | Automated SMS, Booking & Follow-Up',
+    metaDesc: 'Add an AI worker to your dental practice that responds to every patient inquiry in 60 seconds, books appointments automatically, and handles insurance questions 24/7. Works inside GoHighLevel.',
     emoji: '🦷',
-    hero: 'AI Employee for Dental Practices',
+    hero: 'AI Worker for Dental Practices',
     subhero: 'Responds to every patient text in 60 seconds. Books appointments. Handles insurance questions. Works 24/7 — even when your front desk doesn\'t.',
     pain: 'Dental practices miss 30–40% of appointment requests.',
     painDetail: 'Patients text after hours, on weekends, during lunch. Front desk staff can\'t respond immediately — and every unanswered text is a patient who called the next practice on their Google search.',
@@ -62,18 +62,18 @@ const NICHES: Record<string, NicheData> = {
       { q: 'What if the AI doesn\'t know the answer?', a: 'You configure a fallback: "Let me have a team member follow up with you." The contact gets tagged as needing human follow-up, and your staff gets an alert.' },
       { q: 'Is patient data handled securely?', a: 'Conversations happen via SMS — the same channel your practice already uses. No PHI is stored in Kyra beyond what\'s in your GHL CRM.' },
     ],
-    keywords: ['AI for dental practices', 'dental AI employee', 'dental SMS automation', 'GoHighLevel dental', 'AI receptionist dental'],
+    keywords: ['AI for dental practices', 'dental AI worker', 'dental SMS automation', 'GoHighLevel dental', 'AI receptionist dental'],
     demoSlug: 'dental',
   },
 
   cannabis: {
     slug: 'cannabis',
-    title: 'AI Employee for Cannabis Dispensaries',
-    metaTitle: 'AI Employee for Cannabis Dispensaries | Proven SMS Automation',
+    title: 'AI Worker for Cannabis Dispensaries',
+    metaTitle: 'AI Worker for Cannabis Dispensaries | Proven SMS Automation',
     metaDesc:
       'Kyra AI was originally built for high-volume cannabis dispensary clients. Handles every inbound SMS — product questions, compliance FAQs, pickup status — in under 60 seconds. Compliance-aware, 24/7.',
     emoji: '🌿',
-    hero: 'AI Employee for Cannabis Dispensaries',
+    hero: 'AI Worker for Cannabis Dispensaries',
     subhero:
       'Built from years of AI SMS work with cannabis clients. Product questions, compliance FAQs, pickup status — handled automatically in under 60 seconds.',
     pain: 'Cannabis dispensaries are drowning in repetitive SMS messages.',
@@ -107,17 +107,17 @@ const NICHES: Record<string, NicheData> = {
       },
       { q: 'What if a customer asks about delivery?', a: 'You configure the AI\'s knowledge of your delivery zones, minimums, and ETA. It handles delivery questions accurately or routes to your delivery team.' },
     ],
-    keywords: ['cannabis dispensary AI', 'dispensary SMS automation', 'cannabis AI employee', 'dispensary chatbot', 'cannabis marketing automation GHL'],
+    keywords: ['cannabis dispensary AI', 'dispensary SMS automation', 'cannabis AI worker', 'dispensary chatbot', 'cannabis marketing automation GHL'],
     demoSlug: 'cannabis',
   },
 
   'real-estate': {
     slug: 'real-estate',
-    title: 'AI Employee for Real Estate Agencies',
-    metaTitle: 'AI Employee for Real Estate Agencies | Instant Lead Response, Showing Booking',
+    title: 'AI Worker for Real Estate Agencies',
+    metaTitle: 'AI Worker for Real Estate Agencies | Instant Lead Response, Showing Booking',
     metaDesc: 'Real estate AI that responds to every GHL lead in under 60 seconds. Qualifies buyers, books showings, follows up with cold leads automatically. Works inside GoHighLevel.',
     emoji: '🏡',
-    hero: 'AI Employee for Real Estate',
+    hero: 'AI Worker for Real Estate',
     subhero: 'Real estate leads go cold in 5 minutes. Our AI responds to every inbound GHL inquiry in under 60 seconds — qualifies buyers, books showings, and keeps leads warm until an agent is ready.',
     pain: '78% of buyers go with whoever responds first. Most agents respond in hours.',
     painDetail: 'Leads come in from Zillow, Facebook, your website — at all hours. Agents are showing properties, on calls, or asleep. By the time someone responds, the lead has already booked with a competitor.',
@@ -145,17 +145,17 @@ const NICHES: Record<string, NicheData> = {
       { q: 'What if a lead asks about a specific property?', a: 'You can add property details to the AI\'s knowledge base, or the AI can ask for a callback when questions require specific listing expertise.' },
       { q: 'Do buyers know they\'re talking to AI?', a: 'You decide. Many agencies configure the AI with a human name (e.g., "Hi, I\'m Jamie from [Agency]"). Full transparency mode is also available.' },
     ],
-    keywords: ['AI for real estate agents', 'real estate lead response automation', 'GHL real estate AI', 'AI employee real estate', 'automated showing booking'],
+    keywords: ['AI for real estate agents', 'real estate lead response automation', 'GHL real estate AI', 'AI worker real estate', 'automated showing booking'],
     demoSlug: 'realestate',
   },
 
   fitness: {
     slug: 'fitness',
-    title: 'AI Employee for Gyms & Fitness Studios',
-    metaTitle: 'AI Employee for Gyms & Fitness Studios | Lead Response & Trial Booking',
+    title: 'AI Worker for Gyms & Fitness Studios',
+    metaTitle: 'AI Worker for Gyms & Fitness Studios | Lead Response & Trial Booking',
     metaDesc: 'Gym AI that responds to every membership inquiry in 60 seconds, books trial sessions automatically, and reduces no-shows with automated reminders. Works inside GoHighLevel.',
     emoji: '💪',
-    hero: 'AI Employee for Gyms & Fitness Studios',
+    hero: 'AI Worker for Gyms & Fitness Studios',
     subhero: 'Gym leads who don\'t hear back in 10 minutes cancel 80% of the time. Our AI responds to every inquiry in under 60 seconds and books free trial sessions automatically — 24/7.',
     pain: 'Fitness studios lose 80% of trial sign-up inquiries to slow response times.',
     painDetail: 'Someone sees your Instagram ad at 8pm and texts about a free trial. Your front desk is closed. They don\'t hear back until the next morning — if they hear back at all. By then, they\'ve signed up at the gym down the street.',
@@ -182,17 +182,17 @@ const NICHES: Record<string, NicheData> = {
       { q: 'Does this work for boutique studios (yoga, pilates, CrossFit)?', a: 'Yes. The AI personality is fully customizable for your brand voice. Works for everything from big box gyms to intimate boutique studios.' },
       { q: 'Can it handle membership cancellation requests?', a: 'You configure the response — options include collecting cancellation reasons, offering a freeze option, or routing to a human retention specialist.' },
     ],
-    keywords: ['AI for gyms', 'fitness studio AI', 'gym lead automation', 'CrossFit AI employee', 'gym membership automation GHL'],
+    keywords: ['AI for gyms', 'fitness studio AI', 'gym lead automation', 'CrossFit AI worker', 'gym membership automation GHL'],
     demoSlug: 'dental',
   },
 
   'home-services': {
     slug: 'home-services',
-    title: 'AI Employee for Home Service Businesses',
-    metaTitle: 'AI Employee for HVAC, Roofing & Plumbing | 24/7 Lead Response',
+    title: 'AI Worker for Home Service Businesses',
+    metaTitle: 'AI Worker for HVAC, Roofing & Plumbing | 24/7 Lead Response',
     metaDesc: 'Home services AI that responds to emergency calls at midnight, books service appointments, and qualifies leads automatically. Works for HVAC, roofing, plumbing, electrical and more.',
     emoji: '🔧',
-    hero: 'AI Employee for Home Services',
+    hero: 'AI Worker for Home Services',
     subhero: 'HVAC, roofing, plumbing, electrical. Homeowners have emergencies at midnight — our AI responds in under 60 seconds, triages urgency, and dispatches your team. Zero missed calls.',
     pain: 'Home service businesses lose jobs to whoever answers first — even at 2am.',
     painDetail: 'A pipe bursts at 11pm. The homeowner texts 3 plumbers. The first to respond gets the job. Typically worth $300–$3,000. Your competitors who have overnight answering — even automated — win every time.',
@@ -219,7 +219,7 @@ const NICHES: Record<string, NicheData> = {
       { q: 'What if the AI gives wrong pricing?', a: 'You configure the AI to give ranges ("typically $150–$350") or send a quote request form rather than specific prices. Prevents commitment issues.' },
       { q: 'Does this work for franchises with multiple territories?', a: 'Yes — you can configure service area questions so the AI qualifies location before booking and routes to the right local tech.' },
     ],
-    keywords: ['AI for HVAC companies', 'roofing AI employee', 'plumbing SMS automation', 'home services AI', 'contractor AI GoHighLevel'],
+    keywords: ['AI for HVAC companies', 'roofing AI worker', 'plumbing SMS automation', 'home services AI', 'contractor AI GoHighLevel'],
     demoSlug: 'dental',
   },
 };
@@ -238,7 +238,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { niche } = await params;
   const data = NICHES[niche];
-  if (!data) return { title: 'AI Employee Platform | Kyra' };
+  if (!data) return { title: 'AI Workforce Platform | Kyra' };
   return {
     title: data.metaTitle,
     description: data.metaDesc,
@@ -266,7 +266,7 @@ export default async function AiForNichePage({ params }: Props) {
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div>
             <div className="inline-flex items-center gap-2 bg-indigo-50 text-indigo-700 text-sm font-bold px-4 py-2 rounded-full mb-6 border border-indigo-100">
-              {data.emoji} AI Employee Platform
+              {data.emoji} AI Workforce Platform
             </div>
             <h1 className="text-4xl sm:text-5xl font-black leading-tight mb-6">
               {data.hero}
@@ -302,7 +302,7 @@ export default async function AiForNichePage({ params }: Props) {
       {/* Features */}
       <section className="bg-gray-50 py-20 px-4">
         <div className="max-w-5xl mx-auto">
-          <h2 className="text-3xl font-black text-center mb-3">What the AI employee handles</h2>
+          <h2 className="text-3xl font-black text-center mb-3">What the AI worker handles</h2>
           <p className="text-center text-gray-500 mb-12">{data.result}</p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {data.features.map(f => (
@@ -388,7 +388,7 @@ export default async function AiForNichePage({ params }: Props) {
       <section className="bg-indigo-900 text-white py-20 px-4 text-center">
         <div className="max-w-2xl mx-auto">
           <h2 className="text-3xl sm:text-4xl font-black mb-4">
-            Deploy your first {data.emoji} AI employee today.
+            Deploy your first {data.emoji} AI worker today.
           </h2>
           <p className="text-indigo-200 mb-8 text-lg">
             Free to start. Setup in under 10 minutes. $2 in credits included.

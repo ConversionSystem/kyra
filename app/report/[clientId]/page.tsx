@@ -137,7 +137,7 @@ export default function ReportPage({ params }: { params: Promise<{ clientId: str
       <div className="text-white px-6 py-12 text-center" style={{ background: `linear-gradient(135deg, ${brandColor}, ${brandColor}cc)` }}>
         <div className="text-5xl mb-3">{emoji}</div>
         <h1 className="text-3xl font-black mb-1">{client.name}</h1>
-        <p className="text-white/80 text-sm">AI Employee Performance Report · Last 30 Days</p>
+        <p className="text-white/80 text-sm">AI Worker Performance Report · Last 30 Days</p>
         <p className="text-white/60 text-xs mt-1">Active since {since}</p>
       </div>
 
@@ -208,7 +208,7 @@ export default function ReportPage({ params }: { params: Promise<{ clientId: str
         <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-5 mb-8">
           <p className="font-bold text-indigo-900 mb-2">📊 30-Day Summary</p>
           <p className="text-indigo-800 text-sm leading-relaxed">
-            In the last 30 days, <strong>{client.name}&apos;s</strong> AI employee handled{' '}
+            In the last 30 days, <strong>{client.name}&apos;s</strong> AI worker handled{' '}
             <strong>{stats.total_conversations.toLocaleString()} conversations</strong> with an average response
             time of <strong>{stats.avg_response_seconds} seconds</strong> — compared to the industry average
             of 4+ hours. <strong>{stats.resolution_rate}%</strong> were resolved without any human involvement.
