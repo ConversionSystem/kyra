@@ -180,16 +180,27 @@ function StepDeploy({
     setPhase('creating');
 
     try {
+      // Auto-generate slug from name
+      const slug = name.trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 48) || 'my-client';
+
       const res = await fetch('/api/agency/clients', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: name.trim(),
+          slug,
           industry: templates.find(t => t.id === selected)?.industry ?? null,
           template_id: selected,
         }),
       });
-      if (!res.ok) throw new Error('Failed to create client');
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Failed to create client');
+      }
       const data = await res.json();
       const clientId: string = data.client?.id ?? data.id ?? '';
       if (!clientId) throw new Error('No client ID returned');
@@ -705,6 +716,17 @@ export function OnboardingWizard({ agencyId: _agencyId, agencyName, plan: _plan 
     setStep('ghl');
   };
 
+  const router = useRouter();
+
+  const handleSkipSetup = async () => {
+    await fetch('/api/agency/settings', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ settings: { onboarding_complete: true } }),
+    }).catch(() => {});
+    router.push('/agency');
+  };
+
   return (
     <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl ring-1 ring-black/5 p-8">
       {/* Header */}
@@ -713,14 +735,24 @@ export function OnboardingWizard({ agencyId: _agencyId, agencyName, plan: _plan 
           <Building2 className="h-5 w-5 text-indigo-600" />
           <span className="font-bold text-gray-900 text-sm">Kyra Setup</span>
         </div>
-        {step !== 'welcome' && step !== 'done' && step !== 'deploy' && (
-          <button
-            onClick={() => setStep(STEPS[currentIndex - 1])}
-            className="text-gray-400 hover:text-gray-600 flex items-center gap-1 text-sm transition-colors"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" /> Back
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          {step !== 'welcome' && step !== 'done' && step !== 'deploy' && (
+            <button
+              onClick={() => setStep(STEPS[currentIndex - 1])}
+              className="text-gray-400 hover:text-gray-600 flex items-center gap-1 text-sm transition-colors"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" /> Back
+            </button>
+          )}
+          {step !== 'done' && (
+            <button
+              onClick={handleSkipSetup}
+              className="text-sm font-medium text-indigo-600 hover:text-indigo-800 transition-colors"
+            >
+              Skip setup →
+            </button>
+          )}
+        </div>
       </div>
 
       <StepDots current={currentIndex} />
