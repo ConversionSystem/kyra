@@ -499,6 +499,7 @@ export function NewClientForm({ agencyId, templates, defaultTemplateId, defaultR
   // Pre-select template from URL param (e.g. /clients/new?template=abc)
   const defaultTemplate = defaultTemplateId ? templates.find((t) => t.id === defaultTemplateId) ?? null : null;
   const [industry, setIndustry] = useState(defaultTemplate?.industry ?? 'General');
+  const [websiteUrl, setWebsiteUrl] = useState('');
   const [templateId, setTemplateId] = useState<string | null>(defaultTemplate?.id ?? null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -568,6 +569,16 @@ export function NewClientForm({ agencyId, templates, defaultTemplateId, defaultR
       }
 
       const client = data.client || data;
+
+      // Fire-and-forget auto-train if website URL was provided
+      if (websiteUrl.trim()) {
+        fetch('/api/agency/knowledge/auto-train', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ clientId: client.id, websiteUrl: websiteUrl.trim() }),
+        }).catch(() => {}); // best-effort, don't block client creation
+      }
+
       setCreatedClient({ id: client.id, name: client.name });
     } catch {
       setError('Failed to create client. Please try again.');
@@ -675,6 +686,23 @@ export function NewClientForm({ agencyId, templates, defaultTemplateId, defaultR
                   </option>
                 ))}
               </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
+                Website URL
+                <span className="text-xs font-normal text-gray-400">(optional)</span>
+              </label>
+              <Input
+                value={websiteUrl}
+                onChange={(e) => setWebsiteUrl(e.target.value)}
+                placeholder="e.g. https://smilefamilydental.com"
+                className="bg-gray-100 border-gray-200"
+                type="url"
+              />
+              <p className="text-xs text-gray-400">
+                🧠 If provided, we&apos;ll auto-train the AI from the website — services, FAQ, pricing, and more.
+              </p>
             </div>
           </CardContent>
         </Card>
