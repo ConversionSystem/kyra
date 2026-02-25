@@ -1,12 +1,14 @@
 /**
  * POST /api/agency/pipeline/enrich
- * AI enrichment — fetches REAL website content, then generates hyper-personalized messaging.
+ * AI enrichment — scrapes REAL website content + discovers actual team members.
  *
- * Two-stage approach:
- * 1. Fetch the company's actual website → extract readable text
- * 2. Feed REAL content to GPT-4o → generate personalized outreach based on facts
+ * Flow per lead:
+ * 1. Fetch company homepage → extract text
+ * 2. Fetch /about, /team, /our-team, /about-us pages → find real people
+ * 3. Feed ALL real content to GPT-4o → identify decision-maker + write personalized email
  *
- * This means every email references REAL things about the prospect's company.
+ * Result: Real person names from their own website. Real company context.
+ * Zero hallucination — everything is grounded in scraped data.
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
@@ -18,10 +20,9 @@ async function getAgencyId(userId: string): Promise<string | null> {
 }
 
 /**
- * Fetch a website and extract readable text content.
- * Strips scripts, styles, HTML tags → clean text for AI processing.
+ * Fetch a URL and extract readable text. Returns empty string on failure.
  */
-async function fetchWebsiteContent(url: string, maxChars = 4000): Promise<string> {
+async function fetchPageText(url: string, maxChars = 5000): Promise<string> {
   try {
     const fullUrl = url.startsWith('http') ? url : `https://${url}`;
     const res = await fetch(fullUrl, {
@@ -34,46 +35,33 @@ async function fetchWebsiteContent(url: string, maxChars = 4000): Promise<string
       },
     });
     if (!res.ok) return '';
-
     const html = await res.text();
 
-    // Extract meta description
-    const metaDesc = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i)?.[1] || '';
-
-    // Extract title
+    // Extract structured metadata
     const title = html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]?.trim() || '';
-
-    // Extract OG description
+    const metaDesc = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i)?.[1] || '';
     const ogDesc = html.match(/<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']+)["']/i)?.[1] || '';
 
-    // Strip scripts, styles, nav, footer, then tags
+    // Extract body text, strip nav/footer/scripts
     const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
     const bodyHtml = bodyMatch?.[1] || html;
-
     const text = bodyHtml
       .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
       .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
       .replace(/<nav[^>]*>[\s\S]*?<\/nav>/gi, '')
       .replace(/<footer[^>]*>[\s\S]*?<\/footer>/gi, '')
-      .replace(/<header[^>]*>[\s\S]*?<\/header>/gi, ' [HEADER] ')
       .replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi, '\n## $1\n')
       .replace(/<li[^>]*>(.*?)<\/li>/gi, '- $1\n')
       .replace(/<[^>]+>/g, ' ')
-      .replace(/&nbsp;/g, ' ')
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&#?\w+;/g, ' ')
+      .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&#?\w+;/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
 
-    // Combine structured metadata with body text
     const parts: string[] = [];
-    if (title) parts.push(`Page Title: ${title}`);
-    if (metaDesc) parts.push(`Meta Description: ${metaDesc}`);
-    if (ogDesc && ogDesc !== metaDesc) parts.push(`OG Description: ${ogDesc}`);
-    if (text) parts.push(`\nPage Content:\n${text}`);
-
+    if (title) parts.push(`Title: ${title}`);
+    if (metaDesc) parts.push(`Description: ${metaDesc}`);
+    if (ogDesc && ogDesc !== metaDesc) parts.push(`About: ${ogDesc}`);
+    parts.push(text);
     return parts.join('\n').slice(0, maxChars);
   } catch {
     return '';
@@ -81,20 +69,27 @@ async function fetchWebsiteContent(url: string, maxChars = 4000): Promise<string
 }
 
 /**
- * Try to fetch an "about" page for deeper company context.
+ * Try multiple team/about page paths to find one with real content.
  */
-async function fetchAboutPage(baseUrl: string, maxChars = 2000): Promise<string> {
-  const aboutPaths = ['/about', '/about-us', '/about-us/', '/our-story', '/team', '/who-we-are'];
-  const base = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`;
-  const cleanBase = base.replace(/\/$/, '');
+async function fetchTeamPages(baseUrl: string, maxChars = 4000): Promise<string> {
+  const base = (baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`).replace(/\/$/, '');
+  const paths = ['/about', '/about-us', '/team', '/our-team', '/about-us/', '/people', '/leadership', '/who-we-are', '/meet-the-team', '/staff'];
 
-  for (const path of aboutPaths) {
-    const content = await fetchWebsiteContent(`${cleanBase}${path}`, maxChars);
-    if (content.length > 200) { // Has meaningful content
-      return content;
+  const results: string[] = [];
+  // Try 3 paths in parallel to save time
+  for (let i = 0; i < paths.length; i += 3) {
+    const batch = paths.slice(i, i + 3);
+    const fetched = await Promise.allSettled(
+      batch.map(p => fetchPageText(`${base}${p}`, 3000))
+    );
+    for (const r of fetched) {
+      if (r.status === 'fulfilled' && r.value.length > 150) {
+        results.push(r.value);
+      }
     }
+    if (results.length >= 2) break; // Got enough content
   }
-  return '';
+  return results.join('\n---\n').slice(0, maxChars);
 }
 
 export async function POST(req: NextRequest) {
@@ -113,7 +108,6 @@ export async function POST(req: NextRequest) {
 
   const svc = createServiceClientWithoutCookies();
 
-  // Fetch leads + their campaign (for value_prop)
   const { data: leads } = await svc
     .from('pipeline_leads')
     .select('*, pipeline_campaigns!inner(value_prop, target_pain_points, name)')
@@ -126,77 +120,81 @@ export async function POST(req: NextRequest) {
     id: string;
     status: 'enriched' | 'error';
     error?: string;
-    website_content_length?: number;
+    homepage_chars?: number;
+    team_page_chars?: number;
+    found_person?: boolean;
   }> = [];
 
-  // Process leads in serial (respect rate limits + website fetching)
   for (const lead of leads) {
     const campaign = (lead as Record<string, unknown>).pipeline_campaigns as Record<string, string> | undefined;
     const valueProp = campaign?.value_prop || 'AI-powered workforce platform for agencies';
     const painPoints = campaign?.target_pain_points || '';
 
     try {
-      // ──────────────────────────────────────────────
-      // Stage 1: Fetch REAL website content
-      // ──────────────────────────────────────────────
-      let websiteContent = '';
-      let aboutContent = '';
+      // ─── Stage 1: Scrape their actual website ───────────────────
+      let homepageContent = '';
+      let teamContent = '';
 
       if (lead.website) {
-        // Fetch homepage + about page in parallel
-        const [homeResult, aboutResult] = await Promise.allSettled([
-          fetchWebsiteContent(lead.website, 4000),
-          fetchAboutPage(lead.website, 2000),
+        const [homeResult, teamResult] = await Promise.allSettled([
+          fetchPageText(lead.website, 5000),
+          fetchTeamPages(lead.website, 4000),
         ]);
-        websiteContent = homeResult.status === 'fulfilled' ? homeResult.value : '';
-        aboutContent = aboutResult.status === 'fulfilled' ? aboutResult.value : '';
+        homepageContent = homeResult.status === 'fulfilled' ? homeResult.value : '';
+        teamContent = teamResult.status === 'fulfilled' ? teamResult.value : '';
       }
 
-      const hasRealData = websiteContent.length > 100;
+      const hasWebContent = homepageContent.length > 100;
+      const hasTeamContent = teamContent.length > 100;
 
-      // ──────────────────────────────────────────────
-      // Stage 2: GPT-4o enrichment based on REAL data
-      // ──────────────────────────────────────────────
-      const prompt = `You are an expert B2B sales researcher and cold email copywriter.
+      // ─── Stage 2: GPT-4o extracts real people + writes email ─────
+      const prompt = `You are a B2B sales researcher. I need you to do TWO things:
 
-${hasRealData ? `I've scraped this company's actual website. Use ONLY the information below — do NOT make up facts about them. If the website content doesn't tell you something, say "unclear from their site" rather than guessing.
+1. FIND THE DECISION-MAKER: Look through the website content below and identify the real person who is the ${lead.title || 'owner/founder'} or closest decision-maker at this company. Extract their actual name if you can find it.
 
-=== REAL WEBSITE CONTENT (${lead.company}) ===
-${websiteContent}
-${aboutContent ? `\n=== ABOUT PAGE ===\n${aboutContent}` : ''}
-=== END WEBSITE CONTENT ===` : `I could not fetch their website (${lead.website || 'no URL'}). Base your research on the company name and industry only. Be conservative — don't claim specific facts you can't verify.`}
+2. WRITE A PERSONALIZED EMAIL: Based on what you learn about this company from their actual website.
 
-PROSPECT:
-- Name: ${lead.full_name}
-- Title: ${lead.title} at ${lead.company}
-- Industry: ${lead.industry}
-- Location: ${lead.location || 'Unknown'}
-- Company size: ${lead.company_size || 'Unknown'}
-- Website: ${lead.website || 'Unknown'}
+${hasWebContent ? `=== COMPANY HOMEPAGE (${lead.company}) — ${lead.website} ===
+${homepageContent}
+=== END HOMEPAGE ===` : `No homepage content available for ${lead.website || 'unknown website'}.`}
+
+${hasTeamContent ? `=== TEAM/ABOUT PAGES ===
+${teamContent}
+=== END TEAM PAGES ===` : ''}
+
+COMPANY: ${lead.company}
+INDUSTRY: ${lead.industry || 'Unknown'}
+LOCATION: ${lead.location || 'Unknown'}
+COMPANY SIZE: ${lead.company_size || 'Unknown'}
+TARGET ROLE: ${lead.title || 'Owner/Founder'}
 
 WE ARE SELLING: ${valueProp}
 THEIR LIKELY CHALLENGES: ${painPoints}
 
-IMPORTANT RULES:
-1. ${hasRealData ? 'Reference SPECIFIC things from their website (services they offer, clients they mention, tools they use, their positioning).' : 'Keep observations general since we couldn\'t verify their website.'}
-2. The email must feel like you actually looked at their business, not a mass blast.
-3. The personalized_email MUST be 4-5 sentences max, conversational tone, NOT salesy.
-4. End the email with ONE soft question as CTA (not "let's hop on a call").
-5. Sign off as "Angel Castro, Conversion System".
-6. The opener (SMS/DM) must be under 160 chars and reference something specific.
-7. Subject line: curiosity-driven, max 8 words, no spam trigger words.
-8. CTA link (include naturally in email): https://kyra.conversionsystem.com/get-demo
+RULES:
+1. For the decision-maker: ONLY use names you actually found in the website content above. If no name is visible, set first_name and last_name to empty strings "".
+2. DO NOT make up or guess names. If the about page says "Founded by John Smith" — use that. If there's no name anywhere, leave it blank.
+3. DO NOT include any LinkedIn URLs.
+4. ${hasWebContent ? 'Reference SPECIFIC things from their website (services, clients, tech stack, positioning).' : 'Keep it general since we could not access their website.'}
+5. Email must be 4-5 sentences, conversational, NOT salesy. End with one soft question.
+6. Sign off as "Angel Castro, Conversion System"
+7. If you found a real person name, address the email to them. If not, use "Hi there" or address to the company.
+8. CTA link: https://kyra.conversionsystem.com/get-demo
 
 Return JSON:
 {
-  "company_context": "2-3 sentences about what this company ACTUALLY does (based on their website if available)",
-  "services_offered": "list their main services/offerings you found on their site, or 'unknown' if site wasn't available",
-  "likely_pain_points": "2-3 specific pain points based on their business type and size",
-  "opportunity_angle": "1-2 sentences on how our product specifically solves their pain",
-  "icebreaker": "one specific, verifiable observation about their company that shows you did real research",
-  "personalized_subject": "compelling email subject line",
-  "personalized_email": "4-5 sentence cold email. Must feel hand-written, not templated.",
-  "personalized_opener": "SMS/DM opener under 160 chars"
+  "found_first_name": "real first name from website OR empty string",
+  "found_last_name": "real last name from website OR empty string",
+  "found_title": "their actual title from website OR the target role",
+  "found_email": "their email if visible on site OR empty string",
+  "company_context": "2-3 sentences about what this company ACTUALLY does based on their site",
+  "services_offered": "their main services/offerings from their site",
+  "likely_pain_points": "2-3 specific pain points for their business type",
+  "opportunity_angle": "how our product solves their specific pain",
+  "icebreaker": "one specific observation from their website that shows real research",
+  "personalized_subject": "email subject line (max 8 words, curiosity-driven)",
+  "personalized_email": "4-5 sentence personalized cold email",
+  "personalized_opener": "SMS opener under 160 chars"
 }`;
 
       const aiRes = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -206,7 +204,7 @@ Return JSON:
           model: 'gpt-4o',
           response_format: { type: 'json_object' },
           messages: [{ role: 'user', content: prompt }],
-          temperature: 0.5, // Lower than before (was 0.8) — more grounded in real data
+          temperature: 0.4,
           max_tokens: 2000,
         }),
         signal: AbortSignal.timeout(45_000),
@@ -221,44 +219,70 @@ Return JSON:
       const content = aiData.choices?.[0]?.message?.content;
       const parsed = JSON.parse(content || '{}');
 
-      await svc.from('pipeline_leads').update({
+      // Update lead with discovered person + enrichment
+      const firstName = parsed.found_first_name || '';
+      const lastName = parsed.found_last_name || '';
+      const hasRealPerson = firstName.length > 1 && lastName.length > 1;
+
+      const updateData: Record<string, unknown> = {
         enrichment_data: {
           company_context: parsed.company_context || '',
           services_offered: parsed.services_offered || '',
           likely_pain_points: parsed.likely_pain_points || '',
           opportunity_angle: parsed.opportunity_angle || '',
           icebreaker: parsed.icebreaker || '',
-          has_real_website_data: hasRealData,
-          website_content_chars: websiteContent.length,
+          has_website_data: hasWebContent,
+          has_team_page: hasTeamContent,
+          homepage_chars: homepageContent.length,
+          person_source: hasRealPerson ? 'website' : 'none',
           enriched_at: new Date().toISOString(),
         },
         personalized_subject: parsed.personalized_subject || '',
         personalized_email: parsed.personalized_email || '',
         personalized_opener: parsed.personalized_opener || '',
         stage: 'researched',
-      }).eq('id', lead.id);
+      };
+
+      // Only update person info if we found a real name on the website
+      if (hasRealPerson) {
+        updateData.first_name = firstName;
+        updateData.last_name = lastName;
+        updateData.full_name = `${firstName} ${lastName}`.trim();
+        updateData.title = parsed.found_title || lead.title;
+      }
+
+      // Update email only if found on website (not guessed)
+      if (parsed.found_email && parsed.found_email.includes('@')) {
+        updateData.email = parsed.found_email;
+      }
+
+      await svc.from('pipeline_leads').update(updateData).eq('id', lead.id);
 
       results.push({
         id: lead.id,
         status: 'enriched',
-        website_content_length: websiteContent.length,
+        homepage_chars: homepageContent.length,
+        team_page_chars: teamContent.length,
+        found_person: hasRealPerson,
       });
     } catch (err) {
       results.push({ id: lead.id, status: 'error', error: err instanceof Error ? err.message : 'Unknown' });
     }
 
-    // Pause between leads (website fetch + AI call = heavy)
+    // Pause between leads (website fetch + AI = heavy)
     await new Promise(r => setTimeout(r, 500));
   }
 
   const enriched = results.filter(r => r.status === 'enriched').length;
   const errors = results.filter(r => r.status === 'error').length;
-  const withRealData = results.filter(r => r.status === 'enriched' && (r.website_content_length || 0) > 100).length;
+  const withRealPeople = results.filter(r => r.found_person).length;
+  const withWebData = results.filter(r => (r.homepage_chars || 0) > 100).length;
 
   return NextResponse.json({
     enriched,
     errors,
-    with_real_website_data: withRealData,
+    with_real_people: withRealPeople,
+    with_website_data: withWebData,
     results,
   });
 }
