@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  Target, Plus, Search, Sparkles, Send, Loader2, ChevronDown,
-  Users, Mail, MessageSquare, Calendar, CheckCircle2, X, Eye,
-  Zap, Building2, MapPin, Briefcase, Globe, Linkedin, ArrowRight,
-  BarChart3, RefreshCw,
+  Target, Plus, Search, Sparkles, Send, Loader2,
+  Users, Mail, MessageSquare, Calendar, CheckCircle2, X,
+  Zap, Building2, MapPin, Briefcase, Globe,
+  BarChart3, RefreshCw, Phone, Edit3, Check, ChevronRight,
+  Activity, TrendingUp, ArrowRight, Eye, Clock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -57,6 +58,7 @@ interface Lead {
     phones_found?: string[];
     socials?: Record<string, string>;
     person_source?: string;
+    sent_channels?: string[];
   };
   personalized_subject: string | null;
   personalized_email: string | null;
@@ -69,12 +71,34 @@ interface Lead {
   created_at: string;
 }
 
-type Stage = 'all' | 'found' | 'researched' | 'messaged' | 'replied' | 'interested' | 'booked' | 'closed';
+interface ConversationMessage {
+  id: string;
+  direction: 'inbound' | 'outbound';
+  body: string;
+  type: string;
+  dateAdded: string;
+  status?: string;
+}
+
+interface ActivityItem {
+  id: string;
+  type: string;
+  leadId: string;
+  name: string;
+  company: string;
+  timestamp: string;
+  message: string;
+  icon: string;
+}
+
+type Stage = 'all' | 'found' | 'researched' | 'approved' | 'messaged' | 'replied' | 'interested' | 'booked' | 'closed';
+type ViewMode = 'pipeline' | 'activity' | 'funnel';
 
 const STAGES: { id: Stage; label: string; color: string; icon: typeof Search }[] = [
   { id: 'all', label: 'All', color: 'bg-gray-100 text-gray-700', icon: Users },
   { id: 'found', label: 'Found', color: 'bg-blue-100 text-blue-700', icon: Search },
   { id: 'researched', label: 'Researched', color: 'bg-purple-100 text-purple-700', icon: Sparkles },
+  { id: 'approved', label: 'Approved', color: 'bg-cyan-100 text-cyan-700', icon: Check },
   { id: 'messaged', label: 'Messaged', color: 'bg-indigo-100 text-indigo-700', icon: Send },
   { id: 'replied', label: 'Replied', color: 'bg-amber-100 text-amber-700', icon: MessageSquare },
   { id: 'interested', label: 'Interested', color: 'bg-orange-100 text-orange-700', icon: Zap },
@@ -100,12 +124,30 @@ export default function PipelineClient() {
   const [activeCampaign, setActiveCampaign] = useState<Campaign | null>(null);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [stageFilter, setStageFilter] = useState<Stage>('all');
+  const [viewMode, setViewMode] = useState<ViewMode>('pipeline');
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const [enriching, setEnriching] = useState(false);
   const [launching, setLaunching] = useState(false);
+  const [launchProgress, setLaunchProgress] = useState<{ current: number; total: number; results: Array<{ name: string; status: string; channels: string[] }> } | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [launchChannel, setLaunchChannel] = useState<'both' | 'email' | 'sms'>('both');
+
+  // Activity feed
+  const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [loadingActivity, setLoadingActivity] = useState(false);
+
+  // Conversation view
+  const [conversation, setConversation] = useState<ConversationMessage[]>([]);
+  const [loadingConvo, setLoadingConvo] = useState(false);
+  const [manualMsg, setManualMsg] = useState('');
+  const [sendingMsg, setSendingMsg] = useState(false);
+  const convoEndRef = useRef<HTMLDivElement>(null);
+
+  // Inline editing
+  const [editingField, setEditingField] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
 
   // ─── Campaign creation form ────
   const [form, setForm] = useState({
@@ -136,6 +178,53 @@ export default function PipelineClient() {
   useEffect(() => { loadCampaigns(); }, [loadCampaigns]);
   useEffect(() => { loadLeads(); }, [loadLeads]);
 
+  // ─── Load activity feed ────────
+  const loadActivity = useCallback(async () => {
+    setLoadingActivity(true);
+    try {
+      const res = await fetch('/api/agency/pipeline/activity?hours=48');
+      const data = await res.json();
+      setActivities(data.activities ?? []);
+    } finally {
+      setLoadingActivity(false);
+    }
+  }, []);
+
+  // Auto-refresh activity feed
+  useEffect(() => {
+    if (viewMode === 'activity') {
+      loadActivity();
+      const interval = setInterval(loadActivity, 30_000);
+      return () => clearInterval(interval);
+    }
+  }, [viewMode, loadActivity]);
+
+  // ─── Load conversation for a lead ────────
+  const loadConversation = useCallback(async (leadId: string) => {
+    setLoadingConvo(true);
+    try {
+      const res = await fetch(`/api/agency/pipeline/conversations?lead_id=${leadId}`);
+      const data = await res.json();
+      setConversation(data.messages ?? []);
+    } finally {
+      setLoadingConvo(false);
+    }
+  }, []);
+
+  // Load convo when selecting a lead that has been messaged
+  useEffect(() => {
+    if (selectedLead?.ghl_contact_id) {
+      loadConversation(selectedLead.id);
+    } else {
+      setConversation([]);
+    }
+  }, [selectedLead, loadConversation]);
+
+  // Scroll to bottom of convo
+  useEffect(() => {
+    convoEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [conversation]);
+
   // ─── Create campaign + auto-search ────────
   const createCampaign = async () => {
     if (!form.name.trim()) return;
@@ -153,7 +242,6 @@ export default function PipelineClient() {
       setShowCreate(false);
       setActiveCampaign(campaign);
 
-      // Auto-search for leads
       const searchRes = await fetch('/api/agency/pipeline/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -169,7 +257,7 @@ export default function PipelineClient() {
 
   // ─── Research all found leads ────────
   const enrichAll = async () => {
-    const foundLeads = filteredLeads.filter(l => l.stage === 'found');
+    const foundLeads = leads.filter(l => l.stage === 'found');
     if (!foundLeads.length) return;
     setEnriching(true);
     try {
@@ -185,21 +273,61 @@ export default function PipelineClient() {
     }
   };
 
-  // ─── Launch all researched leads ────────
+  // ─── Approve leads (move researched → approved) ────────
+  const approveLeads = async (leadIds: string[]) => {
+    for (const id of leadIds) {
+      await fetch(`/api/agency/pipeline/leads/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stage: 'approved' }),
+      });
+    }
+    await loadLeads();
+    await loadCampaigns();
+  };
+
+  // ─── Launch all approved leads ────────
   const launchAll = async () => {
-    const ready = filteredLeads.filter(l => l.stage === 'researched');
+    const ready = leads.filter(l => l.stage === 'approved' || l.stage === 'researched');
     if (!ready.length) return;
     setLaunching(true);
+    setLaunchProgress({ current: 0, total: ready.length, results: [] });
     try {
-      await fetch('/api/agency/pipeline/launch', {
+      const res = await fetch('/api/agency/pipeline/launch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lead_ids: ready.map(l => l.id) }),
+        body: JSON.stringify({ lead_ids: ready.map(l => l.id), channel: launchChannel }),
+      });
+      const data = await res.json();
+      setLaunchProgress({
+        current: data.sent + data.errors + data.skipped,
+        total: ready.length,
+        results: (data.results || []).map((r: { name: string; status: string; channels: string[] }) => ({
+          name: r.name, status: r.status, channels: r.channels || [],
+        })),
       });
       await loadLeads();
       await loadCampaigns();
     } finally {
       setLaunching(false);
+    }
+  };
+
+  // ─── Send manual message ────────
+  const sendManualMessage = async () => {
+    if (!selectedLead || !manualMsg.trim()) return;
+    setSendingMsg(true);
+    try {
+      await fetch(`/api/agency/pipeline/leads/${selectedLead.id}/message`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: manualMsg.trim(), type: 'SMS' }),
+      });
+      setManualMsg('');
+      // Reload conversation
+      await loadConversation(selectedLead.id);
+    } finally {
+      setSendingMsg(false);
     }
   };
 
@@ -211,6 +339,18 @@ export default function PipelineClient() {
       body: JSON.stringify(updates),
     });
     await loadLeads();
+  };
+
+  // ─── Inline edit save ────────
+  const saveInlineEdit = async (leadId: string, field: string) => {
+    await updateLead(leadId, { [field]: editValue });
+    setEditingField(null);
+    setEditValue('');
+    // Refresh selectedLead
+    const res = await fetch(`/api/agency/pipeline/leads?campaign_id=${activeCampaign?.id}`);
+    const data = await res.json();
+    const updated = (data.leads || []).find((l: Lead) => l.id === leadId);
+    if (updated) setSelectedLead(updated);
   };
 
   // ─── Search more leads ────────
@@ -242,6 +382,43 @@ export default function PipelineClient() {
     stageCounts[l.stage] = (stageCounts[l.stage] ?? 0) + 1;
   }
 
+  // ─── Funnel calculations ────────
+  const totalMessaged = stageCounts.messaged ?? 0;
+  const totalReplied = (stageCounts.replied ?? 0) + (stageCounts.interested ?? 0) + (stageCounts.booked ?? 0) + (stageCounts.closed ?? 0);
+  const totalInterested = (stageCounts.interested ?? 0) + (stageCounts.booked ?? 0) + (stageCounts.closed ?? 0);
+  const totalBooked = (stageCounts.booked ?? 0) + (stageCounts.closed ?? 0);
+  const totalClosed = stageCounts.closed ?? 0;
+  const allMessaged = totalMessaged + totalReplied;
+
+  // ─── Single-lead actions ────────
+  async function enrichSingle(leadId: string) {
+    setEnriching(true);
+    try {
+      await fetch('/api/agency/pipeline/enrich', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lead_ids: [leadId] }),
+      });
+      await loadLeads();
+    } finally {
+      setEnriching(false);
+    }
+  }
+
+  async function launchSingle(leadId: string) {
+    setLaunching(true);
+    try {
+      await fetch('/api/agency/pipeline/launch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lead_ids: [leadId], channel: launchChannel }),
+      });
+      await loadLeads();
+    } finally {
+      setLaunching(false);
+    }
+  }
+
   // ─────────────────────────────────────────────────────────────────────────────
   // RENDER
   // ─────────────────────────────────────────────────────────────────────────────
@@ -265,11 +442,30 @@ export default function PipelineClient() {
             AI Sales Pipeline
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            Find leads → Research → Personalize → Launch → Close
+            Find → Research → Approve → Launch → <span className="text-green-600 font-semibold">AI Closes</span>
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          {activeCampaign && (
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* View mode toggle */}
+          <div className="flex rounded-lg border border-gray-200 overflow-hidden mr-2">
+            {[
+              { id: 'pipeline' as ViewMode, label: 'Pipeline', icon: Target },
+              { id: 'activity' as ViewMode, label: 'Live', icon: Activity },
+              { id: 'funnel' as ViewMode, label: 'Funnel', icon: TrendingUp },
+            ].map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                onClick={() => setViewMode(id)}
+                className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium transition ${
+                  viewMode === id ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                <Icon className="h-3 w-3" /> {label}
+              </button>
+            ))}
+          </div>
+
+          {activeCampaign && viewMode === 'pipeline' && (
             <>
               <Button
                 onClick={() => searchMore(25)}
@@ -288,14 +484,36 @@ export default function PipelineClient() {
                 {enriching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
                 Research All ({stageCounts.found ?? 0})
               </Button>
-              <Button
-                onClick={launchAll}
-                disabled={launching || !leads.some(l => l.stage === 'researched')}
-                className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-sm flex items-center gap-1.5"
-              >
-                {launching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-                Send All ({stageCounts.researched ?? 0})
-              </Button>
+              {(stageCounts.researched ?? 0) > 0 && (
+                <Button
+                  onClick={() => approveLeads(leads.filter(l => l.stage === 'researched').map(l => l.id))}
+                  className="bg-cyan-600 hover:bg-cyan-700 text-white text-sm flex items-center gap-1.5"
+                >
+                  <Check className="h-3.5 w-3.5" />
+                  Approve All ({stageCounts.researched ?? 0})
+                </Button>
+              )}
+              {((stageCounts.approved ?? 0) + (stageCounts.researched ?? 0)) > 0 && (
+                <div className="flex items-center gap-1">
+                  <select
+                    value={launchChannel}
+                    onChange={e => setLaunchChannel(e.target.value as typeof launchChannel)}
+                    className="text-xs border rounded-lg px-2 py-2 bg-white"
+                  >
+                    <option value="both">📧+📱 Both</option>
+                    <option value="email">📧 Email Only</option>
+                    <option value="sms">📱 SMS Only</option>
+                  </select>
+                  <Button
+                    onClick={launchAll}
+                    disabled={launching}
+                    className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-sm flex items-center gap-1.5"
+                  >
+                    {launching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                    Launch ({(stageCounts.approved ?? 0) + (stageCounts.researched ?? 0)})
+                  </Button>
+                </div>
+              )}
             </>
           )}
           <Button
@@ -329,175 +547,338 @@ export default function PipelineClient() {
         </div>
       )}
 
+      {/* ─── Launch Progress Banner ─── */}
+      {launchProgress && (
+        <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-semibold text-indigo-700">
+              {launching ? '🚀 Launching outreach...' : '✅ Launch complete!'}
+            </p>
+            {!launching && (
+              <button onClick={() => setLaunchProgress(null)} className="text-indigo-400 hover:text-indigo-600">
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          <div className="w-full bg-indigo-200 rounded-full h-2 mb-3">
+            <div
+              className="bg-indigo-600 h-2 rounded-full transition-all duration-500"
+              style={{ width: `${launchProgress.total > 0 ? (launchProgress.current / launchProgress.total) * 100 : 0}%` }}
+            />
+          </div>
+          {launchProgress.results.length > 0 && (
+            <div className="space-y-1 max-h-32 overflow-y-auto">
+              {launchProgress.results.map((r, i) => (
+                <div key={i} className="flex items-center gap-2 text-xs">
+                  {r.status === 'sent' ? (
+                    <CheckCircle2 className="h-3 w-3 text-green-500" />
+                  ) : r.status === 'skipped' ? (
+                    <ArrowRight className="h-3 w-3 text-gray-400" />
+                  ) : (
+                    <X className="h-3 w-3 text-red-500" />
+                  )}
+                  <span className={r.status === 'sent' ? 'text-green-700' : r.status === 'skipped' ? 'text-gray-500' : 'text-red-600'}>
+                    {r.name}
+                  </span>
+                  {r.channels?.length > 0 && (
+                    <span className="text-indigo-500">
+                      via {r.channels.map(c => c === 'email' ? '📧' : '📱').join(' ')}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ─── Stats strip ─── */}
       {activeCampaign && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+        <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-2">
           {[
             { label: 'Found', count: stageCounts.found ?? 0, icon: Search, color: 'text-blue-600 bg-blue-50' },
             { label: 'Researched', count: stageCounts.researched ?? 0, icon: Sparkles, color: 'text-purple-600 bg-purple-50' },
+            { label: 'Approved', count: stageCounts.approved ?? 0, icon: Check, color: 'text-cyan-600 bg-cyan-50' },
             { label: 'Messaged', count: stageCounts.messaged ?? 0, icon: Send, color: 'text-indigo-600 bg-indigo-50' },
             { label: 'Replied', count: stageCounts.replied ?? 0, icon: MessageSquare, color: 'text-amber-600 bg-amber-50' },
             { label: 'Interested', count: stageCounts.interested ?? 0, icon: Zap, color: 'text-orange-600 bg-orange-50' },
             { label: 'Booked', count: stageCounts.booked ?? 0, icon: Calendar, color: 'text-green-600 bg-green-50' },
             { label: 'Closed', count: stageCounts.closed ?? 0, icon: CheckCircle2, color: 'text-emerald-600 bg-emerald-50' },
+            { label: 'Skipped', count: stageCounts.skipped ?? 0, icon: X, color: 'text-gray-500 bg-gray-50' },
           ].map(({ label, count, icon: Icon, color }) => (
-            <div key={label} className={`rounded-xl border px-3 py-2.5 ${color}`}>
-              <div className="flex items-center gap-1.5">
-                <Icon className="h-3.5 w-3.5" />
-                <span className="text-xs font-medium">{label}</span>
-              </div>
-              <p className="text-xl font-bold mt-0.5">{count}</p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* ─── Stage filter tabs ─── */}
-      {activeCampaign && (
-        <div className="flex items-center gap-1 overflow-x-auto pb-1">
-          {STAGES.map(({ id, label, color, icon: Icon }) => (
             <button
-              key={id}
-              onClick={() => setStageFilter(id)}
-              className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition ${
-                stageFilter === id ? color : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
-              }`}
+              key={label}
+              onClick={() => { setStageFilter(label.toLowerCase() as Stage); setViewMode('pipeline'); }}
+              className={`rounded-xl border px-3 py-2 ${color} text-left hover:shadow-sm transition`}
             >
-              <Icon className="h-3 w-3" />
-              {label}
-              {id !== 'all' && stageCounts[id] ? (
-                <span className="ml-0.5 opacity-70">({stageCounts[id]})</span>
-              ) : null}
+              <div className="flex items-center gap-1">
+                <Icon className="h-3 w-3" />
+                <span className="text-[10px] font-medium">{label}</span>
+              </div>
+              <p className="text-lg font-bold">{count}</p>
             </button>
           ))}
         </div>
       )}
 
-      {/* ─── Empty state ─── */}
-      {!activeCampaign && campaigns.length === 0 && (
-        <div className="text-center py-16">
-          <Target className="h-12 w-12 text-indigo-300 mx-auto mb-4" />
-          <h2 className="text-lg font-bold text-gray-900 mb-2">Launch Your First Campaign</h2>
-          <p className="text-sm text-gray-500 mb-6 max-w-md mx-auto">
-            Create a campaign to find qualified leads, research them with AI,
-            generate personalized outreach, and launch — all from one place.
-          </p>
-          <Button
-            onClick={() => setShowCreate(true)}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white"
-          >
-            <Plus className="h-4 w-4 mr-1" /> Create Campaign
-          </Button>
+      {/* ═══════════ PIPELINE VIEW ═══════════ */}
+      {viewMode === 'pipeline' && (
+        <>
+          {/* Stage filter tabs */}
+          {activeCampaign && (
+            <div className="flex items-center gap-1 overflow-x-auto pb-1">
+              {STAGES.map(({ id, label, color, icon: Icon }) => (
+                <button
+                  key={id}
+                  onClick={() => setStageFilter(id)}
+                  className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition ${
+                    stageFilter === id ? color : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
+                  }`}
+                >
+                  <Icon className="h-3 w-3" />
+                  {label}
+                  {id !== 'all' && stageCounts[id] ? (
+                    <span className="ml-0.5 opacity-70">({stageCounts[id]})</span>
+                  ) : null}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Lead cards grid */}
+          {filteredLeads.length > 0 && (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {filteredLeads.map((lead) => (
+                <div
+                  key={lead.id}
+                  className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition cursor-pointer"
+                  onClick={() => setSelectedLead(lead)}
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <p className="font-semibold text-gray-900 text-sm">{lead.full_name || 'Unknown Contact'}</p>
+                      <p className="text-xs text-gray-500">{lead.title} at {lead.company}</p>
+                    </div>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${STAGE_BADGE[lead.stage] || 'bg-gray-100'}`}>
+                      {lead.stage.toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="space-y-1 mb-3">
+                    <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                      <Building2 className="h-3 w-3 text-gray-400" />
+                      {lead.company} {lead.company_size && `· ${lead.company_size}`}
+                    </div>
+                    {lead.location && (
+                      <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                        <MapPin className="h-3 w-3 text-gray-400" />
+                        {lead.location}
+                      </div>
+                    )}
+                    {lead.industry && (
+                      <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                        <Briefcase className="h-3 w-3 text-gray-400" />
+                        {lead.industry}
+                      </div>
+                    )}
+                  </div>
+                  {/* Sent channels badges */}
+                  {lead.enrichment_data?.sent_channels && lead.enrichment_data.sent_channels.length > 0 && (
+                    <div className="flex gap-1 mb-2">
+                      {lead.enrichment_data.sent_channels.includes('email') && (
+                        <span className="text-[9px] font-medium bg-green-100 text-green-700 px-1.5 py-0.5 rounded">📧 Email ✓</span>
+                      )}
+                      {lead.enrichment_data.sent_channels.includes('sms') && (
+                        <span className="text-[9px] font-medium bg-green-100 text-green-700 px-1.5 py-0.5 rounded">📱 SMS ✓</span>
+                      )}
+                    </div>
+                  )}
+                  {lead.personalized_opener && (
+                    <p className="text-xs text-indigo-600 italic line-clamp-2 mb-2">
+                      &ldquo;{lead.personalized_opener}&rdquo;
+                    </p>
+                  )}
+                  <div className="flex items-center gap-1.5 mt-auto pt-2 border-t border-gray-100">
+                    {lead.website && (
+                      <a href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`} target="_blank" rel="noopener" onClick={e => e.stopPropagation()} className="text-gray-400 hover:text-gray-600" title={lead.website}>
+                        <Globe className="h-3.5 w-3.5" />
+                      </a>
+                    )}
+                    {lead.email && (
+                      <a href={`mailto:${lead.email}`} onClick={e => e.stopPropagation()} className="text-gray-400 hover:text-indigo-600" title={lead.email}>
+                        <Mail className="h-3.5 w-3.5" />
+                      </a>
+                    )}
+                    {lead.phone && (
+                      <a href={`tel:${lead.phone}`} onClick={e => e.stopPropagation()} className="text-gray-400 hover:text-green-600" title={lead.phone}>
+                        <Phone className="h-3.5 w-3.5" />
+                      </a>
+                    )}
+                    {lead.enrichment_data?.socials && Object.keys(lead.enrichment_data.socials).length > 0 && (
+                      <span className="text-[9px] text-gray-400 font-medium">+{Object.keys(lead.enrichment_data.socials).length} social</span>
+                    )}
+                    <div className="flex-1" />
+                    {lead.stage === 'found' && (
+                      <button onClick={(e) => { e.stopPropagation(); enrichSingle(lead.id); }} className="text-[10px] font-semibold text-purple-600 bg-purple-50 px-2 py-0.5 rounded hover:bg-purple-100">Research</button>
+                    )}
+                    {lead.stage === 'researched' && (
+                      <button onClick={(e) => { e.stopPropagation(); approveLeads([lead.id]); }} className="text-[10px] font-semibold text-cyan-600 bg-cyan-50 px-2 py-0.5 rounded hover:bg-cyan-100">Approve</button>
+                    )}
+                    {lead.stage === 'approved' && (
+                      <button onClick={(e) => { e.stopPropagation(); launchSingle(lead.id); }} className="text-[10px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded hover:bg-indigo-100">Launch</button>
+                    )}
+                    {['replied', 'interested'].includes(lead.stage) && (
+                      <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded flex items-center gap-1">
+                        <Activity className="h-2.5 w-2.5" /> AI Closing
+                      </span>
+                    )}
+                    {lead.stage === 'booked' && (
+                      <span className="text-[10px] font-semibold text-green-600 bg-green-50 px-2 py-0.5 rounded">📅 Demo Set</span>
+                    )}
+                    {lead.messaged_at && !['replied', 'interested', 'booked', 'closed'].includes(lead.stage) && (
+                      <span className="text-[10px] text-gray-400">Sent {new Date(lead.messaged_at).toLocaleDateString()}</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Empty states */}
+          {!activeCampaign && campaigns.length === 0 && (
+            <div className="text-center py-16">
+              <Target className="h-12 w-12 text-indigo-300 mx-auto mb-4" />
+              <h2 className="text-lg font-bold text-gray-900 mb-2">Launch Your First Campaign</h2>
+              <p className="text-sm text-gray-500 mb-6 max-w-md mx-auto">
+                Create a campaign to find qualified leads, research them with AI,
+                personalize outreach, and let the AI close deals — all hands-off.
+              </p>
+              <Button onClick={() => setShowCreate(true)} className="bg-indigo-600 hover:bg-indigo-500 text-white">
+                <Plus className="h-4 w-4 mr-1" /> Create Campaign
+              </Button>
+            </div>
+          )}
+
+          {activeCampaign && filteredLeads.length === 0 && !searching && (
+            <div className="text-center py-12">
+              <Search className="h-8 w-8 text-gray-300 mx-auto mb-3" />
+              <p className="text-sm text-gray-500">
+                {stageFilter === 'all' ? 'No leads yet. Click "Find 25 More" to start.' : `No leads in ${stageFilter} stage.`}
+              </p>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ═══════════ ACTIVITY FEED VIEW ═══════════ */}
+      {viewMode === 'activity' && (
+        <div className="max-w-2xl mx-auto">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+              <Activity className="h-5 w-5 text-green-500" />
+              Live Activity
+            </h2>
+            <button onClick={loadActivity} className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1">
+              <RefreshCw className={`h-3 w-3 ${loadingActivity ? 'animate-spin' : ''}`} /> Refresh
+            </button>
+          </div>
+          {activities.length === 0 ? (
+            <div className="text-center py-16 bg-gray-50 rounded-xl">
+              <Activity className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+              <p className="text-sm text-gray-500">No activity yet. Launch a campaign to see real-time updates.</p>
+              <p className="text-xs text-gray-400 mt-1">Auto-refreshes every 30 seconds</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {activities.map((a) => (
+                <div
+                  key={a.id}
+                  className="flex items-center gap-3 bg-white border border-gray-100 rounded-lg px-4 py-3 hover:shadow-sm transition cursor-pointer"
+                  onClick={() => {
+                    const lead = leads.find(l => l.id === a.leadId);
+                    if (lead) { setSelectedLead(lead); setViewMode('pipeline'); }
+                  }}
+                >
+                  <span className="text-lg">{a.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-900">
+                      <span className="font-semibold">{a.name}</span>
+                      {a.company && <span className="text-gray-500"> at {a.company}</span>}
+                      {' '}<span className="text-gray-600">{a.message}</span>
+                    </p>
+                  </div>
+                  <span className="text-[10px] text-gray-400 whitespace-nowrap">
+                    {timeAgo(a.timestamp)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
-      {/* ─── Lead cards grid ─── */}
-      {filteredLeads.length > 0 && (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredLeads.map((lead) => (
-            <div
-              key={lead.id}
-              className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition cursor-pointer"
-              onClick={() => setSelectedLead(lead)}
-            >
-              <div className="flex items-start justify-between mb-2">
-                <div>
-                  <p className="font-semibold text-gray-900 text-sm">{lead.full_name}</p>
-                  <p className="text-xs text-gray-500">{lead.title}</p>
-                </div>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${STAGE_BADGE[lead.stage] || 'bg-gray-100'}`}>
-                  {lead.stage.toUpperCase()}
-                </span>
-              </div>
-              <div className="space-y-1 mb-3">
-                <div className="flex items-center gap-1.5 text-xs text-gray-600">
-                  <Building2 className="h-3 w-3 text-gray-400" />
-                  {lead.company} {lead.company_size && `· ${lead.company_size}`}
-                </div>
-                {lead.location && (
-                  <div className="flex items-center gap-1.5 text-xs text-gray-600">
-                    <MapPin className="h-3 w-3 text-gray-400" />
-                    {lead.location}
+      {/* ═══════════ FUNNEL VIEW ═══════════ */}
+      {viewMode === 'funnel' && (
+        <div className="max-w-2xl mx-auto space-y-6">
+          <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-indigo-500" />
+            Conversion Funnel
+          </h2>
+
+          {allMessaged === 0 ? (
+            <div className="text-center py-16 bg-gray-50 rounded-xl">
+              <BarChart3 className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+              <p className="text-sm text-gray-500">Launch your first campaign to see conversion metrics.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {[
+                { label: 'Messaged', count: allMessaged, total: allMessaged, color: 'bg-indigo-500', textColor: 'text-indigo-700' },
+                { label: 'Replied', count: totalReplied, total: allMessaged, color: 'bg-amber-500', textColor: 'text-amber-700' },
+                { label: 'Interested', count: totalInterested, total: allMessaged, color: 'bg-orange-500', textColor: 'text-orange-700' },
+                { label: 'Booked', count: totalBooked, total: allMessaged, color: 'bg-green-500', textColor: 'text-green-700' },
+                { label: 'Closed', count: totalClosed, total: allMessaged, color: 'bg-emerald-500', textColor: 'text-emerald-700' },
+              ].map(({ label, count, total, color, textColor }, i) => {
+                const pct = total > 0 ? (count / total * 100) : 0;
+                return (
+                  <div key={label}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className={`text-sm font-semibold ${textColor}`}>{label}</span>
+                      <span className="text-sm text-gray-600">{count} <span className="text-gray-400">({pct.toFixed(1)}%)</span></span>
+                    </div>
+                    <div className="w-full bg-gray-100 rounded-full h-8 relative overflow-hidden">
+                      <div
+                        className={`${color} h-8 rounded-full transition-all duration-700 flex items-center justify-end pr-3`}
+                        style={{ width: `${Math.max(pct, 2)}%` }}
+                      >
+                        {pct > 15 && <span className="text-white text-xs font-bold">{pct.toFixed(0)}%</span>}
+                      </div>
+                    </div>
+                    {i < 4 && (
+                      <div className="flex items-center justify-center py-1">
+                        <ChevronRight className="h-4 w-4 text-gray-300 rotate-90" />
+                      </div>
+                    )}
                   </div>
-                )}
-                {lead.industry && (
-                  <div className="flex items-center gap-1.5 text-xs text-gray-600">
-                    <Briefcase className="h-3 w-3 text-gray-400" />
-                    {lead.industry}
-                  </div>
-                )}
-              </div>
-              {lead.personalized_opener && (
-                <p className="text-xs text-indigo-600 italic line-clamp-2 mb-2">
-                  &ldquo;{lead.personalized_opener}&rdquo;
-                </p>
-              )}
-              <div className="flex items-center gap-1.5 mt-auto pt-2 border-t border-gray-100">
-                {lead.website && (
-                  <a
-                    href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`}
-                    target="_blank"
-                    rel="noopener"
-                    onClick={e => e.stopPropagation()}
-                    className="text-gray-400 hover:text-gray-600"
-                    title={lead.website}
-                  >
-                    <Globe className="h-3.5 w-3.5" />
-                  </a>
-                )}
-                {lead.email && (
-                  <a href={`mailto:${lead.email}`} onClick={e => e.stopPropagation()} className="text-gray-400 hover:text-indigo-600" title={lead.email}>
-                    <Mail className="h-3.5 w-3.5" />
-                  </a>
-                )}
-                {lead.phone && (
-                  <a href={`tel:${lead.phone}`} onClick={e => e.stopPropagation()} className="text-gray-400 hover:text-green-600" title={lead.phone}>
-                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
-                  </a>
-                )}
-                {lead.enrichment_data?.socials && Object.keys(lead.enrichment_data.socials).length > 0 && (
-                  <span className="text-[9px] text-gray-400 font-medium" title={Object.keys(lead.enrichment_data.socials).join(', ')}>
-                    +{Object.keys(lead.enrichment_data.socials).length} social
-                  </span>
-                )}
-                <div className="flex-1" />
-                {lead.stage === 'found' && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); enrichSingle(lead.id); }}
-                    className="text-[10px] font-semibold text-purple-600 bg-purple-50 px-2 py-0.5 rounded hover:bg-purple-100"
-                  >
-                    Research
-                  </button>
-                )}
-                {lead.stage === 'researched' && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); launchSingle(lead.id); }}
-                    className="text-[10px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded hover:bg-indigo-100"
-                  >
-                    Send
-                  </button>
-                )}
-                {lead.messaged_at && (
-                  <span className="text-[10px] text-gray-400">
-                    Sent {new Date(lead.messaged_at).toLocaleDateString()}
-                  </span>
-                )}
+                );
+              })}
+
+              {/* Summary cards */}
+              <div className="grid grid-cols-2 gap-3 mt-6">
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
+                  <p className="text-3xl font-bold text-amber-600">{allMessaged > 0 ? (totalReplied / allMessaged * 100).toFixed(1) : 0}%</p>
+                  <p className="text-xs text-amber-700 font-medium mt-1">Reply Rate</p>
+                </div>
+                <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
+                  <p className="text-3xl font-bold text-green-600">{allMessaged > 0 ? (totalBooked / allMessaged * 100).toFixed(1) : 0}%</p>
+                  <p className="text-xs text-green-700 font-medium mt-1">Booking Rate</p>
+                </div>
               </div>
             </div>
-          ))}
+          )}
         </div>
       )}
 
-      {activeCampaign && filteredLeads.length === 0 && !searching && (
-        <div className="text-center py-12">
-          <Search className="h-8 w-8 text-gray-300 mx-auto mb-3" />
-          <p className="text-sm text-gray-500">
-            {stageFilter === 'all' ? 'No leads yet. Click "Find More Leads" to start.' : `No leads in ${stageFilter} stage.`}
-          </p>
-        </div>
-      )}
-
-      {/* ─── Create Campaign Modal ─── */}
+      {/* ═══════════ CREATE CAMPAIGN MODAL ═══════════ */}
       {showCreate && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowCreate(false)}>
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
@@ -508,41 +889,22 @@ export default function PipelineClient() {
             <div className="space-y-3">
               <div>
                 <label className="text-xs font-medium text-gray-600 mb-1 block">Campaign name *</label>
-                <input
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                  placeholder="e.g. GHL Agency Owners — Q1 2026"
-                  value={form.name}
-                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                />
+                <input className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="e.g. GHL Agency Owners — Q1 2026" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-medium text-gray-600 mb-1 block">Target industry</label>
-                  <input
-                    className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                    placeholder="e.g. Marketing Agencies"
-                    value={form.target_industry}
-                    onChange={e => setForm(f => ({ ...f, target_industry: e.target.value }))}
-                  />
+                  <input className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="e.g. Marketing Agencies" value={form.target_industry} onChange={e => setForm(f => ({ ...f, target_industry: e.target.value }))} />
                 </div>
                 <div>
                   <label className="text-xs font-medium text-gray-600 mb-1 block">Target role/title</label>
-                  <input
-                    className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                    placeholder="e.g. Agency Owner, CEO"
-                    value={form.target_role}
-                    onChange={e => setForm(f => ({ ...f, target_role: e.target.value }))}
-                  />
+                  <input className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="e.g. Agency Owner, CEO" value={form.target_role} onChange={e => setForm(f => ({ ...f, target_role: e.target.value }))} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-medium text-gray-600 mb-1 block">Company size</label>
-                  <select
-                    className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                    value={form.target_company_size}
-                    onChange={e => setForm(f => ({ ...f, target_company_size: e.target.value }))}
-                  >
+                  <select className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" value={form.target_company_size} onChange={e => setForm(f => ({ ...f, target_company_size: e.target.value }))}>
                     <option value="1-10">1-10 employees</option>
                     <option value="11-50">11-50 employees</option>
                     <option value="51-200">51-200 employees</option>
@@ -551,39 +913,20 @@ export default function PipelineClient() {
                 </div>
                 <div>
                   <label className="text-xs font-medium text-gray-600 mb-1 block">Location</label>
-                  <input
-                    className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                    placeholder="e.g. United States"
-                    value={form.target_location}
-                    onChange={e => setForm(f => ({ ...f, target_location: e.target.value }))}
-                  />
+                  <input className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="e.g. Los Angeles, CA" value={form.target_location} onChange={e => setForm(f => ({ ...f, target_location: e.target.value }))} />
                 </div>
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600 mb-1 block">Pain points (what problems do they have?)</label>
-                <textarea
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none min-h-[60px]"
-                  placeholder="e.g. struggling to add AI services for clients, losing deals to competitors with AI..."
-                  value={form.target_pain_points}
-                  onChange={e => setForm(f => ({ ...f, target_pain_points: e.target.value }))}
-                />
+                <label className="text-xs font-medium text-gray-600 mb-1 block">Pain points</label>
+                <textarea className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none min-h-[60px]" placeholder="e.g. struggling to add AI services for clients..." value={form.target_pain_points} onChange={e => setForm(f => ({ ...f, target_pain_points: e.target.value }))} />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600 mb-1 block">Value proposition (what do you offer?)</label>
-                <textarea
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none min-h-[60px]"
-                  placeholder="e.g. Kyra deploys autonomous AI workers to GHL sub-accounts in 5 minutes, one dashboard for all clients"
-                  value={form.value_prop}
-                  onChange={e => setForm(f => ({ ...f, value_prop: e.target.value }))}
-                />
+                <label className="text-xs font-medium text-gray-600 mb-1 block">Value proposition</label>
+                <textarea className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none min-h-[60px]" placeholder="e.g. Deploy AI workers for your clients in 5 minutes..." value={form.value_prop} onChange={e => setForm(f => ({ ...f, value_prop: e.target.value }))} />
               </div>
               <div>
                 <label className="text-xs font-medium text-gray-600 mb-1 block">How many leads to find?</label>
-                <select
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                  value={form.lead_count}
-                  onChange={e => setForm(f => ({ ...f, lead_count: Number(e.target.value) }))}
-                >
+                <select className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" value={form.lead_count} onChange={e => setForm(f => ({ ...f, lead_count: Number(e.target.value) }))}>
                   <option value={10}>10 leads</option>
                   <option value={25}>25 leads</option>
                   <option value={50}>50 leads</option>
@@ -593,193 +936,265 @@ export default function PipelineClient() {
             </div>
             <div className="flex justify-end gap-2 mt-6">
               <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
-              <Button
-                onClick={createCampaign}
-                disabled={!form.name.trim() || searching}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white flex items-center gap-1.5"
-              >
-                {searching
-                  ? <><Loader2 className="h-4 w-4 animate-spin" /> Creating & Finding Leads...</>
-                  : <><Sparkles className="h-4 w-4" /> Create & Find Leads</>
-                }
+              <Button onClick={createCampaign} disabled={!form.name.trim() || searching} className="bg-indigo-600 hover:bg-indigo-500 text-white flex items-center gap-1.5">
+                {searching ? <><Loader2 className="h-4 w-4 animate-spin" /> Creating...</> : <><Sparkles className="h-4 w-4" /> Create & Find Leads</>}
               </Button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ─── Lead Detail Modal ─── */}
+      {/* ═══════════ LEAD DETAIL MODAL ═══════════ */}
       {selectedLead && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setSelectedLead(null)}>
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <h2 className="text-lg font-bold text-gray-900">{selectedLead.full_name}</h2>
-                <p className="text-sm text-gray-500">{selectedLead.title} at {selectedLead.company}</p>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => { setSelectedLead(null); setConversation([]); }}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="p-6 border-b shrink-0">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">{selectedLead.full_name || 'Unknown Contact'}</h2>
+                  <p className="text-sm text-gray-500">{selectedLead.title} at {selectedLead.company}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${STAGE_BADGE[selectedLead.stage] || 'bg-gray-100'}`}>
+                    {selectedLead.stage.toUpperCase()}
+                  </span>
+                  <button onClick={() => { setSelectedLead(null); setConversation([]); }} className="text-gray-400 hover:text-gray-600">
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${STAGE_BADGE[selectedLead.stage] || 'bg-gray-100'}`}>
-                  {selectedLead.stage.toUpperCase()}
-                </span>
-                <button onClick={() => setSelectedLead(null)} className="text-gray-400 hover:text-gray-600">
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-            </div>
 
-            {/* Info grid */}
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              {selectedLead.location && (
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <MapPin className="h-4 w-4 text-gray-400" /> {selectedLead.location}
-                </div>
-              )}
-              {selectedLead.industry && (
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Briefcase className="h-4 w-4 text-gray-400" /> {selectedLead.industry}
-                </div>
-              )}
-              {selectedLead.company_size && (
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Users className="h-4 w-4 text-gray-400" /> {selectedLead.company_size}
-                </div>
-              )}
-              {selectedLead.email && (
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Mail className="h-4 w-4 text-gray-400" /> <a href={`mailto:${selectedLead.email}`} className="text-indigo-600 hover:underline">{selectedLead.email}</a>
-                </div>
-              )}
-              {selectedLead.phone && (
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
-                  <a href={`tel:${selectedLead.phone}`} className="text-indigo-600 hover:underline">{selectedLead.phone}</a>
-                </div>
-              )}
-              {selectedLead.website && (
-                <a href={selectedLead.website.startsWith('http') ? selectedLead.website : `https://${selectedLead.website}`} target="_blank" rel="noopener" className="flex items-center gap-2 text-sm text-indigo-600 hover:underline">
-                  <Globe className="h-4 w-4" /> {selectedLead.website}
-                </a>
-              )}
-              {/* Social Media Profiles */}
+              {/* Contact info row */}
+              <div className="flex flex-wrap gap-3 mt-3">
+                {selectedLead.email && (
+                  <a href={`mailto:${selectedLead.email}`} className="flex items-center gap-1.5 text-xs text-indigo-600 hover:underline">
+                    <Mail className="h-3.5 w-3.5" /> {selectedLead.email}
+                  </a>
+                )}
+                {selectedLead.phone && (
+                  <a href={`tel:${selectedLead.phone}`} className="flex items-center gap-1.5 text-xs text-green-600 hover:underline">
+                    <Phone className="h-3.5 w-3.5" /> {selectedLead.phone}
+                  </a>
+                )}
+                {selectedLead.website && (
+                  <a href={selectedLead.website.startsWith('http') ? selectedLead.website : `https://${selectedLead.website}`} target="_blank" rel="noopener" className="flex items-center gap-1.5 text-xs text-gray-600 hover:underline">
+                    <Globe className="h-3.5 w-3.5" /> {selectedLead.website}
+                  </a>
+                )}
+                {selectedLead.location && (
+                  <span className="flex items-center gap-1.5 text-xs text-gray-500">
+                    <MapPin className="h-3.5 w-3.5" /> {selectedLead.location}
+                  </span>
+                )}
+              </div>
+
+              {/* Social badges */}
               {selectedLead.enrichment_data?.socials && Object.keys(selectedLead.enrichment_data.socials).length > 0 && (
-                <div className="flex flex-wrap gap-2 pt-1">
+                <div className="flex flex-wrap gap-1.5 mt-2">
                   {Object.entries(selectedLead.enrichment_data.socials).map(([platform, url]) => (
                     <a key={platform} href={url} target="_blank" rel="noopener"
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors">
-                      {platform === 'facebook' && '📘'}
-                      {platform === 'instagram' && '📸'}
-                      {platform === 'twitter' && '🐦'}
-                      {platform === 'youtube' && '▶️'}
-                      {platform === 'tiktok' && '🎵'}
-                      {platform === 'linkedin' && '💼'}
-                      {platform === 'yelp' && '⭐'}
-                      {platform === 'google_business' && '📍'}
-                      {!['facebook','instagram','twitter','youtube','tiktok','linkedin','yelp','google_business'].includes(platform) && '🔗'}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">
+                      {platform === 'facebook' ? '📘' : platform === 'instagram' ? '📸' : platform === 'twitter' ? '🐦' : platform === 'youtube' ? '▶️' : platform === 'yelp' ? '⭐' : '🔗'}
                       {' '}{platform.charAt(0).toUpperCase() + platform.slice(1).replace('_', ' ')}
                     </a>
                   ))}
                 </div>
               )}
-              {/* Additional emails found */}
-              {selectedLead.enrichment_data?.emails_found && selectedLead.enrichment_data.emails_found.length > 1 && (
-                <div className="text-xs text-gray-500 pt-1">
-                  Also found: {selectedLead.enrichment_data.emails_found.filter(e => e !== selectedLead.email).join(', ')}
-                </div>
-              )}
-              {/* Additional phones found */}
-              {selectedLead.enrichment_data?.phones_found && selectedLead.enrichment_data.phones_found.length > 1 && (
-                <div className="text-xs text-gray-500">
-                  Other phones: {selectedLead.enrichment_data.phones_found.filter(p => p !== selectedLead.phone).join(', ')}
-                </div>
-              )}
             </div>
 
-            {/* Enrichment data */}
-            {selectedLead.enrichment_data?.company_context && (
-              <div className="space-y-3 mb-4">
-                <div className="bg-purple-50 border border-purple-100 rounded-lg p-3">
-                  <p className="text-xs font-bold text-purple-700 mb-1">🏢 About</p>
-                  <p className="text-sm text-gray-700">{selectedLead.enrichment_data.company_context}</p>
-                </div>
-                {selectedLead.enrichment_data.services_offered && (
-                  <div className="bg-slate-50 border border-slate-100 rounded-lg p-3">
-                    <p className="text-xs font-bold text-slate-700 mb-1">🛠️ Services</p>
-                    <p className="text-sm text-gray-700">{selectedLead.enrichment_data.services_offered}</p>
-                  </div>
-                )}
-                {(selectedLead.enrichment_data.clients_mentioned || selectedLead.enrichment_data.tech_stack || selectedLead.enrichment_data.years_in_business) && (
-                  <div className="bg-gray-50 border border-gray-100 rounded-lg p-3 grid grid-cols-1 gap-1.5">
-                    {selectedLead.enrichment_data.clients_mentioned && (
-                      <div><span className="text-xs font-semibold text-gray-500">Clients: </span><span className="text-xs text-gray-700">{selectedLead.enrichment_data.clients_mentioned}</span></div>
-                    )}
-                    {selectedLead.enrichment_data.tech_stack && (
-                      <div><span className="text-xs font-semibold text-gray-500">Tech: </span><span className="text-xs text-gray-700">{selectedLead.enrichment_data.tech_stack}</span></div>
-                    )}
-                    {selectedLead.enrichment_data.years_in_business && (
-                      <div><span className="text-xs font-semibold text-gray-500">Est: </span><span className="text-xs text-gray-700">{selectedLead.enrichment_data.years_in_business}</span></div>
-                    )}
-                    {selectedLead.enrichment_data.number_of_employees && (
-                      <div><span className="text-xs font-semibold text-gray-500">Team: </span><span className="text-xs text-gray-700">{selectedLead.enrichment_data.number_of_employees}</span></div>
-                    )}
-                  </div>
-                )}
-                <div className="bg-red-50 border border-red-100 rounded-lg p-3">
-                  <p className="text-xs font-bold text-red-700 mb-1">🔥 Pain Points</p>
-                  <p className="text-sm text-gray-700">{selectedLead.enrichment_data.likely_pain_points}</p>
-                </div>
-                <div className="bg-green-50 border border-green-100 rounded-lg p-3">
-                  <p className="text-xs font-bold text-green-700 mb-1">💡 Opportunity</p>
-                  <p className="text-sm text-gray-700">{selectedLead.enrichment_data.opportunity_angle}</p>
-                </div>
-                {selectedLead.enrichment_data.icebreaker && (
-                  <div className="bg-blue-50 border border-blue-100 rounded-lg p-3">
-                    <p className="text-xs font-bold text-blue-700 mb-1">🧊 Icebreaker</p>
-                    <p className="text-sm text-gray-700">{selectedLead.enrichment_data.icebreaker}</p>
-                  </div>
-                )}
-                {selectedLead.enrichment_data.person_source === 'website' && (
-                  <p className="text-[10px] text-green-600 font-medium">✅ Contact found on their actual website</p>
-                )}
-              </div>
-            )}
+            {/* Scrollable content */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
 
-            {/* Personalized messaging */}
-            {selectedLead.personalized_subject && (
-              <div className="space-y-3 mb-4">
-                <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-3">
-                  <p className="text-xs font-bold text-indigo-700 mb-1">📧 Subject</p>
-                  <p className="text-sm text-gray-900 font-medium">{selectedLead.personalized_subject}</p>
-                </div>
-                <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-3">
-                  <p className="text-xs font-bold text-indigo-700 mb-1">📝 Email</p>
-                  <p className="text-sm text-gray-700 whitespace-pre-line">{selectedLead.personalized_email}</p>
-                </div>
-                {selectedLead.personalized_opener && (
-                  <div className="bg-amber-50 border border-amber-100 rounded-lg p-3">
-                    <p className="text-xs font-bold text-amber-700 mb-1">💬 SMS/DM Opener</p>
-                    <p className="text-sm text-gray-700">{selectedLead.personalized_opener}</p>
+              {/* Enrichment data */}
+              {selectedLead.enrichment_data?.company_context && (
+                <div className="space-y-3">
+                  <div className="bg-purple-50 border border-purple-100 rounded-lg p-3">
+                    <p className="text-xs font-bold text-purple-700 mb-1">🏢 About</p>
+                    <p className="text-sm text-gray-700">{selectedLead.enrichment_data.company_context}</p>
                   </div>
-                )}
-              </div>
-            )}
+                  {selectedLead.enrichment_data.services_offered && (
+                    <div className="bg-slate-50 border border-slate-100 rounded-lg p-3">
+                      <p className="text-xs font-bold text-slate-700 mb-1">🛠️ Services</p>
+                      <p className="text-sm text-gray-700">{selectedLead.enrichment_data.services_offered}</p>
+                    </div>
+                  )}
+                  {selectedLead.enrichment_data.likely_pain_points && (
+                    <div className="bg-red-50 border border-red-100 rounded-lg p-3">
+                      <p className="text-xs font-bold text-red-700 mb-1">🔥 Pain Points</p>
+                      <p className="text-sm text-gray-700">{selectedLead.enrichment_data.likely_pain_points}</p>
+                    </div>
+                  )}
+                  {selectedLead.enrichment_data.opportunity_angle && (
+                    <div className="bg-green-50 border border-green-100 rounded-lg p-3">
+                      <p className="text-xs font-bold text-green-700 mb-1">💡 Opportunity</p>
+                      <p className="text-sm text-gray-700">{selectedLead.enrichment_data.opportunity_angle}</p>
+                    </div>
+                  )}
+                </div>
+              )}
 
-            {/* Actions */}
-            <div className="flex items-center gap-2 pt-4 border-t">
+              {/* Personalized messaging preview (editable) */}
+              {selectedLead.personalized_subject && (
+                <div className="space-y-3">
+                  <h3 className="text-sm font-bold text-gray-700 flex items-center gap-1.5">
+                    <Mail className="h-4 w-4" /> Outreach Message
+                    {selectedLead.stage === 'researched' && <span className="text-[10px] text-gray-400 font-normal ml-1">(click to edit)</span>}
+                  </h3>
+                  {/* Subject */}
+                  <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-3">
+                    <p className="text-[10px] font-bold text-indigo-500 mb-1">SUBJECT</p>
+                    {editingField === `${selectedLead.id}-subject` ? (
+                      <div className="flex gap-2">
+                        <input className="flex-1 text-sm border rounded px-2 py-1" value={editValue} onChange={e => setEditValue(e.target.value)} autoFocus />
+                        <button onClick={() => saveInlineEdit(selectedLead.id, 'personalized_subject')} className="text-green-600"><Check className="h-4 w-4" /></button>
+                        <button onClick={() => setEditingField(null)} className="text-gray-400"><X className="h-4 w-4" /></button>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-900 font-medium cursor-pointer hover:text-indigo-700" onClick={() => { if (selectedLead.stage === 'researched') { setEditingField(`${selectedLead.id}-subject`); setEditValue(selectedLead.personalized_subject || ''); } }}>
+                        {selectedLead.personalized_subject}
+                        {selectedLead.stage === 'researched' && <Edit3 className="h-3 w-3 inline ml-1 text-gray-400" />}
+                      </p>
+                    )}
+                  </div>
+                  {/* Email body */}
+                  <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-3">
+                    <p className="text-[10px] font-bold text-indigo-500 mb-1">EMAIL</p>
+                    {editingField === `${selectedLead.id}-email` ? (
+                      <div className="space-y-2">
+                        <textarea className="w-full text-sm border rounded px-2 py-1 min-h-[100px]" value={editValue} onChange={e => setEditValue(e.target.value)} autoFocus />
+                        <div className="flex gap-2">
+                          <button onClick={() => saveInlineEdit(selectedLead.id, 'personalized_email')} className="text-xs bg-green-600 text-white px-2 py-1 rounded">Save</button>
+                          <button onClick={() => setEditingField(null)} className="text-xs text-gray-400">Cancel</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-700 whitespace-pre-line cursor-pointer hover:text-indigo-700" onClick={() => { if (selectedLead.stage === 'researched') { setEditingField(`${selectedLead.id}-email`); setEditValue(selectedLead.personalized_email || ''); } }}>
+                        {selectedLead.personalized_email}
+                        {selectedLead.stage === 'researched' && <Edit3 className="h-3 w-3 inline ml-1 text-gray-400" />}
+                      </p>
+                    )}
+                  </div>
+                  {/* SMS opener */}
+                  {selectedLead.personalized_opener && (
+                    <div className="bg-amber-50 border border-amber-100 rounded-lg p-3">
+                      <p className="text-[10px] font-bold text-amber-500 mb-1">SMS OPENER</p>
+                      {editingField === `${selectedLead.id}-opener` ? (
+                        <div className="flex gap-2">
+                          <input className="flex-1 text-sm border rounded px-2 py-1" value={editValue} onChange={e => setEditValue(e.target.value)} autoFocus />
+                          <button onClick={() => saveInlineEdit(selectedLead.id, 'personalized_opener')} className="text-green-600"><Check className="h-4 w-4" /></button>
+                          <button onClick={() => setEditingField(null)} className="text-gray-400"><X className="h-4 w-4" /></button>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-700 cursor-pointer hover:text-amber-700" onClick={() => { if (selectedLead.stage === 'researched') { setEditingField(`${selectedLead.id}-opener`); setEditValue(selectedLead.personalized_opener || ''); } }}>
+                          {selectedLead.personalized_opener}
+                          {selectedLead.stage === 'researched' && <Edit3 className="h-3 w-3 inline ml-1 text-gray-400" />}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ─── LIVE CONVERSATION ─── */}
+              {selectedLead.ghl_contact_id && (
+                <div>
+                  <h3 className="text-sm font-bold text-gray-700 flex items-center gap-1.5 mb-3">
+                    <MessageSquare className="h-4 w-4" /> Conversation
+                    {loadingConvo && <Loader2 className="h-3 w-3 animate-spin text-gray-400" />}
+                    <button onClick={() => loadConversation(selectedLead.id)} className="ml-auto text-gray-400 hover:text-gray-600">
+                      <RefreshCw className="h-3 w-3" />
+                    </button>
+                  </h3>
+                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 max-h-72 overflow-y-auto space-y-2">
+                    {conversation.length === 0 && !loadingConvo && (
+                      <p className="text-xs text-gray-400 text-center py-4">
+                        {selectedLead.stage === 'messaged' ? 'Waiting for reply... AI will handle it automatically ⏳' : 'No messages yet'}
+                      </p>
+                    )}
+                    {conversation.map((msg) => (
+                      <div key={msg.id} className={`flex ${msg.direction === 'outbound' ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-[80%] rounded-2xl px-3 py-2 ${
+                          msg.direction === 'outbound'
+                            ? 'bg-indigo-600 text-white rounded-br-sm'
+                            : 'bg-white border border-gray-200 text-gray-900 rounded-bl-sm'
+                        }`}>
+                          <p className="text-sm whitespace-pre-line">{msg.body}</p>
+                          <p className={`text-[10px] mt-1 ${msg.direction === 'outbound' ? 'text-indigo-200' : 'text-gray-400'}`}>
+                            {msg.direction === 'outbound' ? '🤖 AI' : '👤 Lead'} · {new Date(msg.dateAdded).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {msg.type !== 'SMS' && ` · ${msg.type}`}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                    <div ref={convoEndRef} />
+                  </div>
+
+                  {/* Manual message input */}
+                  <div className="flex gap-2 mt-2">
+                    <input
+                      className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                      placeholder="Send a manual message..."
+                      value={manualMsg}
+                      onChange={e => setManualMsg(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendManualMessage(); } }}
+                    />
+                    <Button
+                      onClick={sendManualMessage}
+                      disabled={sendingMsg || !manualMsg.trim()}
+                      className="bg-indigo-600 text-white text-sm px-3"
+                    >
+                      {sendingMsg ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Notes */}
+              <div>
+                <h3 className="text-sm font-bold text-gray-700 mb-2">📝 Notes</h3>
+                <textarea
+                  className="w-full border rounded-lg px-3 py-2 text-sm min-h-[60px] focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  placeholder="Add notes about this lead..."
+                  defaultValue={selectedLead.notes || ''}
+                  onBlur={e => {
+                    if (e.target.value !== (selectedLead.notes || '')) {
+                      updateLead(selectedLead.id, { notes: e.target.value });
+                    }
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Footer actions */}
+            <div className="p-4 border-t bg-gray-50 flex items-center gap-2 shrink-0">
               {selectedLead.stage === 'found' && (
                 <Button onClick={() => { enrichSingle(selectedLead.id); setSelectedLead(null); }} className="bg-purple-600 hover:bg-purple-700 text-white text-sm">
                   <Sparkles className="h-3.5 w-3.5 mr-1" /> Research
                 </Button>
               )}
               {selectedLead.stage === 'researched' && (
-                <Button onClick={() => { launchSingle(selectedLead.id); setSelectedLead(null); }} className="bg-indigo-600 hover:bg-indigo-500 text-white text-sm">
-                  <Send className="h-3.5 w-3.5 mr-1" /> Send via GHL
+                <>
+                  <Button onClick={() => { approveLeads([selectedLead.id]); setSelectedLead(null); }} className="bg-cyan-600 hover:bg-cyan-700 text-white text-sm">
+                    <Check className="h-3.5 w-3.5 mr-1" /> Approve
+                  </Button>
+                  <Button onClick={() => { launchSingle(selectedLead.id); setSelectedLead(null); }} className="bg-indigo-600 hover:bg-indigo-500 text-white text-sm">
+                    <Send className="h-3.5 w-3.5 mr-1" /> Approve & Launch
+                  </Button>
+                </>
+              )}
+              {selectedLead.stage === 'approved' && (
+                <Button onClick={() => { launchSingle(selectedLead.id); setSelectedLead(null); }} className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm">
+                  <Send className="h-3.5 w-3.5 mr-1" /> Launch Now
                 </Button>
               )}
               {['messaged', 'replied', 'interested'].includes(selectedLead.stage) && (
                 <>
-                  <Button variant="outline" className="text-sm" onClick={() => { updateLead(selectedLead.id, { stage: 'replied' }); setSelectedLead(null); }}>
-                    Mark Replied
-                  </Button>
+                  {selectedLead.stage === 'messaged' && (
+                    <Button variant="outline" className="text-sm" onClick={() => { updateLead(selectedLead.id, { stage: 'replied' }); setSelectedLead(null); }}>
+                      Mark Replied
+                    </Button>
+                  )}
                   <Button variant="outline" className="text-sm" onClick={() => { updateLead(selectedLead.id, { stage: 'interested' }); setSelectedLead(null); }}>
                     Mark Interested
                   </Button>
@@ -787,6 +1202,11 @@ export default function PipelineClient() {
                     <Calendar className="h-3.5 w-3.5 mr-1" /> Mark Booked
                   </Button>
                 </>
+              )}
+              {selectedLead.stage === 'booked' && (
+                <Button className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm" onClick={() => { updateLead(selectedLead.id, { stage: 'closed' }); setSelectedLead(null); }}>
+                  <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Mark Closed Won
+                </Button>
               )}
               <div className="flex-1" />
               <Button variant="outline" className="text-sm text-gray-400" onClick={() => { updateLead(selectedLead.id, { stage: 'skipped' }); setSelectedLead(null); }}>
@@ -798,33 +1218,15 @@ export default function PipelineClient() {
       )}
     </div>
   );
+}
 
-  // ─── Single-lead actions ────────────────────────────────────────────────────
-  async function enrichSingle(leadId: string) {
-    setEnriching(true);
-    try {
-      await fetch('/api/agency/pipeline/enrich', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lead_ids: [leadId] }),
-      });
-      await loadLeads();
-    } finally {
-      setEnriching(false);
-    }
-  }
-
-  async function launchSingle(leadId: string) {
-    setLaunching(true);
-    try {
-      await fetch('/api/agency/pipeline/launch', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lead_ids: [leadId] }),
-      });
-      await loadLeads();
-    } finally {
-      setLaunching(false);
-    }
-  }
+// ─── Helpers ────────────────────────────────────────────────────────────────
+function timeAgo(ts: string): string {
+  const diff = Date.now() - new Date(ts).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
 }
