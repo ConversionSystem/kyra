@@ -1,6 +1,6 @@
 /**
  * POST /api/agency/pipeline/launch
- * Send outreach for researched leads via GHL — create contact + send email
+ * Send outreach for approved leads via GHL — create contact + send email/SMS/both
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
   const agencyId = await getAgencyId(user.id);
   if (!agencyId) return NextResponse.json({ error: 'No agency' }, { status: 404 });
 
-  const { lead_ids } = await req.json();
+  const { lead_ids, channel = 'both' } = await req.json();
   if (!lead_ids?.length) return NextResponse.json({ error: 'lead_ids required' }, { status: 400 });
 
   const svc = createServiceClientWithoutCookies();
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
   const token = ghlClient.ghl_private_token as string;
   const locationId = OUTREACH_LOCATION_ID;
 
-  // Fetch leads
+  // Fetch leads — only approved or researched leads can be sent
   const { data: leads } = await svc
     .from('pipeline_leads')
     .select('*')
@@ -53,40 +53,52 @@ export async function POST(req: NextRequest) {
 
   if (!leads?.length) return NextResponse.json({ error: 'No leads found' }, { status: 404 });
 
-  const results: Array<{ id: string; status: 'sent' | 'error' | 'skipped'; error?: string }> = [];
+  const results: Array<{ id: string; name: string; status: 'sent' | 'error' | 'skipped'; channels: string[]; error?: string }> = [];
 
   for (const lead of leads) {
-    // Skip already messaged
+    // Skip already messaged or later stages
     if (['messaged', 'replied', 'interested', 'booked', 'closed'].includes(lead.stage)) {
-      results.push({ id: lead.id, status: 'skipped' });
+      results.push({ id: lead.id, name: lead.full_name || lead.company || '?', status: 'skipped', channels: [] });
       continue;
     }
 
-    try {
-      // 1. Create GHL contact
-      const contactRes = await fetch(`${GHL_API}/contacts/`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, Version: GHL_VERSION, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          locationId,
-          firstName: lead.first_name,
-          lastName: lead.last_name,
-          email: lead.email || '',
-          companyName: lead.company || '',
-          source: 'Kyra AI Pipeline',
-          tags: ['kyra-pipeline', `campaign-${lead.campaign_id.slice(0, 8)}`],
-        }),
-        signal: AbortSignal.timeout(10_000),
-      });
-      const contactData = await contactRes.json().catch(() => ({}));
-      const contactId = contactData?.contact?.id || contactData?.id;
+    // Must be researched or approved
+    if (!['researched', 'approved'].includes(lead.stage)) {
+      results.push({ id: lead.id, name: lead.full_name || lead.company || '?', status: 'skipped', channels: [] });
+      continue;
+    }
 
+    const sentChannels: string[] = [];
+
+    try {
+      // 1. Create or find GHL contact
+      let contactId = lead.ghl_contact_id;
       if (!contactId) {
-        results.push({ id: lead.id, status: 'error', error: `GHL contact create failed: ${contactRes.status}` });
-        continue;
+        const contactRes = await fetch(`${GHL_API}/contacts/`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, Version: GHL_VERSION, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            locationId,
+            firstName: lead.first_name || '',
+            lastName: lead.last_name || '',
+            email: lead.email || '',
+            phone: lead.phone || '',
+            companyName: lead.company || '',
+            source: 'Kyra AI Pipeline',
+            tags: ['kyra-pipeline', `campaign-${(lead.campaign_id || '').slice(0, 8)}`],
+          }),
+          signal: AbortSignal.timeout(10_000),
+        });
+        const contactData = await contactRes.json().catch(() => ({}));
+        contactId = contactData?.contact?.id || contactData?.id;
+
+        if (!contactId) {
+          results.push({ id: lead.id, name: lead.full_name || '?', status: 'error', channels: [], error: `GHL contact create failed: ${contactRes.status}` });
+          continue;
+        }
       }
 
-      // 2. Add note with enrichment data
+      // 2. Add enrichment note
       const enrichment = (lead.enrichment_data || {}) as Record<string, string>;
       await fetch(`${GHL_API}/contacts/${contactId}/notes`, {
         method: 'POST',
@@ -97,10 +109,10 @@ export async function POST(req: NextRequest) {
         signal: AbortSignal.timeout(8_000),
       }).catch(() => {});
 
-      // 3. Send email if we have email + personalized content
-      if (lead.email && lead.personalized_email) {
+      // 3. Send email if enabled and we have email + personalized content
+      if ((channel === 'email' || channel === 'both') && lead.email && lead.personalized_email) {
         const emailHtml = `<p>${(lead.personalized_email as string).replace(/\n/g, '</p><p>')}</p>`;
-        await fetch(`${GHL_API}/conversations/messages`, {
+        const emailRes = await fetch(`${GHL_API}/conversations/messages`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}`, Version: GHL_VERSION, 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -112,18 +124,41 @@ export async function POST(req: NextRequest) {
           }),
           signal: AbortSignal.timeout(10_000),
         });
+        if (emailRes.ok) sentChannels.push('email');
       }
 
-      // 4. Update lead
-      await svc.from('pipeline_leads').update({
-        stage: 'messaged',
-        messaged_at: new Date().toISOString(),
-        ghl_contact_id: contactId,
-      }).eq('id', lead.id);
+      // 4. Send SMS if enabled and we have phone + opener
+      if ((channel === 'sms' || channel === 'both') && lead.phone && lead.personalized_opener) {
+        const smsRes = await fetch(`${GHL_API}/conversations/messages`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, Version: GHL_VERSION, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'SMS',
+            contactId,
+            message: lead.personalized_opener,
+          }),
+          signal: AbortSignal.timeout(10_000),
+        });
+        if (smsRes.ok) sentChannels.push('sms');
+      }
 
-      results.push({ id: lead.id, status: 'sent' });
+      // 5. Update lead
+      if (sentChannels.length > 0) {
+        await svc.from('pipeline_leads').update({
+          stage: 'messaged',
+          messaged_at: new Date().toISOString(),
+          ghl_contact_id: contactId,
+          enrichment_data: {
+            ...enrichment,
+            sent_channels: sentChannels,
+          },
+        }).eq('id', lead.id);
+        results.push({ id: lead.id, name: lead.full_name || '?', status: 'sent', channels: sentChannels });
+      } else {
+        results.push({ id: lead.id, name: lead.full_name || '?', status: 'error', channels: [], error: 'No channel available (missing email/phone or content)' });
+      }
     } catch (err) {
-      results.push({ id: lead.id, status: 'error', error: err instanceof Error ? err.message : 'Unknown' });
+      results.push({ id: lead.id, name: lead.full_name || '?', status: 'error', channels: [], error: err instanceof Error ? err.message : 'Unknown' });
     }
 
     // Rate limit pause
