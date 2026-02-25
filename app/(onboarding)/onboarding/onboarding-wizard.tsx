@@ -389,9 +389,9 @@ function StepGHL({
       }
 
       // GHL couldn't auto-detect locationId — ask for it
-      if (res.status === 200 && data.message?.includes('Location ID')) {
+      if (data.needsLocationId || (res.status === 200 && !data.success)) {
         setPhase('needs_location');
-        setMessage(data.message);
+        setMessage(data.message || 'Please enter your GHL Location ID.');
         return;
       }
 
@@ -452,25 +452,28 @@ function StepGHL({
           />
         </div>
 
-        {/* Location ID — shown after auto-detect fails or on demand */}
-        {(phase === 'needs_location' || locationId) && (
-          <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1.5">
-              GHL Location ID
-              <span className="text-gray-400 font-normal ml-1">
-                (GHL → Settings → Business Info → scroll down)
-              </span>
-            </label>
-            <input
-              type="text"
-              placeholder="xxxxxxxxxxxxxxxxxxxxxxxx"
-              value={locationId}
-              onChange={e => setLocationId(e.target.value)}
-              disabled={phase === 'connecting' || phase === 'success'}
-              className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400 font-mono disabled:bg-gray-50"
-            />
-          </div>
-        )}
+        {/* Location ID — always visible so users can enter both at once */}
+        <div>
+          <label className="text-sm font-medium text-gray-700 block mb-1.5">
+            GHL Location ID
+            <span className="text-gray-400 font-normal ml-1">
+              (GHL → Settings → Business Info → scroll to &quot;Company ID&quot;)
+            </span>
+          </label>
+          <input
+            type="text"
+            placeholder="e.g. ve9EPM428h8vShlRW1KT"
+            value={locationId}
+            onChange={e => setLocationId(e.target.value)}
+            disabled={phase === 'connecting' || phase === 'success'}
+            className={`w-full rounded-lg border px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-400 font-mono disabled:bg-gray-50 ${
+              phase === 'needs_location' ? 'border-amber-400 bg-amber-50' : 'border-gray-200'
+            }`}
+          />
+          {phase === 'needs_location' && (
+            <p className="text-xs text-amber-600 mt-1">↑ Enter your Location ID and click Connect again</p>
+          )}
+        </div>
       </div>
 
       {/* Status messages */}
