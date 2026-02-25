@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -204,7 +204,19 @@ function ReprovisionButton({ clientId }: { clientId: string }) {
 
 export function ClientDetailView({ client: initialClient, role }: ClientDetailViewProps) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<Tab>('chat');
+  const searchParams = useSearchParams();
+  const initialTab = (searchParams.get('tab') as Tab) || 'chat';
+  const [activeTab, setActiveTab] = useState<Tab>(
+    TABS.some(t => t.id === initialTab) ? initialTab : 'chat'
+  );
+
+  // Update URL when tab changes (without full reload)
+  const handleTabChange = useCallback((tab: Tab) => {
+    setActiveTab(tab);
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', tab);
+    window.history.replaceState({}, '', url.toString());
+  }, []);
 
   return (
     <div className="p-4 sm:p-6 md:p-8 max-w-5xl">
@@ -255,7 +267,7 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => handleTabChange(tab.id)}
                 className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap shrink-0 ${
                   isActive
                     ? 'border-indigo-600 text-indigo-600'
@@ -275,7 +287,7 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
       <ClientStatusBanner client={initialClient} />
 
       {/* Setup nudge — shown when AI has no personality or GHL configured */}
-      <SetupNudgeBanner client={initialClient} onTabChange={setActiveTab} />
+      <SetupNudgeBanner client={initialClient} onTabChange={handleTabChange} />
 
       {/* Tab content */}
       {activeTab === 'chat' && (
