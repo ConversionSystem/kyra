@@ -20,7 +20,10 @@ import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 
 const MASTER_EMAILS = ['hello@conversionsystem.com', 'angel@conversionsystem.com'];
 const GHL_API_BASE = 'https://services.leadconnectorhq.com';
-const GHL_API_VERSION = '2021-07-28';
+// Match version used by the working poll/send route
+const GHL_API_VERSION = '2021-04-15';
+// Token 2: CS demo account — used for all outbound outreach (AI worker handles replies)
+const OUTREACH_LOCATION_ID = 'y1BFVhXMDNUPlbPxEpSA';
 
 interface LeadInput {
   id: string;
@@ -169,37 +172,50 @@ export async function POST(req: NextRequest) {
       .limit(1)
       .single();
 
-    // Find any GHL-connected client for this agency
-    // Prefer the AGENCY account (main sales location); fall back to any GHL-connected client
-    let clientsQuery = serviceClient
+    // Always use Token 2 (CS demo/outreach account) — query directly by location ID
+    // This is the account whose replies the CS AI worker handles
+    const { data: outreachClient, error: outreachClientError } = await serviceClient
       .from('agency_clients')
-      .select('id, name, ghl_private_token, ghl_location_id, created_at')
+      .select('id, name, ghl_private_token, ghl_location_id')
+      .eq('ghl_location_id', OUTREACH_LOCATION_ID)
       .not('ghl_private_token', 'is', null)
-      .not('ghl_location_id', 'is', null)
-      .order('created_at', { ascending: false })
-      .limit(5);
+      .limit(1)
+      .single();
 
-    if (membership?.agency_id) {
-      clientsQuery = clientsQuery.eq('agency_id', membership.agency_id);
+    let ghlToken: string;
+    let locationId: string;
+
+    if (outreachClientError || !outreachClient) {
+      // Fall back: any GHL-connected client for the agency
+      let fallbackQuery = serviceClient
+        .from('agency_clients')
+        .select('id, name, ghl_private_token, ghl_location_id, created_at')
+        .not('ghl_private_token', 'is', null)
+        .not('ghl_location_id', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (membership?.agency_id) {
+        fallbackQuery = fallbackQuery.eq('agency_id', membership.agency_id);
+      }
+
+      const { data: fallback } = await fallbackQuery;
+
+      if (!fallback || fallback.length === 0) {
+        return NextResponse.json({
+          status: 'no_ghl_token',
+          message: `Token 2 (location ${OUTREACH_LOCATION_ID}) not found and no fallback GHL client connected. Connect GHL in the dashboard first.`,
+          setupUrl: '/agency/clients',
+        });
+      }
+
+      console.warn('[push-ghl-direct] Token 2 not found, falling back to:', fallback[0].name);
+      ghlToken = fallback[0].ghl_private_token as string;
+      locationId = fallback[0].ghl_location_id as string;
+    } else {
+      ghlToken = outreachClient.ghl_private_token as string;
+      locationId = OUTREACH_LOCATION_ID;
     }
-
-    const { data: clients } = await clientsQuery;
-
-    if (!clients || clients.length === 0) {
-      return NextResponse.json({
-        status: 'no_ghl_token',
-        message: 'No GHL connection found. Connect GHL on your Conversion System client in the dashboard first.',
-        setupUrl: '/agency/clients',
-      });
-    }
-
-    // Prefer the AGENCY account (highest contact count / primary sales location)
-    // If none named "AGENCY", fall back to first result
-    const preferredClient =
-      clients.find(c => (c.name as string).includes('AGENCY')) ?? clients[0];
-
-    const ghlToken = preferredClient.ghl_private_token as string;
-    const locationId = preferredClient.ghl_location_id as string;
 
     // ── Push contacts in batches of 5 ────────────────────────────────────
     const results: Array<{
