@@ -636,6 +636,7 @@ export async function GET(request: NextRequest) {
             `Prospect: ${pipelineCtx.fullName}, ${pipelineCtx.title} at ${pipelineCtx.company} (${pipelineCtx.industry})`,
             `What we're selling: ${pipelineCtx.valueProp}`,
             pipelineCtx.enrichment.company_context ? `About their company: ${pipelineCtx.enrichment.company_context}` : '',
+            pipelineCtx.enrichment.services_offered ? `Their services: ${pipelineCtx.enrichment.services_offered}` : '',
             pipelineCtx.enrichment.likely_pain_points ? `Their likely pain points: ${pipelineCtx.enrichment.likely_pain_points}` : '',
             pipelineCtx.enrichment.opportunity_angle ? `Our angle: ${pipelineCtx.enrichment.opportunity_angle}` : '',
             pipelineCtx.enrichment.icebreaker ? `Icebreaker: ${pipelineCtx.enrichment.icebreaker}` : '',
