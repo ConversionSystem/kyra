@@ -101,7 +101,7 @@ export default function PipelineClient() {
   // ─── Campaign creation form ────
   const [form, setForm] = useState({
     name: '', target_industry: '', target_role: '', target_company_size: '11-50',
-    target_location: '', target_pain_points: '', value_prop: '',
+    target_location: '', target_pain_points: '', value_prop: '', lead_count: 25,
   });
 
   // ─── Load campaigns ────────────
@@ -144,11 +144,11 @@ export default function PipelineClient() {
       setShowCreate(false);
       setActiveCampaign(campaign);
 
-      // Auto-search for 10 leads
+      // Auto-search for leads
       const searchRes = await fetch('/api/agency/pipeline/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ campaign_id: campaign.id, criteria: { count: 10 } }),
+        body: JSON.stringify({ campaign_id: campaign.id, criteria: { count: form.lead_count || 25 } }),
       });
       const searchData = await searchRes.json();
       setLeads(searchData.leads ?? []);
@@ -205,7 +205,7 @@ export default function PipelineClient() {
   };
 
   // ─── Search more leads ────────
-  const searchMore = async (count = 10) => {
+  const searchMore = async (count = 25) => {
     if (!activeCampaign) return;
     setSearching(true);
     try {
@@ -263,13 +263,13 @@ export default function PipelineClient() {
           {activeCampaign && (
             <>
               <Button
-                onClick={() => searchMore(10)}
+                onClick={() => searchMore(25)}
                 disabled={searching}
                 variant="outline"
                 className="text-sm flex items-center gap-1.5"
               >
                 {searching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Search className="h-3.5 w-3.5" />}
-                Find More Leads
+                Find 25 More
               </Button>
               <Button
                 onClick={enrichAll}
@@ -562,6 +562,19 @@ export default function PipelineClient() {
                   value={form.value_prop}
                   onChange={e => setForm(f => ({ ...f, value_prop: e.target.value }))}
                 />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-600 mb-1 block">How many leads to find?</label>
+                <select
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  value={form.lead_count}
+                  onChange={e => setForm(f => ({ ...f, lead_count: Number(e.target.value) }))}
+                >
+                  <option value={10}>10 leads</option>
+                  <option value={25}>25 leads</option>
+                  <option value={50}>50 leads</option>
+                  <option value={100}>100 leads</option>
+                </select>
               </div>
             </div>
             <div className="flex justify-end gap-2 mt-6">
