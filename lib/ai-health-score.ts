@@ -1,7 +1,7 @@
 /**
  * AI Health Score — 0 to 100
  * Shown per-client on the clients list and detail view.
- * Higher = healthier, more effective AI employee.
+ * Higher = healthier, more effective AI worker.
  */
 
 export interface HealthScoreInput {

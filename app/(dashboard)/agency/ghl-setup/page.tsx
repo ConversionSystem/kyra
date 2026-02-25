@@ -26,7 +26,7 @@ export default async function GHLSetupPage() {
           <Badge className="bg-green-100 text-green-700 text-xs">5 min setup</Badge>
         </div>
         <p className="text-sm text-gray-500">
-          Connect any GHL sub-account to a Kyra AI employee using a Private Integration token. 
+          Connect any GHL sub-account to a Kyra AI worker using a Private Integration token. 
           No GHL marketplace approval needed.
         </p>
       </div>
@@ -98,7 +98,7 @@ export default async function GHLSetupPage() {
               <ul className="space-y-1.5 mt-1 text-sm text-gray-700">
                 <li className="flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
-                  <span><strong>Name:</strong> &ldquo;Kyra AI Employee&rdquo; (or anything you prefer)</span>
+                  <span><strong>Name:</strong> &ldquo;Kyra AI Worker&rdquo; (or anything you prefer)</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
@@ -130,7 +130,7 @@ export default async function GHLSetupPage() {
               <>
                 In Kyra, go to your client&apos;s detail page (<Link href="/agency/clients" className="text-indigo-600 underline">Clients → [client name]</Link>), 
                 find the <strong>GHL Connection</strong> section, paste the token, and click <strong>Connect</strong>.
-                That&apos;s it — your AI employee can now read and send messages in that GHL sub-account.
+                That&apos;s it — your AI worker can now read and send messages in that GHL sub-account.
               </>
             ),
           },
@@ -203,7 +203,7 @@ export default async function GHLSetupPage() {
               },
               {
                 problem: '"AI is receiving messages but not responding"',
-                solution: 'Check that your AI employee is deployed and has a gateway status of "Live" (green dot on the clients list). If the status is offline, use the Deploy button on the client detail page.',
+                solution: 'Check that your AI worker is deployed and has a gateway status of "Live" (green dot on the clients list). If the status is offline, use the Deploy button on the client detail page.',
               },
               {
                 problem: '"Messages are going to GHL but the contact info is wrong"',

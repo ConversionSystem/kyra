@@ -14,8 +14,8 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { agencySlug } = await params;
   return {
-    title: `${agencySlug} — AI Employee Results | Powered by Kyra`,
-    description: `See real AI employee performance metrics for ${agencySlug}. Powered by Kyra.`,
+    title: `${agencySlug} — AI Worker Results | Powered by Kyra`,
+    description: `See real AI worker performance metrics for ${agencySlug}. Powered by Kyra.`,
   };
 }
 
@@ -98,7 +98,7 @@ export default async function AgencyResultsPage({ params }: Props) {
     <div className="min-h-screen bg-white text-gray-900">
       {/* Kyra powered bar */}
       <div className="bg-indigo-900 text-white text-center text-xs px-4 py-2.5">
-        <span className="text-indigo-300">AI employees powered by </span>
+        <span className="text-indigo-300">AI workers powered by </span>
         <Link href="/" className="font-bold text-white hover:underline">Kyra</Link>
         <span className="text-indigo-300"> · kyra.conversionsystem.com</span>
       </div>
@@ -107,7 +107,7 @@ export default async function AgencyResultsPage({ params }: Props) {
       <nav className="border-b border-gray-100 px-4 py-4">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div>
-            <p className="text-sm text-gray-500">AI Employee Performance</p>
+            <p className="text-sm text-gray-500">AI Worker Performance</p>
             <p className="font-black text-xl text-gray-900">{stats.name}</p>
           </div>
           <Link href="/signup/agency" className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold px-4 py-2 rounded-lg transition">
@@ -125,7 +125,7 @@ export default async function AgencyResultsPage({ params }: Props) {
             {stats.activeClients} AI {stats.activeClients === 1 ? 'employee' : 'employees'} active right now
           </div>
           <h1 className="text-3xl sm:text-4xl font-black mb-4">
-            {stats.name}'s AI employees<br />
+            {stats.name}'s AI workers<br />
             <span className="text-indigo-600">are working around the clock.</span>
           </h1>
           <p className="text-gray-500 text-lg max-w-xl mx-auto">
@@ -138,7 +138,7 @@ export default async function AgencyResultsPage({ params }: Props) {
           {[
             { value: stats.totalConversations.toLocaleString(), label: 'Conversations handled', sub: 'All time', color: 'text-indigo-600' },
             { value: stats.conversationsThisMonth.toLocaleString(), label: 'This month', sub: 'AI responses sent', color: 'text-green-600' },
-            { value: `${stats.activeClients}`, label: 'Active AI employees', sub: 'Across clients', color: 'text-purple-600' },
+            { value: `${stats.activeClients}`, label: 'Active AI workers', sub: 'Across clients', color: 'text-purple-600' },
             { value: '< 60s', label: 'Avg response time', sub: 'Day and night', color: 'text-amber-600' },
           ].map(s => (
             <div key={s.label} className="border border-gray-200 rounded-2xl p-5 text-center">
@@ -151,7 +151,7 @@ export default async function AgencyResultsPage({ params }: Props) {
 
         {/* What the AI does */}
         <div className="bg-gray-50 rounded-2xl p-6 sm:p-8 mb-10">
-          <h2 className="text-xl font-black mb-6">What the AI employee handles</h2>
+          <h2 className="text-xl font-black mb-6">What the AI worker handles</h2>
           <div className="grid sm:grid-cols-2 gap-4">
             {[
               { icon: '💬', title: 'Responds in < 60 seconds', desc: 'Every inbound SMS, inquiry, or lead gets an intelligent reply — including nights and weekends.' },
@@ -186,9 +186,9 @@ export default async function AgencyResultsPage({ params }: Props) {
 
         {/* CTA box */}
         <div className="bg-indigo-700 text-white rounded-2xl p-8 text-center">
-          <h2 className="text-2xl font-black mb-3">Want AI employees for your business?</h2>
+          <h2 className="text-2xl font-black mb-3">Want AI workers for your business?</h2>
           <p className="text-indigo-200 mb-6">
-            {stats.name} uses Kyra to power their AI employees. Set up your own in under 10 minutes — free to start.
+            {stats.name} uses Kyra to power their AI workers. Set up your own in under 10 minutes — free to start.
           </p>
           <Link href="/signup/agency" className="inline-block bg-white text-indigo-900 font-black text-lg px-8 py-4 rounded-xl hover:bg-indigo-50 transition">
             Start Free — $2 in Credits Included →
@@ -198,7 +198,7 @@ export default async function AgencyResultsPage({ params }: Props) {
 
         {/* Member since */}
         <p className="text-center text-xs text-gray-400 mt-8">
-          {stats.name} has been using Kyra AI employees for {monthsActive} month{monthsActive !== 1 ? 's' : ''}
+          {stats.name} has been using Kyra AI workers for {monthsActive} month{monthsActive !== 1 ? 's' : ''}
         </p>
       </div>
     </div>

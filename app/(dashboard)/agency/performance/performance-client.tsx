@@ -232,7 +232,7 @@ export function PerformanceClient({ clients, agencyId, agencySettings }: Perform
           Performance
         </h1>
         <p className="text-sm text-gray-500 mt-1">
-          Weekly insights across all your AI employees
+          Weekly insights across all your AI workers
         </p>
       </div>
 

@@ -117,7 +117,7 @@ export default function ClientStatusBanner({ client }: Props) {
       <WarnBanner
         key="gateway-null"
         title="AI not deployed yet"
-        body="Your AI employee hasn't been launched. Click the Deploy AI button at the top of the page to go live."
+        body="Your AI worker hasn't been launched. Click the Deploy AI button at the top of the page to go live."
         cta={
           <span className="text-xs text-amber-800 font-medium">
             👆 Click <strong>Deploy AI</strong> in the header above to launch.

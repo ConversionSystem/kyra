@@ -20,7 +20,7 @@ export function getVoiceProvider(provider: VoiceProvider, apiKey: string): Voice
 
 export interface ClientContext {
   name: string;          // business name
-  aiName?: string;       // AI employee name e.g. "Alex"
+  aiName?: string;       // AI worker name e.g. "Alex"
   persona?: string;      // existing personality/instructions
   industry?: string;
   services?: string;
@@ -31,7 +31,7 @@ export interface ClientContext {
 }
 
 export function buildVoiceSystemPrompt(ctx: ClientContext): string {
-  return `You are ${ctx.aiName ?? 'Alex'}, an AI employee for ${ctx.name}.
+  return `You are ${ctx.aiName ?? 'Alex'}, an AI worker for ${ctx.name}.
 
 ROLE: You answer inbound calls, qualify leads, book appointments, and provide helpful information about ${ctx.name}. You're warm, professional, and efficient. Keep responses concise — this is a phone call, not a chat.
 

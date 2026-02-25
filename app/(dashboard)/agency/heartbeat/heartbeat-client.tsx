@@ -122,7 +122,7 @@ export function HeartbeatClient({ clients }: HeartbeatClientProps) {
           Heartbeat Protocol
         </h1>
         <p className="text-sm text-gray-500 mt-1">
-          Monitor your AI employees — 24/7 activity at a glance
+          Monitor your AI workers — 24/7 activity at a glance
         </p>
       </div>
 

@@ -104,7 +104,7 @@ export default function AcceptInviteClient({ token, invite, client, branding, us
       <div className="space-y-3 mb-6 text-sm text-gray-600">
         <p className="flex items-center gap-2">
           <span className="h-1.5 w-1.5 rounded-full bg-green-500 shrink-0" />
-          View your AI employee&apos;s performance
+          View your AI worker&apos;s performance
         </p>
         <p className="flex items-center gap-2">
           <span className="h-1.5 w-1.5 rounded-full bg-green-500 shrink-0" />

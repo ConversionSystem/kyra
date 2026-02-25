@@ -431,7 +431,7 @@ export default function KnowledgeClient({ clients }: { clients: Client[] }) {
           <p className="text-sm text-gray-500 max-w-sm mb-4">
             {search
               ? 'Try a different search term'
-              : 'Add business knowledge so your AI employees can answer customer questions accurately.'
+              : 'Add business knowledge so your AI workers can answer customer questions accurately.'
             }
           </p>
           {!search && (

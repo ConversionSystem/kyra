@@ -23,7 +23,7 @@ Quick question: what happens when a new patient texts your dental office at 8pm 
 
 Most practices I talk to admit the honest answer is... nothing. The inquiry sits until someone checks their phone in the morning — by which time the patient has already booked somewhere else.
 
-We built an AI employee specifically for dental practices that responds to every text in under 60 seconds, 24/7. It books appointments, answers insurance questions, and follows up on no-shows — all without touching your staff's time.
+We built an AI worker specifically for dental practices that responds to every text in under 60 seconds, 24/7. It books appointments, answers insurance questions, and follows up on no-shows — all without touching your staff's time.
 
 I'd love to show you what it looks like for a real dental practice. Here's a live demo: https://kyra.conversionsystem.com/try/dental
 
@@ -112,13 +112,13 @@ Want to see what it would look like for your practice specifically?
   {
     id: 'follow-up',
     tag: '📧 Follow-Up',
-    subject: 'Re: AI employee for {{clientName}}',
+    subject: 'Re: AI worker for {{clientName}}',
     description: 'Follow-up for prospects who didn\'t reply to the first email',
     body: `Hi {{firstName}},
 
 Sending a quick follow-up in case my last message got buried.
 
-I know this sounds like another "AI tool" pitch — but what we're building is different. This isn't a chatbot with a script. Each client gets a dedicated AI employee trained on their specific business, pricing, and policies. It responds like a real team member would.
+I know this sounds like another "AI tool" pitch — but what we're building is different. This isn't a chatbot with a script. Each client gets a dedicated AI worker trained on their specific business, pricing, and policies. It responds like a real team member would.
 
 A few things agencies using Kyra are telling their clients:
 - "Your AI handled 47 conversations last week without a single human intervention"
@@ -142,7 +142,7 @@ We've been working together on {{currentService}} and I've been thinking about s
 
 One of the biggest gaps I see in businesses like yours is what happens to inbound leads when your team isn't available. Evenings, weekends, holidays — every missed text is a missed customer.
 
-I've been working with a platform called Kyra that puts an AI employee on your SMS and web chat, 24/7. It's not a chatbot — it's trained on your specific business and responds like a real team member. Most clients see their response rate go from hours to under 60 seconds.
+I've been working with a platform called Kyra that puts an AI worker on your SMS and web chat, 24/7. It's not a chatbot — it's trained on your specific business and responds like a real team member. Most clients see their response rate go from hours to under 60 seconds.
 
 I think this would be a strong addition to what we're already doing together. I'd love to add it to your package and show you the results in the first 30 days.
 
@@ -154,13 +154,13 @@ Interested in a quick call to map it out?
   {
     id: 'ghl-agency',
     tag: '🔗 GHL Agency Pitch',
-    subject: 'Add AI employees to your GHL agency — new revenue stream',
+    subject: 'Add AI workers to your GHL agency — new revenue stream',
     description: 'Outreach to GoHighLevel agencies about adding Kyra to their offerings',
     body: `Hi {{firstName}},
 
 If you're running a GHL agency, you've probably already seen that clients want AI — but GHL's built-in automations can only do so much.
 
-I've been running a white-label AI employee platform built specifically for GHL agencies. The short version:
+I've been running a white-label AI workforce platform built specifically for GHL agencies. The short version:
 
 → Connect Kyra to any GHL location in 2 minutes
 → AI responds to every inbound SMS in <60 seconds, 24/7

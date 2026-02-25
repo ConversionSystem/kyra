@@ -591,7 +591,7 @@ function buildInboundSystemContext(info: {
     lines.push(persona);
   } else {
     lines.push(`# Who You Are`);
-    lines.push(`You are the AI employee for ${info.clientName}${info.clientIndustry ? ` (${info.clientIndustry})` : ''}.`);
+    lines.push(`You are the AI worker for ${info.clientName}${info.clientIndustry ? ` (${info.clientIndustry})` : ''}.`);
   }
   lines.push('');
 
