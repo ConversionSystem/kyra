@@ -6,19 +6,19 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const emailTo = 'openclaw@launch.co';
-const emailSubject = 'Kyra — AI Employee Platform for 60,000 GHL Agencies (Live, Revenue, Demo Inside)';
+const emailSubject = 'Kyra — AI Workforce Platform for 60,000 GHL Agencies (Live, Revenue, Demo Inside)';
 const emailBody = `Hi team,
 
-I'm Angel Castro, founder of Conversion System. I'm applying for the Launch Accelerator with Kyra — a platform that deploys AI employees inside GoHighLevel agency accounts.
+I'm Angel Castro, founder of Conversion System. I'm applying for the Launch Accelerator with Kyra — a platform that deploys AI workers inside GoHighLevel agency accounts.
 
 ─── THE ONE-LINE PITCH ───────────────────────────────────────
 
-Kyra turns any GHL agency into an "AI employee agency" in minutes. Agencies add Kyra to their client's GHL account, pick an industry template, and the AI starts answering leads, booking appointments, and updating the CRM — automatically, 24/7.
+Kyra turns any GHL agency into an "AI worker agency" in minutes. Agencies add Kyra to their client's GHL account, pick an industry template, and the AI starts answering leads, booking appointments, and updating the CRM — automatically, 24/7.
 
 ─── TRACTION ────────────────────────────────────────────────
 
 • Live at kyra.conversionsystem.com (free to try)
-• 9 active agencies running 22 AI employees on dedicated infrastructure
+• 9 active agencies running 22 AI workers on dedicated infrastructure
 • 75 features shipped in the last 72 hours (solo founder + AI CEO build velocity)
 • Paid plans live: Lite $99/mo · Pro $249/mo · Scale $499/mo
 • Working Stripe billing, automated email sequences, referral program
@@ -28,7 +28,7 @@ Kyra turns any GHL agency into an "AI employee agency" in minutes. Agencies add 
 
 GoHighLevel (60,000 agencies) just integrated OpenClaw — the open-source AI agent runtime we're built on. Every GHL agency is being handed an AI terminal. They have no idea what to do with it.
 
-Kyra is the opinionated platform layer above that: one dashboard to deploy, manage, and monetize AI employees for multiple clients. It's the difference between a raw server and Vercel.
+Kyra is the opinionated platform layer above that: one dashboard to deploy, manage, and monetize AI workers for multiple clients. It's the difference between a raw server and Vercel.
 
 ─── WHAT MAKES IT DEFENSIBLE ────────────────────────────────
 
@@ -40,7 +40,7 @@ Kyra is the opinionated platform layer above that: one dashboard to deploy, mana
 ─── THE BUSINESS MODEL ──────────────────────────────────────
 
 Kyra charges agencies a SaaS fee ($99–$499/mo) for the infrastructure.
-Agencies charge their clients $500–$2,000/mo per AI employee.
+Agencies charge their clients $500–$2,000/mo per AI worker.
 At the Lite plan ($99/mo, 5 clients): agency revenue ~$5K/mo, Kyra revenue $99/mo.
 As they scale to Pro and Scale, margins compound on both sides.
 

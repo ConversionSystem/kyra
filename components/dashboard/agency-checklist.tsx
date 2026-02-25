@@ -37,7 +37,7 @@ export default function AgencyChecklist({
     {
       id: 'add-client',
       label: 'Add your first client',
-      description: 'Deploy an AI employee for your first client using a template.',
+      description: 'Deploy an AI worker for your first client using a template.',
       done: hasClients,
       href: '/agency/clients/new',
       cta: 'Add client →',

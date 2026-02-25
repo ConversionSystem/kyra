@@ -108,7 +108,7 @@ export default function CannabisPage() {
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="text-2xl md:text-3xl font-bold mb-3">
-                What your dispensary AI employee handles
+                What your dispensary AI worker handles
               </h2>
               <p className="text-gray-500 max-w-xl mx-auto">
                 Every question your budtenders answer 50 times a day — automated.
@@ -216,10 +216,10 @@ export default function CannabisPage() {
             <div className="space-y-4">
               {[
                 { step: '1', title: 'Tell us about your dispensary', desc: 'Products you carry, hours, location, your brand voice. 15 minutes.' },
-                { step: '2', title: 'We configure your AI employee', desc: 'Pre-built on our cannabis template based on years of high-volume deployments. We customize it for your specific store.' },
+                { step: '2', title: 'We configure your AI worker', desc: 'Pre-built on our cannabis template based on years of high-volume deployments. We customize it for your specific store.' },
                 { step: '3', title: 'You test it and approve', desc: 'Test every scenario — strain questions, compliance edge cases, competitor questions. Approve when you\'re happy.' },
                 { step: '4', title: 'Connect your phone number', desc: 'Your existing dispensary text number, or we set up a new one. Takes 10 minutes.' },
-                { step: '5', title: 'Your AI employee goes live', desc: 'Every customer text handled automatically. You see every conversation. Staff only touches the exceptions.' },
+                { step: '5', title: 'Your AI worker goes live', desc: 'Every customer text handled automatically. You see every conversation. Staff only touches the exceptions.' },
               ].map((item) => (
                 <div key={item.step} className="flex gap-4 items-start">
                   <div className="shrink-0 w-10 h-10 rounded-full bg-green-600 flex items-center justify-center text-white font-bold">

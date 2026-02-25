@@ -299,7 +299,7 @@ export default function RevenueCalculator({ realClientCount }: { realClientCount
         <Button asChild>
           <Link href="/agency/clients/new">
             <Users className="h-4 w-4 mr-2" />
-            Deploy Your First AI Employee
+            Deploy Your First AI Worker
           </Link>
         </Button>
         <Button asChild variant="outline">

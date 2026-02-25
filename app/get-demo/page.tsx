@@ -95,7 +95,7 @@ export default function GetDemoPage() {
             <span className="text-indigo-400">Ask us anything.</span>
           </h1>
           <p className="text-slate-400 text-lg mb-8 leading-relaxed">
-            Schedule a live demo with Angel Castro (Founder). See your industry's AI employee respond to real leads, watch the GHL integration in action, and ask any technical questions.
+            Schedule a live demo with Angel Castro (Founder). See your industry's AI worker respond to real leads, watch the GHL integration in action, and ask any technical questions.
           </p>
 
           <div className="space-y-4 mb-8">

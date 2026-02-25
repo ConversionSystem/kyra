@@ -34,7 +34,7 @@ export const PROVIDER_MODELS: Record<string, ModelDef[]> = {
       id: 'claude-sonnet-4-5',
       ocModel: 'anthropic/claude-sonnet-4-5',
       label: 'Claude Sonnet 4.5',
-      desc: 'Balanced · Great for most AI employee tasks',
+      desc: 'Balanced · Great for most AI worker tasks',
       badge: 'Recommended',
       badgeColor: 'bg-violet-100 text-violet-700',
     },
