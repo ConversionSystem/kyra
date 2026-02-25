@@ -598,6 +598,45 @@ function AIPersonalityTab({ client }: { client: AgencyClient }) {
   const updateWakeWord = (i: number, patch: Partial<WakeWord>) =>
     setWakeWords((prev) => prev.map((w, idx) => idx === i ? { ...w, ...patch } : w));
 
+  // Auto-train from website
+  const [websiteUrl, setWebsiteUrl] = useState((cfg.website_url as string) || '');
+  const [isAutoTraining, setIsAutoTraining] = useState(false);
+  const [autoTrainResult, setAutoTrainResult] = useState<{
+    documentsCreated: number;
+    documents: string[];
+    pagesScraped: number;
+    persona?: string | null;
+    personaUpdated?: boolean;
+  } | null>(null);
+
+  const handleAutoTrain = async () => {
+    if (!websiteUrl.trim()) return;
+    setIsAutoTraining(true);
+    setMessage(null);
+    setAutoTrainResult(null);
+    try {
+      const res = await fetch('/api/agency/knowledge/auto-train', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId: client.id, websiteUrl: websiteUrl.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Auto-training failed');
+      setAutoTrainResult(data);
+      if (data.personaUpdated && data.persona) {
+        setPersona(data.persona);
+      }
+      setMessage({
+        type: 'success',
+        text: `🧠 Trained from ${data.pagesScraped} pages — created ${data.documentsCreated} knowledge documents!`,
+      });
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err.message });
+    } finally {
+      setIsAutoTraining(false);
+    }
+  };
+
   const handleGenerate = async () => {
     setIsGenerating(true);
     setMessage(null);
@@ -684,6 +723,68 @@ function AIPersonalityTab({ client }: { client: AgencyClient }) {
           {message.text}
         </div>
       )}
+
+      {/* Auto-Train from Website */}
+      <Card className="border-indigo-200 bg-gradient-to-br from-indigo-50/50 to-white">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Globe className="h-4 w-4 text-indigo-500" />
+            Train from Website
+          </CardTitle>
+          <CardDescription>
+            Paste a website URL and the AI will learn the business — services, FAQ, pricing, hours, and more. Takes about 30 seconds.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-2">
+            <Input
+              value={websiteUrl}
+              onChange={(e) => setWebsiteUrl(e.target.value)}
+              placeholder="e.g., https://smilefamilydental.com"
+              className="bg-white"
+              onKeyDown={(e) => e.key === 'Enter' && handleAutoTrain()}
+            />
+            <Button
+              onClick={handleAutoTrain}
+              disabled={isAutoTraining || !websiteUrl.trim()}
+              className="shrink-0 gap-1.5 bg-indigo-600 hover:bg-indigo-700"
+            >
+              {isAutoTraining ? (
+                <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Scanning...</>
+              ) : (
+                <>🧠 Auto-Train</>
+              )}
+            </Button>
+          </div>
+          {isAutoTraining && (
+            <p className="text-xs text-indigo-500 mt-2 animate-pulse">
+              Scraping website pages, extracting business knowledge with AI...
+            </p>
+          )}
+          {autoTrainResult && (
+            <div className="mt-3 rounded-md bg-green-50 border border-green-200 p-3 text-sm">
+              <p className="font-medium text-green-800">
+                ✅ Trained from {autoTrainResult.pagesScraped} pages
+              </p>
+              <p className="text-green-700 mt-1">
+                Created {autoTrainResult.documentsCreated} knowledge {autoTrainResult.documentsCreated === 1 ? 'document' : 'documents'}:
+              </p>
+              <ul className="mt-1 space-y-0.5">
+                {autoTrainResult.documents.map((doc, i) => (
+                  <li key={i} className="text-green-600 text-xs flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3" /> {doc}
+                  </li>
+                ))}
+              </ul>
+              {autoTrainResult.personaUpdated && (
+                <p className="text-green-600 text-xs mt-2 flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3" /> AI persona auto-updated ↓
+                </p>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
