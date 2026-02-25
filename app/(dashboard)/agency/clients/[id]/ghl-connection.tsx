@@ -56,6 +56,7 @@ export default function GHLConnection({
   const [token, setToken] = useState('');
   const [locationIdInput, setLocationIdInput] = useState('');
   const [showInstructions, setShowInstructions] = useState(false);
+  const [showLocationId, setShowLocationId] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
 
   const isConnected = !!ghlLocationId && !disconnected;
@@ -95,13 +96,17 @@ export default function GHLConnection({
         throw new Error(data.error || 'Failed to connect');
       }
 
+      // API returned 200 but needs locationId
+      if (data.needsLocationId && !data.success) {
+        setError(data.message || 'Please enter your GHL Location ID below and try again.');
+        setShowLocationId(true);
+        return;
+      }
+
       setSuccess(data.message || 'Connected successfully!');
       setToken('');
       setLocationIdInput('');
       onConnected?.();
-
-      // Reload after brief delay to show updated state
-      setTimeout(() => window.location.reload(), 1500);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to connect');
     } finally {
@@ -359,17 +364,19 @@ export default function GHLConnection({
                     className="block text-sm font-medium text-gray-700 mb-1"
                   >
                     Location ID{' '}
-                    <span className="font-normal text-gray-400">
-                      (optional — auto-detected if possible)
+                    <span className={`font-normal ${showLocationId ? 'text-amber-600 font-medium' : 'text-gray-400'}`}>
+                      {showLocationId
+                        ? '← Required — enter it and click Connect again'
+                        : '(GHL → Settings → Business Info → Company ID)'}
                     </span>
                   </label>
                   <Input
                     id="ghl-location-id"
                     type="text"
-                    placeholder="e.g. y1BFVhXMDNUPlbPxEpSA"
+                    placeholder="e.g. ve9EPM428h8vShlRW1KT"
                     value={locationIdInput}
                     onChange={(e) => setLocationIdInput(e.target.value)}
-                    className="font-mono text-sm"
+                    className={`font-mono text-sm ${showLocationId ? 'border-amber-400 bg-amber-50' : ''}`}
                   />
                 </div>
 
