@@ -1,14 +1,18 @@
 /**
  * POST /api/agency/pipeline/enrich
- * AI enrichment — scrapes REAL website content + discovers actual team members.
+ * Deep enrichment — scrapes website, extracts contacts, socials, and writes killer emails.
  *
- * Flow per lead:
- * 1. Fetch company homepage → extract text
- * 2. Fetch /about, /team, /our-team, /about-us pages → find real people
- * 3. Feed ALL real content to GPT-4o → identify decision-maker + write personalized email
+ * What gets extracted from the actual website:
+ * - Phone numbers (regex on HTML)
+ * - Email addresses (regex on HTML)
+ * - Social media profiles (Facebook, Instagram, Twitter/X, YouTube, TikTok)
+ * - Team member names from /about, /team pages
+ * - Services, clients, tech stack, positioning
  *
- * Result: Real person names from their own website. Real company context.
- * Zero hallucination — everything is grounded in scraped data.
+ * Then GPT-4o uses ALL this real data to:
+ * - Identify the decision-maker
+ * - Write a hyper-personalized email
+ * - Write an SMS opener
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
@@ -19,10 +23,11 @@ async function getAgencyId(userId: string): Promise<string | null> {
   return data?.agency_id ?? null;
 }
 
-/**
- * Fetch a URL and extract readable text. Returns empty string on failure.
- */
-async function fetchPageText(url: string, maxChars = 5000): Promise<string> {
+// ────────────────────────────────────────────────────────────────
+// Website scraping utilities
+// ────────────────────────────────────────────────────────────────
+
+async function fetchRawHtml(url: string): Promise<string> {
   try {
     const fullUrl = url.startsWith('http') ? url : `https://${url}`;
     const res = await fetch(fullUrl, {
@@ -35,62 +40,137 @@ async function fetchPageText(url: string, maxChars = 5000): Promise<string> {
       },
     });
     if (!res.ok) return '';
-    const html = await res.text();
-
-    // Extract structured metadata
-    const title = html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]?.trim() || '';
-    const metaDesc = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i)?.[1] || '';
-    const ogDesc = html.match(/<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']+)["']/i)?.[1] || '';
-
-    // Extract body text, strip nav/footer/scripts
-    const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-    const bodyHtml = bodyMatch?.[1] || html;
-    const text = bodyHtml
-      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-      .replace(/<nav[^>]*>[\s\S]*?<\/nav>/gi, '')
-      .replace(/<footer[^>]*>[\s\S]*?<\/footer>/gi, '')
-      .replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi, '\n## $1\n')
-      .replace(/<li[^>]*>(.*?)<\/li>/gi, '- $1\n')
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&#?\w+;/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-
-    const parts: string[] = [];
-    if (title) parts.push(`Title: ${title}`);
-    if (metaDesc) parts.push(`Description: ${metaDesc}`);
-    if (ogDesc && ogDesc !== metaDesc) parts.push(`About: ${ogDesc}`);
-    parts.push(text);
-    return parts.join('\n').slice(0, maxChars);
+    return await res.text();
   } catch {
     return '';
   }
 }
 
-/**
- * Try multiple team/about page paths to find one with real content.
- */
-async function fetchTeamPages(baseUrl: string, maxChars = 4000): Promise<string> {
-  const base = (baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`).replace(/\/$/, '');
-  const paths = ['/about', '/about-us', '/team', '/our-team', '/about-us/', '/people', '/leadership', '/who-we-are', '/meet-the-team', '/staff'];
+/** Extract readable text from HTML */
+function htmlToText(html: string, maxChars = 5000): string {
+  const title = html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]?.trim() || '';
+  const metaDesc = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i)?.[1] || '';
 
-  const results: string[] = [];
-  // Try 3 paths in parallel to save time
+  const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+  const bodyHtml = bodyMatch?.[1] || html;
+  const text = bodyHtml
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<nav[^>]*>[\s\S]*?<\/nav>/gi, '')
+    .replace(/<footer[^>]*>[\s\S]*?<\/footer>/gi, '')
+    .replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi, '\n## $1\n')
+    .replace(/<li[^>]*>(.*?)<\/li>/gi, '- $1\n')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&#?\w+;/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const parts: string[] = [];
+  if (title) parts.push(`Title: ${title}`);
+  if (metaDesc) parts.push(`Description: ${metaDesc}`);
+  parts.push(text);
+  return parts.join('\n').slice(0, maxChars);
+}
+
+/** Extract all email addresses from raw HTML */
+function extractEmails(html: string): string[] {
+  const emailRegex = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g;
+  const matches = html.match(emailRegex) || [];
+  // Filter out common non-person emails and image files
+  const filtered = matches.filter(e => {
+    const lower = e.toLowerCase();
+    return !lower.endsWith('.png') && !lower.endsWith('.jpg') && !lower.endsWith('.gif')
+      && !lower.endsWith('.svg') && !lower.endsWith('.webp')
+      && !lower.includes('example.com') && !lower.includes('sentry.')
+      && !lower.includes('wixpress') && !lower.includes('googleapis')
+      && !lower.includes('@2x') && !lower.includes('@3x');
+  });
+  return [...new Set(filtered)]; // dedupe
+}
+
+/** Extract phone numbers from raw HTML */
+function extractPhones(html: string): string[] {
+  // Strip HTML tags for cleaner extraction
+  const text = html.replace(/<[^>]+>/g, ' ');
+  const phoneRegex = /(?:\+?1[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?)?\d{3}[-.\s]?\d{4}/g;
+  const telRegex = /tel:([+\d\-.\s()]+)/gi;
+
+  const matches: string[] = [];
+
+  // From tel: links (most reliable)
+  let telMatch;
+  while ((telMatch = telRegex.exec(html)) !== null) {
+    const num = telMatch[1].replace(/\s+/g, '').trim();
+    if (num.length >= 10) matches.push(num);
+  }
+
+  // From page text
+  const textMatches = text.match(phoneRegex) || [];
+  for (const m of textMatches) {
+    const clean = m.replace(/[^\d+]/g, '');
+    if (clean.length >= 10 && clean.length <= 15) matches.push(m.trim());
+  }
+
+  return [...new Set(matches)].slice(0, 5); // max 5
+}
+
+/** Extract social media profile URLs from HTML */
+function extractSocials(html: string): Record<string, string> {
+  const socials: Record<string, string> = {};
+
+  const patterns: [string, RegExp][] = [
+    ['facebook', /href=["'](https?:\/\/(?:www\.)?facebook\.com\/[^"'\s#?]+)/gi],
+    ['instagram', /href=["'](https?:\/\/(?:www\.)?instagram\.com\/[^"'\s#?]+)/gi],
+    ['twitter', /href=["'](https?:\/\/(?:www\.)?(?:twitter\.com|x\.com)\/[^"'\s#?]+)/gi],
+    ['youtube', /href=["'](https?:\/\/(?:www\.)?youtube\.com\/(?:@|channel\/|c\/)[^"'\s#?]+)/gi],
+    ['tiktok', /href=["'](https?:\/\/(?:www\.)?tiktok\.com\/@[^"'\s#?]+)/gi],
+    ['linkedin', /href=["'](https?:\/\/(?:www\.)?linkedin\.com\/(?:company|in)\/[^"'\s#?]+)/gi],
+    ['yelp', /href=["'](https?:\/\/(?:www\.)?yelp\.com\/biz\/[^"'\s#?]+)/gi],
+    ['google_business', /href=["'](https?:\/\/(?:www\.)?google\.com\/maps\/[^"'\s#?]+)/gi],
+  ];
+
+  for (const [name, regex] of patterns) {
+    const match = regex.exec(html);
+    if (match?.[1]) {
+      // Clean up trailing slashes and fragments
+      socials[name] = match[1].replace(/\/+$/, '');
+    }
+  }
+
+  return socials;
+}
+
+/** Try to fetch team/about pages */
+async function fetchTeamPages(baseUrl: string): Promise<{ text: string; html: string }> {
+  const base = (baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`).replace(/\/$/, '');
+  const paths = ['/about', '/about-us', '/team', '/our-team', '/people', '/leadership', '/who-we-are', '/meet-the-team', '/staff', '/about-us/'];
+
+  const textParts: string[] = [];
+  const htmlParts: string[] = [];
+
   for (let i = 0; i < paths.length; i += 3) {
     const batch = paths.slice(i, i + 3);
     const fetched = await Promise.allSettled(
-      batch.map(p => fetchPageText(`${base}${p}`, 3000))
+      batch.map(p => fetchRawHtml(`${base}${p}`))
     );
     for (const r of fetched) {
-      if (r.status === 'fulfilled' && r.value.length > 150) {
-        results.push(r.value);
+      if (r.status === 'fulfilled' && r.value.length > 500) {
+        htmlParts.push(r.value);
+        textParts.push(htmlToText(r.value, 3000));
       }
     }
-    if (results.length >= 2) break; // Got enough content
+    if (textParts.length >= 2) break;
   }
-  return results.join('\n---\n').slice(0, maxChars);
+
+  return {
+    text: textParts.join('\n---\n').slice(0, 5000),
+    html: htmlParts.join('\n'),
+  };
 }
+
+// ────────────────────────────────────────────────────────────────
+// Main route
+// ────────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -120,9 +200,10 @@ export async function POST(req: NextRequest) {
     id: string;
     status: 'enriched' | 'error';
     error?: string;
-    homepage_chars?: number;
-    team_page_chars?: number;
     found_person?: boolean;
+    found_emails?: number;
+    found_phones?: number;
+    found_socials?: number;
   }> = [];
 
   for (const lead of leads) {
@@ -131,69 +212,103 @@ export async function POST(req: NextRequest) {
     const painPoints = campaign?.target_pain_points || '';
 
     try {
-      // ─── Stage 1: Scrape their actual website ───────────────────
-      let homepageContent = '';
-      let teamContent = '';
+      // ─── Stage 1: Scrape everything from their website ──────────
+      let homepageHtml = '';
+      let homepageText = '';
+      let teamPageText = '';
+      let teamPageHtml = '';
+      let allEmails: string[] = [];
+      let allPhones: string[] = [];
+      let allSocials: Record<string, string> = {};
 
       if (lead.website) {
+        // Fetch homepage + team pages in parallel
         const [homeResult, teamResult] = await Promise.allSettled([
-          fetchPageText(lead.website, 5000),
-          fetchTeamPages(lead.website, 4000),
+          fetchRawHtml(lead.website),
+          fetchTeamPages(lead.website),
         ]);
-        homepageContent = homeResult.status === 'fulfilled' ? homeResult.value : '';
-        teamContent = teamResult.status === 'fulfilled' ? teamResult.value : '';
+
+        if (homeResult.status === 'fulfilled' && homeResult.value) {
+          homepageHtml = homeResult.value;
+          homepageText = htmlToText(homepageHtml, 5000);
+        }
+        if (teamResult.status === 'fulfilled') {
+          teamPageText = teamResult.value.text;
+          teamPageHtml = teamResult.value.html;
+        }
+
+        // Extract contacts from ALL scraped HTML
+        const combinedHtml = homepageHtml + '\n' + teamPageHtml;
+        allEmails = extractEmails(combinedHtml);
+        allPhones = extractPhones(combinedHtml);
+        allSocials = extractSocials(combinedHtml);
       }
 
-      const hasWebContent = homepageContent.length > 100;
-      const hasTeamContent = teamContent.length > 100;
+      const hasWebContent = homepageText.length > 100;
+      const hasTeamContent = teamPageText.length > 100;
 
-      // ─── Stage 2: GPT-4o extracts real people + writes email ─────
-      const prompt = `You are a B2B sales researcher. I need you to do TWO things:
+      // ─── Stage 2: GPT-4o deep analysis + email writing ──────────
+      const prompt = `You are an elite B2B sales researcher and cold email copywriter. You have access to this company's REAL website content. Your job:
 
-1. FIND THE DECISION-MAKER: Look through the website content below and identify the real person who is the ${lead.title || 'owner/founder'} or closest decision-maker at this company. Extract their actual name if you can find it.
+1. IDENTIFY THE DECISION-MAKER by reading the website content below
+2. DEEPLY RESEARCH this company based on what you find
+3. WRITE A KILLER personalized cold email that will get a reply
 
-2. WRITE A PERSONALIZED EMAIL: Based on what you learn about this company from their actual website.
+${hasWebContent ? `═══ HOMEPAGE: ${lead.company} (${lead.website}) ═══
+${homepageText}
+═══ END HOMEPAGE ═══` : `⚠️ Could not access homepage for ${lead.website || 'unknown'}.`}
 
-${hasWebContent ? `=== COMPANY HOMEPAGE (${lead.company}) — ${lead.website} ===
-${homepageContent}
-=== END HOMEPAGE ===` : `No homepage content available for ${lead.website || 'unknown website'}.`}
+${hasTeamContent ? `═══ TEAM / ABOUT PAGES ═══
+${teamPageText}
+═══ END TEAM PAGES ═══` : ''}
 
-${hasTeamContent ? `=== TEAM/ABOUT PAGES ===
-${teamContent}
-=== END TEAM PAGES ===` : ''}
+${allEmails.length ? `📧 Emails found on site: ${allEmails.join(', ')}` : ''}
+${allPhones.length ? `📞 Phones found on site: ${allPhones.join(', ')}` : ''}
+${Object.keys(allSocials).length ? `📱 Social profiles found: ${Object.entries(allSocials).map(([k,v]) => `${k}: ${v}`).join(', ')}` : ''}
 
 COMPANY: ${lead.company}
 INDUSTRY: ${lead.industry || 'Unknown'}
 LOCATION: ${lead.location || 'Unknown'}
-COMPANY SIZE: ${lead.company_size || 'Unknown'}
+SIZE: ${lead.company_size || 'Unknown'}
 TARGET ROLE: ${lead.title || 'Owner/Founder'}
 
 WE ARE SELLING: ${valueProp}
 THEIR LIKELY CHALLENGES: ${painPoints}
 
 RULES:
-1. For the decision-maker: ONLY use names you actually found in the website content above. If no name is visible, set first_name and last_name to empty strings "".
-2. DO NOT make up or guess names. If the about page says "Founded by John Smith" — use that. If there's no name anywhere, leave it blank.
-3. DO NOT include any LinkedIn URLs.
-4. ${hasWebContent ? 'Reference SPECIFIC things from their website (services, clients, tech stack, positioning).' : 'Keep it general since we could not access their website.'}
-5. Email must be 4-5 sentences, conversational, NOT salesy. End with one soft question.
-6. Sign off as "Angel Castro, Conversion System"
-7. If you found a real person name, address the email to them. If not, use "Hi there" or address to the company.
-8. CTA link: https://kyra.conversionsystem.com/get-demo
+1. DECISION-MAKER: Only use names you ACTUALLY found in the website content. If no name is visible, return empty strings. NEVER make up names.
+2. BEST EMAIL: Pick the most likely decision-maker email from the ones found on the website. If none found, return empty string.
+3. BEST PHONE: Pick the main business phone from those found. If none found, return empty string.
+4. COMPANY DEEP DIVE: Extract everything — what they do, who they serve, their specialties, any clients/testimonials mentioned, tools/tech they use, awards, years in business.
+5. EMAIL WRITING — THIS IS CRITICAL:
+   - Line 1: A specific observation about THEIR business that proves you looked (reference something from their site)
+   - Line 2: Connect their situation to a pain point they likely have
+   - Line 3: One sentence about how we solve it (not a pitch — a bridge)
+   - Line 4: A soft, curious question as CTA (not "let's hop on a call" — something they WANT to answer)
+   - Sign off: "Angel Castro, Conversion System"
+   - Tone: Like a peer texting another business owner. Conversational. Zero corporate speak. Zero "I hope this finds you well."
+   - Include CTA link naturally: https://kyra.conversionsystem.com/get-demo
+6. SUBJECT LINE: Must create curiosity. Max 6 words. No spam words (free, guarantee, limited). Think about what would make YOU open an email.
+7. SMS OPENER: Under 160 chars. Punchy. Reference their business name.
 
 Return JSON:
 {
   "found_first_name": "real first name from website OR empty string",
   "found_last_name": "real last name from website OR empty string",
-  "found_title": "their actual title from website OR the target role",
-  "found_email": "their email if visible on site OR empty string",
-  "company_context": "2-3 sentences about what this company ACTUALLY does based on their site",
-  "services_offered": "their main services/offerings from their site",
-  "likely_pain_points": "2-3 specific pain points for their business type",
-  "opportunity_angle": "how our product solves their specific pain",
-  "icebreaker": "one specific observation from their website that shows real research",
-  "personalized_subject": "email subject line (max 8 words, curiosity-driven)",
-  "personalized_email": "4-5 sentence personalized cold email",
+  "found_title": "their actual title from website OR target role",
+  "best_email": "most relevant email from website OR empty string",
+  "best_phone": "main phone from website OR empty string",
+  "company_context": "3-4 sentences deep dive: what they do, who they serve, specialties",
+  "services_offered": "comma-separated list of their services/offerings",
+  "clients_mentioned": "any client names or testimonials found on their site",
+  "tech_stack": "any tools, platforms, or tech mentioned on their site",
+  "years_in_business": "if mentioned on site, otherwise empty string",
+  "number_of_employees": "if visible on site, otherwise use estimate",
+  "likely_pain_points": "3 specific pain points based on their actual business",
+  "opportunity_angle": "2 sentences on exactly how our product helps them specifically",
+  "icebreaker": "one specific verifiable fact from their website",
+  "personalized_subject": "6-word max curiosity-driven subject line",
+  "personalized_email": "4-line cold email following the rules above",
   "personalized_opener": "SMS opener under 160 chars"
 }`;
 
@@ -205,9 +320,9 @@ Return JSON:
           response_format: { type: 'json_object' },
           messages: [{ role: 'user', content: prompt }],
           temperature: 0.4,
-          max_tokens: 2000,
+          max_tokens: 2500,
         }),
-        signal: AbortSignal.timeout(45_000),
+        signal: AbortSignal.timeout(60_000),
       });
 
       if (!aiRes.ok) {
@@ -219,31 +334,42 @@ Return JSON:
       const content = aiData.choices?.[0]?.message?.content;
       const parsed = JSON.parse(content || '{}');
 
-      // Update lead with discovered person + enrichment
       const firstName = parsed.found_first_name || '';
       const lastName = parsed.found_last_name || '';
       const hasRealPerson = firstName.length > 1 && lastName.length > 1;
 
+      // Build comprehensive enrichment data
+      const enrichmentData: Record<string, unknown> = {
+        company_context: parsed.company_context || '',
+        services_offered: parsed.services_offered || '',
+        clients_mentioned: parsed.clients_mentioned || '',
+        tech_stack: parsed.tech_stack || '',
+        years_in_business: parsed.years_in_business || '',
+        number_of_employees: parsed.number_of_employees || '',
+        likely_pain_points: parsed.likely_pain_points || '',
+        opportunity_angle: parsed.opportunity_angle || '',
+        icebreaker: parsed.icebreaker || '',
+        // Contact data found on website
+        emails_found: allEmails,
+        phones_found: allPhones,
+        socials: allSocials,
+        // Meta
+        has_website_data: hasWebContent,
+        has_team_page: hasTeamContent,
+        homepage_chars: homepageText.length,
+        person_source: hasRealPerson ? 'website' : 'none',
+        enriched_at: new Date().toISOString(),
+      };
+
       const updateData: Record<string, unknown> = {
-        enrichment_data: {
-          company_context: parsed.company_context || '',
-          services_offered: parsed.services_offered || '',
-          likely_pain_points: parsed.likely_pain_points || '',
-          opportunity_angle: parsed.opportunity_angle || '',
-          icebreaker: parsed.icebreaker || '',
-          has_website_data: hasWebContent,
-          has_team_page: hasTeamContent,
-          homepage_chars: homepageContent.length,
-          person_source: hasRealPerson ? 'website' : 'none',
-          enriched_at: new Date().toISOString(),
-        },
+        enrichment_data: enrichmentData,
         personalized_subject: parsed.personalized_subject || '',
         personalized_email: parsed.personalized_email || '',
         personalized_opener: parsed.personalized_opener || '',
         stage: 'researched',
       };
 
-      // Only update person info if we found a real name on the website
+      // Person info — only if found on the actual website
       if (hasRealPerson) {
         updateData.first_name = firstName;
         updateData.last_name = lastName;
@@ -251,9 +377,16 @@ Return JSON:
         updateData.title = parsed.found_title || lead.title;
       }
 
-      // Update email only if found on website (not guessed)
-      if (parsed.found_email && parsed.found_email.includes('@')) {
-        updateData.email = parsed.found_email;
+      // Best email — from website extraction + AI selection
+      const bestEmail = parsed.best_email || allEmails[0] || '';
+      if (bestEmail && bestEmail.includes('@')) {
+        updateData.email = bestEmail;
+      }
+
+      // Best phone — from website extraction + AI selection
+      const bestPhone = parsed.best_phone || allPhones[0] || '';
+      if (bestPhone && bestPhone.length >= 10) {
+        updateData.phone = bestPhone;
       }
 
       await svc.from('pipeline_leads').update(updateData).eq('id', lead.id);
@@ -261,28 +394,31 @@ Return JSON:
       results.push({
         id: lead.id,
         status: 'enriched',
-        homepage_chars: homepageContent.length,
-        team_page_chars: teamContent.length,
         found_person: hasRealPerson,
+        found_emails: allEmails.length,
+        found_phones: allPhones.length,
+        found_socials: Object.keys(allSocials).length,
       });
     } catch (err) {
       results.push({ id: lead.id, status: 'error', error: err instanceof Error ? err.message : 'Unknown' });
     }
 
-    // Pause between leads (website fetch + AI = heavy)
     await new Promise(r => setTimeout(r, 500));
   }
 
   const enriched = results.filter(r => r.status === 'enriched').length;
   const errors = results.filter(r => r.status === 'error').length;
-  const withRealPeople = results.filter(r => r.found_person).length;
-  const withWebData = results.filter(r => (r.homepage_chars || 0) > 100).length;
+  const withPeople = results.filter(r => r.found_person).length;
+  const withEmails = results.filter(r => (r.found_emails || 0) > 0).length;
+  const withPhones = results.filter(r => (r.found_phones || 0) > 0).length;
+  const withSocials = results.filter(r => (r.found_socials || 0) > 0).length;
 
   return NextResponse.json({
-    enriched,
-    errors,
-    with_real_people: withRealPeople,
-    with_website_data: withWebData,
+    enriched, errors,
+    with_real_people: withPeople,
+    with_emails: withEmails,
+    with_phones: withPhones,
+    with_socials: withSocials,
     results,
   });
 }
