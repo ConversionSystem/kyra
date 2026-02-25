@@ -1,3 +1,6 @@
+// Allow up to 5 minutes for the autonomous pipeline (streaming response)
+export const maxDuration = 300;
+
 /**
  * POST /api/agency/pipeline/run
  * THE AUTONOMOUS PIPELINE — One click, full automation.
@@ -164,24 +167,51 @@ RULES:
         let candidates: Array<Record<string, string>> = [];
         try {
           const parsed = JSON.parse(rawText);
-          candidates = Array.isArray(parsed) ? parsed : parsed.companies || parsed.results || parsed.leads || [];
+          if (Array.isArray(parsed)) {
+            candidates = parsed;
+          } else if (typeof parsed === 'object' && parsed !== null) {
+            // Find the first array value in the response (GPT returns varying keys like "companies", "dentists", "businesses")
+            for (const val of Object.values(parsed)) {
+              if (Array.isArray(val) && val.length > 0) {
+                candidates = val;
+                break;
+              }
+            }
+          }
         } catch { candidates = []; }
 
-        // Verify websites exist
+        // Verify websites exist (try GET — many sites block HEAD)
         const verified: typeof candidates = [];
         for (const c of candidates) {
           if (!c.website) continue;
           const url = c.website.startsWith('http') ? c.website : `https://${c.website}`;
           try {
-            const res = await fetch(url, { method: 'HEAD', signal: AbortSignal.timeout(5_000), redirect: 'follow' });
-            if (res.ok || res.status === 405 || res.status === 403) {
+            const res = await fetch(url, {
+              method: 'GET',
+              headers: { 'User-Agent': 'Mozilla/5.0 (compatible; KyraBot/1.0)' },
+              signal: AbortSignal.timeout(5_000),
+              redirect: 'follow',
+            });
+            if (res.ok || res.status === 403 || res.status === 405 || res.status === 406) {
               verified.push(c);
               send('lead_found', {
                 step: 2, current: verified.length, total: lead_count,
                 company: c.company, website: c.website, location: c.location,
               });
             }
-          } catch { /* skip unreachable */ }
+          } catch {
+            // Try HEAD as fallback
+            try {
+              const res2 = await fetch(url, { method: 'HEAD', signal: AbortSignal.timeout(3_000), redirect: 'follow' });
+              if (res2.ok || res2.status === 403) {
+                verified.push(c);
+                send('lead_found', {
+                  step: 2, current: verified.length, total: lead_count,
+                  company: c.company, website: c.website, location: c.location,
+                });
+              }
+            } catch { /* truly unreachable */ }
+          }
           if (verified.length >= lead_count) break;
         }
 
