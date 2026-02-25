@@ -24,6 +24,7 @@ interface PipelineContext {
   valueProp: string;
   enrichment: {
     company_context?: string;
+    services_offered?: string;
     likely_pain_points?: string;
     opportunity_angle?: string;
     icebreaker?: string;
