@@ -5,7 +5,7 @@ import PublicFooter from '@/components/layout/public-footer';
 
 export const metadata: Metadata = {
   title: 'Kyra Changelog — AI Workforce Platform',
-  description: 'See what\'s new in Kyra. Regular updates, new features, and improvements to the AI employee platform.',
+  description: 'See what\'s new in Kyra. Regular updates, new features, and improvements to the AI workforce platform.',
 };
 
 const UPDATES = [
@@ -67,7 +67,7 @@ const UPDATES = [
     tag: 'Core AI',
     tagColor: 'bg-purple-100 text-purple-700',
     title: 'GHL automation, escalation & personality generation',
-    desc: 'The AI employee now fully operates inside GoHighLevel.',
+    desc: 'The AI worker now fully operates inside GoHighLevel.',
     items: [
       { emoji: '🤖', text: '✨ Generate with AI — auto-writes full AI personality from business name' },
       { emoji: '📅', text: 'GHL calendar booking link — AI includes it when customers ask to schedule' },

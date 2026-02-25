@@ -6,8 +6,8 @@ import PublicFooter from '@/components/layout/public-footer';
 
 export const metadata: Metadata = {
   title: 'Kyra vs. Chatbots — AI Workers Are a Different Category | OpenClaw-Powered',
-  description: 'Why AI employees are different from chatbots, canned response bots, and basic GHL automation workflows. Side-by-side comparison.',
-  keywords: ['GHL AI employee vs chatbot', 'stammer.ai alternative', 'AI employee for GHL', 'GoHighLevel chatbot vs AI'],
+  description: 'Why AI workers are different from chatbots, canned response bots, and basic GHL automation workflows. Side-by-side comparison.',
+  keywords: ['GHL AI worker vs chatbot', 'stammer.ai alternative', 'AI worker for GHL', 'GoHighLevel chatbot vs AI'],
 };
 
 const rows = [
@@ -116,14 +116,14 @@ export default function VsPage() {
         {/* Header */}
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 text-sm font-medium mb-4">
-            AI Employee vs. Everything Else
+            AI Worker vs. Everything Else
           </div>
           <h1 className="text-3xl sm:text-4xl font-black mb-4">
             AI workers vs. chatbots vs. automation.<br />
             <span className="text-indigo-400">Not the same category.</span>
           </h1>
           <p className="text-slate-400 text-lg max-w-2xl mx-auto">
-            Chatbots respond to keywords. GHL automations follow scripts. An AI employee understands context, adapts to each conversation, and operates like a real team member — without the salary.
+            Chatbots respond to keywords. GHL automations follow scripts. An AI worker understands context, adapts to each conversation, and operates like a real team member — without the salary.
           </p>
         </div>
 
@@ -143,7 +143,7 @@ export default function VsPage() {
                 <th className="p-4 text-center">
                   <div className="flex flex-col items-center gap-1">
                     <div className="bg-indigo-600 rounded-lg px-3 py-1 text-sm font-black">Kyra + OpenClaw</div>
-                    <span className="text-xs text-slate-500">AI Employee</span>
+                    <span className="text-xs text-slate-500">AI Worker</span>
                   </div>
                 </th>
                 <th className="p-4 text-center">
@@ -178,21 +178,21 @@ export default function VsPage() {
           {[
             {
               title: 'Chatbots answer questions.',
-              subtitle: 'AI employees have conversations.',
-              desc: 'A chatbot matches keywords to canned responses. When a customer asks something unexpected, it breaks. An AI employee understands context, remembers what was said, and adapts — just like a real person would.',
+              subtitle: 'AI workers have conversations.',
+              desc: 'A chatbot matches keywords to canned responses. When a customer asks something unexpected, it breaks. An AI worker understands context, remembers what was said, and adapts — just like a real person would.',
               bad: 'Customer: "What if I have questions after?" → Chatbot: "I don\'t understand your question."',
               good: 'Same message → Kyra AI: "Great question — you can text us anytime and I\'ll follow up. Should I note that you prefer text over calls?"',
             },
             {
               title: 'Automations run scripts.',
-              subtitle: 'AI employees think.',
+              subtitle: 'AI workers think.',
               desc: 'GHL workflows are powerful, but they follow fixed paths. If a contact takes an unexpected action, they fall off the map. The AI adapts to what the customer actually says — not just what you anticipated.',
               bad: 'Automation: "Reply YES to confirm." → Customer: "sounds good" → Automation: breaks.',
               good: 'Same message → Kyra AI: "✅ Confirmed! See you Tuesday at 2pm. Let me know if anything changes."',
             },
             {
               title: 'Tools need configuration.',
-              subtitle: 'AI employees need personality.',
+              subtitle: 'AI workers need personality.',
               desc: 'Setting up most chatbots takes days of mapping flows. Kyra uses a natural language personality that you write once (or generate with AI in seconds). The AI figures out how to apply it.',
               bad: 'Hours of building conversation trees, testing edge cases, updating flows.',
               good: '10 minutes: add client → pick template → generate personality → go live.',
@@ -218,7 +218,7 @@ export default function VsPage() {
         <div className="rounded-2xl bg-indigo-950/50 border border-indigo-500/20 p-8 text-center">
           <h2 className="text-2xl font-black mb-2">See the difference in 60 seconds</h2>
           <p className="text-slate-400 mb-6 text-sm">
-            Try a live AI employee conversation. Type anything a real customer would say.
+            Try a live AI worker conversation. Type anything a real customer would say.
           </p>
           <div className="flex items-center justify-center gap-3 flex-wrap">
             <Link href="/try/dental" className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-3 rounded-xl transition flex items-center gap-2">

@@ -135,7 +135,7 @@ export default function GhlMarketplacePage() {
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-black leading-tight mb-6">
             Give Every GHL Client
             <br />
-            <span className="text-indigo-300">an AI Worker</span>
+            <span className="text-indigo-300">an AI worker</span>
           </h1>
           <p className="text-xl text-indigo-200 max-w-2xl mx-auto mb-10 leading-relaxed">
             Kyra plugs into any GHL sub-account and handles inbound conversations 24/7.

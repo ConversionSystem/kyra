@@ -44,7 +44,7 @@ export async function POST(
     return NextResponse.json({ error: 'OpenAI API key not configured' }, { status: 500 });
   }
 
-  const systemPrompt = `You are an expert AI assistant trainer. Generate a professional AI employee personality for an SMS-based business assistant.
+  const systemPrompt = `You are an expert AI assistant trainer. Generate a professional AI worker personality for an SMS-based business assistant.
 
 Output ONLY valid JSON with exactly these fields:
 {

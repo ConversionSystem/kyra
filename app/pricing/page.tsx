@@ -19,7 +19,7 @@ const PLANS = [
     featured: false,
     badge: null,
     features: [
-      '1 AI employee',
+      '1 AI worker',
       'GHL SMS integration',
       'All industry templates',
       'Personality customization',
@@ -42,7 +42,7 @@ const PLANS = [
     featured: false,
     badge: 'Most popular for new agencies',
     features: [
-      '5 AI employees',
+      '5 AI workers',
       'Everything in Free',
       'Bring your own OpenAI key (BYOK)',
       'Weekly performance reports',
@@ -62,7 +62,7 @@ const PLANS = [
     featured: true,
     badge: '🔥 Best for growing agencies',
     features: [
-      '15 AI employees',
+      '15 AI workers',
       'Everything in Lite',
       'White-label branding',
       'Business-in-a-Box playbook',
@@ -82,7 +82,7 @@ const PLANS = [
     featured: false,
     badge: 'For high-volume agencies',
     features: [
-      '50 AI employees',
+      '50 AI workers',
       'Everything in Pro',
       'Dedicated infrastructure per client',
       'Admin MRR dashboard',
@@ -99,12 +99,12 @@ const FAQ = [
     a: 'GHL is required for SMS and multi-channel features. Kyra\'s web chat widget works on any website without GHL. Most agency use cases need GHL for the full feature set.',
   },
   {
-    q: 'What does "AI employee" mean exactly?',
-    a: 'Each AI employee is an isolated AI agent with its own personality, memory, and channels — configured for one client business. It responds to their leads, books appointments, updates their CRM, and escalates to humans when needed.',
+    q: 'What does "AI worker" mean exactly?',
+    a: 'Each AI worker is an isolated AI agent with its own personality, memory, and channels — configured for one client business. It responds to their leads, books appointments, updates their CRM, and escalates to humans when needed.',
   },
   {
     q: 'How do agencies make money with Kyra?',
-    a: 'Agencies charge clients $500–$2,000/month per AI employee. At Pro ($249/mo, 15 clients), billing $997/client = $14,955/mo revenue — $14,706/mo gross margin. Most agencies start at $497–$997/mo per client.',
+    a: 'Agencies charge clients $500–$2,000/month per AI worker. At Pro ($249/mo, 15 clients), billing $997/client = $14,955/mo revenue — $14,706/mo gross margin. Most agencies start at $497–$997/mo per client.',
   },
   {
     q: 'What is BYOK (Bring Your Own Key)?',
@@ -160,7 +160,7 @@ export default function PricingPage() {
           <span className="inline-block bg-green-600 text-white text-xs font-bold px-3 py-1 rounded-full mb-3">For your own business</span>
           <h2 className="text-2xl font-black text-white mb-2">No agency. No white-label. Just your AI.</h2>
           <p className="text-slate-400 text-sm max-w-md mx-auto">
-            Dental practice, real estate office, HVAC company, cannabis dispensary — any business can have an AI employee.
+            Dental practice, real estate office, HVAC company, cannabis dispensary — any business can have an AI worker.
           </p>
         </div>
         <div className="grid sm:grid-cols-2 gap-4 mb-8">
@@ -169,21 +169,21 @@ export default function PricingPage() {
               name: 'Business Starter',
               price: annual ? '$39' : '$49',
               period: '/month',
-              desc: '1 AI employee for your business. All channels — voice, SMS, web chat.',
+              desc: '1 AI worker for your business. All channels — voice, SMS, web chat.',
               badge: 'Perfect for solo businesses',
               cta: 'Start Free →',
               href: '/signup/agency?tier=business-starter' + (annual ? '&billing=annual' : ''),
-              features: ['1 AI employee', 'Phone number (VAPI/Retell)', 'SMS + web chat', 'Appointment booking', 'All industry templates', 'Zapier webhook integration'],
+              features: ['1 AI worker', 'Phone number (VAPI/Retell)', 'SMS + web chat', 'Appointment booking', 'All industry templates', 'Zapier webhook integration'],
             },
             {
               name: 'Business Pro',
               price: annual ? '$79' : '$97',
               period: '/month',
-              desc: '3 AI employees — multiple locations, departments, or use cases.',
+              desc: '3 AI workers — multiple locations, departments, or use cases.',
               badge: '🔥 Best for multi-location',
               cta: 'Start Free →',
               href: '/signup/agency?tier=business-pro' + (annual ? '&billing=annual' : ''),
-              features: ['3 AI employees', 'Everything in Starter', 'WhatsApp + Instagram DM', 'Advanced analytics', 'Custom personality per AI', 'Priority support'],
+              features: ['3 AI workers', 'Everything in Starter', 'WhatsApp + Instagram DM', 'Advanced analytics', 'Custom personality per AI', 'Priority support'],
             },
           ].map(plan => (
             <div key={plan.name} className="rounded-2xl border border-white/10 bg-white/5 p-6">
@@ -221,7 +221,7 @@ export default function PricingPage() {
       <div className="max-w-5xl mx-auto px-4 pb-8">
         <div className="flex items-center gap-4">
           <div className="flex-1 h-px bg-white/10" />
-          <span id="agency" className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Agency Plans — Resell AI employees to your clients</span>
+          <span id="agency" className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Agency Plans — Resell AI workers to your clients</span>
           <div className="flex-1 h-px bg-white/10" />
         </div>
       </div>
@@ -379,7 +379,7 @@ export default function PricingPage() {
 
       {/* CTA */}
       <section className="border-t border-white/10 py-20 text-center px-4">
-        <h2 className="text-3xl sm:text-4xl font-black mb-4">Ready to deploy your first AI employee?</h2>
+        <h2 className="text-3xl sm:text-4xl font-black mb-4">Ready to deploy your first AI worker?</h2>
         <p className="text-slate-400 mb-8">Free to start. Works with your existing GoHighLevel account.</p>
         <Link
           href="/signup/agency"
