@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Loader2, Check, MessageSquare, Zap, X, CheckCircle2, ArrowRight, Sparkles } from 'lucide-react';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
+// Client creation now uses /api/agency/clients (handles provisioning + plan limits)
 import type { AgencyTemplate, SampleResponse, SuggestedSkill } from '@/lib/agency/queries';
 import { agentRoles } from '@/app/(dashboard)/agency/roles/roles-data';
 
@@ -542,30 +542,32 @@ export function NewClientForm({ agencyId, templates, defaultTemplateId, defaultR
     setError(null);
 
     try {
-      const supabase = createClient();
-      const { data: client, error: insertError } = await supabase
-        .from('agency_clients')
-        .insert({
-          agency_id: agencyId,
+      const res = await fetch('/api/agency/clients', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           name: name.trim(),
           slug: slug.trim(),
           industry,
           template_id: templateId,
-          status: 'setup',
-        })
-        .select()
-        .single();
+        }),
+      });
 
-      if (insertError) {
-        if (insertError.message.includes('unique') || insertError.message.includes('duplicate')) {
+      const data = await res.json();
+
+      if (!res.ok) {
+        if (data.code === 'PLAN_LIMIT_REACHED') {
+          setError(`Your ${data.plan} plan allows up to ${data.limit} client${data.limit === 1 ? '' : 's'}. Upgrade to add more.`);
+        } else if (data.error?.includes('slug already exists')) {
           setError('A client with this slug already exists. Choose a different name or edit the slug.');
         } else {
-          setError(insertError.message);
+          setError(data.error || 'Failed to create client');
         }
         setIsSubmitting(false);
         return;
       }
 
+      const client = data.client || data;
       setCreatedClient({ id: client.id, name: client.name });
     } catch {
       setError('Failed to create client. Please try again.');
