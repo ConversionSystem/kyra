@@ -20,6 +20,9 @@ const PLANS = [
     badge: null,
     features: [
       '1 AI worker',
+      'AI Sales Pipeline — find & close leads',
+      'Lead discovery + website enrichment',
+      'Auto-qualifying AI conversations',
       'GHL SMS integration',
       'All industry templates',
       'Personality customization',
@@ -44,6 +47,7 @@ const PLANS = [
     features: [
       '5 AI workers',
       'Everything in Free',
+      'AI Sales Pipeline (unlimited campaigns)',
       'Bring your own OpenAI key (BYOK)',
       'Weekly performance reports',
       'Priority support',
@@ -64,6 +68,7 @@ const PLANS = [
     features: [
       '15 AI workers',
       'Everything in Lite',
+      'AI Sales Pipeline (unlimited + auto-close)',
       'White-label branding',
       'Business-in-a-Box playbook',
       'Referral program',
@@ -84,6 +89,7 @@ const PLANS = [
     features: [
       '50 AI workers',
       'Everything in Pro',
+      'AI Sales Pipeline (unlimited + priority)',
       'Dedicated infrastructure per client',
       'Admin MRR dashboard',
       'Custom onboarding support',
