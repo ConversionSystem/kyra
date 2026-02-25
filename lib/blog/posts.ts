@@ -12,7 +12,7 @@ export interface BlogPost {
 export const POSTS: BlogPost[] = [
   {
     slug: 'ghl-ai-employee-agency',
-    title: 'How to Add an AI Employee to Every GHL Client (and Charge $1,000/mo for It)',
+    title: 'How to Add an AI worker to Every GHL Client (and Charge $1,000/mo for It)',
     description: 'GHL agencies are sitting on a goldmine. Here\'s how to turn your existing client base into a recurring AI revenue stream — without building anything from scratch.',
     date: '2026-02-22',
     readMins: 6,
@@ -23,9 +23,9 @@ export const POSTS: BlogPost[] = [
 
 <p>There's a simple fix. And it's worth $1,000–$2,000/month per client.</p>
 
-<h2>What is an AI Employee?</h2>
+<h2>What is an AI worker?</h2>
 
-<p>An AI employee is an autonomous AI agent that:</p>
+<p>An AI worker is an autonomous AI agent that:</p>
 <ul>
   <li>Responds to every inbound SMS in under 60 seconds — 24/7</li>
   <li>Books appointments by checking availability and confirming times</li>
@@ -38,13 +38,13 @@ export const POSTS: BlogPost[] = [
 
 <h2>Why GHL Agencies Are Perfectly Positioned</h2>
 
-<p>You already have the infrastructure. GHL gives you the CRM, the pipelines, the phone numbers, and the messaging channels. An AI employee like Kyra plugs directly into your existing GHL setup using a Private Integration Token — no OAuth approval, no marketplace hurdles.</p>
+<p>You already have the infrastructure. GHL gives you the CRM, the pipelines, the phone numbers, and the messaging channels. An AI worker like Kyra plugs directly into your existing GHL setup using a Private Integration Token — no OAuth approval, no marketplace hurdles.</p>
 
 <p>The moment your client adds their GHL token, the AI starts monitoring their conversations and responding automatically. Setup takes about 10 minutes. The AI goes live immediately.</p>
 
 <h2>The Pricing Model That Works</h2>
 
-<p>Most agencies bill their AI employees as a retainer:</p>
+<p>Most agencies bill their AI workers as a retainer:</p>
 
 <ul>
   <li><strong>Local service businesses</strong> (dental, HVAC, fitness): $500–$1,000/month</li>
@@ -52,7 +52,7 @@ export const POSTS: BlogPost[] = [
   <li><strong>Volume businesses</strong> (cannabis, auto, restaurant): $500–$2,000/month</li>
 </ul>
 
-<p>The pitch is simple: "Your AI employee responds to every lead in 60 seconds, books appointments, and updates your CRM — while you sleep. If it books one extra appointment per week, it's paid for itself."</p>
+<p>The pitch is simple: "Your AI worker responds to every lead in 60 seconds, books appointments, and updates your CRM — while you sleep. If it books one extra appointment per week, it's paid for itself."</p>
 
 <p>For a dental practice at $150/cleaning, three extra bookings per week = $450/week = $1,800/month. You charge $800. They're ahead.</p>
 
@@ -70,23 +70,23 @@ export const POSTS: BlogPost[] = [
 
 <h2>Scaling to 10+ Clients</h2>
 
-<p>Once you have your first AI employee live and your client sees results, scaling is straightforward. Every new client follows the same 5-step process. The AI personalities are different, the channels might vary, but the infrastructure is the same.</p>
+<p>Once you have your first AI worker live and your client sees results, scaling is straightforward. Every new client follows the same 5-step process. The AI personalities are different, the channels might vary, but the infrastructure is the same.</p>
 
 <p>At 10 clients charging $800/month each: $8,000/month in recurring revenue. At 20 clients: $16,000/month. Kyra Pro handles 15 clients at $249/month — your gross margin is 97% before API costs.</p>
 
 <h2>The Competitive Moat</h2>
 
-<p>Once your client's AI employee is live and working, they won't want to turn it off. The AI builds up conversation history, learns the business's tone, and becomes genuinely useful over time. Churn on a working AI employee is near zero.</p>
+<p>Once your client's AI worker is live and working, they won't want to turn it off. The AI builds up conversation history, learns the business's tone, and becomes genuinely useful over time. Churn on a working AI worker is near zero.</p>
 
 <p>Every booking it makes, every lead it handles, every CRM update it logs — that's value your client can see. It's not abstract "automation." It's results they can count.</p>
 
-<p>Ready to add your first AI employee? <a href="/try/dental">Try a live demo</a> or <a href="/signup/agency">start your free account</a>.</p>
+<p>Ready to add your first AI worker? <a href="/try/dental">Try a live demo</a> or <a href="/signup/agency">start your free account</a>.</p>
 `,
   },
   {
     slug: 'ai-for-dental-practices',
     title: 'AI for Dental Practices: How It Works, What It Does, and What to Expect',
-    description: 'Dental practices lose thousands in missed appointments and unanswered after-hours inquiries every month. AI employees change that — here\'s exactly how.',
+    description: 'Dental practices lose thousands in missed appointments and unanswered after-hours inquiries every month. AI workers change that — here\'s exactly how.',
     date: '2026-02-22',
     readMins: 5,
     category: 'Industry Guide',
@@ -96,9 +96,9 @@ export const POSTS: BlogPost[] = [
 
 <p>A patient texts at 7pm asking about a cleaning. The office is closed. By morning, they've booked with another practice. That's $150 lost on a cleaning — potentially $2,000+ if they become a regular patient.</p>
 
-<p>An AI employee fixes this problem permanently.</p>
+<p>An AI worker fixes this problem permanently.</p>
 
-<h2>What the Dental AI Employee Does</h2>
+<h2>What the Dental AI Worker Does</h2>
 
 <p>When a patient texts your practice's GHL number, the AI responds within 60 seconds — day or night. It:</p>
 
@@ -115,7 +115,7 @@ export const POSTS: BlogPost[] = [
 
 <h2>A Real Example</h2>
 
-<p>Here's an actual conversation a dental AI employee handles:</p>
+<p>Here's an actual conversation a dental AI worker handles:</p>
 
 <blockquote>
 <p><strong>Patient:</strong> Hi, I need a cleaning. How much does it cost?</p>
@@ -134,7 +134,7 @@ export const POSTS: BlogPost[] = [
 
 <h2>Integration With GoHighLevel</h2>
 
-<p>If your practice uses GoHighLevel (or you're a marketing agency that manages their GHL account), the AI employee integrates directly. It:</p>
+<p>If your practice uses GoHighLevel (or you're a marketing agency that manages their GHL account), the AI worker integrates directly. It:</p>
 
 <ul>
   <li>Reads and responds to GHL SMS conversations</li>
@@ -159,7 +159,7 @@ export const POSTS: BlogPost[] = [
   },
   {
     slug: 'agency-recurring-revenue-ai',
-    title: 'How Agencies Add $10,000/Month in Recurring Revenue with AI Employees',
+    title: 'How Agencies Add $10,000/Month in Recurring Revenue with AI Workers',
     description: 'The math is simple: 10 clients × $1,000/month = $10K MRR at ~97% gross margin. Here\'s the exact playbook to get there in 90 days.',
     date: '2026-02-22',
     readMins: 7,
@@ -168,7 +168,7 @@ export const POSTS: BlogPost[] = [
     content: `
 <p>Most digital marketing agencies have a ceiling problem. You can only take on so many clients. Every new client means more work, more management, more headaches. Revenue grows linearly. Costs grow almost as fast.</p>
 
-<p>AI employees break this model. Here's why: the marginal cost of adding a 15th AI employee is almost zero. You configure a personality, connect GHL, and the AI does the rest. The infrastructure scales automatically. You don't hire more staff. You don't increase overhead.</p>
+<p>AI workers break this model. Here's why: the marginal cost of adding a 15th AI worker is almost zero. You configure a personality, connect GHL, and the AI does the rest. The infrastructure scales automatically. You don't hire more staff. You don't increase overhead.</p>
 
 <p>That's the opportunity.</p>
 
@@ -177,9 +177,9 @@ export const POSTS: BlogPost[] = [
 <p>Let's run the numbers on a basic agency AI operation:</p>
 
 <ul>
-  <li><strong>Platform cost:</strong> $249/month (Kyra Pro, up to 15 AI employees)</li>
+  <li><strong>Platform cost:</strong> $249/month (Kyra Pro, up to 15 AI workers)</li>
   <li><strong>API cost:</strong> ~$1–3/client/month at moderate conversation volume</li>
-  <li><strong>Your price to clients:</strong> $800–$1,500/month per AI employee</li>
+  <li><strong>Your price to clients:</strong> $800–$1,500/month per AI worker</li>
   <li><strong>10 clients at $1,000/month:</strong> $10,000 MRR</li>
   <li><strong>Your costs:</strong> ~$290/month (platform + API)</li>
   <li><strong>Gross margin:</strong> ~97%</li>
@@ -193,7 +193,7 @@ export const POSTS: BlogPost[] = [
 
 <ol>
   <li>Sign up for Kyra at kyra.conversionsystem.com</li>
-  <li>Set up a demo AI employee in your own agency's name (dental or real estate work great)</li>
+  <li>Set up a demo AI worker in your own agency's name (dental or real estate work great)</li>
   <li>Get comfortable with the dashboard: adding clients, customizing personalities, viewing conversations</li>
   <li>Use the Pitch Generator to create shareable demo links for 3 industries you know well</li>
 </ol>
@@ -239,17 +239,17 @@ export const POSTS: BlogPost[] = [
 
 <h2>The Retention Play</h2>
 
-<p>Here's the best part: AI employee churn is nearly zero. Once it's live and working, clients don't want to turn it off. The AI builds up institutional knowledge — it knows the business's tone, the common questions, the pipeline stages. Replacing it means starting over.</p>
+<p>Here's the best part: AI worker churn is nearly zero. Once it's live and working, clients don't want to turn it off. The AI builds up institutional knowledge — it knows the business's tone, the common questions, the pipeline stages. Replacing it means starting over.</p>
 
-<p>Compare this to typical agency services where clients churn after 3–6 months. An AI employee that books appointments and handles leads creates ongoing, measurable value that compounds over time.</p>
+<p>Compare this to typical agency services where clients churn after 3–6 months. An AI worker that books appointments and handles leads creates ongoing, measurable value that compounds over time.</p>
 
 <p>Ready to start? <a href="/signup/agency">Create your free agency account</a> — no credit card required.</p>
 `,
   },
   {
     slug: 'ghl-ai-employee-complete-guide',
-    title: 'GoHighLevel AI Employee: The Complete Guide for GHL Agencies (2026)',
-    description: 'Everything GHL agencies need to know about adding a real AI employee to every sub-account — not automations, not a chatbot. A real AI that talks, thinks, and books appointments.',
+    title: 'GoHighLevel AI Worker: The Complete Guide for GHL Agencies (2026)',
+    description: 'Everything GHL agencies need to know about adding a real AI worker to every sub-account — not automations, not a chatbot. A real AI that talks, thinks, and books appointments.',
     date: '2026-02-23',
     readMins: 8,
     category: 'GHL Integration',
@@ -257,9 +257,9 @@ export const POSTS: BlogPost[] = [
     content: `
 <p>If you're running a GoHighLevel agency, you've already heard the buzzword: "AI." GHL has started integrating AI features, and every agency is trying to figure out what to do with them. But most GHL agencies are doing AI wrong — and leaving serious money on the table.</p>
 
-<p>This guide explains how to add a <strong>real AI employee</strong> to every GHL sub-account — not a workflow automation, not a keyword chatbot, but a conversational AI that responds to every inbound SMS within 60 seconds, 24/7.</p>
+<p>This guide explains how to add a <strong>real AI worker</strong> to every GHL sub-account — not a workflow automation, not a keyword chatbot, but a conversational AI that responds to every inbound SMS within 60 seconds, 24/7.</p>
 
-<h2>The Difference Between GHL Automations and a Real AI Employee</h2>
+<h2>The Difference Between GHL Automations and a Real AI Worker</h2>
 
 <p>GHL automations are powerful. You can trigger SMS sequences, send follow-ups, move contacts through pipelines — all automatically. But automations are <em>scripts</em>. They match conditions and fire responses. They can't handle:</p>
 
@@ -270,7 +270,7 @@ export const POSTS: BlogPost[] = [
 <li>Open-ended questions like "what do you recommend?"</li>
 </ul>
 
-<p>A real AI employee — like Kyra — uses a large language model to <em>understand</em> what the customer is asking, then compose a contextually appropriate response. It reads the CRM, knows the contact's history, and replies like a trained team member would.</p>
+<p>A real AI worker — like Kyra — uses a large language model to <em>understand</em> what the customer is asking, then compose a contextually appropriate response. It reads the CRM, knows the contact's history, and replies like a trained team member would.</p>
 
 <h2>How Kyra Connects to GHL</h2>
 
@@ -302,7 +302,7 @@ export const POSTS: BlogPost[] = [
 <tr><td>Google My Business</td><td>✅ Full support</td></tr>
 </table>
 
-<h2>Setting Up a GHL AI Employee in 10 Minutes</h2>
+<h2>Setting Up a GHL AI Worker in 10 Minutes</h2>
 
 <p>Here's the exact process:</p>
 
@@ -318,7 +318,7 @@ export const POSTS: BlogPost[] = [
 
 <h2>How Much Should You Charge?</h2>
 
-<p>Most GHL agencies are charging $500–$2,000/month per AI employee. The pricing depends on your client's industry and volume:</p>
+<p>Most GHL agencies are charging $500–$2,000/month per AI worker. The pricing depends on your client's industry and volume:</p>
 
 <ul>
 <li><strong>Dental/Med Spa:</strong> $750–$1,500/mo (high ticket, high volume, high impact)</li>
@@ -355,25 +355,25 @@ export const POSTS: BlogPost[] = [
 
 <p><strong>Can I white-label this?</strong> Yes. The AI personality is fully configurable — you name it, set its personality, and it represents the client's business. There's no "Kyra" branding in client-facing messages.</p>
 
-<p>Ready to add AI employees to your GHL agency? <a href="/signup/agency">Create your free account</a> and have your first AI live in 10 minutes.</p>
+<p>Ready to add AI workers to your GHL agency? <a href="/signup/agency">Create your free account</a> and have your first AI live in 10 minutes.</p>
 `,
   },
   {
     slug: 'white-label-ai-platform-agencies',
     title: 'White-Label AI Platform for Agencies: Build a $50K/mo AI Business in 2026',
-    description: 'The complete playbook for building a white-label AI employee business using Kyra. Pricing strategy, client onboarding, positioning, and how to scale to $50K/month.',
+    description: 'The complete playbook for building a white-label AI worker business using Kyra. Pricing strategy, client onboarding, positioning, and how to scale to $50K/month.',
     date: '2026-02-23',
     readMins: 9,
     category: 'Agency Growth',
     emoji: '💰',
     content: `
-<p>In 2026, the most profitable agencies aren't selling websites, ads, or even GHL setups. They're selling <strong>AI employees</strong>. And the ones who figured this out first are building $50,000/month businesses on autopilot.</p>
+<p>In 2026, the most profitable agencies aren't selling websites, ads, or even GHL setups. They're selling <strong>AI workers</strong>. And the ones who figured this out first are building $50,000/month businesses on autopilot.</p>
 
-<p>This guide is the complete playbook for building a white-label AI employee business using Kyra — the platform built specifically for agencies who want to resell AI without building anything from scratch.</p>
+<p>This guide is the complete playbook for building a white-label AI worker business using Kyra — the platform built specifically for agencies who want to resell AI without building anything from scratch.</p>
 
-<h2>Why AI Employees Are the Perfect Agency Product</h2>
+<h2>Why AI Workers Are the Perfect Agency Product</h2>
 
-<p>Most agency revenue is project-based or tied to ad spend — both are unpredictable and client-churn-heavy. AI employees are different:</p>
+<p>Most agency revenue is project-based or tied to ad spend — both are unpredictable and client-churn-heavy. AI workers are different:</p>
 
 <ul>
 <li><strong>Monthly recurring revenue:</strong> The AI runs 24/7 whether or not you do anything</li>
@@ -385,16 +385,16 @@ export const POSTS: BlogPost[] = [
 
 <h2>The White-Label Model</h2>
 
-<p>With Kyra, you're the agency. Your clients never see "Kyra" — they see an AI employee named whatever you've configured (Alex, Maya, Jordan — your choice). The AI is trained on their specific business, speaks their tone, and represents their brand.</p>
+<p>With Kyra, you're the agency. Your clients never see "Kyra" — they see an AI worker named whatever you've configured (Alex, Maya, Jordan — your choice). The AI is trained on their specific business, speaks their tone, and represents their brand.</p>
 
 <p>Your clients think you built this. You didn't have to — Kyra is the infrastructure, you're the relationship and the strategy.</p>
 
 <h2>Pricing Strategy</h2>
 
-<p>Positioning matters as much as price. Don't sell this as "AI" — sell it as an AI employee. Here's how to frame it:</p>
+<p>Positioning matters as much as price. Don't sell this as "AI" — sell it as an AI worker. Here's how to frame it:</p>
 
 <blockquote>
-<p>"We're adding a full-time AI employee to your business. It responds to every customer inquiry in under 60 seconds, 24/7. It books appointments, answers questions, updates your CRM, and escalates anything it can't handle. Most businesses see ROI in the first week."</p>
+<p>"We're adding a full-time AI worker to your business. It responds to every customer inquiry in under 60 seconds, 24/7. It books appointments, answers questions, updates your CRM, and escalates anything it can't handle. Most businesses see ROI in the first week."</p>
 </blockquote>
 
 <p>Suggested pricing by tier:</p>
@@ -468,7 +468,7 @@ export const POSTS: BlogPost[] = [
 <p>Stop pitching AI. Pitch the outcome:</p>
 
 <blockquote>
-<p>"Your business is missing 40% of inquiries after 6pm. That's revenue walking to your competitor. We'll put an AI employee on your phone line tonight. By Thursday morning, it will have handled 20+ conversations you would have missed. You'll see the report."</p>
+<p>"Your business is missing 40% of inquiries after 6pm. That's revenue walking to your competitor. We'll put an AI worker on your phone line tonight. By Thursday morning, it will have handled 20+ conversations you would have missed. You'll see the report."</p>
 </blockquote>
 
 <p>Then show them the live demo: <a href="/try/dental">kyra.conversionsystem.com/try/dental</a>. Let them text it. Let them see a real AI reply in 10 seconds. Close rate goes up 3×.</p>

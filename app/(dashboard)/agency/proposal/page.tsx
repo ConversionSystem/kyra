@@ -43,7 +43,7 @@ Industry: ${selectedIndustry.label}
 
 WHAT WE'RE PROPOSING
 
-An AI employee for ${clientName || 'your business'} that works 24 hours a day, 7 days a week — answering customer questions, booking appointments, and following up on leads. No sick days. No overtime. No training costs.
+An AI worker for ${clientName || 'your business'} that works 24 hours a day, 7 days a week — answering customer questions, booking appointments, and following up on leads. No sick days. No overtime. No training costs.
 
 WHAT IT DOES
 
@@ -51,7 +51,7 @@ ${selectedIndustry.benefit}
 
 WHAT YOU GET
 
-✓ AI employee live on your phone number (SMS) and website within 72 hours
+✓ AI worker live on your phone number (SMS) and website within 72 hours
 ✓ Configured specifically for ${selectedIndustry.label.split(' ').slice(1).join(' ')} industry
 ✓ Handles common customer questions without staff involvement
 ✓ Works 24/7 including nights, weekends, and holidays
@@ -68,10 +68,10 @@ For context: Most businesses spend 2–5 hours/week on the exact inquiries this 
 HOW WE START
 
 1. You approve this proposal
-2. We configure your AI employee (72 hours)
+2. We configure your AI worker (72 hours)
 3. You test it and approve the responses
 4. We connect it to your phone number / website
-5. Done — your AI employee goes live
+5. Done — your AI worker goes live
 
 ────────────────────────────────────────
 

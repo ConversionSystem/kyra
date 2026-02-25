@@ -49,8 +49,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const data = await getAgencyData(agencyId);
   if (!data) return {};
   return {
-    title: `${data.name} | AI Employee Solutions`,
-    description: `${data.name} uses Kyra AI to provide 24/7 AI employees for businesses. ${data.industries.length > 0 ? `Specializing in: ${data.industries.map(i => INDUSTRY_META[i]?.label ?? i).join(', ')}.` : ''}`,
+    title: `${data.name} | AI Worker Solutions`,
+    description: `${data.name} uses Kyra AI to provide 24/7 AI workers for businesses. ${data.industries.length > 0 ? `Specializing in: ${data.industries.map(i => INDUSTRY_META[i]?.label ?? i).join(', ')}.` : ''}`,
   };
 }
 
@@ -77,7 +77,7 @@ export default async function AgencyProfilePage({ params }: Params) {
           <p className="text-slate-400 text-xl mb-8">{data.tagline}</p>
         ) : (
           <p className="text-slate-400 text-xl mb-8">
-            We equip local businesses with AI employees that respond 24/7 — no staff required.
+            We equip local businesses with AI workers that respond 24/7 — no staff required.
           </p>
         )}
         <div className="flex flex-wrap items-center justify-center gap-3">
@@ -133,7 +133,7 @@ export default async function AgencyProfilePage({ params }: Params) {
       {/* CTA */}
       <section className="max-w-2xl mx-auto px-6 mb-20 text-center">
         <div className="bg-indigo-950/40 border border-indigo-900/40 rounded-2xl p-8">
-          <h2 className="text-2xl font-black mb-3">Ready to get your AI employee?</h2>
+          <h2 className="text-2xl font-black mb-3">Ready to get your AI worker?</h2>
           <p className="text-slate-400 mb-6">Most businesses are live within 10 minutes. No contract, cancel anytime.</p>
           <Link href={`/try/${primaryDemo}`}
             className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-8 py-4 rounded-xl transition">
@@ -149,7 +149,7 @@ export default async function AgencyProfilePage({ params }: Params) {
           <Link href="https://kyra.conversionsystem.com" className="text-indigo-500 hover:text-indigo-400 transition">
             Kyra AI
           </Link>
-          {' '}· AI employee platform for agencies
+          {' '}· AI workforce platform for agencies
         </p>
       </footer>
     </div>

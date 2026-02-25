@@ -1,7 +1,7 @@
 /**
  * Kyra Plan Configuration
  *
- * Plans are based on the number of client AI employees an agency can deploy.
+ * Plans are based on the number of client AI workers an agency can deploy.
  * Each plan has a hard client limit enforced at creation time.
  */
 
@@ -10,7 +10,7 @@ export type Plan = 'free' | 'starter' | 'pro' | 'scale';
 export interface PlanConfig {
   name: string;
   price: number;            // USD/month
-  maxClients: number;       // max client AI employees
+  maxClients: number;       // max client AI workers
   description: string;
   features: string[];
   highlighted?: boolean;
@@ -25,9 +25,9 @@ export const PLANS: Record<Plan, PlanConfig> = {
     name: 'Free',
     price: 0,
     maxClients: 1,
-    description: 'Try Kyra with your first client AI employee. No credit card needed.',
+    description: 'Try Kyra with your first client AI worker. No credit card needed.',
     features: [
-      '1 client AI employee',
+      '1 client AI worker',
       '21 industry templates',
       'Telegram, SMS, web chat',
       'GHL integration',
@@ -44,7 +44,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     maxClients: 5,
     description: 'Launch your AI agency with your first 5 clients.',
     features: [
-      '5 client AI employees',
+      '5 client AI workers',
       'Everything in Free',
       'Full analytics dashboard',
       'Proactive lead outreach',
@@ -63,7 +63,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     maxClients: 15,
     description: 'For growing agencies managing multiple clients.',
     features: [
-      '15 client AI employees',
+      '15 client AI workers',
       'Everything in Lite',
       'White-label branding',
       'Custom AI personalities',
@@ -81,9 +81,9 @@ export const PLANS: Record<Plan, PlanConfig> = {
     name: 'Scale',
     price: 499,
     maxClients: 50,
-    description: 'Built for high-volume agencies running 50+ AI employees.',
+    description: 'Built for high-volume agencies running 50+ AI workers.',
     features: [
-      '50 client AI employees',
+      '50 client AI workers',
       'Everything in Pro',
       'Dedicated infrastructure',
       'Custom domain per agency',

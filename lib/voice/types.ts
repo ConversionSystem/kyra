@@ -12,7 +12,7 @@ export interface VoiceProviderConfig {
 }
 
 export interface VoiceAssistantConfig {
-  name: string;              // AI employee name (e.g. "Alex")
+  name: string;              // AI worker name (e.g. "Alex")
   firstMessage: string;      // greeting when call starts
   systemPrompt: string;      // full persona + business context
   endCallMessage?: string;   // what to say when hanging up

@@ -4,10 +4,10 @@ import PublicNav from '@/components/layout/public-nav';
 import PublicFooter from '@/components/layout/public-footer';
 
 export const metadata: Metadata = {
-  title: 'Free Kyra GHL Snapshot — AI Employee Automation Pack for GoHighLevel Agencies',
+  title: 'Free Kyra GHL Snapshot — AI Worker Automation Pack for GoHighLevel Agencies',
   description: 'Download the free Kyra GHL Snapshot. 10 pre-built AI workflows for dental, real estate, cannabis, and home services. Includes AI SMS responses, appointment booking, and lead qualification automations.',
   openGraph: {
-    title: 'Free Kyra GHL Snapshot — AI Employee Automation Pack',
+    title: 'Free Kyra GHL Snapshot — AI Worker Automation Pack',
     description: '10 pre-built GHL workflows powered by Kyra AI. Free for GoHighLevel agencies.',
     type: 'website',
   },
@@ -45,11 +45,11 @@ export default function GHLSnapshotPage() {
             🎁 Free for GoHighLevel Agencies
           </div>
           <h1 className="text-4xl sm:text-6xl font-black mb-5 leading-tight">
-            The AI Employee<br />
+            The AI Worker<br />
             <span className="text-indigo-400">GHL Snapshot</span>
           </h1>
           <p className="text-xl text-gray-300 mb-4 max-w-2xl mx-auto leading-relaxed">
-            10 pre-built workflows that turn your GHL account into an AI employee. Handles leads, books appointments, and follows up — all automatically.
+            10 pre-built workflows that turn your GHL account into an AI worker. Handles leads, books appointments, and follows up — all automatically.
           </p>
           <p className="text-sm text-gray-500 mb-10">
             Powered by Kyra AI · Built from real agency deployments
@@ -80,7 +80,7 @@ export default function GHLSnapshotPage() {
         <div className="max-w-5xl mx-auto">
           <h2 className="text-3xl font-black text-center mb-3">10 workflows. Ready to import.</h2>
           <p className="text-center text-gray-500 text-sm mb-12 max-w-xl mx-auto">
-            Each workflow is pre-configured with Kyra AI webhooks. Import once, customize the persona, and your AI employee is live.
+            Each workflow is pre-configured with Kyra AI webhooks. Import once, customize the persona, and your AI worker is live.
           </p>
           <div className="grid sm:grid-cols-2 gap-4">
             {WORKFLOWS.map((wf, i) => (
@@ -106,9 +106,9 @@ export default function GHLSnapshotPage() {
           <div className="grid sm:grid-cols-4 gap-6">
             {[
               { step: '1', title: 'Create free Kyra account', desc: 'Sign up at kyra.conversionsystem.com — takes 60 seconds.' },
-              { step: '2', title: 'Add your client', desc: 'Create an AI employee for your client. Choose from dental, real estate, cannabis, or home services.' },
+              { step: '2', title: 'Add your client', desc: 'Create an AI worker for your client. Choose from dental, real estate, cannabis, or home services.' },
               { step: '3', title: 'Import the snapshot', desc: 'In GHL → Settings → Snapshots → Import. All 10 workflows load automatically.' },
-              { step: '4', title: 'Go live', desc: 'Your client\'s AI employee starts handling leads, texts, and bookings instantly.' },
+              { step: '4', title: 'Go live', desc: 'Your client\'s AI worker starts handling leads, texts, and bookings instantly.' },
             ].map(s => (
               <div key={s.step} className="text-center">
                 <div className="w-12 h-12 rounded-full bg-indigo-100 text-indigo-600 font-black text-xl flex items-center justify-center mx-auto mb-3">
@@ -155,7 +155,7 @@ export default function GHLSnapshotPage() {
             <p className="font-bold text-gray-900">— Agency owner, 12 GHL clients</p>
           </div>
 
-          <h2 className="text-3xl font-black mb-4">Ready to deploy AI employees for your clients?</h2>
+          <h2 className="text-3xl font-black mb-4">Ready to deploy AI workers for your clients?</h2>
           <p className="text-gray-500 mb-8">Free snapshot · Free Kyra account · No credit card required</p>
           <Link
             href="/signup/agency?src=ghl-snapshot"

@@ -344,7 +344,7 @@ export function ClientsListView({ clients, plan = 'free', clientLimit = 1 }: Cli
           <CardContent className="p-10 text-center space-y-2">
             {clients.length === 0 ? (
               <>
-                <p className="text-xl font-semibold text-gray-700">Your AI employees are ready to work</p>
+                <p className="text-xl font-semibold text-gray-700">Your AI workers are ready to work</p>
                 <p className="text-sm text-gray-400 max-w-sm mx-auto">
                   Try a live demo to see Kyra in action — a pre-built dental AI with real conversation history. Takes 30 seconds.
                 </p>

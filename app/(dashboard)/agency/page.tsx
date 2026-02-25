@@ -23,6 +23,7 @@ import RevenueUnlockCard from '@/components/dashboard/revenue-unlock-card';
 import TrialCountdownBanner from '@/components/dashboard/trial-countdown-banner';
 import ReferralShareWidget from '@/components/dashboard/referral-share-widget';
 import { UltronSummaryCard } from '@/components/dashboard/ultron-summary-card';
+import RoiSummaryCard from '@/components/dashboard/roi-summary-card';
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -221,6 +222,16 @@ export default async function AgencyOverviewPage() {
       {/* ── Setup Checklist ── */}
       <AgencyChecklist {...checklistProps} />
 
+      {/* ── ROI Summary Card — shows once conversations have started ── */}
+      {totalUsage > 0 && (
+        <div className="mb-6">
+          <RoiSummaryCard
+            totalConversations={totalUsage}
+            plan={agency.plan || 'free'}
+          />
+        </div>
+      )}
+
       {/* ── Revenue Unlock Card (non-scale plans only) ── */}
       {agency.plan !== 'scale' && (
         <div className="mb-6">
@@ -253,7 +264,7 @@ export default async function AgencyOverviewPage() {
 
       {/* ── Stats Bar ── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-4">
-        {/* AI Employees */}
+        {/* AI Workers */}
         <Card>
           <CardContent className="p-5">
             <div className="flex items-center gap-3">
@@ -262,7 +273,7 @@ export default async function AgencyOverviewPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-gray-900">{totalCount}</p>
-                <p className="text-xs text-gray-400">AI Employees</p>
+                <p className="text-xs text-gray-400">AI Workers</p>
               </div>
             </div>
           </CardContent>
@@ -539,7 +550,7 @@ export default async function AgencyOverviewPage() {
                   {
                     icon: Plus,
                     label: 'Add New Client',
-                    subtitle: 'Deploy a new AI employee',
+                    subtitle: 'Deploy a new AI worker',
                     href: '/agency/clients/new',
                     color: 'text-purple-600 bg-purple-50',
                   },
@@ -598,7 +609,7 @@ export default async function AgencyOverviewPage() {
           {
             n: 3,
             title: 'Watch your AI go live',
-            desc: 'Your AI employee starts responding to GHL SMS within 60 seconds.',
+            desc: 'Your AI worker starts responding to GHL SMS within 60 seconds.',
             done: isLive,
             href: '/agency/conversations',
             cta: 'View Conversations \u2192',

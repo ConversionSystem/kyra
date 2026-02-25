@@ -48,7 +48,7 @@ function AnimatedChat({ conversation, contactName, accentColor }: {
       <div className="px-4 py-3 flex items-center gap-3 border-b border-white/10" style={{ background: accentColor + '22' }}>
         <div className="w-9 h-9 rounded-full flex items-center justify-center text-lg" style={{ background: accentColor }}>🤖</div>
         <div>
-          <p className="text-white text-sm font-semibold">AI Employee</p>
+          <p className="text-white text-sm font-semibold">AI Worker</p>
           <p className="text-white/50 text-xs">SMS · Powered by Kyra AI</p>
         </div>
         <div className="ml-auto flex items-center gap-1">
@@ -214,7 +214,7 @@ export default function PitchContent({ demo, industry, agencyId, agencyName, age
 
         {/* Feature grid */}
         <div>
-          <h2 className="text-2xl font-bold text-center mb-8">What your AI employee does automatically</h2>
+          <h2 className="text-2xl font-bold text-center mb-8">What your AI worker does automatically</h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[
               { icon: '⚡', title: 'Responds in 60 seconds', desc: 'Every inbound SMS answered, day or night. No leads fall through the cracks.' },
@@ -235,7 +235,7 @@ export default function PitchContent({ demo, industry, agencyId, agencyName, age
 
         {/* CTA */}
         <div className="rounded-2xl p-8 text-center space-y-5 border border-white/10" style={{ background: `linear-gradient(135deg, ${demo.accentColor}22, ${demo.accentColor}11)` }}>
-          <p className="text-3xl font-black">Ready to deploy your AI employee?</p>
+          <p className="text-3xl font-black">Ready to deploy your AI worker?</p>
           <p className="text-white/60 max-w-lg mx-auto">Works with GoHighLevel. Set up in under 10 minutes. Your AI starts handling leads immediately.</p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <a
