@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   Target, Mail, Linkedin,
   ChevronRight, Flame, Zap,
   Search, Trophy, Copy, CheckCircle2,
   Send, Rocket, Loader2, AlertCircle, ExternalLink,
+  Bot, TrendingUp, Calendar,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -232,6 +233,32 @@ interface Props {
 
 type CampaignStatus = 'idle' | 'launching' | 'enrolled' | 'error' | 'no_webhook';
 
+// ─── Channel 4: Outbound Campaign ────────────────────────────────────────────
+
+type OutreachStatus = 'sent' | 'no_email' | 'error' | 'replied' | 'interested' | 'booked' | 'closed';
+
+interface CampaignRecord {
+  status: OutreachStatus;
+  ghl_contact_id?: string;
+  sent_at?: string;
+  replied_at?: string;
+  booked_at?: string;
+  error?: string;
+  lead_name: string;
+  lead_company: string;
+  lead_email?: string;
+}
+
+const OUTREACH_BADGE: Record<OutreachStatus, { label: string; className: string }> = {
+  sent:       { label: '📤 Sent',       className: 'bg-blue-100 text-blue-700' },
+  no_email:   { label: '📋 No email',   className: 'bg-gray-100 text-gray-500' },
+  error:      { label: '❌ Failed',      className: 'bg-red-100 text-red-600' },
+  replied:    { label: '💬 Replied',    className: 'bg-purple-100 text-purple-700' },
+  interested: { label: '⚡ Interested', className: 'bg-amber-100 text-amber-700' },
+  booked:     { label: '📅 Booked',    className: 'bg-green-100 text-green-700' },
+  closed:     { label: '✅ Closed',     className: 'bg-emerald-100 text-emerald-700' },
+};
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function LeadsPipelineClient({ initialPipelineState }: Props) {
@@ -248,10 +275,62 @@ export function LeadsPipelineClient({ initialPipelineState }: Props) {
   const [search, setSearch] = useState('');
   const [copied, setCopied] = useState<string | null>(null);
 
-  // ── Campaign state ──────────────────────────────────────────────────────────
+  // ── GHL campaign state ──────────────────────────────────────────────────────
   const [campaignStatus, setCampaignStatus] = useState<Record<string, CampaignStatus>>({});
   const [bulkLaunching, setBulkLaunching] = useState(false);
   const [bulkResult, setBulkResult] = useState<{ enrolled: number; errors: number; noWebhook?: boolean } | null>(null);
+
+  // ── Channel 4: Outbound campaign state ──────────────────────────────────────
+  const [outreachState, setOutreachState] = useState<Record<string, CampaignRecord>>({});
+  const [outreachSummary, setOutreachSummary] = useState<Record<string, number>>({});
+  const [outreachLaunching, setOutreachLaunching] = useState(false);
+  const [outreachResult, setOutreachResult] = useState<{ sent: number; noEmail: number; errors: number } | null>(null);
+
+  // Load campaign status on mount
+  useEffect(() => {
+    fetch('/api/agency/leads/campaign-status')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.campaign_state) setOutreachState(data.campaign_state);
+        if (data?.summary) setOutreachSummary(data.summary);
+      })
+      .catch(() => {});
+  }, []);
+
+  const launchOutreachCampaign = async (leadsToSend: Lead[]) => {
+    if (outreachLaunching) return;
+    setOutreachLaunching(true);
+    setOutreachResult(null);
+    try {
+      const res = await fetch('/api/agency/leads/run-campaign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leads: leadsToSend }),
+      });
+      const data = await res.json();
+      // Refresh state
+      const status = await fetch('/api/agency/leads/campaign-status').then(r => r.json());
+      if (status?.campaign_state) setOutreachState(status.campaign_state);
+      if (status?.summary) setOutreachSummary(status.summary);
+      setOutreachResult({ sent: data.sent ?? 0, noEmail: data.no_email ?? 0, errors: data.errors ?? 0 });
+    } catch {
+      setOutreachResult({ sent: 0, noEmail: 0, errors: leadsToSend.length });
+    } finally {
+      setOutreachLaunching(false);
+    }
+  };
+
+  const updateLeadStatus = async (leadId: string, status: OutreachStatus) => {
+    await fetch('/api/agency/leads/campaign-status', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ leadId, status }),
+    });
+    setOutreachState(prev => ({
+      ...prev,
+      [leadId]: { ...prev[leadId], status },
+    }));
+  };
 
   const updateStage = useCallback(async (leadId: string, stage: StageId) => {
     const next = { ...pipeline, [leadId]: stage };
@@ -423,8 +502,20 @@ export function LeadsPipelineClient({ initialPipelineState }: Props) {
           </p>
         </div>
 
-        {/* 🚀 Bulk Launch Button */}
+        {/* 🚀 Buttons */}
         <div className="flex flex-col items-end gap-2">
+          {/* Channel 4: Outbound Campaign */}
+          <Button
+            onClick={() => launchOutreachCampaign(LEADS.filter(l => l.email && !['replied','interested','booked','closed'].includes(outreachState[l.id]?.status ?? '')))}
+            disabled={outreachLaunching}
+            className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-sm font-semibold text-sm px-4 py-2 flex items-center gap-2"
+          >
+            {outreachLaunching
+              ? <><Loader2 className="h-4 w-4 animate-spin" /> Sending…</>
+              : <><Bot className="h-4 w-4" /> 🤖 Launch AI Outreach</>}
+          </Button>
+
+          {/* GHL Bulk Launch Button */}
           <Button
             onClick={launchAllHotLeads}
             disabled={bulkLaunching || hotNew === 0}
@@ -460,6 +551,60 @@ export function LeadsPipelineClient({ initialPipelineState }: Props) {
               {' '}Pipeline stages auto-advanced to "Outreach Sent".
             </p>
           )}
+        </div>
+      )}
+
+      {/* ── Channel 4 Outreach Result Banner ── */}
+      {outreachResult && (
+        <div className={`rounded-xl border px-4 py-3 text-sm flex items-start gap-3 ${
+          outreachResult.sent > 0
+            ? 'bg-indigo-50 border-indigo-200 text-indigo-800'
+            : 'bg-red-50 border-red-200 text-red-800'
+        }`}>
+          <Bot className="h-4 w-4 shrink-0 mt-0.5" />
+          <div>
+            {outreachResult.sent > 0 ? (
+              <>
+                <p className="font-semibold">
+                  🤖 {outreachResult.sent} outreach emails sent via Kyra AI
+                </p>
+                <p className="text-xs mt-0.5 text-indigo-600">
+                  Kyra will handle every reply automatically — qualifying, pitching, and booking demos with Angel.
+                  {outreachResult.noEmail > 0 && ` ${outreachResult.noEmail} leads skipped (no email address).`}
+                </p>
+              </>
+            ) : (
+              <p className="font-semibold">Campaign error — check GHL connection and retry.</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Channel 4 Campaign Stats Strip ── */}
+      {outreachSummary.total > 0 && (
+        <div className="rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-3">
+          <div className="flex items-center gap-2 mb-2">
+            <Bot className="h-4 w-4 text-indigo-600" />
+            <p className="text-sm font-bold text-indigo-900">AI Outreach Campaign — Channel 4</p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {[
+              { label: 'Sent', key: 'sent', icon: Send, color: 'text-blue-600' },
+              { label: 'Replied', key: 'replied', icon: Mail, color: 'text-purple-600' },
+              { label: 'Interested', key: 'interested', icon: TrendingUp, color: 'text-amber-600' },
+              { label: 'Booked', key: 'booked', icon: Calendar, color: 'text-green-600' },
+              { label: 'Closed', key: 'closed', icon: CheckCircle2, color: 'text-emerald-600' },
+            ].map(({ label, key, icon: Icon, color }) => (
+              <div key={key} className="flex items-center gap-1.5 bg-white rounded-lg px-3 py-1.5 border border-indigo-100">
+                <Icon className={`h-3.5 w-3.5 ${color}`} />
+                <span className="text-xs font-bold text-gray-900">{outreachSummary[key] ?? 0}</span>
+                <span className="text-xs text-gray-500">{label}</span>
+              </div>
+            ))}
+          </div>
+          <p className="text-[10px] text-indigo-400 mt-2">
+            Kyra AI is handling all replies from the CS GHL account. Replies auto-qualify → book demo with Angel.
+          </p>
         </div>
       )}
 
@@ -548,15 +693,22 @@ export function LeadsPipelineClient({ initialPipelineState }: Props) {
                     <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${warmth.className}`}>
                       {warmth.label}
                     </span>
-                    {/* Campaign badge */}
+                    {/* GHL Campaign badge */}
                     {cStatus === 'enrolled' && (
                       <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 flex items-center gap-1">
-                        <Send className="h-2.5 w-2.5" /> In Campaign
+                        <Send className="h-2.5 w-2.5" /> In GHL
                       </span>
                     )}
                     {cStatus === 'error' && (
                       <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-600 flex items-center gap-1">
-                        <AlertCircle className="h-2.5 w-2.5" /> Failed
+                        <AlertCircle className="h-2.5 w-2.5" /> GHL Failed
+                      </span>
+                    )}
+                    {/* AI Outreach Campaign badge */}
+                    {outreachState[lead.id] && OUTREACH_BADGE[outreachState[lead.id].status] && (
+                      <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full flex items-center gap-1 ${OUTREACH_BADGE[outreachState[lead.id].status].className}`}>
+                        <Bot className="h-2.5 w-2.5" />
+                        {OUTREACH_BADGE[outreachState[lead.id].status].label}
                       </span>
                     )}
                   </div>
@@ -682,6 +834,58 @@ export function LeadsPipelineClient({ initialPipelineState }: Props) {
                       Use the setup panel at the top of this page to connect your GHL outreach workflow in ~5 minutes.
                     </div>
                   )}
+
+                  {/* ── AI Outreach Status Controls ─────────────────────── */}
+                  <div onClick={e => e.stopPropagation()}>
+                    <p className="text-xs font-semibold text-gray-500 mb-2 flex items-center gap-1.5">
+                      <Bot className="h-3.5 w-3.5 text-indigo-500" />
+                      AI Outreach Status:
+                      {outreachState[lead.id] ? (
+                        <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${OUTREACH_BADGE[outreachState[lead.id].status]?.className}`}>
+                          {OUTREACH_BADGE[outreachState[lead.id].status]?.label}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 text-xs font-normal">Not sent</span>
+                      )}
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {/* Send outreach */}
+                      {(!outreachState[lead.id] || outreachState[lead.id].status === 'error') && (
+                        <button
+                          onClick={() => launchOutreachCampaign([lead])}
+                          disabled={outreachLaunching || !lead.email}
+                          className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                          title={!lead.email ? 'No email address for this lead' : 'Send AI outreach email'}
+                        >
+                          <Bot className="h-3 w-3" />
+                          {outreachLaunching ? 'Sending…' : lead.email ? '🤖 Send AI Outreach' : '📋 No email'}
+                        </button>
+                      )}
+                      {/* Status update buttons */}
+                      {outreachState[lead.id]?.status === 'sent' && (
+                        <>
+                          <button onClick={() => updateLeadStatus(lead.id, 'replied')} className="text-xs px-2.5 py-1 rounded-lg bg-purple-100 text-purple-700 hover:bg-purple-200 font-medium">💬 Mark Replied</button>
+                          <button onClick={() => updateLeadStatus(lead.id, 'interested')} className="text-xs px-2.5 py-1 rounded-lg bg-amber-100 text-amber-700 hover:bg-amber-200 font-medium">⚡ Mark Interested</button>
+                        </>
+                      )}
+                      {(outreachState[lead.id]?.status === 'replied' || outreachState[lead.id]?.status === 'interested') && (
+                        <>
+                          <button onClick={() => updateLeadStatus(lead.id, 'booked')} className="text-xs px-2.5 py-1 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 font-medium">📅 Demo Booked</button>
+                          {outreachState[lead.id]?.status === 'replied' && (
+                            <button onClick={() => updateLeadStatus(lead.id, 'interested')} className="text-xs px-2.5 py-1 rounded-lg bg-amber-100 text-amber-700 hover:bg-amber-200 font-medium">⚡ Mark Interested</button>
+                          )}
+                        </>
+                      )}
+                      {outreachState[lead.id]?.status === 'booked' && (
+                        <button onClick={() => updateLeadStatus(lead.id, 'closed')} className="text-xs px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200 font-medium">✅ Mark Closed</button>
+                      )}
+                      {outreachState[lead.id]?.sent_at && (
+                        <span className="text-[10px] text-gray-400 self-center">
+                          Sent {new Date(outreachState[lead.id].sent_at!).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
+                  </div>
 
                   {/* Stage buttons */}
                   <div>
