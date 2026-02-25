@@ -268,7 +268,7 @@ export default function BizInABoxPage() {
 
 That AI is responding to YOUR customers, branded as YOUR business.
 
-I can have your AI employee live in 72 hours. Want to move forward?`}
+I can have your AI worker live in 72 hours. Want to move forward?`}
           />
 
           <ScriptCard
@@ -320,7 +320,7 @@ Worth a quick call to get it set up?`}
                 color="border-gray-200"
                 pitch="Just getting started / lower-volume business"
                 features={[
-                  'AI employee on SMS',
+                  'AI worker on SMS',
                   'GHL CRM integration',
                   'Basic personality setup',
                   'Business hours config',
@@ -380,7 +380,7 @@ Which of those feels right for what you're trying to do?"`}
               {[
                 {
                   objection: '"We already have a chatbot."',
-                  response: 'Totally get it — most chatbots are glorified FAQ pages. They match keywords and give canned responses. What I\'m talking about is a genuine AI employee: it understands context, recommends products, books appointments, and handles multi-turn conversations. The difference is whether it actually replaces staff time or just sits there. Want to see the difference in a 5-minute demo?',
+                  response: 'Totally get it — most chatbots are glorified FAQ pages. They match keywords and give canned responses. What I\'m talking about is a genuine AI worker: it understands context, recommends products, books appointments, and handles multi-turn conversations. The difference is whether it actually replaces staff time or just sits there. Want to see the difference in a 5-minute demo?',
                 },
                 {
                   objection: '"We tried AI before and it didn\'t work."',
@@ -388,7 +388,7 @@ Which of those feels right for what you're trying to do?"`}
                 },
                 {
                   objection: '"How is this different from ChatGPT?"',
-                  response: 'ChatGPT is a tool that you have to go USE. This is an AI employee that works FOR your business — it responds to YOUR customers on YOUR phone number, connected to YOUR CRM, with YOUR business knowledge. Your customers never type "ChatGPT." They just text your number and get a response in 60 seconds.',
+                  response: 'ChatGPT is a tool that you have to go USE. This is an AI worker that works FOR your business — it responds to YOUR customers on YOUR phone number, connected to YOUR CRM, with YOUR business knowledge. Your customers never type "ChatGPT." They just text your number and get a response in 60 seconds.',
                 },
                 {
                   objection: '"What if it says something wrong?"',
@@ -481,11 +481,11 @@ Worth jumping on a 10-minute call to answer any questions?`}
 
           <ScriptCard
             title="Welcome email (send immediately after they sign)"
-            script={`Subject: Your AI employee is almost live 🚀
+            script={`Subject: Your AI worker is almost live 🚀
 
 Hi [Name],
 
-Welcome to [Your Agency]! Your AI employee for [Business Name] is being set up right now.
+Welcome to [Your Agency]! Your AI worker for [Business Name] is being set up right now.
 
 Here's what happens next:
 1. I'll connect your AI to your GoHighLevel account (24hrs)
@@ -505,7 +505,7 @@ Questions? Text or email me anytime.
 
           <ScriptCard
             title="'It's live' text (send when AI goes live)"
-            script={`Hey [Name] — your AI employee just went live! 🎉
+            script={`Hey [Name] — your AI worker just went live! 🎉
 
 From this point on, every text to your business number gets a response in 60 seconds, 24/7.
 
@@ -572,7 +572,7 @@ Even just one name — who's the first person that comes to mind?`}
 
 "If you run a local business and you're still manually responding to every customer text — I want to show you something.
 
-This is what it looks like when your business has an AI employee.
+This is what it looks like when your business has an AI worker.
 
 [SCREEN: show /demo/dental or /demo/realestate]
 
@@ -588,7 +588,7 @@ If you want to see what this looks like for YOUR business — I put together a f
 
 "If you run a local business and you're still manually responding to every customer text — I want to show you something.
 
-This is what it looks like when your business has an AI employee."
+This is what it looks like when your business has an AI worker."
 
 [SCREEN: show /demo/dental or /demo/realestate]
 

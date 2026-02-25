@@ -96,14 +96,14 @@ const LEADS: Lead[] = [
     clients: '50-100', ghlTier: 'Agency Pro', warmth: 'hot',
     linkedin: 'linkedin.com/in/micahgaudio',
     why: 'GHL Top 1% AI — strong signal. Multi-niche = can white-label Kyra for all clients.',
-    angle: 'Micah — love what you\'re building in the GHL space. We built a platform specifically for agencies at your scale to offer AI employees to every client. Worth a quick call?',
+    angle: 'Micah — love what you\'re building in the GHL space. We built a platform specifically for agencies at your scale to offer AI workers to every client. Worth a quick call?',
   },
   {
     id: 'l11', agency: 'Funnel Gator', owner: 'Asma Ishaq', niche: 'E-commerce / Info Products', location: 'Tampa, FL',
     clients: '20-40', ghlTier: 'Agency Pro', warmth: 'hot',
     linkedin: 'linkedin.com/in/asmaishaq',
     why: 'Known in the GHL community — perfect early adopter + potential integration partner.',
-    angle: 'Asma — saw your GHL work. We built something that plugs directly into GHL and acts as an AI employee for every client — SMS, follow-up, booking, the works. Curious?',
+    angle: 'Asma — saw your GHL work. We built something that plugs directly into GHL and acts as an AI worker for every client — SMS, follow-up, booking, the works. Curious?',
   },
   {
     id: 'l12', agency: 'SkyRocket Digital', owner: 'Brian Torres', niche: 'Chiropractic / Wellness', location: 'San Diego, CA',
@@ -144,7 +144,7 @@ const LEADS: Lead[] = [
     clients: '20-50', ghlTier: 'Agency Pro', warmth: 'hot',
     linkedin: 'linkedin.com/in/samanthareed-ghl',
     why: 'GHL-branded agency = deep platform knowledge, natural Kyra partner.',
-    angle: 'Samantha — we built something exclusively for GHL agencies that want to offer AI employees as a white-labeled service. Would love to show you in 15 minutes.',
+    angle: 'Samantha — we built something exclusively for GHL agencies that want to offer AI workers as a white-labeled service. Would love to show you in 15 minutes.',
   },
   {
     id: 'l18', agency: 'MaxImpact Agency', owner: 'Derek Moore', niche: 'HVAC / Plumbing', location: 'Columbus, OH',
@@ -186,7 +186,7 @@ const LEADS: Lead[] = [
     clients: '10-20', ghlTier: 'Agency Starter', warmth: 'warm',
     linkedin: 'linkedin.com/in/rachelkim-traction',
     why: 'AI in "AI Agency" name signals strong product fit — they get AI value props.',
-    angle: 'Rachel — you\'re already selling AI. We built the infrastructure that lets you add an actual AI employee to every client\'s GHL account. Worth a quick look?',
+    angle: 'Rachel — you\'re already selling AI. We built the infrastructure that lets you add an actual AI worker to every client\'s GHL account. Worth a quick look?',
   },
   {
     id: 'l24', agency: 'Elevate Marketing Solutions', owner: 'Nathan Brooks', niche: 'Spa / Beauty Salons', location: 'Austin, TX',

@@ -6,7 +6,7 @@ import PublicFooter from '@/components/layout/public-footer';
 
 export const metadata: Metadata = {
   title: 'Kyra Blog — AI Workforce Strategy for Agencies',
-  description: 'Learn how to grow your GHL agency with AI employees. Guides on deployment, pricing, and industry-specific use cases.',
+  description: 'Learn how to grow your GHL agency with AI workers. Guides on deployment, pricing, and industry-specific use cases.',
   openGraph: { title: 'Kyra AI Blog — Agency Growth Guides', url: 'https://kyra.conversionsystem.com/blog' },
 };
 
@@ -21,7 +21,7 @@ export default function BlogPage() {
             Agency Playbook
           </div>
           <h1 className="text-3xl sm:text-4xl font-black mb-3">Grow your agency with AI.</h1>
-          <p className="text-slate-400 text-lg">Practical guides on deploying AI employees, pricing your offer, and scaling recurring revenue.</p>
+          <p className="text-slate-400 text-lg">Practical guides on deploying AI workers, pricing your offer, and scaling recurring revenue.</p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">
@@ -49,7 +49,7 @@ export default function BlogPage() {
         </div>
 
         <div className="mt-12 rounded-2xl bg-indigo-950/50 border border-indigo-500/20 p-8 text-center">
-          <p className="text-xl font-bold mb-2">Ready to add AI employees to your agency?</p>
+          <p className="text-xl font-bold mb-2">Ready to add AI workers to your agency?</p>
           <p className="text-slate-400 mb-6 text-sm">Free to start. Works with GoHighLevel. First AI live in under 10 minutes.</p>
           <div className="flex items-center justify-center gap-3">
             <Link href="/signup/agency" className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-3 rounded-xl transition">

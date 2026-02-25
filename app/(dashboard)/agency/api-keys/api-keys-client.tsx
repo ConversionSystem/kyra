@@ -266,7 +266,7 @@ export function ApiKeysClient({ agencyId: _agencyId }: ApiKeysClientProps) {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">AI Model Keys</h1>
           <p className="mt-1 text-gray-500">
-            Pick the provider and exact model that powers your AI employees.
+            Pick the provider and exact model that powers your AI workers.
           </p>
         </div>
         <button

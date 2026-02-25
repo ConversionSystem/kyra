@@ -35,7 +35,7 @@ const SLIDES = [
   {
     id: 3,
     tag: 'The Solution',
-    title: 'An AI employee that works 24/7.',
+    title: 'An AI worker that works 24/7.',
     subtitle: 'Not a bot. Not a script. A real AI agent with a personality.',
     bullets: [
       '✅ Responds to every GHL SMS within 60 seconds — day or night',
@@ -96,7 +96,7 @@ const SLIDES = [
   {
     id: 7,
     tag: 'The Business Model',
-    title: 'Charge $500–$2,000/month per AI employee.',
+    title: 'Charge $500–$2,000/month per AI worker.',
     subtitle: 'Your cost to Kyra: $99–$499/month for all of them.',
     table: [
       { plan: 'Lite', cost: '$99/mo', clients: '5 clients', revenue: '$5,000/mo', margin: '$4,901' },
@@ -114,9 +114,9 @@ const SLIDES = [
     subtitle: '60,000 agencies. All about to need an AI strategy.',
     bullets: [
       '🚀 GHL integrated OpenClaw (the AI runtime Kyra runs on) — every GHL agency is now AI-curious',
-      '📈 AI employee demand is peaking — agencies who move now capture the market',
+      '📈 AI worker demand is peaking — agencies who move now capture the market',
       '🏆 Kyra is purpose-built for GHL agencies — the competition is generic chatbots',
-      '⏱️ First-mover advantage: most GHL agencies have no AI employee offer yet',
+      '⏱️ First-mover advantage: most GHL agencies have no AI worker offer yet',
     ],
     cta: null,
     accent: 'text-amber-400',
@@ -125,12 +125,12 @@ const SLIDES = [
     id: 9,
     tag: 'Why Kyra',
     title: 'The only platform built specifically for GHL agencies.',
-    subtitle: "Not a chatbot. Not a hosted terminal. An AI employee business.",
+    subtitle: "Not a chatbot. Not a hosted terminal. An AI worker business.",
     bullets: [
-      '✅ One dashboard to manage ALL client AI employees',
+      '✅ One dashboard to manage ALL client AI workers',
       '✅ Per-client isolation — each AI has separate memory and personality',
       '✅ 21 industry templates — dental, real estate, cannabis, auto, restaurant, and more',
-      '✅ White-label — your agency name, your clients\'s AI employee',
+      '✅ White-label — your agency name, your clients\'s AI worker',
       '✅ Pitch pages, referral program, Business-in-a-Box playbook included',
       '✅ GHL Private Integration (no marketplace approval needed)',
     ],
@@ -140,7 +140,7 @@ const SLIDES = [
   {
     id: 10,
     tag: 'Get Started',
-    title: "Let's get your first AI employee live.",
+    title: "Let's get your first AI worker live.",
     subtitle: 'Free to start. 10 minutes to first AI response.',
     final: true,
     ctas: [
