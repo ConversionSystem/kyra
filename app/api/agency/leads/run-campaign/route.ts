@@ -21,8 +21,6 @@ import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 const MASTER_EMAILS = ['hello@conversionsystem.com', 'angel@conversionsystem.com'];
 const GHL_API_BASE = 'https://services.leadconnectorhq.com';
 const GHL_VERSION = '2021-07-28';
-// CS AI worker's GHL location — poll route monitors this for replies
-const CS_GHL_LOCATION = 'y1BFVhXMDNUPlbPxEpSA';
 
 interface LeadInput {
   id: string;
@@ -64,7 +62,7 @@ function buildEmailHtml(lead: LeadInput): string {
 <p>Quick question: how many sub-accounts are you running right now?</p>
 <p>— Kyra<br>
 <em>AI Sales Agent · Conversion System</em><br>
-<a href="https://kyra.conversionsystem.com/get-demo">Book a 15-min demo with Angel →</a></p>`;
+<a href="https://kyra.conversionsystem.com/get-demo">Request a quick demo →</a></p>`;
 }
 
 function buildEmailText(lead: LeadInput): string {
@@ -79,11 +77,12 @@ Quick question: how many sub-accounts are you running right now?
 
 — Kyra
 AI Sales Agent · Conversion System
-Book a 15-min demo with Angel: https://kyra.conversionsystem.com/get-demo`;
+Request a quick demo: https://kyra.conversionsystem.com/get-demo`;
 }
 
 async function createGhlContact(
   token: string,
+  locationId: string,
   lead: LeadInput,
 ): Promise<string | null> {
   try {
@@ -95,7 +94,7 @@ async function createGhlContact(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        locationId: CS_GHL_LOCATION,
+        locationId,
         firstName: lead.owner.split(' ')[0],
         lastName: lead.owner.split(' ').slice(1).join(' '),
         companyName: lead.agency,
@@ -114,6 +113,7 @@ async function createGhlContact(
 
 async function sendGhlEmail(
   token: string,
+  locationId: string,
   contactId: string,
   lead: LeadInput,
 ): Promise<{ ok: boolean; conversationId?: string; error?: string }> {
@@ -132,7 +132,7 @@ async function sendGhlEmail(
         subject: buildSubject(lead),
         html: buildEmailHtml(lead),
         message: buildEmailText(lead),
-        locationId: CS_GHL_LOCATION,
+        locationId,
       }),
       signal: AbortSignal.timeout(10_000),
     });
@@ -180,20 +180,26 @@ export async function POST(req: NextRequest) {
         error: 'CS AI worker GHL token not found',
       }, { status: 500 });
     }
+    if (!ghlClient?.ghl_location_id) {
+      return NextResponse.json({
+        error: 'CS AI worker GHL location ID not configured',
+      }, { status: 500 });
+    }
 
     const token = ghlClient.ghl_private_token as string;
+    const locationId = ghlClient.ghl_location_id as string;
 
-    // Get existing campaign state
-    const { data: agency } = await serviceClient
-      .from('agencies')
-      .select('id, settings')
-      .eq('id', (await serviceClient
-        .from('agency_members')
-        .select('agency_id')
-        .eq('user_id', user.id)
-        .single()
-        .then(r => r.data?.agency_id || '')))
+    // Get existing campaign state — two-step lookup to avoid nested await fragility
+    const { data: membership } = await serviceClient
+      .from('agency_members')
+      .select('agency_id')
+      .eq('user_id', user.id)
       .single();
+
+    const agencyId = membership?.agency_id;
+    const { data: agency } = agencyId
+      ? await serviceClient.from('agencies').select('id, settings').eq('id', agencyId).single()
+      : { data: null };
 
     const settings = (agency?.settings ?? {}) as Record<string, unknown>;
     const campaignState = (settings.campaign_state ?? {}) as Record<string, CampaignRecord>;
@@ -219,7 +225,7 @@ export async function POST(req: NextRequest) {
           }
 
           // Step 1: Create GHL contact
-          const contactId = await createGhlContact(token, lead);
+          const contactId = await createGhlContact(token, locationId, lead);
 
           if (!contactId) {
             const record: CampaignRecord = {
@@ -245,7 +251,7 @@ export async function POST(req: NextRequest) {
             return { id: lead.id, leadName: lead.owner, status: 'no_email' as const };
           }
 
-          const emailResult = await sendGhlEmail(token, contactId, lead);
+          const emailResult = await sendGhlEmail(token, locationId, contactId, lead);
 
           const record: CampaignRecord = {
             status: emailResult.ok ? 'sent' : 'error',
