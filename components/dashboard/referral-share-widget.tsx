@@ -14,7 +14,7 @@ export default function ReferralShareWidget({ agencyId, referralCount, creditsEa
   const [expanded, setExpanded] = useState(false);
 
   const referralUrl = `https://kyra.conversionsystem.com/ref/${agencyId}`;
-  const tweetText = encodeURIComponent(`I've been using Kyra AI to give my clients an AI employee that responds to leads in 60 seconds. Try it free → ${referralUrl}`);
+  const tweetText = encodeURIComponent(`I've been using Kyra AI to give my clients an AI worker that responds to leads in 60 seconds. Try it free → ${referralUrl}`);
   const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(referralUrl)}`;
 
   const copy = async () => {

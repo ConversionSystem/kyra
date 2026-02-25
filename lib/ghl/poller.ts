@@ -731,7 +731,7 @@ interface PromptContext {
 }
 
 /**
- * Build the AI employee's full system prompt.
+ * Build the AI worker's full system prompt.
  *
  * Priority of instructions:
  * 1. container_config.persona (agency-written AI personality)
@@ -760,7 +760,7 @@ function buildPersonaSystemPrompt(
   const aiName = (cc.ai_name as string) || (cc.persona_name as string) || 'AI Assistant';
   const businessName = client.name;
 
-  lines.push(`You are ${aiName}, an AI employee for ${businessName}.`);
+  lines.push(`You are ${aiName}, an AI worker for ${businessName}.`);
   lines.push(`Today is ${dateStr} at ${timeStr}.`);
   lines.push(`You are responding via ${ctx.messageType}.`);
   lines.push('');

@@ -22,13 +22,13 @@ const features = [
   {
     icon: Layers,
     title: 'Multi-Client Portfolio Dashboard',
-    desc: 'Manage 20 clients\' AI employees from one dashboard. Configure, monitor, and bill each one independently.',
+    desc: 'Manage 20 clients\' AI workers from one dashboard. Configure, monitor, and bill each one independently.',
     ghl: false,
   },
   {
     icon: MessageSquare,
     title: 'Conversations Inbox',
-    desc: 'See every message your AI employees send and receive — across all clients in one feed. Filter by client or channel.',
+    desc: 'See every message your AI workers send and receive — across all clients in one feed. Filter by client or channel.',
     ghl: false,
   },
   {
@@ -46,7 +46,7 @@ const features = [
   {
     icon: TrendingUp,
     title: 'Client Billing Management',
-    desc: 'Charge your clients $300-2000/mo for their AI employee. Kyra handles the billing layer so you focus on selling.',
+    desc: 'Charge your clients $300-2000/mo for their AI worker. Kyra handles the billing layer so you focus on selling.',
     ghl: false,
   },
 ];
@@ -95,7 +95,7 @@ export default function GHLPage() {
             href="/signup/agency"
             className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-8 py-4 rounded-xl transition text-lg"
           >
-            Deploy your first AI employee free
+            Deploy your first AI worker free
             <ArrowRight className="h-5 w-5" />
           </Link>
           <Link
@@ -160,7 +160,7 @@ export default function GHLPage() {
             The platform GHL agencies need
           </h2>
           <p className="text-gray-500 text-center max-w-xl mx-auto mb-12">
-            Everything your agency needs to sell, manage, and bill AI employees at scale.
+            Everything your agency needs to sell, manage, and bill AI workers at scale.
           </p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {features.map((f, i) => (
@@ -184,7 +184,7 @@ export default function GHLPage() {
             <h2 className="text-2xl font-bold">GHL Workflow Triggers from AI conversations</h2>
           </div>
           <p className="text-indigo-100 text-lg mb-8 max-w-2xl">
-            Every time your AI employee has a conversation, Kyra can fire any GHL workflow automatically.
+            Every time your AI worker has a conversation, Kyra can fire any GHL workflow automatically.
             No manual handoffs. No dropped leads.
           </p>
           <div className="grid sm:grid-cols-3 gap-4 mb-8">
@@ -259,11 +259,11 @@ export default function GHLPage() {
       {/* Pricing CTA */}
       <section className="max-w-3xl mx-auto px-6 py-20 text-center">
         <h2 className="text-3xl font-bold text-gray-900 mb-4">
-          Sell AI employees. Keep the margin.
+          Sell AI workers. Keep the margin.
         </h2>
         <p className="text-gray-500 text-lg mb-10 max-w-xl mx-auto">
           Kyra is your backend. You set the price for your clients.
-          Agencies typically charge $300–$2,000/month per AI employee.
+          Agencies typically charge $300–$2,000/month per AI worker.
           See our plans for what Kyra costs you.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">

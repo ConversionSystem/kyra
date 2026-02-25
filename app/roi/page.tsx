@@ -92,14 +92,14 @@ export default function ROICalculatorPage() {
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2 bg-white/10 border border-white/10 rounded-full px-4 py-1.5 text-sm font-medium mb-6">
             <TrendingUp className="h-4 w-4 text-green-400" />
-            AI Employee ROI Calculator
+            AI Worker ROI Calculator
           </div>
           <h1 className="text-3xl sm:text-5xl font-black mb-4">
             How much is slow response time<br />
             <span className="text-indigo-400">costing your business?</span>
           </h1>
           <p className="text-slate-300 text-lg max-w-2xl mx-auto">
-            Enter your numbers below. See exactly what an AI employee that responds in 60 seconds would be worth to you every month.
+            Enter your numbers below. See exactly what an AI worker that responds in 60 seconds would be worth to you every month.
           </p>
         </div>
 
@@ -174,7 +174,7 @@ export default function ROICalculatorPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Monthly investment in AI employee
+                    Monthly investment in AI worker
                   </label>
                   <div className="flex gap-2">
                     {[497, 997, 1997].map(p => (
@@ -217,7 +217,7 @@ export default function ROICalculatorPage() {
           <div className="space-y-5">
             {/* Big number */}
             <div className="bg-indigo-600 rounded-2xl p-6 text-center">
-              <p className="text-indigo-200 text-sm font-medium mb-2">With an AI employee responding in 60 seconds</p>
+              <p className="text-indigo-200 text-sm font-medium mb-2">With an AI worker responding in 60 seconds</p>
               <p className="text-5xl sm:text-6xl font-black mb-2">{fmt(kyraRevenue)}</p>
               <p className="text-indigo-200 text-sm">estimated monthly revenue</p>
               <div className="mt-4 pt-4 border-t border-indigo-500 grid grid-cols-2 gap-4">
@@ -237,7 +237,7 @@ export default function ROICalculatorPage() {
               <p className="font-bold">Monthly breakdown</p>
               {[
                 { label: 'Extra revenue generated', value: fmt(monthlyGain), color: 'text-green-400' },
-                { label: 'AI employee cost', value: `-${fmt(kyraPrice)}`, color: 'text-red-400' },
+                { label: 'AI worker cost', value: `-${fmt(kyraPrice)}`, color: 'text-red-400' },
                 { label: 'Net monthly gain', value: fmt(netMonthlyGain), color: 'text-white font-black' },
                 { label: 'Days to break even', value: `${daysToROI} days`, color: 'text-indigo-300' },
               ].map(row => (

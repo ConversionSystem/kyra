@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'AI Employee Platform by Industry | Kyra',
-  description: 'Kyra AI employees for dental, real estate, cannabis, fitness, home services, and 21+ more industries. Built for GoHighLevel agencies. Free to start.',
+  title: 'AI Workforce Platform by Industry | Kyra',
+  description: 'Kyra AI workers for dental, real estate, cannabis, fitness, home services, and 21+ more industries. Built for GoHighLevel agencies. Free to start.',
 };
 
 const NICHES = [
@@ -37,9 +37,9 @@ export default function AiForIndexPage() {
         </div>
       </nav>
       <div className="max-w-4xl mx-auto px-4 py-16">
-        <h1 className="text-4xl font-black text-center mb-4">AI Employees by Industry</h1>
+        <h1 className="text-4xl font-black text-center mb-4">AI Workers by Industry</h1>
         <p className="text-center text-gray-500 text-lg mb-12">
-          Every industry has unique needs. Kyra has a pre-built AI employee for each one — customizable, GHL-native, live in under 10 minutes.
+          Every industry has unique needs. Kyra has a pre-built AI worker for each one — customizable, GHL-native, live in under 10 minutes.
         </p>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-12">
           {NICHES.map(n => (

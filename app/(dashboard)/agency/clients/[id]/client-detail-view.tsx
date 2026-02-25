@@ -53,6 +53,7 @@ import AISuggestionsCard from '@/components/dashboard/ai-suggestions-card';
 import ClientStatusBanner from '@/components/dashboard/client-status-banner';
 import ClientActivityHeatmap from '@/components/dashboard/client-activity-heatmap';
 import { VoiceChannelCard } from '@/components/dashboard/voice-channel-card';
+import RoiSummaryCard from '@/components/dashboard/roi-summary-card';
 
 // ── Setup Nudge Banner ────────────────────────────────────────────────────────
 
@@ -1384,8 +1385,17 @@ function UsageTab({ client }: { client: AgencyClient }) {
   return (
     <div className="space-y-6">
       <p className="text-sm text-gray-500">
-        Messages handled, response times, and costs for this client&apos;s AI assistant.
+        Messages handled, response times, and costs for this client&apos;s AI worker.
       </p>
+
+      {/* ROI card — shows what this AI worker is worth vs. hiring staff */}
+      <RoiSummaryCard
+        totalConversations={client.usage_this_month ?? 0}
+        plan="pro"
+        billingCents={client.billing_amount_cents ?? 0}
+        showLink={false}
+      />
+
       <HealthScoreBadge clientId={client.id} showDetails />
       <ClientActivityHeatmap clientId={client.id} />
       <UsageAnalytics clientId={client.id} />
@@ -1917,7 +1927,7 @@ function PortalTab({ client }: { client: AgencyClient }) {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-gray-600">
-            The Client Portal gives your client&apos;s team a branded view of their AI employee — 
+            The Client Portal gives your client&apos;s team a branded view of their AI worker — 
             conversation stats, performance metrics, and their monthly report. They can&apos;t change 
             anything; they just get visibility.
           </p>

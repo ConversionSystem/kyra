@@ -131,7 +131,7 @@ export default function PortalDashboard({ client, agency, branding, role, isAgen
           <div className="bg-white rounded-2xl border border-gray-200 p-5 sm:p-6 mb-6">
             <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
               <Shield className="h-4 w-4 text-indigo-600" />
-              About your AI Employee
+              About your AI Worker
             </h3>
             <p className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed line-clamp-6">
               {persona}

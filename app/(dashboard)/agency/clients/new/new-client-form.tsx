@@ -87,7 +87,7 @@ function SetupWizard({ clientId, clientName, defaultNorthStar, agentRole, onDone
           <CheckCircle2 className="h-7 w-7 text-green-600" />
         </div>
         <h2 className="text-2xl font-bold text-gray-900 mb-1">
-          Your AI employee is live!
+          Your AI worker is live!
         </h2>
         <p className="text-gray-500">
           <span className="font-medium text-gray-700">{clientName}</span> has been created. Let&apos;s set them up for success.
@@ -98,14 +98,14 @@ function SetupWizard({ clientId, clientName, defaultNorthStar, agentRole, onDone
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
         <div className="bg-gradient-to-r from-indigo-600 to-indigo-500 px-6 py-4">
           <p className="text-indigo-200 text-xs font-semibold uppercase tracking-wider">Step 2</p>
-          <h3 className="text-lg font-bold text-white">Set Up Your AI Employee</h3>
+          <h3 className="text-lg font-bold text-white">Set Up Your AI Worker</h3>
         </div>
 
         <div className="p-6 space-y-6">
           {/* North Star Goal */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700">
-              What is this AI employee&apos;s #1 goal?
+              What is this AI worker&apos;s #1 goal?
             </label>
             <textarea
               rows={3}
@@ -115,7 +115,7 @@ function SetupWizard({ clientId, clientName, defaultNorthStar, agentRole, onDone
               className="w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-indigo-400 focus:border-indigo-400"
             />
             <p className="text-xs text-gray-400">
-              This is the single outcome your AI employee is always working toward.
+              This is the single outcome your AI worker is always working toward.
             </p>
           </div>
 
@@ -179,7 +179,7 @@ function SetupWizard({ clientId, clientName, defaultNorthStar, agentRole, onDone
               </>
             ) : (
               <>
-                Launch My AI Employee
+                Launch My AI Worker
                 <ArrowRight className="h-4 w-4" />
               </>
             )}

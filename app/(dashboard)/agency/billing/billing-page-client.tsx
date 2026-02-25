@@ -138,7 +138,7 @@ export function BillingPageClient({ agency, clientCount, totalConversationsThisM
               <div className="text-4xl">🎉</div>
               <div>
                 <p className="text-xl font-black">You&apos;re on {PLANS[currentPlan]?.name ?? 'your new plan'}!</p>
-                <p className="text-green-200 text-sm mt-1">Your client slots are live. Start adding AI employees right now.</p>
+                <p className="text-green-200 text-sm mt-1">Your client slots are live. Start adding AI workers right now.</p>
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
