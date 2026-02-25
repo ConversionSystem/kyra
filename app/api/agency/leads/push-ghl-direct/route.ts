@@ -161,38 +161,45 @@ export async function POST(req: NextRequest) {
     // ── Get the CS agency's GHL token from DB ────────────────────────────
     const serviceClient = createServiceClientWithoutCookies();
 
-    // Find the agency owned by master email
-    const { data: agencies } = await serviceClient
-      .from('agencies')
-      .select('id')
-      .eq('account_level', 'master')
-      .limit(1);
+    // Find the user's agency via membership
+    const { data: membership } = await serviceClient
+      .from('agency_members')
+      .select('agency_id')
+      .eq('user_id', user.id)
+      .limit(1)
+      .single();
 
-    if (!agencies || agencies.length === 0) {
-      return NextResponse.json({ error: 'Master agency not found' }, { status: 404 });
-    }
-
-    const agencyId = agencies[0].id;
-
-    // Find a client record for this agency that has GHL credentials
-    const { data: clients } = await serviceClient
+    // Find any GHL-connected client for this agency
+    // Prefer the AGENCY account (main sales location); fall back to any GHL-connected client
+    let clientsQuery = serviceClient
       .from('agency_clients')
-      .select('id, name, ghl_private_token, ghl_location_id')
-      .eq('agency_id', agencyId)
+      .select('id, name, ghl_private_token, ghl_location_id, created_at')
       .not('ghl_private_token', 'is', null)
       .not('ghl_location_id', 'is', null)
-      .limit(1);
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    if (membership?.agency_id) {
+      clientsQuery = clientsQuery.eq('agency_id', membership.agency_id);
+    }
+
+    const { data: clients } = await clientsQuery;
 
     if (!clients || clients.length === 0) {
       return NextResponse.json({
         status: 'no_ghl_token',
-        message: 'No GHL connection found for the master account. Connect GHL on your Conversion System client in the dashboard first.',
+        message: 'No GHL connection found. Connect GHL on your Conversion System client in the dashboard first.',
         setupUrl: '/agency/clients',
       });
     }
 
-    const ghlToken = clients[0].ghl_private_token as string;
-    const locationId = clients[0].ghl_location_id as string;
+    // Prefer the AGENCY account (highest contact count / primary sales location)
+    // If none named "AGENCY", fall back to first result
+    const preferredClient =
+      clients.find(c => (c.name as string).includes('AGENCY')) ?? clients[0];
+
+    const ghlToken = preferredClient.ghl_private_token as string;
+    const locationId = preferredClient.ghl_location_id as string;
 
     // ── Push contacts in batches of 5 ────────────────────────────────────
     const results: Array<{
