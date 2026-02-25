@@ -20,7 +20,11 @@ import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 
 const MASTER_EMAILS = ['hello@conversionsystem.com', 'angel@conversionsystem.com'];
 const GHL_API_BASE = 'https://services.leadconnectorhq.com';
-const GHL_VERSION = '2021-07-28';
+// Match version used by the working poll route
+const GHL_VERSION = '2021-04-15';
+// Token 2: CS demo account — 10 contacts, used for outbound AI outreach
+// Replies are handled by the CS AI worker connected to this location
+const OUTREACH_LOCATION_ID = 'y1BFVhXMDNUPlbPxEpSA';
 
 interface LeadInput {
   id: string;
@@ -132,7 +136,7 @@ async function sendGhlEmail(
         subject: buildSubject(lead),
         html: buildEmailHtml(lead),
         message: buildEmailText(lead),
-        locationId,
+        // locationId NOT included — GHL infers it from the Bearer token
       }),
       signal: AbortSignal.timeout(10_000),
     });
@@ -167,27 +171,35 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No leads provided' }, { status: 400 });
     }
 
-    // Get CS agency token for the outreach GHL location
+    // Get Token 2 (CS demo / outreach account) — query by location ID, not by UUID
+    // This is the account replies flow back into for the CS AI worker to handle
     const serviceClient = createServiceClientWithoutCookies();
-    const { data: ghlClient } = await serviceClient
+    const { data: ghlClient, error: ghlClientError } = await serviceClient
       .from('agency_clients')
-      .select('ghl_private_token, ghl_location_id')
-      .eq('id', '307c9548-2782-4c12-8122-0f0d132bd4dd')
+      .select('id, name, ghl_private_token, ghl_location_id')
+      .eq('ghl_location_id', OUTREACH_LOCATION_ID)
+      .not('ghl_private_token', 'is', null)
+      .limit(1)
       .single();
 
-    if (!ghlClient?.ghl_private_token) {
+    if (ghlClientError || !ghlClient) {
+      console.error('[run-campaign] Token 2 client not found:', ghlClientError?.message);
       return NextResponse.json({
-        error: 'CS AI worker GHL token not found',
+        error: `Outreach GHL client not found for location ${OUTREACH_LOCATION_ID}. Connect Token 2 in the dashboard first.`,
+        location_id: OUTREACH_LOCATION_ID,
       }, { status: 500 });
     }
-    if (!ghlClient?.ghl_location_id) {
+
+    if (!ghlClient.ghl_private_token) {
       return NextResponse.json({
-        error: 'CS AI worker GHL location ID not configured',
+        error: 'Token 2 GHL private token not set. Connect GHL on the CS demo client first.',
+        client_id: ghlClient.id,
+        client_name: ghlClient.name,
       }, { status: 500 });
     }
 
     const token = ghlClient.ghl_private_token as string;
-    const locationId = ghlClient.ghl_location_id as string;
+    const locationId = OUTREACH_LOCATION_ID;
 
     // Get existing campaign state — two-step lookup to avoid nested await fragility
     const { data: membership } = await serviceClient
