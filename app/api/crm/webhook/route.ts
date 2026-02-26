@@ -23,6 +23,7 @@ import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { getGatewayByClientId } from '@/lib/ovh/gateway-resolver';
 import { logAndFire } from '@/lib/pipeline/webhooks';
 import { syncLeadToCrm } from '@/lib/pipeline/crm-sync';
+import { handleCloserReply } from '@/lib/pipeline/ai-closer';
 import type { GHLWebhookPayload, GHLWebhookEventType } from '@/lib/ghl/types';
 
 // Events that should be forwarded to the AI container
@@ -375,4 +376,24 @@ async function promotePipelineLead(
       .eq('id', campaign.id)
       .then(() => {}, () => {});
   });
+
+  // ── AI Closer: Generate and send autonomous response ──────────────────
+  // This is where OpenClaw powers the pipeline.
+  // The AI Closer reads the full context, generates a human-like response,
+  // sends it via GHL, and auto-updates the pipeline stage.
+  try {
+    const closerResult = await handleCloserReply(
+      lead.id,
+      payload.body || '(no message body)',
+      (payload.messageType as string) || 'SMS',
+    );
+    console.log(
+      `[pipeline/closer] Lead ${lead.id} (${lead.company || lead.full_name}) → ` +
+      `responded via ${closerResult.poweredBy}, sent=${closerResult.sentViaGhl}` +
+      (closerResult.stageUpdate ? `, stage→${closerResult.stageUpdate}` : ''),
+    );
+  } catch (closerErr) {
+    console.error(`[pipeline/closer] Failed for lead ${lead.id}:`, closerErr);
+    // Non-fatal — the lead is already in 'replied' stage, human can intervene
+  }
 }
