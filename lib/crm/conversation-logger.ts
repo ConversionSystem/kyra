@@ -8,6 +8,8 @@
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { logActivity } from './activities';
 import { createContact } from './contacts';
+import { extractMemories, addMemories, getMemories } from './relationship-memory';
+import { detectCompetitorMentions, logCompetitorMentions } from './intelligence';
 
 interface WebhookPayload {
   type: string;
@@ -90,4 +92,24 @@ export async function logConversationToCrm(
       message_type: payload.messageType,
     },
   });
+
+  // Detect competitor mentions (non-blocking)
+  const contactName = payload.name || payload.firstName || payload.phone || 'Contact';
+  const mentions = detectCompetitorMentions(messageBody, contactId, contactName);
+  if (mentions.length > 0) {
+    logCompetitorMentions(agencyId, mentions).catch(() => {});
+  }
+
+  // Extract relationship memories from conversation (non-blocking)
+  if (messageBody.length > 20) {
+    (async () => {
+      try {
+        const existing = await getMemories(agencyId, contactId);
+        const newMemories = await extractMemories(messageBody, existing);
+        if (newMemories.length > 0) {
+          await addMemories(agencyId, contactId, newMemories);
+        }
+      } catch {}
+    })();
+  }
 }
