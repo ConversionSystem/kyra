@@ -25,6 +25,7 @@ import { logAndFire } from '@/lib/pipeline/webhooks';
 import { syncLeadToCrm } from '@/lib/pipeline/crm-sync';
 import { handleCloserReply } from '@/lib/pipeline/ai-closer';
 import { cancelFollowUps } from '@/lib/pipeline/follow-up-engine';
+import { logConversationToCrm } from '@/lib/crm/conversation-logger';
 import type { GHLWebhookPayload, GHLWebhookEventType } from '@/lib/ghl/types';
 
 // Events that should be forwarded to the AI container
@@ -109,6 +110,13 @@ export async function POST(request: NextRequest) {
     } catch (err) {
       console.error('[ghl/webhook] Pipeline inbound handler error:', err);
     }
+  }
+
+  // ── Log to native CRM (non-blocking) ─────────────────────────────────
+  if (type === 'InboundMessage' || type === 'OutboundMessage') {
+    logConversationToCrm(agencyClient.agency_id, payload).catch(err =>
+      console.error('[ghl/webhook] CRM log error:', err)
+    );
   }
 
   // ── Forward to the client's OpenClaw container ────────────────────────
