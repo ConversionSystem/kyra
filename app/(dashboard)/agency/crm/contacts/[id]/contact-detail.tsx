@@ -6,7 +6,7 @@ import {
   ArrowLeft, Mail, Phone, Building2, MapPin, Globe, Calendar,
   Edit2, Trash2, Tag, Bot, MessageSquare, FileText, Flame,
   ArrowRight, Sparkles, CheckCircle2, Clock, User, Briefcase,
-  Plus, Save, X, ExternalLink,
+  Plus, Save, X, ExternalLink, Brain,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { ContactDetail, CrmActivity } from '@/lib/crm/types';
@@ -422,6 +422,9 @@ export function ContactDetailView() {
             </div>
           )}
 
+          {/* AI Relationship Memory */}
+          <AiMemorySection contactId={contactId} />
+
           {/* Enrichment Data */}
           {Object.keys(contact.enrichment_data || {}).length > 0 && (
             <div className="bg-white border border-gray-200 rounded-2xl p-4">
@@ -483,6 +486,74 @@ function TimelineItem({ activity, isLast }: { activity: CrmActivity; isLast: boo
         {activity.channel && (
           <span className="text-[10px] text-gray-400 mt-1 inline-block">via {activity.channel}</span>
         )}
+      </div>
+    </div>
+  );
+}
+
+function AiMemorySection({ contactId }: { contactId: string }) {
+  const [memories, setMemories] = useState<Array<{ id: string; type: string; content: string; source: string; created_at: string }>>([]);
+  const [newMemory, setNewMemory] = useState('');
+  const [adding, setAdding] = useState(false);
+
+  useEffect(() => {
+    fetch(`/api/agency/crm/contacts/${contactId}/memory`)
+      .then(r => r.ok ? r.json() : { memories: [] })
+      .then(d => setMemories(d.memories || []))
+      .catch(() => {});
+  }, [contactId]);
+
+  const addManual = async () => {
+    if (!newMemory.trim()) return;
+    setAdding(true);
+    await fetch(`/api/agency/crm/contacts/${contactId}/memory`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: newMemory.trim(), type: 'context' }),
+    });
+    setNewMemory('');
+    setAdding(false);
+    const r = await fetch(`/api/agency/crm/contacts/${contactId}/memory`);
+    if (r.ok) setMemories((await r.json()).memories || []);
+  };
+
+  const typeEmoji: Record<string, string> = {
+    personal: '👤', preference: '⚙️', objection: '⚠️', interest: '💡',
+    decision: '✅', context: '📝', relationship: '🤝',
+  };
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-2xl p-4">
+      <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wide mb-3 flex items-center gap-1">
+        <Brain className="h-3.5 w-3.5 text-indigo-500" /> AI Memory
+        {memories.length > 0 && (
+          <span className="text-[10px] bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded-full ml-1">{memories.length}</span>
+        )}
+      </h3>
+      {memories.length === 0 ? (
+        <p className="text-xs text-gray-400">AI will remember key details from conversations.</p>
+      ) : (
+        <div className="space-y-1.5 max-h-48 overflow-y-auto">
+          {memories.slice(-15).reverse().map(m => (
+            <div key={m.id} className="flex items-start gap-1.5 text-xs">
+              <span className="shrink-0">{typeEmoji[m.type] || '📝'}</span>
+              <span className="text-gray-700">{m.content}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="mt-2 flex gap-1">
+        <input
+          className="flex-1 border rounded-lg px-2 py-1 text-xs focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+          placeholder="Add memory..."
+          value={newMemory}
+          onChange={e => setNewMemory(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && addManual()}
+        />
+        <button onClick={addManual} disabled={adding || !newMemory.trim()}
+          className="text-xs text-indigo-600 font-medium hover:text-indigo-700 disabled:text-gray-300 px-2">
+          {adding ? '...' : '+'}
+        </button>
       </div>
     </div>
   );
