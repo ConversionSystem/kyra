@@ -13,6 +13,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { logAndFire, type PipelineEvent } from '@/lib/pipeline/webhooks';
 import { syncLeadToCrm } from '@/lib/pipeline/crm-sync';
+import { syncPipelineLeadToCrm } from '@/lib/crm/pipeline-sync';
 
 async function getAgencyId(userId: string): Promise<string | null> {
   const svc = createServiceClientWithoutCookies();
@@ -123,7 +124,7 @@ export async function POST(req: NextRequest) {
 
       await logAndFire(agencyId, webhookEvent, { id: campaign.id, name: campaign.name }, leadPayload, 'human');
 
-      // Sync to CRM (non-blocking)
+      // Sync to GHL CRM (non-blocking)
       syncLeadToCrm(agencyId, {
         ...leadPayload,
         first_name: lead.first_name,
@@ -132,7 +133,26 @@ export async function POST(req: NextRequest) {
         campaign_id: campaign.id,
         campaign_name: campaign.name,
         enrichment_data: lead.enrichment_data,
-      }).catch(err => console.error('[approve] CRM sync error:', err));
+      }).catch(err => console.error('[approve] GHL CRM sync error:', err));
+
+      // Sync to native CRM (non-blocking)
+      syncPipelineLeadToCrm(agencyId, {
+        id: lead.id,
+        agency_id: agencyId,
+        campaign_id: campaign.id,
+        full_name: lead.full_name,
+        first_name: lead.first_name,
+        last_name: lead.last_name,
+        email: lead.email,
+        phone: lead.phone,
+        company: lead.company,
+        title: lead.title,
+        website: lead.website,
+        industry: lead.industry,
+        location: lead.location,
+        stage: newStage,
+        enrichment_data: lead.enrichment_data,
+      }).catch(err => console.error('[approve] Native CRM sync error:', err));
 
       results.push({ id: lead.id, name: lead.full_name || lead.company || '?', status: 'updated' });
     } catch (err) {
