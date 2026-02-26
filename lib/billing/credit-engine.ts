@@ -73,6 +73,12 @@ export const CREDIT_COSTS = {
   'channel.inbound_webhook': 1,   // Inbound webhook AI response
   'channel.telegram': 1,          // Telegram AI response
 
+  // CRM
+  'crm_enrichment': 2,            // AI auto-enrichment per contact
+  'crm_scoring': 1,               // AI relationship scoring (batch of 50)
+  'crm_follow_up_draft': 1,       // AI follow-up draft
+  'crm_meeting_prep': 1,          // AI meeting prep briefing
+
   // Free actions (logged but cost 0)
   'system.calendar': 0,
   'system.reminder': 0,
