@@ -94,8 +94,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Private Integration Token is required' }, { status: 400 });
   }
 
-  // Validate the token
-  const validation = await validateGhlToken(token.trim());
+  // Validate the token (pass location_id if provided for direct validation)
+  const validation = await validateGhlToken(token.trim(), location_id?.trim() || undefined);
   if (!validation.valid) {
     return NextResponse.json({ error: validation.error || 'Invalid token' }, { status: 400 });
   }
@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
   const resolvedLocationId = location_id?.trim() || validation.locationId;
   if (!resolvedLocationId) {
     return NextResponse.json({
-      error: 'Could not detect Location ID automatically. Please enter it manually (GHL → Settings → Business Info → Location ID).',
+      error: 'Could not detect Location ID automatically. Please enter it manually. In GHL: Settings → Business Profile → scroll down → Location ID (or check the URL — it\'s the string after /location/).',
     }, { status: 400 });
   }
 
