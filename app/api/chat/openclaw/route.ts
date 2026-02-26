@@ -22,7 +22,8 @@ import { isGoogleConnected, getTodayEvents } from '@/lib/integrations/google';
 import { generateConversationTitle } from '@/lib/utils';
 import { streamChat } from '@/lib/ai/claude';
 import { Message, Conversation, MemoryType, User } from '@/types';
-import { getPlanLimit, isWithinLimit, getCreditCost, Plan } from '@/lib/billing/plans';
+import { Plan } from '@/lib/billing/plans';
+import { getAgencyCredits, deductCredits } from '@/lib/billing/credit-engine';
 import { v4 as uuid } from 'uuid';
 import {
   getOrCreateSession,
@@ -85,21 +86,28 @@ export async function POST(request: NextRequest) {
       user.usage_this_month = 0;
     }
 
-    // Check usage limits (credits-based)
+    // Check credits via unified system
     const plan = (user.plan || 'free') as Plan;
-    const currentUsage = user.usage_this_month || 0;
-    const limit = getPlanLimit(plan);
+    const { data: agencyMemberOC } = await serviceClient
+      .from('agency_members').select('agency_id').eq('user_id', user.id).single();
+    const ocAgencyId = agencyMemberOC?.agency_id;
 
-    if (!isWithinLimit(plan, currentUsage)) {
-      return new Response(
-        JSON.stringify({
-          error: 'Credit limit exceeded',
-          message: `You've used all ${limit} credits for this month. Upgrade your plan for more.`,
-          usage: currentUsage, limit, plan,
-        }),
-        { status: 429, headers: { 'Content-Type': 'application/json' } }
-      );
+    if (ocAgencyId) {
+      const credits = await getAgencyCredits(ocAgencyId);
+      if (credits.balance <= 0) {
+        return new Response(
+          JSON.stringify({
+            error: 'Insufficient credits',
+            message: 'You\'ve used all your credits. Add more to continue.',
+            balance: credits.balance,
+            buyUrl: '/agency/credits',
+          }),
+          { status: 402, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
     }
+    const currentUsage = 0;
+    const limit = 999999;
 
     const { message, conversation_id } = (await request.json()) as any;
     if (!message || typeof message !== 'string') {
@@ -111,7 +119,7 @@ export async function POST(request: NextRequest) {
     if (!openclawUp) {
       console.warn('OpenClaw Gateway unavailable — falling back to direct Claude');
       return handleDirectClaude(request, {
-        authUser, user, serviceClient, message, conversation_id, plan, currentUsage, limit,
+        authUser, user, serviceClient, message, conversation_id, plan, currentUsage, limit, agencyId: ocAgencyId,
       });
     }
 
@@ -212,15 +220,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Determine credit cost (OpenClaw handles tools, so default to chat; 
-    // actual cost will be updated post-response if sub-agents/search were used)
-    const creditCost = getCreditCost('chat');
-
-    // Deduct credits
-    await serviceClient
-      .from('users')
-      .update({ usage_this_month: currentUsage + creditCost })
-      .eq('id', authUser.id);
+    // Deduct credits via unified engine
+    const creditCost = 1;
+    if (ocAgencyId) {
+      await deductCredits(ocAgencyId, 'chat.message', {
+        description: `OpenClaw chat: ${message.slice(0, 80)}`,
+      });
+    }
 
     // --- Stream response ---
     const encoder = new TextEncoder();
@@ -383,11 +389,12 @@ async function handleDirectClaude(
     plan: Plan;
     currentUsage: number;
     limit: number;
+    agencyId?: string;
   }
 ) {
   // Import the main route handler dynamically to avoid circular deps
   // Instead, we duplicate the minimal fallback logic here
-  const { authUser, user, serviceClient, message, conversation_id, plan, currentUsage, limit } = ctx;
+  const { authUser, user, serviceClient, message, conversation_id, plan, currentUsage, limit, agencyId: ocAgencyId } = ctx;
   const { searchMemories, saveMemory } = await import('@/lib/ai/memory');
   const { getSystemPrompt, extractCommands } = await import('@/lib/ai/prompts');
   const { streamChat } = await import('@/lib/ai/claude');
@@ -450,11 +457,12 @@ async function handleDirectClaude(
 
   const systemPrompt = getSystemPrompt(memories, reminders, calendarEvents);
 
-  const fallbackCreditCost = getCreditCost('chat');
-  await serviceClient
-    .from('users')
-    .update({ usage_this_month: currentUsage + fallbackCreditCost })
-    .eq('id', authUser.id);
+  const fallbackCreditCost = 1;
+  if (ocAgencyId) {
+    await deductCredits(ocAgencyId, 'chat.message', {
+      description: 'OpenClaw chat (fallback)',
+    });
+  }
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({

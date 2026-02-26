@@ -274,7 +274,7 @@ export function ChatInterface({
         </div>
 
         {credits && (
-          <CreditWarningBanner creditsUsed={credits.used} creditsLimit={credits.limit} />
+          <CreditWarningBanner />
         )}
 
         {/* Messages */}
