@@ -17,6 +17,8 @@ import {
   Building2 as Building2Icon,
   Contact as ContactIcon,
   Target as TargetIcon,
+  BarChart3 as CrmChartIcon,
+  Upload as UploadIcon,
   Settings,
   Terminal,
   ExternalLink,
@@ -71,6 +73,8 @@ const navSections: NavSection[] = [
       { label: 'Contacts', href: '/agency/crm/contacts', icon: ContactIcon },
       { label: 'Companies', href: '/agency/crm/companies', icon: Building2Icon },
       { label: 'Deals', href: '/agency/crm/deals', icon: TargetIcon },
+      { label: 'Analytics', href: '/agency/crm/analytics', icon: CrmChartIcon },
+      { label: 'Import', href: '/agency/crm/import', icon: UploadIcon },
     ],
   },
   {

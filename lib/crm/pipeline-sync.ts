@@ -7,6 +7,8 @@
 
 import { createContact } from './contacts';
 import { logActivity } from './activities';
+import { enrichContact } from './enrichment';
+import { createDeal } from './deals';
 
 interface PipelineLead {
   id: string;
@@ -67,6 +69,11 @@ export async function syncPipelineLeadToCrm(
     const contactId = result.contact?.id;
     if (!contactId) return null;
 
+    // AI auto-enrichment for new contacts (non-blocking)
+    if (!result.existing) {
+      enrichContact(agencyId, contactId).catch(() => {});
+    }
+
     // Log activity
     const isReply = lead.stage === 'replied';
     await logActivity(agencyId, {
@@ -90,6 +97,20 @@ export async function syncPipelineLeadToCrm(
         pipeline_stage: lead.stage,
       },
     });
+
+    // Auto-create deal when lead reaches interested or booked
+    if (lead.stage === 'interested' || lead.stage === 'booked') {
+      const dealStage = lead.stage === 'booked' ? 'qualified' : 'prospect';
+      await createDeal(agencyId, {
+        name: `${lead.company || lead.full_name || 'Pipeline'} — ${lead.campaign_id ? 'Campaign Lead' : 'Lead'}`,
+        contact_id: contactId,
+        value: 0,
+        stage: dealStage,
+        source: 'pipeline',
+        source_id: lead.id,
+        notes: `Auto-created from pipeline. Lead stage: ${lead.stage}.`,
+      }, 'AI Pipeline');
+    }
 
     return contactId;
   } catch (err) {
