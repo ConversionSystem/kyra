@@ -104,10 +104,16 @@ export async function POST(req: NextRequest) {
         // ═══ STEP 1: CREATE CAMPAIGN ═══
         send('step', { step: 1, label: 'Creating campaign...', status: 'running' });
 
+        // Extract follow-up settings from request body
+        const follow_up_count = body.follow_up_count ?? 3;
+        const follow_up_delay_days = body.follow_up_delay_days ?? 3;
+        const follow_up_channel = body.follow_up_channel ?? 'same';
+
         const { data: campaign, error: campErr } = await svc.from('pipeline_campaigns').insert({
           agency_id: agencyId, name: name.trim(), target_industry, target_role,
           target_company_size, target_location, target_pain_points, value_prop,
           status: 'active', leads_found: 0, leads_messaged: 0, leads_replied: 0, leads_booked: 0,
+          follow_up_count, follow_up_delay_days, follow_up_channel,
         }).select().single();
 
         if (campErr || !campaign) {
