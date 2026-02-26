@@ -4,10 +4,10 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { getGhlIntegration } from '@/lib/pipeline/crm-sync';
 
 const GHL_API = 'https://services.leadconnectorhq.com';
 const GHL_VERSION = '2021-04-15';
-const OUTREACH_LOCATION_ID = 'y1BFVhXMDNUPlbPxEpSA';
 
 export async function GET(req: NextRequest) {
   const supabase = await createClient();
@@ -25,25 +25,41 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ messages: [], error: 'No GHL contact linked' });
   }
 
-  // Get GHL token
-  const { data: ghlClient } = await svc
-    .from('agency_clients')
-    .select('ghl_private_token')
-    .eq('ghl_location_id', OUTREACH_LOCATION_ID)
-    .not('ghl_private_token', 'is', null)
-    .limit(1)
-    .single();
+  // Get agency ID for this lead
+  const { data: member } = await svc.from('agency_members').select('agency_id').eq('user_id', user.id).single();
+  if (!member) return NextResponse.json({ messages: [], error: 'No agency' });
 
-  if (!ghlClient?.ghl_private_token) {
-    return NextResponse.json({ messages: [], error: 'GHL not connected' });
+  // Get GHL token from native integration (or legacy fallback)
+  const ghlIntegration = await getGhlIntegration(member.agency_id);
+
+  let token: string | null = null;
+  let locationId: string | null = null;
+
+  if (ghlIntegration?.access_token && ghlIntegration?.location_id) {
+    token = ghlIntegration.access_token;
+    locationId = ghlIntegration.location_id;
+  } else {
+    // Legacy fallback
+    const { data: ghlClient } = await svc
+      .from('agency_clients')
+      .select('ghl_private_token, ghl_location_id')
+      .eq('agency_id', member.agency_id)
+      .not('ghl_private_token', 'is', null)
+      .not('ghl_location_id', 'is', null)
+      .limit(1)
+      .single();
+    token = (ghlClient?.ghl_private_token as string) || null;
+    locationId = (ghlClient?.ghl_location_id as string) || null;
   }
 
-  const token = ghlClient.ghl_private_token as string;
+  if (!token || !locationId) {
+    return NextResponse.json({ messages: [], error: 'GHL not connected' });
+  }
 
   try {
     // Search for conversations with this contact
     const searchRes = await fetch(
-      `${GHL_API}/conversations/search?contactId=${lead.ghl_contact_id}&locationId=${OUTREACH_LOCATION_ID}`,
+      `${GHL_API}/conversations/search?contactId=${lead.ghl_contact_id}&locationId=${locationId}`,
       {
         headers: { Authorization: `Bearer ${token}`, Version: GHL_VERSION },
         signal: AbortSignal.timeout(10_000),
