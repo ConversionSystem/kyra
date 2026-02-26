@@ -17,6 +17,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { logAndFire } from '@/lib/pipeline/webhooks';
+import { requireCredits, deductCredits } from '@/lib/billing/credit-engine';
 
 async function getAgencyId(userId: string): Promise<string | null> {
   const svc = createServiceClientWithoutCookies();
@@ -196,6 +197,20 @@ export async function POST(req: NextRequest) {
     .eq('agency_id', agencyId);
 
   if (!leads?.length) return NextResponse.json({ error: 'No leads found' }, { status: 404 });
+
+  // ── Pre-flight credit check (2 credits per lead) ──
+  const enrichableLeads = leads.filter((l: Record<string, unknown>) => l.stage === 'approved' || l.stage === 'found');
+  const creditCheck = await requireCredits(agencyId, 'pipeline.enrich', enrichableLeads.length);
+  if (!creditCheck.allowed) {
+    return NextResponse.json({
+      error: 'Insufficient credits',
+      balance: creditCheck.balance,
+      cost: creditCheck.cost,
+      shortfall: creditCheck.shortfall,
+      message: `Enriching ${enrichableLeads.length} leads costs ${creditCheck.cost} credits but you have ${creditCheck.balance}. Add credits to continue.`,
+      buyUrl: '/agency/credits',
+    }, { status: 402 });
+  }
 
   // Stage gate: only approved leads can be researched
   const invalidLeads = leads.filter((l: Record<string, unknown>) => l.stage !== 'approved' && l.stage !== 'found');
@@ -439,6 +454,14 @@ Return JSON:
 
   const enriched = results.filter(r => r.status === 'enriched').length;
   const errors = results.filter(r => r.status === 'error').length;
+
+  // Deduct credits for successfully enriched leads only
+  if (enriched > 0) {
+    await deductCredits(agencyId, 'pipeline.enrich', {
+      multiplier: enriched,
+      description: `Enrich ${enriched} leads`,
+    });
+  }
   const withPeople = results.filter(r => r.found_person).length;
   const withEmails = results.filter(r => (r.found_emails || 0) > 0).length;
   const withPhones = results.filter(r => (r.found_phones || 0) > 0).length;
