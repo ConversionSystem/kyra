@@ -361,11 +361,13 @@ export default function IntegrationsPage() {
                   value={ghlToken} onChange={e => setGhlToken(e.target.value)} />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600 mb-1 block">Location ID (optional — auto-detected if blank)</label>
+                <label className="text-xs font-medium text-gray-600 mb-1 block">Location ID <span className="text-amber-600">(recommended)</span></label>
                 <input className="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                  placeholder="Auto-detected from token"
+                  placeholder="e.g. ve9EPM428h8vShlRW1KT"
                   value={ghlLocationId} onChange={e => setGhlLocationId(e.target.value)} />
-                <p className="text-[10px] text-gray-400 mt-0.5">Found in GHL → Settings → Business Info → Location ID</p>
+                <p className="text-[10px] text-gray-400 mt-0.5">
+                  How to find it: In GHL, go to <strong>Settings → Business Profile</strong> and scroll down, or look at the URL — it&apos;s the ID after <code className="bg-gray-100 px-1 rounded">/location/</code> in the address bar.
+                </p>
               </div>
             </div>
 

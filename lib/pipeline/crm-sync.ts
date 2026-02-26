@@ -576,8 +576,13 @@ export async function getGhlIntegration(agencyId: string): Promise<CrmIntegratio
 
 /**
  * Validate a GHL Private Integration Token and return location info.
+ *
+ * Private Integration Tokens (pit-...) are LOCATION-scoped — they can't
+ * call agency-level endpoints like /locations/search. We validate by:
+ * 1. If locationId provided: call /locations/{id} directly
+ * 2. If not: try multiple endpoints to discover the locationId
  */
-export async function validateGhlToken(token: string): Promise<{
+export async function validateGhlToken(token: string, providedLocationId?: string): Promise<{
   valid: boolean;
   locationId?: string;
   locationName?: string;
@@ -585,40 +590,99 @@ export async function validateGhlToken(token: string): Promise<{
   error?: string;
 }> {
   try {
-    // Try to get business info with this token
-    const res = await fetch(`${GHL_API}/locations/search`, {
-      headers: ghlHeaders(token),
-      signal: AbortSignal.timeout(10_000),
-    });
-
-    if (!res.ok) {
-      // Try alternative endpoint
-      const altRes = await fetch(`${GHL_API}/users/`, {
+    // Strategy 1: If location ID provided, validate directly
+    if (providedLocationId) {
+      const res = await fetch(`${GHL_API}/locations/${providedLocationId}`, {
         headers: ghlHeaders(token),
         signal: AbortSignal.timeout(10_000),
       });
-      if (!altRes.ok) {
-        return { valid: false, error: `Invalid token (HTTP ${res.status}). Check your Private Integration Token.` };
+      if (res.ok) {
+        const data = await res.json();
+        const loc = data?.location || data;
+        return {
+          valid: true,
+          locationId: providedLocationId,
+          locationName: loc?.name || loc?.business?.name || 'GHL Location',
+          companyName: loc?.business?.name,
+        };
       }
-      const userData = await altRes.json();
+      // 403 with location ID means token doesn't match this location
+      if (res.status === 403 || res.status === 401) {
+        return { valid: false, error: 'Token does not have access to this Location ID. Make sure the Private Integration Token was created inside this sub-account.' };
+      }
+    }
+
+    // Strategy 2: Try /contacts with limit=1 to validate token works
+    // PITs need a locationId for most endpoints, so try to extract it
+    // from the token's own scope by calling different endpoints
+
+    // Try /users/ — sometimes works with PITs
+    const usersRes = await fetch(`${GHL_API}/users/`, {
+      headers: ghlHeaders(token),
+      signal: AbortSignal.timeout(8_000),
+    });
+    if (usersRes.ok) {
+      const userData = await usersRes.json();
       const user = userData?.users?.[0];
+      const locId = user?.roles?.locationIds?.[0];
+      if (locId) {
+        // Now fetch location details
+        const locRes = await fetch(`${GHL_API}/locations/${locId}`, {
+          headers: ghlHeaders(token),
+          signal: AbortSignal.timeout(8_000),
+        });
+        const locData = locRes.ok ? await locRes.json() : {};
+        const loc = locData?.location || locData;
+        return {
+          valid: true,
+          locationId: locId,
+          locationName: loc?.name || user?.name || 'GHL Location',
+          companyName: loc?.business?.name,
+        };
+      }
+      // Users endpoint works but no location — token is valid
       return {
         valid: true,
-        locationId: user?.roles?.locationIds?.[0],
-        locationName: user?.name || 'Unknown',
+        locationName: user?.name || 'GHL Location',
       };
     }
 
-    const data = await res.json();
-    const location = data?.locations?.[0];
-    return {
-      valid: true,
-      locationId: location?.id,
-      locationName: location?.name,
-      companyName: location?.business?.name,
-    };
+    // Strategy 3: Try /calendars/ — PITs with calendar scopes can access this
+    const calRes = await fetch(`${GHL_API}/calendars/`, {
+      headers: ghlHeaders(token),
+      signal: AbortSignal.timeout(8_000),
+    });
+    if (calRes.ok) {
+      // Token works — we just can't auto-detect location
+      return {
+        valid: true,
+        locationName: 'GHL Location',
+      };
+    }
+
+    // Strategy 4: Try /opportunities/pipelines — another common endpoint
+    const pipRes = await fetch(`${GHL_API}/opportunities/pipelines`, {
+      headers: ghlHeaders(token),
+      signal: AbortSignal.timeout(8_000),
+    });
+    if (pipRes.ok) {
+      return {
+        valid: true,
+        locationName: 'GHL Location',
+      };
+    }
+
+    // All strategies failed
+    const lastStatus = pipRes.status || calRes.status || usersRes.status;
+    if (lastStatus === 401) {
+      return { valid: false, error: 'Invalid token. Make sure you copied the full Private Integration Token (starts with pit-).' };
+    }
+    if (lastStatus === 403) {
+      return { valid: false, error: 'Token is valid but lacks required scopes. Make sure you enabled contacts.write, conversations.write, calendars.write, and opportunities.write.' };
+    }
+    return { valid: false, error: `Could not validate token (HTTP ${lastStatus}). Please enter your Location ID manually.` };
   } catch (err) {
-    return { valid: false, error: err instanceof Error ? err.message : 'Connection failed' };
+    return { valid: false, error: err instanceof Error ? err.message : 'Connection failed — check your internet and try again.' };
   }
 }
 
