@@ -56,6 +56,7 @@ export const CREDIT_COSTS = {
   'pipeline.find_leads': 5,       // Per campaign (GPT-4o or Outscraper)
   'pipeline.enrich': 2,           // Per lead (GPT-4o + web scrape)
   'pipeline.closer_response': 1,  // Per AI Closer reply
+  'pipeline.follow_up': 1,        // Per follow-up message sent
   'pipeline.outscraper_lead': 1,  // Per Outscraper lead (on top of find_leads)
 
   // Chat

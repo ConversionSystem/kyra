@@ -24,6 +24,7 @@ import { getGatewayByClientId } from '@/lib/ovh/gateway-resolver';
 import { logAndFire } from '@/lib/pipeline/webhooks';
 import { syncLeadToCrm } from '@/lib/pipeline/crm-sync';
 import { handleCloserReply } from '@/lib/pipeline/ai-closer';
+import { cancelFollowUps } from '@/lib/pipeline/follow-up-engine';
 import type { GHLWebhookPayload, GHLWebhookEventType } from '@/lib/ghl/types';
 
 // Events that should be forwarded to the AI container
@@ -312,6 +313,15 @@ async function promotePipelineLead(
   }
 
   console.log(`[pipeline/inbound] Lead ${lead.id} (${lead.company || lead.full_name}) moved messaged → replied`);
+
+  // Cancel any pending follow-ups — lead replied, no need to follow up
+  cancelFollowUps(lead.id).then((cancelled) => {
+    if (cancelled > 0) {
+      console.log(`[pipeline/inbound] Cancelled ${cancelled} pending follow-ups for lead ${lead.id}`);
+    }
+  }).catch((err) => {
+    console.error(`[pipeline/inbound] Failed to cancel follow-ups for ${lead.id}:`, err);
+  });
 
   // Store the reply message in enrichment_data
   if (payload.body) {
