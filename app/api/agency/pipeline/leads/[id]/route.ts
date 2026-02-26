@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { logAndFire, type PipelineEvent } from '@/lib/pipeline/webhooks';
+import { syncLeadToCrm } from '@/lib/pipeline/crm-sync';
 
 async function getAgencyId(userId: string): Promise<string | null> {
   const svc = createServiceClientWithoutCookies();
@@ -79,28 +80,35 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const webhookEvent = stageToEvent[updates.stage as string];
     if (webhookEvent) {
       const campaign = (existingLead as Record<string, unknown>).pipeline_campaigns as { id: string; name: string };
-      await logAndFire(
-        agencyId,
-        webhookEvent,
-        { id: campaign.id, name: campaign.name },
-        {
-          id: lead.id,
-          full_name: lead.full_name,
-          company: lead.company,
-          email: lead.email,
-          phone: lead.phone,
-          website: lead.website,
-          industry: lead.industry,
-          location: lead.location,
-          stage: updates.stage as string,
-          previous_stage: previousStage,
-          personalized_subject: lead.personalized_subject,
-          personalized_email: lead.personalized_email,
-          personalized_opener: lead.personalized_opener,
-          ghl_contact_id: lead.ghl_contact_id,
-        },
-        'human',
-      );
+      const leadPayload = {
+        id: lead.id,
+        full_name: lead.full_name,
+        company: lead.company,
+        email: lead.email,
+        phone: lead.phone,
+        website: lead.website,
+        industry: lead.industry,
+        location: lead.location,
+        stage: updates.stage as string,
+        previous_stage: previousStage,
+        personalized_subject: lead.personalized_subject,
+        personalized_email: lead.personalized_email,
+        personalized_opener: lead.personalized_opener,
+        ghl_contact_id: lead.ghl_contact_id,
+      };
+
+      await logAndFire(agencyId, webhookEvent, { id: campaign.id, name: campaign.name }, leadPayload, 'human');
+
+      // Sync to CRM (non-blocking)
+      syncLeadToCrm(agencyId, {
+        ...leadPayload,
+        first_name: lead.first_name,
+        last_name: lead.last_name,
+        title: lead.title,
+        campaign_id: campaign.id,
+        campaign_name: campaign.name,
+        enrichment_data: lead.enrichment_data,
+      }).catch(err => console.error('[lead-patch] CRM sync error:', err));
     }
   }
 
