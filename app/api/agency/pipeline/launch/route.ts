@@ -4,6 +4,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { logAndFire } from '@/lib/pipeline/webhooks';
 
 const GHL_API = 'https://services.leadconnectorhq.com';
 const GHL_VERSION = '2021-04-15';
@@ -62,8 +63,9 @@ export async function POST(req: NextRequest) {
       continue;
     }
 
-    // Must be researched or approved
-    if (!['researched', 'approved'].includes(lead.stage)) {
+    // Must be outreach_approved (human reviewed the messages)
+    // Also allow researched/approved for backward compatibility
+    if (!['outreach_approved', 'researched', 'approved'].includes(lead.stage)) {
       results.push({ id: lead.id, name: lead.full_name || lead.company || '?', status: 'skipped', channels: [] });
       continue;
     }
@@ -144,6 +146,7 @@ export async function POST(req: NextRequest) {
 
       // 5. Update lead
       if (sentChannels.length > 0) {
+        const previousStage = lead.stage;
         await svc.from('pipeline_leads').update({
           stage: 'messaged',
           messaged_at: new Date().toISOString(),
@@ -153,6 +156,32 @@ export async function POST(req: NextRequest) {
             sent_channels: sentChannels,
           },
         }).eq('id', lead.id);
+
+        // Fire lead.messaged webhook
+        await logAndFire(
+          agencyId,
+          'lead.messaged',
+          { id: lead.campaign_id, name: 'Campaign' },
+          {
+            id: lead.id,
+            full_name: lead.full_name,
+            company: lead.company,
+            email: lead.email,
+            phone: lead.phone,
+            website: lead.website,
+            industry: lead.industry,
+            location: lead.location,
+            stage: 'messaged',
+            previous_stage: previousStage,
+            personalized_subject: lead.personalized_subject,
+            personalized_email: lead.personalized_email,
+            personalized_opener: lead.personalized_opener,
+            ghl_contact_id: contactId,
+          },
+          'human',
+          { channels: sentChannels },
+        );
+
         results.push({ id: lead.id, name: lead.full_name || '?', status: 'sent', channels: sentChannels });
       } else {
         results.push({ id: lead.id, name: lead.full_name || '?', status: 'error', channels: [], error: 'No channel available (missing email/phone or content)' });
