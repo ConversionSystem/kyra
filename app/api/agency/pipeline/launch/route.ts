@@ -7,6 +7,7 @@ import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/
 import { logAndFire } from '@/lib/pipeline/webhooks';
 import { getGhlIntegration, syncLeadToCrm } from '@/lib/pipeline/crm-sync';
 import { injectCampaignContext } from '@/lib/pipeline/soul-injector';
+import { scheduleFollowUps } from '@/lib/pipeline/follow-up-engine';
 
 const GHL_API = 'https://services.leadconnectorhq.com';
 const GHL_VERSION = '2021-04-15';
@@ -234,6 +235,24 @@ export async function POST(req: NextRequest) {
       })
       .catch((err) => {
         console.error('[launch] Campaign context injection error:', err);
+      });
+
+    // ── Schedule follow-up sequences for sent leads ─────────────────────
+    // Non-blocking. Creates pending follow-ups based on campaign settings.
+    const sentLeadIds = results.filter(r => r.status === 'sent').map(r => r.id);
+    const sentChannelsMap: Record<string, string[]> = {};
+    for (const r of results) {
+      if (r.status === 'sent') sentChannelsMap[r.id] = r.channels;
+    }
+
+    scheduleFollowUps(agencyId, leads[0].campaign_id, sentLeadIds, sentChannelsMap)
+      .then(({ scheduled }) => {
+        if (scheduled > 0) {
+          console.log(`[launch] Scheduled ${scheduled} follow-ups for ${sentLeadIds.length} leads`);
+        }
+      })
+      .catch((err) => {
+        console.error('[launch] Follow-up scheduling error:', err);
       });
   }
 
