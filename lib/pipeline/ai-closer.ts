@@ -4,24 +4,25 @@
  * This is the engine that makes Kyra's AI pipeline truly autonomous.
  * When a lead replies to outreach, the AI Closer:
  *
- * 1. Builds full context (campaign + lead + enrichment + conversation history)
- * 2. Routes through the agency's OpenClaw container (persistent memory, tools, 24/7)
- * 3. Falls back to direct LLM call if no container available
- * 4. Sends the AI response back to the lead via GHL
- * 5. Analyzes the conversation to auto-update pipeline stage
+ * 1. Routes to the CORRECT OpenClaw container (matched by GHL location, not random)
+ * 2. The container has campaign context in SOUL.md + CAMPAIGN.md (injected at launch)
+ * 3. OpenClaw's persistent memory means the agent REMEMBERS prior conversations
+ * 4. Falls back to direct LLM call if no container available
+ * 5. Sends the AI response back to the lead via GHL
+ * 6. Analyzes the conversation to auto-update pipeline stage
  *
- * WHY OpenClaw matters here:
- * - A direct API call is stateless: it forgets everything between messages
- * - An OpenClaw agent has MEMORY: it remembers the full conversation across sessions
- * - An OpenClaw agent has TOOLS: it can book appointments, check calendars, update CRMs
- * - An OpenClaw agent is AUTONOMOUS: it can proactively follow up, not just respond
- * - An OpenClaw agent is PERSISTENT: it runs 24/7 in an isolated container
+ * WHY OpenClaw matters here (and nowhere else in the pipeline):
+ * - SOUL.md: Agent knows WHO it is, WHAT it's selling, and HOW to close
+ * - CAMPAIGN.md: Agent knows every lead's profile, enrichment, and outreach sent
+ * - MEMORY: Agent remembers "I talked to Marcus about pricing on Tuesday"
+ * - TOOLS: Agent can check calendars, look up info, take notes between conversations
+ * - 24/7: Agent is always running in an isolated container — no cold starts
  *
  * This is the difference between a chatbot and an AI employee.
  */
 
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
-import { getGatewayByAgencyId } from '@/lib/ovh/gateway-resolver';
+import { resolveCloserContainer } from '@/lib/pipeline/soul-injector';
 import { getGhlIntegration } from '@/lib/pipeline/crm-sync';
 import { logAndFire } from '@/lib/pipeline/webhooks';
 import { syncLeadToCrm } from '@/lib/pipeline/crm-sync';
@@ -85,6 +86,7 @@ interface CloserResult {
   sentViaGhl: boolean;
   stageUpdate: string | null;
   poweredBy: 'openclaw' | 'direct-llm';
+  containerId?: string;
   error?: string;
 }
 
@@ -93,7 +95,8 @@ interface CloserResult {
 /**
  * Handle an inbound reply from a pipeline lead.
  * This is the full autonomous closer loop:
- * 1. Build context → 2. Generate response → 3. Send via GHL → 4. Update stage
+ * 1. Build context → 2. Route to correct container → 3. Generate response
+ * → 4. Send via GHL → 5. Update stage → 6. Log everything
  */
 export async function handleCloserReply(
   leadId: string,
@@ -139,30 +142,44 @@ export async function handleCloserReply(
     inboundChannel,
   };
 
-  // ── 3. Generate AI response (OpenClaw first, direct LLM fallback) ──────
+  // ── 3. Route to correct OpenClaw container ──────────────────────────────
+  //
+  // resolveCloserContainer() finds the RIGHT container:
+  //   1st: Container matching the agency's GHL location (from pipeline_integrations)
+  //   2nd: First running container for the agency (fallback)
+  //
+  // The container already has SOUL.md + CAMPAIGN.md injected at launch time
+  // via injectCampaignContext() in soul-injector.ts.
 
   let aiResponse: string;
   let poweredBy: 'openclaw' | 'direct-llm';
+  let containerId: string | undefined;
 
-  // Try OpenClaw container first
-  const gateway = await getGatewayByAgencyId(lead.agency_id);
+  const gateway = await resolveCloserContainer(lead.agency_id);
+
   if (gateway) {
     try {
       const result = await routeThroughOpenClaw(gateway, context);
       aiResponse = result;
       poweredBy = 'openclaw';
+      containerId = gateway.clientId;
+      console.log(
+        `[ai-closer] Routed through OpenClaw container ${gateway.clientId} ` +
+        `(${gateway.clientName}) for lead ${lead.full_name || lead.id}`,
+      );
     } catch (err) {
       console.error('[ai-closer] OpenClaw container failed, falling back to direct LLM:', err);
       aiResponse = await directLlmResponse(context);
       poweredBy = 'direct-llm';
     }
   } else {
+    console.warn(`[ai-closer] No OpenClaw container for agency ${lead.agency_id} — using direct LLM`);
     aiResponse = await directLlmResponse(context);
     poweredBy = 'direct-llm';
   }
 
   if (!aiResponse.trim()) {
-    return { response: '', sentViaGhl: false, stageUpdate: null, poweredBy, error: 'Empty AI response' };
+    return { response: '', sentViaGhl: false, stageUpdate: null, poweredBy, containerId, error: 'Empty AI response' };
   }
 
   // ── 4. Send response via GHL ────────────────────────────────────────────
@@ -193,6 +210,7 @@ export async function handleCloserReply(
     actor: 'ai-closer',
     details: {
       powered_by: poweredBy,
+      container_id: containerId,
       inbound_message: inboundMessage.slice(0, 500),
       ai_response: aiResponse.slice(0, 500),
       sent_via_ghl: sentViaGhl,
@@ -200,16 +218,28 @@ export async function handleCloserReply(
     },
   }).then(() => {}, () => {});
 
-  return { response: aiResponse, sentViaGhl, stageUpdate, poweredBy };
+  return { response: aiResponse, sentViaGhl, stageUpdate, poweredBy, containerId };
 }
 
 // ─── OpenClaw Container Route ─────────────────────────────────────────────────
 
+/**
+ * Route the conversation through the agency's OpenClaw container.
+ *
+ * The container already has:
+ *   - SOUL.md: Closer identity + campaign overview + communication rules
+ *   - CAMPAIGN.md: Full lead profiles + enrichment + objection playbook
+ *   - Memory: Prior conversations with this lead (if any)
+ *
+ * We send a LEAN system prompt that tells the agent to use its workspace context,
+ * plus the specific lead's context and conversation history for this message.
+ * The heavy lifting (identity, rules, playbook) lives in the workspace files.
+ */
 async function routeThroughOpenClaw(
   gateway: { url: string; token: string },
   context: CloserContext,
 ): Promise<string> {
-  const systemPrompt = buildCloserSystemPrompt(context);
+  const systemPrompt = buildOpenClawSystemPrompt(context);
   const messages = buildConversationMessages(context, systemPrompt);
 
   const res = await fetch(`${gateway.url}/v1/chat/completions`, {
@@ -237,8 +267,37 @@ async function routeThroughOpenClaw(
   return data?.choices?.[0]?.message?.content || '';
 }
 
+/**
+ * System prompt for OpenClaw container — LEAN.
+ * The heavy context (identity, rules, playbook) is already in SOUL.md + CAMPAIGN.md.
+ * This prompt just provides the specific lead context for THIS conversation.
+ */
+function buildOpenClawSystemPrompt(context: CloserContext): string {
+  const { lead, enrichment } = context;
+
+  return `You are responding to an inbound message from a prospect. Your identity, campaign details, communication rules, and objection playbook are in your SOUL.md and CAMPAIGN.md files — follow them.
+
+## THIS CONVERSATION
+- **Prospect:** ${lead.full_name || 'Unknown'} at ${lead.company || 'Unknown Company'}
+- **Their role:** ${lead.title || 'Decision-maker'}
+- **Channel:** ${context.inboundChannel}
+- **Current stage:** ${lead.stage}
+${enrichment.likely_pain_points ? `- **Their pain points:** ${enrichment.likely_pain_points}` : ''}
+${enrichment.icebreaker ? `- **Icebreaker:** ${enrichment.icebreaker}` : ''}
+
+## WHAT WE SENT THEM
+${lead.personalized_subject ? `Subject: ${lead.personalized_subject}` : ''}
+${lead.personalized_opener ? `SMS: ${lead.personalized_opener}` : ''}
+
+Reply naturally as a human sales professional. Keep it short. Do NOT include a subject line — just the message body.`;
+}
+
 // ─── Direct LLM Fallback ─────────────────────────────────────────────────────
 
+/**
+ * Fallback when no OpenClaw container is available.
+ * Uses a FULL system prompt since there's no workspace to reference.
+ */
 async function directLlmResponse(context: CloserContext): Promise<string> {
   const openaiKey = process.env.OPENAI_API_KEY;
   if (!openaiKey) {
@@ -246,7 +305,7 @@ async function directLlmResponse(context: CloserContext): Promise<string> {
     return '';
   }
 
-  const systemPrompt = buildCloserSystemPrompt(context);
+  const systemPrompt = buildFullSystemPrompt(context);
   const messages = buildConversationMessages(context, systemPrompt);
 
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -269,19 +328,21 @@ async function directLlmResponse(context: CloserContext): Promise<string> {
   return data?.choices?.[0]?.message?.content || '';
 }
 
-// ─── The Closer's Brain ───────────────────────────────────────────────────────
-
-function buildCloserSystemPrompt(context: CloserContext): string {
+/**
+ * Full system prompt for direct LLM fallback — includes everything
+ * since there's no workspace to reference.
+ */
+function buildFullSystemPrompt(context: CloserContext): string {
   const { lead, campaign, enrichment } = context;
 
-  return `You are a skilled sales closer working for an agency. Your job is to have a natural, human conversation with a prospect who replied to our outreach. You are NOT a chatbot — you are a real salesperson having a text/email conversation.
+  return `You are a skilled sales closer. Your job is to have a natural, human conversation with a prospect who replied to our outreach. You are NOT a chatbot — you are a real salesperson having a text/email conversation.
 
 ## YOUR MISSION
-Turn this reply into a booked demo/meeting. Be conversational, warm, and direct. Don't be pushy. Don't be salesy. Be genuinely helpful.
+Turn this reply into a booked demo/meeting. Be conversational, warm, and direct. Don't be pushy.
 
 ## THE PROSPECT
 - Name: ${lead.full_name || 'Unknown'}
-- Title: ${lead.title || 'Owner/Decision-maker'}
+- Title: ${lead.title || 'Decision-maker'}
 - Company: ${lead.company || 'Unknown'}
 - Industry: ${lead.industry || 'Unknown'}
 - Location: ${lead.location || 'Unknown'}
@@ -301,19 +362,20 @@ ${lead.personalized_email ? `Email: ${lead.personalized_email}` : ''}
 ${lead.personalized_opener ? `SMS: ${lead.personalized_opener}` : ''}
 
 ## RULES
-1. Keep responses SHORT (2-4 sentences for SMS, 3-6 for email). Nobody reads walls of text.
+1. Keep responses SHORT (2-4 sentences for SMS, 3-6 for email).
 2. Match their energy. If they're casual, be casual. If formal, be professional.
 3. Answer their question directly, then pivot to booking a quick call.
-4. If they say "not interested" — acknowledge gracefully, ask if timing is the issue. One soft follow-up max.
-5. If they ask "who is this?" — explain briefly and mention the outreach you sent.
-6. If they're interested — suggest 2-3 specific time slots. Make it easy.
-7. If they want to learn more — offer a quick 15-min call, not more emails.
-8. Never lie, never make up capabilities, never promise things you can't deliver.
-9. Don't use emojis unless they do first.
-10. Don't start with "Hey!" or "Hi there!" — jump into the substance.
-11. Sign with a first name only, no titles. Keep it human.
-12. NEVER reveal you are an AI. You are a person on the team.`;
+4. If they say "not interested" — acknowledge gracefully, one soft follow-up max.
+5. If they ask "who is this?" — explain briefly and reference the outreach.
+6. If they're interested — suggest 2-3 specific time slots.
+7. Never lie, never make up capabilities.
+8. Don't use emojis unless they do first.
+9. Don't start with "Hey!" or "Hi there!" — jump into substance.
+10. Sign with a first name only, no titles.
+11. NEVER reveal you are an AI.`;
 }
+
+// ─── Message Builder ──────────────────────────────────────────────────────────
 
 function buildConversationMessages(
   context: CloserContext,
@@ -323,8 +385,8 @@ function buildConversationMessages(
     { role: 'system', content: systemPrompt },
   ];
 
-  // Add conversation history for context
-  for (const msg of context.conversationHistory.slice(-10)) { // Last 10 messages
+  // Add conversation history for context (last 10 messages)
+  for (const msg of context.conversationHistory.slice(-10)) {
     messages.push({
       role: msg.direction === 'outbound' ? 'assistant' : 'user',
       content: msg.body,
@@ -350,7 +412,6 @@ async function analyzeAndUpdateStage(
   aiResponse: string,
   inboundMessage: string,
 ): Promise<string | null> {
-  // Quick heuristic analysis — determine if stage should change
   const combined = `${inboundMessage} ${aiResponse}`.toLowerCase();
 
   let newStage: string | null = null;
@@ -391,7 +452,7 @@ async function analyzeAndUpdateStage(
   if (newStage && newStage !== 'skipped') {
     const currentIdx = stageOrder.indexOf(lead.stage);
     const newIdx = stageOrder.indexOf(newStage);
-    if (newIdx <= currentIdx) newStage = null; // Don't move backward
+    if (newIdx <= currentIdx) newStage = null;
   }
 
   if (newStage) {
@@ -424,7 +485,7 @@ async function analyzeAndUpdateStage(
         { trigger: 'conversation_analysis' },
       );
 
-      // CRM sync
+      // CRM sync (non-blocking)
       syncLeadToCrm(lead.agency_id, {
         id: lead.id, full_name: lead.full_name, first_name: lead.first_name,
         last_name: lead.last_name, email: lead.email, phone: lead.phone,
@@ -485,7 +546,6 @@ async function fetchGhlConversation(
   contactId: string,
 ): Promise<ConversationMessage[]> {
   try {
-    // Find conversation
     const searchRes = await fetch(
       `${GHL_API}/conversations/search?contactId=${contactId}&locationId=${locationId}`,
       {
@@ -498,7 +558,6 @@ async function fetchGhlConversation(
     const conversations = searchData?.conversations || [];
     if (!conversations.length) return [];
 
-    // Get messages
     const convId = conversations[0].id;
     const msgRes = await fetch(`${GHL_API}/conversations/${convId}/messages`, {
       headers: { Authorization: `Bearer ${token}`, Version: GHL_VERSION },
