@@ -38,6 +38,7 @@ import {
 import { cn } from '@/lib/utils';
 import type { AgencySettings } from '@/lib/agency/types';
 import type { LucideIcon } from 'lucide-react';
+import { CreditBadge } from '@/components/chat/CreditBadge';
 
 interface NavItem {
   label: string;
@@ -228,9 +229,12 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
           </button>
         </div>
 
-        <Badge className={cn('mt-2 capitalize', planColors[plan] ?? planColors.starter)}>
-          {plan}
-        </Badge>
+        <div className="flex items-center gap-2 mt-2">
+          <Badge className={cn('capitalize', planColors[plan] ?? planColors.starter)}>
+            {plan}
+          </Badge>
+          <CreditBadge />
+        </div>
       </div>
 
       {/* Navigation */}

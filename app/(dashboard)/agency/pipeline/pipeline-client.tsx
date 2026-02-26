@@ -169,7 +169,16 @@ export default function PipelineClient() {
       });
 
       if (!res.ok || !res.body) {
-        setRunEvents(prev => [...prev, { type: 'error', data: { error: 'Failed to start pipeline' }, timestamp: Date.now() }]);
+        let errorMsg = 'Failed to start pipeline';
+        try {
+          const errData = await res.json();
+          if (res.status === 402) {
+            errorMsg = errData.message || `Insufficient credits (${errData.balance || 0} remaining). Add credits to continue.`;
+          } else {
+            errorMsg = errData.error || errData.message || errorMsg;
+          }
+        } catch { /* use default */ }
+        setRunEvents(prev => [...prev, { type: 'error', data: { error: errorMsg }, timestamp: Date.now() }]);
         setIsRunning(false);
         return;
       }
@@ -518,13 +527,18 @@ export default function PipelineClient() {
               : form.lead_source === 'csv_upload' ? <><Upload className="h-5 w-5" /> Import Leads</>
               : <><Search className="h-5 w-5" /> Discover Leads</>}
           </Button>
-          <p className="text-[10px] text-gray-400 text-center mt-2">
-            {form.lead_source === 'google_maps'
-              ? 'Real businesses from Google Maps → you review → AI writes personalized outreach → you approve → send'
-              : form.lead_source === 'csv_upload'
-                ? 'Your leads → AI enriches & writes personalized outreach → you review & approve → send'
-                : 'AI finds businesses → you review → AI writes outreach → you approve → send'}
-          </p>
+          <div className="text-center mt-2 space-y-1">
+            <p className="text-[10px] text-gray-400">
+              {form.lead_source === 'google_maps'
+                ? 'Real businesses from Google Maps → you review → AI writes personalized outreach → you approve → send'
+                : form.lead_source === 'csv_upload'
+                  ? 'Your leads → AI enriches & writes personalized outreach → you review & approve → send'
+                  : 'AI finds businesses → you review → AI writes outreach → you approve → send'}
+            </p>
+            <p className="text-[10px] font-medium text-indigo-500">
+              Cost: 5 credits to find leads + 2 credits per lead enriched
+            </p>
+          </div>
 
           {/* Live event feed */}
           {(isRunning || runEvents.length > 0) && (

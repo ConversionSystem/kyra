@@ -19,7 +19,8 @@ import { extractCommands, getSystemPrompt, Reminder, CalendarEvent } from '@/lib
 import { isGoogleConnected, getTodayEvents } from '@/lib/integrations/google';
 import { generateConversationTitle } from '@/lib/utils';
 import { Message, Conversation, MemoryType, User } from '@/types';
-import { getPlanLimit, isWithinLimit, getCreditCost, Plan } from '@/lib/billing/plans';
+import { Plan } from '@/lib/billing/plans';
+import { getAgencyCredits, deductCredits } from '@/lib/billing/credit-engine';
 import { getSessionKeyForClient, getSessionKeyForUser, getSystemContextForClient, getSystemPromptForClient } from '@/lib/agency/container';
 import { resolveModelPreference } from '@/lib/ai/model-router';
 import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
@@ -77,21 +78,28 @@ export async function POST(request: NextRequest) {
       user.usage_this_month = 0;
     }
 
-    // Check usage limits
+    // Check credits via unified system
     const plan = (user.plan || 'free') as Plan;
-    const currentUsage = user.usage_this_month || 0;
-    const limit = getPlanLimit(plan);
+    const { data: agencyMemberW } = await serviceClient
+      .from('agency_members').select('agency_id').eq('user_id', user.id).single();
+    const workerAgencyId = agencyMemberW?.agency_id;
 
-    if (!isWithinLimit(plan, currentUsage)) {
-      return new Response(
-        JSON.stringify({
-          error: 'Credit limit exceeded',
-          message: `You've used all ${limit} credits for this month. Upgrade your plan for more.`,
-          usage: currentUsage, limit, plan,
-        }),
-        { status: 429, headers: { 'Content-Type': 'application/json' } }
-      );
+    if (workerAgencyId) {
+      const credits = await getAgencyCredits(workerAgencyId);
+      if (credits.balance <= 0) {
+        return new Response(
+          JSON.stringify({
+            error: 'Insufficient credits',
+            message: 'You\'ve used all your credits. Add more to continue.',
+            balance: credits.balance,
+            buyUrl: '/agency/credits',
+          }),
+          { status: 402, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
     }
+    const currentUsage = 0;
+    const limit = 999999;
 
     const body = (await request.json()) as any;
     const { message, conversation_id } = body;
@@ -166,12 +174,14 @@ export async function POST(request: NextRequest) {
       conversation = data as Conversation;
     }
 
-    // Deduct credits
-    const creditCost = getCreditCost('chat');
-    await serviceClient
-      .from('users')
-      .update({ usage_this_month: currentUsage + creditCost })
-      .eq('id', authUser.id);
+    // Deduct credits via unified engine
+    const creditCost = 1;
+    if (workerAgencyId) {
+      await deductCredits(workerAgencyId, 'chat.message', {
+        clientId: clientId || undefined,
+        description: `Worker chat: ${message.slice(0, 80)}`,
+      });
+    }
 
     // Note: Workspace init is handled inside the container (static SOUL.md/AGENTS.md).
     // Per-user workspace bootstrap will be added in Phase 0.2.
