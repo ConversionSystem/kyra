@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { getContacts, createContact } from '@/lib/crm/contacts';
 import { logActivity } from '@/lib/crm/activities';
+import { enrichContact } from '@/lib/crm/enrichment';
 import type { ContactFilters } from '@/lib/crm/types';
 
 async function getAgencyId(userId: string): Promise<string | null> {
@@ -65,6 +66,11 @@ export async function POST(req: NextRequest) {
     actor: 'human',
     actor_name: user.email || 'Team member',
   });
+
+  // AI auto-enrichment (non-blocking, 2 credits)
+  enrichContact(agencyId, result.contact.id).catch(err =>
+    console.error('[crm/contacts] enrichment error:', err)
+  );
 
   return NextResponse.json({ contact: result.contact, existing: false }, { status: 201 });
 }
