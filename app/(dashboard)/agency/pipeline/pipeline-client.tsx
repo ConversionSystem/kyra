@@ -95,6 +95,10 @@ export default function PipelineClient() {
   const [editingLead, setEditingLead] = useState<string | null>(null);
   const [editFields, setEditFields] = useState<{ subject: string; email: string; opener: string }>({ subject: '', email: '', opener: '' });
 
+  // Follow-up stats
+  const [followUpStats, setFollowUpStats] = useState<{ total: number; pending: number; sent: number; cancelled: number; failed: number } | null>(null);
+  const [leadFollowUps, setLeadFollowUps] = useState<Array<{ id: string; follow_up_number: number; status: string; channel: string; scheduled_at: string; sent_at: string | null; message: string | null; subject: string | null }>>([]);
+
   // Form
   const [form, setForm] = useState({
     name: '', target_industry: '', target_role: 'Owner', target_company_size: '11-50',
@@ -102,6 +106,9 @@ export default function PipelineClient() {
     lead_source: 'google_maps' as 'google_maps' | 'ai_discovery' | 'csv_upload',
     csv_data: '',
     enrich_model: 'gpt-4o',
+    follow_up_count: 3,
+    follow_up_delay_days: 3,
+    follow_up_channel: 'same' as 'same' | 'email' | 'sms' | 'both',
   });
 
   // ─── Load data ──────────────────────────────────────────────────────────────
@@ -124,8 +131,28 @@ export default function PipelineClient() {
     setSelectedIds(new Set());
   }, [activeCampaign]);
 
+  // Load follow-up stats when on closer tab
+  const loadFollowUpStats = useCallback(async () => {
+    if (!activeCampaign || activeStage !== 'closer') return;
+    try {
+      const res = await fetch(`/api/agency/pipeline/follow-ups?campaign_id=${activeCampaign.id}`);
+      const data = await res.json();
+      setFollowUpStats(data.stats ?? null);
+    } catch { /* ignore */ }
+  }, [activeCampaign, activeStage]);
+
+  // Load follow-ups for selected lead
+  const loadLeadFollowUps = useCallback(async (leadId: string) => {
+    try {
+      const res = await fetch(`/api/agency/pipeline/follow-ups?lead_id=${leadId}`);
+      const data = await res.json();
+      setLeadFollowUps(data.follow_ups ?? []);
+    } catch { /* ignore */ }
+  }, []);
+
   useEffect(() => { loadCampaigns(); }, [loadCampaigns]);
   useEffect(() => { loadLeads(); }, [loadLeads]);
+  useEffect(() => { loadFollowUpStats(); }, [loadFollowUpStats]);
   useEffect(() => { eventsEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [runEvents]);
   useEffect(() => { convoEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [conversation]);
 
@@ -496,6 +523,56 @@ export default function PipelineClient() {
             <div>
               <label className="text-xs font-medium text-gray-600 mb-1 block">What you&apos;re selling (value prop)</label>
               <textarea className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none min-h-[60px]" placeholder="e.g. AI-powered customer service that handles 80% of inquiries automatically..." value={form.value_prop} onChange={e => setForm(f => ({ ...f, value_prop: e.target.value }))} />
+            </div>
+
+            {/* ═══ FOLLOW-UP SEQUENCE SETTINGS ═══ */}
+            <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <RefreshCw className="h-4 w-4 text-amber-600" />
+                <h3 className="text-sm font-bold text-amber-900">Auto Follow-Up Sequence</h3>
+                <span className="text-[9px] font-bold bg-amber-200 text-amber-800 px-1.5 py-0.5 rounded">NEW</span>
+              </div>
+              <p className="text-xs text-amber-700 mb-3">80% of sales require 5+ follow-ups. Leads who don&apos;t reply get automated, personalized follow-ups.</p>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="text-[10px] font-bold text-amber-700 mb-1 block">Follow-ups</label>
+                  <select className="w-full border border-amber-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none bg-white" value={form.follow_up_count} onChange={e => setForm(f => ({ ...f, follow_up_count: Number(e.target.value) }))}>
+                    <option value={0}>None (single touch)</option>
+                    <option value={1}>1 follow-up</option>
+                    <option value={2}>2 follow-ups</option>
+                    <option value={3}>3 follow-ups (recommended)</option>
+                    <option value={4}>4 follow-ups</option>
+                    <option value={5}>5 follow-ups (aggressive)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-amber-700 mb-1 block">Days between</label>
+                  <select className="w-full border border-amber-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none bg-white" value={form.follow_up_delay_days} onChange={e => setForm(f => ({ ...f, follow_up_delay_days: Number(e.target.value) }))}>
+                    <option value={2}>Every 2 days</option>
+                    <option value={3}>Every 3 days (recommended)</option>
+                    <option value={5}>Every 5 days</option>
+                    <option value={7}>Weekly</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-amber-700 mb-1 block">Channel</label>
+                  <select className="w-full border border-amber-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none bg-white" value={form.follow_up_channel} onChange={e => setForm(f => ({ ...f, follow_up_channel: e.target.value as 'same' | 'email' | 'sms' | 'both' }))}>
+                    <option value="same">Same as outreach</option>
+                    <option value="email">Email only</option>
+                    <option value="sms">SMS only</option>
+                    <option value="both">Both email & SMS</option>
+                  </select>
+                </div>
+              </div>
+              {form.follow_up_count > 0 && (
+                <div className="mt-2 flex items-center gap-2 text-[10px] text-amber-600">
+                  <Clock className="h-3 w-3" />
+                  <span>Each follow-up uses a different strategy: gentle bump → new angle → social proof → urgency → breakup</span>
+                </div>
+              )}
+              <p className="text-[10px] text-amber-500 mt-2 flex items-center gap-1">
+                <Zap className="h-2.5 w-2.5" /> 1 credit per follow-up sent · Auto-cancels when lead replies
+              </p>
             </div>
 
             {/* ═══ ADVANCED: MODEL SELECTOR ═══ */}
@@ -945,6 +1022,23 @@ export default function PipelineClient() {
             </div>
           </div>
 
+          {/* Follow-up stats bar */}
+          {followUpStats && followUpStats.total > 0 && (
+            <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-3 flex items-center gap-4 flex-wrap">
+              <div className="flex items-center gap-2">
+                <RefreshCw className="h-4 w-4 text-amber-600" />
+                <span className="text-sm font-medium text-amber-800">Follow-Up Sequence</span>
+              </div>
+              <div className="flex-1" />
+              <div className="flex gap-3 text-xs">
+                <span className="text-amber-600">⏳ Pending: {followUpStats.pending}</span>
+                <span className="text-green-600">✅ Sent: {followUpStats.sent}</span>
+                <span className="text-gray-500">🚫 Cancelled: {followUpStats.cancelled}</span>
+                {followUpStats.failed > 0 && <span className="text-red-500">❌ Failed: {followUpStats.failed}</span>}
+              </div>
+            </div>
+          )}
+
           {closerLeads.length === 0 && (
             <div className="text-center py-12 text-gray-400">
               <Bot className="h-8 w-8 mx-auto mb-2 opacity-50" />
@@ -960,7 +1054,7 @@ export default function PipelineClient() {
               return (
                 <div key={lead.id}
                   className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition cursor-pointer"
-                  onClick={() => { setSelectedLead(lead); if (lead.ghl_contact_id) loadConversation(lead.id); }}
+                  onClick={() => { setSelectedLead(lead); if (lead.ghl_contact_id) loadConversation(lead.id); loadLeadFollowUps(lead.id); }}
                 >
                   <div className="flex items-start justify-between mb-2">
                     <div className="min-w-0">
@@ -986,13 +1080,20 @@ export default function PipelineClient() {
                       {sentChannels.includes('sms') && <span className="text-[9px] font-medium bg-green-100 text-green-700 px-1.5 py-0.5 rounded">📱 SMS</span>}
                     </div>
                   )}
-                  <div className="flex items-center gap-1.5 pt-2 mt-2 border-t border-gray-100 text-[10px]">
+                  <div className="flex items-center gap-1.5 pt-2 mt-2 border-t border-gray-100 text-[10px] flex-wrap">
                     {['replied', 'interested'].includes(lead.stage) && (
                       <span className="font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded flex items-center gap-1">
                         <Bot className="h-2.5 w-2.5" /> AI Closing
                       </span>
                     )}
-                    {lead.stage === 'messaged' && lead.messaged_at && <span className="text-gray-400">Sent {timeAgo(lead.messaged_at)}</span>}
+                    {lead.stage === 'messaged' && lead.messaged_at && (
+                      <>
+                        <span className="text-gray-400">Sent {timeAgo(lead.messaged_at)}</span>
+                        <span className="text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                          <RefreshCw className="h-2.5 w-2.5" /> Follow-ups active
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
               );
@@ -1061,6 +1162,64 @@ export default function PipelineClient() {
                     <Button onClick={sendManualMessage} disabled={sendingMsg || !manualMsg.trim()} className="bg-indigo-600 text-white px-3">
                       {sendingMsg ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                     </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Follow-Up Timeline */}
+              {leadFollowUps.length > 0 && (
+                <div>
+                  <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <RefreshCw className="h-3.5 w-3.5" /> Follow-Up Sequence
+                  </h3>
+                  <div className="space-y-2">
+                    {leadFollowUps.map((fu) => (
+                      <div key={fu.id} className={`flex items-start gap-3 p-2.5 rounded-lg border ${
+                        fu.status === 'sent' ? 'bg-green-50 border-green-200' :
+                        fu.status === 'pending' ? 'bg-amber-50 border-amber-200' :
+                        fu.status === 'cancelled' ? 'bg-gray-50 border-gray-200 opacity-60' :
+                        fu.status === 'failed' ? 'bg-red-50 border-red-200' :
+                        'bg-blue-50 border-blue-200'
+                      }`}>
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
+                          fu.status === 'sent' ? 'bg-green-200 text-green-800' :
+                          fu.status === 'pending' ? 'bg-amber-200 text-amber-800' :
+                          fu.status === 'cancelled' ? 'bg-gray-200 text-gray-600' :
+                          fu.status === 'failed' ? 'bg-red-200 text-red-800' :
+                          'bg-blue-200 text-blue-800'
+                        }`}>
+                          {fu.follow_up_number}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <span className="text-xs font-medium text-gray-900">
+                              Follow-up #{fu.follow_up_number} via {fu.channel.toUpperCase()}
+                            </span>
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                              fu.status === 'sent' ? 'bg-green-200 text-green-800' :
+                              fu.status === 'pending' ? 'bg-amber-200 text-amber-800' :
+                              fu.status === 'cancelled' ? 'bg-gray-200 text-gray-600' :
+                              fu.status === 'failed' ? 'bg-red-200 text-red-800' :
+                              'bg-blue-200 text-blue-800'
+                            }`}>
+                              {fu.status === 'sent' ? '✅ SENT' :
+                               fu.status === 'pending' ? '⏳ SCHEDULED' :
+                               fu.status === 'cancelled' ? '🚫 CANCELLED' :
+                               fu.status === 'failed' ? '❌ FAILED' :
+                               fu.status.toUpperCase()}
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-gray-500">
+                            {fu.status === 'sent' && fu.sent_at ? `Sent ${new Date(fu.sent_at).toLocaleDateString()} at ${new Date(fu.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` :
+                             fu.status === 'pending' ? `Scheduled for ${new Date(fu.scheduled_at).toLocaleDateString()} at ${new Date(fu.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` :
+                             fu.status === 'cancelled' ? 'Lead replied — follow-up cancelled' : ''}
+                          </p>
+                          {fu.status === 'sent' && fu.message && (
+                            <p className="text-xs text-gray-700 mt-1 line-clamp-2 italic">&ldquo;{fu.message.slice(0, 150)}{fu.message.length > 150 ? '...' : ''}&rdquo;</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
