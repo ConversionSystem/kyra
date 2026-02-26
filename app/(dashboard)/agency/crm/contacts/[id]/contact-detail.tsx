@@ -24,6 +24,13 @@ export function ContactDetailView() {
   const [saving, setSaving] = useState(false);
   const [noteText, setNoteText] = useState('');
   const [addingNote, setAddingNote] = useState(false);
+  const [showSend, setShowSend] = useState(false);
+  const [sendChannel, setSendChannel] = useState<'sms' | 'email'>('sms');
+  const [sendMessage, setSendMessage] = useState('');
+  const [sendSubject, setSendSubject] = useState('');
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState('');
+  const [sendSuccess, setSendSuccess] = useState('');
 
   const fetchContact = useCallback(async () => {
     const res = await fetch(`/api/agency/crm/contacts/${contactId}`);
@@ -73,6 +80,36 @@ export function ContactDetailView() {
     setNoteText('');
     setAddingNote(false);
     fetchContact();
+  };
+
+  const handleSend = async () => {
+    if (!sendMessage.trim()) return;
+    setSending(true);
+    setSendError('');
+    setSendSuccess('');
+
+    const res = await fetch(`/api/agency/crm/contacts/${contactId}/send`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        channel: sendChannel,
+        message: sendMessage.trim(),
+        subject: sendChannel === 'email' ? sendSubject || undefined : undefined,
+      }),
+    });
+
+    if (res.ok) {
+      setSendSuccess(`${sendChannel === 'sms' ? 'SMS' : 'Email'} sent!`);
+      setSendMessage('');
+      setSendSubject('');
+      setShowSend(false);
+      fetchContact();
+      setTimeout(() => setSendSuccess(''), 3000);
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setSendError(data.error || 'Send failed');
+    }
+    setSending(false);
   };
 
   if (loading) {
@@ -164,6 +201,10 @@ export function ContactDetailView() {
           </div>
 
           <div className="flex gap-2 shrink-0">
+            <Button size="sm" variant="outline" onClick={() => setShowSend(!showSend)}
+              className="text-indigo-600 border-indigo-200 hover:bg-indigo-50">
+              <MessageSquare className="h-4 w-4 mr-1" /> Send
+            </Button>
             <Button size="sm" variant="outline" onClick={() => {
               setEditing(!editing);
               if (!editing) {
@@ -232,6 +273,61 @@ export function ContactDetailView() {
           </div>
         )}
       </div>
+
+      {/* Send Message Panel */}
+      {showSend && (
+        <div className="bg-white border border-indigo-200 rounded-2xl p-5">
+          <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <MessageSquare className="h-4 w-4 text-indigo-600" /> Send Message
+          </h3>
+          <div className="flex gap-2 mb-3">
+            <button
+              onClick={() => setSendChannel('sms')}
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition ${
+                sendChannel === 'sms' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'
+              }`}
+            >
+              📱 SMS
+            </button>
+            <button
+              onClick={() => setSendChannel('email')}
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition ${
+                sendChannel === 'email' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'
+              }`}
+            >
+              ✉️ Email
+            </button>
+          </div>
+          {sendChannel === 'email' && (
+            <input
+              className="w-full border rounded-lg px-3 py-2 text-sm mb-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              placeholder="Subject"
+              value={sendSubject}
+              onChange={e => setSendSubject(e.target.value)}
+            />
+          )}
+          <textarea
+            className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-none"
+            rows={3}
+            placeholder={sendChannel === 'sms' ? `SMS to ${contact.phone || 'no phone'}...` : `Email to ${contact.email || 'no email'}...`}
+            value={sendMessage}
+            onChange={e => setSendMessage(e.target.value)}
+          />
+          {sendError && <p className="text-sm text-red-600 mt-1">{sendError}</p>}
+          {sendSuccess && <p className="text-sm text-green-600 mt-1">{sendSuccess}</p>}
+          <div className="flex justify-end gap-2 mt-2">
+            <Button size="sm" variant="outline" onClick={() => setShowSend(false)}>Cancel</Button>
+            <Button
+              size="sm"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white"
+              onClick={handleSend}
+              disabled={sending || !sendMessage.trim()}
+            >
+              {sending ? 'Sending...' : `Send ${sendChannel === 'sms' ? 'SMS' : 'Email'}`}
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Two column: Timeline + Quick Info */}
       <div className="grid grid-cols-3 gap-6">
