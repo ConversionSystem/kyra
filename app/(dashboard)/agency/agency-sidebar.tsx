@@ -16,6 +16,7 @@ import {
   Inbox,
   Building2 as Building2Icon,
   Contact as ContactIcon,
+  Target as TargetIcon,
   Settings,
   Terminal,
   ExternalLink,
@@ -69,6 +70,7 @@ const navSections: NavSection[] = [
       { label: 'Command Feed', href: '/agency/crm', icon: Inbox },
       { label: 'Contacts', href: '/agency/crm/contacts', icon: ContactIcon },
       { label: 'Companies', href: '/agency/crm/companies', icon: Building2Icon },
+      { label: 'Deals', href: '/agency/crm/deals', icon: TargetIcon },
     ],
   },
   {
