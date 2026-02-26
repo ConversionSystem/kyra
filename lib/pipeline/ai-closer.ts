@@ -26,6 +26,7 @@ import { resolveCloserContainer } from '@/lib/pipeline/soul-injector';
 import { getGhlIntegration } from '@/lib/pipeline/crm-sync';
 import { logAndFire } from '@/lib/pipeline/webhooks';
 import { syncLeadToCrm } from '@/lib/pipeline/crm-sync';
+import { requireCredits, deductCredits } from '@/lib/billing/credit-engine';
 
 const GHL_API = 'https://services.leadconnectorhq.com';
 const GHL_VERSION = '2021-04-15';
@@ -142,6 +143,13 @@ export async function handleCloserReply(
     inboundChannel,
   };
 
+  // ── Credit check before generating response ─────────────────────────────
+  const creditCheck = await requireCredits(lead.agency_id, 'pipeline.closer_response');
+  if (!creditCheck.allowed) {
+    console.warn(`[ai-closer] Insufficient credits for agency ${lead.agency_id} (${creditCheck.balance} remaining)`);
+    return { response: '', sentViaGhl: false, stageUpdate: null, poweredBy: 'direct-llm', error: 'Insufficient credits' };
+  }
+
   // ── 3. Route to correct OpenClaw container ──────────────────────────────
   //
   // resolveCloserContainer() finds the RIGHT container:
@@ -198,7 +206,12 @@ export async function handleCloserReply(
 
   const stageUpdate = await analyzeAndUpdateStage(svc, lead as LeadRecord, campaign, aiResponse, inboundMessage);
 
-  // ── 6. Log the closer activity ──────────────────────────────────────────
+  // ── 6. Deduct credit ─────────────────────────────────────────────────────
+  await deductCredits(lead.agency_id, 'pipeline.closer_response', {
+    description: `AI Closer reply to ${lead.full_name || 'lead'} (${lead.company || '?'})`,
+  });
+
+  // ── 7. Log the closer activity ──────────────────────────────────────────
 
   await svc.from('pipeline_activity_log').insert({
     agency_id: lead.agency_id,

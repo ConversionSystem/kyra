@@ -10,7 +10,8 @@ import { getToolDefinitions, executeToolCall } from '@/lib/tools/definitions';
 import { buildSkillsPrompt } from '@/lib/skills/registry';
 import { generateConversationTitle } from '@/lib/utils';
 import { Message, Conversation, MemoryType, User } from '@/types';
-import { getPlanLimit, isWithinLimit, getCreditCost, classifyChatAction, Plan } from '@/lib/billing/plans';
+import { Plan } from '@/lib/billing/plans';
+import { getAgencyCredits, deductCredits, type CreditAction } from '@/lib/billing/credit-engine';
 import { processMessageForGraph } from '@/lib/memory/graph';
 import { resolveModelPreference } from '@/lib/ai/model-router';
 import { v4 as uuid } from 'uuid';
@@ -84,25 +85,37 @@ export async function POST(request: NextRequest) {
       user.usage_this_month = 0;
     }
 
-    // Check usage limits (credits-based)
+    // Look up agency for unified credit system
     const plan = (user.plan || 'free') as Plan;
-    const currentUsage = user.usage_this_month || 0;
-    const limit = getPlanLimit(plan);
+    const { data: agencyMember } = await serviceClient
+      .from('agency_members')
+      .select('agency_id')
+      .eq('user_id', user.id)
+      .single();
+    const agencyId = agencyMember?.agency_id;
 
-    if (!isWithinLimit(plan, currentUsage)) {
-      return new Response(
-        JSON.stringify({
-          error: 'Credit limit exceeded',
-          message: `You've used all ${limit} credits for this month. Upgrade your plan for more.`,
-          usage: currentUsage,
-          limit,
-          plan,
-        }),
-        { 
-          status: 429,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
+    // Check credits via unified agency_credits system
+    let currentUsage = 0;
+    let limit = 999999; // No hard limit — credits are balance-based
+    if (agencyId) {
+      const credits = await getAgencyCredits(agencyId);
+      currentUsage = credits.lifetimeUsed;
+      limit = credits.balance + credits.lifetimeUsed; // total capacity
+
+      if (credits.balance <= 0) {
+        return new Response(
+          JSON.stringify({
+            error: 'Insufficient credits',
+            message: 'You\'ve used all your credits. Add more credits to continue chatting.',
+            balance: credits.balance,
+            buyUrl: '/agency/credits',
+          }),
+          {
+            status: 402,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        );
+      }
     }
 
     const { message, conversation_id, image_url, file_ids } = (await request.json()) as any;
@@ -336,19 +349,21 @@ export async function POST(request: NextRequest) {
     const hasFileAnalysis = /\b(analyze|analyse|review|summarize|summarise)\b.*\b(file|document|pdf)\b/i.test(message);
     const hasImageAnalysis = !!image_url;
     const hasDeepResearch = /\b(deep research|in-depth research|thorough research|research report)\b/i.test(message);
-    const creditAction = classifyChatAction({
-      hasWebSearch: hasWebSearch || hasUrls || hasToolSkills,
-      hasSubAgent: hasDeepResearch,
-      hasFileAnalysis,
-      hasImageAnalysis,
-    });
-    const creditCost = getCreditCost(creditAction);
 
-    // Deduct credits
-    await serviceClient
-      .from('users')
-      .update({ usage_this_month: currentUsage + creditCost })
-      .eq('id', authUser.id);
+    // Map to unified credit action
+    let creditAction: CreditAction = 'chat.message';
+    if (hasDeepResearch) creditAction = 'chat.deep_research';
+    else if (hasImageAnalysis) creditAction = 'chat.image_analysis';
+    else if (hasFileAnalysis) creditAction = 'chat.file_analysis';
+    else if (hasWebSearch || hasUrls || hasToolSkills) creditAction = 'chat.web_search';
+    const creditCost = 1; // Will be determined by deductCredits
+
+    // Deduct credits via unified engine
+    if (agencyId) {
+      await deductCredits(agencyId, creditAction, {
+        description: `Chat: ${message.slice(0, 80)}`,
+      });
+    }
 
     // Create readable stream for response
     const encoder = new TextEncoder();
