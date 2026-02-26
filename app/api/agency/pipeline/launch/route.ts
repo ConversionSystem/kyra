@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { logAndFire } from '@/lib/pipeline/webhooks';
 import { getGhlIntegration, syncLeadToCrm } from '@/lib/pipeline/crm-sync';
+import { injectCampaignContext } from '@/lib/pipeline/soul-injector';
 
 const GHL_API = 'https://services.leadconnectorhq.com';
 const GHL_VERSION = '2021-04-15';
@@ -216,6 +217,24 @@ export async function POST(req: NextRequest) {
     await svc.from('pipeline_campaigns').update({
       leads_messaged: (camp?.leads_messaged ?? 0) + sent,
     }).eq('id', leads[0].campaign_id);
+
+    // ── Inject campaign context into OpenClaw container ──────────────────
+    // This writes SOUL.md + CAMPAIGN.md to the agent's workspace so the
+    // AI Closer has full context when leads reply. Non-blocking.
+    injectCampaignContext(agencyId, leads[0].campaign_id)
+      .then((result) => {
+        if (result.ok) {
+          console.log(
+            `[launch] Campaign context injected into container ${result.clientId} — ` +
+            `${result.filesWritten?.join(', ')}`,
+          );
+        } else {
+          console.warn(`[launch] Campaign context injection failed: ${result.error}`);
+        }
+      })
+      .catch((err) => {
+        console.error('[launch] Campaign context injection error:', err);
+      });
   }
 
   return NextResponse.json({
