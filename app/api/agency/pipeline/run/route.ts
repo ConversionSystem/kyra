@@ -24,6 +24,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { logAndFire } from '@/lib/pipeline/webhooks';
 import { findLeads, parseCsv, type LeadSourceType, type CsvLeadRow } from '@/lib/pipeline/lead-sources';
+import { requireCredits, deductCredits } from '@/lib/billing/credit-engine';
 
 async function getAgencyId(userId: string): Promise<string | null> {
   const svc = createServiceClientWithoutCookies();
@@ -67,6 +68,19 @@ export async function POST(req: NextRequest) {
 
   if (!openaiKey && lead_source === 'ai_discovery') {
     return NextResponse.json({ error: 'OpenAI API key not configured' }, { status: 500 });
+  }
+
+  // ── Pre-flight credit check ──────────────────────────────────────────────
+  const creditCheck = await requireCredits(agencyId, 'pipeline.find_leads');
+  if (!creditCheck.allowed) {
+    return NextResponse.json({
+      error: 'Insufficient credits',
+      balance: creditCheck.balance,
+      cost: creditCheck.cost,
+      shortfall: creditCheck.shortfall,
+      message: `This campaign requires ${creditCheck.cost} credits but you have ${creditCheck.balance}. Add credits to continue.`,
+      buyUrl: '/agency/credits',
+    }, { status: 402 });
   }
 
   // Parse CSV if provided
@@ -143,6 +157,11 @@ export async function POST(req: NextRequest) {
           send('error', { step: 2, error: result.warning || 'No leads found. Try a different location or industry.' });
           controller.close(); return;
         }
+
+        // ═══ DEDUCT CREDITS ═══
+        await deductCredits(agencyId, 'pipeline.find_leads', {
+          description: `Find leads: "${name}" (${result.leads.length} leads via ${result.source})`,
+        });
 
         // ═══ STEP 3: INSERT LEADS INTO DB ═══
         const leadsToInsert = result.leads.map(lead => ({
