@@ -16,6 +16,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { logAndFire } from '@/lib/pipeline/webhooks';
 
 async function getAgencyId(userId: string): Promise<string | null> {
   const svc = createServiceClientWithoutCookies();
@@ -190,11 +191,17 @@ export async function POST(req: NextRequest) {
 
   const { data: leads } = await svc
     .from('pipeline_leads')
-    .select('*, pipeline_campaigns!inner(value_prop, target_pain_points, name)')
+    .select('*, pipeline_campaigns!inner(id, value_prop, target_pain_points, name)')
     .in('id', lead_ids)
     .eq('agency_id', agencyId);
 
   if (!leads?.length) return NextResponse.json({ error: 'No leads found' }, { status: 404 });
+
+  // Stage gate: only approved leads can be researched
+  const invalidLeads = leads.filter((l: Record<string, unknown>) => l.stage !== 'approved' && l.stage !== 'found');
+  if (invalidLeads.length === leads.length) {
+    return NextResponse.json({ error: 'All leads must be in "approved" or "found" stage to be researched' }, { status: 400 });
+  }
 
   const results: Array<{
     id: string;
@@ -390,6 +397,30 @@ Return JSON:
       }
 
       await svc.from('pipeline_leads').update(updateData).eq('id', lead.id);
+
+      // Fire lead.researched webhook
+      const campaignInfo = (lead as Record<string, unknown>).pipeline_campaigns as { id: string; name: string };
+      await logAndFire(
+        agencyId,
+        'lead.researched',
+        { id: campaignInfo.id, name: campaignInfo.name },
+        {
+          id: lead.id,
+          full_name: hasRealPerson ? `${firstName} ${lastName}`.trim() : lead.full_name,
+          company: lead.company,
+          email: bestEmail || null,
+          phone: bestPhone || null,
+          website: lead.website,
+          industry: lead.industry,
+          location: lead.location,
+          stage: 'researched',
+          previous_stage: lead.stage,
+          personalized_subject: parsed.personalized_subject || null,
+          personalized_email: parsed.personalized_email || null,
+          personalized_opener: parsed.personalized_opener || null,
+        },
+        'system',
+      );
 
       results.push({
         id: lead.id,
