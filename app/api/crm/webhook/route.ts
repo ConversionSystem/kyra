@@ -21,6 +21,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { getGatewayByClientId } from '@/lib/ovh/gateway-resolver';
+import { logAndFire } from '@/lib/pipeline/webhooks';
+import { syncLeadToCrm } from '@/lib/pipeline/crm-sync';
 import type { GHLWebhookPayload, GHLWebhookEventType } from '@/lib/ghl/types';
 
 // Events that should be forwarded to the AI container
@@ -94,6 +96,17 @@ export async function POST(request: NextRequest) {
   } catch (logError) {
     // Non-fatal — don't block webhook processing
     console.error('[ghl/webhook] Failed to log event:', logError);
+  }
+
+  // ── Pipeline inbound reply handler ─────────────────────────────────────
+  // When a lead replies to outreach via GHL, auto-update pipeline:
+  // messaged → replied, fire webhooks, trigger CRM sync
+  if (type === 'InboundMessage' && payload.contactId) {
+    try {
+      await handlePipelineInboundReply(payload, locationId);
+    } catch (err) {
+      console.error('[ghl/webhook] Pipeline inbound handler error:', err);
+    }
   }
 
   // ── Forward to the client's OpenClaw container ────────────────────────
@@ -209,4 +222,157 @@ async function forwardToContainer(
     const text = await res.text().catch(() => '');
     throw new Error(`Worker returned ${res.status}: ${text}`);
   }
+}
+
+// ── Pipeline Inbound Reply Handler ────────────────────────────────────────────
+//
+// When a GHL contact replies (InboundMessage), check if they're a pipeline lead.
+// If so: messaged → replied, fire webhooks, sync CRM, log activity.
+// This is what makes the AI Closer truly autonomous.
+
+async function handlePipelineInboundReply(
+  payload: GHLWebhookPayload,
+  locationId: string,
+): Promise<void> {
+  const contactId = payload.contactId;
+  if (!contactId) return;
+
+  const supabase = createServiceClientWithoutCookies();
+
+  // Find pipeline lead(s) with this GHL contact ID that are in "messaged" stage
+  const { data: leads } = await supabase
+    .from('pipeline_leads')
+    .select('*, pipeline_campaigns!inner(id, name)')
+    .eq('ghl_contact_id', contactId)
+    .eq('stage', 'messaged');
+
+  if (!leads?.length) {
+    // Also check by phone/email match if no direct contact ID match
+    const phone = payload.phone;
+    const email = payload.email;
+
+    let fallbackLeads = null;
+    if (phone) {
+      const { data } = await supabase
+        .from('pipeline_leads')
+        .select('*, pipeline_campaigns!inner(id, name)')
+        .eq('phone', phone)
+        .eq('stage', 'messaged');
+      fallbackLeads = data;
+    }
+    if (!fallbackLeads?.length && email) {
+      const { data } = await supabase
+        .from('pipeline_leads')
+        .select('*, pipeline_campaigns!inner(id, name)')
+        .eq('email', email)
+        .eq('stage', 'messaged');
+      fallbackLeads = data;
+    }
+
+    if (!fallbackLeads?.length) return; // Not a pipeline lead
+
+    // Process fallback matches
+    for (const lead of fallbackLeads) {
+      await promotePipelineLead(supabase, lead, contactId, payload);
+    }
+    return;
+  }
+
+  // Process direct matches
+  for (const lead of leads) {
+    await promotePipelineLead(supabase, lead, contactId, payload);
+  }
+}
+
+async function promotePipelineLead(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  lead: any,
+  contactId: string,
+  payload: GHLWebhookPayload,
+): Promise<void> {
+  const campaign = lead.pipeline_campaigns as { id: string; name: string };
+  const previousStage = lead.stage;
+
+  // Update lead: messaged → replied
+  const { error: updateErr } = await supabase
+    .from('pipeline_leads')
+    .update({
+      stage: 'replied',
+      replied_at: new Date().toISOString(),
+      ghl_contact_id: contactId, // Ensure contact ID is linked
+    })
+    .eq('id', lead.id);
+
+  if (updateErr) {
+    console.error(`[pipeline/inbound] Failed to update lead ${lead.id}:`, updateErr);
+    return;
+  }
+
+  console.log(`[pipeline/inbound] Lead ${lead.id} (${lead.company || lead.full_name}) moved messaged → replied`);
+
+  // Store the reply message in enrichment_data
+  if (payload.body) {
+    const enrichment = (lead.enrichment_data || {}) as Record<string, unknown>;
+    await supabase
+      .from('pipeline_leads')
+      .update({
+        enrichment_data: {
+          ...enrichment,
+          last_reply: payload.body,
+          last_reply_at: new Date().toISOString(),
+          reply_channel: payload.messageType || 'unknown',
+        },
+      })
+      .eq('id', lead.id);
+  }
+
+  // Fire webhook: lead.replied
+  const leadPayload = {
+    id: lead.id,
+    full_name: lead.full_name,
+    company: lead.company,
+    email: lead.email,
+    phone: lead.phone,
+    website: lead.website,
+    industry: lead.industry,
+    location: lead.location,
+    stage: 'replied',
+    previous_stage: previousStage,
+    personalized_subject: lead.personalized_subject,
+    personalized_email: lead.personalized_email,
+    personalized_opener: lead.personalized_opener,
+    ghl_contact_id: contactId,
+  };
+
+  await logAndFire(
+    lead.agency_id,
+    'lead.replied',
+    { id: campaign.id, name: campaign.name },
+    leadPayload,
+    'system',
+    { reply_body: payload.body, reply_channel: payload.messageType },
+  );
+
+  // Sync to CRM (tags, pipeline stage move)
+  syncLeadToCrm(lead.agency_id, {
+    ...leadPayload,
+    first_name: lead.first_name,
+    last_name: lead.last_name,
+    title: lead.title,
+    campaign_id: campaign.id,
+    campaign_name: campaign.name,
+    enrichment_data: lead.enrichment_data,
+  }).catch(err => console.error('[pipeline/inbound] CRM sync error:', err));
+
+  // Update campaign reply count
+  await supabase.rpc('increment_campaign_replies', { campaign_id: campaign.id }).catch(() => {
+    // Fallback: direct update if RPC doesn't exist
+    supabase
+      .from('pipeline_campaigns')
+      .update({ leads_replied: (lead.leads_replied || 0) + 1 })
+      .eq('id', campaign.id)
+      .then(() => {}, () => {});
+  });
 }
