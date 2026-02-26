@@ -13,6 +13,9 @@ import {
   BarChart3,
   Radio,
   KeyRound,
+  Inbox,
+  Building2 as Building2Icon,
+  Contact as ContactIcon,
   Settings,
   Terminal,
   ExternalLink,
@@ -58,6 +61,14 @@ const navSections: NavSection[] = [
       { label: 'Overview', href: '/agency', icon: LayoutDashboard },
       { label: 'Clients', href: '/agency/clients', icon: Users },
       { label: 'Conversations', href: '/agency/conversations', icon: MessageSquare },
+    ],
+  },
+  {
+    label: 'CRM',
+    items: [
+      { label: 'Command Feed', href: '/agency/crm', icon: Inbox },
+      { label: 'Contacts', href: '/agency/crm/contacts', icon: ContactIcon },
+      { label: 'Companies', href: '/agency/crm/companies', icon: Building2Icon },
     ],
   },
   {
