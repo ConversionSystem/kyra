@@ -5,10 +5,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { logAndFire } from '@/lib/pipeline/webhooks';
+import { getGhlIntegration, syncLeadToCrm } from '@/lib/pipeline/crm-sync';
 
 const GHL_API = 'https://services.leadconnectorhq.com';
 const GHL_VERSION = '2021-04-15';
-const OUTREACH_LOCATION_ID = 'y1BFVhXMDNUPlbPxEpSA';
 
 async function getAgencyId(userId: string): Promise<string | null> {
   const svc = createServiceClientWithoutCookies();
@@ -29,21 +29,36 @@ export async function POST(req: NextRequest) {
 
   const svc = createServiceClientWithoutCookies();
 
-  // Get GHL token from Token 2 (outreach location)
-  const { data: ghlClient } = await svc
-    .from('agency_clients')
-    .select('ghl_private_token, ghl_location_id')
-    .eq('ghl_location_id', OUTREACH_LOCATION_ID)
-    .not('ghl_private_token', 'is', null)
-    .limit(1)
-    .single();
+  // Get GHL token from agency's native integration (or fall back to legacy client token)
+  const ghlIntegration = await getGhlIntegration(agencyId);
 
-  if (!ghlClient?.ghl_private_token) {
-    return NextResponse.json({ error: 'GHL Token 2 not found. Connect GHL in the dashboard first.' }, { status: 500 });
+  let token: string | null = null;
+  let locationId: string | null = null;
+
+  if (ghlIntegration?.access_token && ghlIntegration?.location_id) {
+    // Use native pipeline integration (per-agency)
+    token = ghlIntegration.access_token;
+    locationId = ghlIntegration.location_id;
+  } else {
+    // Legacy fallback: look for any agency_client with a GHL token
+    const { data: ghlClient } = await svc
+      .from('agency_clients')
+      .select('ghl_private_token, ghl_location_id')
+      .eq('agency_id', agencyId)
+      .not('ghl_private_token', 'is', null)
+      .not('ghl_location_id', 'is', null)
+      .limit(1)
+      .single();
+
+    token = (ghlClient?.ghl_private_token as string) || null;
+    locationId = (ghlClient?.ghl_location_id as string) || null;
   }
 
-  const token = ghlClient.ghl_private_token as string;
-  const locationId = OUTREACH_LOCATION_ID;
+  if (!token || !locationId) {
+    return NextResponse.json({
+      error: 'GHL not connected. Go to Pipeline → Integrations → Connect GoHighLevel to send outreach.',
+    }, { status: 400 });
+  }
 
   // Fetch leads — only approved or researched leads can be sent
   const { data: leads } = await svc
