@@ -1,12 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Target, Webhook } from 'lucide-react';
+import { Target, Zap } from 'lucide-react';
 import PipelineClient from './pipeline-client';
-import WebhookSettings from './webhook-settings';
+import IntegrationsPage from './integrations-page';
 
 export default function PipelinePage() {
-  const [tab, setTab] = useState<'pipeline' | 'webhooks'>('pipeline');
+  const [tab, setTab] = useState<'pipeline' | 'integrations'>('pipeline');
 
   return (
     <div>
@@ -15,24 +15,24 @@ export default function PipelinePage() {
         <button
           onClick={() => setTab('pipeline')}
           className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition ${
-            tab === 'pipeline' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'text-gray-500 hover:bg-gray-50'
+            tab === 'pipeline' ? 'bg-primary/10 text-primary border border-primary/20' : 'text-gray-500 hover:bg-gray-50'
           }`}
         >
           <Target className="h-4 w-4" /> Pipeline
         </button>
         <button
-          onClick={() => setTab('webhooks')}
+          onClick={() => setTab('integrations')}
           className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition ${
-            tab === 'webhooks' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'text-gray-500 hover:bg-gray-50'
+            tab === 'integrations' ? 'bg-primary/10 text-primary border border-primary/20' : 'text-gray-500 hover:bg-gray-50'
           }`}
         >
-          <Webhook className="h-4 w-4" /> Integrations
+          <Zap className="h-4 w-4" /> Integrations
         </button>
       </div>
 
       {tab === 'pipeline' ? <PipelineClient /> : (
-        <div className="p-4 sm:p-6 md:p-8 max-w-4xl">
-          <WebhookSettings />
+        <div className="p-4 sm:p-6 md:p-8 max-w-5xl">
+          <IntegrationsPage />
         </div>
       )}
     </div>
