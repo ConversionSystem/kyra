@@ -9,6 +9,7 @@ import {
   Rocket, Eye, Clock, Check, Edit3, ArrowRight,
   Settings, Webhook, AlertTriangle, ChevronDown, Trash2,
   UserCheck, XCircle, FileEdit, Play, Square,
+  Map, Upload, Star, Cpu,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -98,6 +99,9 @@ export default function PipelineClient() {
   const [form, setForm] = useState({
     name: '', target_industry: '', target_role: 'Owner', target_company_size: '11-50',
     target_location: '', target_pain_points: '', value_prop: '', lead_count: 10,
+    lead_source: 'google_maps' as 'google_maps' | 'ai_discovery' | 'csv_upload',
+    csv_data: '',
+    enrich_model: 'gpt-4o',
   });
 
   // ─── Load data ──────────────────────────────────────────────────────────────
@@ -156,7 +160,12 @@ export default function PipelineClient() {
       const res = await fetch('/api/agency/pipeline/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          lead_source: form.lead_source,
+          csv_data: form.lead_source === 'csv_upload' ? form.csv_data : undefined,
+          enrich_model: form.enrich_model,
+        }),
       });
 
       if (!res.ok || !res.body) {
@@ -384,59 +393,137 @@ export default function PipelineClient() {
           <h2 className="text-lg font-bold flex items-center gap-2 mb-1">
             <Rocket className="h-5 w-5 text-indigo-500" /> Create Campaign
           </h2>
-          <p className="text-xs text-gray-500 mb-5">AI will find real businesses. You review them before anything is sent.</p>
+          <p className="text-xs text-gray-500 mb-5">Find real businesses, review them, then let AI handle outreach.</p>
 
           <div className="space-y-3">
             <div>
               <label className="text-xs font-medium text-gray-600 mb-1 block">Campaign name *</label>
               <input className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="e.g. Cannabis Dispensaries — Los Angeles" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-medium text-gray-600 mb-1 block">Industry *</label>
-                <input className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="e.g. Cannabis Dispensaries" value={form.target_industry} onChange={e => setForm(f => ({ ...f, target_industry: e.target.value }))} />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-gray-600 mb-1 block">Location *</label>
-                <input className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="e.g. Los Angeles, CA" value={form.target_location} onChange={e => setForm(f => ({ ...f, target_location: e.target.value }))} />
+
+            {/* ═══ LEAD SOURCE SELECTOR ═══ */}
+            <div>
+              <label className="text-xs font-medium text-gray-600 mb-2 block">Where to find leads</label>
+              <div className="grid grid-cols-3 gap-2">
+                {([
+                  { key: 'google_maps', icon: Map, label: 'Google Maps', desc: 'Real businesses, verified data', badge: 'Recommended', badgeColor: 'bg-green-100 text-green-700' },
+                  { key: 'ai_discovery', icon: Cpu, label: 'AI Discovery', desc: 'AI-generated, may need verification', badge: 'Free', badgeColor: 'bg-blue-100 text-blue-700' },
+                  { key: 'csv_upload', icon: Upload, label: 'Upload CSV', desc: 'Your own lead list', badge: 'Custom', badgeColor: 'bg-purple-100 text-purple-700' },
+                ] as const).map(({ key, icon: Icon, label, desc, badge, badgeColor }) => (
+                  <button key={key} onClick={() => setForm(f => ({ ...f, lead_source: key }))}
+                    className={`text-left p-3 rounded-xl border-2 transition ${
+                      form.lead_source === key
+                        ? 'border-indigo-500 bg-indigo-50 ring-1 ring-indigo-200'
+                        : 'border-gray-200 hover:border-gray-300 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <Icon className={`h-4 w-4 ${form.lead_source === key ? 'text-indigo-600' : 'text-gray-400'}`} />
+                      <span className="text-xs font-semibold text-gray-900">{label}</span>
+                    </div>
+                    <p className="text-[10px] text-gray-500 leading-tight">{desc}</p>
+                    <span className={`inline-block text-[9px] font-bold px-1.5 py-0.5 rounded mt-1 ${badgeColor}`}>{badge}</span>
+                  </button>
+                ))}
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+
+            {/* Google Maps & AI Discovery fields */}
+            {form.lead_source !== 'csv_upload' && (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-medium text-gray-600 mb-1 block">Industry *</label>
+                    <input className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="e.g. Cannabis Dispensaries" value={form.target_industry} onChange={e => setForm(f => ({ ...f, target_industry: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-gray-600 mb-1 block">Location *</label>
+                    <input className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="e.g. Los Angeles, CA" value={form.target_location} onChange={e => setForm(f => ({ ...f, target_location: e.target.value }))} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-medium text-gray-600 mb-1 block">Target role</label>
+                    <input className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="e.g. Owner, CEO" value={form.target_role} onChange={e => setForm(f => ({ ...f, target_role: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-gray-600 mb-1 block">Company size</label>
+                    <select className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" value={form.target_company_size} onChange={e => setForm(f => ({ ...f, target_company_size: e.target.value }))}>
+                      <option value="1-10">1-10 employees</option>
+                      <option value="11-50">11-50 employees</option>
+                      <option value="51-200">51-200 employees</option>
+                      <option value="200+">200+ employees</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">How many leads to find</label>
+                  <select className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" value={form.lead_count} onChange={e => setForm(f => ({ ...f, lead_count: Number(e.target.value) }))}>
+                    <option value={5}>5 leads</option>
+                    <option value={10}>10 leads</option>
+                    <option value={25}>25 leads</option>
+                    <option value={50}>50 leads</option>
+                  </select>
+                </div>
+              </>
+            )}
+
+            {/* CSV Upload area */}
+            {form.lead_source === 'csv_upload' && (
               <div>
-                <label className="text-xs font-medium text-gray-600 mb-1 block">Target role</label>
-                <input className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="e.g. Owner, CEO" value={form.target_role} onChange={e => setForm(f => ({ ...f, target_role: e.target.value }))} />
+                <label className="text-xs font-medium text-gray-600 mb-1 block">Paste your CSV data</label>
+                <textarea
+                  className="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-indigo-500 focus:outline-none min-h-[120px]"
+                  placeholder={`company,website,phone,email,industry,location\nSweet Flower,sweetflower.com,310-555-1234,info@sweetflower.com,Cannabis,Los Angeles\nMedMen,medmen.com,323-555-5678,,Cannabis,Los Angeles`}
+                  value={form.csv_data}
+                  onChange={e => setForm(f => ({ ...f, csv_data: e.target.value }))}
+                />
+                <p className="text-[10px] text-gray-400 mt-1">
+                  Columns: company (required), website, phone, email, industry, location, full_name, title
+                </p>
               </div>
-              <div>
-                <label className="text-xs font-medium text-gray-600 mb-1 block">Company size</label>
-                <select className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" value={form.target_company_size} onChange={e => setForm(f => ({ ...f, target_company_size: e.target.value }))}>
-                  <option value="1-10">1-10 employees</option>
-                  <option value="11-50">11-50 employees</option>
-                  <option value="51-200">51-200 employees</option>
-                  <option value="200+">200+ employees</option>
-                </select>
-              </div>
-            </div>
+            )}
+
             <div>
               <label className="text-xs font-medium text-gray-600 mb-1 block">What you&apos;re selling (value prop)</label>
               <textarea className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none min-h-[60px]" placeholder="e.g. AI-powered customer service that handles 80% of inquiries automatically..." value={form.value_prop} onChange={e => setForm(f => ({ ...f, value_prop: e.target.value }))} />
             </div>
-            <div>
-              <label className="text-xs font-medium text-gray-600 mb-1 block">How many leads to find</label>
-              <select className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" value={form.lead_count} onChange={e => setForm(f => ({ ...f, lead_count: Number(e.target.value) }))}>
-                <option value={5}>5</option>
-                <option value={10}>10</option>
-                <option value={25}>25</option>
-              </select>
-            </div>
+
+            {/* ═══ ADVANCED: MODEL SELECTOR ═══ */}
+            <details className="group">
+              <summary className="text-xs font-medium text-gray-500 cursor-pointer hover:text-gray-700 flex items-center gap-1">
+                <Settings className="h-3 w-3" /> Advanced Settings
+                <ChevronDown className="h-3 w-3 group-open:rotate-180 transition-transform" />
+              </summary>
+              <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-100 space-y-2">
+                <div>
+                  <label className="text-[10px] font-bold text-gray-500 mb-1 block">AI MODEL FOR ENRICHMENT & EMAILS</label>
+                  <select className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white" value={form.enrich_model} onChange={e => setForm(f => ({ ...f, enrich_model: e.target.value }))}>
+                    <option value="gpt-4o">GPT-4o — Best quality (default)</option>
+                    <option value="gpt-4o-mini">GPT-4o Mini — Faster, cheaper</option>
+                    <option value="anthropic/claude-sonnet-4-20250514">Claude Sonnet — Strong reasoning (via OpenRouter)</option>
+                    <option value="google/gemini-2.0-flash-001">Gemini 2.0 Flash — Fast (via OpenRouter)</option>
+                  </select>
+                  <p className="text-[10px] text-gray-400 mt-1">This model writes your personalized emails and SMS messages.</p>
+                </div>
+              </div>
+            </details>
           </div>
 
-          <Button onClick={startRun} disabled={!form.name.trim() || !form.target_industry.trim() || isRunning}
+          <Button onClick={startRun} disabled={!form.name.trim() || (form.lead_source !== 'csv_upload' && !form.target_industry.trim()) || (form.lead_source === 'csv_upload' && !form.csv_data.trim()) || isRunning}
             className="w-full mt-6 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white py-3 text-base shadow-lg flex items-center justify-center gap-2"
           >
-            {isRunning ? <><Loader2 className="h-5 w-5 animate-spin" /> Finding leads...</> : <><Search className="h-5 w-5" /> Find Leads</>}
+            {isRunning ? <><Loader2 className="h-5 w-5 animate-spin" /> Finding leads...</>
+              : form.lead_source === 'google_maps' ? <><Map className="h-5 w-5" /> Search Google Maps</>
+              : form.lead_source === 'csv_upload' ? <><Upload className="h-5 w-5" /> Import Leads</>
+              : <><Search className="h-5 w-5" /> Discover Leads</>}
           </Button>
           <p className="text-[10px] text-gray-400 text-center mt-2">
-            AI will find → you review → you approve → AI researches → you review → you send
+            {form.lead_source === 'google_maps'
+              ? 'Real businesses from Google Maps → you review → AI writes personalized outreach → you approve → send'
+              : form.lead_source === 'csv_upload'
+                ? 'Your leads → AI enriches & writes personalized outreach → you review & approve → send'
+                : 'AI finds businesses → you review → AI writes outreach → you approve → send'}
           </p>
 
           {/* Live event feed */}
@@ -533,7 +620,7 @@ export default function PipelineClient() {
                       <div className="flex items-center gap-1.5 text-xs text-gray-600">
                         <Globe className="h-3 w-3 text-gray-400" />
                         <a href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`} target="_blank" rel="noopener"
-                          className="hover:underline text-indigo-600" onClick={e => e.stopPropagation()}>{lead.website}</a>
+                          className="hover:underline text-indigo-600 truncate" onClick={e => e.stopPropagation()}>{lead.website}</a>
                       </div>
                     )}
                     {lead.location && (
@@ -541,8 +628,38 @@ export default function PipelineClient() {
                         <MapPin className="h-3 w-3 text-gray-400" /> {lead.location}
                       </div>
                     )}
+                    {lead.phone && (
+                      <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                        <Phone className="h-3 w-3 text-green-500" /> {lead.phone}
+                      </div>
+                    )}
+                    {lead.email && (
+                      <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                        <Mail className="h-3 w-3 text-indigo-400" /> {lead.email}
+                      </div>
+                    )}
+                    {/* Google Maps data */}
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      {typeof ed.rating === 'number' && ed.rating > 0 && (
+                        <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">
+                          <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" /> {(ed.rating as number).toFixed(1)}
+                        </span>
+                      )}
+                      {typeof ed.reviews_count === 'number' && ed.reviews_count > 0 && (
+                        <span className="text-[10px] text-gray-400">{ed.reviews_count as number} reviews</span>
+                      )}
+                      {ed.source === 'google_maps' && (
+                        <span className="text-[9px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded">✓ Google Maps</span>
+                      )}
+                      {ed.source === 'csv_upload' && (
+                        <span className="text-[9px] font-bold text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded">📄 CSV</span>
+                      )}
+                    </div>
                     {typeof ed.why_qualified === 'string' && ed.why_qualified && (
                       <p className="text-xs text-indigo-600 italic mt-1">&ldquo;{ed.why_qualified}&rdquo;</p>
+                    )}
+                    {typeof ed.description === 'string' && ed.description && (
+                      <p className="text-[10px] text-gray-500 mt-1 line-clamp-2">{ed.description as string}</p>
                     )}
                   </div>
                   {/* Quick action buttons */}

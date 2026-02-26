@@ -4,10 +4,15 @@ export const maxDuration = 120;
 /**
  * POST /api/agency/pipeline/run
  * HUMAN-IN-THE-LOOP PIPELINE — Step 1 only.
- * 
+ *
  * Creates campaign → finds leads → STOPS.
  * Returns a stream of events so the UI shows real-time progress.
- * 
+ *
+ * Supports 3 lead sources:
+ *   - google_maps: Real businesses from Outscraper/Google Maps (default)
+ *   - ai_discovery: GPT-4o generated leads (legacy, may not be real)
+ *   - csv_upload: Agency's own lead list
+ *
  * After this, the human reviews leads in the UI and manually:
  * 1. Approves leads (found → approved)
  * 2. Triggers research (approved → researched)
@@ -18,11 +23,18 @@ export const maxDuration = 120;
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { logAndFire } from '@/lib/pipeline/webhooks';
+import { findLeads, parseCsv, type LeadSourceType, type CsvLeadRow } from '@/lib/pipeline/lead-sources';
 
 async function getAgencyId(userId: string): Promise<string | null> {
   const svc = createServiceClientWithoutCookies();
   const { data } = await svc.from('agency_members').select('agency_id').eq('user_id', userId).single();
   return data?.agency_id ?? null;
+}
+
+async function getAgencySettings(agencyId: string): Promise<Record<string, unknown>> {
+  const svc = createServiceClientWithoutCookies();
+  const { data } = await svc.from('agencies').select('settings').eq('id', agencyId).single();
+  return (data?.settings as Record<string, unknown>) || {};
 }
 
 export async function POST(req: NextRequest) {
@@ -34,14 +46,37 @@ export async function POST(req: NextRequest) {
   if (!agencyId) return NextResponse.json({ error: 'No agency' }, { status: 404 });
 
   const body = await req.json();
-  const { name, target_industry, target_role, target_location, target_company_size,
-    target_pain_points, value_prop, lead_count = 10 } = body;
+  const {
+    name, target_industry, target_role, target_location, target_company_size,
+    target_pain_points, value_prop, lead_count = 10,
+    // New fields for lead source
+    lead_source = 'google_maps' as LeadSourceType,
+    csv_data,       // raw CSV text (for csv_upload)
+    enrich_model,   // optional LLM model override
+  } = body;
 
   if (!name?.trim()) return NextResponse.json({ error: 'Campaign name required' }, { status: 400 });
 
   const svc = createServiceClientWithoutCookies();
+  const settings = await getAgencySettings(agencyId);
+
+  // Resolve API keys
   const openaiKey = process.env.OPENAI_API_KEY;
-  if (!openaiKey) return NextResponse.json({ error: 'OPENAI_API_KEY not configured' }, { status: 500 });
+  const outscraperKey = (settings.outscraper_api_key as string) || process.env.OUTSCRAPER_API_KEY || '';
+  const enrichModel = enrich_model || (settings.pipeline_model as string) || 'gpt-4o';
+
+  if (!openaiKey && lead_source === 'ai_discovery') {
+    return NextResponse.json({ error: 'OpenAI API key not configured' }, { status: 500 });
+  }
+
+  // Parse CSV if provided
+  let csvRows: CsvLeadRow[] | undefined;
+  if (lead_source === 'csv_upload' && csv_data) {
+    csvRows = parseCsv(csv_data);
+    if (csvRows.length === 0) {
+      return NextResponse.json({ error: 'CSV contains no valid rows. Ensure it has a header row with at least a "company" column.' }, { status: 400 });
+    }
+  }
 
   // ─── Stream response using SSE ─────────────────────────────────────────────
   const encoder = new TextEncoder();
@@ -72,86 +107,67 @@ export async function POST(req: NextRequest) {
         send('step', { step: 1, label: 'Campaign created', status: 'done', campaignId: campaign.id });
 
         // ═══ STEP 2: FIND LEADS ═══
-        send('step', { step: 2, label: 'Finding real businesses...', status: 'running', total: lead_count });
+        const sourceLabel = lead_source === 'google_maps'
+          ? '🗺️ Searching Google Maps for real businesses...'
+          : lead_source === 'csv_upload'
+            ? '📄 Processing your lead list...'
+            : '🤖 AI discovering businesses...';
 
-        const searchPrompt = `Find exactly ${Math.min(lead_count * 2, 50)} real ${target_industry || 'businesses'} in ${target_location || 'the United States'}.
-These must be REAL companies that exist on Google Maps, Yelp, Clutch, or industry directories.
-Target: ${target_role || 'Owner/CEO'} at companies with ${target_company_size || '11-50'} employees.
+        send('step', { step: 2, label: sourceLabel, status: 'running', total: lead_count, source: lead_source });
 
-Return JSON array: [{"company":"...","website":"...","industry":"...","location":"...","company_size":"..."}]
-RULES:
-- company: EXACT legal business name
-- website: REAL domain (e.g. "sweetflower.com") — NO made-up domains
-- Only include businesses you are confident actually exist
-- NO LinkedIn URLs, NO people names (we discover those from websites)`;
+        // ── Use the unified lead source dispatcher ──
+        const result = await findLeads(
+          {
+            type: lead_source as LeadSourceType,
+            query: target_industry || 'businesses',
+            location: target_location || 'United States',
+            limit: lead_count,
+            role: target_role,
+            companySize: target_company_size,
+            csvData: csvRows,
+          },
+          {
+            outscraperKey,
+            openaiKey: openaiKey || undefined,
+            enrichModel,
+          },
+          send, // Stream callback — each lead shows in real-time
+        );
 
-        const searchRes = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: 'gpt-4o', temperature: 0.4, max_tokens: 4000,
-            messages: [{ role: 'user', content: searchPrompt }],
-            response_format: { type: 'json_object' },
-          }),
-        });
-        const searchData = await searchRes.json();
-        const rawText = searchData.choices?.[0]?.message?.content || '{}';
-        let candidates: Array<Record<string, string>> = [];
-        try {
-          const parsed = JSON.parse(rawText);
-          if (Array.isArray(parsed)) {
-            candidates = parsed;
-          } else if (typeof parsed === 'object' && parsed !== null) {
-            for (const val of Object.values(parsed)) {
-              if (Array.isArray(val) && val.length > 0) {
-                candidates = val as Array<Record<string, string>>;
-                break;
-              }
-            }
-          }
-        } catch { candidates = []; }
-
-        // Verify websites exist
-        const verified: typeof candidates = [];
-        for (const c of candidates) {
-          if (!c.website) continue;
-          const url = c.website.startsWith('http') ? c.website : `https://${c.website}`;
-          try {
-            const res = await fetch(url, {
-              method: 'GET',
-              headers: { 'User-Agent': 'Mozilla/5.0 (compatible; KyraBot/1.0)' },
-              signal: AbortSignal.timeout(5_000),
-              redirect: 'follow',
-            });
-            if (res.ok || res.status === 403 || res.status === 405 || res.status === 406) {
-              verified.push(c);
-              send('lead_found', {
-                step: 2, current: verified.length, total: lead_count,
-                company: c.company, website: c.website, location: c.location,
-              });
-            }
-          } catch {
-            try {
-              const res2 = await fetch(url, { method: 'HEAD', signal: AbortSignal.timeout(3_000), redirect: 'follow' });
-              if (res2.ok || res2.status === 403) {
-                verified.push(c);
-                send('lead_found', {
-                  step: 2, current: verified.length, total: lead_count,
-                  company: c.company, website: c.website, location: c.location,
-                });
-              }
-            } catch { /* truly unreachable */ }
-          }
-          if (verified.length >= lead_count) break;
+        // Show warning if applicable
+        if (result.warning) {
+          send('step', { step: 2, label: result.warning, status: 'warning' });
         }
 
-        // Insert leads into DB
-        const leadsToInsert = verified.slice(0, lead_count).map(c => ({
-          campaign_id: campaign.id, agency_id: agencyId,
-          company: c.company, website: c.website, industry: c.industry || target_industry,
-          location: c.location || target_location, company_size: c.company_size || target_company_size,
-          full_name: `Owner at ${c.company}`, title: target_role || 'Owner',
+        if (result.leads.length === 0) {
+          send('error', { step: 2, error: result.warning || 'No leads found. Try a different location or industry.' });
+          controller.close(); return;
+        }
+
+        // ═══ STEP 3: INSERT LEADS INTO DB ═══
+        const leadsToInsert = result.leads.map(lead => ({
+          campaign_id: campaign.id,
+          agency_id: agencyId,
+          company: lead.company,
+          website: lead.website,
+          phone: lead.phone,
+          email: lead.email,
+          industry: lead.industry || target_industry,
+          location: lead.location || target_location,
+          company_size: lead.company_size || target_company_size,
+          full_name: lead.email
+            ? `Contact at ${lead.company}` // Will be discovered during enrich
+            : `Owner at ${lead.company}`,
+          title: target_role || 'Owner',
           stage: 'found',
+          enrichment_data: {
+            source: result.source,
+            full_address: lead.full_address,
+            rating: lead.rating,
+            reviews_count: lead.reviews_count,
+            description: lead.description,
+            social_links: lead.social_links,
+          },
         }));
 
         const { data: insertedLeads } = await svc.from('pipeline_leads').insert(leadsToInsert).select();
@@ -167,21 +183,35 @@ RULES:
             { id: campaign.id, name: campaign.name },
             {
               id: lead.id, full_name: lead.full_name, company: lead.company,
-              email: null, phone: null, website: lead.website,
+              email: lead.email, phone: lead.phone, website: lead.website,
               industry: lead.industry, location: lead.location, stage: 'found',
             },
             'system',
           );
         }
 
-        send('step', { step: 2, label: `Found ${dbLeads.length} verified businesses`, status: 'done', count: dbLeads.length });
+        // ═══ DONE — Show results ═══
+        const sourceDesc = result.source === 'google_maps'
+          ? 'from Google Maps'
+          : result.source === 'csv_upload'
+            ? 'from your CSV'
+            : 'via AI discovery';
 
-        // ═══ STOP HERE — Human reviews leads next ═══
+        send('step', {
+          step: 2,
+          label: `Found ${dbLeads.length} businesses ${sourceDesc}`,
+          status: 'done',
+          count: dbLeads.length,
+          source: result.source,
+          cost: result.cost_estimate,
+        });
+
         send('step', { step: 3, label: 'Review leads below — approve the ones you want to research', status: 'waiting' });
         send('done', {
           campaignId: campaign.id,
           leadsFound: dbLeads.length,
-          message: `Found ${dbLeads.length} verified businesses. Review them below and approve the ones you want to research.`,
+          source: result.source,
+          message: `Found ${dbLeads.length} real businesses ${sourceDesc}. Review them below.`,
           nextAction: 'review_leads',
         });
 
