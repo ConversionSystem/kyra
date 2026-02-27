@@ -6,7 +6,7 @@ export const metadata = { title: 'Conversations — Kyra' };
 
 export default function ConversationsPage() {
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="p-4 sm:p-6 md:p-8 max-w-5xl">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
           <Inbox className="h-6 w-6 text-indigo-500" />

@@ -153,7 +153,7 @@ export function DealsKanban() {
           return (
             <div
               key={stage.key}
-              className={`flex-shrink-0 w-72 rounded-2xl border-t-4 ${stage.color} bg-gray-50 transition ${
+              className={`flex-shrink-0 w-72 rounded-xl border-t-4 ${stage.color} bg-gray-50 transition ${
                 isDragTarget ? 'ring-2 ring-indigo-400 bg-indigo-50' : ''
               }`}
               onDragOver={e => handleDragOver(e, stage.key)}
@@ -330,7 +330,7 @@ function AddDealModal({ defaultStage, onClose, onCreated }: {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
+      <form onSubmit={handleSubmit} className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
         <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
           <DollarSign className="h-5 w-5 text-indigo-600" /> New Deal
         </h3>

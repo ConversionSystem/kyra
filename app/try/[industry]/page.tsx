@@ -7,6 +7,8 @@ import { Send, Zap, ArrowRight, Loader2, Share2, Copy, Check as CheckIcon, Linke
 import { pixel } from '@/components/analytics/MetaPixel';
 
 // ── Industry config ───────────────────────────────────────────────────────────
+import PublicNav from '@/components/layout/public-nav';
+import PublicFooter from '@/components/layout/public-footer';
 const INDUSTRIES: Record<string, {
   name: string; emoji: string; color: string; gradient: string;
   businessName: string; greeting: string;
@@ -191,6 +193,7 @@ export default function TryPage({ params }: { params: Promise<{ industry: string
 
   return (
     <div className="min-h-screen bg-gray-950 flex flex-col">
+      <PublicNav />
       {/* Industry switcher */}
       <div className="bg-gray-900 border-b border-white/10 overflow-x-auto">
         <div className="flex items-center gap-1 px-3 py-2 max-w-2xl mx-auto min-w-max">
@@ -365,6 +368,7 @@ export default function TryPage({ params }: { params: Promise<{ industry: string
           <Link href="/demo/dental" className="hover:text-gray-400">More demos</Link>
         </p>
       </div>
+      <PublicFooter />
     </div>
   );
 }

@@ -114,7 +114,7 @@ export function IntelligenceDashboard() {
 
       {/* Autopilot Digest */}
       {digest && (
-        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-2xl p-6">
+        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl p-6">
           <h2 className="text-sm font-bold text-gray-900 flex items-center gap-2 mb-3">
             <Bot className="h-4 w-4 text-indigo-600" /> DEAL AUTOPILOT DIGEST
           </h2>
@@ -160,7 +160,7 @@ export function IntelligenceDashboard() {
 
       {/* Revenue Forecast */}
       {forecasts.length > 0 && (
-        <div className="bg-white border border-gray-200 rounded-2xl p-6">
+        <div className="bg-white border border-gray-200 rounded-xl p-6">
           <h2 className="text-sm font-bold text-gray-900 flex items-center gap-2 mb-4">
             <TrendingUp className="h-4 w-4 text-green-500" /> AI REVENUE FORECAST
           </h2>
@@ -223,7 +223,7 @@ export function IntelligenceDashboard() {
 
       {/* Cross-Contact Intelligence */}
       {companies.length > 0 && (
-        <div className="bg-white border border-gray-200 rounded-2xl p-6">
+        <div className="bg-white border border-gray-200 rounded-xl p-6">
           <h2 className="text-sm font-bold text-gray-900 flex items-center gap-2 mb-4">
             <Building2 className="h-4 w-4 text-purple-500" /> CROSS-CONTACT INTELLIGENCE
             <span className="bg-purple-100 text-purple-700 text-xs font-bold px-2 py-0.5 rounded-full">
@@ -299,7 +299,7 @@ export function IntelligenceDashboard() {
 
       {/* Empty states */}
       {companies.length === 0 && forecasts.length === 0 && !digest && (
-        <div className="bg-gray-50 border border-gray-200 rounded-2xl p-8 text-center">
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-8 text-center">
           <Brain className="h-10 w-10 text-gray-300 mx-auto mb-3" />
           <p className="font-medium text-gray-500">Intelligence builds over time</p>
           <p className="text-sm text-gray-400 mt-1">

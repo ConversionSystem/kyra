@@ -618,7 +618,7 @@ export default async function AgencyOverviewPage() {
         const currentStep = steps.find(s => !s.done) ?? steps[steps.length - 1];
 
         return (
-          <div className="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-white overflow-hidden">
+          <div className="rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-white overflow-hidden">
             {/* Header */}
             <div className="p-6 border-b border-indigo-100 flex items-center gap-3">
               <div className="rounded-xl bg-indigo-600 p-2.5">
