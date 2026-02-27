@@ -147,6 +147,31 @@ export async function POST(request: NextRequest) {
     if (error) console.error('[widget/chat] Log error:', error.message);
   });
 
+  // Auto-log to CRM (fire-and-forget) — creates contact if new visitor
+  void (async () => {
+    try {
+      const { logConversationToCrm } = await import('@/lib/crm/conversation-logger');
+      // Log inbound visitor message
+      await logConversationToCrm(client.agency_id, {
+        type: 'InboundMessage',
+        body: message.trim(),
+        messageType: 'web_chat',
+        direction: 'inbound',
+        name: `Web Visitor (${ip})`,
+      });
+      // Log AI response
+      await logConversationToCrm(client.agency_id, {
+        type: 'OutboundMessage',
+        body: aiResponse,
+        messageType: 'web_chat',
+        direction: 'outbound',
+        name: 'AI Worker',
+      });
+    } catch (err) {
+      console.error('[widget/chat] CRM log error:', err);
+    }
+  })();
+
   return NextResponse.json(
     { response: aiResponse, sessionId: resolvedSessionId },
     {

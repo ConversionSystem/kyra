@@ -18,6 +18,8 @@ import { detectStaleDeals } from '@/lib/crm/stale-deals';
 import { runDealAutopilot } from '@/lib/crm/deal-autopilot';
 import { getRules, executeRule } from '@/lib/crm/rules';
 import { logActivity } from '@/lib/crm/activities';
+import { scanForAutoDeals } from '@/lib/crm/auto-deal';
+import { sendDigestEmail } from '@/lib/email/sender';
 
 // Vercel cron auth
 const CRON_SECRET = process.env.CRON_SECRET;
@@ -76,12 +78,17 @@ export async function POST(req: NextRequest) {
         }
         agencyResult.rules = { total: enabledRules.length, executed: rulesExecuted };
 
-        // 5. Log daily digest to Command Feed
+        // 5. Auto-deal creation from conversation signals
+        const autoDeals = await scanForAutoDeals(agency.id);
+        agencyResult.auto_deals = autoDeals;
+
+        // 6. Log daily digest to Command Feed
         const totalActions =
           (scoring.scored || 0) +
           (stale.drafted || 0) +
           autopilot.deals_worked +
-          rulesExecuted;
+          rulesExecuted +
+          (autoDeals.created || 0);
 
         if (totalActions > 0) {
           const summaryParts: string[] = [];
@@ -89,6 +96,7 @@ export async function POST(req: NextRequest) {
           if (stale.stale > 0) summaryParts.push(`${stale.stale} stale deals detected, ${stale.drafted} follow-ups drafted`);
           if (autopilot.deals_worked > 0) summaryParts.push(`Worked ${autopilot.deals_worked} deals (${autopilot.follow_ups_drafted} follow-ups, ${autopilot.deals_progressed} progressed)`);
           if (rulesExecuted > 0) summaryParts.push(`Executed ${rulesExecuted} automation rules`);
+          if (autoDeals.created > 0) summaryParts.push(`Auto-created ${autoDeals.created} deals from conversation signals`);
 
           await logActivity(agency.id, {
             type: 'system',
@@ -131,6 +139,38 @@ export async function POST(req: NextRequest) {
         }
 
         agencyResult.total_actions = totalActions;
+
+        // 7. Send digest email to agency owner (if any actions happened)
+        if (totalActions > 0) {
+          try {
+            const { data: owner } = await svc
+              .from('agency_members')
+              .select('user_id')
+              .eq('agency_id', agency.id)
+              .eq('role', 'owner')
+              .limit(1)
+              .single();
+
+            if (owner?.user_id) {
+              const { data: profile } = await svc.auth.admin.getUserById(owner.user_id);
+              const ownerEmail = profile?.user?.email;
+              if (ownerEmail) {
+                const emailParts: string[] = [];
+                if (scoring.scored > 0) emailParts.push(`Scored ${scoring.scored} contacts`);
+                if (stale.stale > 0) emailParts.push(`${stale.stale} stale deals, ${stale.drafted} follow-ups drafted`);
+                if (autopilot.deals_worked > 0) emailParts.push(`Worked ${autopilot.deals_worked} deals`);
+                if (rulesExecuted > 0) emailParts.push(`Executed ${rulesExecuted} automation rules`);
+                if (autoDeals.created > 0) emailParts.push(`Auto-created ${autoDeals.created} deals`);
+                const digestBody = emailParts.map((s: string) => `• ${s}`).join('\n');
+                await sendDigestEmail(ownerEmail, agency.name, digestBody);
+                agencyResult.digest_emailed = true;
+              }
+            }
+          } catch (emailErr) {
+            // Non-fatal — digest email is nice-to-have
+            agencyResult.digest_email_error = String(emailErr);
+          }
+        }
       } catch (err) {
         agencyResult.error = String(err);
         console.error(`[crm-autopilot] Agency ${agency.name} failed:`, err);

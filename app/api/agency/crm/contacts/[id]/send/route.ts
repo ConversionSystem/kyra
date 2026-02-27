@@ -50,9 +50,37 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     .limit(1)
     .single();
 
+  if (!integration && channel === 'email' && contact.email) {
+    // No GHL — try Resend fallback for email
+    try {
+      const { sendEmailViaResend } = await import('@/lib/email/sender');
+      const result = await sendEmailViaResend({
+        to: contact.email,
+        subject: subject || 'Message from your team',
+        body: message.trim(),
+      });
+
+      if (result.ok) {
+        await logActivity(agencyId, {
+          contact_id: contactId,
+          type: 'email',
+          subject: subject || 'Email sent',
+          body: message.trim(),
+          direction: 'outbound',
+          channel: 'resend',
+          actor: 'human',
+          actor_name: user.email || undefined,
+          metadata: { provider: 'resend', message_id: result.messageId },
+        });
+        return NextResponse.json({ ok: true, channel: 'email', provider: 'resend' });
+      }
+      // If Resend also fails, fall through to error
+    } catch {}
+  }
+
   if (!integration) {
     return NextResponse.json({
-      error: 'No GHL integration connected. Connect GHL in Pipeline → Integrations to send messages.',
+      error: 'No GHL integration connected. Connect GHL in Pipeline → Integrations, or add RESEND_API_KEY for email.',
     }, { status: 422 });
   }
 

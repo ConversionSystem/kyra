@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Inbox, Users, TrendingUp, Flame, Search, Bell, Bot,
+  Inbox, Users, TrendingUp, Flame, Search, Bell, Bot, Send, Loader2,
   CheckCircle2, Clock, Mail, MessageSquare, Phone, ArrowRight,
   ChevronDown, ChevronRight, AlertCircle, Eye, X, Sparkles,
   Building2, Calendar, FileText,
@@ -18,6 +18,7 @@ export function CrmCommandFeed() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [aiHandledOpen, setAiHandledOpen] = useState(false);
+  const [sending, setSending] = useState<string | null>(null);
 
   const fetchFeed = useCallback(async () => {
     try {
@@ -46,6 +47,28 @@ export function CrmCommandFeed() {
       body: JSON.stringify({ activity_id: activityId }),
     });
     fetchFeed();
+  };
+
+  const approveAndSend = async (item: CommandFeedItem) => {
+    if (!item.contact_id || !item.metadata?.ai_draft) return;
+    setSending(item.id);
+    try {
+      const res = await fetch(`/api/agency/crm/contacts/${item.contact_id}/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          channel: item.metadata?.channel || 'email',
+          message: item.metadata.ai_draft as string,
+          subject: item.subject || 'Follow-up',
+        }),
+      });
+      if (res.ok) {
+        await resolveItem(item.id);
+      }
+    } catch (err) {
+      console.error('Send failed:', err);
+    }
+    setSending(null);
   };
 
   const handleSearch = (e: React.FormEvent) => {
@@ -89,7 +112,7 @@ export function CrmCommandFeed() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
         <button onClick={() => router.push('/agency/crm/contacts')}
           className="bg-white border border-gray-200 rounded-xl p-5 text-left hover:border-indigo-200 hover:shadow-sm transition">
           <div className="flex items-center gap-3 mb-2">
@@ -136,7 +159,7 @@ export function CrmCommandFeed() {
           </h2>
           <div className="space-y-2">
             {feed!.attention_items.map(item => (
-              <AttentionCard key={item.id} item={item} onResolve={resolveItem} router={router} />
+              <AttentionCard key={item.id} item={item} onResolve={resolveItem} onApproveAndSend={approveAndSend} sendingId={sending} router={router} />
             ))}
           </div>
         </div>
@@ -247,9 +270,11 @@ export function CrmCommandFeed() {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function AttentionCard({ item, onResolve, router }: {
+function AttentionCard({ item, onResolve, onApproveAndSend, sendingId, router }: {
   item: CommandFeedItem;
   onResolve: (id: string) => void;
+  onApproveAndSend: (item: CommandFeedItem) => void;
+  sendingId: string | null;
   router: ReturnType<typeof useRouter>;
 }) {
   const contactName = item.contact
@@ -283,6 +308,18 @@ function AttentionCard({ item, onResolve, router }: {
                 className="h-7 text-xs bg-indigo-600 hover:bg-indigo-700"
                 onClick={() => router.push(`/agency/crm/contacts/${item.contact_id}`)}>
                 <Eye className="h-3 w-3 mr-1" /> View
+              </Button>
+            )}
+            {item.attention_type === 'approval_needed' && (item.metadata?.ai_draft as string) && (
+              <Button size="sm" variant="default"
+                className="h-7 text-xs bg-green-600 hover:bg-green-700"
+                disabled={sendingId === item.id}
+                onClick={() => onApproveAndSend(item)}>
+                {sendingId === item.id ? (
+                  <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Sending...</>
+                ) : (
+                  <><Send className="h-3 w-3 mr-1" /> Approve &amp; Send</>
+                )}
               </Button>
             )}
             {item.attention_type === 'reply_needed' && (
