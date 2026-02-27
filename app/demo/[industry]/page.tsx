@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation';
 import DemoChat from './demo-chat';
 
 // Industry-specific demo scenarios
+import PublicNav from '@/components/layout/public-nav';
+import PublicFooter from '@/components/layout/public-footer';
 const DEMOS: Record<string, {
   title: string;
   subtitle: string;
@@ -166,6 +168,7 @@ export default async function DemoPage({ params }: { params: Promise<{ industry:
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 text-white">
+      <PublicNav />
       {/* Header */}
       <div className="max-w-5xl mx-auto px-4 pt-12 pb-8 text-center">
         <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 text-sm font-medium mb-6">
@@ -244,6 +247,7 @@ export default async function DemoPage({ params }: { params: Promise<{ industry:
       <div className="text-center pb-8 text-slate-500 text-sm">
         Powered by <strong className="text-slate-400">Kyra AI</strong> — conversionsystem.com
       </div>
+      <PublicFooter />
     </div>
   );
 }

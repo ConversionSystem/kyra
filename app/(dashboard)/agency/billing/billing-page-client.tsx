@@ -132,7 +132,7 @@ export function BillingPageClient({ agency, clientCount, totalConversationsThisM
 
       {/* Checkout status banner — upgrade celebration */}
       {checkoutStatus === 'success' && (
-        <div className="rounded-2xl overflow-hidden border border-green-200">
+        <div className="rounded-xl overflow-hidden border border-green-200">
           <div className="bg-gradient-to-br from-green-600 to-emerald-700 text-white p-6">
             <div className="flex items-start gap-4 mb-4">
               <div className="text-4xl">🎉</div>

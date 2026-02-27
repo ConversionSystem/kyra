@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 
+import PublicNav from '@/components/layout/public-nav';
+import PublicFooter from '@/components/layout/public-footer';
 export const metadata: Metadata = {
   title: 'Kyra @ Launch — OpenClaw Agency Platform | March 16 Demo',
   description: 'Kyra turns OpenClaw into agency revenue. 60,000+ GHL agencies. One command center. Deploy in 5 minutes.',
@@ -57,6 +59,7 @@ const PRODUCT_CARDS = [
 export default function March16Page() {
   return (
     <div className="min-h-screen bg-white text-slate-900">
+      <PublicNav />
 
       {/* ── Header ───────────────────────────────────────────────────────── */}
       <div className="border-b border-slate-200 py-4">
@@ -262,6 +265,7 @@ export default function March16Page() {
           Kyra by Conversion System · Powered by OpenClaw · <a href="mailto:angel@conversionsystem.com" className="hover:text-slate-600 transition">angel@conversionsystem.com</a>
         </p>
       </div>
+      <PublicFooter />
     </div>
   );
 }

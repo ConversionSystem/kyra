@@ -7,6 +7,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 
+import PublicNav from '@/components/layout/public-nav';
+import PublicFooter from '@/components/layout/public-footer';
 interface Props {
   params: Promise<{ agencySlug: string }>;
 }
@@ -96,6 +98,7 @@ export default async function AgencyResultsPage({ params }: Props) {
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
+      <PublicNav />
       {/* Kyra powered bar */}
       <div className="bg-indigo-900 text-white text-center text-xs px-4 py-2.5">
         <span className="text-indigo-300">AI workers powered by </span>
@@ -201,6 +204,7 @@ export default async function AgencyResultsPage({ params }: Props) {
           {stats.name} has been using Kyra AI workers for {monthsActive} month{monthsActive !== 1 ? 's' : ''}
         </p>
       </div>
+      <PublicFooter />
     </div>
   );
 }

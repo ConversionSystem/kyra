@@ -82,7 +82,7 @@ function SetupWizard({ clientId, clientName, defaultNorthStar, agentRole, onDone
   return (
     <div className="max-w-2xl mx-auto">
       {/* Success celebration */}
-      <div className="rounded-2xl border-2 border-green-200 bg-gradient-to-br from-green-50 via-emerald-50 to-indigo-50 p-8 mb-8 text-center">
+      <div className="rounded-xl border-2 border-green-200 bg-gradient-to-br from-green-50 via-emerald-50 to-indigo-50 p-8 mb-8 text-center">
         <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-green-100 mb-4">
           <CheckCircle2 className="h-7 w-7 text-green-600" />
         </div>

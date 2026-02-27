@@ -50,7 +50,7 @@ function Section({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="border border-gray-200 rounded-2xl overflow-hidden">
+    <div className="border border-gray-200 rounded-xl overflow-hidden">
       <button
         className="w-full flex items-center gap-4 p-5 text-left bg-white hover:bg-gray-50 transition"
         onClick={() => setOpen(!open)}
@@ -162,7 +162,7 @@ export default function BizInABoxPage() {
       <div className="mb-8">
         <div className="flex items-center gap-2 mb-2">
           <Briefcase className="h-6 w-6 text-indigo-600" />
-          <h1 className="text-2xl font-black text-gray-900">Business in a Box</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Business in a Box</h1>
         </div>
         <p className="text-gray-500">
           Everything you need to sign your first 5 clients. Follow the stages in order.
@@ -604,7 +604,7 @@ This is what it looks like when your business has an AI worker."
       </div>
 
       {/* Bottom CTA */}
-      <div className="mt-8 rounded-2xl bg-indigo-600 text-white p-6 text-center">
+      <div className="mt-8 rounded-xl bg-indigo-600 text-white p-6 text-center">
         <Star className="h-8 w-8 text-indigo-300 mx-auto mb-3" />
         <h3 className="text-lg font-black mb-2">Your goal: 5 clients in 30 days</h3>
         <p className="text-indigo-200 text-sm mb-4">
