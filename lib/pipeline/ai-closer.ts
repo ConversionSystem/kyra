@@ -27,6 +27,16 @@ import { getGhlIntegration } from '@/lib/pipeline/crm-sync';
 import { logAndFire } from '@/lib/pipeline/webhooks';
 import { syncLeadToCrm } from '@/lib/pipeline/crm-sync';
 import { requireCredits, deductCredits } from '@/lib/billing/credit-engine';
+import {
+  GHL_TOOL_DEFINITIONS,
+  executeTool,
+  type ToolContext,
+  type ToolResult,
+} from '@/lib/ghl/ghl-tools';
+import {
+  getConversationHistory,
+  saveConversationTurn,
+} from '@/lib/ghl/conversation-memory';
 
 const GHL_API = 'https://services.leadconnectorhq.com';
 const GHL_VERSION = '2021-04-15';
@@ -40,6 +50,7 @@ interface CloserContext {
   enrichment: Record<string, unknown>;
   inboundMessage: string;
   inboundChannel: string;
+  toolContext: ToolContext | null;
 }
 
 interface LeadRecord {
@@ -104,6 +115,7 @@ export async function handleCloserReply(
   inboundMessage: string,
   inboundChannel: string = 'SMS',
 ): Promise<CloserResult> {
+  const startTime = Date.now();
   const svc = createServiceClientWithoutCookies();
 
   // ── 1. Load full context ────────────────────────────────────────────────
@@ -121,18 +133,62 @@ export async function handleCloserReply(
   const campaign = (lead as Record<string, unknown>).pipeline_campaigns as CampaignRecord;
   const enrichment = (lead.enrichment_data || {}) as Record<string, unknown>;
 
-  // ── 2. Fetch conversation history from GHL ──────────────────────────────
+  // ── 2. Fetch conversation history ─────────────────────────────────────
+  // Try Supabase first (fast, reliable), fall back to GHL API
 
   let conversationHistory: ConversationMessage[] = [];
   const ghlIntegration = await getGhlIntegration(lead.agency_id);
 
-  if (ghlIntegration?.access_token && lead.ghl_contact_id) {
+  // Look up agency_client ID for conversation memory (client linked to this agency's GHL location)
+  let agencyClientId: string | null = null;
+  if (ghlIntegration?.location_id) {
+    const { data: agClient } = await svc
+      .from('agency_clients')
+      .select('id')
+      .eq('ghl_location_id', ghlIntegration.location_id)
+      .limit(1)
+      .single();
+    agencyClientId = agClient?.id ?? null;
+  }
+
+  // Try Supabase conversation memory first
+  if (agencyClientId && lead.ghl_contact_id) {
+    try {
+      const supabaseTurns = await getConversationHistory(agencyClientId, lead.ghl_contact_id, 10);
+      if (supabaseTurns.length > 0) {
+        conversationHistory = supabaseTurns.map(t => ({
+          direction: t.role === 'user' ? 'inbound' as const : 'outbound' as const,
+          body: t.content,
+          dateAdded: t.timestamp,
+          type: inboundChannel,
+        }));
+      }
+    } catch (err) {
+      console.warn('[ai-closer] Supabase conversation memory failed, trying GHL API:', err);
+    }
+  }
+
+  // Fall back to GHL API if no Supabase history
+  if (conversationHistory.length === 0 && ghlIntegration?.access_token && lead.ghl_contact_id) {
     conversationHistory = await fetchGhlConversation(
       ghlIntegration.access_token,
       ghlIntegration.location_id!,
       lead.ghl_contact_id,
     );
   }
+
+  // Build tool context for function calling
+  const toolContext: ToolContext | null =
+    ghlIntegration?.access_token && lead.ghl_contact_id && ghlIntegration.location_id
+      ? {
+          token: ghlIntegration.access_token,
+          contactId: lead.ghl_contact_id,
+          locationId: ghlIntegration.location_id,
+          clientId: agencyClientId || lead.agency_id,
+          calendarId: ghlIntegration.config?.calendar_id,
+          pipelineId: ghlIntegration.config?.pipeline_id,
+        }
+      : null;
 
   const context: CloserContext = {
     lead: lead as LeadRecord,
@@ -141,6 +197,7 @@ export async function handleCloserReply(
     enrichment,
     inboundMessage,
     inboundChannel,
+    toolContext,
   };
 
   // ── Credit check before generating response ─────────────────────────────
@@ -202,16 +259,33 @@ export async function handleCloserReply(
     );
   }
 
-  // ── 5. Analyze and update stage ─────────────────────────────────────────
+  // ── 5. Save conversation turn to Supabase ─────────────────────────────
+  if (agencyClientId && lead.ghl_contact_id) {
+    saveConversationTurn({
+      clientId: agencyClientId,
+      agencyId: lead.agency_id,
+      contactId: lead.ghl_contact_id,
+      contactName: lead.full_name || lead.company || 'Unknown',
+      contactPhone: lead.phone,
+      contactEmail: lead.email,
+      conversationId: `closer-${lead.id}`,
+      userMessage: inboundMessage,
+      aiResponse: aiResponse,
+      channel: inboundChannel,
+      responseTimeMs: Date.now() - startTime,
+    }).catch(err => console.error('[ai-closer] Failed to save conversation turn:', err));
+  }
+
+  // ── 6. Analyze and update stage ─────────────────────────────────────────
 
   const stageUpdate = await analyzeAndUpdateStage(svc, lead as LeadRecord, campaign, aiResponse, inboundMessage);
 
-  // ── 6. Deduct credit ─────────────────────────────────────────────────────
+  // ── 7. Deduct credit ─────────────────────────────────────────────────────
   await deductCredits(lead.agency_id, 'pipeline.closer_response', {
     description: `AI Closer reply to ${lead.full_name || 'lead'} (${lead.company || '?'})`,
   });
 
-  // ── 7. Log the closer activity ──────────────────────────────────────────
+  // ── 8. Log the closer activity ──────────────────────────────────────────
 
   await svc.from('pipeline_activity_log').insert({
     agency_id: lead.agency_id,
@@ -302,7 +376,15 @@ ${enrichment.icebreaker ? `- **Icebreaker:** ${enrichment.icebreaker}` : ''}
 ${lead.personalized_subject ? `Subject: ${lead.personalized_subject}` : ''}
 ${lead.personalized_opener ? `SMS: ${lead.personalized_opener}` : ''}
 
-Reply naturally as a human sales professional. Keep it short. Do NOT include a subject line — just the message body.`;
+Reply naturally as a human sales professional. Keep it short. Do NOT include a subject line — just the message body.
+
+## AVAILABLE ACTIONS
+When appropriate, you can:
+- **Book an appointment** — if the prospect wants to schedule a call/demo
+- **Tag the contact** — to label their interest level or intent
+- **Create a sales opportunity** — when they show clear buying intent
+- **Escalate to a human** — if the conversation needs human attention
+These actions are handled automatically through your campaign tools.`;
 }
 
 // ─── Direct LLM Fallback ─────────────────────────────────────────────────────
@@ -310,6 +392,8 @@ Reply naturally as a human sales professional. Keep it short. Do NOT include a s
 /**
  * Fallback when no OpenClaw container is available.
  * Uses a FULL system prompt since there's no workspace to reference.
+ * NOW WITH FUNCTION CALLING — the AI can book appointments, tag contacts,
+ * create opportunities, and escalate to humans via GHL.
  */
 async function directLlmResponse(context: CloserContext): Promise<string> {
   const openaiKey = process.env.OPENAI_API_KEY;
@@ -319,26 +403,98 @@ async function directLlmResponse(context: CloserContext): Promise<string> {
   }
 
   const systemPrompt = buildFullSystemPrompt(context);
-  const messages = buildConversationMessages(context, systemPrompt);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const messages: any[] = buildConversationMessages(context, systemPrompt);
 
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${openaiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
+  // Include GHL tools if we have a valid tool context
+  const includeTools = !!context.toolContext;
+
+  // Tool execution loop — LLM may call tools, we execute them and loop back
+  const MAX_TOOL_ROUNDS = 3;
+  let toolRound = 0;
+
+  while (toolRound <= MAX_TOOL_ROUNDS) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const requestBody: Record<string, any> = {
       model: 'gpt-4o',
       messages,
       temperature: 0.7,
       max_tokens: 500,
-    }),
-    signal: AbortSignal.timeout(30_000),
-  });
+    };
 
-  if (!res.ok) return '';
-  const data = await res.json();
-  return data?.choices?.[0]?.message?.content || '';
+    // Only include tools on first request or if we're in a tool loop
+    if (includeTools && toolRound < MAX_TOOL_ROUNDS) {
+      requestBody.tools = GHL_TOOL_DEFINITIONS;
+      requestBody.tool_choice = 'auto';
+    }
+
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${openaiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+      signal: AbortSignal.timeout(30_000),
+    });
+
+    if (!res.ok) return '';
+    const data = await res.json();
+    const choice = data?.choices?.[0];
+
+    if (!choice) return '';
+
+    // If the model returned tool calls, execute them and loop
+    if (choice.finish_reason === 'tool_calls' || choice.message?.tool_calls?.length) {
+      const assistantMessage = choice.message;
+      messages.push(assistantMessage);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      for (const toolCall of (assistantMessage.tool_calls || []) as any[]) {
+        const fnName = toolCall.function?.name;
+        let fnArgs: Record<string, unknown> = {};
+        try {
+          fnArgs = JSON.parse(toolCall.function?.arguments || '{}');
+        } catch {
+          fnArgs = {};
+        }
+
+        let toolResult: ToolResult;
+        if (context.toolContext) {
+          toolResult = await executeTool(fnName, fnArgs, context.toolContext);
+          console.log(
+            `[ai-closer] Tool ${fnName}(${JSON.stringify(fnArgs).slice(0, 100)}) → ` +
+            `${toolResult.success ? 'OK' : 'FAIL'}: ${JSON.stringify(toolResult.data || toolResult.error).slice(0, 200)}`,
+          );
+
+          // Handle escalation
+          if (toolResult.escalate) {
+            console.log(
+              `[ai-closer] 🚨 Escalation requested: ${toolResult.escalate.reason} (${toolResult.escalate.urgency})`,
+            );
+            // TODO: Create an attention item / notification for the agency
+          }
+        } else {
+          toolResult = { success: false, error: 'No GHL integration configured' };
+        }
+
+        messages.push({
+          role: 'tool',
+          tool_call_id: toolCall.id,
+          content: JSON.stringify(toolResult),
+        });
+      }
+
+      toolRound++;
+      continue;
+    }
+
+    // Model returned a text response — we're done
+    return choice.message?.content || '';
+  }
+
+  console.warn('[ai-closer] Max tool rounds exceeded');
+  return '';
 }
 
 /**
@@ -385,7 +541,14 @@ ${lead.personalized_opener ? `SMS: ${lead.personalized_opener}` : ''}
 8. Don't use emojis unless they do first.
 9. Don't start with "Hey!" or "Hi there!" — jump into substance.
 10. Sign with a first name only, no titles.
-11. NEVER reveal you are an AI.`;
+11. NEVER reveal you are an AI.
+
+## TOOLS AT YOUR DISPOSAL
+You have these tools available — use them when the conversation calls for it:
+- **book_appointment** — Schedule a meeting/demo (confirm time with prospect first!)
+- **tag_contact** — Label the contact (e.g. "hot-lead", "pricing-requested", "booked")
+- **create_opportunity** — Create a deal in the CRM when buying intent is clear
+- **escalate_to_human** — Flag for human follow-up (angry customer, complex request, or they ask for a person)`;
 }
 
 // ─── Message Builder ──────────────────────────────────────────────────────────
