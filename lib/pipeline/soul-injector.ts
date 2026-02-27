@@ -200,13 +200,32 @@ async function writeToWorkspace(clientId: string, filePath: string, content: str
 
     if (!res.ok) {
       const err = await res.text().catch(() => '');
+
+      // Graceful 404: provisioner endpoint may not exist yet (container not deployed)
+      if (res.status === 404) {
+        console.warn(
+          `[soul-injector] Provisioner endpoint not found for ${clientId} (404). ` +
+          `Container may not be deployed yet -- skipping ${filePath} write.`,
+        );
+        return false;
+      }
+
       console.error(`[soul-injector] Failed to write ${filePath} for ${clientId}: ${res.status} ${err}`);
       return false;
     }
 
     return true;
   } catch (err) {
-    console.error(`[soul-injector] Error writing ${filePath} for ${clientId}:`, err);
+    // Graceful handling: network errors (ECONNREFUSED, timeout) shouldn't break the launch flow
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes('ECONNREFUSED') || msg.includes('fetch failed') || msg.includes('AbortError')) {
+      console.warn(
+        `[soul-injector] Provisioner unreachable for ${clientId} -- ` +
+        `skipping ${filePath} write (${msg}). Launch continues.`,
+      );
+    } else {
+      console.error(`[soul-injector] Error writing ${filePath} for ${clientId}:`, err);
+    }
     return false;
   }
 }
