@@ -18,7 +18,8 @@ interface ImportResult {
 export function CrmImport() {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
-  const [importing, setImporting] = useState<'ghl' | 'csv' | null>(null);
+  const [importing, setImporting] = useState<'ghl' | 'csv' | 'hubspot' | null>(null);
+  const [hubspotKey, setHubspotKey] = useState('');
   const [result, setResult] = useState<ImportResult | null>(null);
   const [error, setError] = useState('');
   const [csvRows, setCsvRows] = useState<Record<string, string>[]>([]);
@@ -103,7 +104,7 @@ export function CrmImport() {
       </div>
 
       {/* Import Sources */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* GHL Import */}
         <div className="bg-white border border-gray-200 rounded-xl p-6 hover:border-indigo-200 transition">
           <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mb-4">
@@ -122,6 +123,50 @@ export function CrmImport() {
               <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Importing...</>
             ) : (
               <><Database className="h-4 w-4 mr-2" /> Import from GHL</>
+            )}
+          </Button>
+        </div>
+
+        {/* HubSpot Import */}
+        <div className="bg-white border border-gray-200 rounded-xl p-6 hover:border-indigo-200 transition">
+          <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center mb-4">
+            <Database className="h-6 w-6 text-orange-600" />
+          </div>
+          <h3 className="font-bold text-gray-900 mb-1">HubSpot</h3>
+          <p className="text-sm text-gray-500 mb-3">
+            Import contacts + deals from HubSpot. Paste your private app access token.
+          </p>
+          <input
+            type="password"
+            placeholder="pat-na1-xxxxx..."
+            value={hubspotKey}
+            onChange={(e) => setHubspotKey(e.target.value)}
+            className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 mb-3 focus:outline-none focus:ring-2 focus:ring-orange-500"
+          />
+          <Button
+            onClick={async () => {
+              if (!hubspotKey.trim()) return;
+              setImporting('hubspot');
+              setError('');
+              try {
+                const res = await fetch('/api/agency/crm/import', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ source: 'hubspot', api_key: hubspotKey.trim() }),
+                });
+                const data = await res.json();
+                if (!res.ok) setError(data.error || 'Import failed');
+                else setResult(data);
+              } catch (err) { setError('HubSpot import failed'); }
+              setImporting(null);
+            }}
+            disabled={importing === 'hubspot' || !hubspotKey.trim()}
+            className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+          >
+            {importing === 'hubspot' ? (
+              <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Importing...</>
+            ) : (
+              <><Database className="h-4 w-4 mr-2" /> Import from HubSpot</>
             )}
           </Button>
         </div>

@@ -229,7 +229,7 @@ export function ContactDetailView() {
         {/* Edit Form */}
         {editing && (
           <div className="mt-4 pt-4 border-t border-gray-100">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <input className="border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                 placeholder="First name" value={editForm.first_name || ''} onChange={e => setEditForm(f => ({ ...f, first_name: e.target.value }))} />
               <input className="border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
@@ -330,7 +330,7 @@ export function ContactDetailView() {
       )}
 
       {/* Two column: Timeline + Quick Info */}
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Timeline (2/3) */}
         <div className="col-span-2 space-y-4">
           {/* Add Note */}

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
-import { importFromGHL, importFromCsv } from '@/lib/crm/import';
+import { importFromGHL, importFromCsv, importFromHubSpot } from '@/lib/crm/import';
 
 async function getAgencyId(userId: string): Promise<string | null> {
   const svc = createServiceClientWithoutCookies();
@@ -28,5 +28,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(result);
   }
 
-  return NextResponse.json({ error: 'source must be "ghl" or "csv" (with rows array)' }, { status: 400 });
+  if (body.source === 'hubspot' && body.api_key) {
+    const result = await importFromHubSpot(agencyId, body.api_key);
+    return NextResponse.json(result);
+  }
+
+  return NextResponse.json({ error: 'source must be "ghl", "hubspot" (with api_key), or "csv" (with rows array)' }, { status: 400 });
 }
