@@ -97,7 +97,7 @@ export function CrmAnalytics() {
       </div>
 
       {/* Conversion Funnel */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-6">
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
         <h2 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
           <TrendingUp className="h-4 w-4 text-indigo-500" /> CONVERSION FUNNEL
         </h2>
@@ -115,7 +115,7 @@ export function CrmAnalytics() {
       {/* Two columns */}
       <div className="grid grid-cols-2 gap-6">
         {/* Revenue by Source */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-6">
+        <div className="bg-white border border-gray-200 rounded-xl p-6">
           <h2 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
             <DollarSign className="h-4 w-4 text-green-500" /> REVENUE BY SOURCE
           </h2>
@@ -149,7 +149,7 @@ export function CrmAnalytics() {
         </div>
 
         {/* Score Distribution */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-6">
+        <div className="bg-white border border-gray-200 rounded-xl p-6">
           <h2 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
             <Flame className="h-4 w-4 text-red-500" /> LEAD SCORING
           </h2>
@@ -173,7 +173,7 @@ export function CrmAnalytics() {
 
       {/* AI ROI */}
       {funnel.won_value > 0 && ai_stats.crm_credits_used_30d > 0 && (
-        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-2xl p-6 text-center">
+        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl p-6 text-center">
           <Zap className="h-8 w-8 text-indigo-600 mx-auto mb-2" />
           <p className="text-lg font-bold text-gray-900">
             AI ROI: {Math.round(funnel.won_value / (ai_stats.crm_credits_used_30d * 0.01))}x
@@ -190,7 +190,7 @@ export function CrmAnalytics() {
 
 function KpiCard({ icon, label, value, bg }: { icon: React.ReactNode; label: string; value: number | string; bg: string }) {
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl p-5">
+    <div className="bg-white border border-gray-200 rounded-xl p-5">
       <div className="flex items-center gap-3 mb-2">
         <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center`}>{icon}</div>
         <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">{label}</span>

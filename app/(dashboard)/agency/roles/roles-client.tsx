@@ -113,7 +113,7 @@ function DeployModal({
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       {/* Panel */}
-      <div className="relative w-full max-w-lg rounded-2xl bg-white shadow-2xl overflow-hidden">
+      <div className="relative w-full max-w-lg rounded-xl bg-white shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="flex items-start justify-between p-6 border-b border-gray-100">
           <div>

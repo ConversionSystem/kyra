@@ -76,7 +76,7 @@ function MiniBarChart({ data, maxBars = 30 }: { data: Array<{ date: string; coun
           <div key={d.date} className="flex-1 flex flex-col items-center group relative">
             <div
               className={`w-full rounded-t transition-colors ${
-                d.count > 0 ? 'bg-blue-500 hover:bg-blue-600' : 'bg-gray-200'
+                d.count > 0 ? 'bg-blue-500 hover:bg-indigo-600' : 'bg-gray-200'
               }`}
               style={{ height: `${height}%`, minHeight: '2px' }}
             />

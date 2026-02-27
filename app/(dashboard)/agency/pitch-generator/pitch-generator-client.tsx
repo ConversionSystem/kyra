@@ -34,7 +34,7 @@ export default function PitchGeneratorClient({ agencyId, agencyName }: Props) {
   return (
     <div className="p-4 sm:p-6 md:p-8 max-w-4xl space-y-6">
       {/* General pitch deck (not white-labeled) */}
-      <div className="bg-indigo-600 rounded-2xl p-5 flex items-center justify-between gap-4">
+      <div className="bg-indigo-600 rounded-xl p-5 flex items-center justify-between gap-4">
         <div>
           <p className="font-bold text-white text-sm">🎯 General Sales Pitch Deck</p>
           <p className="text-indigo-200 text-xs mt-0.5">10-slide interactive deck — share this URL in any sales call or email</p>

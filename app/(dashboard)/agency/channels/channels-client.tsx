@@ -277,10 +277,10 @@ export function ChannelsClient() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="p-4 sm:p-6 md:p-8 max-w-5xl space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-white">Connect Channels</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Connect Channels</h1>
         <p className="text-gray-400 text-sm mt-1">
           Connect messaging platforms so your AI can chat with customers directly
         </p>
@@ -365,7 +365,7 @@ export function ChannelsClient() {
                       <Button
                         onClick={() => connectChannel(channel)}
                         disabled={connectingChannel === channel.id || !tokenValues[channel.id]?.trim()}
-                        className="bg-blue-600 hover:bg-blue-700 shrink-0"
+                        className="bg-indigo-600 hover:bg-indigo-700 shrink-0"
                       >
                         {connectingChannel === channel.id ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
@@ -381,7 +381,7 @@ export function ChannelsClient() {
                     <Button
                       onClick={() => connectChannel(channel)}
                       disabled={connectingChannel === channel.id}
-                      className="bg-blue-600 hover:bg-blue-700"
+                      className="bg-indigo-600 hover:bg-indigo-700"
                     >
                       {connectingChannel === channel.id ? (
                         <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -404,7 +404,7 @@ export function ChannelsClient() {
                       <Button
                         onClick={() => connectChannel(channel)}
                         disabled={connectingChannel === channel.id || !tokenValues[channel.id]?.trim()}
-                        className="bg-blue-600 hover:bg-blue-700 shrink-0"
+                        className="bg-indigo-600 hover:bg-indigo-700 shrink-0"
                       >
                         Connect
                       </Button>
@@ -453,7 +453,7 @@ export function ChannelsClient() {
                             <Button
                               onClick={() => approvePairing(channel)}
                               disabled={connectingChannel === channel.id + '-pair' || !pairingValues[channel.id]?.trim()}
-                              className="bg-blue-600 hover:bg-blue-700 shrink-0"
+                              className="bg-indigo-600 hover:bg-indigo-700 shrink-0"
                             >
                               {connectingChannel === channel.id + '-pair' ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />

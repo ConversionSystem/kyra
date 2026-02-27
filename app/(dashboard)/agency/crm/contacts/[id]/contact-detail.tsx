@@ -146,7 +146,7 @@ export function ContactDetailView() {
       </button>
 
       {/* Contact Header */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-6">
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
         <div className="flex items-start gap-4">
           <div className={`w-16 h-16 rounded-2xl ${color} flex items-center justify-center text-white text-xl font-bold shrink-0`}>
             {initials}
@@ -276,7 +276,7 @@ export function ContactDetailView() {
 
       {/* Send Message Panel */}
       {showSend && (
-        <div className="bg-white border border-indigo-200 rounded-2xl p-5">
+        <div className="bg-white border border-indigo-200 rounded-xl p-5">
           <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
             <MessageSquare className="h-4 w-4 text-indigo-600" /> Send Message
           </h3>
@@ -334,7 +334,7 @@ export function ContactDetailView() {
         {/* Timeline (2/3) */}
         <div className="col-span-2 space-y-4">
           {/* Add Note */}
-          <div className="bg-white border border-gray-200 rounded-2xl p-4">
+          <div className="bg-white border border-gray-200 rounded-xl p-4">
             <textarea
               className="w-full border rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-none"
               rows={2}
@@ -359,7 +359,7 @@ export function ContactDetailView() {
             </h2>
 
             {(!contact.activities?.length) ? (
-              <div className="bg-white border border-gray-200 rounded-2xl p-6 text-center text-sm text-gray-400">
+              <div className="bg-white border border-gray-200 rounded-xl p-6 text-center text-sm text-gray-400">
                 No activity yet.
               </div>
             ) : (
@@ -375,7 +375,7 @@ export function ContactDetailView() {
         {/* Quick Info (1/3) */}
         <div className="space-y-4">
           {/* Source */}
-          <div className="bg-white border border-gray-200 rounded-2xl p-4">
+          <div className="bg-white border border-gray-200 rounded-xl p-4">
             <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wide mb-3">Details</h3>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
@@ -407,7 +407,7 @@ export function ContactDetailView() {
 
           {/* Company Card */}
           {contact.company && (
-            <div className="bg-white border border-gray-200 rounded-2xl p-4">
+            <div className="bg-white border border-gray-200 rounded-xl p-4">
               <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wide mb-3 flex items-center gap-1">
                 <Building2 className="h-3.5 w-3.5" /> Company
               </h3>
@@ -427,7 +427,7 @@ export function ContactDetailView() {
 
           {/* Enrichment Data */}
           {Object.keys(contact.enrichment_data || {}).length > 0 && (
-            <div className="bg-white border border-gray-200 rounded-2xl p-4">
+            <div className="bg-white border border-gray-200 rounded-xl p-4">
               <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wide mb-3 flex items-center gap-1">
                 <Sparkles className="h-3.5 w-3.5 text-purple-500" /> Enrichment
               </h3>
@@ -444,7 +444,7 @@ export function ContactDetailView() {
 
           {/* Deals */}
           {(contact.deals?.length || 0) > 0 && (
-            <div className="bg-white border border-gray-200 rounded-2xl p-4">
+            <div className="bg-white border border-gray-200 rounded-xl p-4">
               <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wide mb-3">Deals</h3>
               {contact.deals.map(deal => (
                 <div key={deal.id} className="flex justify-between items-center py-1.5 text-sm">
@@ -523,7 +523,7 @@ function AiMemorySection({ contactId }: { contactId: string }) {
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl p-4">
+    <div className="bg-white border border-gray-200 rounded-xl p-4">
       <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wide mb-3 flex items-center gap-1">
         <Brain className="h-3.5 w-3.5 text-indigo-500" /> AI Memory
         {memories.length > 0 && (

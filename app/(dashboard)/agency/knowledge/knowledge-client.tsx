@@ -422,7 +422,7 @@ export default function KnowledgeClient({ clients }: { clients: Client[] }) {
       {/* Documents List */}
       {filteredDocs.length === 0 && !showCreate ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="p-4 bg-emerald-50 rounded-2xl mb-4">
+          <div className="p-4 bg-emerald-50 rounded-xl mb-4">
             <BookOpen className="h-10 w-10 text-emerald-600" />
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">

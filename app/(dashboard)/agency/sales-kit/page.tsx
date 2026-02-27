@@ -218,7 +218,7 @@ function QuickWinSection() {
   };
 
   return (
-    <div className="mb-8 rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 via-white to-orange-50 overflow-hidden">
+    <div className="mb-8 rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 via-white to-orange-50 overflow-hidden">
       {/* Header */}
       <div className="px-5 py-4 border-b border-amber-100 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
