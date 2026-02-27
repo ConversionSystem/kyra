@@ -111,6 +111,72 @@ export async function GET() {
     scoreDistribution[label] = (scoreDistribution[label] || 0) + 1;
   }
 
+  // Full attribution chain: Source → AI Outreach → Reply → Meeting → Deal → Revenue
+  const { data: chainDeals } = await svc
+    .from('crm_deals')
+    .select('id, name, value, stage, source, source_id, contact_id, created_at')
+    .eq('agency_id', agencyId)
+    .eq('stage', 'won')
+    .order('created_at', { ascending: false })
+    .limit(20);
+
+  const attributionChain: Array<{
+    deal_name: string;
+    value: number;
+    source: string;
+    contact_id: string | null;
+    stages: string[];
+    created_at: string;
+  }> = [];
+
+  for (const deal of (chainDeals || [])) {
+    // Get activities for this deal's contact to build the chain
+    const stages: string[] = [];
+    if (deal.source === 'pipeline') stages.push('AI Outreach');
+    if (deal.source === 'ai') stages.push('AI Generated');
+    if (deal.source === 'ghl_inbound') stages.push('GHL Inbound');
+    if (deal.source === 'manual') stages.push('Manual Entry');
+
+    if (deal.contact_id) {
+      const { count: replies } = await svc
+        .from('crm_activities')
+        .select('id', { count: 'exact', head: true })
+        .eq('contact_id', deal.contact_id)
+        .eq('direction', 'inbound')
+        .limit(1);
+      if (replies && replies > 0) stages.push('Customer Replied');
+
+      const { count: meetings } = await svc
+        .from('crm_activities')
+        .select('id', { count: 'exact', head: true })
+        .eq('contact_id', deal.contact_id)
+        .eq('type', 'meeting')
+        .limit(1);
+      if (meetings && meetings > 0) stages.push('Meeting Held');
+    }
+
+    stages.push('Deal Won');
+
+    attributionChain.push({
+      deal_name: deal.name,
+      value: Number(deal.value) || 0,
+      source: deal.source || 'manual',
+      contact_id: deal.contact_id,
+      stages,
+      created_at: deal.created_at,
+    });
+  }
+
+  // Autopilot digest (last run)
+  const { data: lastDigest } = await svc
+    .from('crm_activities')
+    .select('body, metadata, created_at')
+    .eq('agency_id', agencyId)
+    .eq('type', 'system')
+    .eq('actor', 'system')
+    .order('created_at', { ascending: false })
+    .limit(1);
+
   return NextResponse.json({
     revenue_by_source: sourceRevenue,
     funnel: {
@@ -127,5 +193,7 @@ export async function GET() {
       crm_credits_used_30d: crmCreditsUsed,
     },
     score_distribution: scoreDistribution,
+    attribution_chain: attributionChain,
+    last_autopilot_digest: lastDigest?.[0] || null,
   });
 }
