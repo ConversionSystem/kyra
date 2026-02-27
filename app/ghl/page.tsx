@@ -82,7 +82,7 @@ export default function GHLPage() {
           Built for GoHighLevel Agencies
         </div>
 
-        <h1 className="text-5xl sm:text-6xl font-extrabold text-gray-900 leading-tight tracking-tight mb-6">
+        <h1 className="text-5xl sm:text-6xl font-black text-gray-900 leading-tight tracking-tight mb-6">
           The autonomous AI layer every GHL agency needs.
         </h1>
 

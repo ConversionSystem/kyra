@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight, Zap, ExternalLink } from 'lucide-react';
 
+import PublicNav from '@/components/layout/public-nav';
+import PublicFooter from '@/components/layout/public-footer';
 const SLIDES = [
   {
     id: 1,
@@ -172,6 +174,7 @@ export default function PitchPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white flex flex-col">
+      <PublicNav />
       {/* Top bar */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
         <Link href="/" className="flex items-center gap-2 font-black text-lg">
@@ -319,6 +322,7 @@ export default function PitchPage() {
         </div>
         <p className="text-center text-xs text-slate-600 mt-2">← → arrow keys to navigate</p>
       </div>
+      <PublicFooter />
     </div>
   );
 }

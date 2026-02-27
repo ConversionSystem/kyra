@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
+import PublicNav from '@/components/layout/public-nav';
+import PublicFooter from '@/components/layout/public-footer';
 export const metadata: Metadata = {
   title: 'AI Workforce Platform by Industry | Kyra',
   description: 'Kyra AI workers for dental, real estate, cannabis, fitness, home services, and 21+ more industries. Built for GoHighLevel agencies. Free to start.',
@@ -30,6 +32,7 @@ const COMING_SOON = [
 export default function AiForIndexPage() {
   return (
     <div className="min-h-screen bg-white text-gray-900 font-sans">
+      <PublicNav />
       <nav className="border-b border-gray-100 px-4 py-4">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <Link href="/" className="font-black text-xl"><span className="text-indigo-600">⚡</span> Kyra</Link>
@@ -63,6 +66,7 @@ export default function AiForIndexPage() {
           <p className="text-xs text-gray-400 mt-3">All 21 templates available inside the platform. <Link href="/signup/agency" className="text-indigo-500 underline">Start free →</Link></p>
         </div>
       </div>
+      <PublicFooter />
     </div>
   );
 }

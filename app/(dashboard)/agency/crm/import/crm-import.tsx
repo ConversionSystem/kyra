@@ -105,7 +105,7 @@ export function CrmImport() {
       {/* Import Sources */}
       <div className="grid grid-cols-2 gap-4">
         {/* GHL Import */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-6 hover:border-indigo-200 transition">
+        <div className="bg-white border border-gray-200 rounded-xl p-6 hover:border-indigo-200 transition">
           <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mb-4">
             <Database className="h-6 w-6 text-blue-600" />
           </div>
@@ -116,7 +116,7 @@ export function CrmImport() {
           <Button
             onClick={handleGhlImport}
             disabled={importing === 'ghl'}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
           >
             {importing === 'ghl' ? (
               <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Importing...</>
@@ -127,7 +127,7 @@ export function CrmImport() {
         </div>
 
         {/* CSV Import */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-6 hover:border-indigo-200 transition">
+        <div className="bg-white border border-gray-200 rounded-xl p-6 hover:border-indigo-200 transition">
           <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center mb-4">
             <FileText className="h-6 w-6 text-green-600" />
           </div>
@@ -174,7 +174,7 @@ export function CrmImport() {
 
       {/* Results */}
       {result && (
-        <div className="bg-white border border-gray-200 rounded-2xl p-6">
+        <div className="bg-white border border-gray-200 rounded-xl p-6">
           <div className="flex items-center gap-2 mb-4">
             <CheckCircle2 className="h-5 w-5 text-green-500" />
             <h3 className="font-bold text-gray-900">Import Complete</h3>

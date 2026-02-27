@@ -425,7 +425,7 @@ export default function PipelineClient() {
 
       {/* ── STAGE 1: CREATE CAMPAIGN ── */}
       {activeStage === 'create' && (
-        <div className="bg-white border border-gray-200 rounded-2xl p-6 max-w-2xl mx-auto">
+        <div className="bg-white border border-gray-200 rounded-xl p-6 max-w-2xl mx-auto">
           <h2 className="text-lg font-bold flex items-center gap-2 mb-1">
             <Rocket className="h-5 w-5 text-indigo-500" /> Create Campaign
           </h2>
@@ -821,7 +821,7 @@ export default function PipelineClient() {
               const isEditing = editingLead === lead.id;
               const isSelected = selectedIds.has(lead.id);
               return (
-                <div key={lead.id} className={`bg-white border rounded-2xl overflow-hidden transition ${
+                <div key={lead.id} className={`bg-white border rounded-xl overflow-hidden transition ${
                   isSelected ? 'border-indigo-400 ring-2 ring-indigo-100' : 'border-gray-200'
                 }`}>
                   {/* Header */}
@@ -1105,7 +1105,7 @@ export default function PipelineClient() {
       {/* ═══ LEAD DETAIL MODAL ═══ */}
       {selectedLead && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => { setSelectedLead(null); setConversation([]); }}>
-          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
             {/* Header */}
             <div className="p-5 border-b shrink-0">
               <div className="flex items-start justify-between">

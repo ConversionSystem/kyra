@@ -261,7 +261,7 @@ function AddContactModal({ onClose, onCreated }: { onClose: () => void; onCreate
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
+      <form onSubmit={handleSubmit} className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
         <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
           <Plus className="h-5 w-5 text-indigo-600" /> Add Contact
         </h3>

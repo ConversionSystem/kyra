@@ -323,7 +323,7 @@ export default function AutomationsClient() {
       {/* Jobs List */}
       {jobs.length === 0 && !showCreate ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="p-4 bg-amber-50 rounded-2xl mb-4">
+          <div className="p-4 bg-amber-50 rounded-xl mb-4">
             <Zap className="h-10 w-10 text-amber-600" />
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">No automations yet</h3>

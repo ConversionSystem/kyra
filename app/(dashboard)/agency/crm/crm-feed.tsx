@@ -68,7 +68,7 @@ export function CrmCommandFeed() {
   const stats = feed?.stats || { total_contacts: 0, pipeline_value: 0, hot_leads: 0, ai_handled_count: 0 };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="p-4 sm:p-6 md:p-8 max-w-7xl space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -91,7 +91,7 @@ export function CrmCommandFeed() {
       {/* KPI Cards */}
       <div className="grid grid-cols-3 gap-4">
         <button onClick={() => router.push('/agency/crm/contacts')}
-          className="bg-white border border-gray-200 rounded-2xl p-5 text-left hover:border-indigo-200 hover:shadow-sm transition">
+          className="bg-white border border-gray-200 rounded-xl p-5 text-left hover:border-indigo-200 hover:shadow-sm transition">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
               <Users className="h-5 w-5 text-indigo-600" />
@@ -101,7 +101,7 @@ export function CrmCommandFeed() {
           <div className="text-3xl font-bold text-gray-900">{stats.total_contacts}</div>
         </button>
 
-        <div className="bg-white border border-gray-200 rounded-2xl p-5">
+        <div className="bg-white border border-gray-200 rounded-xl p-5">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center">
               <TrendingUp className="h-5 w-5 text-purple-600" />
@@ -113,7 +113,7 @@ export function CrmCommandFeed() {
           </div>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-2xl p-5">
+        <div className="bg-white border border-gray-200 rounded-xl p-5">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center">
               <Flame className="h-5 w-5 text-red-500" />
@@ -144,7 +144,7 @@ export function CrmCommandFeed() {
 
       {/* Empty state */}
       {(!feed?.attention_items?.length) && (
-        <div className="bg-green-50 border border-green-200 rounded-2xl p-6 text-center">
+        <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-center">
           <CheckCircle2 className="h-8 w-8 text-green-500 mx-auto mb-2" />
           <p className="font-semibold text-green-800">All clear!</p>
           <p className="text-sm text-green-600 mt-1">Nothing needs your attention right now. AI is handling everything.</p>
@@ -153,7 +153,7 @@ export function CrmCommandFeed() {
 
       {/* AI Handled Today */}
       {stats.ai_handled_count > 0 && (
-        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
           <button
             onClick={() => setAiHandledOpen(!aiHandledOpen)}
             className="w-full px-5 py-3 flex items-center justify-between hover:bg-gray-50 transition"
@@ -186,7 +186,7 @@ export function CrmCommandFeed() {
         <h2 className="text-sm font-bold text-gray-900 flex items-center gap-2 mb-3">
           <Clock className="h-4 w-4 text-gray-400" /> RECENT ACTIVITY
         </h2>
-        <div className="bg-white border border-gray-200 rounded-2xl divide-y divide-gray-100">
+        <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
           {(feed?.recent_activities || []).length === 0 ? (
             <div className="p-6 text-center text-sm text-gray-400">
               No activity yet. Create your first contact or run a pipeline campaign.

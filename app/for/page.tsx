@@ -5,6 +5,8 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 
+import PublicNav from '@/components/layout/public-nav';
+import PublicFooter from '@/components/layout/public-footer';
 export const metadata: Metadata = {
   title: 'Kyra — AI Workforce for Your GHL Clients',
   description:
@@ -104,6 +106,7 @@ export default async function ForPage({ searchParams }: Props) {
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
+      <PublicNav />
 
       {/* Personalized header bar */}
       <div className="bg-indigo-900 text-white px-4 py-3 text-center text-sm">
@@ -304,6 +307,7 @@ export default async function ForPage({ searchParams }: Props) {
           <p className="text-indigo-400 text-sm mt-4">No credit card · 10-minute setup · Cancel anytime</p>
         </div>
       </section>
+      <PublicFooter />
     </div>
   );
 }

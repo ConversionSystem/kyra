@@ -116,7 +116,7 @@ export default function IntegrationsPage() {
       </div>
 
       {/* ═══ NATIVE VS WEBHOOK EXPLAINER ═══ */}
-      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 rounded-2xl p-5">
+      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 rounded-xl p-5">
         <button onClick={() => setShowComparison(!showComparison)} className="w-full flex items-center justify-between text-left">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm">
@@ -197,7 +197,7 @@ export default function IntegrationsPage() {
         </div>
 
         {/* GHL — The main one */}
-        <div className="bg-white border-2 border-indigo-200 rounded-2xl overflow-hidden shadow-sm mb-4">
+        <div className="bg-white border-2 border-indigo-200 rounded-xl overflow-hidden shadow-sm mb-4">
           {/* GHL Header */}
           <div className="p-5 bg-gradient-to-r from-indigo-50 to-white">
             <div className="flex items-center justify-between">
@@ -320,7 +320,7 @@ export default function IntegrationsPage() {
       {/* ═══ GHL CONNECT MODAL ═══ */}
       {showGhlConnect && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => !connectingGhl && setShowGhlConnect(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold flex items-center gap-2">
                 <span className="text-2xl">📊</span> Connect GoHighLevel
