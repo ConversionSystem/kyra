@@ -9,6 +9,7 @@ import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { getSystemPromptForClient, getSessionKeyForClient } from '@/lib/agency/container';
 import { sendGHLMessage, getValidToken } from './api';
 import { getGatewayByClientId } from '@/lib/ovh/gateway-resolver';
+import { logConversationToCrm } from '@/lib/crm/conversation-logger';
 import type { GHLWebhookPayload, GHLMessageChannel } from './types';
 import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
 
@@ -108,6 +109,35 @@ export async function processInboundMessage(
   }
 
   console.log(`[ghl/handler] ✅ Reply sent to ${contactName} for "${client.name}"`);
+
+  // ── Log both sides to CRM ──────────────────────────────────────────────
+  const agencyId = client.agency_id;
+  if (agencyId) {
+    // Log inbound message
+    logConversationToCrm(agencyId, {
+      type: 'InboundMessage',
+      contactId,
+      phone: payload.phone,
+      email: payload.email,
+      body: messageBody,
+      messageType: messageType,
+      direction: 'inbound',
+      firstName: payload.phone || undefined,
+      name: contactName,
+    }).catch((err) => console.error('[ghl/handler] CRM log inbound failed:', err));
+
+    // Log AI response
+    logConversationToCrm(agencyId, {
+      type: 'OutboundMessage',
+      contactId,
+      phone: payload.phone,
+      email: payload.email,
+      body: aiResponse,
+      messageType: messageType,
+      direction: 'outbound',
+      name: 'AI Worker',
+    }).catch((err) => console.error('[ghl/handler] CRM log outbound failed:', err));
+  }
 }
 
 // ── Bridge Communication ──────────────────────────────────────────────────────

@@ -7,6 +7,15 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
+interface AttributionDeal {
+  deal_name: string;
+  value: number;
+  source: string;
+  contact_id: string | null;
+  stages: string[];
+  created_at: string;
+}
+
 interface Analytics {
   revenue_by_source: Record<string, { total: number; won: number; pipeline: number; count: number }>;
   funnel: {
@@ -20,6 +29,8 @@ interface Analytics {
   };
   ai_stats: { actions_30d: number; crm_credits_used_30d: number };
   score_distribution: Record<string, number>;
+  attribution_chain: AttributionDeal[];
+  last_autopilot_digest: { body: string; metadata: Record<string, unknown>; created_at: string } | null;
 }
 
 export function CrmAnalytics() {
@@ -65,7 +76,7 @@ export function CrmAnalytics() {
     return <div className="p-8 text-center text-gray-500">Failed to load analytics.</div>;
   }
 
-  const { funnel, ai_stats, score_distribution, revenue_by_source } = data;
+  const { funnel, ai_stats, score_distribution, revenue_by_source, attribution_chain, last_autopilot_digest } = data;
 
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-6">
@@ -181,6 +192,69 @@ export function CrmAnalytics() {
           <p className="text-sm text-gray-600 mt-1">
             ${funnel.won_value.toLocaleString()} revenue from {ai_stats.crm_credits_used_30d} credits
             (${(ai_stats.crm_credits_used_30d * 0.01).toFixed(2)} cost)
+          </p>
+        </div>
+      )}
+
+      {/* Revenue Attribution Chain */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <h2 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <TrendingUp className="h-4 w-4 text-green-500" /> REVENUE ATTRIBUTION CHAIN
+        </h2>
+        <p className="text-xs text-gray-500 mb-4">
+          Source → AI Outreach → Customer Reply → Meeting → Deal Won — the complete journey for every dollar earned.
+        </p>
+        {attribution_chain.length === 0 ? (
+          <div className="text-center py-8 text-gray-400">
+            <DollarSign className="h-8 w-8 mx-auto mb-2 opacity-50" />
+            <p className="text-sm">No won deals yet. Close your first deal to see the full attribution chain.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {attribution_chain.map((deal, i) => (
+              <div key={i} className="border border-gray-100 rounded-lg p-4 hover:border-indigo-200 transition">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="font-semibold text-gray-900">{deal.deal_name}</span>
+                  <span className="text-lg font-bold text-green-600">${deal.value.toLocaleString()}</span>
+                </div>
+                <div className="flex items-center gap-1 flex-wrap">
+                  {deal.stages.map((stage, j) => (
+                    <span key={j} className="flex items-center">
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                        stage === 'Deal Won' ? 'bg-green-100 text-green-700' :
+                        stage === 'Customer Replied' ? 'bg-blue-100 text-blue-700' :
+                        stage === 'Meeting Held' ? 'bg-purple-100 text-purple-700' :
+                        stage.startsWith('AI') ? 'bg-indigo-100 text-indigo-700' :
+                        'bg-gray-100 text-gray-700'
+                      }`}>
+                        {stage}
+                      </span>
+                      {j < deal.stages.length - 1 && (
+                        <ArrowRight className="h-3 w-3 text-gray-300 mx-1 shrink-0" />
+                      )}
+                    </span>
+                  ))}
+                </div>
+                <p className="text-[10px] text-gray-400 mt-2">
+                  {new Date(deal.created_at).toLocaleDateString()}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Last Autopilot Digest */}
+      {last_autopilot_digest && (
+        <div className="bg-white border border-gray-200 rounded-xl p-6">
+          <h2 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <Bot className="h-4 w-4 text-indigo-500" /> LAST AI AUTOPILOT RUN
+          </h2>
+          <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-700 whitespace-pre-wrap">
+            {last_autopilot_digest.body}
+          </div>
+          <p className="text-[10px] text-gray-400 mt-2">
+            {new Date(last_autopilot_digest.created_at).toLocaleString()}
           </p>
         </div>
       )}
