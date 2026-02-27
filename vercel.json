@@ -15,6 +15,10 @@
     {
       "path": "/api/cron/follow-ups",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/crm-autopilot",
+      "schedule": "0 7 * * *"
     }
   ]
 }
