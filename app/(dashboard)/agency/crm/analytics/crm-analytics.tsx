@@ -100,7 +100,7 @@ export function CrmAnalytics() {
       </div>
 
       {/* Top KPIs */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         <KpiCard icon={<Users className="h-5 w-5 text-indigo-600" />} label="Total Contacts" value={funnel.total_contacts} bg="bg-indigo-50" />
         <KpiCard icon={<Target className="h-5 w-5 text-purple-600" />} label="Active Deals" value={funnel.deals} bg="bg-purple-50" />
         <KpiCard icon={<DollarSign className="h-5 w-5 text-green-600" />} label="Won Revenue" value={`$${funnel.won_value.toLocaleString()}`} bg="bg-green-50" />
@@ -112,7 +112,7 @@ export function CrmAnalytics() {
         <h2 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
           <TrendingUp className="h-4 w-4 text-indigo-500" /> CONVERSION FUNNEL
         </h2>
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-2">
           <FunnelStep label="Leads" count={funnel.leads} total={funnel.total_contacts} color="bg-indigo-500" />
           <ArrowRight className="h-4 w-4 text-gray-300 shrink-0" />
           <FunnelStep label="Contacts" count={funnel.contacts} total={funnel.total_contacts} color="bg-purple-500" />
@@ -124,7 +124,7 @@ export function CrmAnalytics() {
       </div>
 
       {/* Two columns */}
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
         {/* Revenue by Source */}
         <div className="bg-white border border-gray-200 rounded-xl p-6">
           <h2 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
