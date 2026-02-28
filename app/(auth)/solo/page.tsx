@@ -204,13 +204,21 @@ export default function SoloSignupPage() {
             <br />
             <span className="text-emerald-400">60 seconds to launch.</span>
           </h1>
-          <p className="text-slate-400 text-lg mb-8">
+          <p className="text-slate-400 text-lg mb-4">
             One AI that answers customers, manages your CRM, and never sleeps. Built for solo business owners.
+          </p>
+          <p className="text-slate-500 text-sm mb-8 flex items-center gap-2">
+            Powered by{' '}
+            <a href="https://openclaw.ai" target="_blank" rel="noopener noreferrer" className="text-slate-300 hover:text-white font-semibold transition inline-flex items-center gap-1">
+              OpenClaw
+              <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded font-medium text-slate-400">AI</span>
+            </a>
+            — the open-source AI agent platform
           </p>
 
           <div className="space-y-4">
             {[
-              { icon: Bot, title: '1 AI Worker', desc: 'Your own autonomous AI — trained on your business' },
+              { icon: Bot, title: 'Your Own OpenClaw Agent', desc: 'A dedicated OpenClaw AI worker — trained on your business, running 24/7' },
               { icon: MessageSquare, title: 'Web Chat', desc: 'Embed on your site — customers chat with your AI 24/7' },
               { icon: BookOpen, title: 'Train from Website', desc: 'Drop your URL — AI learns your business instantly' },
               { icon: Coins, title: '50 Free Credits/Month', desc: 'Enough for 50 AI conversations — on the house' },
@@ -274,7 +282,7 @@ export default function SoloSignupPage() {
               Stop doing everything yourself.
             </h2>
             <p className="text-slate-400 mt-3 max-w-xl mx-auto">
-              Kyra isn&apos;t another tool to learn. It&apos;s an AI worker that handles the tasks you keep putting off.
+              Kyra gives you your own OpenClaw AI agent — a real AI worker that handles the tasks you keep putting off.
             </p>
           </div>
 
@@ -415,14 +423,14 @@ export default function SoloSignupPage() {
               },
               {
                 step: '02',
-                title: 'Kyra trains on your business',
-                desc: 'Your AI reads your website, learns your services, hours, pricing, and FAQs. It sounds like you — not a generic chatbot.',
+                title: 'OpenClaw trains on your business',
+                desc: 'Your OpenClaw agent reads your website, learns your services, hours, pricing, and FAQs. It sounds like you — not a generic chatbot.',
                 icon: Sparkles,
               },
               {
                 step: '03',
                 title: 'Go live — customers talk to your AI',
-                desc: 'Embed the web chat on your site or share the link. Kyra answers questions, captures leads, and fills your CRM automatically.',
+                desc: 'Embed the web chat on your site or share the link. Your OpenClaw agent answers questions, captures leads, and fills your CRM — automatically.',
                 icon: Zap,
               },
             ].map((s) => (
@@ -496,8 +504,12 @@ export default function SoloSignupPage() {
               answer="Absolutely. The free tier includes web chat and CRM. When you're ready for SMS, email outreach, automated follow-ups, or a full sales pipeline, just upgrade to a paid plan. Everything is already built — you just unlock it."
             />
             <FAQItem
+              question="What is OpenClaw?"
+              answer="OpenClaw is the leading open-source AI agent platform — the technology that powers your Kyra AI worker. It's trusted by thousands of developers and businesses worldwide. Kyra gives you the power of OpenClaw without any setup complexity — we handle the hosting, configuration, and infrastructure so you just get a working AI."
+            />
+            <FAQItem
               question="Is my data safe?"
-              answer="Your AI runs in its own isolated container — completely separate from other users. Your data never touches another account. We use enterprise-grade encryption and your container runs on secure, dedicated infrastructure."
+              answer="Your AI runs in its own isolated OpenClaw container — completely separate from other users. Your data never touches another account. We use enterprise-grade encryption and your container runs on secure, dedicated infrastructure."
             />
             <FAQItem
               question="What happens after the beta?"
@@ -539,7 +551,7 @@ export default function SoloSignupPage() {
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-md bg-emerald-600 flex items-center justify-center font-black text-[10px]">K</div>
-            <span className="text-sm text-slate-500">Kyra · AI Workforce Platform</span>
+            <span className="text-sm text-slate-500">Kyra · Powered by <a href="https://openclaw.ai" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-white transition">OpenClaw</a></span>
           </div>
           <div className="flex items-center gap-6 text-sm text-slate-500">
             <Link href="/login" className="hover:text-white transition">Sign in</Link>
