@@ -136,6 +136,42 @@ const planColors: Record<string, string> = {
   beta:    'border-amber-200 bg-amber-50 text-amber-700',
 };
 
+// ─── Solo Mode Nav ─────────────────────────────────────────────────────────
+// Solo users see a simplified sidebar with only the features they need.
+// Agency users see the full sidebar unchanged.
+
+const soloNavSections: NavSection[] = [
+  {
+    items: [
+      { label: 'Overview', href: '/agency', icon: LayoutDashboard },
+      { label: 'Conversations', href: '/agency/conversations', icon: MessageSquare },
+    ],
+  },
+  {
+    label: 'CRM',
+    items: [
+      { label: 'My CRM', href: '/agency/crm', icon: Inbox },
+      { label: 'Contacts', href: '/agency/crm/contacts', icon: ContactIcon },
+      { label: 'Companies', href: '/agency/crm/companies', icon: Building2Icon },
+      { label: 'Deals', href: '/agency/crm/deals', icon: TargetIcon },
+    ],
+  },
+  {
+    label: 'AI Worker',
+    items: [
+      { label: 'Knowledge Base', href: '/agency/clients', icon: BookOpen },
+      { label: 'Channels', href: '/agency/channels', icon: Radio },
+    ],
+  },
+  {
+    label: 'Account',
+    items: [
+      { label: 'Credits', href: '/agency/credits', icon: Coins },
+      { label: 'Settings', href: '/agency/settings', icon: Settings },
+    ],
+  },
+];
+
 interface AgencySidebarProps {
   agencyName: string;
   plan: string;
@@ -144,6 +180,7 @@ interface AgencySidebarProps {
 }
 
 export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySidebarProps) {
+  const isSolo = (settings as Record<string, unknown> | undefined)?.account_type === 'solo';
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [agencyGatewayUrl, setAgencyGatewayUrl] = useState<string | null>(null);
@@ -258,7 +295,7 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
 
       {/* Navigation */}
       <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
-        {navSections.map((section, si) => (
+        {(isSolo ? soloNavSections : navSections).map((section, si) => (
           <div key={si}>
             {section.label && (
               <div className={cn(
@@ -354,13 +391,13 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
             ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
             : <Terminal className="h-4 w-4 shrink-0" />
           }
-          {provisioningGateway ? 'Starting terminal...' : 'OpenClaw Terminal'}
+          {provisioningGateway ? 'Starting...' : isSolo ? 'My AI Worker' : 'OpenClaw Terminal'}
           {agencyGatewayUrl && !provisioningGateway && (
             <ExternalLink className="h-3 w-3 ml-auto" />
           )}
         </a>
         <div className={cn('px-3 mt-0.5 text-[10px]', hasBranding ? 'text-white/30' : 'text-gray-600')}>
-          {provisioningGateway ? 'Provisioning your container...' : 'Your private AI · opens in new tab'}
+          {provisioningGateway ? 'Provisioning your AI worker...' : isSolo ? 'Your AI assistant · opens in new tab' : 'Your private AI · opens in new tab'}
         </div>
       </div>
     </>
