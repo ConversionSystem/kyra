@@ -317,13 +317,13 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
               ? <Loader2 className="h-5 w-5 shrink-0 animate-spin" />
               : <Terminal className="h-5 w-5 shrink-0" />
             }
-            {provisioningGateway ? 'Starting AI Worker...' : '🤖 My AI Worker'}
+            {provisioningGateway ? 'Starting Terminal...' : 'OpenClaw Terminal'}
             {agencyGatewayUrl && !provisioningGateway && (
               <ExternalLink className="h-3.5 w-3.5 ml-auto opacity-70" />
             )}
           </a>
           {!agencyGatewayUrl && !provisioningGateway && (
-            <p className="text-[10px] text-gray-500 px-1 mt-1.5">Container provisioning — refresh in a moment</p>
+            <p className="text-[10px] text-gray-500 px-1 mt-1.5">Terminal provisioning — refresh in a moment</p>
           )}
         </div>
       )}
