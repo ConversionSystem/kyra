@@ -16,6 +16,7 @@ interface PortalChatProps {
   gatewayUrl: string;
   gatewayToken: string;
   accentColor?: string;
+  showPoweredByKyra?: boolean;
 }
 
 function timeStr(d: Date) {
@@ -28,6 +29,7 @@ export default function PortalChat({
   gatewayUrl,
   gatewayToken,
   accentColor = '#4f46e5',
+  showPoweredByKyra = false,
 }: PortalChatProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -263,7 +265,21 @@ export default function PortalChat({
             )}
           </button>
         </form>
-        <p className="text-center text-[10px] text-gray-300 mt-2">Powered by Kyra AI</p>
+        {showPoweredByKyra ? (
+          <a
+            href="https://kyra.conversionsystem.com/solo"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-1.5 mt-2 py-1 text-[10px] text-gray-400 hover:text-gray-600 transition group"
+          >
+            <span className="inline-flex items-center gap-1 bg-gray-100 border border-gray-200 rounded-full px-2.5 py-0.5 group-hover:bg-gray-200 transition">
+              <span className="font-semibold text-gray-500">Powered by Kyra</span>
+              <span className="text-gray-400">— AI for business</span>
+            </span>
+          </a>
+        ) : (
+          <p className="text-center text-[10px] text-gray-300 mt-2">Powered by Kyra AI</p>
+        )}
       </div>
     </div>
   );

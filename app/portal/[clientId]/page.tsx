@@ -33,6 +33,7 @@ export default async function ClientPortalPage({
 
   const agencySettings = (agency?.settings as Record<string, unknown>) || {};
   const accentColor = (agencySettings.accent_color as string | undefined) || '#4f46e5';
+  const isSoloAccount = agencySettings.account_type === 'solo';
 
   // ?terminal=1 → send to raw OpenClaw terminal (power user / agency testing)
   if (sp?.terminal === '1' && client.gateway_status === 'running' && client.gateway_url) {
@@ -51,6 +52,7 @@ export default async function ClientPortalPage({
         gatewayUrl={client.gateway_url}
         gatewayToken={client.gateway_token}
         accentColor={accentColor}
+        showPoweredByKyra={isSoloAccount}
       />
     );
   }
