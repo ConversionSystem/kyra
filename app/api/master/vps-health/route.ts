@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
 const MASTER_EMAILS = ['hello@conversionsystem.com', 'angel@conversionsystem.com'];
-const VPS_URL = 'http://192.99.43.7:9090/health';
+const VPS_URL = 'https://provisioner.gw.kyra.conversionsystem.com/health';
 const VPS_TOKEN = process.env.OVH_PROVISIONER_SECRET ?? 'kyra-provisioner-2026';
 
 export async function GET() {

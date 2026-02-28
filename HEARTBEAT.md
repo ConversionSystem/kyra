@@ -44,7 +44,7 @@ On every heartbeat: check VPS, check build, pick next PR, ship it.
 
 ## VPS Health Check
 ```bash
-curl -s -H "Authorization: Bearer kyra-provisioner-2026" http://192.99.43.7:9090/health
+curl -s -H "Authorization: Bearer kyra-provisioner-2026" http://provisioner.gw.kyra.conversionsystem.com/health
 ```
 All 9 containers should be running.
 

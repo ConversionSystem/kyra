@@ -15,7 +15,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-const PROVISIONER_URL = process.env.OVH_PROVISIONER_URL || 'http://192.99.43.7:9090';
+const PROVISIONER_URL = process.env.OVH_PROVISIONER_URL || 'https://provisioner.gw.kyra.conversionsystem.com';
 const PROVISIONER_SECRET = process.env.OVH_PROVISIONER_SECRET || '';
 const GATEWAY_DOMAIN = 'gw.kyra.conversionsystem.com';
 
