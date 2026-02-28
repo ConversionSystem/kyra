@@ -1,3 +1,6 @@
+// Allow up to 5 minutes for bulk enrichment (48+ leads)
+export const maxDuration = 300;
+
 /**
  * POST /api/agency/pipeline/enrich
  * Deep enrichment — scrapes website, extracts contacts, socials, and writes killer emails.
@@ -13,11 +16,15 @@
  * - Identify the decision-maker
  * - Write a hyper-personalized email
  * - Write an SMS opener
+ *
+ * BULK FIX: Processes leads in parallel batches of 3 (was sequential = timeout on 48+ leads)
+ * BYOK FIX: Uses agency's own API key when available, skips credit deduction for BYOK
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { logAndFire } from '@/lib/pipeline/webhooks';
 import { requireCredits, deductCredits } from '@/lib/billing/credit-engine';
+import { resolveAgencyApiKey } from '@/lib/billing/byok';
 
 async function getAgencyId(userId: string): Promise<string | null> {
   const svc = createServiceClientWithoutCookies();
@@ -185,8 +192,13 @@ export async function POST(req: NextRequest) {
   const { lead_ids } = await req.json();
   if (!lead_ids?.length) return NextResponse.json({ error: 'lead_ids required' }, { status: 400 });
 
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return NextResponse.json({ error: 'OPENAI_API_KEY not configured' }, { status: 500 });
+  // ── Resolve API key: agency BYOK first, then platform key ──
+  const resolved = await resolveAgencyApiKey(agencyId);
+  if (!resolved.apiKey) {
+    return NextResponse.json({ error: 'No API key configured. Add your own OpenAI key in Settings or contact support.' }, { status: 500 });
+  }
+  const apiKey = resolved.apiKey;
+  const isByok = resolved.isByok;
 
   const svc = createServiceClientWithoutCookies();
 
@@ -198,18 +210,20 @@ export async function POST(req: NextRequest) {
 
   if (!leads?.length) return NextResponse.json({ error: 'No leads found' }, { status: 404 });
 
-  // ── Pre-flight credit check (2 credits per lead) ──
+  // ── Pre-flight credit check (2 credits per lead) — SKIP if BYOK ──
   const enrichableLeads = leads.filter((l: Record<string, unknown>) => l.stage === 'approved' || l.stage === 'found');
-  const creditCheck = await requireCredits(agencyId, 'pipeline.enrich', enrichableLeads.length);
-  if (!creditCheck.allowed) {
-    return NextResponse.json({
-      error: 'Insufficient credits',
-      balance: creditCheck.balance,
-      cost: creditCheck.cost,
-      shortfall: creditCheck.shortfall,
-      message: `Enriching ${enrichableLeads.length} leads costs ${creditCheck.cost} credits but you have ${creditCheck.balance}. Add credits to continue.`,
-      buyUrl: '/agency/credits',
-    }, { status: 402 });
+  if (!isByok) {
+    const creditCheck = await requireCredits(agencyId, 'pipeline.enrich', enrichableLeads.length);
+    if (!creditCheck.allowed) {
+      return NextResponse.json({
+        error: 'Insufficient credits',
+        balance: creditCheck.balance,
+        cost: creditCheck.cost,
+        shortfall: creditCheck.shortfall,
+        message: `Enriching ${enrichableLeads.length} leads costs ${creditCheck.cost} credits but you have ${creditCheck.balance}. Add credits or add your own API key in Settings to continue.`,
+        buyUrl: '/agency/credits',
+      }, { status: 402 });
+    }
   }
 
   // Stage gate: only approved leads can be researched
@@ -228,7 +242,10 @@ export async function POST(req: NextRequest) {
     found_socials?: number;
   }> = [];
 
-  for (const lead of leads) {
+  // ── Process in PARALLEL batches of 3 (was sequential = timeout on 48+ leads) ──
+  const BATCH_SIZE = 3;
+
+  const processLead = async (lead: typeof leads[number]) => {
     const campaign = (lead as Record<string, unknown>).pipeline_campaigns as Record<string, string> | undefined;
     const valueProp = campaign?.value_prop || 'AI-powered workforce platform for agencies';
     const painPoints = campaign?.target_pain_points || '';
@@ -348,8 +365,7 @@ Return JSON:
       });
 
       if (!aiRes.ok) {
-        results.push({ id: lead.id, status: 'error', error: `OpenAI ${aiRes.status}` });
-        continue;
+        return { id: lead.id, status: 'error' as const, error: `OpenAI ${aiRes.status}` };
       }
 
       const aiData = await aiRes.json();
@@ -437,26 +453,36 @@ Return JSON:
         'system',
       );
 
-      results.push({
+      return {
         id: lead.id,
-        status: 'enriched',
+        status: 'enriched' as const,
         found_person: hasRealPerson,
         found_emails: allEmails.length,
         found_phones: allPhones.length,
         found_socials: Object.keys(allSocials).length,
-      });
+      };
     } catch (err) {
-      results.push({ id: lead.id, status: 'error', error: err instanceof Error ? err.message : 'Unknown' });
+      return { id: lead.id, status: 'error' as const, error: err instanceof Error ? err.message : 'Unknown' };
     }
+  };
 
-    await new Promise(r => setTimeout(r, 500));
+  // Process in batches of 3 for parallel speed without overwhelming the API
+  for (let i = 0; i < leads.length; i += BATCH_SIZE) {
+    const batch = leads.slice(i, i + BATCH_SIZE);
+    const batchResults = await Promise.all(batch.map(processLead));
+    results.push(...batchResults);
+
+    // Brief pause between batches to avoid rate limits
+    if (i + BATCH_SIZE < leads.length) {
+      await new Promise(r => setTimeout(r, 300));
+    }
   }
 
   const enriched = results.filter(r => r.status === 'enriched').length;
   const errors = results.filter(r => r.status === 'error').length;
 
-  // Deduct credits for successfully enriched leads only
-  if (enriched > 0) {
+  // Deduct credits for successfully enriched leads only — SKIP if BYOK
+  if (enriched > 0 && !isByok) {
     await deductCredits(agencyId, 'pipeline.enrich', {
       multiplier: enriched,
       description: `Enrich ${enriched} leads`,
@@ -473,6 +499,8 @@ Return JSON:
     with_emails: withEmails,
     with_phones: withPhones,
     with_socials: withSocials,
+    byok: isByok,
+    credits_charged: isByok ? 0 : enriched * 2,
     results,
   });
 }

@@ -25,6 +25,7 @@ import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/
 import { logAndFire } from '@/lib/pipeline/webhooks';
 import { findLeads, parseCsv, type LeadSourceType, type CsvLeadRow } from '@/lib/pipeline/lead-sources';
 import { requireCredits, deductCredits } from '@/lib/billing/credit-engine';
+import { resolveAgencyApiKey } from '@/lib/billing/byok';
 
 async function getAgencyId(userId: string): Promise<string | null> {
   const svc = createServiceClientWithoutCookies();
@@ -61,26 +62,30 @@ export async function POST(req: NextRequest) {
   const svc = createServiceClientWithoutCookies();
   const settings = await getAgencySettings(agencyId);
 
-  // Resolve API keys
-  const openaiKey = process.env.OPENAI_API_KEY;
+  // Resolve API keys — prefer agency BYOK
+  const resolved = await resolveAgencyApiKey(agencyId);
+  const openaiKey = resolved.apiKey || process.env.OPENAI_API_KEY;
+  const isByok = resolved.isByok;
   const outscraperKey = (settings.outscraper_api_key as string) || process.env.OUTSCRAPER_API_KEY || '';
-  const enrichModel = enrich_model || (settings.pipeline_model as string) || 'gpt-4o';
+  const enrichModel = enrich_model || (settings.pipeline_model as string) || resolved.model || 'gpt-4o';
 
   if (!openaiKey && lead_source === 'ai_discovery') {
-    return NextResponse.json({ error: 'OpenAI API key not configured' }, { status: 500 });
+    return NextResponse.json({ error: 'No API key configured. Add your own key in Settings or contact support.' }, { status: 500 });
   }
 
-  // ── Pre-flight credit check ──────────────────────────────────────────────
-  const creditCheck = await requireCredits(agencyId, 'pipeline.find_leads');
-  if (!creditCheck.allowed) {
-    return NextResponse.json({
-      error: 'Insufficient credits',
-      balance: creditCheck.balance,
-      cost: creditCheck.cost,
-      shortfall: creditCheck.shortfall,
-      message: `This campaign requires ${creditCheck.cost} credits but you have ${creditCheck.balance}. Add credits to continue.`,
-      buyUrl: '/agency/credits',
-    }, { status: 402 });
+  // ── Pre-flight credit check (skip if BYOK) ──────────────────────────────
+  if (!isByok) {
+    const creditCheck = await requireCredits(agencyId, 'pipeline.find_leads');
+    if (!creditCheck.allowed) {
+      return NextResponse.json({
+        error: 'Insufficient credits',
+        balance: creditCheck.balance,
+        cost: creditCheck.cost,
+        shortfall: creditCheck.shortfall,
+        message: `This campaign requires ${creditCheck.cost} credits but you have ${creditCheck.balance}. Add credits or add your own API key in Settings.`,
+        buyUrl: '/agency/credits',
+      }, { status: 402 });
+    }
   }
 
   // Parse CSV if provided
@@ -164,10 +169,12 @@ export async function POST(req: NextRequest) {
           controller.close(); return;
         }
 
-        // ═══ DEDUCT CREDITS ═══
-        await deductCredits(agencyId, 'pipeline.find_leads', {
-          description: `Find leads: "${name}" (${result.leads.length} leads via ${result.source})`,
-        });
+        // ═══ DEDUCT CREDITS (skip if BYOK) ═══
+        if (!isByok) {
+          await deductCredits(agencyId, 'pipeline.find_leads', {
+            description: `Find leads: "${name}" (${result.leads.length} leads via ${result.source})`,
+          });
+        }
 
         // ═══ STEP 3: INSERT LEADS INTO DB ═══
         const leadsToInsert = result.leads.map(lead => ({
