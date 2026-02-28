@@ -293,6 +293,41 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
         </div>
       </div>
 
+      {/* Solo: AI Worker button at the TOP — this is the product */}
+      {isSolo && (
+        <div className="px-3 pt-3">
+          <a
+            href={agencyGatewayUrl
+              ? (agencyGatewayToken ? `${agencyGatewayUrl}?token=${agencyGatewayToken}` : agencyGatewayUrl)
+              : '#'}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => {
+              if (!agencyGatewayUrl) e.preventDefault();
+              setMobileOpen(false);
+            }}
+            className={cn(
+              'flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all',
+              agencyGatewayUrl
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-emerald-600 hover:to-teal-600 shadow-lg shadow-emerald-500/25'
+                : 'bg-gray-800 text-gray-500 cursor-not-allowed'
+            )}
+          >
+            {provisioningGateway
+              ? <Loader2 className="h-5 w-5 shrink-0 animate-spin" />
+              : <Terminal className="h-5 w-5 shrink-0" />
+            }
+            {provisioningGateway ? 'Starting AI Worker...' : '🤖 My AI Worker'}
+            {agencyGatewayUrl && !provisioningGateway && (
+              <ExternalLink className="h-3.5 w-3.5 ml-auto opacity-70" />
+            )}
+          </a>
+          {!agencyGatewayUrl && !provisioningGateway && (
+            <p className="text-[10px] text-gray-500 px-1 mt-1.5">Container provisioning — refresh in a moment</p>
+          )}
+        </div>
+      )}
+
       {/* Navigation */}
       <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
         {(isSolo ? soloNavSections : navSections).map((section, si) => (
@@ -364,42 +399,44 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
         )}
       </nav>
 
-      {/* Agency's Own OpenClaw Terminal — dedicated container, separate from clients */}
-      <div className={cn('p-3 border-t', hasBranding ? 'border-white/10' : 'border-gray-800')}>
-        <a
-          href={agencyGatewayUrl
-            ? (agencyGatewayToken ? `${agencyGatewayUrl}?token=${agencyGatewayToken}` : agencyGatewayUrl)
-            : '#'}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={(e) => {
-            if (!agencyGatewayUrl) e.preventDefault();
-            setMobileOpen(false);
-          }}
-          className={cn(
-            'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors',
-            agencyGatewayUrl
-              ? hasBranding
-                ? 'text-white/70 hover:bg-white/10 hover:text-white'
-                : 'text-gray-400 hover:bg-gray-800 hover:text-white'
-              : hasBranding
-                ? 'text-white/20 cursor-not-allowed'
-                : 'text-gray-600 cursor-not-allowed'
-          )}
-        >
-          {provisioningGateway
-            ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
-            : <Terminal className="h-4 w-4 shrink-0" />
-          }
-          {provisioningGateway ? 'Starting...' : isSolo ? 'My AI Worker' : 'OpenClaw Terminal'}
-          {agencyGatewayUrl && !provisioningGateway && (
-            <ExternalLink className="h-3 w-3 ml-auto" />
-          )}
-        </a>
-        <div className={cn('px-3 mt-0.5 text-[10px]', hasBranding ? 'text-white/30' : 'text-gray-600')}>
-          {provisioningGateway ? 'Provisioning your AI worker...' : isSolo ? 'Your AI assistant · opens in new tab' : 'Your private AI · opens in new tab'}
+      {/* Agency's Own OpenClaw Terminal — for solo: shown at TOP via soloTerminalBlock, for agency: shown here at bottom */}
+      {!isSolo && (
+        <div className={cn('p-3 border-t', hasBranding ? 'border-white/10' : 'border-gray-800')}>
+          <a
+            href={agencyGatewayUrl
+              ? (agencyGatewayToken ? `${agencyGatewayUrl}?token=${agencyGatewayToken}` : agencyGatewayUrl)
+              : '#'}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => {
+              if (!agencyGatewayUrl) e.preventDefault();
+              setMobileOpen(false);
+            }}
+            className={cn(
+              'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors',
+              agencyGatewayUrl
+                ? hasBranding
+                  ? 'text-white/70 hover:bg-white/10 hover:text-white'
+                  : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                : hasBranding
+                  ? 'text-white/20 cursor-not-allowed'
+                  : 'text-gray-600 cursor-not-allowed'
+            )}
+          >
+            {provisioningGateway
+              ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+              : <Terminal className="h-4 w-4 shrink-0" />
+            }
+            {provisioningGateway ? 'Starting...' : 'OpenClaw Terminal'}
+            {agencyGatewayUrl && !provisioningGateway && (
+              <ExternalLink className="h-3 w-3 ml-auto" />
+            )}
+          </a>
+          <div className={cn('px-3 mt-0.5 text-[10px]', hasBranding ? 'text-white/30' : 'text-gray-600')}>
+            {provisioningGateway ? 'Provisioning your AI worker...' : 'Your private AI · opens in new tab'}
+          </div>
         </div>
-      </div>
+      )}
     </>
   );
 
