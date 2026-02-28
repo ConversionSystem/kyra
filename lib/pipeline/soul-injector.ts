@@ -27,7 +27,7 @@ import {
 } from '@/lib/ovh/gateway-resolver';
 import { getGhlIntegration } from '@/lib/pipeline/crm-sync';
 
-const PROVISIONER_URL = process.env.OVH_PROVISIONER_URL || 'http://192.99.43.7:9090';
+const PROVISIONER_URL = process.env.OVH_PROVISIONER_URL || 'https://provisioner.gw.kyra.conversionsystem.com';
 const PROVISIONER_SECRET = process.env.OVH_PROVISIONER_SECRET || '';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
