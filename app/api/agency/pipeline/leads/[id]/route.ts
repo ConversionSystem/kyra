@@ -7,6 +7,7 @@ import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/
 import { logAndFire, type PipelineEvent } from '@/lib/pipeline/webhooks';
 import { syncLeadToCrm } from '@/lib/pipeline/crm-sync';
 import { syncPipelineLeadToCrm } from '@/lib/crm/pipeline-sync';
+import { updateTestStats } from '@/lib/pipeline/ab-testing';
 
 async function getAgencyId(userId: string): Promise<string | null> {
   const svc = createServiceClientWithoutCookies();
@@ -129,6 +130,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         stage: updates.stage as string,
         enrichment_data: lead.enrichment_data,
       }).catch(err => console.error('[lead-patch] Native CRM sync error:', err));
+
+      // Update A/B test stats (non-blocking)
+      updateTestStats(lead.id, updates.stage as string).catch(() => {});
     }
   }
 

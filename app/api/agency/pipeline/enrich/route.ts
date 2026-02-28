@@ -25,6 +25,7 @@ import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/
 import { logAndFire } from '@/lib/pipeline/webhooks';
 import { requireCredits, deductCredits } from '@/lib/billing/credit-engine';
 import { resolveAgencyApiKey } from '@/lib/billing/byok';
+import { getActiveTest, assignVariant, getVariantPromptOverride } from '@/lib/pipeline/ab-testing';
 
 async function getAgencyId(userId: string): Promise<string | null> {
   const svc = createServiceClientWithoutCookies();
@@ -286,6 +287,21 @@ export async function POST(req: NextRequest) {
       const hasWebContent = homepageText.length > 100;
       const hasTeamContent = teamPageText.length > 100;
 
+      // ─── Stage 1.5: Check for active A/B test ──────────────────
+      let abTestOverride = '';
+      try {
+        const abTest = await getActiveTest(lead.campaign_id);
+        if (abTest) {
+          const assignment = await assignVariant(abTest.id, lead.id, abTest);
+          if (assignment) {
+            const variantData = assignment.variant === 'a' ? abTest.variant_a : abTest.variant_b;
+            abTestOverride = getVariantPromptOverride(variantData, abTest.test_type);
+          }
+        }
+      } catch {
+        // A/B testing is optional — if table doesn't exist or any error, continue without it
+      }
+
       // ─── Stage 2: GPT-4o deep analysis + email writing ──────────
       const prompt = `You are an elite B2B sales researcher and cold email copywriter. You have access to this company's REAL website content. Your job:
 
@@ -314,6 +330,7 @@ TARGET ROLE: ${lead.title || 'Owner/Founder'}
 WE ARE SELLING: ${valueProp}
 THEIR LIKELY CHALLENGES: ${painPoints}
 
+${abTestOverride}
 RULES:
 1. DECISION-MAKER: Only use names you ACTUALLY found in the website content. If no name is visible, return empty strings. NEVER make up names.
 2. BEST EMAIL: Pick the most likely decision-maker email from the ones found on the website. If none found, return empty string.
