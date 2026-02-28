@@ -229,7 +229,7 @@ export default async function MasterDashboard() {
               <div className="space-y-2">
                 {[
                   { label: 'Agency Dashboard', href: '/agency', icon: Building2 },
-                  { label: 'VPS Provisioner', href: 'http://192.99.43.7:9090/health', icon: Server, external: true },
+                  { label: 'VPS Provisioner', href: 'http://provisioner.gw.kyra.conversionsystem.com/health', icon: Server, external: true },
                   { label: 'OVH Control Panel', href: 'https://www.ovh.com/manager/#/dedicated/vps', icon: Server, external: true },
                   { label: 'Supabase', href: 'https://supabase.com/dashboard', icon: Activity, external: true },
                   { label: 'Vercel', href: 'https://vercel.com/dashboard', icon: Globe, external: true },

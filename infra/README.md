@@ -1,6 +1,6 @@
 # Kyra Infrastructure
 
-VPS: `ubuntu@192.99.43.7` | Docker + Traefik + nginx CSS proxy
+VPS: `ubuntu@15.204.91.157` | Docker + Traefik + nginx CSS proxy
 
 ## Key Fixes Applied
 
