@@ -270,8 +270,12 @@ export default function PipelineClient() {
   };
 
   // ─── Research leads ───────────────────────────────────────────────────────
+  const [enrichError, setEnrichError] = useState<string | null>(null);
+
   const researchLeads = async (leadIds: string[]) => {
+    if (!leadIds.length) return;
     setIsEnriching(true);
+    setEnrichError(null);
     setEnrichProgress({ done: 0, total: leadIds.length });
     try {
       const res = await fetch('/api/agency/pipeline/enrich', {
@@ -280,10 +284,20 @@ export default function PipelineClient() {
         body: JSON.stringify({ lead_ids: leadIds }),
       });
       const data = await res.json();
+
+      if (!res.ok) {
+        // Show error to user (insufficient credits, no API key, etc.)
+        setEnrichError(data.message || data.error || `Error ${res.status}`);
+        setIsEnriching(false);
+        return;
+      }
+
       setEnrichProgress({ done: data.enriched ?? 0, total: leadIds.length });
       await loadLeads();
       // Auto-switch to review outreach
       if (data.enriched > 0) setActiveStage('review_outreach');
+    } catch (err) {
+      setEnrichError(err instanceof Error ? err.message : 'Network error — check your connection and try again');
     } finally { setIsEnriching(false); }
   };
 
@@ -666,6 +680,16 @@ export default function PipelineClient() {
                   <UserCheck className="h-3 w-3 mr-1" /> Approve All ({foundLeads.length})
                 </Button>
               </>
+            )}
+            {enrichError && (
+              <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-700 flex items-start gap-2">
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold">Research failed</p>
+                  <p>{enrichError}</p>
+                </div>
+                <button onClick={() => setEnrichError(null)} className="ml-auto text-red-400 hover:text-red-600">✕</button>
+              </div>
             )}
             {approvedLeads.length > 0 && (
               <Button size="sm" onClick={() => researchLeads(approvedLeads.map(l => l.id))} disabled={isEnriching} className="text-xs bg-purple-600 hover:bg-purple-700 text-white">
