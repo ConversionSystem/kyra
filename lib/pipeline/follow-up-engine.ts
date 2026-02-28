@@ -23,6 +23,7 @@ import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { getGhlIntegration } from '@/lib/pipeline/crm-sync';
 import { logAndFire, PipelineEvent } from '@/lib/pipeline/webhooks';
 import { requireCredits, deductCredits } from '@/lib/billing/credit-engine';
+import { resolveAgencyApiKey } from '@/lib/billing/byok';
 
 const GHL_API = 'https://services.leadconnectorhq.com';
 const GHL_VERSION = '2021-04-15';
@@ -287,12 +288,16 @@ export async function processDueFollowUps(): Promise<{
         continue;
       }
 
-      // Credit check
-      const creditCheck = await requireCredits(followUp.agency_id, 'pipeline.follow_up');
-      if (!creditCheck.allowed) {
-        await markFollowUp(svc, followUp.id, 'failed', 'Insufficient credits');
-        failed++;
-        continue;
+      // Credit check (skip if BYOK)
+      const resolvedKey = await resolveAgencyApiKey(followUp.agency_id);
+      const followUpIsByok = resolvedKey.isByok;
+      if (!followUpIsByok) {
+        const creditCheck = await requireCredits(followUp.agency_id, 'pipeline.follow_up');
+        if (!creditCheck.allowed) {
+          await markFollowUp(svc, followUp.id, 'failed', 'Insufficient credits');
+          failed++;
+          continue;
+        }
       }
 
       // Get GHL integration
@@ -349,10 +354,12 @@ export async function processDueFollowUps(): Promise<{
         updated_at: new Date().toISOString(),
       }).eq('id', followUp.id);
 
-      // Deduct credit
-      await deductCredits(followUp.agency_id, 'pipeline.follow_up', {
-        description: `Follow-up #${followUp.follow_up_number} to ${lead.full_name || 'lead'} (${lead.company || '?'})`,
-      });
+      // Deduct credit (skip if BYOK)
+      if (!followUpIsByok) {
+        await deductCredits(followUp.agency_id, 'pipeline.follow_up', {
+          description: `Follow-up #${followUp.follow_up_number} to ${lead.full_name || 'lead'} (${lead.company || '?'})`,
+        });
+      }
 
       // Log activity
       await logAndFire(

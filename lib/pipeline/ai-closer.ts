@@ -27,6 +27,7 @@ import { getGhlIntegration } from '@/lib/pipeline/crm-sync';
 import { logAndFire } from '@/lib/pipeline/webhooks';
 import { syncLeadToCrm } from '@/lib/pipeline/crm-sync';
 import { requireCredits, deductCredits } from '@/lib/billing/credit-engine';
+import { resolveAgencyApiKey } from '@/lib/billing/byok';
 import {
   GHL_TOOL_DEFINITIONS,
   executeTool,
@@ -216,11 +217,15 @@ export async function handleCloserReply(
     toolContext,
   };
 
-  // -- Credit check before generating response ------------------------------
-  const creditCheck = await requireCredits(lead.agency_id, 'pipeline.closer_response');
-  if (!creditCheck.allowed) {
-    console.warn(`[ai-closer] Insufficient credits for agency ${lead.agency_id} (${creditCheck.balance} remaining)`);
-    return { response: '', sentViaGhl: false, stageUpdate: null, poweredBy: 'direct-llm', error: 'Insufficient credits' };
+  // -- Credit check before generating response (skip if BYOK) ---------------
+  const resolved = await resolveAgencyApiKey(lead.agency_id);
+  const isByok = resolved.isByok;
+  if (!isByok) {
+    const creditCheck = await requireCredits(lead.agency_id, 'pipeline.closer_response');
+    if (!creditCheck.allowed) {
+      console.warn(`[ai-closer] Insufficient credits for agency ${lead.agency_id} (${creditCheck.balance} remaining)`);
+      return { response: '', sentViaGhl: false, stageUpdate: null, poweredBy: 'direct-llm', error: 'Insufficient credits' };
+    }
   }
 
   // -- 3. Route to correct OpenClaw container -------------------------------
@@ -284,10 +289,12 @@ export async function handleCloserReply(
 
   const stageUpdate = await analyzeAndUpdateStage(svc, lead as LeadRecord, campaign, aiResponse, inboundMessage);
 
-  // -- 6. Deduct credit -----------------------------------------------------
-  await deductCredits(lead.agency_id, 'pipeline.closer_response', {
-    description: `AI Closer reply to ${lead.full_name || 'lead'} (${lead.company || '?'})`,
-  });
+  // -- 6. Deduct credit (skip if BYOK) --------------------------------------
+  if (!isByok) {
+    await deductCredits(lead.agency_id, 'pipeline.closer_response', {
+      description: `AI Closer reply to ${lead.full_name || 'lead'} (${lead.company || '?'})`,
+    });
+  }
 
   // -- 7. Save conversation to Supabase memory ------------------------------
   const responseTimeMs = Date.now() - responseStart;
