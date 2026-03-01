@@ -275,8 +275,9 @@ export async function extractFactsFromConversation(
     }
   }
 
-  // Detect phone
-  const phoneMatch = customerMessage.match(/\b(\+?1?\d{10,11}|\d{3}[-.]?\d{3}[-.]?\d{4})\b/);
+  // Detect phone (7-11 digits, with optional separators)
+  const phoneMatch = customerMessage.match(/\b(\+?1?[-.\s]?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})\b/) ||
+    customerMessage.match(/\b(\d{3}[-.]?\d{4})\b/);
   if (phoneMatch) {
     result.detectedPhone = phoneMatch[1];
   }
