@@ -78,8 +78,21 @@ export default async function AgencyOverviewPage() {
 
   // ── Solo Dashboard ── render a completely different overview for solo users
   if (isSolo) {
-    // For solo: the owner IS the client — find their self-client
+    // For solo: the agency gateway IS the user's AI worker
+    // Also check client records for knowledge/personality status
     const soloClient = clients[0] ?? null;
+
+    // Fetch the agency's own gateway info (this is the solo user's container)
+    const { data: agencyGw } = await supabase
+      .from('agencies')
+      .select('gateway_url, gateway_token, gateway_status')
+      .eq('id', agency.id)
+      .single();
+
+    // Use agency gateway first, fall back to client gateway
+    const gwUrl = agencyGw?.gateway_url ?? soloClient?.gateway_url ?? null;
+    const gwToken = agencyGw?.gateway_token ?? soloClient?.gateway_token ?? null;
+    const gwStatus = agencyGw?.gateway_status ?? soloClient?.gateway_status ?? null;
     
     // Fetch recent conversations for solo
     let soloConversations: { id: string; channel: string; user_message: string; ai_response: string; created_at: string }[] = [];
@@ -120,9 +133,9 @@ export default async function AgencyOverviewPage() {
     return (
       <SoloOverview
         businessName={agency.name}
-        gatewayUrl={soloClient?.gateway_url ?? null}
-        gatewayToken={soloClient?.gateway_token ?? null}
-        gatewayStatus={soloClient?.gateway_status ?? null}
+        gatewayUrl={gwUrl}
+        gatewayToken={gwToken}
+        gatewayStatus={gwStatus}
         creditsBalance={agencyCredits.balance}
         creditsUsed={agencyCredits.lifetimeUsed}
         conversationsToday={soloConvosToday}
