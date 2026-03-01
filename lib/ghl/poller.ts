@@ -29,6 +29,7 @@ import { defend, scanOutput } from '@/lib/security/prompt-injection';
 import { deductCredit } from '@/lib/billing/credit-engine';
 import { routeMessage } from './model-router';
 import { callLLMWithTools } from './direct-llm';
+import { getCustomerMemory, updateCustomerMemory, formatMemoryForPrompt, extractFactsFromConversation } from '@/lib/memory/customer-memory';
 import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
 
 const GHL_API_BASE = 'https://services.leadconnectorhq.com';
@@ -453,8 +454,16 @@ async function processConversation(
     );
   }
 
-  // Augment system prompt with security reminder for medium/high risk messages
-  const secureSystemPrompt = systemPrompt + defense.systemPromptAddition;
+  // ── Customer Memory — inject known facts about this customer ────────
+  let memoryContext = '';
+  const customerMemory = await getCustomerMemory(client.id, conv.contactId).catch(() => null);
+  if (customerMemory && customerMemory.totalInteractions > 0) {
+    memoryContext = '\n\n' + formatMemoryForPrompt(customerMemory);
+    console.log(`[ghl/poller] 🧠 Injected customer memory (${customerMemory.facts.length} facts, ${customerMemory.totalInteractions} interactions)`);
+  }
+
+  // Augment system prompt with security reminder + customer memory
+  const secureSystemPrompt = systemPrompt + memoryContext + defense.systemPromptAddition;
 
   // ── Smart model routing: pick cheapest model for this message ────────
   let routedModel = byokKey?.model;
@@ -591,6 +600,30 @@ async function processConversation(
     });
   } catch (saveErr) {
     console.warn('[ghl/poller] Failed to save conversation:', saveErr);
+  }
+
+  // ── Update Customer Memory (knowledge graph) ──────────────────────
+  try {
+    const extracted = await extractFactsFromConversation(
+      latestInbound.body,
+      aiResponse,
+      customerMemory?.facts ?? [],
+    );
+
+    await updateCustomerMemory(client.id, conv.contactId, {
+      name: extracted.detectedName ?? contactName ?? undefined,
+      phone: conv.phone || contactInfo?.phone || undefined,
+      email: contactInfo?.email || undefined,
+      newFacts: extracted.newFacts,
+      newTags: extracted.detectedTags,
+      sentiment: extracted.detectedSentiment,
+    });
+
+    if (extracted.newFacts.length > 0) {
+      console.log(`[ghl/poller] 🧠 Learned ${extracted.newFacts.length} new fact(s) about ${contactName || conv.contactId}`);
+    }
+  } catch (memErr) {
+    console.warn('[ghl/poller] Failed to update customer memory:', memErr);
   }
 
   // ── Log to ghl_message_log ─────────────────────────────────────────
