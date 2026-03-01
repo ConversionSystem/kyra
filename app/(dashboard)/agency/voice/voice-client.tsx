@@ -251,7 +251,8 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
 
   // ── Copy webhook URL ────────────────────────────────────────────────────
 
-  const webhookUrl = `https://kyra.conversionsystem.com/api/voice/webhook?provider=${selectedProvider || config?.provider || 'vapi'}&clientId=${clientId}`;
+  const entityId = clientId ?? agencyId;
+  const webhookUrl = `https://kyra.conversionsystem.com/api/voice/webhook?provider=${selectedProvider || config?.provider || 'vapi'}&clientId=${entityId}`;
 
   const copyWebhook = () => {
     navigator.clipboard.writeText(webhookUrl);
