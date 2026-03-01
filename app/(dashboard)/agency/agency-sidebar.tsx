@@ -89,6 +89,7 @@ const navSections: NavSection[] = [
       { label: 'Automations', href: '/agency/automations', icon: Zap },
       { label: 'Channels', href: '/agency/channels', icon: Radio },
       { label: 'Voice AI', href: '/agency/voice', icon: Phone },
+      { label: 'Chat Widget', href: '/agency/widget', icon: MessageCircle },
     ],
   },
   {
