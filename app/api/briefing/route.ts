@@ -32,13 +32,17 @@ export async function GET(req: NextRequest) {
     
     if (!membership) return NextResponse.json({ error: 'No agency found' }, { status: 404 });
 
-    const data = await generateBriefingData(membership.agency_id);
-    if (!data) return NextResponse.json({ error: 'Failed to generate briefing' }, { status: 500 });
-    
-    return NextResponse.json({
-      briefing: formatBriefing(data),
-      data,
-    });
+    try {
+      const data = await generateBriefingData(membership.agency_id);
+      if (!data) return NextResponse.json({ error: 'Failed to generate briefing', agencyId: membership.agency_id }, { status: 500 });
+      
+      return NextResponse.json({
+        briefing: formatBriefing(data),
+        data,
+      });
+    } catch (err) {
+      return NextResponse.json({ error: 'Briefing generation error', detail: (err as Error).message, agencyId: membership.agency_id }, { status: 500 });
+    }
   }
 
   // Verify user has access to this agency
