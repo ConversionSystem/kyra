@@ -44,6 +44,7 @@ import {
   Phone,
   MessageCircle,
   Star,
+  LayoutGrid,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AgencySettings } from '@/lib/agency/types';
@@ -92,6 +93,7 @@ const navSections: NavSection[] = [
       { label: 'Voice AI', href: '/agency/voice', icon: Phone },
       { label: 'Chat Widget', href: '/agency/widget', icon: MessageCircle },
       { label: 'Reviews', href: '/agency/reviews', icon: Star },
+      { label: 'Templates', href: '/agency/templates', icon: LayoutGrid },
     ],
   },
   {
