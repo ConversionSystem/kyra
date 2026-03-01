@@ -74,15 +74,41 @@ export function getSystemPromptForClient(
   ghlContext?: { messageType?: string; contactName?: string },
 ): string {
   const lines: string[] = [];
+  const cc = (client.container_config || {}) as Record<string, unknown>;
 
-  // Use system_prompt_prefix if available, otherwise fall back to generic intro
-  if (template?.system_prompt_prefix) {
+  // ── Core identity: persona from container_config, then template, then generic ──
+  if (cc.persona && typeof cc.persona === 'string') {
+    lines.push(cc.persona as string);
+  } else if (template?.system_prompt_prefix) {
     lines.push(template.system_prompt_prefix);
   } else {
     lines.push(
       `You are an AI assistant for "${client.name}".`,
       `Industry: ${client.industry || 'General'}`,
     );
+  }
+
+  // ── Detailed instructions from container_config ──
+  if (cc.instructions && typeof cc.instructions === 'string') {
+    lines.push('', cc.instructions as string);
+  }
+
+  // ── Business hours ──
+  if (cc.business_hours && typeof cc.business_hours === 'object') {
+    const bh = cc.business_hours as { enabled?: boolean; start?: string; end?: string; timezone?: string };
+    if (bh.enabled && bh.start && bh.end) {
+      lines.push(``, `Business hours: ${bh.start} – ${bh.end} (${bh.timezone || 'local'})`);
+    }
+  }
+
+  // ── Booking link ──
+  if (cc.calendar_url && typeof cc.calendar_url === 'string') {
+    lines.push(`Booking link: ${cc.calendar_url}`);
+  }
+
+  // ── Language ──
+  if (cc.response_language && typeof cc.response_language === 'string' && cc.response_language !== 'English') {
+    lines.push(`Always respond in ${cc.response_language}.`);
   }
 
   if (ghlContext) {
