@@ -150,6 +150,7 @@ export default async function AgencyOverviewPage() {
         conversationsTotal={soloConvosTotal}
         recentConversations={soloConversations}
         clientId={soloClient?.id ?? null}
+        agencyId={agency.id}
         hasKnowledge={!!(soloConfig.knowledge_trained || soloConfig.website_url)}
         hasPersonality={!!(soloConfig.persona || soloConfig.instructions)}
       />
