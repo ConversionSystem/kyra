@@ -19,6 +19,10 @@
     {
       "path": "/api/cron/crm-autopilot",
       "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/briefing?secret=CRON_SECRET_PLACEHOLDER",
+      "schedule": "0 8 * * *"
     }
   ]
 }
