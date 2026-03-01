@@ -36,6 +36,7 @@ interface SoloOverviewProps {
     created_at: string;
   }[];
   clientId: string | null;
+  agencyId: string;
   hasKnowledge: boolean;
   hasPersonality: boolean;
 }
@@ -61,9 +62,12 @@ export default function SoloOverview({
   conversationsTotal,
   recentConversations,
   clientId,
+  agencyId,
   hasKnowledge,
   hasPersonality,
 }: SoloOverviewProps) {
+  // For embed code and portal links, prefer clientId but fall back to agencyId
+  const embedId = clientId ?? agencyId;
   const isOnline = gatewayStatus === 'running';
   const terminalUrl = gatewayUrl
     ? gatewayToken
@@ -189,7 +193,7 @@ export default function SoloOverview({
           {(!hasKnowledge || !hasPersonality) ? 'Finish Setup' : 'Quick Actions'}
         </h2>
         <div className="grid sm:grid-cols-3 gap-3">
-          <Link href={clientId ? `/agency/clients/${clientId}` : '/agency/clients'}>
+          <Link href={embedId ? `/agency/clients/${embedId}` : '/agency/clients'}>
             <Card className={`cursor-pointer hover:border-indigo-200 transition h-full ${!hasKnowledge ? 'border-amber-200 bg-amber-50/50' : ''}`}>
               <CardContent className="p-4">
                 <div className="flex items-center gap-3 mb-2">
@@ -206,7 +210,7 @@ export default function SoloOverview({
             </Card>
           </Link>
 
-          <Link href={clientId ? `/agency/clients/${clientId}` : '/agency/clients'}>
+          <Link href={embedId ? `/agency/clients/${embedId}` : '/agency/clients'}>
             <Card className={`cursor-pointer hover:border-indigo-200 transition h-full ${!hasPersonality ? 'border-amber-200 bg-amber-50/50' : ''}`}>
               <CardContent className="p-4">
                 <div className="flex items-center gap-3 mb-2">
@@ -223,7 +227,7 @@ export default function SoloOverview({
             </Card>
           </Link>
 
-          <Link href={clientId ? `/portal/${clientId}` : '#'} target="_blank" rel="noopener noreferrer">
+          <Link href={embedId ? `/portal/${embedId}` : '#'} target="_blank" rel="noopener noreferrer">
             <Card className="cursor-pointer hover:border-indigo-200 transition h-full">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3 mb-2">
@@ -240,7 +244,7 @@ export default function SoloOverview({
       </div>
 
       {/* ── Embed Code ── */}
-      {clientId && (
+      {embedId && (
         <div className="mb-6">
           <Card>
             <CardContent className="p-4">
@@ -254,12 +258,12 @@ export default function SoloOverview({
                 </div>
               </div>
               <div className="bg-gray-50 rounded-lg p-3 font-mono text-xs text-gray-600 overflow-x-auto border">
-                {`<script src="https://kyra.conversionsystem.com/embed/${clientId}.js" async></script>`}
+                {`<script src="https://kyra.conversionsystem.com/embed/${embedId}.js" async></script>`}
               </div>
               <button
                 onClick={() => {
                   navigator.clipboard.writeText(
-                    `<script src="https://kyra.conversionsystem.com/embed/${clientId}.js" async></script>`
+                    `<script src="https://kyra.conversionsystem.com/embed/${embedId}.js" async></script>`
                   );
                 }}
                 className="mt-2 text-xs text-indigo-600 hover:text-indigo-800 font-medium"
@@ -313,8 +317,8 @@ export default function SoloOverview({
               <p className="text-sm text-gray-500 mb-4 max-w-sm mx-auto">
                 Your AI worker is online and waiting. Share your chat link or embed it on your website to start getting conversations.
               </p>
-              {clientId && (
-                <Link href={`/portal/${clientId}`} target="_blank" rel="noopener noreferrer">
+              {embedId && (
+                <Link href={`/portal/${embedId}`} target="_blank" rel="noopener noreferrer">
                   <Button size="sm" className="gap-2">
                     <MessageSquare className="h-4 w-4" />
                     Try a Test Chat
