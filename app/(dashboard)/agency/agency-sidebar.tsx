@@ -43,6 +43,7 @@ import {
   Coins,
   Phone,
   MessageCircle,
+  Star,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AgencySettings } from '@/lib/agency/types';
@@ -90,6 +91,7 @@ const navSections: NavSection[] = [
       { label: 'Channels', href: '/agency/channels', icon: Radio },
       { label: 'Voice AI', href: '/agency/voice', icon: Phone },
       { label: 'Chat Widget', href: '/agency/widget', icon: MessageCircle },
+      { label: 'Reviews', href: '/agency/reviews', icon: Star },
     ],
   },
   {
@@ -167,6 +169,7 @@ const soloNavSections: NavSection[] = [
       { label: 'Knowledge Base', href: '/agency/clients', icon: BookOpen },
       { label: 'Channels', href: '/agency/channels', icon: Radio },
       { label: 'Voice AI', href: '/agency/voice', icon: Phone },
+      { label: 'Reviews', href: '/agency/reviews', icon: Star },
     ],
   },
   {
