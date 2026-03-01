@@ -17,6 +17,9 @@ export interface Agency {
   default_client_price_cents: number;
   ghl_agency_id: string | null;
   settings: Record<string, unknown>;
+  gateway_url: string | null;
+  gateway_token: string | null;
+  gateway_status: string | null;
   created_at: string;
   updated_at: string;
 }

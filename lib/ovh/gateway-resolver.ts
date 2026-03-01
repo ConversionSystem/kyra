@@ -136,10 +136,12 @@ export async function chatWithClient(
 /**
  * Get the first running gateway for an agency by agency ID.
  * Used by routes that know the agency but not a specific client.
- * Returns the first client with a running gateway.
+ * Checks: 1) client gateways, 2) agency's own gateway (solo users).
  */
 export async function getGatewayByAgencyId(agencyId: string): Promise<ClientGateway | null> {
   const supabase = getSupabase();
+  
+  // Try client gateways first
   const { data: clients } = await supabase
     .from('agency_clients')
     .select('id, name, agency_id, gateway_url, gateway_token, gateway_container_id, gateway_status')
@@ -150,18 +152,39 @@ export async function getGatewayByAgencyId(agencyId: string): Promise<ClientGate
     .order('created_at', { ascending: true })
     .limit(1);
 
-  if (!clients?.length) return null;
-  const client = clients[0];
+  if (clients?.length) {
+    const client = clients[0];
+    return {
+      url: client.gateway_url,
+      token: client.gateway_token,
+      containerId: client.gateway_container_id,
+      status: client.gateway_status,
+      clientId: client.id,
+      clientName: client.name,
+      agencyId: client.agency_id,
+    };
+  }
 
-  return {
-    url: client.gateway_url,
-    token: client.gateway_token,
-    containerId: client.gateway_container_id,
-    status: client.gateway_status,
-    clientId: client.id,
-    clientName: client.name,
-    agencyId: client.agency_id,
-  };
+  // Fallback: check agency's own gateway (solo accounts + agencies with their own container)
+  const { data: agency } = await supabase
+    .from('agencies')
+    .select('id, name, gateway_url, gateway_token, gateway_status')
+    .eq('id', agencyId)
+    .single();
+
+  if (agency?.gateway_url && agency?.gateway_token && agency.gateway_status === 'running') {
+    return {
+      url: agency.gateway_url,
+      token: agency.gateway_token,
+      containerId: `kyra-cl-${agency.id}`,
+      status: agency.gateway_status,
+      clientId: agency.id, // container is named kyra-cl-{agencyId}
+      clientName: agency.name,
+      agencyId: agency.id,
+    };
+  }
+
+  return null;
 }
 
 /**
@@ -187,11 +210,15 @@ export async function getFirstGatewayByUserId(userId: string): Promise<ClientGat
 
 /**
  * Resolve a gateway URL + token for a user.
- * Looks up the user's agency membership, then finds the first active client gateway.
+ * Looks up the user's agency membership, then finds the first active gateway.
  * Used by routes that only have the auth user ID (dashboard, tools, channels).
  *
  * If clientId is provided, resolves that specific client's gateway.
- * Otherwise finds the first active client gateway in the user's agency.
+ * Otherwise tries: 1) first active client gateway, 2) agency's own gateway (solo users).
+ * 
+ * NOTE: For solo accounts, the container is named kyra-cl-{agencyId}, not kyra-cl-{clientId}.
+ * The clientId returned for agency gateways is actually the agencyId — this is correct
+ * because the provisioner routes use it to find the container.
  */
 export async function resolveGatewayForUser(
   userId: string,
@@ -203,9 +230,33 @@ export async function resolveGatewayForUser(
     return { url: gw.url, token: gw.token, clientId: gw.clientId };
   }
 
+  // Try client gateways first
   const gw = await getFirstGatewayByUserId(userId);
-  if (!gw) return null;
-  return { url: gw.url, token: gw.token, clientId: gw.clientId };
+  if (gw) return { url: gw.url, token: gw.token, clientId: gw.clientId };
+
+  // Fallback: check agency's own gateway (solo accounts + agencies with their own container)
+  const supabase = getSupabase();
+  const { data: member } = await supabase
+    .from('agency_members')
+    .select('agency_id')
+    .eq('user_id', userId)
+    .limit(1)
+    .single();
+
+  if (!member?.agency_id) return null;
+
+  const { data: agency } = await supabase
+    .from('agencies')
+    .select('id, gateway_url, gateway_token, gateway_status')
+    .eq('id', member.agency_id)
+    .single();
+
+  if (agency?.gateway_url && agency?.gateway_token && agency.gateway_status === 'running') {
+    // For agency gateways, the "clientId" is the agencyId (container: kyra-cl-{agencyId})
+    return { url: agency.gateway_url, token: agency.gateway_token, clientId: agency.id };
+  }
+
+  return null;
 }
 
 /**
