@@ -45,6 +45,7 @@ import {
   MessageCircle,
   Star,
   LayoutGrid,
+  Bot,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AgencySettings } from '@/lib/agency/types';
@@ -94,6 +95,7 @@ const navSections: NavSection[] = [
       { label: 'Chat Widget', href: '/agency/widget', icon: MessageCircle },
       { label: 'Reviews', href: '/agency/reviews', icon: Star },
       { label: 'Templates', href: '/agency/templates', icon: LayoutGrid },
+      { label: 'AI Agents', href: '/agency/agents', icon: Bot },
     ],
   },
   {
@@ -172,6 +174,8 @@ const soloNavSections: NavSection[] = [
       { label: 'Channels', href: '/agency/channels', icon: Radio },
       { label: 'Voice AI', href: '/agency/voice', icon: Phone },
       { label: 'Reviews', href: '/agency/reviews', icon: Star },
+      { label: 'Templates', href: '/agency/templates', icon: LayoutGrid },
+      { label: 'AI Agents', href: '/agency/agents', icon: Bot },
     ],
   },
   {
