@@ -18,19 +18,21 @@ interface CronJob {
   id: string;
   name: string;
   schedule: {
-    kind: 'cron' | 'every' | 'at';
+    kind?: string;
     expr?: string;
     everyMs?: number;
     at?: string;
     tz?: string;
   };
-  payload: {
-    kind: string;
+  task?: string;
+  payload?: {
+    kind?: string;
     message?: string;
   };
   enabled: boolean;
   lastRun: string | null;
-  nextRun: string | null;
+  nextRun?: string | null;
+  createdAt?: string;
 }
 
 const SCHEDULE_PRESETS = [
@@ -378,9 +380,9 @@ export default function AutomationsClient() {
                     )}
                   </div>
 
-                  {job.payload?.message && (
+                  {job.task || job.payload?.message && (
                     <p className="text-xs text-gray-500 mt-2 line-clamp-2">
-                      {job.payload.message}
+                      {job.task || job.task || job.payload?.message}
                     </p>
                   )}
                 </div>

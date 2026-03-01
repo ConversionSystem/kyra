@@ -1,232 +1,145 @@
 // ============================================================================
 // /api/agency/automations
 //
-// CRUD for OpenClaw cron jobs via the gateway's HTTP API.
-// Each client can have scheduled automations (follow-ups, reports, etc.)
+// CRUD for Kyra automations stored in agency settings JSONB.
+// Automations are stored as agency.settings.automations[] and executed
+// by the pipeline's follow-up engine or heartbeat system.
 // ============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 import { requireAgencyMember } from '@/lib/agency/middleware';
-import { getGatewayByClientId, getGatewayByAgencyId } from '@/lib/ovh/gateway-resolver';
+import { v4 as uuid } from 'uuid';
 
 export const dynamic = 'force-dynamic';
 
-// Helper: resolve gateway — prefer clientId, fall back to first active in agency
-async function resolveGateway(agencyId: string, clientId?: string | null) {
-  if (clientId) {
-    return getGatewayByClientId(clientId);
-  }
-  return getGatewayByAgencyId(agencyId);
+interface Automation {
+  id: string;
+  name: string;
+  schedule: Record<string, unknown>;
+  task: string;
+  enabled: boolean;
+  lastRun: string | null;
+  createdAt: string;
 }
 
-// Helper: call gateway HTTP API
-async function gatewayFetch(
-  gatewayUrl: string,
-  token: string,
-  path: string,
-  method = 'GET',
-  body?: any,
-): Promise<any> {
-  const url = `${gatewayUrl}/api${path}`;
-  const res = await fetch(url, {
-    method,
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: body ? JSON.stringify(body) : undefined,
-    signal: AbortSignal.timeout(10_000),
-  });
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`Gateway ${method} ${path}: ${res.status} ${text.slice(0, 200)}`);
-  }
-
-  // Guard against HTML catch-all responses (gateway serves SPA for unknown routes)
-  const contentType = res.headers.get('content-type') || '';
-  if (!contentType.includes('application/json')) {
-    throw new Error(`Gateway ${method} ${path}: expected JSON but got ${contentType}`);
-  }
-
-  return res.json();
+async function getAutomations(agencyId: string): Promise<Automation[]> {
+  const sb = await createClient();
+  const { data: agency } = await sb
+    .from('agencies')
+    .select('settings')
+    .eq('id', agencyId)
+    .single();
+  const settings = (agency?.settings ?? {}) as Record<string, unknown>;
+  return ((settings.automations ?? []) as Automation[]);
 }
 
-// GET — List all cron jobs
-export async function GET(request: NextRequest) {
+async function saveAutomations(agencyId: string, automations: Automation[]): Promise<boolean> {
+  const sb = await createClient();
+  const { data: agency } = await sb
+    .from('agencies')
+    .select('settings')
+    .eq('id', agencyId)
+    .single();
+  const settings = (agency?.settings ?? {}) as Record<string, unknown>;
+  settings.automations = automations;
+  const { error } = await sb
+    .from('agencies')
+    .update({ settings })
+    .eq('id', agencyId);
+  return !error;
+}
+
+// GET — List all automations
+export async function GET() {
   const result = await requireAgencyMember();
   if (result.error) {
     return NextResponse.json({ error: result.error.message }, { status: result.error.status });
   }
-
   const { agency } = result.data;
-  const clientId = request.nextUrl.searchParams.get('clientId');
-  const gateway = await resolveGateway(agency.id, clientId);
-
-  if (!gateway) {
-    return NextResponse.json({
-      jobs: [],
-      error: 'Gateway not provisioned. Deploy a client AI first.',
-    });
-  }
-
-  try {
-    const data = await gatewayFetch(gateway.url, gateway.token, '/cron');
-    const jobs = (data.jobs || []).map((job: any) => ({
-      id: job.id || job.jobId,
-      name: job.name || 'Unnamed',
-      schedule: job.schedule,
-      payload: job.payload,
-      delivery: job.delivery,
-      enabled: job.enabled !== false,
-      sessionTarget: job.sessionTarget || 'isolated',
-      lastRun: job.lastRun || null,
-      nextRun: job.nextRun || null,
-      createdAt: job.createdAt,
-    }));
-
-    return NextResponse.json({ jobs, gatewayStatus: gateway.status });
-  } catch (err: any) {
-    console.error('[automations] Gateway cron list error:', err.message);
-    return NextResponse.json({
-      jobs: [],
-      error: `Failed to fetch automations: ${err.message}`,
-      gatewayStatus: gateway.status,
-    });
-  }
+  const jobs = await getAutomations(agency.id);
+  return NextResponse.json({ jobs });
 }
 
-// POST — Create a new cron job
+// POST — Create a new automation
 export async function POST(request: NextRequest) {
   const result = await requireAgencyMember();
   if (result.error) {
     return NextResponse.json({ error: result.error.message }, { status: result.error.status });
   }
-
   const { agency } = result.data;
-
   const body = await request.json();
-  const clientId = body.clientId || request.nextUrl.searchParams.get('clientId');
-  const gateway = await resolveGateway(agency.id, clientId);
-  if (!gateway) {
-    return NextResponse.json({ error: 'Gateway not provisioned. Deploy a client AI first.' }, { status: 400 });
-  }
 
-  // Validate required fields
   if (!body.name || !body.schedule || !body.task) {
-    return NextResponse.json(
-      { error: 'Missing required fields: name, schedule, task' },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: 'Missing required fields: name, schedule, task' }, { status: 400 });
   }
 
-  // Build the cron job spec for OpenClaw
-  const job: any = {
+  const jobs = await getAutomations(agency.id);
+  const newJob: Automation = {
+    id: uuid(),
     name: body.name,
     schedule: parseSchedule(body.schedule, body.scheduleValue, body.timezone),
-    payload: {
-      kind: 'agentTurn',
-      message: body.task,
-      model: body.model || undefined,
-    },
-    sessionTarget: 'isolated',
+    task: body.task,
     enabled: body.enabled !== false,
+    lastRun: null,
+    createdAt: new Date().toISOString(),
   };
-
-  if (body.delivery) {
-    job.delivery = body.delivery;
-  }
-
-  try {
-    const data = await gatewayFetch(gateway.url, gateway.token, '/cron', 'POST', { job });
-    return NextResponse.json({ success: true, job: data });
-  } catch (err: any) {
-    console.error('[automations] Create error:', err.message);
-    return NextResponse.json({ error: err.message }, { status: 500 });
-  }
+  jobs.push(newJob);
+  const ok = await saveAutomations(agency.id, jobs);
+  if (!ok) return NextResponse.json({ error: 'Failed to save' }, { status: 500 });
+  return NextResponse.json({ success: true, job: newJob });
 }
 
-// PATCH — Update an existing cron job
+// PATCH — Update an existing automation
 export async function PATCH(request: NextRequest) {
   const result = await requireAgencyMember();
   if (result.error) {
     return NextResponse.json({ error: result.error.message }, { status: result.error.status });
   }
-
   const { agency } = result.data;
-
   const body = await request.json();
-  const clientId = body.clientId || request.nextUrl.searchParams.get('clientId');
-  const gateway = await resolveGateway(agency.id, clientId);
-  if (!gateway) {
-    return NextResponse.json({ error: 'Gateway not provisioned. Deploy a client AI first.' }, { status: 400 });
-  }
+  if (!body.jobId) return NextResponse.json({ error: 'Missing jobId' }, { status: 400 });
 
-  if (!body.jobId) {
-    return NextResponse.json({ error: 'Missing jobId' }, { status: 400 });
-  }
+  const jobs = await getAutomations(agency.id);
+  const idx = jobs.findIndex(j => j.id === body.jobId);
+  if (idx === -1) return NextResponse.json({ error: 'Job not found' }, { status: 404 });
 
-  const patch: any = {};
-  if (body.name !== undefined) patch.name = body.name;
-  if (body.enabled !== undefined) patch.enabled = body.enabled;
-  if (body.task !== undefined) {
-    patch.payload = { kind: 'agentTurn', message: body.task };
-  }
+  if (body.name !== undefined) jobs[idx].name = body.name;
+  if (body.enabled !== undefined) jobs[idx].enabled = body.enabled;
+  if (body.task !== undefined) jobs[idx].task = body.task;
   if (body.schedule !== undefined) {
-    patch.schedule = parseSchedule(body.schedule, body.scheduleValue, body.timezone);
+    jobs[idx].schedule = parseSchedule(body.schedule, body.scheduleValue, body.timezone);
   }
 
-  try {
-    const data = await gatewayFetch(
-      gateway.url, gateway.token,
-      `/cron/${body.jobId}`, 'PATCH',
-      { patch },
-    );
-    return NextResponse.json({ success: true, job: data });
-  } catch (err: any) {
-    console.error('[automations] Update error:', err.message);
-    return NextResponse.json({ error: err.message }, { status: 500 });
-  }
+  const ok = await saveAutomations(agency.id, jobs);
+  if (!ok) return NextResponse.json({ error: 'Failed to save' }, { status: 500 });
+  return NextResponse.json({ success: true, job: jobs[idx] });
 }
 
-// DELETE — Remove a cron job
+// DELETE — Remove an automation
 export async function DELETE(request: NextRequest) {
   const result = await requireAgencyMember();
   if (result.error) {
     return NextResponse.json({ error: result.error.message }, { status: result.error.status });
   }
-
   const { agency } = result.data;
-  const { searchParams } = new URL(request.url);
-  const clientId = searchParams.get('clientId');
-  const gateway = await resolveGateway(agency.id, clientId);
-  if (!gateway) {
-    return NextResponse.json({ error: 'Gateway not provisioned. Deploy a client AI first.' }, { status: 400 });
-  }
+  const jobId = new URL(request.url).searchParams.get('jobId');
+  if (!jobId) return NextResponse.json({ error: 'Missing jobId' }, { status: 400 });
 
-  const jobId = searchParams.get('jobId');
-  if (!jobId) {
-    return NextResponse.json({ error: 'Missing jobId' }, { status: 400 });
-  }
-
-  try {
-    await gatewayFetch(gateway.url, gateway.token, `/cron/${jobId}`, 'DELETE');
-    return NextResponse.json({ success: true });
-  } catch (err: any) {
-    console.error('[automations] Delete error:', err.message);
-    return NextResponse.json({ error: err.message }, { status: 500 });
-  }
+  let jobs = await getAutomations(agency.id);
+  jobs = jobs.filter(j => j.id !== jobId);
+  const ok = await saveAutomations(agency.id, jobs);
+  if (!ok) return NextResponse.json({ error: 'Failed to save' }, { status: 500 });
+  return NextResponse.json({ success: true });
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
-function parseSchedule(type: string, value: string, timezone?: string): any {
+function parseSchedule(type: string, value: string, timezone?: string): Record<string, unknown> {
   switch (type) {
     case 'cron':
       return { kind: 'cron', expr: value, tz: timezone || 'UTC' };
     case 'every': {
-      // Parse interval like "5m", "1h", "30s"
       const match = value.match(/^(\d+)(s|m|h|d)$/);
       if (!match) return { kind: 'cron', expr: value, tz: timezone || 'UTC' };
       const num = parseInt(match[1]);
