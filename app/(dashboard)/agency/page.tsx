@@ -79,8 +79,16 @@ export default async function AgencyOverviewPage() {
   // ── Solo Dashboard ── render a completely different overview for solo users
   if (isSolo) {
     // For solo: the agency gateway IS the user's AI worker
-    // Also check client records for knowledge/personality status
-    const soloClient = clients[0] ?? null;
+    // Try clients array first, then solo_client_id from settings
+    let soloClient = clients[0] ?? null;
+    if (!soloClient && agencySettings.solo_client_id) {
+      const { data: fetchedClient } = await supabase
+        .from('agency_clients')
+        .select('*, template:agency_templates(*)')
+        .eq('id', agencySettings.solo_client_id as string)
+        .single();
+      if (fetchedClient) soloClient = fetchedClient as typeof clients[0];
+    }
 
     // Fetch the agency's own gateway info (this is the solo user's container)
     const { data: agencyGw } = await supabase
