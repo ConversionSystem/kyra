@@ -41,6 +41,7 @@ import {
   Gift,
   Crown,
   Coins,
+  Phone,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AgencySettings } from '@/lib/agency/types';
@@ -85,6 +86,7 @@ const navSections: NavSection[] = [
       { label: 'Heartbeat', href: '/agency/heartbeat', icon: Heart },
       { label: 'Automations', href: '/agency/automations', icon: Zap },
       { label: 'Channels', href: '/agency/channels', icon: Radio },
+      { label: 'Voice AI', href: '/agency/voice', icon: Phone },
     ],
   },
   {
@@ -161,6 +163,7 @@ const soloNavSections: NavSection[] = [
     items: [
       { label: 'Knowledge Base', href: '/agency/clients', icon: BookOpen },
       { label: 'Channels', href: '/agency/channels', icon: Radio },
+      { label: 'Voice AI', href: '/agency/voice', icon: Phone },
     ],
   },
   {
