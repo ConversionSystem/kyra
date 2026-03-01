@@ -5,6 +5,7 @@ const FOOTER_LINKS = {
     { href: '/try/dental', label: '💬 Try Live Demo' },
     { href: '/pricing', label: 'Pricing' },
     { href: '/changelog', label: 'Changelog' },
+    { href: '/use-cases', label: 'Use Cases' },
     { href: '/vs', label: 'vs. Chatbots' },
     { href: '/roi', label: 'ROI Calculator' },
     { href: '/get-demo', label: 'Get a Demo' },

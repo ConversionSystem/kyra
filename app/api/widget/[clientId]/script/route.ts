@@ -220,7 +220,7 @@ export async function GET(
       var res = await fetch(API_BASE.replace(/\/$/, '') + '/api/widget/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clientId: CLIENT_ID, message: text, sessionId: sessionId, history: history.slice(-10) }),
+        body: JSON.stringify({ clientId: CLIENT_ID, message: text, sessionId: sessionId, history: history.slice(-10), sourceUrl: window.location.href }),
       });
       var data = await res.json();
       hideTyping();
@@ -234,6 +234,14 @@ export async function GET(
         history.push({ role: 'assistant', content: data.response });
         if (history.length > 20) history = history.slice(-20);
         addMessage('bot', data.response);
+        // If lead was captured, show a subtle confirmation
+        if (data.leadCaptured) {
+          var noteEl = document.createElement('div');
+          noteEl.style.cssText = 'text-align:center;font-size:10px;color:#9ca3af;padding:4px 0;';
+          noteEl.textContent = '✓ We\\'ll follow up with you';
+          messagesEl.appendChild(noteEl);
+          scrollToBottom();
+        }
       } else {
         addMessage('bot', 'Sorry, something went wrong. Please try again.');
       }

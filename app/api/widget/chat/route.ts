@@ -5,12 +5,25 @@
 // No authentication required — clients embed this on their websites.
 // Rate-limited per IP. Logs to client_conversations table.
 //
-// Body: { clientId: string, message: string, sessionId?: string }
-// Returns: { response: string, sessionId: string }
+// ✨ NEW (Mar 1): Knowledge RAG + Smart Lead Capture
+// - Injects relevant knowledge base docs into AI system prompt
+// - Extracts visitor contact info after engagement
+// - Auto-creates CRM contacts + web_chat_leads
+// - Fires webhook notifications for new leads
+//
+// Body: { clientId, message, sessionId?, history?, sourceUrl? }
+// Returns: { response, sessionId, leadCaptured? }
 // ============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createSupabase } from '@supabase/supabase-js';
+import { getKnowledgeContext } from '@/lib/knowledge/rag';
+import {
+  extractLeadFromConversation,
+  saveWebChatLead,
+  notifyLeadWebhook,
+  getLeadCapturePrompt,
+} from '@/lib/chat/lead-capture';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -33,7 +46,7 @@ function getSupabase() {
   return createSupabase(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false, autoRefreshToken: false } }
+    { auth: { persistSession: false, autoRefreshToken: false } },
   );
 }
 
@@ -44,16 +57,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
   }
 
-  let body: { clientId?: string; message?: string; sessionId?: string };
+  let body: Record<string, unknown>;
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  const { clientId, message, sessionId, history } = body as typeof body & {
-    history?: Array<{ role: 'user' | 'assistant'; content: string }>;
-  };
+  const clientId = body.clientId as string | undefined;
+  const message = body.message as string | undefined;
+  const sessionId = body.sessionId as string | undefined;
+  const history = body.history as Array<{ role: 'user' | 'assistant'; content: string }> | undefined;
+  const sourceUrl = body.sourceUrl as string | undefined;
+
   if (!clientId || !message?.trim()) {
     return NextResponse.json({ error: 'clientId and message are required' }, { status: 400 });
   }
@@ -88,16 +104,42 @@ export async function POST(request: NextRequest) {
 
   const cfg = (client.container_config as Record<string, unknown>) ?? {};
   const persona = (cfg.persona as string) || `AI assistant for ${client.name}`;
+  const businessName = (cfg.business_name as string) || client.name;
 
+  // ── Knowledge RAG ──────────────────────────────────────────────────────────
+  // Fetch relevant knowledge base documents and inject into system prompt.
+  // This makes the AI actually USE the trained knowledge from auto-train.
+  let knowledgeSection = '';
+  try {
+    const knowledge = await getKnowledgeContext(client.agency_id, client.id, message.trim());
+    if (knowledge.text) {
+      knowledgeSection = `\n\n${knowledge.text}\n`;
+    }
+  } catch (err) {
+    console.error('[widget/chat] Knowledge RAG error:', err);
+    // Degrade gracefully — proceed without knowledge
+  }
+
+  // ── Lead Capture Prompt ────────────────────────────────────────────────────
+  const exchangeCount = Array.isArray(history) ? Math.floor(history.length / 2) : 0;
+  const leadCapturePrompt = getLeadCapturePrompt(exchangeCount);
+
+  // ── Build System Prompt ────────────────────────────────────────────────────
   const systemPrompt = [
-    `You are ${persona}. You are responding via a web chat widget on a website.`,
+    `You are ${persona}. You are a helpful AI assistant for ${businessName}, responding via a web chat widget on their website.`,
     `Be warm, helpful, and concise. Keep replies to 2-4 sentences unless more detail is needed.`,
+    `Answer questions accurately using your knowledge base. If you know the answer from your training, share it confidently.`,
     `Do not mention you are an AI unless directly asked.`,
     cfg.calendar_url ? `When scheduling is mentioned, share this booking link: ${cfg.calendar_url}` : '',
+    cfg.business_hours ? `Business hours: ${cfg.business_hours}` : '',
+    cfg.business_phone ? `Business phone: ${cfg.business_phone}` : '',
+    cfg.business_address ? `Business address: ${cfg.business_address}` : '',
     `If you can't resolve something, say: "Let me connect you with our team — they'll follow up shortly."`,
+    knowledgeSection,
+    leadCapturePrompt,
   ].filter(Boolean).join('\n');
 
-  // Call the client's isolated OpenClaw gateway
+  // ── Call AI Gateway ────────────────────────────────────────────────────────
   let aiResponse = '';
   try {
     const chatRes = await fetch(`${client.gateway_url}/v1/chat/completions`, {
@@ -127,8 +169,9 @@ export async function POST(request: NextRequest) {
 
     const data = await chatRes.json();
     aiResponse = data?.choices?.[0]?.message?.content || '';
-  } catch (err: any) {
-    console.error(`[widget/chat] Gateway timeout/error: ${err.message}`);
+  } catch (err: unknown) {
+    const errMsg = err instanceof Error ? err.message : String(err);
+    console.error(`[widget/chat] Gateway timeout/error: ${errMsg}`);
     return NextResponse.json({ error: 'AI unavailable' }, { status: 503 });
   }
 
@@ -136,22 +179,65 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Empty AI response' }, { status: 503 });
   }
 
-  // Log to client_conversations (fire-and-forget)
-  void supabase.from('client_conversations').insert({
-    client_id: client.id,
-    agency_id: client.agency_id,
-    channel: 'web_chat',
-    user_message: message.trim(),
-    ai_response: aiResponse,
-  }).then(({ error }) => {
-    if (error) console.error('[widget/chat] Log error:', error.message);
-  });
+  // ── Log to client_conversations (fire-and-forget) ──────────────────────────
+  void supabase
+    .from('client_conversations')
+    .insert({
+      client_id: client.id,
+      agency_id: client.agency_id,
+      channel: 'web_chat',
+      user_message: message.trim(),
+      ai_response: aiResponse,
+    })
+    .then(({ error }) => {
+      if (error) console.error('[widget/chat] Log error:', error.message);
+    });
 
-  // Auto-log to CRM (fire-and-forget) — creates contact if new visitor
+  // ── Lead Capture (fire-and-forget) ─────────────────────────────────────────
+  // Build full conversation including current exchange
+  const fullHistory = [
+    ...(Array.isArray(history) ? history : []),
+    { role: 'user' as const, content: message.trim() },
+    { role: 'assistant' as const, content: aiResponse },
+  ];
+
+  let leadCaptured = false;
+
+  void (async () => {
+    try {
+      // Only try extraction after at least 2 user messages
+      const userMsgCount = fullHistory.filter(m => m.role === 'user').length;
+      if (userMsgCount < 2) return;
+
+      const extracted = extractLeadFromConversation(fullHistory);
+      if (!extracted) return;
+
+      // Need at least email or phone to save
+      if (!extracted.email && !extracted.phone) return;
+
+      const result = await saveWebChatLead(
+        client.agency_id,
+        client.id,
+        resolvedSessionId,
+        extracted,
+        fullHistory,
+        sourceUrl,
+      );
+
+      if (result) {
+        leadCaptured = true;
+        // Fire webhook notification (async, non-blocking)
+        void notifyLeadWebhook(client.agency_id, extracted, result.leadId);
+      }
+    } catch (err) {
+      console.error('[widget/chat] Lead capture error:', err);
+    }
+  })();
+
+  // ── Auto-log to CRM (fire-and-forget) ─────────────────────────────────────
   void (async () => {
     try {
       const { logConversationToCrm } = await import('@/lib/crm/conversation-logger');
-      // Log inbound visitor message
       await logConversationToCrm(client.agency_id, {
         type: 'InboundMessage',
         body: message.trim(),
@@ -159,7 +245,6 @@ export async function POST(request: NextRequest) {
         direction: 'inbound',
         name: `Web Visitor (${ip})`,
       });
-      // Log AI response
       await logConversationToCrm(client.agency_id, {
         type: 'OutboundMessage',
         body: aiResponse,
@@ -173,14 +258,14 @@ export async function POST(request: NextRequest) {
   })();
 
   return NextResponse.json(
-    { response: aiResponse, sessionId: resolvedSessionId },
+    { response: aiResponse, sessionId: resolvedSessionId, leadCaptured },
     {
       headers: {
-        'Access-Control-Allow-Origin': '*', // Widget is cross-origin
+        'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type',
       },
-    }
+    },
   );
 }
 
