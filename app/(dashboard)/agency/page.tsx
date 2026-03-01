@@ -24,6 +24,7 @@ import TrialCountdownBanner from '@/components/dashboard/trial-countdown-banner'
 import ReferralShareWidget from '@/components/dashboard/referral-share-widget';
 import { UltronSummaryCard } from '@/components/dashboard/ultron-summary-card';
 import RoiSummaryCard from '@/components/dashboard/roi-summary-card';
+import SoloOverview from '@/components/dashboard/solo-overview';
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -73,6 +74,67 @@ export default async function AgencyOverviewPage() {
   ]);
   const isAdmin = ['hello@conversionsystem.com', 'angel@conversionsystem.com'].includes(user.email ?? '');
   const agencySettings = (agency.settings as Record<string, unknown>) ?? {};
+  const isSolo = agencySettings.account_type === 'solo';
+
+  // ── Solo Dashboard ── render a completely different overview for solo users
+  if (isSolo) {
+    // For solo: the owner IS the client — find their self-client
+    const soloClient = clients[0] ?? null;
+    
+    // Fetch recent conversations for solo
+    let soloConversations: { id: string; channel: string; user_message: string; ai_response: string; created_at: string }[] = [];
+    let soloConvosToday = 0;
+    let soloConvosTotal = 0;
+    
+    try {
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+
+      const { data: todayConvos } = await supabase
+        .from('client_conversations')
+        .select('id')
+        .eq('agency_id', agency.id)
+        .gte('created_at', todayStart.toISOString());
+      soloConvosToday = todayConvos?.length ?? 0;
+      
+      const { data: monthConvos } = await supabase
+        .from('client_conversations')
+        .select('id')
+        .eq('agency_id', agency.id)
+        .gte('created_at', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString());
+      soloConvosTotal = monthConvos?.length ?? 0;
+
+      const { data: recentConvos } = await supabase
+        .from('client_conversations')
+        .select('id, channel, user_message, ai_response, created_at')
+        .eq('agency_id', agency.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+      soloConversations = (recentConvos ?? []) as typeof soloConversations;
+    } catch {
+      // conversations table may not exist yet — graceful fallback
+    }
+
+    const soloConfig = (soloClient?.container_config as Record<string, unknown>) ?? {};
+
+    return (
+      <SoloOverview
+        businessName={agency.name}
+        gatewayUrl={soloClient?.gateway_url ?? null}
+        gatewayToken={soloClient?.gateway_token ?? null}
+        gatewayStatus={soloClient?.gateway_status ?? null}
+        creditsBalance={agencyCredits.balance}
+        creditsUsed={agencyCredits.lifetimeUsed}
+        conversationsToday={soloConvosToday}
+        conversationsTotal={soloConvosTotal}
+        recentConversations={soloConversations}
+        clientId={soloClient?.id ?? null}
+        hasKnowledge={!!(soloConfig.knowledge_trained || soloConfig.website_url)}
+        hasPersonality={!!(soloConfig.persona || soloConfig.instructions)}
+      />
+    );
+  }
+
   const salesPipelineState = (agencySettings.sales_pipeline as Record<string, string>) ?? {};
   // Show trial credits banner when: still on welcome credits, haven't purchased yet
   const showTrialCreditsBanner = agencyCredits.lifetimePurchased === 0 && agencyCredits.balance > 0;
