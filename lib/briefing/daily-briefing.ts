@@ -41,13 +41,32 @@ export async function generateBriefingData(agencyId: string): Promise<BriefingDa
   const supabase = createServiceClientWithoutCookies();
 
   // Get agency info
-  const { data: agency } = await supabase
+  const { data: agency, error: agencyError } = await supabase
     .from('agencies')
-    .select('id, name, settings, credits_balance')
+    .select('id, name, settings')
     .eq('id', agencyId)
     .single();
 
-  if (!agency) return null;
+  if (agencyError || !agency) {
+    console.error('[briefing] Agency fetch error:', agencyError?.message);
+    return null;
+  }
+
+  // Get credits balance separately (column may not exist)
+  let creditsBalance = 0;
+  try {
+    const { data: creditData } = await supabase
+      .from('credit_transactions')
+      .select('amount, type')
+      .eq('agency_id', agencyId);
+    
+    if (creditData) {
+      creditsBalance = creditData.reduce((sum, t) => {
+        if (t.type === 'usage') return sum - Math.abs(t.amount);
+        return sum + t.amount;
+      }, 0);
+    }
+  } catch { /* credits table may not exist */ }
 
   // Get first client (for solo) or primary client
   const { data: clients } = await supabase
@@ -194,7 +213,7 @@ export async function generateBriefingData(agencyId: string): Promise<BriefingDa
     escalations: escalationCount ?? 0,
     conversationsThisWeek: convsThisWeek ?? 0,
     conversationsLastWeek: convsLastWeek ?? 0,
-    creditsRemaining: (agency.credits_balance as number) ?? 0,
+    creditsRemaining: creditsBalance,
     creditsUsedYesterday,
   };
 }
