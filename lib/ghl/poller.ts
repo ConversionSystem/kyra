@@ -28,6 +28,7 @@ import { getConversationHistory, saveConversationTurn } from './conversation-mem
 import { defend, scanOutput } from '@/lib/security/prompt-injection';
 import { deductCredit } from '@/lib/billing/credit-engine';
 import { routeMessage } from './model-router';
+import { callLLMWithTools } from './direct-llm';
 import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
 
 const GHL_API_BASE = 'https://services.leadconnectorhq.com';
@@ -471,17 +472,22 @@ async function processConversation(
   let aiResponse = '';
   let escalation: { reason: string; urgency: string } | null = null;
 
-  const firstResult = await chatViaGateway(client.id, defense.safeInput, {
-    sessionId: sessionKey,
-    apiKey: byokKey?.apiKey,
-    model: routedModel,
-    systemPrompt: secureSystemPrompt,
-    history: historyMessages,
+  // ── Direct LLM call with tools (bypasses OpenClaw gateway) ──────────
+  const llmMessages: Array<{ role: string; content: string }> = [];
+  if (secureSystemPrompt) llmMessages.push({ role: 'system', content: secureSystemPrompt });
+  for (const h of historyMessages) llmMessages.push({ role: h.role, content: h.content });
+  llmMessages.push({ role: 'user', content: defense.safeInput });
+
+  const firstResult = await callLLMWithTools({
+    agencyId: client.agency_id,
+    messages: llmMessages,
     tools: GHL_TOOL_DEFINITIONS,
+    model: routedModel,
+    apiKey: byokKey?.apiKey,
   });
 
-  if ('error' in firstResult) {
-    throw new Error(`Gateway error: ${firstResult.error}`);
+  if (firstResult.error) {
+    throw new Error(`LLM error: ${firstResult.error}`);
   }
 
   // ── Tool call execution loop ─────────────────────────────────────────
@@ -489,12 +495,17 @@ async function processConversation(
     console.log(`[ghl/poller] 🔧 Executing ${firstResult.toolCalls.length} tool call(s)...`);
 
     // Build messages for the second turn (after tool results)
-    const toolMessages: Array<{ role: string; content: string; tool_call_id?: string; name?: string }> = [];
+    const toolMessages: Array<{ role: string; content: string; tool_call_id?: string; name?: string; tool_calls?: unknown[] }> = [];
 
-    // Add assistant message with tool calls
+    // Add assistant message with tool calls (must include tool_calls array for OpenAI)
     toolMessages.push({
       role: 'assistant',
       content: firstResult.reply || '',
+      tool_calls: firstResult.toolCalls.map(tc => ({
+        id: tc.id || `call_${tc.name}`,
+        type: 'function',
+        function: { name: tc.name, arguments: JSON.stringify(tc.args) },
+      })),
     });
 
     // Execute each tool and collect results
@@ -513,25 +524,26 @@ async function processConversation(
         content: result.success
           ? JSON.stringify(result.data || { success: true })
           : JSON.stringify({ error: result.error }),
-        tool_call_id: (toolCall as { name: string; args: Record<string, unknown>; id?: string }).id,
+        tool_call_id: toolCall.id || `call_${toolCall.name}`,
         name: toolCall.name,
       });
     }
 
-    // Get final response after tool execution (use same routed model)
-    const finalResult = await chatViaGateway(client.id, '', {
-      sessionId: sessionKey,
-      apiKey: byokKey?.apiKey,
+    // Get final response after tool execution — direct LLM call (no tools this time)
+    const finalMessages = [
+      ...llmMessages,
+      ...toolMessages.map(m => ({ role: m.role, content: m.content, tool_call_id: m.tool_call_id, name: m.name, tool_calls: m.tool_calls })),
+    ];
+
+    const finalResult = await callLLMWithTools({
+      agencyId: client.agency_id,
+      messages: finalMessages as Array<{ role: string; content: string }>,
+      tools: [], // No tools on final turn — just generate the response
       model: routedModel,
-      systemPrompt: secureSystemPrompt,
-      history: [
-        ...historyMessages,
-        { role: 'user', content: latestInbound.body },
-        ...toolMessages.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
-      ],
+      apiKey: byokKey?.apiKey,
     });
 
-    if (!('error' in finalResult)) {
+    if (!finalResult.error) {
       aiResponse = finalResult.reply;
     } else {
       // Fallback to any partial response
