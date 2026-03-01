@@ -31,7 +31,7 @@ export const AGENT_ROLES: AgentRole[] = [
     description: 'Answers calls and messages, books appointments, handles walk-in questions.',
     defaultPersonality: 'You are a friendly, professional front desk receptionist. Greet everyone warmly, answer common questions, and book appointments efficiently.',
     suggestedTools: ['book_appointment', 'tag_contact'],
-    triggerKeywords: ['appointment', 'book', 'schedule', 'available', 'hours', 'location', 'directions'],
+    triggerKeywords: ['appointment', 'book', 'schedule', 'available', 'hours', 'location', 'directions', 'open', 'walk-in', 'when', 'address', 'cancel', 'reschedule'],
     priority: 50,
   },
   {
@@ -41,7 +41,7 @@ export const AGENT_ROLES: AgentRole[] = [
     description: 'Follows up with leads, handles pricing questions, closes deals.',
     defaultPersonality: 'You are a helpful, consultative sales professional. Understand the customer\'s needs, present solutions, handle objections, and guide them to a decision without being pushy.',
     suggestedTools: ['create_opportunity', 'tag_contact', 'send_payment_link'],
-    triggerKeywords: ['price', 'cost', 'quote', 'estimate', 'package', 'plan', 'discount', 'deal', 'buy', 'purchase', 'interested'],
+    triggerKeywords: ['price', 'cost', 'quote', 'estimate', 'package', 'plan', 'discount', 'deal', 'buy', 'purchase', 'interested', 'charge', 'how much', 'pricing', 'rate', 'rates', 'afford'],
     priority: 60,
   },
   {
@@ -51,7 +51,7 @@ export const AGENT_ROLES: AgentRole[] = [
     description: 'Handles questions, resolves issues, processes complaints.',
     defaultPersonality: 'You are a patient, empathetic customer support specialist. Listen carefully, acknowledge frustrations, solve problems efficiently, and always follow up.',
     suggestedTools: ['tag_contact', 'escalate_to_human'],
-    triggerKeywords: ['problem', 'issue', 'broken', 'not working', 'complaint', 'refund', 'return', 'help', 'wrong', 'mistake', 'disappointed'],
+    triggerKeywords: ['problem', 'issue', 'broken', 'not working', 'complaint', 'refund', 'return', 'help', 'wrong', 'mistake', 'disappointed', 'unhappy', 'terrible', 'horrible', 'fix', 'resolve', 'frustrated', 'angry', 'damage'],
     priority: 70,
   },
   {
