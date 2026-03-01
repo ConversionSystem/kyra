@@ -10,6 +10,7 @@ import { getSystemPromptForClient, getSessionKeyForClient } from '@/lib/agency/c
 import { sendGHLMessage, getValidToken } from './api';
 import { getGatewayByClientId } from '@/lib/ovh/gateway-resolver';
 import { logConversationToCrm } from '@/lib/crm/conversation-logger';
+import { processWithSmartEngine } from './smart-handler';
 import type { GHLWebhookPayload, GHLMessageChannel } from './types';
 import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
 
@@ -23,9 +24,17 @@ interface ClientWithTemplate extends AgencyClient {
 
 /**
  * Process an inbound GHL message end-to-end:
- * 1. Build system context from client config
- * 2. Call Fly bridge for AI response
- * 3. Send AI response back via GHL API
+ *
+ * PRIMARY PATH (Smart Engine):
+ *   1. Build rich system prompt from container_config (persona, instructions, hours, language)
+ *   2. Fetch conversation history (last 10 messages for this contact)
+ *   3. Fetch relationship memories from CRM
+ *   4. Call LLM directly with GHL tools (function calling)
+ *   5. Execute tool calls (book, tag, create opportunity, escalate)
+ *   6. Save conversation turn for future memory
+ *
+ * FALLBACK PATH (Bridge relay — if Smart Engine fails):
+ *   Same as before: gateway bridge → generic response
  */
 export async function processInboundMessage(
   payload: GHLWebhookPayload,
@@ -46,31 +55,54 @@ export async function processInboundMessage(
   const messageType = payload.messageType || 'TYPE_SMS';
   const contactName = payload.phone || payload.email || 'Customer';
 
-  // Build the session key (unique per client + contact for conversation continuity)
-  const sessionKey = `${getSessionKeyForClient(client.id)}:contact:${contactId}`;
-
-  // Build system prompt with GHL context
-  const systemContext = getSystemPromptForClient(client, client.template, {
-    messageType: formatChannelName(messageType),
-    contactName,
-  });
-
   console.log(
     `[ghl/handler] Processing inbound from ${contactName} for client "${client.name}" via ${messageType}`,
   );
 
-  // ── Call the agency's own gateway ────────────────────────────────────
-  const clientGateway = await getGatewayByClientId(client.id);
-  const bridgeUrl = clientGateway?.url;
-  if (!bridgeUrl) {
-    throw new Error(`No gateway provisioned for client ${client.id} (${client.name})`);
-  }
+  // ── Try Smart Engine first ────────────────────────────────────────────
+  let aiResponse: string;
+  let usedSmartEngine = false;
 
-  const aiResponse = await callBridge(bridgeUrl, {
-    message: messageBody,
-    sessionKey,
-    systemContext,
-  });
+  try {
+    const result = await processWithSmartEngine({
+      client: { ...client, template: client.template ?? null },
+      contactId,
+      contactName,
+      contactPhone: payload.phone,
+      contactEmail: payload.email,
+      conversationId: payload.conversationId,
+      messageType: formatChannelName(messageType),
+      messageBody,
+    });
+
+    aiResponse = result.reply;
+    usedSmartEngine = true;
+
+    console.log(
+      `[ghl/handler] Smart Engine: ${result.responseTimeMs}ms | Tools: [${result.toolsUsed.join(', ')}] | Escalated: ${result.escalated}`,
+    );
+  } catch (smartErr) {
+    // Smart Engine failed — fall back to bridge relay
+    console.warn('[ghl/handler] Smart Engine failed, falling back to bridge:', smartErr);
+
+    const sessionKey = `${getSessionKeyForClient(client.id)}:contact:${contactId}`;
+    const systemContext = getSystemPromptForClient(client, client.template, {
+      messageType: formatChannelName(messageType),
+      contactName,
+    });
+
+    const clientGateway = await getGatewayByClientId(client.id);
+    const bridgeUrl = clientGateway?.url;
+    if (!bridgeUrl) {
+      throw new Error(`No gateway provisioned for client ${client.id} (${client.name})`);
+    }
+
+    aiResponse = await callBridge(bridgeUrl, {
+      message: messageBody,
+      sessionKey,
+      systemContext,
+    });
+  }
 
   if (!aiResponse || aiResponse.trim().length === 0) {
     console.warn('[ghl/handler] Empty AI response, not sending reply');
@@ -78,7 +110,7 @@ export async function processInboundMessage(
   }
 
   console.log(
-    `[ghl/handler] AI response (${aiResponse.length} chars), sending via ${messageType}`,
+    `[ghl/handler] AI response (${aiResponse.length} chars) via ${usedSmartEngine ? 'Smart Engine' : 'Bridge'}, sending via ${messageType}`,
   );
 
   // ── Send reply back through GHL ───────────────────────────────────────
@@ -111,9 +143,10 @@ export async function processInboundMessage(
   console.log(`[ghl/handler] ✅ Reply sent to ${contactName} for "${client.name}"`);
 
   // ── Log both sides to CRM ──────────────────────────────────────────────
+  // (Smart Engine already saves to client_conversations, but CRM logging
+  //  is separate — it creates CRM activities + extracts relationship memories)
   const agencyId = client.agency_id;
   if (agencyId) {
-    // Log inbound message
     logConversationToCrm(agencyId, {
       type: 'InboundMessage',
       contactId,
@@ -126,7 +159,6 @@ export async function processInboundMessage(
       name: contactName,
     }).catch((err) => console.error('[ghl/handler] CRM log inbound failed:', err));
 
-    // Log AI response
     logConversationToCrm(agencyId, {
       type: 'OutboundMessage',
       contactId,
