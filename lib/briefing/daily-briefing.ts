@@ -70,11 +70,12 @@ export async function generateBriefingData(agencyId: string): Promise<BriefingDa
   const lastWeekStart = new Date(weekStart);
   lastWeekStart.setDate(lastWeekStart.getDate() - 7);
 
+  // Use agency_id for all queries (works for both solo and agency accounts)
   // Conversations yesterday
   const { count: convsYesterday } = await supabase
     .from('client_conversations')
     .select('id', { count: 'exact', head: true })
-    .or(`agency_client_id.eq.${entityId},client_id.eq.${entityId}`)
+    .eq('agency_id', agencyId)
     .gte('created_at', yesterdayStart.toISOString())
     .lt('created_at', todayStart.toISOString());
 
@@ -82,51 +83,58 @@ export async function generateBriefingData(agencyId: string): Promise<BriefingDa
   const { count: convsTotal } = await supabase
     .from('client_conversations')
     .select('id', { count: 'exact', head: true })
-    .or(`agency_client_id.eq.${entityId},client_id.eq.${entityId}`);
+    .eq('agency_id', agencyId);
 
   // Conversations this week
   const { count: convsThisWeek } = await supabase
     .from('client_conversations')
     .select('id', { count: 'exact', head: true })
-    .or(`agency_client_id.eq.${entityId},client_id.eq.${entityId}`)
+    .eq('agency_id', agencyId)
     .gte('created_at', weekStart.toISOString());
 
   // Conversations last week
   const { count: convsLastWeek } = await supabase
     .from('client_conversations')
     .select('id', { count: 'exact', head: true })
-    .or(`agency_client_id.eq.${entityId},client_id.eq.${entityId}`)
+    .eq('agency_id', agencyId)
     .gte('created_at', lastWeekStart.toISOString())
     .lt('created_at', weekStart.toISOString());
 
-  // Appointments booked yesterday (from metadata)
-  const { data: appointmentConvs } = await supabase
-    .from('client_conversations')
-    .select('metadata')
-    .or(`agency_client_id.eq.${entityId},client_id.eq.${entityId}`)
-    .gte('created_at', yesterdayStart.toISOString())
-    .lt('created_at', todayStart.toISOString())
-    .not('metadata', 'is', null);
+  // Appointments booked yesterday (from ghl_message_log which has metadata)
+  let appointmentsBooked = 0;
+  try {
+    const { data: appointmentLogs } = await supabase
+      .from('ghl_message_log')
+      .select('metadata')
+      .eq('agency_client_id', entityId)
+      .gte('created_at', yesterdayStart.toISOString())
+      .lt('created_at', todayStart.toISOString())
+      .not('metadata', 'is', null);
 
-  const appointmentsBooked = (appointmentConvs ?? []).filter(c => {
-    const meta = c.metadata as Record<string, unknown> | null;
-    return meta?.tool_used === 'book_appointment' || meta?.appointment_booked === true;
-  }).length;
+    appointmentsBooked = (appointmentLogs ?? []).filter(c => {
+      const meta = c.metadata as Record<string, unknown> | null;
+      return meta?.tool_used === 'book_appointment' || meta?.appointment_booked === true;
+    }).length;
+  } catch { /* ghl_message_log may not have metadata column */ }
 
   // Escalations yesterday
-  const { count: escalationCount } = await supabase
-    .from('client_conversations')
-    .select('id', { count: 'exact', head: true })
-    .or(`agency_client_id.eq.${entityId},client_id.eq.${entityId}`)
-    .gte('created_at', yesterdayStart.toISOString())
-    .lt('created_at', todayStart.toISOString())
-    .contains('metadata', { escalated: true } as never);
+  let escalationCount = 0;
+  try {
+    const { count } = await supabase
+      .from('ghl_message_log')
+      .select('id', { count: 'exact', head: true })
+      .eq('agency_client_id', entityId)
+      .gte('created_at', yesterdayStart.toISOString())
+      .lt('created_at', todayStart.toISOString())
+      .eq('escalated', true);
+    escalationCount = count ?? 0;
+  } catch { /* escalated column may not exist */ }
 
-  // Hot leads — recent conversations with buying intent tags
+  // Hot leads — recent conversations with contact info
   const { data: recentConvs } = await supabase
     .from('client_conversations')
-    .select('user_message, ai_response, metadata, contact_id, created_at')
-    .or(`agency_client_id.eq.${entityId},client_id.eq.${entityId}`)
+    .select('user_message, ai_response, contact_id, contact_name, created_at')
+    .eq('agency_id', agencyId)
     .gte('created_at', yesterdayStart.toISOString())
     .order('created_at', { ascending: false })
     .limit(50);
@@ -134,19 +142,19 @@ export async function generateBriefingData(agencyId: string): Promise<BriefingDa
   const hotLeads: Array<{ name: string; reason: string; phone?: string }> = [];
   const seenContacts = new Set<string>();
 
-  for (const conv of (recentConvs ?? [])) {
-    const meta = conv.metadata as Record<string, unknown> | null;
-    const tags = (meta?.tags as string[]) ?? [];
-    const isHot = tags.some(t =>
-      ['hot-lead', 'appointment', 'pricing', 'urgent', 'booking', 'interested'].includes(t)
-    );
+  // Detect hot leads by message content (pricing, booking, urgency keywords)
+  const hotKeywords = ['price', 'cost', 'book', 'appointment', 'schedule', 'urgent', 'emergency', 'asap', 'available', 'quote', 'estimate'];
 
-    if (isHot && conv.contact_id && !seenContacts.has(conv.contact_id)) {
-      seenContacts.add(conv.contact_id);
+  for (const conv of (recentConvs ?? [])) {
+    const msg = (conv.user_message ?? '').toLowerCase();
+    const isHot = hotKeywords.some(k => msg.includes(k));
+    const contactKey = conv.contact_id ?? conv.contact_name ?? msg.slice(0, 20);
+
+    if (isHot && !seenContacts.has(contactKey)) {
+      seenContacts.add(contactKey);
       hotLeads.push({
-        name: (meta?.contact_name as string) ?? conv.contact_id,
+        name: (conv as Record<string, unknown>).contact_name as string ?? conv.contact_id ?? 'Unknown',
         reason: conv.user_message?.slice(0, 80) ?? 'Showed buying intent',
-        phone: meta?.phone as string | undefined,
       });
     }
   }
