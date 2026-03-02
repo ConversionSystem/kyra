@@ -473,6 +473,33 @@ export default function SoloSignupPage() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════
+          SECTION 6.5: BELIEF SHIFTS
+         ═══════════════════════════════════════════════════════════ */}
+      <section className="border-t border-white/5 px-4 py-16 lg:py-24">
+        <div className="max-w-2xl mx-auto">
+          <div className="text-center mb-10">
+            <p className="text-emerald-400 text-sm font-semibold uppercase tracking-widest mb-3">Objections Destroyed</p>
+            <h2 className="text-2xl sm:text-3xl font-black">Still thinking about it?</h2>
+            <p className="text-slate-400 text-sm mt-3">Every excuse you have — answered.</p>
+          </div>
+          <div className="space-y-3">
+            {[
+              { old: '"I\'m not technical enough for AI."', truth: 'If you can fill out a form, you can launch Kyra. Paste your website, pick your style, done. Zero code. Zero terminal. Zero setup guides.' },
+              { old: '"I tried AI chatbots before. They were terrible."', truth: 'Chatbots follow scripts. Kyra reads your entire website, learns your services and pricing, remembers past conversations, and responds like a human who actually works at your business.' },
+              { old: '"I\'ll set this up when things calm down."', truth: 'You\'re busy because you\'re doing everything yourself. Kyra handles leads at 11pm, answers the same questions for the 50th time, and follows up automatically. The busy IS why you need this.' },
+              { old: '"AI will make my business feel impersonal."', truth: 'Your AI is trained on YOUR voice, YOUR website, YOUR way of doing things. Customers think they\'re talking to your team. And you can review every conversation.' },
+              { old: '"Free? What\'s the catch?"', truth: 'The catch is we want you to love it so much you tell other business owners. That\'s it. 50 credits/month, full CRM, web chat — free. No credit card. No trial that expires.' },
+            ].map((item, i) => (
+              <div key={i} className="border border-white/10 rounded-xl p-5 bg-white/[0.02] hover:bg-white/[0.04] transition">
+                <p className="text-red-400/70 text-sm font-semibold line-through mb-2">{item.old}</p>
+                <p className="text-slate-300 text-sm leading-relaxed">{item.truth}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════
           SECTION 7: FAQ
          ═══════════════════════════════════════════════════════════ */}
       <section className="border-t border-white/5 px-4 py-16 lg:py-24 bg-white/[0.02]">

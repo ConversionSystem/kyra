@@ -370,6 +370,45 @@ export default function PricingPage() {
         </div>
       </section>
 
+      {/* Belief Shifts / Objection Handling */}
+      <section className="max-w-3xl mx-auto px-4 pb-20">
+        <h2 className="text-2xl font-black text-center mb-3">Still on the fence?</h2>
+        <p className="text-slate-400 text-sm text-center mb-10">Every objection you have — we&apos;ve heard it. Here&apos;s the truth.</p>
+        <div className="space-y-4">
+          {[
+            {
+              old: '"I need to be technical to run AI agents."',
+              truth: 'You need to be a clear thinker, not a developer. Kyra has zero terminal commands. Pick a template, customize, deploy. The hardest part is deciding what your AI should say — and we give you templates for that too.',
+            },
+            {
+              old: '"AI is just for big companies with engineering teams."',
+              truth: 'That was true 12 months ago. Today a solo plumber in Ohio can deploy an AI receptionist that answers calls, books jobs, and follows up — for less than the cost of one lunch per day.',
+            },
+            {
+              old: '"I don\'t have time to set this up."',
+              truth: 'Kyra\'s Setup Wizard takes 5 minutes. Not 5 hours. Not 30 days. Five minutes. Then it runs 24/7 without you touching it. The setup IS the time saving.',
+            },
+            {
+              old: '"I tried AI tools before and they didn\'t work."',
+              truth: 'You were using AI like a search engine — ask a question, get an answer, done. Kyra gives AI a role, a personality, memory of past conversations, and real tools (booking, CRM, SMS). Completely different experience.',
+            },
+            {
+              old: '"My business is too unique for AI."',
+              truth: 'Every business answers phones, qualifies leads, books appointments, follows up, and asks for reviews. If you do any of those manually, Kyra can do them autonomously.',
+            },
+            {
+              old: '"I don\'t want to lose control."',
+              truth: 'Kyra has Review Gates — AI drafts a response, you approve it before it sends. Plus alert rules, conversation logs, and a full analytics dashboard. You have MORE visibility than you had before.',
+            },
+          ].map((item, i) => (
+            <div key={i} className="border border-white/10 rounded-xl p-5 bg-white/[0.02]">
+              <p className="text-red-400 text-sm font-semibold line-through opacity-70 mb-2">{item.old}</p>
+              <p className="text-slate-300 text-sm leading-relaxed">{item.truth}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* FAQ */}
       <section className="max-w-3xl mx-auto px-4 pb-24">
         <h2 className="text-2xl font-black text-center mb-10">Frequently asked questions</h2>
