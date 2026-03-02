@@ -170,6 +170,9 @@ const soloNavSections: NavSection[] = [
       { label: 'Contacts', href: '/agency/crm/contacts', icon: ContactIcon },
       { label: 'Companies', href: '/agency/crm/companies', icon: Building2Icon },
       { label: 'Deals', href: '/agency/crm/deals', icon: TargetIcon },
+      { label: 'Analytics', href: '/agency/crm/analytics', icon: CrmChartIcon },
+      { label: 'Import', href: '/agency/crm/import', icon: UploadIcon },
+      { label: 'Web Leads', href: '/agency/crm/web-leads', icon: MessageCircle },
     ],
   },
   {
@@ -178,18 +181,35 @@ const soloNavSections: NavSection[] = [
       { label: 'Knowledge Base', href: '/agency/clients', icon: BookOpen },
       { label: 'Channels', href: '/agency/channels', icon: Radio },
       { label: 'Voice AI', href: '/agency/voice', icon: Phone },
-      { label: 'Reviews', href: '/agency/reviews', icon: Star },
-      { label: 'Templates', href: '/agency/templates', icon: LayoutGrid },
+      { label: 'Chat Widget', href: '/agency/widget', icon: MessageCircle },
       { label: 'AI Agents', href: '/agency/agents', icon: Bot },
-      { label: 'Autopilot', href: '/agency/autopilot', icon: ZapIcon },
+      { label: 'Templates', href: '/agency/templates', icon: LayoutGrid },
       { label: 'Packages', href: '/agency/packages', icon: Package },
+    ],
+  },
+  {
+    label: 'Automation',
+    items: [
+      { label: 'Autopilot', href: '/agency/autopilot', icon: ZapIcon },
+      { label: 'Automations', href: '/agency/automations', icon: Zap },
+      { label: 'Heartbeat', href: '/agency/heartbeat', icon: Heart },
+      { label: 'Reviews', href: '/agency/reviews', icon: Star },
+    ],
+  },
+  {
+    label: 'Insights',
+    items: [
+      { label: 'Performance', href: '/agency/performance', icon: BarChart3 },
+      { label: 'Revenue', href: '/agency/revenue', icon: TrendingUp },
     ],
   },
   {
     label: 'Account',
     items: [
       { label: 'Credits', href: '/agency/credits', icon: Coins },
+      { label: 'API Keys', href: '/agency/api-keys', icon: KeyRound },
       { label: 'Settings', href: '/agency/settings', icon: Settings },
+      { label: 'Setup Wizard', href: '/agency/setup', icon: Sparkles },
     ],
   },
 ];
