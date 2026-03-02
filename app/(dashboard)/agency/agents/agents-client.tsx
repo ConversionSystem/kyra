@@ -198,9 +198,9 @@ export function AgentsClient() {
       )}
 
       {/* Info banner */}
-      <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 flex items-start gap-2">
-        <Info className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
-        <p className="text-blue-300 text-sm">
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-start gap-2">
+        <Info className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+        <p className="text-blue-700 text-sm">
           Enable agents to specialize your AI worker. When Smart Routing is on, customer messages are analyzed and forwarded to the best agent automatically.
         </p>
       </div>
