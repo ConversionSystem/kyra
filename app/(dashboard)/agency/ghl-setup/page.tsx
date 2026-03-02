@@ -23,7 +23,7 @@ export default async function GHLSetupPage() {
         <div className="flex items-center gap-2 mb-2">
           <span className="text-2xl">⚡</span>
           <h1 className="text-2xl font-bold text-gray-900">GHL Integration Setup</h1>
-          <Badge className="bg-green-100 text-green-700 text-xs">5 min setup</Badge>
+          <Badge className="bg-blue-100 text-blue-700 text-xs">5 min setup</Badge>
         </div>
         <p className="text-sm text-gray-500">
           Connect any GHL sub-account to a Kyra AI worker using a Private Integration token. 
@@ -162,10 +162,10 @@ export default async function GHLSetupPage() {
       </div>
 
       {/* What happens after connecting */}
-      <Card className="mb-8 border-green-200 bg-green-50/50">
+      <Card className="mb-8 border-blue-200 bg-blue-50/50">
         <CardContent className="p-5">
           <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-            <Zap className="h-4 w-4 text-green-600" />
+            <Zap className="h-4 w-4 text-blue-600" />
             What happens after connecting
           </h3>
           <div className="grid md:grid-cols-2 gap-3">
