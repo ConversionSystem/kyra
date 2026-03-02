@@ -2,302 +2,299 @@
 
 import { useState, useEffect } from 'react';
 import {
-  BarChart3, TrendingUp, Users, Target, Flame, Bot, Coins,
-  ArrowRight, DollarSign, Zap, Download, RefreshCw,
+  BarChart3, Users, TrendingUp, Target, Clock, Flame,
+  ArrowUp, ArrowDown, DollarSign, Zap, Download, Filter,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-interface AttributionDeal {
-  deal_name: string;
-  value: number;
-  source: string;
-  contact_id: string | null;
-  stages: string[];
-  created_at: string;
-}
-
-interface Analytics {
-  revenue_by_source: Record<string, { total: number; won: number; pipeline: number; count: number }>;
-  funnel: {
-    total_contacts: number;
-    leads: number;
-    contacts: number;
-    customers: number;
-    deals: number;
-    won_deals: number;
-    won_value: number;
-  };
-  ai_stats: { actions_30d: number; crm_credits_used_30d: number };
-  score_distribution: Record<string, number>;
-  attribution_chain: AttributionDeal[];
-  last_autopilot_digest: { body: string; metadata: Record<string, unknown>; created_at: string } | null;
+interface AnalyticsData {
+  contacts: { total: number; byStage: Record<string, number>; bySource: Record<string, number>; byScore: Record<string, number> };
+  deals: { total: number; totalValue: number; byStage: Record<string, { count: number; value: number }> };
+  activities: { total: number; byType: Record<string, number>; byDay: Array<{ date: string; count: number }> };
+  conversions: { lead_to_contact: number; contact_to_customer: number; overall: number };
+  forecast: { weighted_pipeline: number; expected_revenue: number };
+  topContacts: Array<{ id: string; name: string; score: number; stage: string }>;
 }
 
 export function CrmAnalytics() {
-  const [data, setData] = useState<Analytics | null>(null);
+  const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [scoring, setScoring] = useState(false);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     fetch('/api/agency/crm/analytics')
-      .then(r => r.ok ? r.json() : null)
+      .then(r => {
+        if (!r.ok) throw new Error();
+        return r.json();
+      })
       .then(d => { setData(d); setLoading(false); })
-      .catch(() => setLoading(false));
+      .catch(() => { setError(true); setLoading(false); });
   }, []);
 
-  const runScoring = async () => {
-    setScoring(true);
-    await fetch('/api/agency/crm/score', { method: 'POST' });
-    // Refresh analytics
-    const r = await fetch('/api/agency/crm/analytics');
-    if (r.ok) setData(await r.json());
-    setScoring(false);
+  if (loading) return <div className="p-8 text-center text-gray-400 animate-pulse">Loading analytics...</div>;
+  if (error || !data) return <div className="p-8 text-center text-gray-500">Failed to load analytics.</div>;
+
+  const stages = ['lead', 'contact', 'customer', 'churned'];
+  const stageColors: Record<string, string> = { lead: '#6366f1', contact: '#8b5cf6', customer: '#22c55e', churned: '#9ca3af' };
+  const dealStages = ['prospect', 'qualified', 'proposal', 'negotiation', 'won', 'lost'];
+  const dealStageColors: Record<string, string> = {
+    prospect: '#6366f1', qualified: '#3b82f6', proposal: '#8b5cf6',
+    negotiation: '#f59e0b', won: '#22c55e', lost: '#9ca3af',
   };
-
-  const exportCsv = () => {
-    if (!data) return;
-    const rows = [['Source', 'Deals', 'Pipeline Value', 'Won Value', 'Total Value']];
-    for (const [src, info] of Object.entries(data.revenue_by_source)) {
-      rows.push([src, String(info.count), `$${info.pipeline}`, `$${info.won}`, `$${info.total}`]);
-    }
-    const csv = rows.map(r => r.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `crm-analytics-${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-  };
-
-  if (loading) {
-    return <div className="p-8 text-center text-gray-400 animate-pulse">Loading analytics...</div>;
-  }
-
-  if (!data) {
-    return <div className="p-8 text-center text-gray-500">Failed to load analytics.</div>;
-  }
-
-  const { funnel, ai_stats, score_distribution, revenue_by_source, attribution_chain, last_autopilot_digest } = data;
 
   return (
-    <div className="max-w-5xl mx-auto p-6 space-y-6">
+    <div className="max-w-6xl mx-auto p-4 sm:p-6 md:p-8 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <BarChart3 className="h-6 w-6 text-indigo-600" /> CRM Analytics
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">Revenue attribution, conversion funnel, AI ROI</p>
+          <p className="text-sm text-gray-500 mt-0.5">Performance overview and insights</p>
         </div>
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={runScoring} disabled={scoring}>
-            <RefreshCw className={`h-4 w-4 mr-1 ${scoring ? 'animate-spin' : ''}`} />
-            {scoring ? 'Scoring...' : 'Run AI Scoring'}
-          </Button>
-          <Button size="sm" variant="outline" onClick={exportCsv}>
-            <Download className="h-4 w-4 mr-1" /> Export CSV
-          </Button>
-        </div>
+        <Button variant="outline" size="sm" onClick={async () => {
+          const res = await fetch('/api/agency/crm/export?type=contacts');
+          if (res.ok) {
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `crm-export-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+          }
+        }}>
+          <Download className="h-4 w-4 mr-1" /> Export
+        </Button>
       </div>
 
-      {/* Top KPIs */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-        <KpiCard icon={<Users className="h-5 w-5 text-indigo-600" />} label="Total Contacts" value={funnel.total_contacts} bg="bg-indigo-50" />
-        <KpiCard icon={<Target className="h-5 w-5 text-purple-600" />} label="Active Deals" value={funnel.deals} bg="bg-purple-50" />
-        <KpiCard icon={<DollarSign className="h-5 w-5 text-green-600" />} label="Won Revenue" value={`$${funnel.won_value.toLocaleString()}`} bg="bg-green-50" />
-        <KpiCard icon={<Bot className="h-5 w-5 text-indigo-600" />} label="AI Actions (30d)" value={ai_stats.actions_30d} bg="bg-indigo-50" />
+      {/* KPI Row */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <KpiCard icon={<Users className="h-5 w-5 text-indigo-600" />} label="Total Contacts" value={data.contacts.total} />
+        <KpiCard icon={<DollarSign className="h-5 w-5 text-green-600" />} label="Pipeline Value" value={`$${(data.deals.totalValue / 1000).toFixed(1)}K`} />
+        <KpiCard icon={<TrendingUp className="h-5 w-5 text-purple-600" />} label="Forecast Revenue" value={`$${((data.forecast?.expected_revenue || 0) / 1000).toFixed(1)}K`} />
+        <KpiCard icon={<Flame className="h-5 w-5 text-red-500" />} label="Hot Leads" value={data.contacts.byScore?.hot || 0} />
       </div>
 
       {/* Conversion Funnel */}
       <div className="bg-white border border-gray-200 rounded-xl p-6">
         <h2 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
-          <TrendingUp className="h-4 w-4 text-indigo-500" /> CONVERSION FUNNEL
+          <Target className="h-4 w-4 text-indigo-500" /> Conversion Funnel
         </h2>
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-2">
-          <FunnelStep label="Leads" count={funnel.leads} total={funnel.total_contacts} color="bg-indigo-500" />
-          <ArrowRight className="h-4 w-4 text-gray-300 shrink-0" />
-          <FunnelStep label="Contacts" count={funnel.contacts} total={funnel.total_contacts} color="bg-purple-500" />
-          <ArrowRight className="h-4 w-4 text-gray-300 shrink-0" />
-          <FunnelStep label="Customers" count={funnel.customers} total={funnel.total_contacts} color="bg-green-500" />
-          <ArrowRight className="h-4 w-4 text-gray-300 shrink-0" />
-          <FunnelStep label="Won Deals" count={funnel.won_deals} total={funnel.deals || 1} color="bg-emerald-500" />
+        <ConversionFunnel
+          stages={stages.filter(s => s !== 'churned')}
+          values={stages.filter(s => s !== 'churned').map(s => data.contacts.byStage[s] || 0)}
+          colors={stages.filter(s => s !== 'churned').map(s => stageColors[s])}
+        />
+        <div className="grid grid-cols-3 gap-4 mt-4">
+          <div className="text-center">
+            <p className="text-2xl font-bold text-gray-900">{((data.conversions?.lead_to_contact || 0) * 100).toFixed(1)}%</p>
+            <p className="text-xs text-gray-500">Lead → Contact</p>
+          </div>
+          <div className="text-center">
+            <p className="text-2xl font-bold text-gray-900">{((data.conversions?.contact_to_customer || 0) * 100).toFixed(1)}%</p>
+            <p className="text-xs text-gray-500">Contact → Customer</p>
+          </div>
+          <div className="text-center">
+            <p className="text-2xl font-bold text-indigo-600">{((data.conversions?.overall || 0) * 100).toFixed(1)}%</p>
+            <p className="text-xs text-gray-500">Overall Conversion</p>
+          </div>
         </div>
       </div>
 
-      {/* Two columns */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-        {/* Revenue by Source */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Deal Pipeline */}
         <div className="bg-white border border-gray-200 rounded-xl p-6">
           <h2 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <DollarSign className="h-4 w-4 text-green-500" /> REVENUE BY SOURCE
+            <DollarSign className="h-4 w-4 text-green-500" /> Deal Pipeline
           </h2>
-          {Object.keys(revenue_by_source).length === 0 ? (
-            <p className="text-sm text-gray-400">No deals yet. Create deals to see attribution.</p>
-          ) : (
-            <div className="space-y-3">
-              {Object.entries(revenue_by_source).map(([src, info]) => (
-                <div key={src}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium text-gray-900 capitalize">{src.replace(/_/g, ' ')}</span>
-                    <span className="text-sm font-bold text-gray-900">${info.total.toLocaleString()}</span>
+          <div className="space-y-3">
+            {dealStages.map(stage => {
+              const stageData = data.deals.byStage[stage] || { count: 0, value: 0 };
+              const maxVal = Math.max(...dealStages.map(s => data.deals.byStage[s]?.value || 0), 1);
+              const pct = (stageData.value / maxVal) * 100;
+              return (
+                <div key={stage} className="flex items-center gap-3">
+                  <span className="text-xs text-gray-500 w-24 capitalize">{stage}</span>
+                  <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{ width: `${Math.max(pct, 2)}%`, backgroundColor: dealStageColors[stage] }}
+                    />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-green-500 rounded-full"
-                        style={{
-                          width: `${Math.min(100, (info.won / Math.max(1, info.total)) * 100)}%`,
-                        }}
-                      />
+                  <span className="text-xs font-bold text-gray-900 w-20 text-right">
+                    ${stageData.value.toLocaleString()}
+                  </span>
+                  <span className="text-[10px] text-gray-400 w-12 text-right">
+                    {stageData.count} deals
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Source Breakdown */}
+        <div className="bg-white border border-gray-200 rounded-xl p-6">
+          <h2 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <Zap className="h-4 w-4 text-amber-500" /> Contact Sources
+          </h2>
+          <SourcePieChart sources={data.contacts.bySource} total={data.contacts.total} />
+        </div>
+
+        {/* Activity Trends */}
+        <div className="bg-white border border-gray-200 rounded-xl p-6">
+          <h2 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <Clock className="h-4 w-4 text-blue-500" /> Activity (Last 14 Days)
+          </h2>
+          <ActivityChart days={data.activities.byDay || []} />
+          <div className="flex gap-4 mt-3">
+            {Object.entries(data.activities.byType || {}).slice(0, 5).map(([type, count]) => (
+              <div key={type} className="text-center">
+                <p className="text-lg font-bold text-gray-900">{count as number}</p>
+                <p className="text-[10px] text-gray-500 capitalize">{type.replace(/_/g, ' ')}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Top Contacts */}
+        <div className="bg-white border border-gray-200 rounded-xl p-6">
+          <h2 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <Flame className="h-4 w-4 text-red-500" /> Top Contacts by Score
+          </h2>
+          {(data.topContacts || []).length === 0 ? (
+            <p className="text-sm text-gray-400 text-center py-4">No scored contacts yet</p>
+          ) : (
+            <div className="space-y-2">
+              {data.topContacts.slice(0, 10).map((c, i) => (
+                <div key={c.id} className="flex items-center gap-3 py-1.5">
+                  <span className="text-xs font-bold text-gray-400 w-5">{i + 1}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">{c.name}</p>
+                    <p className="text-[10px] text-gray-500 capitalize">{c.stage}</p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-16 h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-full bg-red-500 rounded-full" style={{ width: `${c.score}%` }} />
                     </div>
-                    <span className="text-[10px] text-gray-500 shrink-0">
-                      {info.count} deals · ${info.won.toLocaleString()} won
-                    </span>
+                    <span className="text-xs font-bold text-gray-900 w-8 text-right">{c.score}</span>
                   </div>
                 </div>
               ))}
             </div>
           )}
         </div>
-
-        {/* Score Distribution */}
-        <div className="bg-white border border-gray-200 rounded-xl p-6">
-          <h2 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <Flame className="h-4 w-4 text-red-500" /> LEAD SCORING
-          </h2>
-          <div className="space-y-3">
-            <ScoreBar label="🔥 Hot" count={score_distribution.hot || 0} total={funnel.total_contacts} color="bg-red-500" />
-            <ScoreBar label="Warm" count={score_distribution.warm || 0} total={funnel.total_contacts} color="bg-amber-500" />
-            <ScoreBar label="Cold" count={score_distribution.cold || 0} total={funnel.total_contacts} color="bg-blue-500" />
-            <ScoreBar label="New" count={score_distribution.new || 0} total={funnel.total_contacts} color="bg-gray-300" />
-          </div>
-
-          <div className="mt-4 pt-4 border-t border-gray-100">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-500 flex items-center gap-1">
-                <Coins className="h-3.5 w-3.5" /> Credits used (30d)
-              </span>
-              <span className="font-bold text-gray-900">{ai_stats.crm_credits_used_30d}</span>
-            </div>
-          </div>
-        </div>
       </div>
-
-      {/* AI ROI */}
-      {funnel.won_value > 0 && ai_stats.crm_credits_used_30d > 0 && (
-        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl p-6 text-center">
-          <Zap className="h-8 w-8 text-indigo-600 mx-auto mb-2" />
-          <p className="text-lg font-bold text-gray-900">
-            AI ROI: {Math.round(funnel.won_value / (ai_stats.crm_credits_used_30d * 0.01))}x
-          </p>
-          <p className="text-sm text-gray-600 mt-1">
-            ${funnel.won_value.toLocaleString()} revenue from {ai_stats.crm_credits_used_30d} credits
-            (${(ai_stats.crm_credits_used_30d * 0.01).toFixed(2)} cost)
-          </p>
-        </div>
-      )}
-
-      {/* Revenue Attribution Chain */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6">
-        <h2 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
-          <TrendingUp className="h-4 w-4 text-green-500" /> REVENUE ATTRIBUTION CHAIN
-        </h2>
-        <p className="text-xs text-gray-500 mb-4">
-          Source → AI Outreach → Customer Reply → Meeting → Deal Won — the complete journey for every dollar earned.
-        </p>
-        {attribution_chain.length === 0 ? (
-          <div className="text-center py-8 text-gray-400">
-            <DollarSign className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">No won deals yet. Close your first deal to see the full attribution chain.</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {attribution_chain.map((deal, i) => (
-              <div key={i} className="border border-gray-100 rounded-lg p-4 hover:border-indigo-200 transition">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="font-semibold text-gray-900">{deal.deal_name}</span>
-                  <span className="text-lg font-bold text-green-600">${deal.value.toLocaleString()}</span>
-                </div>
-                <div className="flex items-center gap-1 flex-wrap">
-                  {deal.stages.map((stage, j) => (
-                    <span key={j} className="flex items-center">
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                        stage === 'Deal Won' ? 'bg-green-100 text-green-700' :
-                        stage === 'Customer Replied' ? 'bg-blue-100 text-blue-700' :
-                        stage === 'Meeting Held' ? 'bg-purple-100 text-purple-700' :
-                        stage.startsWith('AI') ? 'bg-indigo-100 text-indigo-700' :
-                        'bg-gray-100 text-gray-700'
-                      }`}>
-                        {stage}
-                      </span>
-                      {j < deal.stages.length - 1 && (
-                        <ArrowRight className="h-3 w-3 text-gray-300 mx-1 shrink-0" />
-                      )}
-                    </span>
-                  ))}
-                </div>
-                <p className="text-[10px] text-gray-400 mt-2">
-                  {new Date(deal.created_at).toLocaleDateString()}
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Last Autopilot Digest */}
-      {last_autopilot_digest && (
-        <div className="bg-white border border-gray-200 rounded-xl p-6">
-          <h2 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
-            <Bot className="h-4 w-4 text-indigo-500" /> LAST AI AUTOPILOT RUN
-          </h2>
-          <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-700 whitespace-pre-wrap">
-            {last_autopilot_digest.body}
-          </div>
-          <p className="text-[10px] text-gray-400 mt-2">
-            {new Date(last_autopilot_digest.created_at).toLocaleString()}
-          </p>
-        </div>
-      )}
     </div>
   );
 }
 
-function KpiCard({ icon, label, value, bg }: { icon: React.ReactNode; label: string; value: number | string; bg: string }) {
+function KpiCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string | number }) {
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-5">
       <div className="flex items-center gap-3 mb-2">
-        <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center`}>{icon}</div>
+        <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center">{icon}</div>
         <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">{label}</span>
       </div>
-      <div className="text-3xl font-bold text-gray-900">{value}</div>
+      <p className="text-3xl font-bold text-gray-900">{value}</p>
     </div>
   );
 }
 
-function FunnelStep({ label, count, total, color }: { label: string; count: number; total: number; color: string }) {
-  const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+function ConversionFunnel({ stages, values, colors }: { stages: string[]; values: number[]; colors: string[] }) {
+  const maxVal = Math.max(...values, 1);
+
   return (
-    <div className="flex-1 text-center">
-      <div className="h-16 flex items-end justify-center mb-2">
-        <div className={`w-full ${color} rounded-t-lg`} style={{ height: `${Math.max(8, pct)}%` }} />
-      </div>
-      <p className="text-xl font-bold text-gray-900">{count}</p>
-      <p className="text-[10px] text-gray-500">{label} ({pct}%)</p>
+    <div className="flex items-end gap-2 h-32">
+      {stages.map((stage, i) => {
+        const pct = (values[i] / maxVal) * 100;
+        return (
+          <div key={stage} className="flex-1 flex flex-col items-center gap-1">
+            <span className="text-sm font-bold text-gray-900">{values[i]}</span>
+            <div className="w-full bg-gray-100 rounded-t-lg overflow-hidden" style={{ height: '100px' }}>
+              <div
+                className="w-full rounded-t-lg transition-all"
+                style={{
+                  height: `${Math.max(pct, 5)}%`,
+                  backgroundColor: colors[i],
+                  marginTop: `${100 - Math.max(pct, 5)}%`,
+                }}
+              />
+            </div>
+            <span className="text-[10px] text-gray-500 capitalize">{stage}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }
 
-function ScoreBar({ label, count, total, color }: { label: string; count: number; total: number; color: string }) {
-  const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+function SourcePieChart({ sources, total }: { sources: Record<string, number>; total: number }) {
+  const entries = Object.entries(sources || {}).sort((a, b) => b[1] - a[1]);
+  if (entries.length === 0) return <p className="text-sm text-gray-400 text-center py-4">No data</p>;
+
+  const colors = ['#6366f1', '#8b5cf6', '#ec4899', '#f97316', '#22c55e', '#3b82f6', '#eab308', '#14b8a6'];
+
+  // Simple horizontal bar chart instead of pie (more readable)
   return (
-    <div>
-      <div className="flex items-center justify-between mb-1">
-        <span className="text-sm text-gray-700">{label}</span>
-        <span className="text-sm font-bold text-gray-900">{count}</span>
-      </div>
-      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-        <div className={`h-full ${color} rounded-full`} style={{ width: `${pct}%` }} />
-      </div>
+    <div className="space-y-3">
+      {entries.map(([source, count], i) => {
+        const pct = total > 0 ? (count / total) * 100 : 0;
+        return (
+          <div key={source} className="flex items-center gap-3">
+            <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: colors[i % colors.length] }} />
+            <span className="text-xs text-gray-600 w-20 capitalize">{source || 'unknown'}</span>
+            <div className="flex-1 h-4 bg-gray-100 rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full"
+                style={{ width: `${Math.max(pct, 3)}%`, backgroundColor: colors[i % colors.length] }}
+              />
+            </div>
+            <span className="text-xs font-bold text-gray-900 w-8 text-right">{count}</span>
+            <span className="text-[10px] text-gray-400 w-10 text-right">{pct.toFixed(0)}%</span>
+          </div>
+        );
+      })}
     </div>
+  );
+}
+
+function ActivityChart({ days }: { days: Array<{ date: string; count: number }> }) {
+  if (days.length === 0) return <p className="text-sm text-gray-400 text-center py-4">No activity data</p>;
+
+  const maxCount = Math.max(...days.map(d => d.count), 1);
+  const chartWidth = 400;
+  const chartHeight = 80;
+  const barWidth = Math.min((chartWidth / days.length) - 2, 24);
+
+  return (
+    <svg viewBox={`0 0 ${chartWidth} ${chartHeight + 20}`} className="w-full h-24">
+      {days.map((day, i) => {
+        const barHeight = (day.count / maxCount) * chartHeight;
+        const x = (i / days.length) * chartWidth + barWidth / 2;
+        const y = chartHeight - barHeight;
+        const label = new Date(day.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+        return (
+          <g key={day.date}>
+            <rect
+              x={x}
+              y={y}
+              width={barWidth}
+              height={barHeight}
+              rx={3}
+              fill={day.count > 0 ? '#6366f1' : '#e5e7eb'}
+              opacity={0.8}
+            />
+            {i % Math.ceil(days.length / 7) === 0 && (
+              <text x={x + barWidth / 2} y={chartHeight + 14} textAnchor="middle" className="text-[8px]" fill="#9ca3af">
+                {label}
+              </text>
+            )}
+          </g>
+        );
+      })}
+    </svg>
   );
 }
