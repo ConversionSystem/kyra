@@ -179,13 +179,13 @@ export function ContactsList() {
             {viewMode === 'people' ? `${total} contacts` : `${companyTotal} companies`}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {viewMode === 'people' && (
             <>
               <Button variant="outline" size="sm" onClick={() => router.push('/agency/crm/import')}>
                 <Upload className="h-4 w-4 mr-1" /> Import
               </Button>
-              <Button variant="outline" size="sm" onClick={async () => {
+              <Button variant="outline" size="sm" className="hidden sm:flex" onClick={async () => {
                 const res = await fetch('/api/agency/crm/export?type=contacts');
                 if (res.ok) {
                   const blob = await res.blob();
@@ -255,7 +255,7 @@ export function ContactsList() {
               <p className="text-sm text-gray-400 mt-1">Companies are auto-created when you add contacts with a company name.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {companies.map(co => (
                 <div key={co.id}
                   className="bg-white border border-gray-200 rounded-xl p-4 hover:border-indigo-200 hover:shadow-sm transition cursor-pointer">
@@ -318,7 +318,7 @@ export function ContactsList() {
       {viewMode === 'people' && <>
 
       {/* Search + Filters */}
-      <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <input
@@ -333,24 +333,26 @@ export function ContactsList() {
             </button>
           )}
         </div>
-        <select
-          value={sort}
-          onChange={e => setSort(e.target.value as ContactFilters['sort'])}
-          className="border rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-        >
-          <option value="created">Newest</option>
-          <option value="last_activity">Last Active</option>
-          <option value="score">Score</option>
-          <option value="name">Name</option>
-        </select>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setShowFilters(!showFilters)}
-          className={showFilters ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : ''}
-        >
-          <Filter className="h-4 w-4 mr-1" /> Filters
-        </Button>
+        <div className="flex gap-2">
+          <select
+            value={sort}
+            onChange={e => setSort(e.target.value as ContactFilters['sort'])}
+            className="border rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none flex-1 sm:flex-none"
+          >
+            <option value="created">Newest</option>
+            <option value="last_activity">Last Active</option>
+            <option value="score">Score</option>
+            <option value="name">Name</option>
+          </select>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowFilters(!showFilters)}
+            className={showFilters ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : ''}
+          >
+            <Filter className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">Filters</span>
+          </Button>
+        </div>
       </div>
 
       {/* Advanced Filters */}
@@ -385,7 +387,7 @@ export function ContactsList() {
       )}
 
       {/* Stage Tabs */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
+      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl overflow-x-auto">
         {STAGE_TABS.map(tab => (
           <button
             key={tab.key}
@@ -403,11 +405,11 @@ export function ContactsList() {
 
       {/* Bulk Action Bar */}
       {selectedIds.size > 0 && (
-        <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3 flex items-center gap-3 sticky top-0 z-10">
+        <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3 flex flex-wrap items-center gap-2 sm:gap-3 sticky top-0 z-10">
           <span className="text-sm font-medium text-indigo-700">
             {selectedIds.size} selected
           </span>
-          <div className="flex gap-2 flex-1">
+          <div className="flex gap-2 flex-wrap flex-1">
             <Button size="sm" variant="outline" className="text-xs h-7"
               onClick={() => { setBulkAction('tag'); }}>
               <Tag className="h-3 w-3 mr-1" /> Tag

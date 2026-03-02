@@ -112,7 +112,7 @@ export function CrmCommandFeed() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <button onClick={() => router.push('/agency/crm/contacts')}
           className="bg-white border border-gray-200 rounded-xl p-5 text-left hover:border-indigo-200 hover:shadow-sm transition">
           <div className="flex items-center gap-3 mb-2">
@@ -241,25 +241,25 @@ export function CrmCommandFeed() {
       </div>
 
       {/* Quick Actions */}
-      <div className="flex gap-3">
+      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
         <Button
           onClick={() => router.push('/agency/crm/contacts')}
           variant="outline"
-          className="flex-1 py-5 text-sm"
+          className="flex-1 py-4 sm:py-5 text-sm"
         >
           <Users className="h-4 w-4 mr-2" /> View All Contacts
         </Button>
         <Button
-          onClick={() => router.push('/agency/crm/companies')}
+          onClick={() => router.push('/agency/crm/contacts?view=companies')}
           variant="outline"
-          className="flex-1 py-5 text-sm"
+          className="flex-1 py-4 sm:py-5 text-sm"
         >
           <Building2 className="h-4 w-4 mr-2" /> View Companies
         </Button>
         <Button
           onClick={() => router.push('/agency/pipeline')}
           variant="outline"
-          className="flex-1 py-5 text-sm"
+          className="flex-1 py-4 sm:py-5 text-sm"
         >
           <Sparkles className="h-4 w-4 mr-2" /> AI Pipeline
         </Button>
