@@ -47,6 +47,7 @@ import {
   LayoutGrid,
   Bot,
   Zap as ZapIcon,
+  Package,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AgencySettings } from '@/lib/agency/types';
@@ -98,6 +99,7 @@ const navSections: NavSection[] = [
       { label: 'Templates', href: '/agency/templates', icon: LayoutGrid },
       { label: 'AI Agents', href: '/agency/agents', icon: Bot },
       { label: 'Autopilot', href: '/agency/autopilot', icon: ZapIcon },
+      { label: 'Packages', href: '/agency/packages', icon: Package },
     ],
   },
   {
@@ -179,6 +181,7 @@ const soloNavSections: NavSection[] = [
       { label: 'Templates', href: '/agency/templates', icon: LayoutGrid },
       { label: 'AI Agents', href: '/agency/agents', icon: Bot },
       { label: 'Autopilot', href: '/agency/autopilot', icon: ZapIcon },
+      { label: 'Packages', href: '/agency/packages', icon: Package },
     ],
   },
   {
