@@ -1,5 +1,5 @@
 /**
- * GET /api/agency/crm/analytics — Revenue attribution + CRM analytics
+ * GET /api/agency/crm/analytics — Enhanced CRM Analytics
  */
 import { NextResponse } from 'next/server';
 import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
@@ -20,180 +20,120 @@ export async function GET() {
 
   const svc = createServiceClientWithoutCookies();
 
-  // Revenue by source
-  const { data: dealsBySource } = await svc
-    .from('crm_deals')
-    .select('source, value, stage')
+  // ─── Contacts ───
+  const { data: allContacts } = await svc
+    .from('crm_contacts')
+    .select('id, first_name, last_name, stage, score, score_label, source')
     .eq('agency_id', agencyId);
 
-  const sourceRevenue: Record<string, { total: number; won: number; pipeline: number; count: number }> = {};
-  for (const deal of (dealsBySource || [])) {
-    const src = deal.source || 'manual';
-    if (!sourceRevenue[src]) sourceRevenue[src] = { total: 0, won: 0, pipeline: 0, count: 0 };
-    sourceRevenue[src].count++;
-    const val = Number(deal.value) || 0;
-    sourceRevenue[src].total += val;
-    if (deal.stage === 'won') sourceRevenue[src].won += val;
-    if (!['won', 'lost'].includes(deal.stage)) sourceRevenue[src].pipeline += val;
+  const contacts = allContacts || [];
+  const byStage: Record<string, number> = {};
+  const bySource: Record<string, number> = {};
+  const byScore: Record<string, number> = {};
+  for (const c of contacts) {
+    byStage[c.stage] = (byStage[c.stage] || 0) + 1;
+    bySource[c.source || 'unknown'] = (bySource[c.source || 'unknown'] || 0) + 1;
+    byScore[c.score_label || 'new'] = (byScore[c.score_label || 'new'] || 0) + 1;
   }
 
-  // Conversion funnel
-  const { count: totalContacts } = await svc
-    .from('crm_contacts')
-    .select('id', { count: 'exact', head: true })
+  const topContacts = contacts
+    .filter(c => c.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 10)
+    .map(c => ({
+      id: c.id,
+      name: `${c.first_name || ''} ${c.last_name || ''}`.trim() || 'Unnamed',
+      score: c.score,
+      stage: c.stage,
+    }));
+
+  // ─── Deals ───
+  const { data: allDeals } = await svc
+    .from('crm_deals')
+    .select('id, value, stage, probability')
     .eq('agency_id', agencyId);
 
-  const { count: leadsCount } = await svc
-    .from('crm_contacts')
-    .select('id', { count: 'exact', head: true })
-    .eq('agency_id', agencyId)
-    .eq('stage', 'lead');
+  const deals = allDeals || [];
+  const dealsByStage: Record<string, { count: number; value: number }> = {};
+  let totalDealValue = 0;
+  let weightedPipeline = 0;
 
-  const { count: contactsCount } = await svc
-    .from('crm_contacts')
-    .select('id', { count: 'exact', head: true })
-    .eq('agency_id', agencyId)
-    .eq('stage', 'contact');
-
-  const { count: customersCount } = await svc
-    .from('crm_contacts')
-    .select('id', { count: 'exact', head: true })
-    .eq('agency_id', agencyId)
-    .eq('stage', 'customer');
-
-  const { count: totalDeals } = await svc
-    .from('crm_deals')
-    .select('id', { count: 'exact', head: true })
-    .eq('agency_id', agencyId);
-
-  const { count: wonDeals } = await svc
-    .from('crm_deals')
-    .select('id', { count: 'exact', head: true })
-    .eq('agency_id', agencyId)
-    .eq('stage', 'won');
-
-  const { data: wonTotal } = await svc
-    .from('crm_deals')
-    .select('value')
-    .eq('agency_id', agencyId)
-    .eq('stage', 'won');
-
-  const totalWonValue = (wonTotal || []).reduce((sum, d) => sum + (Number(d.value) || 0), 0);
-
-  // AI activity stats (last 30 days)
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString();
-  const { count: aiActions } = await svc
-    .from('crm_activities')
-    .select('id', { count: 'exact', head: true })
-    .eq('agency_id', agencyId)
-    .eq('actor', 'ai')
-    .gte('created_at', thirtyDaysAgo);
-
-  // Credits used on CRM
-  const { data: creditUsage } = await svc
-    .from('agency_credit_log')
-    .select('credits_used, action')
-    .eq('agency_id', agencyId)
-    .like('action', 'crm%')
-    .gte('created_at', thirtyDaysAgo);
-
-  const crmCreditsUsed = (creditUsage || []).reduce((sum, c) => sum + (Number(c.credits_used) || 0), 0);
-
-  // Score distribution
-  const { data: scoreData } = await svc
-    .from('crm_contacts')
-    .select('score_label')
-    .eq('agency_id', agencyId);
-
-  const scoreDistribution: Record<string, number> = { new: 0, cold: 0, warm: 0, hot: 0 };
-  for (const c of (scoreData || [])) {
-    const label = c.score_label || 'new';
-    scoreDistribution[label] = (scoreDistribution[label] || 0) + 1;
-  }
-
-  // Full attribution chain: Source → AI Outreach → Reply → Meeting → Deal → Revenue
-  const { data: chainDeals } = await svc
-    .from('crm_deals')
-    .select('id, name, value, stage, source, source_id, contact_id, created_at')
-    .eq('agency_id', agencyId)
-    .eq('stage', 'won')
-    .order('created_at', { ascending: false })
-    .limit(20);
-
-  const attributionChain: Array<{
-    deal_name: string;
-    value: number;
-    source: string;
-    contact_id: string | null;
-    stages: string[];
-    created_at: string;
-  }> = [];
-
-  for (const deal of (chainDeals || [])) {
-    // Get activities for this deal's contact to build the chain
-    const stages: string[] = [];
-    if (deal.source === 'pipeline') stages.push('AI Outreach');
-    if (deal.source === 'ai') stages.push('AI Generated');
-    if (deal.source === 'ghl_inbound') stages.push('GHL Inbound');
-    if (deal.source === 'manual') stages.push('Manual Entry');
-
-    if (deal.contact_id) {
-      const { count: replies } = await svc
-        .from('crm_activities')
-        .select('id', { count: 'exact', head: true })
-        .eq('contact_id', deal.contact_id)
-        .eq('direction', 'inbound')
-        .limit(1);
-      if (replies && replies > 0) stages.push('Customer Replied');
-
-      const { count: meetings } = await svc
-        .from('crm_activities')
-        .select('id', { count: 'exact', head: true })
-        .eq('contact_id', deal.contact_id)
-        .eq('type', 'meeting')
-        .limit(1);
-      if (meetings && meetings > 0) stages.push('Meeting Held');
+  for (const d of deals) {
+    const val = Number(d.value) || 0;
+    totalDealValue += val;
+    if (!dealsByStage[d.stage]) dealsByStage[d.stage] = { count: 0, value: 0 };
+    dealsByStage[d.stage].count++;
+    dealsByStage[d.stage].value += val;
+    if (!['won', 'lost'].includes(d.stage)) {
+      weightedPipeline += val * ((d.probability || 50) / 100);
     }
-
-    stages.push('Deal Won');
-
-    attributionChain.push({
-      deal_name: deal.name,
-      value: Number(deal.value) || 0,
-      source: deal.source || 'manual',
-      contact_id: deal.contact_id,
-      stages,
-      created_at: deal.created_at,
-    });
   }
 
-  // Autopilot digest (last run)
-  const { data: lastDigest } = await svc
+  // ─── Activities (last 14 days) ───
+  const fourteenDaysAgo = new Date(Date.now() - 14 * 86400000).toISOString();
+  const { data: recentActivities } = await svc
     .from('crm_activities')
-    .select('body, metadata, created_at')
+    .select('type, created_at')
     .eq('agency_id', agencyId)
-    .eq('type', 'system')
-    .eq('actor', 'system')
-    .order('created_at', { ascending: false })
-    .limit(1);
+    .gte('created_at', fourteenDaysAgo);
+
+  const actByType: Record<string, number> = {};
+  const actByDay: Map<string, number> = new Map();
+
+  // Initialize all 14 days
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 86400000);
+    actByDay.set(d.toISOString().split('T')[0], 0);
+  }
+
+  for (const a of recentActivities || []) {
+    actByType[a.type] = (actByType[a.type] || 0) + 1;
+    const day = a.created_at.split('T')[0];
+    actByDay.set(day, (actByDay.get(day) || 0) + 1);
+  }
+
+  const actByDayArr = Array.from(actByDay.entries()).map(([date, count]) => ({ date, count }));
+
+  // ─── Conversions ───
+  const totalLeads = byStage.lead || 0;
+  const totalContactStage = byStage.contact || 0;
+  const totalCustomers = byStage.customer || 0;
+  const allNonChurned = contacts.length - (byStage.churned || 0);
+
+  const leadToContact = totalLeads + totalContactStage + totalCustomers > 0
+    ? (totalContactStage + totalCustomers) / (totalLeads + totalContactStage + totalCustomers)
+    : 0;
+  const contactToCustomer = totalContactStage + totalCustomers > 0
+    ? totalCustomers / (totalContactStage + totalCustomers)
+    : 0;
+  const overall = allNonChurned > 0 ? totalCustomers / allNonChurned : 0;
 
   return NextResponse.json({
-    revenue_by_source: sourceRevenue,
-    funnel: {
-      total_contacts: totalContacts || 0,
-      leads: leadsCount || 0,
-      contacts: contactsCount || 0,
-      customers: customersCount || 0,
-      deals: totalDeals || 0,
-      won_deals: wonDeals || 0,
-      won_value: totalWonValue,
+    contacts: {
+      total: contacts.length,
+      byStage,
+      bySource,
+      byScore,
     },
-    ai_stats: {
-      actions_30d: aiActions || 0,
-      crm_credits_used_30d: crmCreditsUsed,
+    deals: {
+      total: deals.length,
+      totalValue: totalDealValue,
+      byStage: dealsByStage,
     },
-    score_distribution: scoreDistribution,
-    attribution_chain: attributionChain,
-    last_autopilot_digest: lastDigest?.[0] || null,
+    activities: {
+      total: (recentActivities || []).length,
+      byType: actByType,
+      byDay: actByDayArr,
+    },
+    conversions: {
+      lead_to_contact: leadToContact,
+      contact_to_customer: contactToCustomer,
+      overall,
+    },
+    forecast: {
+      weighted_pipeline: weightedPipeline,
+      expected_revenue: (dealsByStage.won?.value || 0) + weightedPipeline,
+    },
+    topContacts,
   });
 }
