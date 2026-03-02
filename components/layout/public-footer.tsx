@@ -6,6 +6,7 @@ const FOOTER_LINKS = {
     { href: '/pricing', label: 'Pricing' },
     { href: '/changelog', label: 'Changelog' },
     { href: '/use-cases', label: 'Use Cases' },
+    { href: '/guides', label: 'Setup Guides' },
     { href: '/vs', label: 'vs. Chatbots' },
     { href: '/roi', label: 'ROI Calculator' },
     { href: '/get-demo', label: 'Get a Demo' },
