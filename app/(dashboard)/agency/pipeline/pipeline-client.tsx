@@ -667,7 +667,7 @@ export default function PipelineClient() {
                 <Button size="sm" variant="outline" onClick={() => approveLeads([...selectedIds], 'reject')} disabled={isApproving} className="text-xs text-red-600 border-red-200 hover:bg-red-50">
                   <XCircle className="h-3 w-3 mr-1" /> Reject
                 </Button>
-                <Button size="sm" onClick={() => approveLeads([...selectedIds], 'approve')} disabled={isApproving} className="text-xs bg-green-600 hover:bg-green-700 text-white">
+                <Button size="sm" onClick={() => approveLeads([...selectedIds], 'approve')} disabled={isApproving} className="text-xs bg-blue-600 hover:bg-blue-700 text-white">
                   {isApproving ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <UserCheck className="h-3 w-3 mr-1" />}
                   Approve ({selectedIds.size})
                 </Button>
@@ -676,7 +676,7 @@ export default function PipelineClient() {
             {foundLeads.length > 0 && selectedIds.size === 0 && (
               <>
                 <Button size="sm" variant="outline" onClick={() => selectAll(foundLeads)} className="text-xs">Select All</Button>
-                <Button size="sm" onClick={() => approveLeads(foundLeads.map(l => l.id), 'approve')} disabled={isApproving} className="text-xs bg-green-600 hover:bg-green-700 text-white">
+                <Button size="sm" onClick={() => approveLeads(foundLeads.map(l => l.id), 'approve')} disabled={isApproving} className="text-xs bg-blue-600 hover:bg-blue-700 text-white">
                   <UserCheck className="h-3 w-3 mr-1" /> Approve All ({foundLeads.length})
                 </Button>
               </>
@@ -781,7 +781,7 @@ export default function PipelineClient() {
                   <div className="flex gap-2 mt-3 pt-2 border-t border-gray-100" onClick={e => e.stopPropagation()}>
                     {lead.stage === 'found' && (
                       <>
-                        <Button size="sm" onClick={() => approveLeads([lead.id], 'approve')} disabled={isApproving} className="text-xs bg-green-600 hover:bg-green-700 text-white flex-1">
+                        <Button size="sm" onClick={() => approveLeads([lead.id], 'approve')} disabled={isApproving} className="text-xs bg-blue-600 hover:bg-blue-700 text-white flex-1">
                           <Check className="h-3 w-3 mr-1" /> Approve
                         </Button>
                         <Button size="sm" variant="outline" onClick={() => approveLeads([lead.id], 'reject')} disabled={isApproving} className="text-xs text-red-500 border-red-200 hover:bg-red-50">
@@ -897,7 +897,7 @@ export default function PipelineClient() {
                               personalized_opener: editFields.opener,
                             });
                             setEditingLead(null);
-                          }} className="text-xs bg-green-600 text-white">
+                          }} className="text-xs bg-blue-600 text-white">
                             <Check className="h-3 w-3 mr-1" /> Save
                           </Button>
                           <Button size="sm" variant="outline" onClick={() => setEditingLead(null)} className="text-xs">Cancel</Button>
@@ -1014,7 +1014,7 @@ export default function PipelineClient() {
                   <Button size="sm" onClick={() => launchOutreach([lead.id], 'email')} disabled={isLaunching || !lead.email} className="text-xs bg-cyan-600 text-white flex-1">
                     <Mail className="h-3 w-3 mr-1" /> Email
                   </Button>
-                  <Button size="sm" onClick={() => launchOutreach([lead.id], 'sms')} disabled={isLaunching || !lead.phone} className="text-xs bg-green-600 text-white flex-1">
+                  <Button size="sm" onClick={() => launchOutreach([lead.id], 'sms')} disabled={isLaunching || !lead.phone} className="text-xs bg-blue-600 text-white flex-1">
                     <Phone className="h-3 w-3 mr-1" /> SMS
                   </Button>
                   <Button size="sm" onClick={() => launchOutreach([lead.id], 'both')} disabled={isLaunching} className="text-xs bg-indigo-600 text-white flex-1">
@@ -1262,7 +1262,7 @@ export default function PipelineClient() {
               {['messaged', 'replied', 'interested'].includes(selectedLead.stage) && (
                 <>
                   <Button variant="outline" className="text-xs" onClick={() => { updateLead(selectedLead.id, { stage: 'interested' }); setSelectedLead(null); }}>Mark Interested</Button>
-                  <Button className="bg-green-600 hover:bg-green-700 text-white text-xs" onClick={() => { updateLead(selectedLead.id, { stage: 'booked' }); setSelectedLead(null); }}><Calendar className="h-3 w-3 mr-1" /> Booked</Button>
+                  <Button className="bg-blue-600 hover:bg-blue-700 text-white text-xs" onClick={() => { updateLead(selectedLead.id, { stage: 'booked' }); setSelectedLead(null); }}><Calendar className="h-3 w-3 mr-1" /> Booked</Button>
                 </>
               )}
               {selectedLead.stage === 'booked' && (

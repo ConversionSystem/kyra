@@ -2135,7 +2135,7 @@ function PortalTab({ client }: { client: AgencyClient }) {
                 </code>
                 <button
                   onClick={() => copyUrl(inviteResult.portalUrl)}
-                  className="shrink-0 px-3 py-2 text-xs font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  className="shrink-0 px-3 py-2 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   Copy
                 </button>

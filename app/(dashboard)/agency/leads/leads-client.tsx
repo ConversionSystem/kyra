@@ -519,7 +519,7 @@ export function LeadsPipelineClient({ initialPipelineState }: Props) {
           <Button
             onClick={launchAllHotLeads}
             disabled={bulkLaunching || hotNew === 0}
-            className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-sm font-semibold text-sm px-4 py-2 flex items-center gap-2"
+            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-sm font-semibold text-sm px-4 py-2 flex items-center gap-2"
           >
             {bulkLaunching
               ? <><Loader2 className="h-4 w-4 animate-spin" /> Launching…</>
