@@ -267,7 +267,7 @@ export function ChannelsClient() {
   }
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="p-4 sm:p-6 md:p-8 space-y-6 max-w-4xl">
       {/* Header */}
       <div>
         <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Connect Channels</h1>

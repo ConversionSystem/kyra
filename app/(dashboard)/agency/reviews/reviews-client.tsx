@@ -101,7 +101,7 @@ export function ReviewsClient({ agencyId, clientId, businessName, reviewConfig, 
   };
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="p-4 sm:p-6 md:p-8 space-y-6 max-w-3xl">
       <div>
         <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Reviews & Reputation</h1>
         <p className="text-sm text-gray-500 mt-1">

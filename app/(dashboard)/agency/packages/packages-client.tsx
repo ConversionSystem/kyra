@@ -185,7 +185,7 @@ export function PackagesClient({ businessName }: Props) {
   }
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="p-4 sm:p-6 md:p-8 space-y-6 max-w-4xl">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
           <Package className="w-6 h-6 text-blue-600" /> Service Packages
