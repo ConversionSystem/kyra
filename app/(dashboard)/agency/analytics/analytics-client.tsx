@@ -108,11 +108,12 @@ function HorizontalBar({ label, value, max, color = 'bg-blue-500' }: { label: st
 }
 
 // Hourly heatmap
-function HourlyHeatmap({ hours }: { hours: number[] }) {
-  const max = Math.max(...hours, 1);
+function HourlyHeatmap({ hours }: { hours: number[] | Record<string, number> }) {
+  const hourArray = Array.isArray(hours) ? hours : Array.from({ length: 24 }, (_, i) => (hours as Record<string, number>)?.[String(i)] ?? 0);
+  const max = Math.max(...hourArray, 1);
   return (
     <div className="flex items-end gap-[2px] h-16">
-      {hours.map((count, h) => {
+      {hourArray.map((count, h) => {
         const intensity = count / max;
         const bg = intensity === 0 ? 'bg-gray-100' :
           intensity < 0.25 ? 'bg-amber-100' :
@@ -184,9 +185,15 @@ export default function AnalyticsClient() {
   }
 
   if (!data) return null;
-  const { summary, dailyMessages, channelBreakdown, clientBreakdown, topContacts, hourlyDistribution } = data;
-  const maxClient = Math.max(...clientBreakdown.map(c => c.messages), 1);
-  const maxChannel = Math.max(...Object.values(channelBreakdown), 1);
+  const { dailyMessages, channelBreakdown, clientBreakdown, topContacts, hourlyDistribution } = data;
+  const summary = data.summary ?? { totalMessages: 0, today: 0, thisWeek: 0, avgPerDay: 0, responseRate: 0, avgResponseTime: 0 };
+  const safeClientBreakdown = clientBreakdown ?? [];
+  const safeChannelBreakdown = channelBreakdown ?? {};
+  const safeDailyMessages = dailyMessages ?? [];
+  const safeTopContacts = topContacts ?? [];
+  const safeHourlyDistribution = hourlyDistribution ?? {};
+  const maxClient = safeClientBreakdown.length > 0 ? Math.max(...safeClientBreakdown.map((c: any) => c.messages), 1) : 1;
+  const maxChannel = Object.values(safeChannelBreakdown).length > 0 ? Math.max(...Object.values(safeChannelBreakdown) as number[], 1) : 1;
 
   return (
     <div className="space-y-6">
@@ -272,15 +279,15 @@ export default function AnalyticsClient() {
       {/* Message Volume Chart */}
       <div className="rounded-xl border border-gray-200 bg-white p-5">
         <h3 className="text-sm font-semibold text-gray-900 mb-4">Message Volume — Last {days} Days</h3>
-        {dailyMessages.some(d => d.count > 0) ? (
-          <MiniBarChart data={dailyMessages} maxBars={days} />
+        {safeDailyMessages.some(d => d.count > 0) ? (
+          <MiniBarChart data={safeDailyMessages} maxBars={days} />
         ) : (
           <div className="h-32 flex items-center justify-center text-gray-400 text-sm">
             No messages in this period
           </div>
         )}
         <div className="flex justify-between text-xs text-gray-400 mt-2">
-          <span>{new Date(dailyMessages[0]?.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+          <span>{safeDailyMessages[0]?.date ? new Date(safeDailyMessages[0].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}</span>
           <span>Today</span>
         </div>
       </div>
@@ -290,9 +297,9 @@ export default function AnalyticsClient() {
         {/* Channel Breakdown */}
         <div className="rounded-xl border border-gray-200 bg-white p-5">
           <h3 className="text-sm font-semibold text-gray-900 mb-4">By Channel</h3>
-          {Object.keys(channelBreakdown).length > 0 ? (
+          {Object.keys(safeChannelBreakdown).length > 0 ? (
             <div className="space-y-3">
-              {Object.entries(channelBreakdown)
+              {Object.entries(safeChannelBreakdown)
                 .sort(([, a], [, b]) => b - a)
                 .map(([channel, count]) => (
                   <HorizontalBar
@@ -318,9 +325,9 @@ export default function AnalyticsClient() {
         {/* Client Breakdown */}
         <div className="rounded-xl border border-gray-200 bg-white p-5">
           <h3 className="text-sm font-semibold text-gray-900 mb-4">By Client</h3>
-          {clientBreakdown.length > 0 ? (
+          {safeClientBreakdown.length > 0 ? (
             <div className="space-y-3">
-              {clientBreakdown.map(client => (
+              {safeClientBreakdown.map((client: any) => (
                 <HorizontalBar
                   key={client.id}
                   label={client.name}
@@ -339,15 +346,15 @@ export default function AnalyticsClient() {
       {/* Hourly Distribution */}
       <div className="rounded-xl border border-gray-200 bg-white p-5">
         <h3 className="text-sm font-semibold text-gray-900 mb-4">Peak Hours</h3>
-        <HourlyHeatmap hours={hourlyDistribution} />
+        <HourlyHeatmap hours={safeHourlyDistribution} />
       </div>
 
       {/* Top Contacts */}
-      {topContacts.length > 0 && (
+      {safeTopContacts.length > 0 && (
         <div className="rounded-xl border border-gray-200 bg-white p-5">
           <h3 className="text-sm font-semibold text-gray-900 mb-4">Most Active Contacts</h3>
           <div className="divide-y divide-gray-100">
-            {topContacts.map((contact, i) => (
+            {safeTopContacts.map((contact: any, i: number) => (
               <div key={contact.id} className="flex items-center justify-between py-2.5">
                 <div className="flex items-center gap-3">
                   <span className="text-xs font-medium text-gray-400 w-5">{i + 1}</span>
