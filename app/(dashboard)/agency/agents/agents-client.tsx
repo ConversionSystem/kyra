@@ -130,25 +130,25 @@ export function AgentsClient() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <Bot className="w-6 h-6" /> AI Agents
           </h1>
-          <p className="text-gray-400 mt-1">
+          <p className="text-gray-500 mt-1">
             Deploy specialized AI workers for different departments. Each handles their area of expertise.
           </p>
         </div>
-        <Badge variant="outline" className="border-gray-700 text-gray-300 text-sm">
+        <Badge variant="outline" className="border-gray-200 text-gray-700 text-sm">
           {enabledCount} active
         </Badge>
       </div>
 
       {/* Smart Routing Toggle */}
-      <Card className="bg-gray-900 border-gray-800">
+      <Card className="bg-white border-gray-200">
         <CardContent className="flex items-center justify-between py-4">
           <div className="flex items-center gap-3">
             <Zap className="w-5 h-5 text-yellow-400" />
             <div>
-              <p className="text-white font-medium">Smart Routing</p>
+              <p className="text-gray-900 font-medium">Smart Routing</p>
               <p className="text-gray-500 text-sm">
                 Auto-route incoming messages to the right agent based on intent
               </p>
@@ -163,9 +163,9 @@ export function AgentsClient() {
 
       {/* Routing Tester */}
       {routingEnabled && (
-        <Card className="bg-gray-900 border-gray-800">
+        <Card className="bg-white border-gray-200">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm text-gray-400 flex items-center gap-2">
+            <CardTitle className="text-sm text-gray-500 flex items-center gap-2">
               <FlaskConical className="w-4 h-4" /> Test Routing
             </CardTitle>
           </CardHeader>
@@ -176,17 +176,17 @@ export function AgentsClient() {
                 value={testMessage}
                 onChange={e => setTestMessage(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && testRouting()}
-                className="bg-gray-800 border-gray-700 text-white"
+                className="bg-gray-50 border-gray-200 text-gray-900"
               />
               <Button onClick={testRouting} disabled={testing} className="bg-blue-600 hover:bg-blue-700 shrink-0">
                 {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               </Button>
             </div>
             {testResult && (
-              <div className="bg-gray-800 rounded-lg p-3 flex items-center gap-3">
+              <div className="bg-gray-50 rounded-lg p-3 flex items-center gap-3">
                 <span className="text-2xl">{testResult.routedTo.emoji}</span>
                 <div>
-                  <p className="text-white font-medium">
+                  <p className="text-gray-900 font-medium">
                     → {testResult.routedTo.name}
                   </p>
                   <p className="text-gray-500 text-xs">{testResult.routedTo.description}</p>
@@ -211,8 +211,8 @@ export function AgentsClient() {
           const isExpanded = expandedId === agent.id;
           return (
             <Card key={agent.id} className={cn(
-              'bg-gray-900 border-gray-800 transition-all',
-              agent.enabled && 'border-gray-700',
+              'bg-white border-gray-200 transition-all',
+              agent.enabled && 'border-gray-200',
             )}>
               <CardContent className="py-4 space-y-0">
                 {/* Main row */}
@@ -220,7 +220,7 @@ export function AgentsClient() {
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     <span className="text-2xl">{agent.emoji}</span>
                     <div className="min-w-0">
-                      <p className="text-white font-medium">{agent.name}</p>
+                      <p className="text-gray-900 font-medium">{agent.name}</p>
                       <p className="text-gray-500 text-xs truncate">{agent.description}</p>
                     </div>
                   </div>
@@ -232,7 +232,7 @@ export function AgentsClient() {
                     />
                     <button
                       onClick={() => setExpandedId(isExpanded ? null : agent.id)}
-                      className="text-gray-500 hover:text-gray-300 transition-colors"
+                      className="text-gray-500 hover:text-gray-700 transition-colors"
                     >
                       {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                     </button>
@@ -241,13 +241,13 @@ export function AgentsClient() {
 
                 {/* Expanded config */}
                 {isExpanded && (
-                  <div className="mt-4 pt-4 border-t border-gray-800 space-y-4">
+                  <div className="mt-4 pt-4 border-t border-gray-200 space-y-4">
                     {/* Tools */}
                     <div>
                       <p className="text-xs text-gray-500 mb-2">Tools</p>
                       <div className="flex flex-wrap gap-1.5">
                         {agent.suggestedTools.map(t => (
-                          <Badge key={t} variant="outline" className="border-gray-700 text-gray-400 text-xs">
+                          <Badge key={t} variant="outline" className="border-gray-200 text-gray-500 text-xs">
                             {TOOL_LABELS[t] ?? t}
                           </Badge>
                         ))}
@@ -259,7 +259,7 @@ export function AgentsClient() {
                       <p className="text-xs text-gray-500 mb-2">Routes when message contains</p>
                       <div className="flex flex-wrap gap-1.5">
                         {agent.triggerKeywords.map(kw => (
-                          <span key={kw} className="bg-gray-800 text-gray-400 text-xs px-2 py-0.5 rounded-full">
+                          <span key={kw} className="bg-gray-50 text-gray-500 text-xs px-2 py-0.5 rounded-full">
                             {kw}
                           </span>
                         ))}
@@ -278,13 +278,13 @@ export function AgentsClient() {
                           a.id === agent.id ? { ...a, customPersonality: e.target.value } : a
                         ))}
                         rows={3}
-                        className="w-full bg-gray-800 border border-gray-700 text-white rounded-md p-2 text-sm resize-y"
+                        className="w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-md p-2 text-sm resize-y"
                       />
                       <div className="flex justify-end mt-2">
                         <Button
                           size="sm"
                           variant="outline"
-                          className="border-gray-700 text-gray-300 hover:bg-gray-800"
+                          className="border-gray-200 text-gray-700 hover:bg-gray-50"
                           disabled={saving === agent.id}
                           onClick={() => savePersonality(agent.id, agent.customPersonality ?? '')}
                         >
