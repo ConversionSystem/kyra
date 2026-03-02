@@ -133,11 +133,11 @@ export function DealsKanban() {
       </div>
 
       {/* Stage Summary Bar */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 overflow-x-auto pb-1">
         {STAGES.filter(s => s.key !== 'lost').map(stage => {
           const stageData = stats?.byStage?.[stage.key];
           return (
-            <div key={stage.key} className={`flex-1 rounded-xl p-3 ${stage.bg} text-center`}>
+            <div key={stage.key} className={`flex-1 min-w-[80px] rounded-xl p-3 ${stage.bg} text-center`}>
               <p className="text-xs font-medium text-gray-600">{stage.label}</p>
               <p className="text-lg font-bold text-gray-900">${(stageData?.value || 0).toLocaleString()}</p>
               <p className="text-[10px] text-gray-500">{stageData?.count || 0} deals</p>
@@ -147,7 +147,7 @@ export function DealsKanban() {
       </div>
 
       {/* Kanban Board */}
-      <div className="flex gap-4 overflow-x-auto pb-4">
+      <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
         {STAGES.map(stage => {
           const stageDeals = deals.filter(d => d.stage === stage.key);
           const isDragTarget = dragOver === stage.key;
@@ -155,7 +155,7 @@ export function DealsKanban() {
           return (
             <div
               key={stage.key}
-              className={`flex-shrink-0 w-72 rounded-xl border-t-4 ${stage.color} bg-gray-50 transition ${
+              className={`flex-shrink-0 w-64 sm:w-72 rounded-xl border-t-4 ${stage.color} bg-gray-50 transition ${
                 isDragTarget ? 'ring-2 ring-indigo-400 bg-indigo-50' : ''
               }`}
               onDragOver={e => handleDragOver(e, stage.key)}
@@ -438,7 +438,7 @@ function DealSlideOver({ deal, onClose, onUpdate, onDelete }: {
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="relative w-full max-w-lg bg-white shadow-2xl overflow-y-auto">
+      <div className="relative w-full sm:max-w-lg bg-white shadow-2xl overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
           <h2 className="text-lg font-bold text-gray-900 truncate">{deal.name}</h2>

@@ -235,16 +235,16 @@ export function ContactDetailView() {
         <div className="h-2 bg-gradient-to-r from-indigo-500 to-purple-500" />
 
         <div className="p-6">
-          <div className="flex items-start gap-5">
+          <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-5">
             {/* Avatar */}
-            <div className={`w-20 h-20 rounded-2xl ${color} flex items-center justify-center text-white text-2xl font-bold shrink-0 shadow-lg`}>
+            <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl ${color} flex items-center justify-center text-white text-xl sm:text-2xl font-bold shrink-0 shadow-lg`}>
               {initials}
             </div>
 
             {/* Info */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-3 mb-1">
-                <h1 className="text-2xl font-bold text-gray-900">{name}</h1>
+            <div className="flex-1 min-w-0 w-full">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-1">
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{name}</h1>
                 <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${scoreBadge.color}`}>{scoreBadge.text}</span>
 
                 {/* Stage dropdown */}
@@ -278,7 +278,7 @@ export function ContactDetailView() {
               )}
 
               {/* Contact methods — clickable with copy */}
-              <div className="flex items-center gap-4 mt-3">
+              <div className="flex flex-wrap items-center gap-3 sm:gap-4 mt-3">
                 {contact.email && (
                   <button onClick={() => copyToClipboard(contact.email!)}
                     className="text-sm text-gray-500 flex items-center gap-1.5 hover:text-indigo-600 transition group">
@@ -320,12 +320,12 @@ export function ContactDetailView() {
             </div>
 
             {/* Action buttons */}
-            <div className="flex gap-2 shrink-0">
+            <div className="flex gap-2 shrink-0 w-full sm:w-auto mt-3 sm:mt-0">
               <Button size="sm" onClick={() => setShowSend(!showSend)}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                className="bg-indigo-600 hover:bg-indigo-700 text-white flex-1 sm:flex-none">
                 <Send className="h-4 w-4 mr-1" /> Message
               </Button>
-              <Button size="sm" variant="outline" onClick={() => {
+              <Button size="sm" variant="outline" className="flex-1 sm:flex-none" onClick={() => {
                 setEditing(!editing);
                 if (!editing) {
                   setEditForm({
@@ -363,7 +363,7 @@ export function ContactDetailView() {
           {/* Edit Form */}
           {editing && (
             <div className="mt-4 pt-4 border-t border-gray-100">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 <input className="border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                   placeholder="First name" value={editForm.first_name || ''} onChange={e => setEditForm(f => ({ ...f, first_name: e.target.value }))} />
                 <input className="border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
@@ -386,7 +386,7 @@ export function ContactDetailView() {
         </div>
 
         {/* ═══ QUICK STATS BAR ═══ */}
-        <div className="border-t border-gray-100 bg-gray-50/50 px-6 py-3 grid grid-cols-4 gap-4">
+        <div className="border-t border-gray-100 bg-gray-50/50 px-4 sm:px-6 py-3 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
           <div className="text-center">
             <p className="text-xs text-gray-500">Activities</p>
             <p className="text-lg font-bold text-gray-900">{(contact.activities || []).length}</p>
@@ -506,7 +506,7 @@ export function ContactDetailView() {
       )}
 
       {/* ═══ TABS ═══ */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
+      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl overflow-x-auto">
         {[
           { key: 'timeline' as Tab, label: 'Timeline', icon: Clock, count: (contact.activities || []).length },
           { key: 'tasks' as Tab, label: 'Tasks', icon: CheckSquare, count: openTasks.length },
@@ -530,9 +530,9 @@ export function ContactDetailView() {
       </div>
 
       {/* ═══ TAB CONTENT ═══ */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5">
         {/* Main Content (2/3) */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-2 space-y-3 sm:space-y-4">
           {/* Timeline Tab */}
           {activeTab === 'timeline' && (
             <>
