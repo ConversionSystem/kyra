@@ -6,10 +6,10 @@ import {
   Users, Search, Plus, Mail, Phone, Clock, Download,
   ChevronLeft, ChevronRight, X, Building2, Upload, Tag,
   ArrowRight, Trash2, CheckSquare, Square, Filter, Save,
-  Loader2, MoreHorizontal,
+  Loader2, MoreHorizontal, Globe, MapPin,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import type { ContactWithCompany, ContactFilters } from '@/lib/crm/types';
+import type { ContactWithCompany, ContactFilters, CrmCompany } from '@/lib/crm/types';
 import { getInitials, getAvatarColor, getScoreBadge, getStageBadge } from '@/lib/crm/types';
 
 const STAGE_TABS = [
@@ -40,6 +40,7 @@ const SOURCE_FILTERS = [
 export function ContactsList() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [viewMode, setViewMode] = useState<'people' | 'companies'>(searchParams.get('view') === 'companies' ? 'companies' : 'people');
   const [contacts, setContacts] = useState<ContactWithCompany[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -51,6 +52,14 @@ export function ContactsList() {
   const [page, setPage] = useState(1);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+
+  // Companies
+  const [companies, setCompanies] = useState<CrmCompany[]>([]);
+  const [companyTotal, setCompanyTotal] = useState(0);
+  const [companyLoading, setCompanyLoading] = useState(false);
+  const [companySearch, setCompanySearch] = useState('');
+  const [companyPage, setCompanyPage] = useState(1);
+  const [showAddCompany, setShowAddCompany] = useState(false);
 
   // Bulk selection
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -80,6 +89,22 @@ export function ContactsList() {
   }, [search, stage, scoreLabel, source, sort, page]);
 
   useEffect(() => { fetchContacts(); }, [fetchContacts]);
+
+  const fetchCompanies = useCallback(async () => {
+    setCompanyLoading(true);
+    const params = new URLSearchParams();
+    if (companySearch) params.set('search', companySearch);
+    params.set('page', String(companyPage));
+    const res = await fetch(`/api/agency/crm/companies?${params}`);
+    if (res.ok) {
+      const data = await res.json();
+      setCompanies(data.companies || []);
+      setCompanyTotal(data.total || 0);
+    }
+    setCompanyLoading(false);
+  }, [companySearch, companyPage]);
+
+  useEffect(() => { if (viewMode === 'companies') fetchCompanies(); }, [viewMode, fetchCompanies]);
 
   const totalPages = Math.ceil(total / 50);
   const allSelected = contacts.length > 0 && contacts.every(c => selectedIds.has(c.id));
@@ -150,32 +175,147 @@ export function ContactsList() {
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <Users className="h-6 w-6 text-indigo-600" /> Contacts
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">{total} contacts</p>
+          <p className="text-sm text-gray-500 mt-0.5">
+            {viewMode === 'people' ? `${total} contacts` : `${companyTotal} companies`}
+          </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => router.push('/agency/crm/import')}>
-            <Upload className="h-4 w-4 mr-1" /> Import
-          </Button>
-          <Button variant="outline" size="sm" onClick={async () => {
-            const res = await fetch('/api/agency/crm/export?type=contacts');
-            if (res.ok) {
-              const blob = await res.blob();
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = `contacts-${new Date().toISOString().split('T')[0]}.csv`;
-              a.click();
-              URL.revokeObjectURL(url);
-            }
-          }}>
-            <Download className="h-4 w-4 mr-1" /> Export
-          </Button>
-          <Button size="sm" onClick={() => setShowAddModal(true)}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white">
-            <Plus className="h-4 w-4 mr-1" /> Add Contact
-          </Button>
+          {viewMode === 'people' && (
+            <>
+              <Button variant="outline" size="sm" onClick={() => router.push('/agency/crm/import')}>
+                <Upload className="h-4 w-4 mr-1" /> Import
+              </Button>
+              <Button variant="outline" size="sm" onClick={async () => {
+                const res = await fetch('/api/agency/crm/export?type=contacts');
+                if (res.ok) {
+                  const blob = await res.blob();
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `contacts-${new Date().toISOString().split('T')[0]}.csv`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }
+              }}>
+                <Download className="h-4 w-4 mr-1" /> Export
+              </Button>
+              <Button size="sm" onClick={() => setShowAddModal(true)}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                <Plus className="h-4 w-4 mr-1" /> Add Contact
+              </Button>
+            </>
+          )}
+          {viewMode === 'companies' && (
+            <Button size="sm" onClick={() => setShowAddCompany(true)}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white">
+              <Plus className="h-4 w-4 mr-1" /> Add Company
+            </Button>
+          )}
         </div>
       </div>
+
+      {/* People / Companies Toggle */}
+      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit">
+        <button
+          onClick={() => setViewMode('people')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 ${
+            viewMode === 'people' ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+          }`}>
+          <Users className="h-4 w-4" /> People
+        </button>
+        <button
+          onClick={() => setViewMode('companies')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 ${
+            viewMode === 'companies' ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+          }`}>
+          <Building2 className="h-4 w-4" /> Companies
+          {companyTotal > 0 && <span className="text-[10px] bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full">{companyTotal}</span>}
+        </button>
+      </div>
+
+      {/* ═══ COMPANIES VIEW ═══ */}
+      {viewMode === 'companies' && (
+        <>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              className="w-full pl-9 pr-4 py-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              placeholder="Search companies..."
+              value={companySearch}
+              onChange={e => { setCompanySearch(e.target.value); setCompanyPage(1); }}
+            />
+          </div>
+
+          {companyLoading ? (
+            <div className="py-12 text-center text-gray-400 animate-pulse">Loading companies...</div>
+          ) : companies.length === 0 ? (
+            <div className="py-12 text-center">
+              <Building2 className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-500 font-medium">No companies yet</p>
+              <p className="text-sm text-gray-400 mt-1">Companies are auto-created when you add contacts with a company name.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {companies.map(co => (
+                <div key={co.id}
+                  className="bg-white border border-gray-200 rounded-xl p-4 hover:border-indigo-200 hover:shadow-sm transition cursor-pointer">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0">
+                      <Building2 className="h-5 w-5 text-indigo-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-gray-900 truncate">{co.name}</h3>
+                      {co.industry && <p className="text-xs text-gray-500">{co.industry}</p>}
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {co.website && (
+                          <a href={co.website} target="_blank" rel="noopener"
+                            className="text-[11px] text-indigo-600 hover:underline flex items-center gap-0.5">
+                            <Globe className="h-3 w-3" /> Website
+                          </a>
+                        )}
+                        {co.email && (
+                          <span className="text-[11px] text-gray-400 flex items-center gap-0.5">
+                            <Mail className="h-3 w-3" /> {co.email}
+                          </span>
+                        )}
+                        {co.phone && (
+                          <span className="text-[11px] text-gray-400 flex items-center gap-0.5">
+                            <Phone className="h-3 w-3" /> {co.phone}
+                          </span>
+                        )}
+                        {co.city && (
+                          <span className="text-[11px] text-gray-400 flex items-center gap-0.5">
+                            <MapPin className="h-3 w-3" /> {co.city}{co.state ? `, ${co.state}` : ''}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {Math.ceil(companyTotal / 50) > 1 && (
+            <div className="flex items-center justify-between">
+              <Button variant="outline" size="sm" disabled={companyPage <= 1} onClick={() => setCompanyPage(p => p - 1)}>
+                <ChevronLeft className="h-4 w-4 mr-1" /> Previous
+              </Button>
+              <span className="text-sm text-gray-500">Page {companyPage} of {Math.ceil(companyTotal / 50)}</span>
+              <Button variant="outline" size="sm" disabled={companyPage >= Math.ceil(companyTotal / 50)} onClick={() => setCompanyPage(p => p + 1)}>
+                Next <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          )}
+
+          {showAddCompany && (
+            <AddCompanyModal onClose={() => setShowAddCompany(false)} onCreated={() => { setShowAddCompany(false); fetchCompanies(); }} />
+          )}
+        </>
+      )}
+
+      {/* ═══ PEOPLE VIEW ═══ */}
+      {viewMode === 'people' && <>
 
       {/* Search + Filters */}
       <div className="flex items-center gap-3">
@@ -393,6 +533,8 @@ export function ContactsList() {
       {showAddModal && (
         <AddContactModal onClose={() => setShowAddModal(false)} onCreated={() => { setShowAddModal(false); fetchContacts(); }} />
       )}
+
+      </>}
     </div>
   );
 }
@@ -551,6 +693,62 @@ function AddContactModal({ onClose, onCreated }: { onClose: () => void; onCreate
           <Button type="button" variant="outline" className="flex-1" onClick={onClose}>Cancel</Button>
           <Button type="submit" className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white" disabled={saving}>
             {saving ? 'Creating...' : 'Create Contact'}
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function AddCompanyModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const [form, setForm] = useState({ name: '', website: '', industry: '', phone: '', email: '', city: '', state: '' });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name.trim()) { setError('Company name required'); return; }
+    setSaving(true); setError('');
+
+    const res = await fetch('/api/agency/crm/companies', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(form),
+    });
+
+    if (res.ok) onCreated();
+    else {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error || 'Failed');
+    }
+    setSaving(false);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <form onSubmit={handleSubmit} className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
+        <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <Building2 className="h-5 w-5 text-indigo-600" /> Add Company
+        </h3>
+        <div className="space-y-3">
+          <input className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            placeholder="Company name *" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+          <input className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            placeholder="Website" value={form.website} onChange={e => setForm(f => ({ ...f, website: e.target.value }))} />
+          <input className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            placeholder="Industry" value={form.industry} onChange={e => setForm(f => ({ ...f, industry: e.target.value }))} />
+          <div className="grid grid-cols-2 gap-3">
+            <input className="border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              placeholder="City" value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} />
+            <input className="border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              placeholder="State" value={form.state} onChange={e => setForm(f => ({ ...f, state: e.target.value }))} />
+          </div>
+        </div>
+        {error && <p className="text-sm text-red-600 mt-2">{error}</p>}
+        <div className="flex gap-2 mt-5">
+          <Button type="button" variant="outline" className="flex-1" onClick={onClose}>Cancel</Button>
+          <Button type="submit" className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white" disabled={saving}>
+            {saving ? 'Creating...' : 'Create Company'}
           </Button>
         </div>
       </form>
