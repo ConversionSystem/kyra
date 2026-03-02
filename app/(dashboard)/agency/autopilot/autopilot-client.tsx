@@ -119,7 +119,7 @@ export function AutopilotClient() {
   }
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="p-4 sm:p-6 md:p-8 space-y-6 max-w-3xl">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
           <Zap className="w-6 h-6 text-blue-600" /> Autopilot

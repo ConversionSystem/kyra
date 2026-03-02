@@ -253,7 +253,7 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
 
   if (step === 'provider') {
     return (
-      <div className="space-y-6 max-w-4xl">
+      <div className="p-4 sm:p-6 md:p-8 space-y-6 max-w-4xl">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Voice AI</h1>
           <p className="text-sm text-gray-500 mt-1">
@@ -504,7 +504,7 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
   // ── Render: Active Dashboard ────────────────────────────────────────────
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="p-4 sm:p-6 md:p-8 space-y-6 max-w-4xl">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Voice AI</h1>
