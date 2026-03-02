@@ -256,7 +256,7 @@ export function TemplateStoreClient({ agencyId, businessName }: Props) {
   // ── Store View ────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="p-4 sm:p-6 md:p-8 space-y-6 max-w-4xl">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Template Store</h1>
         <p className="text-gray-500 mt-1">

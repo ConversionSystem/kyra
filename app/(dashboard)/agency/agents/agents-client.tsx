@@ -126,7 +126,7 @@ export function AgentsClient() {
   }
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="p-4 sm:p-6 md:p-8 space-y-6 max-w-3xl">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
