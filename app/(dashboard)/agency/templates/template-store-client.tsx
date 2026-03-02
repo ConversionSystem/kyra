@@ -57,7 +57,6 @@ export function TemplateStoreClient({ agencyId, businessName }: Props) {
   const [generatedSoul, setGeneratedSoul] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Load templates
   useEffect(() => {
     fetch('/api/templates')
       .then(r => r.json())
@@ -65,14 +64,12 @@ export function TemplateStoreClient({ agencyId, businessName }: Props) {
       .catch(() => setLoading(false));
   }, []);
 
-  // Load detail when selected
   useEffect(() => {
     if (!selectedId) { setDetail(null); return; }
     fetch(`/api/templates?id=${selectedId}`)
       .then(r => r.json())
       .then(d => {
         setDetail(d.template);
-        // Pre-fill business name
         const vars: Record<string, string> = {};
         for (const v of (d.template?.variables ?? [])) {
           if (v.key === 'business_name' || v.key === 'firm_name' || v.key === 'photographer_name') {
@@ -87,7 +84,6 @@ export function TemplateStoreClient({ agencyId, businessName }: Props) {
       });
   }, [selectedId, businessName]);
 
-  // Apply template
   const handleApply = async () => {
     if (!detail) return;
     setApplying(true);
@@ -106,7 +102,6 @@ export function TemplateStoreClient({ agencyId, businessName }: Props) {
     setApplying(false);
   };
 
-  // Filter templates
   const filtered = templates.filter(t => {
     if (!search) return true;
     const s = search.toLowerCase();
@@ -121,37 +116,36 @@ export function TemplateStoreClient({ agencyId, businessName }: Props) {
   if (detail) {
     return (
       <div className="space-y-6 max-w-3xl">
-        <Button variant="ghost" size="sm" onClick={() => setSelectedId(null)} className="text-gray-400 -ml-2">
+        <Button variant="ghost" size="sm" onClick={() => setSelectedId(null)} className="text-gray-500 -ml-2">
           <ArrowLeft className="w-4 h-4 mr-1" /> Back to templates
         </Button>
 
         <div className="flex items-center gap-4">
           <span className="text-4xl">{detail.emoji}</span>
           <div>
-            <h1 className="text-2xl font-bold text-white">{detail.name}</h1>
-            <p className="text-gray-400">{detail.description}</p>
+            <h1 className="text-2xl font-bold text-gray-900">{detail.name}</h1>
+            <p className="text-gray-500">{detail.description}</p>
           </div>
         </div>
 
         {applied && (
-          <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4 flex items-center gap-3">
-            <CheckCircle2 className="w-5 h-5 text-green-400 shrink-0" />
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3">
+            <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
             <div>
-              <p className="text-green-400 font-semibold">Template Applied!</p>
-              <p className="text-green-300 text-sm">Your AI worker is now configured for {detail.industry}.</p>
+              <p className="text-green-800 font-semibold">Template Applied!</p>
+              <p className="text-green-700 text-sm">Your AI worker is now configured for {detail.industry}.</p>
             </div>
           </div>
         )}
 
-        {/* Tools included */}
-        <Card className="bg-gray-900 border-gray-800">
+        <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm text-gray-400">Tools Included</CardTitle>
+            <CardTitle className="text-sm text-gray-500">Tools Included</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
               {detail.suggestedTools.map(t => (
-                <Badge key={t} variant="outline" className="border-gray-700 text-gray-300">
+                <Badge key={t} variant="outline" className="border-gray-200 text-gray-700">
                   {TOOL_LABELS[t] ?? t}
                 </Badge>
               ))}
@@ -159,19 +153,18 @@ export function TemplateStoreClient({ agencyId, businessName }: Props) {
           </CardContent>
         </Card>
 
-        {/* Variables form */}
-        <Card className="bg-gray-900 border-gray-800">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-yellow-400" />
+            <CardTitle className="text-gray-900 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-blue-600" />
               Customize for Your Business
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {detail.variables.map(v => (
               <div key={v.key}>
-                <label className="text-sm text-gray-400 mb-1 block">
-                  {v.label} {v.required && <span className="text-red-400">*</span>}
+                <label className="text-sm text-gray-600 mb-1 block">
+                  {v.label} {v.required && <span className="text-red-500">*</span>}
                 </label>
                 {v.placeholder.includes('\n') ? (
                   <textarea
@@ -179,14 +172,13 @@ export function TemplateStoreClient({ agencyId, businessName }: Props) {
                     value={variables[v.key] ?? ''}
                     onChange={(e) => setVariables(prev => ({ ...prev, [v.key]: e.target.value }))}
                     rows={4}
-                    className="w-full bg-gray-800 border border-gray-700 text-white rounded-md p-2 text-sm resize-y"
+                    className="w-full bg-white border border-gray-200 text-gray-900 rounded-md p-2 text-sm resize-y focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                   />
                 ) : (
                   <Input
                     placeholder={v.placeholder}
                     value={variables[v.key] ?? ''}
                     onChange={(e) => setVariables(prev => ({ ...prev, [v.key]: e.target.value }))}
-                    className="bg-gray-800 border-gray-700 text-white"
                   />
                 )}
               </div>
@@ -194,37 +186,35 @@ export function TemplateStoreClient({ agencyId, businessName }: Props) {
           </CardContent>
         </Card>
 
-        {/* Sample FAQs */}
         {detail.sampleFaqs.length > 0 && (
-          <Card className="bg-gray-900 border-gray-800">
+          <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm text-gray-400">Sample Conversations</CardTitle>
+              <CardTitle className="text-sm text-gray-500">Sample Conversations</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {detail.sampleFaqs.map((faq, i) => (
-                <div key={i} className="bg-gray-800 rounded-lg p-3">
-                  <p className="text-gray-400 text-xs mb-1">Customer:</p>
-                  <p className="text-white text-sm mb-2">{faq.q}</p>
-                  <p className="text-gray-400 text-xs mb-1">AI Worker:</p>
-                  <p className="text-gray-300 text-sm">{faq.a}</p>
+                <div key={i} className="bg-gray-50 rounded-lg p-3">
+                  <p className="text-gray-500 text-xs mb-1">Customer:</p>
+                  <p className="text-gray-900 text-sm mb-2">{faq.q}</p>
+                  <p className="text-gray-500 text-xs mb-1">AI Worker:</p>
+                  <p className="text-gray-700 text-sm">{faq.a}</p>
                 </div>
               ))}
             </CardContent>
           </Card>
         )}
 
-        {/* Automations */}
         {detail.automations.length > 0 && (
-          <Card className="bg-gray-900 border-gray-800">
+          <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm text-gray-400">Included Automations</CardTitle>
+              <CardTitle className="text-sm text-gray-500">Included Automations</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               {detail.automations.map((a, i) => (
-                <div key={i} className="flex items-center gap-3 bg-gray-800 rounded-lg p-3">
-                  <Zap className="w-4 h-4 text-yellow-400 shrink-0" />
+                <div key={i} className="flex items-center gap-3 bg-gray-50 rounded-lg p-3">
+                  <Zap className="w-4 h-4 text-blue-600 shrink-0" />
                   <div>
-                    <p className="text-white text-sm font-medium">{a.name}</p>
+                    <p className="text-gray-900 text-sm font-medium">{a.name}</p>
                     <p className="text-gray-500 text-xs">{a.description}</p>
                   </div>
                 </div>
@@ -233,21 +223,19 @@ export function TemplateStoreClient({ agencyId, businessName }: Props) {
           </Card>
         )}
 
-        {/* Generated SOUL preview */}
         {generatedSoul && (
-          <Card className="bg-gray-900 border-gray-800">
+          <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm text-gray-400">Generated Personality (SOUL.md)</CardTitle>
+              <CardTitle className="text-sm text-gray-500">Generated Personality (SOUL.md)</CardTitle>
             </CardHeader>
             <CardContent>
-              <pre className="bg-gray-800 rounded-lg p-4 text-gray-300 text-xs overflow-x-auto whitespace-pre-wrap max-h-64 overflow-y-auto">
+              <pre className="bg-gray-50 rounded-lg p-4 text-gray-700 text-xs overflow-x-auto whitespace-pre-wrap max-h-64 overflow-y-auto border border-gray-200">
                 {generatedSoul}
               </pre>
             </CardContent>
           </Card>
         )}
 
-        {/* Apply button */}
         <Button
           onClick={handleApply}
           disabled={applying || applied}
@@ -270,26 +258,24 @@ export function TemplateStoreClient({ agencyId, businessName }: Props) {
   return (
     <div className="space-y-6 max-w-4xl">
       <div>
-        <h1 className="text-2xl font-bold text-white">Template Store</h1>
-        <p className="text-gray-400 mt-1">
+        <h1 className="text-2xl font-bold text-gray-900">Template Store</h1>
+        <p className="text-gray-500 mt-1">
           Pick a template for your industry. Your AI worker will be configured instantly with the right personality, tools, and knowledge.
         </p>
       </div>
 
-      {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
         <Input
           placeholder="Search templates (plumber, dental, restaurant...)"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="bg-gray-800 border-gray-700 text-white pl-10"
+          className="pl-10"
         />
       </div>
 
-      {/* Templates grid */}
       {loading ? (
-        <div className="text-center py-12 text-gray-500">
+        <div className="text-center py-12 text-gray-400">
           <Loader2 className="w-6 h-6 mx-auto animate-spin mb-2" />
           Loading templates...
         </div>
@@ -299,19 +285,19 @@ export function TemplateStoreClient({ agencyId, businessName }: Props) {
             <button
               key={t.id}
               onClick={() => setSelectedId(t.id)}
-              className="text-left bg-gray-900 border border-gray-800 rounded-xl p-5 hover:border-gray-600 transition-all hover:scale-[1.01]"
+              className="text-left bg-white border border-gray-200 rounded-xl p-5 hover:border-blue-300 hover:shadow-md transition-all"
             >
               <div className="flex items-center justify-between mb-3">
                 <span className="text-3xl">{t.emoji}</span>
-                <Badge variant="outline" className="text-xs border-gray-700 text-gray-400">
+                <Badge variant="outline" className="text-xs border-gray-200 text-gray-500">
                   {t.toolCount} tools
                 </Badge>
               </div>
-              <h3 className="font-bold text-white text-lg">{t.name}</h3>
-              <p className="text-gray-400 text-sm mt-1">{t.description}</p>
+              <h3 className="font-bold text-gray-900 text-lg">{t.name}</h3>
+              <p className="text-gray-500 text-sm mt-1">{t.description}</p>
               <div className="flex flex-wrap gap-1.5 mt-3">
                 {t.tags.slice(0, 3).map(tag => (
-                  <span key={tag} className="bg-gray-800 text-gray-500 text-xs px-2 py-0.5 rounded-full">
+                  <span key={tag} className="bg-gray-100 text-gray-500 text-xs px-2 py-0.5 rounded-full">
                     {tag}
                   </span>
                 ))}
@@ -322,7 +308,7 @@ export function TemplateStoreClient({ agencyId, businessName }: Props) {
       )}
 
       {filtered.length === 0 && !loading && (
-        <div className="text-center py-12 text-gray-500">
+        <div className="text-center py-12 text-gray-400">
           <p>No templates match &quot;{search}&quot;</p>
           <p className="text-sm mt-1">Try a different search term</p>
         </div>
