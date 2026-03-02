@@ -58,12 +58,12 @@ function ActualMrrCard({ clients }: { clients: ClientRate[] }) {
   const configuredCount = activeClients.filter((c) => (parseFloat(rates[c.id] || '0') || 0) > 0).length;
 
   return (
-    <Card className="mb-8 border-green-200 bg-gradient-to-br from-green-50/60 to-white">
+    <Card className="mb-8 border-indigo-200 bg-gradient-to-br from-indigo-50/60 to-white">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between gap-3">
           <div>
             <CardTitle className="text-base flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-green-600" />
+              <DollarSign className="h-4 w-4 text-indigo-600" />
               Your Actual MRR
             </CardTitle>
             <p className="text-xs text-gray-500 mt-0.5">
@@ -71,7 +71,7 @@ function ActualMrrCard({ clients }: { clients: ClientRate[] }) {
             </p>
           </div>
           <div className="text-right">
-            <p className="text-3xl font-black text-green-700">{fmt(totalMrr)}</p>
+            <p className="text-3xl font-black text-indigo-700">{fmt(totalMrr)}</p>
             <p className="text-xs text-gray-400">/ month</p>
           </div>
         </div>
@@ -86,9 +86,9 @@ function ActualMrrCard({ clients }: { clients: ClientRate[] }) {
         <div className="space-y-2">
           {clients.map((c) => (
             <div key={c.id} className="flex items-center gap-2">
-              <div className={`h-1.5 w-1.5 rounded-full shrink-0 ${c.status === 'active' ? 'bg-green-400' : 'bg-gray-300'}`} />
+              <div className={`h-1.5 w-1.5 rounded-full shrink-0 ${c.status === 'active' ? 'bg-indigo-400' : 'bg-gray-300'}`} />
               <span className="text-sm text-gray-700 flex-1 min-w-0 truncate">{c.name}</span>
-              <Badge className={`text-[10px] shrink-0 ${c.status === 'active' ? 'bg-green-50 text-green-600 border-green-200' : 'bg-gray-50 text-gray-400 border-gray-200'}`}>
+              <Badge className={`text-[10px] shrink-0 ${c.status === 'active' ? 'bg-indigo-50 text-indigo-600 border-indigo-200' : 'bg-gray-50 text-gray-400 border-gray-200'}`}>
                 {c.status}
               </Badge>
               <div className="flex items-center gap-1 shrink-0">
@@ -108,7 +108,7 @@ function ActualMrrCard({ clients }: { clients: ClientRate[] }) {
                   disabled={saving[c.id]}
                   className={`rounded-md border px-2 py-1 text-xs font-medium transition-colors ${
                     saved[c.id]
-                      ? 'border-green-200 bg-green-50 text-green-700'
+                      ? 'border-indigo-200 bg-indigo-50 text-indigo-700'
                       : 'border-gray-200 bg-white text-gray-600 hover:border-indigo-300 hover:text-indigo-700'
                   }`}
                 >
@@ -120,7 +120,7 @@ function ActualMrrCard({ clients }: { clients: ClientRate[] }) {
         </div>
 
         {totalMrr > 0 && (
-          <div className="mt-4 pt-4 border-t border-green-100 grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
+          <div className="mt-4 pt-4 border-t border-indigo-100 grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
             <div>
               <p className="text-lg font-bold text-gray-900">{fmt(totalMrr)}</p>
               <p className="text-[10px] text-gray-400">MRR</p>
@@ -130,7 +130,7 @@ function ActualMrrCard({ clients }: { clients: ClientRate[] }) {
               <p className="text-[10px] text-gray-400">ARR</p>
             </div>
             <div>
-              <p className="text-lg font-bold text-green-600">
+              <p className="text-lg font-bold text-indigo-600">
                 {clients.length > 0 ? fmt(totalMrr / clients.length) : '$0'}
               </p>
               <p className="text-[10px] text-gray-400">Avg / client</p>
@@ -231,16 +231,16 @@ export default function RevenueCalculator({ realClientCount }: { realClientCount
             <div className="border-t border-white/20 pt-4">
               <div className="flex justify-between items-center mb-1">
                 <span className="text-sm font-semibold text-white">Net profit / mo</span>
-                <span className="text-2xl font-bold text-emerald-300">{fmt(netRevenue)}</span>
+                <span className="text-2xl font-bold text-white">{fmt(netRevenue)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-indigo-200">Annual revenue</span>
-                <span className="text-lg font-bold text-emerald-300">{fmt(annualRevenue)}</span>
+                <span className="text-lg font-bold text-white">{fmt(annualRevenue)}</span>
               </div>
             </div>
             <div className="bg-white/10 border border-white/20 rounded-lg p-3 text-center">
-              <p className="text-xs text-emerald-300 mb-0.5">Profit margin</p>
-              <p className="text-3xl font-black text-emerald-300">{margin}%</p>
+              <p className="text-xs text-white mb-0.5">Profit margin</p>
+              <p className="text-3xl font-black text-white">{margin}%</p>
             </div>
           </CardContent>
         </Card>

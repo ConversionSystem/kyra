@@ -109,7 +109,7 @@ function ResendSetupBanner() {
 }
 
 function performanceScore(usage: number): { label: string; color: string } {
-  if (usage > 20) return { label: 'Excellent', color: 'border-green-200 bg-green-50 text-green-700' };
+  if (usage > 20) return { label: 'Excellent', color: 'border-indigo-200 bg-indigo-50 text-indigo-700' };
   if (usage >= 10) return { label: 'Good', color: 'border-blue-200 bg-blue-50 text-blue-700' };
   if (usage >= 1) return { label: 'Low', color: 'border-yellow-200 bg-yellow-50 text-yellow-700' };
   return { label: 'Inactive', color: 'border-gray-200 bg-gray-50 text-gray-500' };
@@ -210,7 +210,7 @@ export function PerformanceClient({ clients, agencyId, agencySettings }: Perform
 
   const topStats = [
     { label: 'Total Clients', value: totalClients, icon: Users, color: 'text-gray-600 bg-gray-50' },
-    { label: 'Active This Month', value: activeThisMonth, icon: Activity, color: 'text-green-600 bg-green-50' },
+    { label: 'Active This Month', value: activeThisMonth, icon: Activity, color: 'text-indigo-600 bg-indigo-50' },
     { label: 'Total Conversations', value: totalConversations, icon: MessageSquare, color: 'text-blue-600 bg-blue-50' },
     { label: 'Avg / Client', value: avgConversations, icon: TrendingUp, color: 'text-indigo-600 bg-indigo-50' },
   ];
