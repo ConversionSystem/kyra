@@ -95,18 +95,22 @@ const navSections: NavSection[] = [
     ],
   },
   {
-    label: 'Automation',
+    label: 'AI Worker',
     items: [
-      { label: 'Heartbeat', href: '/agency/heartbeat', icon: Heart },
-      { label: 'Automations', href: '/agency/automations', icon: Zap },
+      { label: 'AI Setup', href: '/agency/templates', icon: Sparkles },
+      { label: 'AI Agents', href: '/agency/agents', icon: Bot },
       { label: 'Channels', href: '/agency/channels', icon: Radio },
       { label: 'Voice AI', href: '/agency/voice', icon: Phone },
       { label: 'Chat Widget', href: '/agency/widget', icon: MessageCircle },
-      { label: 'Reviews', href: '/agency/reviews', icon: Star },
-      { label: 'Templates', href: '/agency/templates', icon: LayoutGrid },
-      { label: 'AI Agents', href: '/agency/agents', icon: Bot },
+    ],
+  },
+  {
+    label: 'Automation',
+    items: [
       { label: 'Autopilot', href: '/agency/autopilot', icon: ZapIcon },
-      { label: 'Packages', href: '/agency/packages', icon: Package },
+      { label: 'Automations', href: '/agency/automations', icon: Zap },
+      { label: 'Heartbeat', href: '/agency/heartbeat', icon: Heart },
+      { label: 'Reviews', href: '/agency/reviews', icon: Star },
     ],
   },
   {
@@ -133,8 +137,7 @@ const navSections: NavSection[] = [
   {
     label: 'Resources',
     items: [
-      { label: 'Templates', href: '/agency/templates', icon: BookOpen },
-      { label: 'Roles', href: '/agency/roles', icon: Sparkles },
+      { label: 'Email Templates', href: '/agency/email-templates', icon: Mail },
       { label: 'GHL Listing', href: '/agency/ghl-listing', icon: Store, masterOnly: true },
       { label: 'Launch Pitch', href: '/agency/launch-pitch', icon: Rocket, masterOnly: true },
     ],
@@ -187,13 +190,11 @@ const soloNavSections: NavSection[] = [
   {
     label: 'AI Worker',
     items: [
-      { label: 'Knowledge Base', href: '/agency/clients', icon: BookOpen },
+      { label: 'AI Setup', href: '/agency/templates', icon: Sparkles },
+      { label: 'AI Agents', href: '/agency/agents', icon: Bot },
       { label: 'Channels', href: '/agency/channels', icon: Radio },
       { label: 'Voice AI', href: '/agency/voice', icon: Phone },
       { label: 'Chat Widget', href: '/agency/widget', icon: MessageCircle },
-      { label: 'AI Agents', href: '/agency/agents', icon: Bot },
-      { label: 'Templates', href: '/agency/templates', icon: LayoutGrid },
-      { label: 'Packages', href: '/agency/packages', icon: Package },
     ],
   },
   {
