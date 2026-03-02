@@ -254,7 +254,10 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
   }, []);
 
   useEffect(() => {
-    // Fetch the agency's OWN dedicated gateway (separate from client gateways)
+    // Only solo users get an agency-level gateway (their personal AI worker).
+    // Agency users create AI workers as clients — no agency-level container needed.
+    if (!isSolo) return;
+
     fetch('/api/agency/gateway')
       .then((r) => r.json())
       .then((data) => {
@@ -262,7 +265,6 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
           setAgencyGatewayUrl(data.gatewayUrl);
           setAgencyGatewayToken(data.gatewayToken ?? null);
         } else if (!data.gatewayUrl || data.status === 'not_provisioned' || data.status === 'error') {
-          // Auto-provision the agency gateway on first load (or retry after error)
           setProvisioningGateway(true);
           fetch('/api/agency/gateway', { method: 'POST' })
             .then((r) => r.json())
@@ -277,7 +279,7 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
         }
       })
       .catch(() => {});
-  }, []);
+  }, [isSolo]);
 
   // Close mobile sidebar on route change
   useEffect(() => {
@@ -345,8 +347,9 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
         </div>
       </div>
 
-      {/* OpenClaw Terminal — big green button at the TOP for everyone */}
-      {(
+      {/* AI Worker Terminal — only for solo users (their personal AI worker).
+          Agency users create AI workers as clients instead. */}
+      {isSolo && (
         <div className="px-3 pt-3">
           <a
             href={agencyGatewayUrl
@@ -369,13 +372,13 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
               ? <Loader2 className="h-5 w-5 shrink-0 animate-spin" />
               : <Terminal className="h-5 w-5 shrink-0" />
             }
-            {provisioningGateway ? 'Starting Terminal...' : 'OpenClaw Terminal'}
+            {provisioningGateway ? 'Starting AI...' : 'My AI Worker'}
             {agencyGatewayUrl && !provisioningGateway && (
               <ExternalLink className="h-3.5 w-3.5 ml-auto opacity-70" />
             )}
           </a>
           {!agencyGatewayUrl && !provisioningGateway && (
-            <p className="text-[10px] text-gray-500 px-1 mt-1.5">Terminal provisioning — refresh in a moment</p>
+            <p className="text-[10px] text-gray-500 px-1 mt-1.5">Setting up your AI worker — refresh in a moment</p>
           )}
         </div>
       )}
