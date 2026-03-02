@@ -55,6 +55,7 @@ import {
   Activity,
   Shield,
   Bell,
+  GitBranch,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AgencySettings } from '@/lib/agency/types';
@@ -111,6 +112,7 @@ const navSections: NavSection[] = [
     label: 'Automation',
     items: [
       { label: 'Autopilot', href: '/agency/autopilot', icon: ZapIcon },
+      { label: 'Pipelines', href: '/agency/pipelines', icon: GitBranch },
       { label: 'Automations', href: '/agency/automations', icon: Zap },
       { label: 'Heartbeat', href: '/agency/heartbeat', icon: Heart },
       { label: 'Reviews', href: '/agency/reviews', icon: Star },
@@ -212,6 +214,7 @@ const soloNavSections: NavSection[] = [
     label: 'Automation',
     items: [
       { label: 'Autopilot', href: '/agency/autopilot', icon: ZapIcon },
+      { label: 'Pipelines', href: '/agency/pipelines', icon: GitBranch },
       { label: 'Automations', href: '/agency/automations', icon: Zap },
       { label: 'Heartbeat', href: '/agency/heartbeat', icon: Heart },
       { label: 'Reviews', href: '/agency/reviews', icon: Star },
