@@ -139,6 +139,7 @@ const navSections: NavSection[] = [
       { label: 'Credits', href: '/agency/credits', icon: Coins },
       { label: 'API Keys', href: '/agency/api-keys', icon: KeyRound },
       { label: 'Settings', href: '/agency/settings', icon: Settings },
+      { label: 'Setup Wizard', href: '/agency/setup', icon: Sparkles },
     ],
   },
 ];
