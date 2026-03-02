@@ -131,7 +131,7 @@ export function BudgetClient({ clients: initialClients }: BudgetClientProps) {
   const stats = [
     { label: 'Total Conversations', value: totalConversations, icon: MessageSquare, color: 'text-blue-600 bg-blue-50' },
     { label: 'Over 80% Budget', value: clientsOverBudget, icon: AlertTriangle, color: 'text-red-600 bg-red-50' },
-    { label: 'Budgets Configured', value: clientsWithBudgets, icon: Users, color: 'text-green-600 bg-green-50' },
+    { label: 'Budgets Configured', value: clientsWithBudgets, icon: Users, color: 'text-indigo-600 bg-indigo-50' },
   ];
 
   return (
