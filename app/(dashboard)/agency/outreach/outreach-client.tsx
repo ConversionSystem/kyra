@@ -684,7 +684,7 @@ function ContentCalendarSection() {
               onClick={() => setActivePlatform(platform)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 activePlatform === platform
-                  ? `${cfg.color} text-white`
+                  ? 'bg-blue-600 text-white'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >

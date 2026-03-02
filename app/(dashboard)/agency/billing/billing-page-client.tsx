@@ -132,13 +132,13 @@ export function BillingPageClient({ agency, clientCount, totalConversationsThisM
 
       {/* Checkout status banner — upgrade celebration */}
       {checkoutStatus === 'success' && (
-        <div className="rounded-xl overflow-hidden border border-green-200">
-          <div className="bg-gradient-to-br from-green-600 to-emerald-700 text-white p-6">
+        <div className="rounded-xl overflow-hidden border border-indigo-200">
+          <div className="bg-gradient-to-br from-indigo-600 to-blue-700 text-white p-6">
             <div className="flex items-start gap-4 mb-4">
               <div className="text-4xl">🎉</div>
               <div>
                 <p className="text-xl font-black">You&apos;re on {PLANS[currentPlan]?.name ?? 'your new plan'}!</p>
-                <p className="text-green-200 text-sm mt-1">Your client slots are live. Start adding AI workers right now.</p>
+                <p className="text-indigo-200 text-sm mt-1">Your client slots are live. Start adding AI workers right now.</p>
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
@@ -149,11 +149,11 @@ export function BillingPageClient({ agency, clientCount, totalConversationsThisM
               ].map(s => (
                 <div key={s.label} className="bg-white/15 rounded-xl p-3 text-center">
                   <p className="text-xl font-black text-white">{s.value}</p>
-                  <p className="text-[10px] text-green-200 mt-0.5 font-medium">{s.label}</p>
+                  <p className="text-[10px] text-indigo-200 mt-0.5 font-medium">{s.label}</p>
                 </div>
               ))}
             </div>
-            <a href="/agency/clients/new" className="block w-full text-center bg-white text-green-700 font-black py-3 rounded-xl hover:bg-green-50 transition text-sm">
+            <a href="/agency/clients/new" className="block w-full text-center bg-white text-indigo-700 font-black py-3 rounded-xl hover:bg-indigo-50 transition text-sm">
               Add Your First Client Now →
             </a>
           </div>
@@ -249,10 +249,10 @@ export function BillingPageClient({ agency, clientCount, totalConversationsThisM
             </div>
 
             {/* Total */}
-            <div className="rounded-xl border border-green-200 bg-green-50 p-4 text-center">
-              <p className="text-xs text-green-600 mb-1 font-medium uppercase tracking-wide">Total Estimate</p>
-              <p className="text-2xl font-black text-green-700">{formatUsd(estimatedTotal)}</p>
-              <p className="text-xs text-green-500 mt-0.5">this month so far</p>
+            <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-4 text-center">
+              <p className="text-xs text-indigo-600 mb-1 font-medium uppercase tracking-wide">Total Estimate</p>
+              <p className="text-2xl font-black text-indigo-700">{formatUsd(estimatedTotal)}</p>
+              <p className="text-xs text-indigo-500 mt-0.5">this month so far</p>
             </div>
           </div>
 
@@ -282,7 +282,7 @@ export function BillingPageClient({ agency, clientCount, totalConversationsThisM
                 key={id}
                 className={`relative flex flex-col transition-all ${
                   plan.highlighted ? 'border-indigo-300 shadow-md shadow-indigo-50 scale-[1.01]' : ''
-                } ${isCurrent ? 'ring-2 ring-green-400' : ''}`}
+                } ${isCurrent ? 'ring-2 ring-blue-400' : ''}`}
               >
                 {plan.highlighted && !isCurrent && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
@@ -293,7 +293,7 @@ export function BillingPageClient({ agency, clientCount, totalConversationsThisM
                 )}
                 {isCurrent && (
                   <div className="absolute -top-3 right-3 z-10">
-                    <span className="px-3 py-0.5 rounded-full bg-green-500 text-white text-xs font-bold shadow">
+                    <span className="px-3 py-0.5 rounded-full bg-blue-600 text-white text-xs font-bold shadow">
                       Your Plan
                     </span>
                   </div>
