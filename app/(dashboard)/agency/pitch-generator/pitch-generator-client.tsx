@@ -136,7 +136,7 @@ export default function PitchGeneratorClient({ agencyId, agencyName }: Props) {
           <CardDescription className="text-xs">Paste this into your CRM or sales tracking sheet</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="bg-gray-900 rounded-lg p-4 font-mono text-xs text-green-400 space-y-1 mb-3">
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 font-mono text-xs text-blue-700 space-y-1 mb-3">
             {INDUSTRIES.map(ind => (
               <div key={ind.id}>{ind.label}: {pitchUrl(ind.id)}</div>
             ))}

@@ -618,7 +618,7 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
               name="testNumber"
               placeholder="+1 (555) 123-4567"
             />
-            <Button type="submit" disabled={testingCall} className="shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white">
+            <Button type="submit" disabled={testingCall} className="shrink-0 bg-blue-600 hover:bg-blue-700 text-white">
               {testingCall ? <Loader2 className="w-4 h-4 animate-spin" /> : <PhoneCall className="w-4 h-4 mr-1" />}
               Call
             </Button>

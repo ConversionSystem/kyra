@@ -243,7 +243,7 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
                 </div>
               )}
               {saveSuccess && (
-                <div className="rounded-md bg-green-50 border border-green-500/30 px-4 py-2.5 text-sm text-green-600 mb-3">
+                <div className="rounded-md bg-emerald-50 border border-emerald-200 px-4 py-2.5 text-sm text-emerald-700 mb-3">
                   Settings saved successfully.
                 </div>
               )}
@@ -456,7 +456,7 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
                     </div>
                   )}
                   {saveSuccess && (
-                    <div className="rounded-md bg-green-50 border border-green-500/30 px-4 py-2.5 text-sm text-green-600 mb-3">
+                    <div className="rounded-md bg-emerald-50 border border-emerald-200 px-4 py-2.5 text-sm text-emerald-700 mb-3">
                       Branding saved successfully.
                     </div>
                   )}
@@ -555,7 +555,7 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
                 </div>
               )}
               {inviteSuccess && (
-                <div className="rounded-md bg-green-50 border border-green-500/30 px-3 py-2 text-sm text-green-600 mb-3">
+                <div className="rounded-md bg-emerald-50 border border-emerald-200 px-3 py-2 text-sm text-emerald-700 mb-3">
                   Invitation sent successfully.
                 </div>
               )}

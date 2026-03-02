@@ -292,7 +292,7 @@ export function SetupWizardClient({ agencyId, existingName }: Props) {
               Continue <ArrowRight className="w-4 h-4 ml-1" />
             </Button>
           ) : (
-            <Button onClick={deploy} disabled={!canProceed() || deploying} className="bg-green-600 hover:bg-green-700 text-white px-8">
+            <Button onClick={deploy} disabled={!canProceed() || deploying} className="bg-blue-600 hover:bg-blue-700 text-white px-8">
               {deploying ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Deploying...</> : <><Rocket className="w-4 h-4 mr-2" /> Deploy AI Worker</>}
             </Button>
           )}
