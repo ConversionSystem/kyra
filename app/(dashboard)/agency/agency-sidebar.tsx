@@ -52,6 +52,9 @@ import {
   GitMerge,
   Tag,
   Download,
+  Activity,
+  Shield,
+  Bell,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AgencySettings } from '@/lib/agency/types';
@@ -111,6 +114,14 @@ const navSections: NavSection[] = [
       { label: 'Automations', href: '/agency/automations', icon: Zap },
       { label: 'Heartbeat', href: '/agency/heartbeat', icon: Heart },
       { label: 'Reviews', href: '/agency/reviews', icon: Star },
+    ],
+  },
+  {
+    label: 'Oversight',
+    items: [
+      { label: 'Token Usage', href: '/agency/usage', icon: Activity },
+      { label: 'Review Queue', href: '/agency/review-queue', icon: Shield },
+      { label: 'Alerts', href: '/agency/alerts', icon: Bell },
     ],
   },
   {
@@ -204,6 +215,14 @@ const soloNavSections: NavSection[] = [
       { label: 'Automations', href: '/agency/automations', icon: Zap },
       { label: 'Heartbeat', href: '/agency/heartbeat', icon: Heart },
       { label: 'Reviews', href: '/agency/reviews', icon: Star },
+    ],
+  },
+  {
+    label: 'Oversight',
+    items: [
+      { label: 'Token Usage', href: '/agency/usage', icon: Activity },
+      { label: 'Review Queue', href: '/agency/review-queue', icon: Shield },
+      { label: 'Alerts', href: '/agency/alerts', icon: Bell },
     ],
   },
   {

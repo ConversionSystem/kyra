@@ -1,66 +1,82 @@
-// GET /api/agency/usage
-// Returns aggregate usage across ALL clients for the agency
-
 import { NextResponse } from 'next/server';
-import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
+import { getAgencyForUser, getAgencyClients } from '@/lib/agency/queries';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const supabase = createServiceClientWithoutCookies();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  const result = await getAgencyForUser(user.id);
+  if (!result) return NextResponse.json({ error: 'No agency' }, { status: 403 });
 
-  // Get all clients and their message logs this month
-  const { data: clients } = await supabase
-    .from('agency_clients')
-    .select('id, name, status')
-    .in('status', ['active', 'setup']);
+  const clients = await getAgencyClients(result.agency.id);
 
-  if (!clients || clients.length === 0) {
-    return NextResponse.json({ clients: [], totals: { messages: 0, estimatedCostCents: 0, estimatedCostFormatted: '$0.00' } });
-  }
+  // Build per-client usage from conversations + metadata
+  const clientUsage = await Promise.all(
+    clients.map(async (client) => {
+      // Count conversations this month
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
-  const clientIds = clients.map(c => c.id);
+      const { count: convosThisMonth } = await supabase
+        .from('client_conversations')
+        .select('*', { count: 'exact', head: true })
+        .eq('client_id', client.id)
+        .gte('created_at', monthStart);
 
-  const { data: messages } = await supabase
-    .from('ghl_message_log')
-    .select('agency_client_id, inbound_message, ai_response, response_time_ms, created_at')
-    .in('agency_client_id', clientIds)
-    .gte('created_at', monthStart);
+      const { count: convosToday } = await supabase
+        .from('client_conversations')
+        .select('*', { count: 'exact', head: true })
+        .eq('client_id', client.id)
+        .gte('created_at', new Date().toISOString().split('T')[0]);
 
-  // Aggregate per client
-  const perClient: Record<string, { messages: number; estimatedCostCents: number; avgResponseTimeMs: number }> = {};
-  let totalMessages = 0;
-  let totalCostCents = 0;
+      // Get last conversation time
+      const { data: lastConvo } = await supabase
+        .from('client_conversations')
+        .select('created_at')
+        .eq('client_id', client.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
 
-  for (const msg of (messages || [])) {
-    const cid = msg.agency_client_id;
-    if (!perClient[cid]) perClient[cid] = { messages: 0, estimatedCostCents: 0, avgResponseTimeMs: 0 };
-    perClient[cid].messages++;
-    totalMessages++;
+      const config = (client.container_config as Record<string, unknown>) ?? {};
+      const model = (config.model as string) || 'gpt-4o-mini';
 
-    const inTokens = Math.ceil((msg.inbound_message?.length || 0) / 4) + 500;
-    const outTokens = Math.ceil((msg.ai_response?.length || 0) / 4);
-    const cost = Math.round((inTokens * 3 / 1_000_000 + outTokens * 15 / 1_000_000) * 100);
-    perClient[cid].estimatedCostCents += cost;
-    totalCostCents += cost;
-  }
+      // Estimate tokens from conversation count (avg ~800 tokens per exchange)
+      const estimatedTokens = (convosThisMonth ?? 0) * 800;
+      // Cost estimation based on model
+      const costPer1kTokens = model.includes('gpt-4o-mini') ? 0.00015
+        : model.includes('gpt-4o') ? 0.0025
+        : model.includes('claude') ? 0.003
+        : 0.001;
+      const estimatedCost = (estimatedTokens / 1000) * costPer1kTokens;
 
-  const clientUsage = clients.map(c => ({
-    clientId: c.id,
-    clientName: c.name,
-    status: c.status,
-    messagesThisMonth: perClient[c.id]?.messages || 0,
-    estimatedCostCents: perClient[c.id]?.estimatedCostCents || 0,
-    estimatedCostFormatted: `$${((perClient[c.id]?.estimatedCostCents || 0) / 100).toFixed(2)}`,
-  })).sort((a, b) => b.messagesThisMonth - a.messagesThisMonth);
+      return {
+        client_id: client.id,
+        client_name: client.name || 'Unnamed',
+        status: client.gateway_status || 'unknown',
+        model,
+        conversations_today: convosToday ?? 0,
+        conversations_month: convosThisMonth ?? 0,
+        estimated_tokens: estimatedTokens,
+        estimated_cost_usd: Math.round(estimatedCost * 100) / 100,
+        last_activity: lastConvo?.created_at || null,
+      };
+    })
+  );
 
-  return NextResponse.json({
-    clients: clientUsage,
-    totals: {
-      messages: totalMessages,
-      estimatedCostCents: totalCostCents,
-      estimatedCostFormatted: `$${(totalCostCents / 100).toFixed(2)}`,
-    },
-  });
+  // Totals
+  const totals = {
+    total_clients: clients.length,
+    active_clients: clients.filter(c => c.gateway_status === 'running').length,
+    conversations_today: clientUsage.reduce((s, c) => s + c.conversations_today, 0),
+    conversations_month: clientUsage.reduce((s, c) => s + c.conversations_month, 0),
+    estimated_tokens: clientUsage.reduce((s, c) => s + c.estimated_tokens, 0),
+    estimated_cost_usd: Math.round(clientUsage.reduce((s, c) => s + c.estimated_cost_usd, 0) * 100) / 100,
+  };
+
+  return NextResponse.json({ totals, clients: clientUsage });
 }
