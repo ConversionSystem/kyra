@@ -7,6 +7,7 @@ import {
   Server, RefreshCw, ChevronRight, Globe, Activity, Coins,
   UserPlus, Bot, Clock, TrendingUp, ExternalLink,
 } from 'lucide-react';
+import GrowthChart from '@/components/master/growth-chart';
 
 interface KPIs {
   total_agencies: number;
@@ -208,6 +209,11 @@ export default function MasterDashboard() {
             <KpiCard icon={UserPlus} label="Signups" value={kpis.signups_this_week} sub="last 7 days" color="bg-purple-600" />
             <KpiCard icon={Coins} label="Credits" value={kpis.credits_used} sub={`${kpis.credits_purchased} purchased · ${kpis.credits_bonus} bonus`} color="bg-amber-600" />
           </div>
+        )}
+
+        {/* ── Growth Chart ── */}
+        {agencies.length > 0 && (
+          <GrowthChart agencies={agencies.map(a => ({ id: a.id, created_at: a.created_at, type: a.type as 'solo' | 'agency' }))} />
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
