@@ -82,7 +82,7 @@ function MiniBarChart({ data, maxBars = 30 }: { data: Array<{ date: string; coun
             />
             {/* Tooltip */}
             <div className="absolute bottom-full mb-2 hidden group-hover:block z-10">
-              <div className="bg-gray-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
+              <div className="bg-gray-800 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
                 {new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}: {d.count} messages
               </div>
             </div>
@@ -125,7 +125,7 @@ function HourlyHeatmap({ hours }: { hours: number[] }) {
               <span className="text-[10px] text-gray-400 mt-1">{h}:00</span>
             )}
             <div className="absolute bottom-full mb-2 hidden group-hover:block z-10">
-              <div className="bg-gray-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
+              <div className="bg-gray-800 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
                 {h}:00 — {count} messages
               </div>
             </div>
@@ -199,7 +199,7 @@ export default function AnalyticsClient() {
               onClick={() => { setDays(d); setLoading(true); }}
               className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
                 days === d
-                  ? 'bg-gray-900 text-white'
+                  ? 'bg-blue-600 text-white'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >

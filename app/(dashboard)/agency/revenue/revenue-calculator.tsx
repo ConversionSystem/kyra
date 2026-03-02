@@ -209,38 +209,38 @@ export default function RevenueCalculator({ realClientCount }: { realClientCount
         </Card>
 
         {/* Results */}
-        <Card className="bg-gray-900 text-white border-gray-800">
+        <Card className="bg-gradient-to-br from-indigo-600 to-blue-700 text-white border-0 shadow-lg">
           <CardHeader className="pb-4">
-            <CardTitle className="text-base text-gray-300">Projected Numbers</CardTitle>
+            <CardTitle className="text-base text-indigo-200">Projected Numbers</CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-400">Gross revenue / mo</span>
+              <span className="text-sm text-indigo-200">Gross revenue / mo</span>
               <span className="text-lg font-bold text-white">{fmt(grossRevenue)}</span>
             </div>
-            <div className="border-t border-gray-800 pt-4 space-y-2">
+            <div className="border-t border-white/20 pt-4 space-y-2">
               <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-500">Kyra plan ({PLAN_LIMITS[plan].label})</span>
-                <span className="text-gray-400">− {fmt(kyraFee)}</span>
+                <span className="text-indigo-200">Kyra plan ({PLAN_LIMITS[plan].label})</span>
+                <span className="text-indigo-200">− {fmt(kyraFee)}</span>
               </div>
               <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-500">Platform hosting</span>
-                <span className="text-gray-400">Included</span>
+                <span className="text-indigo-200">Platform hosting</span>
+                <span className="text-indigo-200">Included</span>
               </div>
             </div>
-            <div className="border-t border-gray-700 pt-4">
+            <div className="border-t border-white/20 pt-4">
               <div className="flex justify-between items-center mb-1">
                 <span className="text-sm font-semibold text-white">Net profit / mo</span>
-                <span className="text-2xl font-bold text-green-400">{fmt(netRevenue)}</span>
+                <span className="text-2xl font-bold text-emerald-300">{fmt(netRevenue)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-400">Annual revenue</span>
-                <span className="text-lg font-bold text-green-300">{fmt(annualRevenue)}</span>
+                <span className="text-sm text-indigo-200">Annual revenue</span>
+                <span className="text-lg font-bold text-emerald-300">{fmt(annualRevenue)}</span>
               </div>
             </div>
-            <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 text-center">
-              <p className="text-xs text-green-400 mb-0.5">Profit margin</p>
-              <p className="text-3xl font-black text-green-400">{margin}%</p>
+            <div className="bg-white/10 border border-white/20 rounded-lg p-3 text-center">
+              <p className="text-xs text-emerald-300 mb-0.5">Profit margin</p>
+              <p className="text-3xl font-black text-emerald-300">{margin}%</p>
             </div>
           </CardContent>
         </Card>

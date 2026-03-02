@@ -291,7 +291,7 @@ export default function KnowledgeClient({ clients }: { clients: Client[] }) {
           </button>
           <button
             onClick={() => setShowCreate(true)}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm text-white bg-gray-900 rounded-lg hover:bg-gray-800"
+            className="flex items-center gap-1.5 px-3 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700"
           >
             <Plus className="h-3.5 w-3.5" />
             Add Knowledge
@@ -410,7 +410,7 @@ export default function KnowledgeClient({ clients }: { clients: Client[] }) {
               <button
                 onClick={createMode === 'text' ? handleCreateText : handleImportUrl}
                 disabled={saving || (createMode === 'text' ? (!newTitle.trim() || !newContent.trim()) : !newUrl.trim())}
-                className="px-4 py-2 text-sm text-white bg-gray-900 rounded-lg hover:bg-gray-800 disabled:opacity-50"
+                className="px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50"
               >
                 {saving ? (createMode === 'url' ? 'Importing...' : 'Saving...') : (createMode === 'url' ? 'Import Page' : 'Add Document')}
               </button>
@@ -437,7 +437,7 @@ export default function KnowledgeClient({ clients }: { clients: Client[] }) {
           {!search && (
             <button
               onClick={() => setShowCreate(true)}
-              className="flex items-center gap-2 px-4 py-2 text-sm text-white bg-gray-900 rounded-lg hover:bg-gray-800"
+              className="flex items-center gap-2 px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700"
             >
               <Plus className="h-4 w-4" />
               Add Your First Document
