@@ -179,7 +179,7 @@ Takes about a week to set up. Worth a quick 15-minute call to see if it's a fit?
   {
     label: '🌿 Cannabis (highest margin)',
     tag: 'HIGHEST ROI',
-    tagColor: 'bg-green-100 text-green-800',
+    tagColor: 'bg-indigo-100 text-indigo-800',
     subject: 'How many texts is your budtender answering right now?',
     body: `Hi [Owner Name],
 
@@ -245,7 +245,7 @@ function QuickWinSection() {
                 onClick={() => handleCopy(i, `Subject: ${t.subject}\n\n${t.body}`)}
                 className={`shrink-0 inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${
                   copiedIdx === i
-                    ? 'border-green-200 bg-green-50 text-green-700'
+                    ? 'border-indigo-200 bg-indigo-50 text-indigo-700'
                     : 'border-amber-200 bg-white text-amber-800 hover:bg-amber-50'
                 }`}
               >
@@ -298,7 +298,7 @@ function ObjectionCard({ objection, response }: { objection: string; response: s
         {open ? <ChevronDown className="h-4 w-4 text-gray-400" /> : <ChevronRight className="h-4 w-4 text-gray-400" />}
       </button>
       {open && (
-        <div className="px-4 pb-4 bg-green-50 border-t border-gray-100">
+        <div className="px-4 pb-4 bg-indigo-50 border-t border-gray-100">
           <div className="flex items-start justify-between gap-2 mt-3">
             <p className="text-sm text-gray-700 italic leading-relaxed">{response}</p>
             <CopyButton text={response} />
@@ -364,7 +364,7 @@ export default function SalesKitPage() {
               <CardHeader className="pb-3 flex flex-row items-center justify-between">
                 <div>
                   <CardTitle className="text-sm font-semibold">{t.industry}</CardTitle>
-                  {t.tag && <Badge className="text-[10px] bg-green-100 text-green-700 mt-1">{t.tag}</Badge>}
+                  {t.tag && <Badge className="text-[10px] bg-indigo-100 text-indigo-700 mt-1">{t.tag}</Badge>}
                   {t.subject && <p className="text-xs text-gray-400 mt-1">Subject: <span className="text-gray-600">{t.subject}</span></p>}
                 </div>
                 <CopyButton text={`Subject: ${t.subject}\n\n${t.body}`} />

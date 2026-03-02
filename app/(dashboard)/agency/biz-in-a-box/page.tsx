@@ -173,7 +173,7 @@ export default function BizInABoxPage() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
         {[
           { label: 'Send a Demo', href: '/demo/dental', icon: Zap, color: 'text-indigo-600' },
-          { label: 'Build Proposal', href: '/agency/proposal', icon: FileText, color: 'text-green-600' },
+          { label: 'Build Proposal', href: '/agency/proposal', icon: FileText, color: 'text-indigo-600' },
           { label: 'Email Templates', href: '/agency/sales-kit', icon: MessageSquare, color: 'text-blue-600' },
           { label: 'ROI Calculator', href: '/roi', icon: DollarSign, color: 'text-amber-600' },
         ].map((item) => (
@@ -236,7 +236,7 @@ export default function BizInABoxPage() {
           label="Stage 2 · Pitch"
           title="Show them the demo, then send the ROI"
           subtitle="Never pitch features. Show the AI working. Then show their money."
-          color="bg-green-100 text-green-600"
+          color="bg-blue-100 text-blue-600"
         >
           {/* Demo links */}
           <div className="bg-white rounded-xl border border-gray-200 p-4">
