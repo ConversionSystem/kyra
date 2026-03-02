@@ -226,7 +226,7 @@ export default function AutomationsClient() {
           </button>
           <button
             onClick={() => setShowCreate(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-white bg-gray-900 rounded-lg hover:bg-gray-800"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700"
           >
             <Plus className="h-3.5 w-3.5" />
             New Automation
@@ -313,7 +313,7 @@ export default function AutomationsClient() {
               <button
                 onClick={handleCreate}
                 disabled={saving || !newName.trim() || !newTask.trim()}
-                className="px-4 py-2 text-sm text-white bg-gray-900 rounded-lg hover:bg-gray-800 disabled:opacity-50"
+                className="px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50"
               >
                 {saving ? 'Creating...' : 'Create Automation'}
               </button>
@@ -335,7 +335,7 @@ export default function AutomationsClient() {
           </p>
           <button
             onClick={() => setShowCreate(true)}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-white bg-gray-900 rounded-lg hover:bg-gray-800"
+            className="flex items-center gap-2 px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700"
           >
             <Plus className="h-4 w-4" />
             Create Your First Automation

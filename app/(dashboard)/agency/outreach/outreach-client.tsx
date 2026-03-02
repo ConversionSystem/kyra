@@ -1037,7 +1037,7 @@ function ColdAcquisitionSection() {
               onClick={() => { setActiveNiche(n); setActiveStage('initial'); }}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 activeNiche === n
-                  ? 'bg-gray-900 text-white'
+                  ? 'bg-blue-600 text-white'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >

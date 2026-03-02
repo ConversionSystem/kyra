@@ -633,7 +633,7 @@ export default function PipelineClient() {
 
           {/* Live event feed */}
           {(isRunning || runEvents.length > 0) && (
-            <div className="mt-4 bg-gray-950 rounded-xl border border-gray-800 p-4 max-h-60 overflow-y-auto font-mono text-xs space-y-1">
+            <div className="mt-4 bg-gray-900 rounded-xl border border-gray-200 p-4 max-h-60 overflow-y-auto font-mono text-xs space-y-1 shadow-inner">
               {runEvents.map((ev, i) => (
                 <div key={i} className="flex items-start gap-2">
                   <span className="text-gray-600 shrink-0">{new Date(ev.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>

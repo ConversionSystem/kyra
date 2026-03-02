@@ -42,7 +42,7 @@ const CHANNELS: ChannelDef[] = [
     id: 'telegram',
     name: 'Telegram',
     icon: '✈️',
-    color: 'text-blue-400',
+    color: 'text-blue-600',
     description: 'Chat with your AI assistant via Telegram.',
     tokenField: 'botToken',
     tokenLabel: 'Bot Token',
@@ -65,7 +65,7 @@ const CHANNELS: ChannelDef[] = [
     id: 'discord',
     name: 'Discord',
     icon: '🎮',
-    color: 'text-indigo-400',
+    color: 'text-indigo-600',
     description: 'Add your AI assistant to Discord servers.',
     tokenField: 'token',
     tokenLabel: 'Bot Token',
@@ -82,7 +82,7 @@ const CHANNELS: ChannelDef[] = [
     id: 'slack',
     name: 'Slack',
     icon: '💼',
-    color: 'text-green-400',
+    color: 'text-green-600',
     description: 'Connect your AI assistant to Slack workspaces.',
     tokenField: 'botToken',
     tokenLabel: 'Bot Token',
@@ -100,7 +100,7 @@ const CHANNELS: ChannelDef[] = [
     id: 'whatsapp',
     name: 'WhatsApp',
     icon: '📱',
-    color: 'text-emerald-400',
+    color: 'text-emerald-600',
     description: 'Connect your AI to WhatsApp via QR code pairing.',
     tokenField: '_whatsapp',
     tokenLabel: 'Setup',
@@ -116,7 +116,7 @@ const CHANNELS: ChannelDef[] = [
     id: 'signal',
     name: 'Signal',
     icon: '🔒',
-    color: 'text-blue-300',
+    color: 'text-blue-500',
     description: 'Secure messaging with your AI via Signal.',
     tokenField: '_signal',
     tokenLabel: 'Phone Number',
@@ -141,7 +141,6 @@ export function ChannelsClient() {
   const [messages, setMessages] = useState<Record<string, { type: 'success' | 'error'; text: string }>>({});
   const [expandedChannel, setExpandedChannel] = useState<string | null>(null);
 
-  // Load channel status from API — no caching to avoid stale/cross-agency leaks
   const loadStatus = useCallback(async () => {
     try {
       const res = await fetch('/api/openclaw/channels');
@@ -150,15 +149,12 @@ export function ChannelsClient() {
         if (data.ok) {
           setChannelStatus(data.channels || {});
         } else {
-          // API returned error — show all disconnected (safe default)
           setChannelStatus({});
         }
       } else {
-        // Request failed — show all disconnected (safe default)
         setChannelStatus({});
       }
     } catch {
-      // Network error — show all disconnected (safe default)
       setChannelStatus({});
     }
     setLoading(false);
@@ -174,7 +170,6 @@ export function ChannelsClient() {
     setMessages((prev) => ({ ...prev, [channel.id]: undefined as any }));
 
     try {
-      // Extract token from BotFather message if pasted
       let cleanToken = token;
       if (channel.id === 'telegram' && token.includes('Use this token')) {
         const match = token.match(/(\d+:[A-Za-z0-9_-]+)/);
@@ -183,7 +178,6 @@ export function ChannelsClient() {
 
       const config: Record<string, unknown> = {};
       if (channel.id === 'whatsapp') {
-        // WhatsApp needs special setup
         config.enabled = true;
       } else if (channel.id === 'signal') {
         config.phoneNumber = cleanToken;
@@ -199,14 +193,11 @@ export function ChannelsClient() {
       const data = await res.json();
 
       if (data.ok) {
-        // Immediately mark as connected in local state
         setChannelStatus((prev) => ({ ...prev, [channel.id]: { configured: true, hasToken: true } }));
-
         setMessages((prev) => ({
           ...prev,
           [channel.id]: { type: 'success', text: `${channel.name} connected! Gateway restarting to apply changes... (this takes ~2 minutes)` },
         }));
-        // Refresh status after gateway restart (~150s for full reboot)
         setTimeout(loadStatus, 10000);
         setTimeout(loadStatus, 60000);
         setTimeout(loadStatus, 150000);
@@ -232,7 +223,6 @@ export function ChannelsClient() {
     setConnectingChannel(channel.id + '-pair');
 
     try {
-      // Extract code from bot message if pasted
       let cleanCode = code.replace(/[^A-Za-z0-9]/g, '').slice(0, 8).toUpperCase();
 
       const res = await fetch('/api/openclaw/channels/pair', {
@@ -277,11 +267,11 @@ export function ChannelsClient() {
   }
 
   return (
-    <div className="p-4 sm:p-6 md:p-8 max-w-5xl space-y-6">
+    <div className="space-y-6 max-w-4xl">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Connect Channels</h1>
-        <p className="text-gray-400 text-sm mt-1">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Connect Channels</h1>
+        <p className="text-sm text-gray-500 mt-1">
           Connect messaging platforms so your AI can chat with customers directly
         </p>
       </div>
@@ -296,7 +286,7 @@ export function ChannelsClient() {
           const pairMsg = messages[channel.id + '-pair'];
 
           return (
-            <Card key={channel.id} className="bg-gray-900 border-gray-800">
+            <Card key={channel.id}>
               <CardHeader
                 className="cursor-pointer"
                 onClick={() => setExpandedChannel(isExpanded ? null : channel.id)}
@@ -310,7 +300,7 @@ export function ChannelsClient() {
                     </div>
                   </div>
                   {isConnected && (
-                    <div className="flex items-center gap-1.5 text-green-400 text-sm font-medium">
+                    <div className="flex items-center gap-1.5 text-emerald-600 text-sm font-medium">
                       <CheckCircle2 className="h-4 w-4" />
                       Connected
                     </div>
@@ -324,13 +314,13 @@ export function ChannelsClient() {
                   <div className="space-y-2">
                     {channel.steps.map((step, i) => (
                       <div key={i} className="flex items-start gap-3">
-                        <span className="flex items-center justify-center h-6 w-6 rounded-full bg-gray-800 text-xs text-gray-400 font-bold shrink-0 mt-0.5">
+                        <span className="flex items-center justify-center h-6 w-6 rounded-full bg-gray-100 text-xs text-gray-500 font-bold shrink-0 mt-0.5">
                           {i + 1}
                         </span>
-                        <span className="text-sm text-gray-300">
+                        <span className="text-sm text-gray-700">
                           {step.link ? (
                             <>
-                              <a href={step.link} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+                              <a href={step.link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
                                 {step.linkText || step.text}
                                 <ExternalLink className="inline h-3 w-3 ml-1" />
                               </a>
@@ -347,7 +337,7 @@ export function ChannelsClient() {
                   </div>
 
                   {/* Tip */}
-                  <div className="flex items-start gap-2 text-xs text-amber-400/80 bg-amber-950/20 rounded-lg px-3 py-2">
+                  <div className="flex items-start gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
                     <Lightbulb className="h-3.5 w-3.5 mt-0.5 shrink-0" />
                     {channel.tip}
                   </div>
@@ -360,12 +350,12 @@ export function ChannelsClient() {
                         value={tokenValues[channel.id] || ''}
                         onChange={(e) => setTokenValues((prev) => ({ ...prev, [channel.id]: e.target.value }))}
                         onKeyDown={(e) => e.key === 'Enter' && connectChannel(channel)}
-                        className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 text-sm font-mono"
+                        className="font-mono text-sm"
                       />
                       <Button
                         onClick={() => connectChannel(channel)}
                         disabled={connectingChannel === channel.id || !tokenValues[channel.id]?.trim()}
-                        className="bg-indigo-600 hover:bg-indigo-700 shrink-0"
+                        className="bg-blue-600 hover:bg-blue-700 text-white shrink-0"
                       >
                         {connectingChannel === channel.id ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
@@ -381,7 +371,7 @@ export function ChannelsClient() {
                     <Button
                       onClick={() => connectChannel(channel)}
                       disabled={connectingChannel === channel.id}
-                      className="bg-indigo-600 hover:bg-indigo-700"
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
                     >
                       {connectingChannel === channel.id ? (
                         <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -399,12 +389,12 @@ export function ChannelsClient() {
                         placeholder={channel.tokenPlaceholder}
                         value={tokenValues[channel.id] || ''}
                         onChange={(e) => setTokenValues((prev) => ({ ...prev, [channel.id]: e.target.value }))}
-                        className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 text-sm font-mono"
+                        className="font-mono text-sm"
                       />
                       <Button
                         onClick={() => connectChannel(channel)}
                         disabled={connectingChannel === channel.id || !tokenValues[channel.id]?.trim()}
-                        className="bg-indigo-600 hover:bg-indigo-700 shrink-0"
+                        className="bg-blue-600 hover:bg-blue-700 text-white shrink-0"
                       >
                         Connect
                       </Button>
@@ -413,64 +403,61 @@ export function ChannelsClient() {
 
                   {/* Connection message */}
                   {msg && (
-                    <p className={cn('text-sm font-medium', msg.type === 'success' ? 'text-green-400' : 'text-red-400')}>
+                    <p className={cn('text-sm font-medium', msg.type === 'success' ? 'text-emerald-600' : 'text-red-600')}>
                       {msg.text}
                     </p>
                   )}
 
                   {/* Pairing section (after connection) */}
                   {isConnected && channel.pairingSteps && (
-                    <Card className="bg-gray-800/50 border-gray-700">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-base text-white">Pair Your {channel.name} Account</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        {channel.pairingSteps.map((step, i) => (
-                          <div key={i} className="flex items-start gap-3">
-                            <span className="flex items-center justify-center h-6 w-6 rounded-full bg-gray-700 text-xs text-gray-400 font-bold shrink-0 mt-0.5">
-                              {i + 1}
-                            </span>
-                            <span className="text-sm text-gray-300">{step.text}</span>
-                          </div>
-                        ))}
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
+                      <h3 className="text-base font-semibold text-gray-900">Pair Your {channel.name} Account</h3>
 
-                        {channel.pairingTip && (
-                          <div className="flex items-start gap-2 text-xs text-amber-400/80 bg-amber-950/20 rounded-lg px-3 py-2">
-                            <Lightbulb className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                            {channel.pairingTip}
-                          </div>
-                        )}
+                      {channel.pairingSteps.map((step, i) => (
+                        <div key={i} className="flex items-start gap-3">
+                          <span className="flex items-center justify-center h-6 w-6 rounded-full bg-gray-200 text-xs text-gray-500 font-bold shrink-0 mt-0.5">
+                            {i + 1}
+                          </span>
+                          <span className="text-sm text-gray-700">{step.text}</span>
+                        </div>
+                      ))}
 
-                        {!pairMsg?.type && (
-                          <div className="flex gap-2">
-                            <Input
-                              placeholder={channel.pairingPlaceholder || 'Pairing code...'}
-                              value={pairingValues[channel.id] || ''}
-                              onChange={(e) => setPairingValues((prev) => ({ ...prev, [channel.id]: e.target.value }))}
-                              onKeyDown={(e) => e.key === 'Enter' && approvePairing(channel)}
-                              className="bg-gray-700 border-gray-600 text-white placeholder:text-gray-500 text-sm font-mono uppercase"
-                            />
-                            <Button
-                              onClick={() => approvePairing(channel)}
-                              disabled={connectingChannel === channel.id + '-pair' || !pairingValues[channel.id]?.trim()}
-                              className="bg-indigo-600 hover:bg-indigo-700 shrink-0"
-                            >
-                              {connectingChannel === channel.id + '-pair' ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                'Approve'
-                              )}
-                            </Button>
-                          </div>
-                        )}
+                      {channel.pairingTip && (
+                        <div className="flex items-start gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+                          <Lightbulb className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                          {channel.pairingTip}
+                        </div>
+                      )}
 
-                        {pairMsg && (
-                          <p className={cn('text-sm font-medium', pairMsg.type === 'success' ? 'text-green-400' : 'text-red-400')}>
-                            {pairMsg.text}
-                          </p>
-                        )}
-                      </CardContent>
-                    </Card>
+                      {!pairMsg?.type && (
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder={channel.pairingPlaceholder || 'Pairing code...'}
+                            value={pairingValues[channel.id] || ''}
+                            onChange={(e) => setPairingValues((prev) => ({ ...prev, [channel.id]: e.target.value }))}
+                            onKeyDown={(e) => e.key === 'Enter' && approvePairing(channel)}
+                            className="font-mono text-sm uppercase"
+                          />
+                          <Button
+                            onClick={() => approvePairing(channel)}
+                            disabled={connectingChannel === channel.id + '-pair' || !pairingValues[channel.id]?.trim()}
+                            className="bg-blue-600 hover:bg-blue-700 text-white shrink-0"
+                          >
+                            {connectingChannel === channel.id + '-pair' ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              'Approve'
+                            )}
+                          </Button>
+                        </div>
+                      )}
+
+                      {pairMsg && (
+                        <p className={cn('text-sm font-medium', pairMsg.type === 'success' ? 'text-emerald-600' : 'text-red-600')}>
+                          {pairMsg.text}
+                        </p>
+                      )}
+                    </div>
                   )}
                 </CardContent>
               )}
@@ -480,8 +467,8 @@ export function ChannelsClient() {
       </div>
 
       {/* Footer */}
-      <div className="text-center py-4 border-t border-gray-800">
-        <p className="text-gray-500 text-xs">
+      <div className="text-center py-4 border-t border-gray-200">
+        <p className="text-gray-400 text-xs">
           Powered by OpenClaw — channels connect directly to your AI engine
         </p>
       </div>

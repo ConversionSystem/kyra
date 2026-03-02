@@ -144,7 +144,7 @@ function DeployModal({
             <button
               onClick={() => setTab('existing')}
               className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors
-                ${tab === 'existing' ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
+                ${tab === 'existing' ? 'bg-blue-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
             >
               <UserCheck className="h-4 w-4" />
               Existing Client
@@ -152,7 +152,7 @@ function DeployModal({
             <button
               onClick={() => setTab('new')}
               className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors
-                ${tab === 'new' ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
+                ${tab === 'new' ? 'bg-blue-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
             >
               <UserPlus className="h-4 w-4" />
               New Client
