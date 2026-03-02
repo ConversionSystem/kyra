@@ -312,7 +312,7 @@ function AttentionCard({ item, onResolve, onApproveAndSend, sendingId, router }:
             )}
             {item.attention_type === 'approval_needed' && (item.metadata?.ai_draft as string) && (
               <Button size="sm" variant="default"
-                className="h-7 text-xs bg-green-600 hover:bg-green-700"
+                className="h-7 text-xs bg-blue-600 hover:bg-blue-700"
                 disabled={sendingId === item.id}
                 onClick={() => onApproveAndSend(item)}>
                 {sendingId === item.id ? (

@@ -138,7 +138,7 @@ ${agencyName || 'Your Agency'}`;
                   </select>
                   <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
                 </div>
-                <p className="text-xs text-green-600 mt-1.5 font-medium">Typical price: {selectedIndustry.price}/mo</p>
+                <p className="text-xs text-indigo-600 mt-1.5 font-medium">Typical price: {selectedIndustry.price}/mo</p>
               </div>
               <div>
                 <label className="text-xs font-medium text-gray-600 mb-1.5 block">Your Monthly Price (optional)</label>

@@ -161,7 +161,7 @@ export function CrmImport() {
               setImporting(null);
             }}
             disabled={importing === 'hubspot' || !hubspotKey.trim()}
-            className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
           >
             {importing === 'hubspot' ? (
               <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Importing...</>
@@ -190,7 +190,7 @@ export function CrmImport() {
               <p className="text-sm font-medium text-green-700">{csvRows.length} rows ready</p>
               <div className="flex gap-2">
                 <Button onClick={handleCsvImport} disabled={importing === 'csv'}
-                  className="flex-1 bg-green-600 hover:bg-green-700 text-white">
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
                   {importing === 'csv' ? 'Importing...' : `Import ${csvRows.length} contacts`}
                 </Button>
                 <Button variant="outline" onClick={() => setCsvRows([])}><X className="h-4 w-4" /></Button>
