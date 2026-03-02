@@ -69,7 +69,7 @@ export function CrmAnalytics() {
       </div>
 
       {/* KPI Row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
         <KpiCard icon={<Users className="h-5 w-5 text-indigo-600" />} label="Total Contacts" value={data.contacts.total} />
         <KpiCard icon={<DollarSign className="h-5 w-5 text-green-600" />} label="Pipeline Value" value={`$${(data.deals.totalValue / 1000).toFixed(1)}K`} />
         <KpiCard icon={<TrendingUp className="h-5 w-5 text-purple-600" />} label="Forecast Revenue" value={`$${((data.forecast?.expected_revenue || 0) / 1000).toFixed(1)}K`} />
@@ -102,7 +102,7 @@ export function CrmAnalytics() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-6">
         {/* Deal Pipeline */}
         <div className="bg-white border border-gray-200 rounded-xl p-6">
           <h2 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">

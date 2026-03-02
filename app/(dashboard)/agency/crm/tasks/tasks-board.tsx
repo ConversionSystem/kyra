@@ -103,7 +103,7 @@ export function TasksBoard() {
             )}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {/* View toggle */}
           <div className="flex bg-gray-100 rounded-lg p-0.5">
             <button
@@ -159,13 +159,13 @@ export function TasksBoard() {
 
       {/* Board View */}
       {view === 'board' && (
-        <div className="flex gap-4 overflow-x-auto pb-4">
+        <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
           {STATUS_COLS.map(col => {
             const colTasks = tasks.filter(t => t.status === col.key);
             return (
               <div
                 key={col.key}
-                className={`flex-shrink-0 w-80 rounded-xl border-t-4 ${col.color} ${col.bg} transition ${
+                className={`flex-shrink-0 w-72 sm:w-80 rounded-xl border-t-4 ${col.color} ${col.bg} transition ${
                   dragOver === col.key ? 'ring-2 ring-indigo-400' : ''
                 }`}
                 onDragOver={e => { e.preventDefault(); setDragOver(col.key); }}
