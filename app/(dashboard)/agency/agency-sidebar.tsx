@@ -83,7 +83,6 @@ const navSections: NavSection[] = [
     items: [
       { label: 'Command Feed', href: '/agency/crm', icon: Inbox },
       { label: 'Contacts', href: '/agency/crm/contacts', icon: ContactIcon },
-      { label: 'Companies', href: '/agency/crm/companies', icon: Building2Icon },
       { label: 'Deals', href: '/agency/crm/deals', icon: TargetIcon },
       { label: 'Tasks', href: '/agency/crm/tasks', icon: CheckSquare },
       { label: 'Analytics', href: '/agency/crm/analytics', icon: CrmChartIcon },
@@ -176,7 +175,6 @@ const soloNavSections: NavSection[] = [
     items: [
       { label: 'My CRM', href: '/agency/crm', icon: Inbox },
       { label: 'Contacts', href: '/agency/crm/contacts', icon: ContactIcon },
-      { label: 'Companies', href: '/agency/crm/companies', icon: Building2Icon },
       { label: 'Deals', href: '/agency/crm/deals', icon: TargetIcon },
       { label: 'Tasks', href: '/agency/crm/tasks', icon: CheckSquare },
       { label: 'Analytics', href: '/agency/crm/analytics', icon: CrmChartIcon },
