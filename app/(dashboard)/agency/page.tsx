@@ -18,7 +18,7 @@ import AgencyAnalyticsStrip from '@/components/dashboard/agency-analytics-strip'
 import WhatsNewBanner from '@/components/dashboard/whats-new-banner';
 import AgencyChecklist from '@/components/dashboard/agency-checklist';
 import ClientSparkline from '@/components/dashboard/client-sparkline';
-import { SalesLeadWidget } from '@/components/dashboard/sales-lead-widget';
+// SalesLeadWidget removed — was hardcoded dummy data
 import RevenueUnlockCard from '@/components/dashboard/revenue-unlock-card';
 import TrialCountdownBanner from '@/components/dashboard/trial-countdown-banner';
 import ReferralShareWidget from '@/components/dashboard/referral-share-widget';
@@ -160,7 +160,7 @@ export default async function AgencyOverviewPage() {
     );
   }
 
-  const salesPipelineState = (agencySettings.sales_pipeline as Record<string, string>) ?? {};
+  // salesPipelineState removed — SalesLeadWidget was hardcoded dummy data
   // Show trial credits banner when: still on welcome credits, haven't purchased yet
   const showTrialCreditsBanner = agencyCredits.lifetimePurchased === 0 && agencyCredits.balance > 0;
 
@@ -356,19 +356,7 @@ export default async function AgencyOverviewPage() {
         />
       </div>
 
-      {/* ── Fleet Status (agencies with 2+ clients) ── */}
-      {clients.length >= 2 && (
-        <div className="mb-6">
-          <FleetStatusBar
-            clients={clients.map(c => ({
-              id: c.id,
-              name: c.name,
-              status: c.gateway_status,
-              lastActive: c.updated_at ?? null,
-            }))}
-          />
-        </div>
-      )}
+      {/* Fleet Status bar removed — replaced by Mission Control table below */}
 
       {/* ── Setup Checklist ── */}
       <AgencyChecklist {...checklistProps} />
@@ -406,12 +394,7 @@ export default async function AgencyOverviewPage() {
         </div>
       )}
 
-      {/* ── Sales Lead Widget (admin only) ── */}
-      {isAdmin && (
-        <div className="mb-6">
-          <SalesLeadWidget pipelineState={salesPipelineState} />
-        </div>
-      )}
+      {/* Sales Lead Widget removed — was hardcoded dummy data */}
 
       {/* ── Stats Bar ── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-4">
