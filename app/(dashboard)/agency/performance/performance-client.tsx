@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import {
   BarChart3, Users, MessageSquare, Activity,
   TrendingUp, Mail, Info, X, ChevronRight, Copy, Check,
+  Download, Share2,
 } from 'lucide-react';
 import type { AgencyClient } from '@/lib/agency/types';
 
@@ -226,14 +227,38 @@ export function PerformanceClient({ clients, agencyId, agencySettings }: Perform
       <ResendSetupBanner />
 
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <BarChart3 className="h-6 w-6 text-indigo-500" />
-          Performance
-        </h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Weekly insights across all your AI workers
-        </p>
+      <div className="flex items-start justify-between flex-wrap gap-3 mb-6">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <BarChart3 className="h-6 w-6 text-indigo-500" />
+            Performance
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Weekly insights across all your AI workers
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="text-xs"
+          onClick={() => {
+            const rows = [
+              ['Client', 'Status', 'Conversations', 'Response Rate'].join(','),
+              ...clients.map(c =>
+                [c.name, c.gateway_status || 'unknown', c.usage_this_month || 0, '—'].join(',')
+              ),
+            ];
+            const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `kyra-performance-${new Date().toISOString().slice(0, 10)}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+          }}
+        >
+          <Download className="h-3.5 w-3.5 mr-1" /> Export CSV
+        </Button>
       </div>
 
       {/* Top stats */}
