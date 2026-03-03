@@ -57,6 +57,7 @@ import {
   Bell,
   GitBranch,
   LogOut,
+  Filter,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AgencySettings } from '@/lib/agency/types';
@@ -92,6 +93,7 @@ const navSections: NavSection[] = [
       { label: 'Tasks', href: '/agency/crm/tasks', icon: CheckSquare },
       { label: 'Analytics', href: '/agency/crm/analytics', icon: CrmChartIcon },
       { label: 'Tags', href: '/agency/crm/tags', icon: Tag },
+      { label: 'Segments', href: '/agency/crm/segments', icon: Filter },
       { label: 'Merge', href: '/agency/crm/merge', icon: GitMerge },
       { label: 'Intelligence', href: '/agency/crm/intelligence', icon: BrainIcon },
       { label: 'Import', href: '/agency/crm/import', icon: UploadIcon },
@@ -196,6 +198,7 @@ const soloNavSections: NavSection[] = [
       { label: 'Tasks', href: '/agency/crm/tasks', icon: CheckSquare },
       { label: 'Analytics', href: '/agency/crm/analytics', icon: CrmChartIcon },
       { label: 'Tags', href: '/agency/crm/tags', icon: Tag },
+      { label: 'Segments', href: '/agency/crm/segments', icon: Filter },
       { label: 'Import', href: '/agency/crm/import', icon: UploadIcon },
       { label: 'Export', href: '/agency/crm/export', icon: Download },
       { label: 'Web Leads', href: '/agency/crm/web-leads', icon: MessageCircle },
