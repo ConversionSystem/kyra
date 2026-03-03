@@ -26,9 +26,17 @@ export function CreditBadge({ className = '' }: CreditBadgeProps) {
       }
     }
     fetchBalance();
-    // Refresh every 60 seconds
-    const interval = setInterval(fetchBalance, 60_000);
-    return () => clearInterval(interval);
+    // Poll every 15 seconds for near-real-time updates
+    const interval = setInterval(fetchBalance, 15_000);
+
+    // Also listen for custom credit-update events (fired by chat components)
+    const handleCreditUpdate = () => fetchBalance();
+    window.addEventListener('kyra:credit-update', handleCreditUpdate);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('kyra:credit-update', handleCreditUpdate);
+    };
   }, []);
 
   if (loading || balance === null) return null;

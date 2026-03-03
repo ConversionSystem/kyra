@@ -24,6 +24,7 @@ import {
   notifyLeadWebhook,
   getLeadCapturePrompt,
 } from '@/lib/chat/lead-capture';
+import { deductCredits, requireCredits } from '@/lib/billing/credit-engine';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -97,6 +98,15 @@ export async function POST(request: NextRequest) {
 
   if (!client.gateway_url || !['running', 'starting'].includes(client.gateway_status || '')) {
     return NextResponse.json({ error: 'AI not available' }, { status: 503 });
+  }
+
+  // ── Credit check ────────────────────────────────────────────────────────────
+  const creditCheck = await requireCredits(client.agency_id, 'chat.message');
+  if (!creditCheck.allowed) {
+    return NextResponse.json(
+      { error: 'AI unavailable — account credits depleted' },
+      { status: 503, headers: { 'Access-Control-Allow-Origin': '*' } },
+    );
   }
 
   // Build session ID (persist conversation across messages)
@@ -179,7 +189,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Empty AI response' }, { status: 503 });
   }
 
-  // ── Log to client_conversations (fire-and-forget) ──────────────────────────
+  // ── Log to client_conversations + deduct credit (fire-and-forget) ───────────
   void supabase
     .from('client_conversations')
     .insert({
@@ -192,6 +202,12 @@ export async function POST(request: NextRequest) {
     .then(({ error }) => {
       if (error) console.error('[widget/chat] Log error:', error.message);
     });
+
+  // Deduct credit for this widget chat message
+  void deductCredits(client.agency_id, 'chat.message', {
+    clientId: client.id,
+    description: `Web chat: ${message.trim().slice(0, 60)}`,
+  });
 
   // ── Lead Capture (fire-and-forget) ─────────────────────────────────────────
   // Build full conversation including current exchange

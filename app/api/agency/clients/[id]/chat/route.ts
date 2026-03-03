@@ -17,6 +17,7 @@ import { getSessionKeyForClient, getSystemContextForClient, getSystemPromptForCl
 import { resolveClientGateway } from '@/lib/ovh/provisioner';
 import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
 import { dispatchWebhookIfConfigured } from '@/lib/agency/webhook-dispatcher';
+import { deductCredits, requireCredits } from '@/lib/billing/credit-engine';
 
 export async function POST(
   request: NextRequest,
@@ -54,6 +55,20 @@ export async function POST(
 
     if (memberError || !membership) {
       return new Response('Forbidden: not a member of this agency', { status: 403 });
+    }
+
+    // 3b. Pre-flight credit check
+    const creditCheck = await requireCredits(client.agency_id, 'chat.message');
+    if (!creditCheck.allowed) {
+      return new Response(
+        JSON.stringify({
+          error: 'Insufficient credits',
+          message: `You need ${creditCheck.cost} credit(s) but have ${creditCheck.balance}. Top up to continue.`,
+          balance: creditCheck.balance,
+          buyUrl: '/agency/credits',
+        }),
+        { status: 402, headers: { 'Content-Type': 'application/json' } }
+      );
     }
 
     // 4. Resolve the CLIENT's own gateway — per-client isolation (OVH)
@@ -183,7 +198,7 @@ export async function POST(
             );
             controller.enqueue(encoder.encode('data: [DONE]\n\n'));
             controller.close();
-            // Fire-and-forget: log conversation + GHL webhook
+            // Fire-and-forget: log conversation + deduct credits + GHL webhook
             if (fullResponse) {
               void (async () => {
                 try {
@@ -191,6 +206,11 @@ export async function POST(
                     .from('client_conversations')
                     .insert({ client_id: clientId, agency_id: client.agency_id, channel: 'test_chat', user_message: message, ai_response: fullResponse });
                 } catch { /* table may not exist yet */ }
+                // Deduct credit for this conversation
+                await deductCredits(client.agency_id, 'chat.message', {
+                  clientId,
+                  description: `Test chat: ${message.slice(0, 60)}`,
+                });
                 void dispatchWebhookIfConfigured({ clientId, agencyId: client.agency_id, channel: 'test_chat', userMessage: message, aiResponse: fullResponse });
               })();
             }
@@ -237,7 +257,7 @@ export async function POST(
             );
             controller.enqueue(encoder.encode('data: [DONE]\n\n'));
             controller.close();
-            // Fire-and-forget: log conversation + GHL webhook
+            // Fire-and-forget: log conversation + deduct credits + GHL webhook
             if (fullResponse) {
               void (async () => {
                 try {
@@ -245,6 +265,11 @@ export async function POST(
                     .from('client_conversations')
                     .insert({ client_id: clientId, agency_id: client.agency_id, channel: 'test_chat', user_message: message, ai_response: fullResponse });
                 } catch { /* table may not exist yet */ }
+                // Deduct credit for this conversation
+                await deductCredits(client.agency_id, 'chat.message', {
+                  clientId,
+                  description: `Test chat: ${message.slice(0, 60)}`,
+                });
                 void dispatchWebhookIfConfigured({ clientId, agencyId: client.agency_id, channel: 'test_chat', userMessage: message, aiResponse: fullResponse });
               })();
             }
