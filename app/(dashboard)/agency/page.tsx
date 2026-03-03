@@ -25,6 +25,8 @@ import ReferralShareWidget from '@/components/dashboard/referral-share-widget';
 import { UltronSummaryCard } from '@/components/dashboard/ultron-summary-card';
 import RoiSummaryCard from '@/components/dashboard/roi-summary-card';
 import SoloOverview from '@/components/dashboard/solo-overview';
+import { LaunchProgress } from '@/components/onboarding/launch-progress';
+import { FleetStatusBar } from '@/components/dashboard/fleet-status-bar';
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -300,6 +302,34 @@ export default async function AgencyOverviewPage() {
               </Button>
             </Link>
           </div>
+        </div>
+      )}
+
+      {/* ── Launch Progress ── */}
+      <div className="mb-6">
+        <LaunchProgress
+          completedSteps={[
+            'signup_complete', // always true — they're logged in
+            ...(agencySettings.setup_complete || agencySettings.onboarding_completed ? ['setup_complete'] : []),
+            ...(clients.some(c => c.gateway_status === 'running') || (agencySettings as Record<string, unknown>).channels_connected ? ['channels_connected'] : []),
+            ...(agencySettings.autopilot_configured || agencySettings.autopilot_enabled ? ['autopilot_configured'] : []),
+            ...(clients.length > 0 ? ['first_client_added'] : []),
+          ]}
+          compact
+        />
+      </div>
+
+      {/* ── Fleet Status (agencies with 2+ clients) ── */}
+      {clients.length >= 2 && (
+        <div className="mb-6">
+          <FleetStatusBar
+            clients={clients.map(c => ({
+              id: c.id,
+              name: c.name,
+              status: c.gateway_status,
+              lastActive: c.updated_at ?? null,
+            }))}
+          />
         </div>
       )}
 

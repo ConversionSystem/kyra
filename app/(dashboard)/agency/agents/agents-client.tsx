@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { AISuggestButton } from '@/components/ai/suggest-button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
@@ -268,9 +269,19 @@ export function AgentsClient() {
 
                     {/* Custom personality */}
                     <div>
-                      <p className="text-xs text-gray-500 mb-2">
-                        Custom Personality {agent.customPersonality ? '(customized)' : '(using default)'}
-                      </p>
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-xs text-gray-500">
+                          Custom Personality {agent.customPersonality ? '(customized)' : '(using default)'}
+                        </p>
+                        <AISuggestButton
+                          type="role_description"
+                          context={{ role: agent.name }}
+                          label="Generate"
+                          onSelect={(s) => setAgents(prev => prev.map(a =>
+                            a.id === agent.id ? { ...a, customPersonality: s } : a
+                          ))}
+                        />
+                      </div>
                       <textarea
                         placeholder={agent.defaultPersonality}
                         value={agent.customPersonality ?? ''}
