@@ -6,7 +6,9 @@ const WEBHOOK_SECRET = "kyra-usage-2026";
 
 export async function POST(req: NextRequest) {
   const auth = req.headers.get("authorization") || "";
-  if (auth !== `Bearer ${WEBHOOK_SECRET}`) {
+  const xSecret = req.headers.get("x-kyra-secret") || "";
+
+  if (auth !== `Bearer ${WEBHOOK_SECRET}` && xSecret !== WEBHOOK_SECRET) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
