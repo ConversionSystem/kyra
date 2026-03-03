@@ -179,8 +179,8 @@ export default function SoloOverview({
                 <Clock className="h-4 w-4 text-purple-600" />
               </div>
               <div>
-                <p className="text-xl font-bold text-gray-900">24/7</p>
-                <p className="text-[11px] text-gray-400">Always on</p>
+                <p className="text-xl font-bold text-gray-900">{creditsUsed}</p>
+                <p className="text-[11px] text-gray-400">Credits used</p>
               </div>
             </div>
           </CardContent>
@@ -275,155 +275,29 @@ export default function SoloOverview({
         </div>
       )}
 
-      {/* ── Explore All Features ── */}
+      {/* ── Quick Links ── */}
       <div className="mb-6">
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
-          Explore Your AI Toolkit
-        </h2>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          <Link href="/agency/setup">
-            <Card className="cursor-pointer hover:border-indigo-200 transition h-full">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg">🚀</span>
-                  <h3 className="font-semibold text-sm text-gray-900">Setup Wizard</h3>
+        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Quick Links</h2>
+        <div className="grid sm:grid-cols-3 gap-2">
+          {[
+            { href: '/agency/crm', icon: '📇', label: 'CRM', desc: 'Contacts & deals' },
+            { href: '/agency/channels', icon: '📱', label: 'Channels', desc: 'SMS, WhatsApp, chat' },
+            { href: '/agency/autopilot', icon: '⚡', label: 'Autopilot', desc: 'Follow-ups & reminders' },
+            { href: '/agency/agents', icon: '🤖', label: 'AI Agents', desc: 'Specialists & routing' },
+            { href: '/agency/performance', icon: '📊', label: 'Performance', desc: 'Insights & reports' },
+            { href: '/agency/credits', icon: '💳', label: 'Credits', desc: `${creditsBalance} remaining` },
+          ].map((item) => (
+            <Link key={item.href} href={item.href}>
+              <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-gray-200 bg-white hover:border-indigo-200 hover:shadow-sm transition cursor-pointer">
+                <span className="text-base">{item.icon}</span>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-gray-900">{item.label}</p>
+                  <p className="text-[11px] text-gray-400">{item.desc}</p>
                 </div>
-                <p className="text-xs text-gray-500">Configure your entire AI worker in 60 seconds — personality, agents, automations, all at once.</p>
-              </CardContent>
-            </Card>
-          </Link>
-
-          <Link href="/agency/templates">
-            <Card className="cursor-pointer hover:border-indigo-200 transition h-full">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg">📋</span>
-                  <h3 className="font-semibold text-sm text-gray-900">Template Store</h3>
-                </div>
-                <p className="text-xs text-gray-500">10 industry templates — plumber, dentist, real estate, restaurant & more. One-click apply.</p>
-              </CardContent>
-            </Card>
-          </Link>
-
-          <Link href="/agency/agents">
-            <Card className="cursor-pointer hover:border-indigo-200 transition h-full">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg">🤖</span>
-                  <h3 className="font-semibold text-sm text-gray-900">AI Agents</h3>
-                </div>
-                <p className="text-xs text-gray-500">5 department specialists — Front Desk, Sales, Support, Collections, Reviews. Smart routing included.</p>
-              </CardContent>
-            </Card>
-          </Link>
-
-          <Link href="/agency/autopilot">
-            <Card className="cursor-pointer hover:border-indigo-200 transition h-full">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg">⚡</span>
-                  <h3 className="font-semibold text-sm text-gray-900">Autopilot</h3>
-                </div>
-                <p className="text-xs text-gray-500">Automated follow-ups, reminders, review requests & weekly reports — set it and forget it.</p>
-              </CardContent>
-            </Card>
-          </Link>
-
-          <Link href="/agency/crm">
-            <Card className="cursor-pointer hover:border-indigo-200 transition h-full">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg">📇</span>
-                  <h3 className="font-semibold text-sm text-gray-900">CRM</h3>
-                </div>
-                <p className="text-xs text-gray-500">Contacts, companies, deals & analytics. AI auto-fills customer profiles from conversations.</p>
-              </CardContent>
-            </Card>
-          </Link>
-
-          <Link href="/agency/reviews">
-            <Card className="cursor-pointer hover:border-indigo-200 transition h-full">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg">⭐</span>
-                  <h3 className="font-semibold text-sm text-gray-900">Review Generation</h3>
-                </div>
-                <p className="text-xs text-gray-500">Automatically send review requests after service. Happy → Google review, unhappy → escalation alert.</p>
-              </CardContent>
-            </Card>
-          </Link>
-
-          <Link href="/agency/channels">
-            <Card className="cursor-pointer hover:border-indigo-200 transition h-full">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg">📱</span>
-                  <h3 className="font-semibold text-sm text-gray-900">Channels</h3>
-                </div>
-                <p className="text-xs text-gray-500">Connect SMS, WhatsApp, Telegram, web chat — your AI replies instantly on any channel.</p>
-              </CardContent>
-            </Card>
-          </Link>
-
-          <Link href="/agency/voice">
-            <Card className="cursor-pointer hover:border-indigo-200 transition h-full">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg">🎙️</span>
-                  <h3 className="font-semibold text-sm text-gray-900">Voice AI</h3>
-                </div>
-                <p className="text-xs text-gray-500">AI answers phone calls. Connect VAPI, Synthflow, or Retell for 24/7 voice support.</p>
-              </CardContent>
-            </Card>
-          </Link>
-
-          <Link href="/agency/packages">
-            <Card className="cursor-pointer hover:border-indigo-200 transition h-full">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg">📦</span>
-                  <h3 className="font-semibold text-sm text-gray-900">Service Packages</h3>
-                </div>
-                <p className="text-xs text-gray-500">Pre-built bundles for plumbing, HVAC, electrical & more. One click activates everything.</p>
-              </CardContent>
-            </Card>
-          </Link>
-
-          <Link href="/agency/performance">
-            <Card className="cursor-pointer hover:border-indigo-200 transition h-full">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg">📊</span>
-                  <h3 className="font-semibold text-sm text-gray-900">Performance</h3>
-                </div>
-                <p className="text-xs text-gray-500">Track conversations, response times, customer satisfaction & revenue influenced.</p>
-              </CardContent>
-            </Card>
-          </Link>
-
-          <Link href="/agency/automations">
-            <Card className="cursor-pointer hover:border-indigo-200 transition h-full">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg">🔄</span>
-                  <h3 className="font-semibold text-sm text-gray-900">Automations</h3>
-                </div>
-                <p className="text-xs text-gray-500">Custom workflow triggers — AI sends follow-ups, tags contacts, creates deals automatically.</p>
-              </CardContent>
-            </Card>
-          </Link>
-
-          <Link href="/agency/crm/web-leads">
-            <Card className="cursor-pointer hover:border-indigo-200 transition h-full">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg">🌐</span>
-                  <h3 className="font-semibold text-sm text-gray-900">Web Leads</h3>
-                </div>
-                <p className="text-xs text-gray-500">Capture leads from your website chat widget. Every conversation becomes a CRM contact.</p>
-              </CardContent>
-            </Card>
-          </Link>
+                <ArrowRight className="h-3 w-3 text-gray-300 ml-auto shrink-0" />
+              </div>
+            </Link>
+          ))}
         </div>
       </div>
 
