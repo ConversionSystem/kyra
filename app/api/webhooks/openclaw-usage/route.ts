@@ -1,33 +1,37 @@
-// ============================================================================
-// POST /api/webhooks/openclaw-usage
-//
-// Webhook endpoint for OpenClaw containers to report message usage.
-// Called after each AI message processed by the container.
-//
-// This closes the credit gap for direct terminal/gateway usage where
-// messages bypass Kyra's chat API routes entirely.
-//
-// Headers: Authorization: Bearer <provisioner-secret>
-// Body: { clientId, agencyId, channel, messageCount?, description? }
-// ============================================================================
+/**
+ * POST /api/webhooks/openclaw-usage
+ *
+ * Webhook endpoint for OpenClaw containers to report message usage.
+ * Called by containers after processing a message so Kyra can deduct credits.
+ *
+ * This solves the "terminal bypass" problem: when users chat directly through
+ * the OpenClaw terminal, Kyra's API is bypassed entirely. This webhook
+ * allows the container to report usage back to Kyra for credit deduction.
+ *
+ * Auth: Bearer token matching the client's gateway_token
+ *
+ * Body: {
+ *   client_id: string,
+ *   message_count?: number,  // defaults to 1
+ *   channel?: string,        // e.g. 'terminal', 'telegram', 'web'
+ *   user_message?: string,   // truncated for logging
+ *   ai_response?: string,    // truncated for logging
+ * }
+ */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { deductCredits } from '@/lib/billing/credit-engine';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
-  // Validate auth
-  const authHeader = request.headers.get('authorization');
-  const expectedSecret = process.env.OVH_PROVISIONER_SECRET || process.env.PROVISIONER_SECRET;
+  // Auth via Bearer token
+  const authHeader = request.headers.get('authorization') || '';
+  const token = authHeader.replace(/^Bearer\s+/i, '').trim();
 
-  if (!expectedSecret || !authHeader?.startsWith('Bearer ')) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  const token = authHeader.slice(7);
-  if (token !== expectedSecret) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!token) {
+    return NextResponse.json({ error: 'Missing authorization' }, { status: 401 });
   }
 
   let body: Record<string, unknown>;
@@ -37,27 +41,59 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  const agencyId = body.agencyId as string | undefined;
-  const clientId = body.clientId as string | undefined;
-  const messageCount = (body.messageCount as number) || 1;
+  const clientId = body.client_id as string | undefined;
+  const messageCount = Math.min(Math.max(Number(body.message_count) || 1, 1), 100); // cap at 100
   const channel = (body.channel as string) || 'terminal';
-  const description = (body.description as string) || `Terminal: ${channel}`;
+  const userMessage = ((body.user_message as string) || '').slice(0, 200);
+  const aiResponse = ((body.ai_response as string) || '').slice(0, 200);
 
-  if (!agencyId) {
-    return NextResponse.json({ error: 'agencyId is required' }, { status: 400 });
+  if (!clientId) {
+    return NextResponse.json({ error: 'client_id required' }, { status: 400 });
+  }
+
+  const supabase = createServiceClientWithoutCookies();
+
+  // Look up client and verify token matches
+  const { data: client, error: clientErr } = await supabase
+    .from('agency_clients')
+    .select('id, agency_id, gateway_token, name')
+    .eq('id', clientId)
+    .single();
+
+  if (clientErr || !client) {
+    return NextResponse.json({ error: 'Client not found' }, { status: 404 });
+  }
+
+  // Verify the token matches (the container knows its own gateway_token)
+  if (client.gateway_token !== token) {
+    return NextResponse.json({ error: 'Invalid token' }, { status: 403 });
   }
 
   // Deduct credits
-  const result = await deductCredits(agencyId, 'chat.message', {
+  const result = await deductCredits(client.agency_id, 'chat.message', {
     multiplier: messageCount,
-    clientId: clientId || null,
-    description,
+    clientId: client.id,
+    description: `${channel}: ${userMessage.slice(0, 60) || 'terminal message'}`,
   });
+
+  // Also log to client_conversations if we have message content
+  if (userMessage && aiResponse) {
+    void supabase
+      .from('client_conversations')
+      .insert({
+        client_id: client.id,
+        agency_id: client.agency_id,
+        channel,
+        user_message: userMessage,
+        ai_response: aiResponse,
+      })
+      .then(() => {}, () => {});
+  }
 
   return NextResponse.json({
     ok: result.ok,
-    newBalance: result.newBalance,
+    balance: result.newBalance,
     insufficient: result.insufficient,
-    lowBalance: result.lowBalance,
+    deducted: messageCount,
   });
 }
