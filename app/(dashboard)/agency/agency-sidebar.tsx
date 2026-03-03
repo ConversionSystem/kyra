@@ -56,6 +56,7 @@ import {
   Shield,
   Bell,
   GitBranch,
+  LogOut,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AgencySettings } from '@/lib/agency/types';
@@ -238,6 +239,7 @@ const soloNavSections: NavSection[] = [
   {
     label: 'Account',
     items: [
+      { label: 'Billing', href: '/agency/billing', icon: CreditCard },
       { label: 'Credits', href: '/agency/credits', icon: Coins },
       { label: 'API Keys', href: '/agency/api-keys', icon: KeyRound },
       { label: 'Settings', href: '/agency/settings', icon: Settings },
@@ -477,6 +479,19 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
       </nav>
 
       {/* Terminal block removed from bottom — now at top for all accounts */}
+
+      {/* Log Out */}
+      <div className="px-3 pb-3 mt-auto border-t border-gray-800 pt-3">
+        <form action="/api/auth/signout" method="POST">
+          <button
+            type="submit"
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-500 hover:text-red-400 hover:bg-gray-800/50 rounded-lg transition"
+          >
+            <LogOut className="h-4 w-4" />
+            Log Out
+          </button>
+        </form>
+      </div>
     </>
   );
 
