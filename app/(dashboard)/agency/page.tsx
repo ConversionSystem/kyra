@@ -27,6 +27,7 @@ import RoiSummaryCard from '@/components/dashboard/roi-summary-card';
 import SoloOverview from '@/components/dashboard/solo-overview';
 import { LaunchProgress } from '@/components/onboarding/launch-progress';
 import { FleetStatusBar } from '@/components/dashboard/fleet-status-bar';
+import { StartTourButton } from '@/components/onboarding/guided-tour';
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -256,7 +257,10 @@ export default async function AgencyOverviewPage() {
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
             {getGreeting()}, {agency.name}
           </h1>
-          <p className="text-sm text-gray-500 mt-1">Agency Command Center</p>
+          <div className="flex items-center gap-3 mt-1">
+            <p className="text-sm text-gray-500">Agency Command Center</p>
+            <StartTourButton />
+          </div>
         </div>
         <Link href="/agency/clients/new">
           <Button size="sm" className="gap-2">

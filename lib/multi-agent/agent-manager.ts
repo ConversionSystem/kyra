@@ -74,6 +74,16 @@ export const AGENT_ROLES: AgentRole[] = [
     triggerKeywords: ['review', 'feedback', 'experience', 'rate', 'rating', 'google', 'yelp'],
     priority: 40,
   },
+  {
+    id: 'content',
+    name: 'Content Creator',
+    emoji: '✍️',
+    description: 'Repurposes conversations into social posts, emails, blog content, and FAQs.',
+    defaultPersonality: 'You are a creative content strategist. Take customer conversations, reviews, FAQs, and business insights and turn them into engaging social media posts, email newsletters, blog outlines, and FAQ pages. Always match the brand voice.',
+    suggestedTools: [],
+    triggerKeywords: ['content', 'blog', 'post', 'social media', 'newsletter', 'email blast', 'write', 'article', 'caption', 'linkedin', 'facebook', 'instagram', 'repurpose', 'faq'],
+    priority: 30,
+  },
 ];
 
 /**
