@@ -109,6 +109,8 @@ export default async function AgencyOverviewPage() {
     let soloConversations: { id: string; channel: string; user_message: string; ai_response: string; created_at: string }[] = [];
     let soloConvosToday = 0;
     let soloConvosTotal = 0;
+    const soloPerClientToday: Record<string, number> = {};
+    const soloPerClientLastMsg: Record<string, string> = {};
     
     try {
       const todayStart = new Date();
@@ -116,10 +118,15 @@ export default async function AgencyOverviewPage() {
 
       const { data: todayConvos } = await supabase
         .from('client_conversations')
-        .select('id')
+        .select('id, client_id, created_at')
         .eq('agency_id', agency.id)
         .gte('created_at', todayStart.toISOString());
       soloConvosToday = todayConvos?.length ?? 0;
+
+      // Per-client today counts
+      (todayConvos ?? []).forEach(c => {
+        if (c.client_id) soloPerClientToday[c.client_id] = (soloPerClientToday[c.client_id] || 0) + 1;
+      });
       
       const { data: monthConvos } = await supabase
         .from('client_conversations')
@@ -130,16 +137,32 @@ export default async function AgencyOverviewPage() {
 
       const { data: recentConvos } = await supabase
         .from('client_conversations')
-        .select('id, channel, user_message, ai_response, created_at')
+        .select('id, channel, user_message, ai_response, created_at, client_id')
         .eq('agency_id', agency.id)
         .order('created_at', { ascending: false })
         .limit(5);
       soloConversations = (recentConvos ?? []) as typeof soloConversations;
+
+      // Per-client last message
+      const { data: lastMsgs } = await supabase
+        .from('client_conversations')
+        .select('client_id, created_at')
+        .eq('agency_id', agency.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      (lastMsgs ?? []).forEach(m => {
+        if (m.client_id && !soloPerClientLastMsg[m.client_id]) {
+          soloPerClientLastMsg[m.client_id] = m.created_at;
+        }
+      });
     } catch {
       // conversations table may not exist yet — graceful fallback
     }
 
     const soloConfig = (soloClient?.container_config as Record<string, unknown>) ?? {};
+
+    // Gather all clients for Mission Control (solo may have 1+ clients via API)
+    const soloClients = clients.length > 0 ? clients : soloClient ? [soloClient] : [];
 
     return (
       <SoloOverview
@@ -147,6 +170,7 @@ export default async function AgencyOverviewPage() {
         gatewayUrl={gwUrl}
         gatewayToken={gwToken}
         gatewayStatus={gwStatus}
+        gatewayError={(agencyGw as Record<string, unknown> | null)?.gateway_error as string | null ?? null}
         creditsBalance={agencyCredits.balance}
         creditsUsed={agencyCredits.lifetimeUsed}
         conversationsToday={soloConvosToday}
@@ -156,6 +180,15 @@ export default async function AgencyOverviewPage() {
         agencyId={agency.id}
         hasKnowledge={!!(soloConfig.knowledge_trained || soloConfig.website_url)}
         hasPersonality={!!(soloConfig.persona || soloConfig.instructions)}
+        clients={soloClients.map(c => ({
+          id: c.id,
+          name: c.name,
+          gateway_status: c.gateway_status,
+          gateway_error: c.gateway_error ?? null,
+          usage_this_month: c.usage_this_month ?? 0,
+          todayCount: soloPerClientToday[c.id] || 0,
+          lastMessage: soloPerClientLastMsg[c.id] || null,
+        }))}
       />
     );
   }
