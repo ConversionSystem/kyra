@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getAgencyForUser } from '@/lib/agency/queries';
 import { AgencySidebar } from './agency-sidebar';
 import { VoiceCommandButton } from '@/components/agency/VoiceCommandButton';
+import { GuidedTour } from '@/components/onboarding/guided-tour';
 
 export default async function AgencyLayout({
   children,
@@ -27,6 +28,7 @@ export default async function AgencyLayout({
         {children}
       </main>
       <VoiceCommandButton />
+      <GuidedTour autoStart />
     </div>
   );
 }
