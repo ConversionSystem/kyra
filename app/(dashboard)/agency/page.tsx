@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import {
   Users, Zap, MessageSquare, AlertTriangle, Plus, Target, DollarSign,
   BarChart3, ClipboardList, ArrowRight, Rocket, Globe, Send, Smartphone,
-  Clock,
+  Clock, Activity,
 } from 'lucide-react';
 import CeoActionBoard from '@/components/dashboard/ceo-action-board';
 import AgencyAnalyticsStrip from '@/components/dashboard/agency-analytics-strip';
@@ -320,11 +320,12 @@ export default async function AgencyOverviewPage() {
       {/* ── Header Row ── */}
       <div className="flex items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-            {getGreeting()}, {agency.name}
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <Activity className="h-5 w-5 text-indigo-600" />
+            Mission Control
           </h1>
           <div className="flex items-center gap-3 mt-1">
-            <p className="text-sm text-gray-500">Agency Command Center</p>
+            <p className="text-sm text-gray-500">{agency.name}</p>
             <StartTourButton />
           </div>
         </div>
