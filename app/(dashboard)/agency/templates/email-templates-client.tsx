@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Copy, CheckCircle2, Mail, ChevronDown, ChevronRight } from 'lucide-react';
+import { AISuggestButton } from '@/components/ai/suggest-button';
 
 interface Template {
   id: string;
@@ -199,14 +200,17 @@ export default function EmailTemplates() {
 
   return (
     <div className="p-4 sm:p-6 md:p-8 max-w-3xl">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <Mail className="h-6 w-6 text-indigo-500" />
-          Email Template Library
-        </h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Copy-ready cold emails for agency outreach. Personalize and send — no writing required.
-        </p>
+      <div className="flex items-start justify-between flex-wrap gap-3 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <Mail className="h-6 w-6 text-indigo-500" />
+            Email Template Library
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Copy-ready cold emails for agency outreach. Personalize and send — no writing required.
+          </p>
+        </div>
+        <AISuggestButton type="email_templates" label="Generate Templates" />
       </div>
 
       {/* Tips */}

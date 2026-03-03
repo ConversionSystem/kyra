@@ -262,7 +262,7 @@ export function ApiKeysClient({ agencyId: _agencyId }: ApiKeysClientProps) {
     <div className="p-4 sm:p-6 md:p-8 max-w-3xl">
 
       {/* Header */}
-      <div className="mb-8 flex items-start justify-between">
+      <div className="mb-8 flex flex-col sm:flex-row items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">AI Model Keys</h1>
           <p className="mt-1 text-gray-500">
