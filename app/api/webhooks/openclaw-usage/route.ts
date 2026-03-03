@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
   }
 
   for (let i = 0; i < count; i++) {
-    await deductCredits(client.agency_id, "terminal.message", {
+    await deductCredits(client.agency_id, "chat.message", {
       description: `Terminal message (${clientId})`,
     });
   }
