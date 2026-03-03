@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { AISuggestButton } from '@/components/ai/suggest-button';
 import type { CrmTask } from '@/lib/crm/tasks';
 
 const STATUS_COLS = [
@@ -133,6 +134,11 @@ export function TasksBoard() {
             <option value="low">⚪ Low</option>
           </select>
 
+          <AISuggestButton
+            type="tasks"
+            label="Suggest Tasks"
+            onSelect={(s) => { setAddStatus('todo'); setShowAdd(true); }}
+          />
           <Button size="sm" onClick={() => { setAddStatus('todo'); setShowAdd(true); }}
             className="bg-indigo-600 hover:bg-indigo-700 text-white">
             <Plus className="h-4 w-4 mr-1" /> Add Task
