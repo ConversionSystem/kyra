@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   Bot,
@@ -100,6 +101,40 @@ export default function SoloOverview({
 }: SoloOverviewProps) {
   const embedId = clientId ?? agencyId;
   const isOnline = gatewayStatus === 'running';
+
+  // Live credit tracking — poll every 15s + reconcile on mount
+  const [liveBalance, setLiveBalance] = useState(creditsBalance);
+  const [liveUsed, setLiveUsed] = useState(creditsUsed);
+
+  useEffect(() => {
+    // Reconcile credits on mount (catches untracked terminal usage)
+    fetch('/api/agency/credits/reconcile', { method: 'POST' })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.reconciled) {
+          setLiveBalance(data.newBalance);
+          setLiveUsed(prev => prev + data.deficit);
+        }
+      })
+      .catch(() => {});
+
+    // Poll for fresh balance every 15 seconds
+    const poll = setInterval(() => {
+      fetch('/api/agency/credits')
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (data) {
+            setLiveBalance(data.balance ?? 0);
+            setLiveUsed(data.lifetimeUsed ?? 0);
+            // Dispatch event for sidebar badge
+            window.dispatchEvent(new Event('kyra:credit-update'));
+          }
+        })
+        .catch(() => {});
+    }, 15_000);
+
+    return () => clearInterval(poll);
+  }, []);
   const terminalUrl = gatewayUrl
     ? gatewayToken
       ? `${gatewayUrl}?token=${gatewayToken}`
@@ -120,7 +155,7 @@ export default function SoloOverview({
   const avgPerDay = conversationsTotal > 0
     ? Math.round((conversationsTotal / Math.max(new Date().getDate(), 1)) * 10) / 10
     : 0;
-  const creditsRemaining = creditsBalance;
+  const creditsRemaining = liveBalance;
   const estimatedDaysLeft = avgPerDay > 0 ? Math.floor(creditsRemaining / avgPerDay) : creditsRemaining > 0 ? 999 : 0;
 
   // Channel breakdown from recent conversations
@@ -227,7 +262,7 @@ export default function SoloOverview({
                 <Coins className="h-4 w-4 text-emerald-600" />
               </div>
               <div>
-                <p className="text-xl font-bold text-gray-900">{creditsBalance}</p>
+                <p className="text-xl font-bold text-gray-900">{liveBalance}</p>
                 <p className="text-[11px] text-gray-400">Credits left</p>
               </div>
             </div>
@@ -240,7 +275,7 @@ export default function SoloOverview({
                 <Zap className="h-4 w-4 text-purple-600" />
               </div>
               <div>
-                <p className="text-xl font-bold text-gray-900">{creditsUsed}</p>
+                <p className="text-xl font-bold text-gray-900">{liveUsed}</p>
                 <p className="text-[11px] text-gray-400">Credits used</p>
               </div>
             </div>
@@ -392,15 +427,15 @@ export default function SoloOverview({
               {/* Usage bar */}
               <div className="mt-2">
                 <div className="flex justify-between text-[10px] text-gray-400 mb-1">
-                  <span>{creditsUsed} used</span>
-                  <span>{creditsUsed + creditsBalance} total</span>
+                  <span>{liveUsed} used</span>
+                  <span>{liveUsed + liveBalance} total</span>
                 </div>
                 <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all ${
-                      creditsBalance <= 10 ? 'bg-red-500' : creditsBalance <= 30 ? 'bg-amber-500' : 'bg-indigo-500'
+                      liveBalance <= 10 ? 'bg-red-500' : liveBalance <= 30 ? 'bg-amber-500' : 'bg-indigo-500'
                     }`}
-                    style={{ width: `${Math.min(100, (creditsUsed / Math.max(creditsUsed + creditsBalance, 1)) * 100)}%` }}
+                    style={{ width: `${Math.min(100, (liveUsed / Math.max(liveUsed + liveBalance, 1)) * 100)}%` }}
                   />
                 </div>
               </div>
@@ -594,13 +629,13 @@ export default function SoloOverview({
       </div>
 
       {/* ── Credits Warning ── */}
-      {creditsBalance <= 10 && (
+      {liveBalance <= 10 && (
         <Card className="border-amber-200 bg-amber-50/50">
           <CardContent className="p-4 flex items-center gap-4">
             <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
             <div className="flex-1">
               <p className="text-sm font-semibold text-amber-900">
-                {creditsBalance === 0 ? 'Out of credits — AI worker paused' : `Only ${creditsBalance} credits remaining`}
+                {liveBalance === 0 ? 'Out of credits — AI worker paused' : `Only ${liveBalance} credits remaining`}
               </p>
               <p className="text-xs text-amber-700 mt-0.5">
                 Top up to keep your AI worker responding.
