@@ -19,11 +19,22 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
+interface MissionControlClient {
+  id: string;
+  name: string;
+  gateway_status: string | null;
+  gateway_error: string | null;
+  usage_this_month: number;
+  todayCount: number;
+  lastMessage: string | null;
+}
+
 interface SoloOverviewProps {
   businessName: string;
   gatewayUrl: string | null;
   gatewayToken: string | null;
   gatewayStatus: string | null;
+  gatewayError: string | null;
   creditsBalance: number;
   creditsUsed: number;
   conversationsToday: number;
@@ -39,6 +50,7 @@ interface SoloOverviewProps {
   agencyId: string;
   hasKnowledge: boolean;
   hasPersonality: boolean;
+  clients: MissionControlClient[];
 }
 
 function timeAgo(dateStr: string): string {
@@ -65,6 +77,8 @@ export default function SoloOverview({
   agencyId,
   hasKnowledge,
   hasPersonality,
+  clients,
+  gatewayError,
 }: SoloOverviewProps) {
   // For embed code and portal links, prefer clientId but fall back to agencyId
   const embedId = clientId ?? agencyId;
@@ -185,6 +199,139 @@ export default function SoloOverview({
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* ── Mission Control — Fleet View ── */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
+            </span>
+            Mission Control
+          </h2>
+        </div>
+
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          {clients.length > 0 ? (
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-100 bg-gray-50/50">
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">AI Worker</th>
+                      <th className="px-4 py-2.5 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="px-4 py-2.5 text-center text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Today</th>
+                      <th className="px-4 py-2.5 text-center text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">This Month</th>
+                      <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">Last Message</th>
+                      <th className="px-4 py-2.5 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-8" />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {clients.map((client) => {
+                      const isRunning = client.gateway_status === 'running';
+                      const isError = client.gateway_status === 'error' || client.gateway_status === null;
+                      const isPaused = client.gateway_status === 'starting' || client.gateway_status === 'provisioning';
+                      const hasError = client.gateway_error;
+                      const isSilent = isRunning && client.todayCount === 0 && client.usage_this_month > 0;
+
+                      return (
+                        <tr key={client.id} className={`hover:bg-gray-50/80 transition ${isError ? 'bg-red-50/30' : ''}`}>
+                          <td className="px-4 py-3">
+                            <Link href={`/agency/clients/${client.id}`} className="group">
+                              <p className="text-sm font-medium text-gray-900 group-hover:text-indigo-600 transition truncate max-w-[180px]">
+                                {client.name}
+                              </p>
+                              {hasError && (
+                                <p className="text-[10px] text-red-500 truncate max-w-[180px] mt-0.5">
+                                  ⚠ {client.gateway_error}
+                                </p>
+                              )}
+                            </Link>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className="inline-flex items-center gap-1.5">
+                              <span className={`h-2 w-2 rounded-full ${
+                                isRunning ? 'bg-green-500' :
+                                isPaused ? 'bg-amber-400 animate-pulse' :
+                                'bg-red-500'
+                              }`} />
+                              <span className={`text-xs font-medium ${
+                                isRunning ? 'text-green-700' :
+                                isPaused ? 'text-amber-600' :
+                                'text-red-600'
+                              }`}>
+                                {isRunning ? (isSilent ? 'Idle' : 'Active') :
+                                 isPaused ? 'Starting' :
+                                 'Down'}
+                              </span>
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-center hidden sm:table-cell">
+                            <span className={`text-sm font-semibold ${client.todayCount > 0 ? 'text-indigo-600' : 'text-gray-300'}`}>
+                              {client.todayCount}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-center hidden md:table-cell">
+                            <span className="text-sm text-gray-600">{client.usage_this_month.toLocaleString()}</span>
+                          </td>
+                          <td className="px-4 py-3 text-right hidden lg:table-cell">
+                            <span className="text-xs text-gray-400">
+                              {client.lastMessage ? timeAgo(client.lastMessage) : '—'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            {hasError ? <span title="Error">⚠️</span> :
+                             isSilent ? <span title="No activity today">🕐</span> :
+                             null}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {/* Fleet Summary Footer */}
+              <div className="px-4 py-2 bg-gray-50/50 border-t border-gray-100 text-[11px] text-gray-400">
+                {clients.filter(c => c.gateway_status === 'running').length}/{clients.length} online
+                {' · '}
+                {clients.reduce((sum, c) => sum + c.todayCount, 0)} conversations today
+                {clients.some(c => c.gateway_error) && (
+                  <span className="text-red-400"> · {clients.filter(c => c.gateway_error).length} need attention</span>
+                )}
+              </div>
+            </>
+          ) : (
+            /* No clients yet — show single worker status from gateway */
+            <div className="px-5 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className={`h-2.5 w-2.5 rounded-full ${isOnline ? 'bg-green-500' : 'bg-red-500'}`} />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{businessName} AI Worker</p>
+                    {gatewayError && <p className="text-[10px] text-red-500 mt-0.5">⚠ {gatewayError}</p>}
+                  </div>
+                </div>
+                <div className="flex items-center gap-6 text-sm">
+                  <div className="text-center hidden sm:block">
+                    <p className={`font-semibold ${conversationsToday > 0 ? 'text-indigo-600' : 'text-gray-300'}`}>{conversationsToday}</p>
+                    <p className="text-[10px] text-gray-400">Today</p>
+                  </div>
+                  <div className="text-center hidden md:block">
+                    <p className="font-semibold text-gray-600">{conversationsTotal}</p>
+                    <p className="text-[10px] text-gray-400">This Month</p>
+                  </div>
+                  <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-full ${
+                    isOnline ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+                  }`}>
+                    {isOnline ? 'Active' : 'Down'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ── Quick Setup / Actions ── */}
