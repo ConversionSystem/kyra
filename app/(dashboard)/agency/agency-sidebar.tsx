@@ -79,7 +79,7 @@ interface NavSection {
 const navSections: NavSection[] = [
   {
     items: [
-      { label: 'Overview', href: '/agency', icon: LayoutDashboard },
+      { label: 'Mission Control', href: '/agency', icon: Activity },
       { label: 'Clients', href: '/agency/clients', icon: Users },
       { label: 'Conversations', href: '/agency/conversations', icon: MessageSquare },
     ],
@@ -185,7 +185,7 @@ const planColors: Record<string, string> = {
 const soloNavSections: NavSection[] = [
   {
     items: [
-      { label: 'Overview', href: '/agency', icon: LayoutDashboard },
+      { label: 'Mission Control', href: '/agency', icon: Activity },
       { label: 'Conversations', href: '/agency/conversations', icon: MessageSquare },
     ],
   },
