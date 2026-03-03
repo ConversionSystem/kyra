@@ -226,6 +226,39 @@ export default async function AgencyOverviewPage() {
         (c) => c.user_message?.includes('[NEW CONTACT]')
       ).length;
 
+      // Per-client today counts + last message time
+      const { data: todayPerClient } = await supabase
+        .from('client_conversations')
+        .select('client_id, created_at')
+        .eq('agency_id', membership.agency_id)
+        .gte('created_at', todayStart.toISOString());
+
+      const perClientToday: Record<string, number> = {};
+      (todayPerClient ?? []).forEach(c => {
+        perClientToday[c.client_id] = (perClientToday[c.client_id] || 0) + 1;
+      });
+
+      // Last message per client
+      const { data: lastMessages } = await supabase
+        .from('client_conversations')
+        .select('client_id, created_at')
+        .eq('agency_id', membership.agency_id)
+        .order('created_at', { ascending: false })
+        .limit(200);
+
+      const perClientLastMsg: Record<string, string> = {};
+      (lastMessages ?? []).forEach(m => {
+        if (!perClientLastMsg[m.client_id]) {
+          perClientLastMsg[m.client_id] = m.created_at;
+        }
+      });
+
+      // Attach to clients
+      clients.forEach(c => {
+        (c as unknown as Record<string, unknown>)._todayCount = perClientToday[c.id] || 0;
+        (c as unknown as Record<string, unknown>)._lastMessage = perClientLastMsg[c.id] || null;
+      });
+
       // Recent 5 for activity feed
       const { data: convos, error } = await supabase
         .from('client_conversations')
@@ -507,58 +540,132 @@ export default async function AgencyOverviewPage() {
         </div>
       )}
 
-      {/* ── Heartbeat Strip ── */}
+      {/* ── Mission Control — Fleet View ── */}
       {clients.length > 0 && (
         <div className="mb-8">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
-            Heartbeat
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-            {clients.map((client) => {
-              const isRunning = client.gateway_status === 'running';
-              const isError = client.gateway_status === 'error' || client.gateway_status === null;
-              const isPaused = client.gateway_status === 'starting' || client.gateway_status === 'provisioning';
-              const isSilent = isRunning && client.usage_this_month === 0;
-              const northStar = (client.settings as Record<string, unknown>)?.north_star as string | undefined;
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
+              </span>
+              Mission Control
+            </h2>
+            <Link href="/agency/usage" className="text-xs text-indigo-500 hover:underline flex items-center gap-1">
+              Token Details <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
 
-              let borderColor = 'border-gray-200';
-              if (isSilent) borderColor = 'border-l-amber-400 border-t-gray-200 border-r-gray-200 border-b-gray-200';
-              else if (isRunning) borderColor = 'border-l-green-400 border-t-gray-200 border-r-gray-200 border-b-gray-200';
+          {/* Fleet Table */}
+          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100 bg-gray-50/50">
+                    <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">AI Worker</th>
+                    <th className="px-4 py-2.5 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-4 py-2.5 text-center text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Today</th>
+                    <th className="px-4 py-2.5 text-center text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">This Month</th>
+                    <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">Last Message</th>
+                    <th className="px-4 py-2.5 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-8" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {clients.map((client) => {
+                    const isRunning = client.gateway_status === 'running';
+                    const isError = client.gateway_status === 'error' || client.gateway_status === null;
+                    const isPaused = client.gateway_status === 'starting' || client.gateway_status === 'provisioning';
+                    const todayCount = ((client as unknown as Record<string, unknown>)._todayCount as number) || 0;
+                    const lastMsg = (client as unknown as Record<string, unknown>)._lastMessage as string | null;
+                    const hasError = client.gateway_error;
+                    const isSilent = isRunning && todayCount === 0 && client.usage_this_month > 0;
 
-              return (
-                <Link
-                  key={client.id}
-                  href={`/agency/clients/${client.id}`}
-                  className={`block rounded-xl border ${borderColor} border-l-[3px] bg-white p-4 hover:shadow-md hover:-translate-y-0.5 transition-all`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-semibold text-gray-900 truncate pr-2">
-                      {client.name}
-                    </p>
-                    <span className="flex items-center gap-1.5 shrink-0">
-                      <span
-                        className={`h-2 w-2 rounded-full ${
-                          isRunning ? 'bg-green-400' :
-                          isPaused ? 'bg-yellow-400' :
-                          'bg-red-400'
-                        }`}
-                      />
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs text-gray-500">
-                    <span>{client.usage_this_month.toLocaleString()} conversations</span>
-                  </div>
-                  <div className="mt-2">
-                    <ClientSparkline clientId={client.id} />
-                  </div>
-                  <p className={`text-xs mt-1.5 truncate ${
-                    northStar ? 'text-gray-400' : 'text-gray-300 italic'
-                  }`}>
-                    {northStar ? northStar.slice(0, 40) : 'No goal set'}
-                  </p>
-                </Link>
-              );
-            })}
+                    return (
+                      <tr key={client.id} className={`hover:bg-gray-50/80 transition ${isError ? 'bg-red-50/30' : ''}`}>
+                        {/* Name */}
+                        <td className="px-4 py-3">
+                          <Link href={`/agency/clients/${client.id}`} className="group">
+                            <p className="text-sm font-medium text-gray-900 group-hover:text-indigo-600 transition truncate max-w-[180px]">
+                              {client.name}
+                            </p>
+                            {hasError && (
+                              <p className="text-[10px] text-red-500 truncate max-w-[180px] mt-0.5">
+                                ⚠ {client.gateway_error}
+                              </p>
+                            )}
+                          </Link>
+                        </td>
+
+                        {/* Status light */}
+                        <td className="px-4 py-3 text-center">
+                          <span className="inline-flex items-center gap-1.5">
+                            <span className={`h-2 w-2 rounded-full ${
+                              isRunning ? 'bg-green-500' :
+                              isPaused ? 'bg-amber-400 animate-pulse' :
+                              'bg-red-500'
+                            }`} />
+                            <span className={`text-xs font-medium ${
+                              isRunning ? 'text-green-700' :
+                              isPaused ? 'text-amber-600' :
+                              'text-red-600'
+                            }`}>
+                              {isRunning ? (isSilent ? 'Idle' : 'Active') :
+                               isPaused ? 'Starting' :
+                               'Down'}
+                            </span>
+                          </span>
+                        </td>
+
+                        {/* Today count */}
+                        <td className="px-4 py-3 text-center hidden sm:table-cell">
+                          <span className={`text-sm font-semibold ${todayCount > 0 ? 'text-indigo-600' : 'text-gray-300'}`}>
+                            {todayCount}
+                          </span>
+                        </td>
+
+                        {/* Month count */}
+                        <td className="px-4 py-3 text-center hidden md:table-cell">
+                          <span className="text-sm text-gray-600">
+                            {client.usage_this_month.toLocaleString()}
+                          </span>
+                        </td>
+
+                        {/* Last message */}
+                        <td className="px-4 py-3 text-right hidden lg:table-cell">
+                          <span className="text-xs text-gray-400">
+                            {lastMsg ? timeAgo(lastMsg) : '—'}
+                          </span>
+                        </td>
+
+                        {/* Alert indicator */}
+                        <td className="px-4 py-3 text-center">
+                          {isError ? (
+                            <AlertTriangle className="h-4 w-4 text-red-500" />
+                          ) : isSilent ? (
+                            <Clock className="h-3.5 w-3.5 text-amber-400" />
+                          ) : null}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Fleet Summary Footer */}
+            <div className="px-4 py-2.5 bg-gray-50/80 border-t border-gray-100 flex flex-wrap items-center gap-x-5 gap-y-1">
+              <span className="text-xs text-gray-500">
+                <span className="font-semibold text-gray-700">{clients.filter(c => c.gateway_status === 'running').length}</span>/{clients.length} online
+              </span>
+              <span className="text-xs text-gray-500">
+                <span className="font-semibold text-gray-700">{conversationsToday}</span> conversations today
+              </span>
+              {clients.some(c => c.gateway_status === 'error' || c.gateway_status === null) && (
+                <span className="text-xs text-red-500 font-medium">
+                  ⚠ {clients.filter(c => c.gateway_status === 'error' || c.gateway_status === null).length} need attention
+                </span>
+              )}
+            </div>
           </div>
         </div>
       )}
