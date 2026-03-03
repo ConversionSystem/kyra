@@ -5,20 +5,16 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import {
-  LayoutDashboard,
   Users,
   MessageSquare,
-  BookOpen,
   Zap,
   BarChart3,
   Radio,
   KeyRound,
   Inbox,
-  Building2 as Building2Icon,
   Contact as ContactIcon,
   Target as TargetIcon,
   BarChart3 as CrmChartIcon,
-  Upload as UploadIcon,
   Brain as BrainIcon,
   Settings,
   Terminal,
@@ -27,37 +23,20 @@ import {
   X,
   TrendingUp,
   CreditCard,
-  FileText,
-  Target,
-  Heart,
-  Wallet,
-  Store,
-  Mail,
-  Rocket,
   Sparkles,
   Loader2,
-  Briefcase,
-  Link2,
-  Gift,
   Crown,
   Coins,
   Phone,
   MessageCircle,
-  Star,
-  LayoutGrid,
   Bot,
   Zap as ZapIcon,
-  Package,
   CheckSquare,
-  GitMerge,
-  Tag,
-  Download,
   Activity,
-  Shield,
-  Bell,
   GitBranch,
   LogOut,
-  Filter,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AgencySettings } from '@/lib/agency/types';
@@ -74,8 +53,11 @@ interface NavItem {
 interface NavSection {
   label?: string;
   items: NavItem[];
+  collapsible?: boolean;
+  defaultOpen?: boolean;
 }
 
+// ─── Agency Nav (collapsible groups, minimal top-level) ────────────────────
 const navSections: NavSection[] = [
   {
     items: [
@@ -86,23 +68,18 @@ const navSections: NavSection[] = [
   },
   {
     label: 'CRM',
+    collapsible: true,
     items: [
       { label: 'Command Feed', href: '/agency/crm', icon: Inbox },
       { label: 'Contacts', href: '/agency/crm/contacts', icon: ContactIcon },
       { label: 'Deals', href: '/agency/crm/deals', icon: TargetIcon },
       { label: 'Tasks', href: '/agency/crm/tasks', icon: CheckSquare },
       { label: 'Analytics', href: '/agency/crm/analytics', icon: CrmChartIcon },
-      { label: 'Tags', href: '/agency/crm/tags', icon: Tag },
-      { label: 'Segments', href: '/agency/crm/segments', icon: Filter },
-      { label: 'Merge', href: '/agency/crm/merge', icon: GitMerge },
-      { label: 'Intelligence', href: '/agency/crm/intelligence', icon: BrainIcon },
-      { label: 'Import', href: '/agency/crm/import', icon: UploadIcon },
-      { label: 'Export', href: '/agency/crm/export', icon: Download },
-      { label: 'Web Leads', href: '/agency/crm/web-leads', icon: MessageCircle },
     ],
   },
   {
     label: 'AI Worker',
+    collapsible: true,
     items: [
       { label: 'AI Setup', href: '/agency/templates', icon: Sparkles },
       { label: 'AI Agents', href: '/agency/agents', icon: Bot },
@@ -113,59 +90,30 @@ const navSections: NavSection[] = [
   },
   {
     label: 'Automation',
+    collapsible: true,
     items: [
       { label: 'Autopilot', href: '/agency/autopilot', icon: ZapIcon },
       { label: 'Pipelines', href: '/agency/pipelines', icon: GitBranch },
       { label: 'Automations', href: '/agency/automations', icon: Zap },
-      { label: 'Heartbeat', href: '/agency/heartbeat', icon: Heart },
-      { label: 'Reviews', href: '/agency/reviews', icon: Star },
-    ],
-  },
-  {
-    label: 'Oversight',
-    items: [
-      { label: 'Token Usage', href: '/agency/usage', icon: Activity },
-      { label: 'Review Queue', href: '/agency/review-queue', icon: Shield },
-      { label: 'Alerts', href: '/agency/alerts', icon: Bell },
     ],
   },
   {
     label: 'Insights',
+    collapsible: true,
     items: [
       { label: 'Performance', href: '/agency/performance', icon: BarChart3 },
-      { label: 'Budget', href: '/agency/budget', icon: Wallet },
+      { label: 'Token Usage', href: '/agency/usage', icon: Activity },
       { label: 'Revenue', href: '/agency/revenue', icon: TrendingUp },
     ],
   },
   {
-    label: 'Sell',
-    items: [
-      { label: 'Biz in a Box', href: '/agency/biz-in-a-box', icon: Briefcase },
-      { label: 'Pitch Pages', href: '/agency/pitch-generator', icon: Link2 },
-      { label: 'Referrals', href: '/agency/referrals', icon: Gift },
-      { label: 'Sales Kit', href: '/agency/sales-kit', icon: Target },
-      { label: 'AI Pipeline', href: '/agency/pipeline', icon: Zap },
-      { label: 'Sales Leads', href: '/agency/leads', icon: Rocket, masterOnly: true },
-      { label: 'Proposal', href: '/agency/proposal', icon: FileText },
-      { label: 'Outreach', href: '/agency/outreach', icon: Mail, masterOnly: true },
-    ],
-  },
-  {
-    label: 'Resources',
-    items: [
-      { label: 'Email Templates', href: '/agency/email-templates', icon: Mail },
-      { label: 'GHL Listing', href: '/agency/ghl-listing', icon: Store, masterOnly: true },
-      { label: 'Launch Pitch', href: '/agency/launch-pitch', icon: Rocket, masterOnly: true },
-    ],
-  },
-  {
     label: 'Account',
+    collapsible: true,
     items: [
       { label: 'Billing', href: '/agency/billing', icon: CreditCard },
       { label: 'Credits', href: '/agency/credits', icon: Coins },
       { label: 'API Keys', href: '/agency/api-keys', icon: KeyRound },
       { label: 'Settings', href: '/agency/settings', icon: Settings },
-      { label: 'Setup Wizard', href: '/agency/setup', icon: Sparkles },
     ],
   },
 ];
@@ -179,9 +127,6 @@ const planColors: Record<string, string> = {
 };
 
 // ─── Solo Mode Nav ─────────────────────────────────────────────────────────
-// Solo users see a simplified sidebar with only the features they need.
-// Agency users see the full sidebar unchanged.
-
 const soloNavSections: NavSection[] = [
   {
     items: [
@@ -191,65 +136,89 @@ const soloNavSections: NavSection[] = [
   },
   {
     label: 'CRM',
+    collapsible: true,
     items: [
-      { label: 'My CRM', href: '/agency/crm', icon: Inbox },
       { label: 'Contacts', href: '/agency/crm/contacts', icon: ContactIcon },
       { label: 'Deals', href: '/agency/crm/deals', icon: TargetIcon },
       { label: 'Tasks', href: '/agency/crm/tasks', icon: CheckSquare },
-      { label: 'Analytics', href: '/agency/crm/analytics', icon: CrmChartIcon },
-      { label: 'Tags', href: '/agency/crm/tags', icon: Tag },
-      { label: 'Segments', href: '/agency/crm/segments', icon: Filter },
-      { label: 'Import', href: '/agency/crm/import', icon: UploadIcon },
-      { label: 'Export', href: '/agency/crm/export', icon: Download },
-      { label: 'Web Leads', href: '/agency/crm/web-leads', icon: MessageCircle },
     ],
   },
   {
     label: 'AI Worker',
+    collapsible: true,
     items: [
       { label: 'AI Setup', href: '/agency/templates', icon: Sparkles },
-      { label: 'AI Agents', href: '/agency/agents', icon: Bot },
       { label: 'Channels', href: '/agency/channels', icon: Radio },
-      { label: 'Voice AI', href: '/agency/voice', icon: Phone },
       { label: 'Chat Widget', href: '/agency/widget', icon: MessageCircle },
     ],
   },
   {
-    label: 'Automation',
-    items: [
-      { label: 'Autopilot', href: '/agency/autopilot', icon: ZapIcon },
-      { label: 'Pipelines', href: '/agency/pipelines', icon: GitBranch },
-      { label: 'Automations', href: '/agency/automations', icon: Zap },
-      { label: 'Heartbeat', href: '/agency/heartbeat', icon: Heart },
-      { label: 'Reviews', href: '/agency/reviews', icon: Star },
-    ],
-  },
-  {
-    label: 'Oversight',
-    items: [
-      { label: 'Token Usage', href: '/agency/usage', icon: Activity },
-      { label: 'Review Queue', href: '/agency/review-queue', icon: Shield },
-      { label: 'Alerts', href: '/agency/alerts', icon: Bell },
-    ],
-  },
-  {
-    label: 'Insights',
-    items: [
-      { label: 'Performance', href: '/agency/performance', icon: BarChart3 },
-      { label: 'Revenue', href: '/agency/revenue', icon: TrendingUp },
-    ],
-  },
-  {
     label: 'Account',
+    collapsible: true,
     items: [
       { label: 'Billing', href: '/agency/billing', icon: CreditCard },
       { label: 'Credits', href: '/agency/credits', icon: Coins },
-      { label: 'API Keys', href: '/agency/api-keys', icon: KeyRound },
       { label: 'Settings', href: '/agency/settings', icon: Settings },
-      { label: 'Setup Wizard', href: '/agency/setup', icon: Sparkles },
     ],
   },
 ];
+
+// ─── Collapsible Section ───────────────────────────────────────────────────
+function CollapsibleSection({
+  label,
+  collapsible,
+  defaultOpen,
+  hasBranding,
+  children,
+}: {
+  label?: string;
+  collapsible?: boolean;
+  defaultOpen?: boolean;
+  hasBranding: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen ?? !collapsible);
+
+  // Auto-open when defaultOpen changes (e.g. navigating into a section)
+  useEffect(() => {
+    if (defaultOpen) setOpen(true);
+  }, [defaultOpen]);
+
+  if (!label) return <div>{children}</div>;
+
+  if (!collapsible) {
+    return (
+      <div>
+        <div className={cn(
+          'text-[10px] uppercase tracking-widest font-medium px-3 pt-4 pb-1',
+          hasBranding ? 'text-white/40' : 'text-gray-500'
+        )}>
+          {label}
+        </div>
+        {children}
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(!open)}
+        className={cn(
+          'flex items-center justify-between w-full text-[10px] uppercase tracking-widest font-medium px-3 pt-4 pb-1 transition-colors',
+          hasBranding ? 'text-white/40 hover:text-white/60' : 'text-gray-500 hover:text-gray-300'
+        )}
+      >
+        {label}
+        {open
+          ? <ChevronDown className="h-3 w-3" />
+          : <ChevronRight className="h-3 w-3" />
+        }
+      </button>
+      {open && children}
+    </div>
+  );
+}
 
 interface AgencySidebarProps {
   agencyName: string;
@@ -412,50 +381,55 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
 
       {/* Navigation */}
       <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
-        {(isSolo ? soloNavSections : navSections).map((section, si) => (
-          <div key={si}>
-            {section.label && (
-              <div className={cn(
-                'text-[10px] uppercase tracking-widest font-medium px-3 pt-4 pb-1',
-                hasBranding ? 'text-white/40' : 'text-gray-500'
-              )}>
-                {section.label}
-              </div>
-            )}
-            {section.items.filter(item => !item.masterOnly || isMaster).map((item) => {
-              const isActive =
-                item.href === '/agency'
-                  ? pathname === '/agency'
-                  : pathname.startsWith(item.href);
+        {(isSolo ? soloNavSections : navSections).map((section, si) => {
+          const sectionHrefPrefixes = section.items.map(i => i.href);
+          const isSectionActive = section.collapsible && sectionHrefPrefixes.some(
+            href => href === '/agency' ? pathname === '/agency' : pathname.startsWith(href)
+          );
 
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMobileOpen(false)}
-                  className={cn(
-                    'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
-                    isActive
-                      ? hasBranding
-                        ? 'bg-white/20 text-white font-medium'
-                        : 'bg-gray-800 text-white'
-                      : hasBranding
-                        ? 'text-white/70 hover:bg-white/10 hover:text-white'
-                        : 'text-gray-400 hover:bg-gray-800 hover:text-white'
-                  )}
-                >
-                  <item.icon className="h-4 w-4 shrink-0" />
-                  {item.label}
-                  {item.href === '/agency/conversations' && escalationCount > 0 && (
-                    <span className="ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 leading-none">
-                      {escalationCount > 9 ? '9+' : escalationCount}
-                    </span>
-                  )}
-                </Link>
-              );
-            })}
-          </div>
-        ))}
+          return (
+            <CollapsibleSection
+              key={si}
+              label={section.label}
+              collapsible={section.collapsible}
+              defaultOpen={section.defaultOpen ?? isSectionActive}
+              hasBranding={hasBranding}
+            >
+              {section.items.filter(item => !item.masterOnly || isMaster).map((item) => {
+                const isActive =
+                  item.href === '/agency'
+                    ? pathname === '/agency'
+                    : pathname.startsWith(item.href);
+
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setMobileOpen(false)}
+                    className={cn(
+                      'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
+                      isActive
+                        ? hasBranding
+                          ? 'bg-white/20 text-white font-medium'
+                          : 'bg-gray-800 text-white'
+                        : hasBranding
+                          ? 'text-white/70 hover:bg-white/10 hover:text-white'
+                          : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                    )}
+                  >
+                    <item.icon className="h-4 w-4 shrink-0" />
+                    {item.label}
+                    {item.href === '/agency/conversations' && escalationCount > 0 && (
+                      <span className="ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 leading-none">
+                        {escalationCount > 9 ? '9+' : escalationCount}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </CollapsibleSection>
+          );
+        })}
         {/* Master Control link — only for ConversionSystem */}
         {isMaster && (
           <div className="pt-3">
