@@ -6,19 +6,19 @@ import { X, Sparkles, ArrowRight } from 'lucide-react';
 
 // Bump this version string whenever new features are added.
 // Users who dismissed an older version will see the banner again.
-const BANNER_VERSION = '2026-02-23-v1';
+const BANNER_VERSION = '2026-03-03-v1';
 const STORAGE_KEY = `kyra_whats_new_dismissed_${BANNER_VERSION}`;
 
 const LATEST_FEATURES = [
-  { emoji: '📊', text: 'AI health score per client — see which AIs are thriving vs stalling' },
-  { emoji: '🏭', text: 'Industry-specific landing pages (/for/[industry]) — shareable SEO pages for each vertical' },
-  { emoji: '📧', text: 'Email template library — 12 proven outreach templates, agency-ready' },
-  { emoji: '📈', text: 'Cross-client analytics strip — weekly stats across your whole portfolio at a glance' },
-  { emoji: '📥', text: 'Conversation CSV export — download all AI conversations for reporting or compliance' },
-  { emoji: '🏢', text: 'Agency public profile (/a/[agencyId]) — shareable white-label showcase page' },
-  { emoji: '📱', text: 'Mobile + webhook tester — send test messages and trigger webhooks from the dashboard' },
-  { emoji: '🚨', text: 'Escalation badge in sidebar — real-time alert count when clients need human follow-up' },
-  { emoji: '🧠', text: 'AI personality suggestions — get smart prompts tailored to your client\'s industry' },
+  { emoji: '🎯', text: 'Mission Control fleet view — see every AI worker\'s status, today\'s activity, and errors at a glance' },
+  { emoji: '🔗', text: 'Pipeline Builder — chain AI agents together: research → write → review → publish' },
+  { emoji: '🛡️', text: 'Review Gates — approve AI responses before they send. Human-in-the-loop control' },
+  { emoji: '📊', text: 'Token Usage Dashboard — per-client cost tracking with margin visibility' },
+  { emoji: '🚨', text: 'Alert Rules — get notified when agents go offline, tokens spike, or conversations stale' },
+  { emoji: '✨', text: 'AI Suggest buttons — one-click AI recommendations on every page (agents, tasks, autopilot)' },
+  { emoji: '🎪', text: 'Saved Segments — filter contacts by stage, score, tags, and save for reuse' },
+  { emoji: '🚀', text: 'Interactive guided tour — 9-step walkthrough for new users' },
+  { emoji: '📈', text: 'Performance CSV export — download reports for clients' },
 ];
 
 export default function WhatsNewBanner() {
