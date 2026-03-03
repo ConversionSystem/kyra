@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Loader2, Zap, ChevronDown, ChevronUp, Clock, Users, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { AISuggestButton } from '@/components/ai/suggest-button';
 
 interface AutopilotAction {
   id: string;
@@ -120,13 +121,19 @@ export function AutopilotClient() {
 
   return (
     <div className="p-4 sm:p-6 md:p-8 space-y-6 max-w-3xl">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <Zap className="w-6 h-6 text-blue-600" /> Autopilot
-        </h1>
-        <p className="text-gray-500 mt-1">
-          Your AI worker acts on its own — follow-ups, reminders, reviews, reports. Set it and forget it.
-        </p>
+      <div className="flex items-start justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <Zap className="w-6 h-6 text-blue-600" /> Autopilot
+          </h1>
+          <p className="text-gray-500 mt-1">
+            Your AI worker acts on its own — follow-ups, reminders, reviews, reports. Set it and forget it.
+          </p>
+        </div>
+        <AISuggestButton
+          type="follow_up_sequence"
+          label="Suggest Sequences"
+        />
       </div>
 
       {/* Master toggle + stats */}

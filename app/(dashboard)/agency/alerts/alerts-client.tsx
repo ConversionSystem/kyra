@@ -6,6 +6,7 @@ import {
   MessageSquare, Bot, Shield, CheckCircle2, Loader2, X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { AISuggestButton } from '@/components/ai/suggest-button';
 
 interface AlertRule {
   id: string;
@@ -98,7 +99,8 @@ export function AlertsClient({ initialRules }: { initialRules: Array<Record<stri
             Get notified when something needs your attention — agent down, cost spike, or stale reviews
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <AISuggestButton type="alert_rules" label="Suggest Rules" />
           <Button variant="outline" size="sm" onClick={() => setShowAdd(!showAdd)}>
             <Plus className="h-4 w-4 mr-1" /> Add Rule
           </Button>
