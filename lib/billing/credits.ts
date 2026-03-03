@@ -4,8 +4,8 @@
 // Enough for ~200 AI conversations. Not enough to run a real business.
 // ============================================================================
 
-export const WELCOME_CREDITS = 200; // $2 worth at $0.01/credit
-export const WELCOME_CREDIT_DESCRIPTION = 'Welcome gift — $2 in free credits to test Kyra 🎁';
+export const WELCOME_CREDITS = 50; // One-time welcome gift — enough for ~50 conversations
+export const WELCOME_CREDIT_DESCRIPTION = 'Welcome gift — 50 free credits (one-time) 🎁';
 
 // ============================================================================
 // Promo Codes
@@ -54,11 +54,11 @@ export const CREDIT_PACKS: CreditPack[] = [
     id: 'starter',
     name: 'Starter',
     price: 10,
-    credits: 1000,
+    credits: 500,
     bonusCredits: 0,
-    totalCredits: 1000,
+    totalCredits: 500,
     bonusPct: 0,
-    pricePerCredit: 0.01,
+    pricePerCredit: 0.02,
     badge: null,
     badgeColor: '',
     highlighted: false,
@@ -67,12 +67,12 @@ export const CREDIT_PACKS: CreditPack[] = [
   {
     id: 'growth',
     name: 'Growth',
-    price: 20,
-    credits: 2000,
-    bonusCredits: 200,
-    totalCredits: 2200,
+    price: 25,
+    credits: 1500,
+    bonusCredits: 150,
+    totalCredits: 1650,
     bonusPct: 10,
-    pricePerCredit: 0.0091,
+    pricePerCredit: 0.0152,
     badge: '+10% bonus',
     badgeColor: 'bg-green-100 text-green-700',
     highlighted: false,
@@ -81,12 +81,12 @@ export const CREDIT_PACKS: CreditPack[] = [
   {
     id: 'pro',
     name: 'Pro',
-    price: 40,
-    credits: 4000,
-    bonusCredits: 800,
-    totalCredits: 4800,
+    price: 50,
+    credits: 3000,
+    bonusCredits: 600,
+    totalCredits: 3600,
     bonusPct: 20,
-    pricePerCredit: 0.0083,
+    pricePerCredit: 0.0139,
     badge: 'Best Value',
     badgeColor: 'bg-indigo-100 text-indigo-700',
     highlighted: true,
@@ -96,11 +96,11 @@ export const CREDIT_PACKS: CreditPack[] = [
     id: 'scale',
     name: 'Scale',
     price: 100,
-    credits: 10000,
-    bonusCredits: 3000,
-    totalCredits: 13000,
+    credits: 6000,
+    bonusCredits: 1800,
+    totalCredits: 7800,
     bonusPct: 30,
-    pricePerCredit: 0.0077,
+    pricePerCredit: 0.0128,
     badge: '+30% bonus',
     badgeColor: 'bg-amber-100 text-amber-700',
     highlighted: false,
@@ -110,11 +110,11 @@ export const CREDIT_PACKS: CreditPack[] = [
     id: 'agency',
     name: 'Agency',
     price: 250,
-    credits: 25000,
-    bonusCredits: 10000,
-    totalCredits: 35000,
+    credits: 15000,
+    bonusCredits: 6000,
+    totalCredits: 21000,
     bonusPct: 40,
-    pricePerCredit: 0.0071,
+    pricePerCredit: 0.0119,
     badge: '+40% bonus',
     badgeColor: 'bg-purple-100 text-purple-700',
     highlighted: false,
