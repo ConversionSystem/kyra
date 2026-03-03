@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { deductCredits } from "@/lib/billing/credits";
+import { deductCredits } from "@/lib/billing/credit-engine";
 
 const WEBHOOK_SECRET = "kyra-usage-2026";
 
