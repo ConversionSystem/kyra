@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getAgencyForUser } from '@/lib/agency/queries';
+import { sendGHLMessage, getValidToken } from '@/lib/ghl/api';
 
 export const dynamic = 'force-dynamic';
 
@@ -78,39 +79,108 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  // Approve a message
+  const agencyId = result.agency.id;
+
+  // Helper: send approved message via GHL
+  async function sendApprovedMessage(conversationId: string, responseText: string) {
+    // Fetch the conversation to get client_id, contact_id, channel
+    const { data: convo } = await supabase
+      .from('client_conversations')
+      .select('client_id, contact_id, channel')
+      .eq('id', conversationId)
+      .eq('agency_id', agencyId)
+      .single();
+
+    if (!convo) return { sent: false, error: 'Conversation not found' };
+
+    try {
+      const token = await getValidToken(convo.client_id);
+      // Map channel name back to GHL message type
+      const channelToType: Record<string, string> = {
+        SMS: 'TYPE_SMS',
+        Email: 'TYPE_EMAIL',
+        WhatsApp: 'TYPE_WHATSAPP',
+        'Facebook Messenger': 'TYPE_FB_MESSENGER',
+        'Instagram DM': 'TYPE_INSTAGRAM',
+        'Live Chat': 'TYPE_LIVE_CHAT',
+      };
+      const messageType = channelToType[convo.channel] || 'TYPE_SMS';
+      await sendGHLMessage(convo.client_id, token, convo.contact_id, responseText, messageType);
+      return { sent: true };
+    } catch (err) {
+      console.error('[review-queue] Failed to send approved message:', err);
+      return { sent: false, error: String(err) };
+    }
+  }
+
+  // Approve a message — send it to the customer via GHL
   if (body.action === 'approve' && body.id) {
+    // Get the AI response text before updating
+    const { data: convo } = await supabase
+      .from('client_conversations')
+      .select('ai_response')
+      .eq('id', body.id)
+      .eq('agency_id', result.agency.id)
+      .single();
+
+    const sendResult = convo?.ai_response
+      ? await sendApprovedMessage(body.id, convo.ai_response)
+      : { sent: false, error: 'No response text' };
+
     await supabase
       .from('client_conversations')
       .update({
-        metadata: { needs_review: false, reviewed_at: new Date().toISOString(), reviewed_by: user.id, review_action: 'approved' },
+        metadata: {
+          needs_review: false,
+          reviewed_at: new Date().toISOString(),
+          reviewed_by: user.id,
+          review_action: 'approved',
+          sent_to_customer: sendResult.sent,
+          send_error: sendResult.error || null,
+        },
       })
       .eq('id', body.id)
       .eq('agency_id', result.agency.id);
 
-    return NextResponse.json({ ok: true, action: 'approved' });
+    return NextResponse.json({ ok: true, action: 'approved', ...sendResult });
   }
 
-  // Edit and approve
+  // Edit and approve — send the edited version to the customer
   if (body.action === 'edit_approve' && body.id && body.edited_response) {
+    const sendResult = await sendApprovedMessage(body.id, body.edited_response);
+
     await supabase
       .from('client_conversations')
       .update({
         ai_response: body.edited_response,
-        metadata: { needs_review: false, reviewed_at: new Date().toISOString(), reviewed_by: user.id, review_action: 'edited', original_response: body.original_response },
+        metadata: {
+          needs_review: false,
+          reviewed_at: new Date().toISOString(),
+          reviewed_by: user.id,
+          review_action: 'edited',
+          original_response: body.original_response,
+          sent_to_customer: sendResult.sent,
+          send_error: sendResult.error || null,
+        },
       })
       .eq('id', body.id)
       .eq('agency_id', result.agency.id);
 
-    return NextResponse.json({ ok: true, action: 'edited' });
+    return NextResponse.json({ ok: true, action: 'edited', ...sendResult });
   }
 
-  // Reject (discard the response)
+  // Reject (discard the response — do NOT send to customer)
   if (body.action === 'reject' && body.id) {
     await supabase
       .from('client_conversations')
       .update({
-        metadata: { needs_review: false, reviewed_at: new Date().toISOString(), reviewed_by: user.id, review_action: 'rejected' },
+        metadata: {
+          needs_review: false,
+          reviewed_at: new Date().toISOString(),
+          reviewed_by: user.id,
+          review_action: 'rejected',
+          sent_to_customer: false,
+        },
       })
       .eq('id', body.id)
       .eq('agency_id', result.agency.id);
