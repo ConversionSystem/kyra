@@ -1,0 +1,34 @@
+{
+  "description": "Subreddits to monitor for vet-related discussions. {{CITY_SUB}} replaced at runtime.",
+  "global_subreddits": [
+    "dogs",
+    "cats",
+    "AskVet",
+    "pets",
+    "veterinarian",
+    "Veterinary",
+    "puppy101",
+    "CatAdvice",
+    "DogAdvice",
+    "PetAdvice"
+  ],
+  "city_subreddits_note": "Populated per client based on city. Common format: r/CityName",
+  "keywords": [
+    "vet",
+    "veterinarian",
+    "animal hospital",
+    "pet doctor",
+    "emergency vet",
+    "vet recommendation",
+    "best vet",
+    "looking for a vet",
+    "need a vet",
+    "vet clinic",
+    "animal clinic",
+    "pet hospital",
+    "recommend a vet",
+    "good vet"
+  ],
+  "max_post_age_hours": 48,
+  "min_relevance_score": 0.6
+}
