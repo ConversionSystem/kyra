@@ -1,0 +1,110 @@
+{
+  "description": "Directories to audit for NAP consistency. Ordered by authority/importance.",
+  "directories": [
+    {
+      "name": "Google Business Profile",
+      "url_pattern": "https://www.google.com/maps/search/{{CLINIC_NAME}}+{{CITY}}",
+      "priority": "critical",
+      "method": "scrape",
+      "fields": ["name", "address", "phone", "website", "hours"]
+    },
+    {
+      "name": "Yelp",
+      "url_pattern": "https://www.yelp.com/search?find_desc={{CLINIC_NAME}}&find_loc={{CITY}}",
+      "priority": "critical",
+      "method": "scrape",
+      "fields": ["name", "address", "phone", "website"]
+    },
+    {
+      "name": "Facebook",
+      "url_pattern": "https://www.facebook.com/search/pages/?q={{CLINIC_NAME}}+{{CITY}}",
+      "priority": "high",
+      "method": "scrape",
+      "fields": ["name", "address", "phone", "website"]
+    },
+    {
+      "name": "YellowPages",
+      "url_pattern": "https://www.yellowpages.com/search?search_terms={{CLINIC_NAME}}&geo_location_terms={{CITY}}",
+      "priority": "high",
+      "method": "scrape",
+      "fields": ["name", "address", "phone", "website"]
+    },
+    {
+      "name": "Healthgrades",
+      "url_pattern": "https://www.healthgrades.com/search?what={{CLINIC_NAME}}&where={{CITY}}",
+      "priority": "high",
+      "method": "scrape",
+      "fields": ["name", "address", "phone"]
+    },
+    {
+      "name": "BBB",
+      "url_pattern": "https://www.bbb.org/search?find_text={{CLINIC_NAME}}&find_loc={{CITY}}",
+      "priority": "medium",
+      "method": "scrape",
+      "fields": ["name", "address", "phone", "website"]
+    },
+    {
+      "name": "Manta",
+      "url_pattern": "https://www.manta.com/search?search={{CLINIC_NAME}}+{{CITY}}",
+      "priority": "medium",
+      "method": "scrape",
+      "fields": ["name", "address", "phone"]
+    },
+    {
+      "name": "Superpages",
+      "url_pattern": "https://www.superpages.com/search?search_terms={{CLINIC_NAME}}&geo_location_terms={{CITY}}",
+      "priority": "medium",
+      "method": "scrape",
+      "fields": ["name", "address", "phone"]
+    },
+    {
+      "name": "Angi",
+      "url_pattern": "https://www.angi.com/companylist/{{CITY}}/veterinarians.htm",
+      "priority": "medium",
+      "method": "scrape",
+      "fields": ["name", "address", "phone"]
+    },
+    {
+      "name": "VetRatingz",
+      "url_pattern": "https://www.vetratingz.com/search?q={{CLINIC_NAME}}",
+      "priority": "high",
+      "method": "scrape",
+      "fields": ["name", "address", "phone", "website"]
+    },
+    {
+      "name": "AVMA Find-a-Vet",
+      "url_pattern": "https://www.avma.org/resources-tools/find-veterinarian",
+      "priority": "high",
+      "method": "scrape",
+      "fields": ["name", "address", "phone"]
+    },
+    {
+      "name": "PetDesk",
+      "url_pattern": "https://www.petdesk.com/search?q={{CLINIC_NAME}}",
+      "priority": "medium",
+      "method": "scrape",
+      "fields": ["name", "address", "phone"]
+    },
+    {
+      "name": "BringFido",
+      "url_pattern": "https://www.bringfido.com/attraction/search?q={{CLINIC_NAME}}+{{CITY}}",
+      "priority": "medium",
+      "method": "scrape",
+      "fields": ["name", "address", "phone"]
+    },
+    {
+      "name": "CitySearch",
+      "url_pattern": "https://www.citysearch.com/search?what={{CLINIC_NAME}}&where={{CITY}}",
+      "priority": "low",
+      "method": "scrape",
+      "fields": ["name", "address", "phone"]
+    },
+    {
+      "name": "MapQuest",
+      "url_pattern": "https://www.mapquest.com/search/results?query={{CLINIC_NAME}}&boundingBox={{CITY}}",
+      "priority": "low",
+      "method": "scrape",
+      "fields": ["name", "address", "phone"]
+    }
+  ]
+}

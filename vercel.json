@@ -26,6 +26,14 @@
     {
       "path": "/api/briefing?secret=CRON_SECRET_PLACEHOLDER",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/seo-worker",
+      "schedule": "0 6 * * 1-5"
+    },
+    {
+      "path": "/api/cron/alerts",
+      "schedule": "*/5 * * * *"
     }
   ]
 }
