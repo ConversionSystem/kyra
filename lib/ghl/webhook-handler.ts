@@ -11,6 +11,7 @@ import { sendGHLMessage, getValidToken } from './api';
 import { getGatewayByClientId } from '@/lib/ovh/gateway-resolver';
 import { logConversationToCrm } from '@/lib/crm/conversation-logger';
 import { processWithSmartEngine } from './smart-handler';
+import { isReviewGateActive, queueForReview } from './review-gate';
 import type { GHLWebhookPayload, GHLMessageChannel } from './types';
 import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
 
@@ -58,6 +59,8 @@ export async function processInboundMessage(
   console.log(
     `[ghl/handler] Processing inbound from ${contactName} for client "${client.name}" via ${messageType}`,
   );
+
+  const handlerStartTime = Date.now();
 
   // ── Try Smart Engine first ────────────────────────────────────────────
   let aiResponse: string;
@@ -113,16 +116,38 @@ export async function processInboundMessage(
     `[ghl/handler] AI response (${aiResponse.length} chars) via ${usedSmartEngine ? 'Smart Engine' : 'Bridge'}, sending via ${messageType}`,
   );
 
-  // ── Send reply back through GHL ───────────────────────────────────────
-  const accessToken = await getValidToken(client.id);
+  // ── Check review gate before sending ───────────────────────────────────
+  const reviewGateActive = await isReviewGateActive(client.agency_id, client.id);
 
-  await sendGHLMessage(
-    client.id,
-    accessToken,
-    contactId,
-    aiResponse,
-    messageType,
-  );
+  if (reviewGateActive) {
+    // Queue for human review instead of sending
+    await queueForReview({
+      clientId: client.id,
+      agencyId: client.agency_id,
+      contactId,
+      contactName,
+      contactPhone: payload.phone,
+      contactEmail: payload.email,
+      conversationId: payload.conversationId,
+      channel: formatChannelName(messageType),
+      userMessage: messageBody,
+      aiResponse,
+      responseTimeMs: Date.now() - handlerStartTime,
+    });
+
+    console.log(`[ghl/handler] 📋 Response queued for review (not sent to ${contactName})`);
+  } else {
+    // Send reply directly through GHL
+    const accessToken = await getValidToken(client.id);
+
+    await sendGHLMessage(
+      client.id,
+      accessToken,
+      contactId,
+      aiResponse,
+      messageType,
+    );
+  }
 
   // ── Mark webhook event as processed ───────────────────────────────────
   try {
@@ -140,7 +165,7 @@ export async function processInboundMessage(
     console.error('[ghl/handler] Failed to mark event processed:', err);
   }
 
-  console.log(`[ghl/handler] ✅ Reply sent to ${contactName} for "${client.name}"`);
+  console.log(`[ghl/handler] ✅ ${reviewGateActive ? 'Queued for review' : 'Reply sent'} for ${contactName} → "${client.name}"`);
 
   // ── Log both sides to CRM ──────────────────────────────────────────────
   // (Smart Engine already saves to client_conversations, but CRM logging
