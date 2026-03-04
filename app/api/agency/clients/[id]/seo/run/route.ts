@@ -257,18 +257,37 @@ Return as JSON: { "title": "...", "body": "...(HTML)...", "target_keyword": "...
 
 async function scanReddit(clinic: Record<string, unknown>): Promise<Array<Record<string, unknown>>> {
   const city = (clinic.city as string) || '';
-  const subreddits = ['pets', 'dogs', 'cats', 'DogAdvice', 'CatAdvice', 'AskVet'];
+  const state = (clinic.state as string) || '';
   const results: Array<Record<string, unknown>> = [];
 
-  for (const sub of subreddits.slice(0, 3)) {
+  // Search strategies: city subreddit + broad vet subreddits
+  const citySlug = city.toLowerCase().replace(/\s+/g, '');
+  const searches: Array<{ sub: string; query: string }> = [
+    // City-specific subreddit — most likely to have local vet questions
+    { sub: citySlug, query: 'vet veterinarian pet' },
+    { sub: `r_${citySlug}`, query: 'vet' },
+    // Vet-specific subreddits with city filter
+    { sub: 'AskVet', query: city },
+    { sub: 'dogs', query: `vet ${city}` },
+    { sub: 'cats', query: `vet ${city}` },
+    // Broader search on r/all
+    { sub: 'all', query: `veterinarian "${city}"` },
+    { sub: 'all', query: `vet clinic "${city}" ${state}` },
+  ];
+
+  for (const { sub, query } of searches) {
     try {
-      const url = `https://www.reddit.com/r/${sub}/search.json?q=${encodeURIComponent(city + ' vet')}&sort=new&limit=5&t=week`;
-      const res = await fetch(url, { headers: { 'User-Agent': 'KyraSEOWorker/1.0' } });
+      const url = `https://www.reddit.com/r/${sub}/search.json?q=${encodeURIComponent(query)}&sort=new&limit=10&t=month`;
+      const res = await fetch(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; KyraSEO/1.0)' },
+        signal: AbortSignal.timeout(5000),
+      });
       if (!res.ok) continue;
       const json = await res.json() as { data?: { children?: Array<{ data: Record<string, unknown> }> } };
       const posts = json?.data?.children || [];
       for (const post of posts) {
         const d = post.data;
+        if (!d.id) continue;
         results.push({
           post_id: d.id,
           subreddit: d.subreddit,
