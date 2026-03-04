@@ -276,43 +276,43 @@ export async function runGeoTest(
   const today = new Date().toISOString().split('T')[0];
   let successfulQueries = 0;
 
-  for (const query of queries) {
-    // Test with ChatGPT
-    try {
-      const chatgptResponse = await queryChatGPT(query, openaiKey);
-      const analysis = analyzeCitation(chatgptResponse, clinic);
-      results.push({
-        query,
-        provider: 'chatgpt',
-        cited: analysis.cited,
-        position: analysis.position,
-        context: analysis.context,
-        date: today,
-      });
-      successfulQueries++;
-    } catch (err) {
-      console.error(`[geo-tester] ChatGPT failed for "${query}":`, err);
+  // Run all queries in parallel (batches of 5) to avoid sequential timeout
+  const BATCH_SIZE = 5;
+  for (let i = 0; i < queries.length; i += BATCH_SIZE) {
+    const batch = queries.slice(i, i + BATCH_SIZE);
+    const batchResults = await Promise.allSettled(
+      batch.flatMap((query) => [
+        // ChatGPT
+        queryChatGPT(query, openaiKey)
+          .then((response) => {
+            const analysis = analyzeCitation(response, clinic);
+            successfulQueries++;
+            return { query, provider: 'chatgpt', cited: analysis.cited, position: analysis.position, context: analysis.context, date: today } as GeoResult;
+          })
+          .catch((err) => {
+            console.error(`[geo-tester] ChatGPT failed for "${query}":`, err);
+            return null;
+          }),
+        // Perplexity
+        queryPerplexity(query, perplexityKey)
+          .then((response) => {
+            const analysis = analyzeCitation(response, clinic);
+            successfulQueries++;
+            return { query, provider: 'perplexity', cited: analysis.cited, position: analysis.position, context: analysis.context, date: today } as GeoResult;
+          })
+          .catch((err) => {
+            console.error(`[geo-tester] Perplexity failed for "${query}":`, err);
+            return null;
+          }),
+      ]),
+    );
+    for (const r of batchResults) {
+      if (r.status === 'fulfilled' && r.value) results.push(r.value);
     }
-
-    // Test with Perplexity
-    try {
-      const perplexityResponse = await queryPerplexity(query, perplexityKey);
-      const analysis = analyzeCitation(perplexityResponse, clinic);
-      results.push({
-        query,
-        provider: 'perplexity',
-        cited: analysis.cited,
-        position: analysis.position,
-        context: analysis.context,
-        date: today,
-      });
-      successfulQueries++;
-    } catch (err) {
-      console.error(`[geo-tester] Perplexity failed for "${query}":`, err);
+    // Brief pause between batches to avoid rate limits
+    if (i + BATCH_SIZE < queries.length) {
+      await new Promise((r) => setTimeout(r, 300));
     }
-
-    // Rate limit: 100ms between queries
-    await new Promise((r) => setTimeout(r, 100));
   }
 
   // Calculate scores
