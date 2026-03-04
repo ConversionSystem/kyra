@@ -5,7 +5,7 @@
  * Each plan has a hard client limit enforced at creation time.
  */
 
-export type Plan = 'free' | 'starter' | 'pro' | 'scale';
+export type Plan = 'free' | 'business_starter' | 'starter' | 'pro' | 'scale';
 
 export interface PlanConfig {
   name: string;
@@ -22,10 +22,26 @@ export interface PlanConfig {
 
 export const PLANS: Record<Plan, PlanConfig> = {
   free: {
-    name: 'Free',
+    name: 'Free Trial',
     price: 0,
     maxClients: 1,
-    description: 'Try Kyra with your first client AI worker. No credit card needed.',
+    description: '14-day trial to test the platform. Upgrade to keep your AI worker running.',
+    features: [
+      '1 client AI worker (14-day trial)',
+      '21 industry templates',
+      'Telegram, SMS, web chat',
+      'GHL integration',
+    ],
+    badge: 'TRIAL',
+    badgeColor: 'bg-gray-100 text-gray-600',
+    cta: 'Start Trial',
+    stripePriceKey: 'free',
+  },
+  business_starter: {
+    name: 'Business Starter',
+    price: 49,
+    maxClients: 1,
+    description: 'Perfect for agencies deploying their first AI worker.',
     features: [
       '1 client AI worker',
       '21 industry templates',
@@ -35,27 +51,25 @@ export const PLANS: Record<Plan, PlanConfig> = {
       'AI Sales Pipeline',
       'Lead discovery & enrichment',
       'Auto-qualifying AI worker',
+      'Client conversation history',
     ],
-    badge: 'FREE',
-    badgeColor: 'bg-gray-100 text-gray-600',
-    cta: 'Get Started Free',
-    stripePriceKey: 'free',
+    badge: 'STARTER',
+    badgeColor: 'bg-green-100 text-green-700',
+    cta: 'Start for $49/mo',
+    stripePriceKey: 'business_starter',
   },
   starter: {
     name: 'Lite',
     price: 99,
-    maxClients: 5,
-    description: 'Launch your AI agency with your first 5 clients.',
+    maxClients: 3,
+    description: 'Launch your AI agency with your first 3 clients.',
     features: [
-      '5 client AI workers',
-      'Everything in Free',
+      '3 client AI workers',
+      'Everything in Business Starter',
       'Full analytics dashboard',
       'AI Sales Pipeline (unlimited campaigns)',
-      'AI lead discovery & website enrichment',
-      'Auto-qualifying AI conversations',
       'Proactive lead outreach',
       'Smart escalation alerts',
-      'Client conversation history',
       'Weekly performance reports',
     ],
     badge: 'LITE',
@@ -66,18 +80,18 @@ export const PLANS: Record<Plan, PlanConfig> = {
   pro: {
     name: 'Pro',
     price: 249,
-    maxClients: 15,
+    maxClients: 10,
     description: 'For growing agencies managing multiple clients.',
     features: [
-      '15 client AI workers',
+      '10 client AI workers',
       'Everything in Lite',
       'White-label branding',
-      'AI Sales Pipeline (unlimited)',
       'AI lead discovery, enrichment & closing',
       'Custom AI personalities',
       'Priority support',
       'Custom templates',
       'Revenue tracking dashboard',
+      'Review queue (human-in-the-loop)',
     ],
     highlighted: true,
     badge: 'MOST POPULAR',
@@ -88,10 +102,10 @@ export const PLANS: Record<Plan, PlanConfig> = {
   scale: {
     name: 'Scale',
     price: 499,
-    maxClients: 50,
-    description: 'Built for high-volume agencies running 50+ AI workers.',
+    maxClients: 30,
+    description: 'Built for high-volume agencies running 30+ AI workers.',
     features: [
-      '50 client AI workers',
+      '30 client AI workers',
       'Everything in Pro',
       'AI Sales Pipeline (unlimited + priority)',
       'AI lead discovery, enrichment & auto-closing',
@@ -100,7 +114,8 @@ export const PLANS: Record<Plan, PlanConfig> = {
       'SLA uptime guarantee',
       'Dedicated Slack support',
       'API access',
-      'Monthly strategy call',
+      'Outbound webhooks',
+      'Alert monitoring',
     ],
     badge: 'FOR AGENCIES',
     badgeColor: 'bg-purple-100 text-purple-700',
