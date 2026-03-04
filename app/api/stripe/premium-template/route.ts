@@ -7,14 +7,17 @@ import { getPremiumTemplate } from '@/lib/billing/premium-templates';
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
-  // Auth: verify user owns this agency
+  // ── Auth ──────────────────────────────────────────────────────────────
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const result = await getAgencyForUser(user.id);
-  if (!result) return NextResponse.json({ error: 'No agency' }, { status: 403 });
+  if (!result) return NextResponse.json({ error: 'No agency found for this user' }, { status: 403 });
 
+  const agencyId = result.agency.id;
+
+  // ── Parse body ────────────────────────────────────────────────────────
   const body = await request.json();
   const { templateId, clientId } = body;
 
@@ -22,39 +25,57 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Missing templateId or clientId' }, { status: 400 });
   }
 
-  // Validate template exists
+  // ── Validate template ─────────────────────────────────────────────────
   const template = getPremiumTemplate(templateId);
   if (!template) {
-    return NextResponse.json({ error: 'Unknown template' }, { status: 400 });
+    return NextResponse.json({ error: `Unknown template: ${templateId}` }, { status: 400 });
   }
 
-  // Use service client for all DB writes (bypasses RLS edge cases)
+  // ── Fetch client (service role — no RLS) ─────────────────────────────
   const admin = createServiceClientWithoutCookies();
 
-  // Validate client belongs to this agency
   const { data: clientRow, error: clientErr } = await admin
     .from('agency_clients')
-    .select('id, name, settings')
+    .select('id, name, agency_id, settings')
     .eq('id', clientId)
-    .eq('agency_id', result.agency.id)
     .single();
 
   if (clientErr || !clientRow) {
-    return NextResponse.json({ error: 'Client not found' }, { status: 404 });
+    console.error('[premium-template] Client lookup failed:', {
+      clientId,
+      agencyId,
+      error: clientErr?.message,
+      code: clientErr?.code,
+    });
+    return NextResponse.json(
+      { error: `Client not found (id: ${clientId})` },
+      { status: 404 },
+    );
+  }
+
+  // ── Verify ownership ──────────────────────────────────────────────────
+  if (clientRow.agency_id !== agencyId) {
+    console.error('[premium-template] Agency mismatch:', {
+      clientId,
+      clientAgencyId: clientRow.agency_id,
+      userAgencyId: agencyId,
+    });
+    return NextResponse.json({ error: 'This client does not belong to your agency' }, { status: 403 });
   }
 
   const clientSettings = (clientRow.settings as Record<string, unknown>) ?? {};
 
-  // Already activated?
+  // ── Already activated? ────────────────────────────────────────────────
   if (clientSettings.premium_template === templateId) {
     return NextResponse.json({ error: 'Client already has this premium template' }, { status: 400 });
   }
 
+  // ── Activate ──────────────────────────────────────────────────────────
   const priceId = process.env.STRIPE_PREMIUM_VET_SEO_PRICE_ID;
 
   if (!priceId) {
-    // Beta mode — activate without Stripe payment
-    const newSettings = {
+    // Beta mode — activate without Stripe
+    const newSettings: Record<string, unknown> = {
       ...clientSettings,
       premium_template: templateId,
       premium_template_activated_at: new Date().toISOString(),
@@ -65,47 +86,45 @@ export async function POST(request: NextRequest) {
     const { error: updateErr } = await admin
       .from('agency_clients')
       .update({ settings: newSettings })
-      .eq('id', clientId)
-      .eq('agency_id', result.agency.id);
+      .eq('id', clientId);
 
     if (updateErr) {
-      console.error('[premium-template] Failed to activate:', updateErr);
+      console.error('[premium-template] Update failed:', updateErr);
       return NextResponse.json(
-        { error: `Activation failed: ${updateErr.message}` },
+        { error: `Database update failed: ${updateErr.message}` },
         { status: 500 },
       );
     }
 
-    // Verify the update actually persisted
+    // Verify it persisted
     const { data: verify } = await admin
       .from('agency_clients')
       .select('settings')
       .eq('id', clientId)
       .single();
 
-    const verifiedSettings = verify?.settings as Record<string, unknown> | null;
-    if (verifiedSettings?.premium_template !== templateId) {
-      console.error('[premium-template] Update did not persist for client', clientId);
+    const saved = (verify?.settings as Record<string, unknown>)?.premium_template;
+    if (saved !== templateId) {
+      console.error('[premium-template] Verification failed. Saved:', saved, 'Expected:', templateId);
       return NextResponse.json(
-        { error: 'Activation did not persist — please try again' },
+        { error: 'Activation did not persist — try again' },
         { status: 500 },
       );
     }
 
-    console.log(
-      `[premium-template] ✅ Activated ${templateId} for ${clientRow.name} (${clientId})`,
-    );
+    console.log(`[premium-template] ✅ ${templateId} activated for "${clientRow.name}" (${clientId})`);
 
     return NextResponse.json({
       ok: true,
       mode: 'beta',
       templateId,
       clientId,
+      clientName: clientRow.name,
       redirectUrl: `/agency/clients/${clientId}?tab=seo&activated=true`,
     });
   }
 
-  // Production mode — Stripe checkout
+  // ── Stripe checkout ───────────────────────────────────────────────────
   try {
     const stripe = (await import('stripe')).default;
     const stripeClient = new stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -120,7 +139,7 @@ export async function POST(request: NextRequest) {
       cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/agency/clients/${clientId}?tab=settings`,
       client_reference_id: user.id,
       metadata: {
-        agency_id: result.agency.id,
+        agency_id: agencyId,
         client_id: clientId,
         template_id: templateId,
         user_id: user.id,
