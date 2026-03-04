@@ -42,6 +42,7 @@ import {
   X,
   Plus,
   Users,
+  Database,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { AgencyClient, AgencyMember } from '@/lib/agency/queries';
@@ -54,6 +55,7 @@ import ClientStatusBanner from '@/components/dashboard/client-status-banner';
 import ClientActivityHeatmap from '@/components/dashboard/client-activity-heatmap';
 import { VoiceChannelCard } from '@/components/dashboard/voice-channel-card';
 import RoiSummaryCard from '@/components/dashboard/roi-summary-card';
+import { MemoryBrowser } from './memory-browser';
 
 // ── Setup Nudge Banner ────────────────────────────────────────────────────────
 
@@ -120,7 +122,7 @@ interface ChatMessage {
   content: string;
 }
 
-type Tab = 'chat' | 'personality' | 'settings' | 'ghl' | 'permissions' | 'usage' | 'conversations' | 'channels' | 'portal';
+type Tab = 'chat' | 'personality' | 'settings' | 'ghl' | 'permissions' | 'usage' | 'conversations' | 'channels' | 'portal' | 'memory';
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'chat', label: 'Test Chat', icon: MessageSquare },
@@ -132,6 +134,7 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'conversations', label: 'Conversations', icon: Inbox },
   { id: 'channels', label: 'Channels', icon: Radio },
   { id: 'portal', label: 'Client Portal', icon: Users },
+  { id: 'memory', label: 'AI Memory', icon: Database },
 ];
 
 interface ClientDetailViewProps {
@@ -316,6 +319,10 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
       )}
       {activeTab === 'portal' && (
         <PortalTab client={initialClient} />
+      )}
+
+      {activeTab === 'memory' && (
+        <MemoryBrowser clientId={initialClient.id} clientName={initialClient.name || 'Client'} />
       )}
     </div>
   );
