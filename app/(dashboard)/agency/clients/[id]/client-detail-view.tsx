@@ -211,6 +211,7 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialTab = (searchParams.get('tab') as Tab) || 'chat';
+  const justActivated = searchParams.get('activated') === 'true';
   const [activeTab, setActiveTab] = useState<Tab>(
     TABS.some(t => t.id === initialTab) ? initialTab : 'chat'
   );
@@ -233,6 +234,17 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
         <ArrowLeft className="h-3 w-3" />
         Back to Clients
       </Link>
+
+      {/* SEO Worker Activation Banner */}
+      {justActivated && activeTab === 'seo' && (
+        <div className="mb-4 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3 flex items-center gap-3">
+          <span className="text-emerald-600 text-lg">🐾</span>
+          <div>
+            <p className="text-sm font-semibold text-emerald-800">Veterinary SEO Worker activated!</p>
+            <p className="text-xs text-emerald-600">First GEO visibility test will run Monday. NAP audit runs Wednesday. Weekly reports every Friday.</p>
+          </div>
+        </div>
+      )}
 
       {/* Client Header */}
       <div className="flex items-start gap-3 sm:gap-4 mb-6">
