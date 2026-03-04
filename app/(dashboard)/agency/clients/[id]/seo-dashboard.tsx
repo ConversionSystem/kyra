@@ -4,11 +4,154 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Search, MapPin, FileText, Globe, MessageCircle,
   BarChart3, Loader2, AlertTriangle, CheckCircle2, TrendingUp,
-  TrendingDown, Minus, RefreshCw, ExternalLink,
+  TrendingDown, Minus, RefreshCw, ExternalLink, Calendar,
+  ChevronDown, ChevronUp, BookOpen, Zap, Clock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+// ── Getting Started Guide ─────────────────────────────────────────────────────
+
+const SCHEDULE = [
+  { day: 'Every Monday', icon: '🔍', title: 'GEO Visibility Test', desc: 'Tests 25 queries across ChatGPT and Perplexity to measure if your practice is being cited by AI assistants.' },
+  { day: 'Every Tuesday + Thursday', icon: '✍️', title: 'Content Batch', desc: 'Publishes Web 2.0 articles and semantic stack pages to Google Docs, GitHub Pages, Notion, and Telegraph.' },
+  { day: 'Every Wednesday', icon: '📍', title: 'NAP Consistency Audit', desc: 'Scrapes 15 major directories (Google, Yelp, Bing, etc.) and flags any mismatches in your business name, address, or phone.' },
+  { day: 'Daily (8 AM + 6 PM)', icon: '💬', title: 'Reddit Monitoring', desc: 'Monitors vet-related subreddits for mentions of your city or services. Drafts replies for your review — never auto-posts.' },
+  { day: 'Every Friday', icon: '📊', title: 'Weekly SEO Report', desc: 'Full report with GEO citation trends, NAP status, content published, and outreach pipeline.' },
+];
+
+const GLOSSARY = [
+  { term: 'GEO Score', def: 'How often your practice is cited when someone asks an AI assistant (ChatGPT, Perplexity) for a vet recommendation in your city. 0% = not found, 100% = always cited.' },
+  { term: 'NAP Consistency', def: 'Name, Address, Phone. All 15 major directories must show identical info. Mismatches hurt local rankings and AI citations.' },
+  { term: 'Semantic Stack', def: 'Supporting pages on high-authority platforms (Google Docs, GitHub, Notion) that reinforce your main website in AI training data.' },
+  { term: 'Web 2.0', def: 'Blog-style content published on WordPress, Blogger, Telegraph. Builds topical authority and backlinks.' },
+  { term: 'Review Queue', def: 'Reddit replies drafted by AI and held for your approval. You approve, edit, or discard before anything is posted.' },
+];
+
+function GettingStartedGuide({ setup }: { setup: Record<string, unknown> }) {
+  const [open, setOpen] = useState(true);
+
+  const clinicName = (setup?.clinicName as string) || 'your practice';
+  const city = (setup?.city as string) || '';
+  const services = (setup?.services as string[]) || [];
+
+  return (
+    <Card className="border-indigo-200 bg-indigo-50/40">
+      <CardHeader className="pb-2">
+        <button
+          onClick={() => setOpen(o => !o)}
+          className="flex items-center justify-between w-full text-left"
+        >
+          <div className="flex items-center gap-2">
+            <BookOpen className="w-4 h-4 text-indigo-600" />
+            <CardTitle className="text-sm font-semibold text-indigo-900">
+              Getting Started Guide — What happens next
+            </CardTitle>
+          </div>
+          {open ? <ChevronUp className="w-4 h-4 text-indigo-400" /> : <ChevronDown className="w-4 h-4 text-indigo-400" />}
+        </button>
+      </CardHeader>
+
+      {open && (
+        <CardContent className="pt-0 space-y-5">
+          {/* Setup summary */}
+          <div className="bg-white rounded-lg border border-indigo-100 p-4">
+            <p className="text-xs font-semibold text-indigo-700 uppercase tracking-wide mb-2">✅ Configuration Confirmed</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+              <div>
+                <p className="text-xs text-gray-500">Practice</p>
+                <p className="font-medium text-gray-800">{clinicName}</p>
+              </div>
+              {city && (
+                <div>
+                  <p className="text-xs text-gray-500">Location</p>
+                  <p className="font-medium text-gray-800">{city}</p>
+                </div>
+              )}
+              {services.length > 0 && (
+                <div>
+                  <p className="text-xs text-gray-500">Target Services</p>
+                  <p className="font-medium text-gray-800">{services.slice(0, 3).join(', ')}{services.length > 3 ? ` +${services.length - 3}` : ''}</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Week 1 timeline */}
+          <div>
+            <p className="text-xs font-semibold text-indigo-700 uppercase tracking-wide mb-3 flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5" /> Week 1 Timeline
+            </p>
+            <div className="space-y-2">
+              {[
+                { when: 'This Monday', what: '🔍 First GEO Visibility Test runs. Establishes your baseline citation rate across 25 AI queries.' },
+                { when: 'This Wednesday', what: '📍 First NAP Audit runs. Checks all 15 directories for consistency issues.' },
+                { when: 'Tue + Thu', what: '✍️ AI drafts first batch of Web 2.0 + semantic stack content for your review.' },
+                { when: 'This Friday', what: '📊 First weekly report generated. You\'ll see your starting GEO score and NAP health.' },
+              ].map((item, i) => (
+                <div key={i} className="flex gap-3 text-sm">
+                  <span className="text-xs font-medium text-indigo-600 w-28 shrink-0 pt-0.5">{item.when}</span>
+                  <span className="text-gray-700">{item.what}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Weekly schedule */}
+          <div>
+            <p className="text-xs font-semibold text-indigo-700 uppercase tracking-wide mb-3 flex items-center gap-1.5">
+              <Calendar className="w-3.5 h-3.5" /> Ongoing Weekly Schedule
+            </p>
+            <div className="grid gap-2">
+              {SCHEDULE.map((item, i) => (
+                <div key={i} className="bg-white rounded-md border border-indigo-100 p-3 flex gap-3">
+                  <span className="text-lg leading-none mt-0.5">{item.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-medium text-gray-800">{item.title}</p>
+                      <span className="text-xs text-indigo-500 font-medium">{item.day}</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-0.5">{item.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* What you need to do */}
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+              <Zap className="w-3.5 h-3.5" /> Your Only Job
+            </p>
+            <ul className="space-y-1.5 text-sm text-amber-800">
+              <li>• <strong>Check Review Queue weekly</strong> — approve or edit Reddit replies before they go live (tab above)</li>
+              <li>• <strong>Review Friday reports</strong> — they show GEO trend + what content was published</li>
+              <li>• <strong>Fix any NAP mismatches flagged</strong> — log into the listed directory and update the info directly</li>
+              <li>• Everything else is fully automated 🤖</li>
+            </ul>
+          </div>
+
+          {/* Glossary */}
+          <details className="group">
+            <summary className="cursor-pointer text-xs font-semibold text-indigo-600 hover:text-indigo-800 select-none flex items-center gap-1">
+              <ChevronDown className="w-3.5 h-3.5 group-open:rotate-180 transition-transform" />
+              Glossary — what do these terms mean?
+            </summary>
+            <div className="mt-3 grid gap-2">
+              {GLOSSARY.map((item, i) => (
+                <div key={i} className="bg-white rounded border border-indigo-100 p-3">
+                  <p className="text-xs font-semibold text-gray-800">{item.term}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{item.def}</p>
+                </div>
+              ))}
+            </div>
+          </details>
+        </CardContent>
+      )}
+    </Card>
+  );
+}
 
 interface SEODashboardProps {
   clientId: string;
@@ -114,6 +257,8 @@ export function SEODashboard({ clientId, clientName }: SEODashboardProps) {
     : stats.geo_score_trend === 'down' ? 'text-red-600'
     : 'text-gray-400';
 
+  const isNewActivation = data.geo_scores.length === 0 && data.content_published.length === 0;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -131,6 +276,9 @@ export function SEODashboard({ clientId, clientName }: SEODashboardProps) {
           <RefreshCw className="w-4 h-4 mr-1" /> Refresh
         </Button>
       </div>
+
+      {/* Getting Started Guide — always visible, collapsible */}
+      <GettingStartedGuide setup={data.setup} />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
