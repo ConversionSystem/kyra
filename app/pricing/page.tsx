@@ -9,48 +9,45 @@ import PublicFooter from '@/components/layout/public-footer';
 
 const PLANS = [
   {
-    name: 'Free',
-    monthly: 0, annual: 0,
-    annualSave: null,
-    period: 'forever',
-    desc: 'Test Kyra with 50 one-time credits. Upgrade when ready.',
-    cta: 'Get Started Free',
-    href: '/signup/agency',
+    name: 'Business Starter',
+    monthly: 49, annual: 39,
+    annualSave: 120,
+    period: '/month',
+    desc: '1 AI worker — perfect for agencies deploying their first client.',
+    cta: 'Start for $49/mo',
+    href: '/signup/agency?plan=business_starter',
     featured: false,
-    badge: null,
+    badge: 'Start here',
     features: [
-      '1 AI worker',
-      '50 credits (one-time)',
-      'Web chat widget',
-      'Basic CRM',
-      'Personality customization',
+      '1 client AI worker',
+      '21 industry templates',
+      'Telegram, SMS, web chat',
+      'GHL integration',
+      'BYOK (Bring Your Own AI Keys)',
+      'AI Sales Pipeline',
+      'Lead discovery & enrichment',
+      'Client conversation history',
     ],
-    limits: [
-      'No SMS/GHL integration',
-      'No sales pipeline',
-      'No analytics or reports',
-      'No API key management',
-      'Credits do not renew monthly',
-    ],
+    limits: [],
   },
   {
     name: 'Lite',
     monthly: 99, annual: 79,
     annualSave: 240,
     period: '/month',
-    desc: 'Run up to 5 autonomous AI workers across your clients.',
-    cta: 'Start 30-Day Trial',
+    desc: 'Launch your AI agency with up to 3 client AI workers.',
+    cta: 'Start Lite',
     href: '/signup/agency?plan=starter',
     featured: false,
     badge: 'Most popular for new agencies',
     features: [
-      '5 AI workers',
-      'Everything in Free',
+      '3 client AI workers',
+      'Everything in Business Starter',
+      'Full analytics dashboard',
       'AI Sales Pipeline (unlimited campaigns)',
-      'Bring your own OpenAI key (BYOK)',
+      'Proactive lead outreach',
+      'Smart escalation alerts',
       'Weekly performance reports',
-      'Priority support',
-      'Pitch page generator',
     ],
     limits: [],
   },
@@ -59,19 +56,19 @@ const PLANS = [
     monthly: 249, annual: 199,
     annualSave: 600,
     period: '/month',
-    desc: 'Full AI workforce — up to 15 autonomous workers.',
-    cta: 'Start 30-Day Trial',
+    desc: 'Full AI workforce — up to 10 autonomous workers.',
+    cta: 'Start Pro',
     href: '/signup/agency?plan=pro',
     featured: true,
     badge: '🔥 Best for growing agencies',
     features: [
-      '15 AI workers',
+      '10 client AI workers',
       'Everything in Lite',
-      'AI Sales Pipeline (unlimited + auto-close)',
       'White-label branding',
-      'Business-in-a-Box playbook',
-      'Referral program',
-      'Advanced analytics',
+      'Custom AI personalities',
+      'Review queue (human-in-the-loop)',
+      'Revenue tracking dashboard',
+      'Priority support',
     ],
     limits: [],
   },
@@ -80,19 +77,20 @@ const PLANS = [
     monthly: 499, annual: 399,
     annualSave: 1200,
     period: '/month',
-    desc: 'Unlimited autonomous AI worker deployments.',
-    cta: 'Start 30-Day Trial',
+    desc: 'Built for high-volume agencies — 30 AI worker deployments.',
+    cta: 'Start Scale',
     href: '/signup/agency?plan=scale',
     featured: false,
     badge: 'For high-volume agencies',
     features: [
-      '50 AI workers',
+      '30 client AI workers',
       'Everything in Pro',
       'AI Sales Pipeline (unlimited + priority)',
-      'Dedicated infrastructure per client',
-      'Admin MRR dashboard',
-      'Custom onboarding support',
-      'Slack / email priority support',
+      'Dedicated infrastructure',
+      'Outbound webhooks',
+      'Alert monitoring',
+      'Dedicated Slack support',
+      'API access',
     ],
     limits: [],
   },
@@ -139,7 +137,7 @@ export default function PricingPage() {
       {/* Header */}
       <section className="py-20 text-center px-4">
         <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 text-sm font-medium mb-6">
-          30-day free trial · No credit card required
+          Start at $49/mo · Cancel anytime
         </div>
         <h1 className="text-4xl sm:text-5xl font-black mb-4">
           Pricing for agencies that mean business.
@@ -361,9 +359,9 @@ export default function PricingPage() {
 
         {/* ROI callout */}
         <div className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-6 sm:p-8 text-center">
-          <p className="text-slate-400 text-sm mb-1">At Pro plan {annual ? '($199/mo annual)' : '($249/mo)'} with 10 clients billed at $997/mo each:</p>
+          <p className="text-slate-400 text-sm mb-1">At Pro plan {annual ? '($199/mo annual)' : '($249/mo)'} with just 5 clients billed at $997/mo each:</p>
           <p className="text-2xl font-black text-green-400">
-            $9,970/mo revenue · ${annual ? '9,771' : '9,721'}/mo gross margin
+            $4,985/mo revenue · ${annual ? '4,786' : '4,736'}/mo gross margin
           </p>
           <p className="text-slate-500 text-xs mt-1">Before API key costs (typically $0.50–$2/client/mo)</p>
         </div>
@@ -424,14 +422,14 @@ export default function PricingPage() {
       {/* CTA */}
       <section className="border-t border-white/10 py-20 text-center px-4">
         <h2 className="text-3xl sm:text-4xl font-black mb-4">Ready to deploy your first AI worker?</h2>
-        <p className="text-slate-400 mb-8">Free to start. Works with your existing GoHighLevel account.</p>
+        <p className="text-slate-400 mb-8">Start with Business Starter at $49/mo. Works with your existing GoHighLevel account.</p>
         <Link
-          href="/signup/agency"
+          href="/signup/agency?plan=business_starter"
           className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-lg px-8 py-4 rounded-xl transition"
         >
-          Get Started Free →
+          Start for $49/mo →
         </Link>
-        <p className="text-slate-600 text-sm mt-4">No credit card · 30-day trial on paid plans · Cancel anytime</p>
+        <p className="text-slate-600 text-sm mt-4">Cancel anytime · Upgrade as you grow</p>
       </section>
 
       <PublicFooter />

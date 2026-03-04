@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Validate plan
-  const validPlans = ['free', 'starter', 'pro', 'scale', 'beta'];
+  const validPlans = ['free', 'business_starter', 'starter', 'pro', 'scale', 'beta'];
   if (!validPlans.includes(plan)) {
     return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });
   }
