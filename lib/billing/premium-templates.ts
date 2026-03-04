@@ -36,7 +36,7 @@ export const PREMIUM_TEMPLATES: Record<PremiumTemplateType, PremiumTemplate> = {
     id: 'vet-seo-worker',
     name: 'Veterinary SEO Worker',
     description: 'Autonomous AI worker that manages off-site SEO and GEO optimization for veterinary clinics. Publishes content, monitors AI citations, audits NAP consistency, and scouts link building opportunities.',
-    price: 79,
+    price: 97,
     category: 'SEO & Marketing',
     icon: '🐾',
     features: [

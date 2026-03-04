@@ -249,15 +249,12 @@ function TemplateCard({
         <p className="text-sm text-gray-500 mb-4">{template.description}</p>
 
         <div className="space-y-1.5 mb-4">
-          {template.features.slice(0, 5).map((feature, i) => (
+          {template.features.map((feature, i) => (
             <div key={i} className="flex items-start gap-2 text-xs text-gray-600">
               <Check className="w-3.5 h-3.5 text-emerald-500 mt-0.5 shrink-0" />
               <span>{feature}</span>
             </div>
           ))}
-          {template.features.length > 5 && (
-            <p className="text-xs text-gray-400 ml-5">+{template.features.length - 5} more features</p>
-          )}
         </div>
 
         <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 mb-4">
