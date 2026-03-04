@@ -12,6 +12,7 @@ import { getGatewayByClientId } from '@/lib/ovh/gateway-resolver';
 import { logConversationToCrm } from '@/lib/crm/conversation-logger';
 import { processWithSmartEngine } from './smart-handler';
 import { isReviewGateActive, queueForReview } from './review-gate';
+import { deductCredits } from '@/lib/billing/credit-engine';
 import type { GHLWebhookPayload, GHLMessageChannel } from './types';
 import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
 
@@ -166,6 +167,13 @@ export async function processInboundMessage(
   }
 
   console.log(`[ghl/handler] ✅ ${reviewGateActive ? 'Queued for review' : 'Reply sent'} for ${contactName} → "${client.name}"`);
+
+  // ── Deduct 1 credit for this AI response ──────────────────────────────
+  // Fire-and-forget — never block message delivery on billing
+  deductCredits(client.agency_id, 'channel.ghl_sms', {
+    clientId: client.id,
+    description: `GHL ${messageType} reply → ${contactName} (${client.name})`,
+  }).catch((err) => console.error('[ghl/handler] Credit deduction failed:', err));
 
   // ── Log both sides to CRM ──────────────────────────────────────────────
   // (Smart Engine already saves to client_conversations, but CRM logging
