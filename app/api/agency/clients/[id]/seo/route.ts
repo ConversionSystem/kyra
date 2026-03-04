@@ -34,30 +34,48 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
 
   const setupData = (clientSettings.premium_template_setup as Record<string, unknown>) ?? {};
 
-  // Fetch SEO data from seo_data table (or settings JSONB)
   const seoData = (clientSettings.seo_data as Record<string, unknown>) ?? {};
+
+  // ── Map stored data to display format ────────────────────────────────
+  // GEO: stored as geo_history (array of weekly test reports)
+  const geoHistory = (seoData.geo_history as Array<Record<string, unknown>>) || [];
+  const latestGeo = geoHistory[0] ?? null;
+  const geoScores = latestGeo
+    ? (latestGeo.results as unknown[]) || []
+    : (seoData.geo_scores as unknown[]) || []; // legacy key fallback
+
+  // NAP: stored as nap_audit_last (single audit object with .results array)
+  const napAuditLast = (seoData.nap_audit_last as Record<string, unknown>) ?? null;
+  const napStatus: unknown[] = napAuditLast
+    ? (napAuditLast.results as unknown[]) || []
+    : (seoData.nap_status as unknown[]) || []; // legacy key fallback
+
+  const napIssues = (napStatus as Array<Record<string, unknown>>).filter(
+    (n) => n.status === 'mismatch',
+  ).length;
+
+  const contentPublished = (seoData.content_published as unknown[]) || [];
+  const redditQueue = (seoData.reddit_queue as Array<Record<string, unknown>>) || [];
 
   return NextResponse.json({
     template: 'vet-seo-worker',
     status: clientSettings.premium_template_status || 'active',
     activated_at: clientSettings.premium_template_activated_at || null,
     setup: setupData,
-    geo_scores: (seoData.geo_scores as unknown[]) || [],
-    nap_status: (seoData.nap_status as unknown[]) || [],
-    content_published: (seoData.content_published as unknown[]) || [],
+    geo_scores: geoScores,
+    nap_status: napStatus,
+    content_published: contentPublished,
     outreach_pipeline: (seoData.outreach_pipeline as unknown[]) || [],
-    reddit_queue: (seoData.reddit_queue as unknown[]) || [],
+    reddit_queue: redditQueue,
     last_report: seoData.last_report || null,
+    geo_last_run: seoData.geo_last_run || null,
+    nap_last_run: seoData.nap_last_run || null,
     stats: {
-      geo_score_current: seoData.geo_score_current ?? null,
-      geo_score_trend: seoData.geo_score_trend ?? null,
-      content_count: ((seoData.content_published as unknown[]) || []).length,
-      nap_issues: ((seoData.nap_status as Array<Record<string, unknown>>) || []).filter(
-        (n) => n.status === 'mismatch',
-      ).length,
-      pending_reviews: ((seoData.reddit_queue as Array<Record<string, unknown>>) || []).filter(
-        (r) => r.status === 'pending',
-      ).length,
+      geo_score_current: latestGeo?.overall_score ?? (seoData.geo_score_current as number) ?? null,
+      geo_score_trend: latestGeo?.trend ?? (seoData.geo_score_trend as string) ?? null,
+      content_count: contentPublished.length,
+      nap_issues: napIssues,
+      pending_reviews: redditQueue.filter((r) => r.status === 'pending').length,
     },
   });
 }
