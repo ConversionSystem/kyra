@@ -190,7 +190,7 @@ interface SEOData {
   content_published: ContentEntry[];
   outreach_pipeline: Array<Record<string, unknown>>;
   reddit_queue: Array<Record<string, unknown>>;
-  last_report: string | null;
+  last_report: Record<string, unknown> | string | null;
   stats: {
     geo_score_current: number | null;
     geo_score_trend: 'up' | 'down' | 'stable' | null;
@@ -207,7 +207,7 @@ export function SEODashboard({ clientId, clientName }: SEODashboardProps) {
   const [running, setRunning] = useState<string | null>(null);
   const [runResult, setRunResult] = useState<{ task: string; ok: boolean; message: string } | null>(null);
 
-  const runTask = async (task: 'geo_test' | 'nap_audit') => {
+  const runTask = async (task: 'geo_test' | 'nap_audit' | 'content_draft' | 'reddit_scan' | 'weekly_report') => {
     setRunning(task);
     setRunResult(null);
     try {
@@ -328,29 +328,20 @@ export function SEODashboard({ clientId, clientName }: SEODashboardProps) {
                 and <code className="text-xs bg-gray-100 px-1 rounded">FIRECRAWL_API_KEY</code> for NAP.
               </p>
             </div>
-            <div className="flex gap-2 shrink-0">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => runTask('geo_test')}
-                disabled={!!running}
-                className="text-indigo-700 border-indigo-200 bg-indigo-50 hover:bg-indigo-100"
-              >
-                {running === 'geo_test'
-                  ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Running…</>
-                  : <><Play className="w-3.5 h-3.5 mr-1.5" />Run GEO Test</>}
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => runTask('nap_audit')}
-                disabled={!!running}
-                className="text-emerald-700 border-emerald-200 bg-emerald-50 hover:bg-emerald-100"
-              >
-                {running === 'nap_audit'
-                  ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Running…</>
-                  : <><Play className="w-3.5 h-3.5 mr-1.5" />Run NAP Audit</>}
-              </Button>
+            <div className="flex flex-wrap gap-2">
+              {([
+                { id: 'geo_test' as const, label: 'GEO Test', cls: 'text-indigo-700 border-indigo-200 bg-indigo-50 hover:bg-indigo-100' },
+                { id: 'nap_audit' as const, label: 'NAP Audit', cls: 'text-emerald-700 border-emerald-200 bg-emerald-50 hover:bg-emerald-100' },
+                { id: 'content_draft' as const, label: 'Generate Content', cls: 'text-blue-700 border-blue-200 bg-blue-50 hover:bg-blue-100' },
+                { id: 'reddit_scan' as const, label: 'Reddit Scan', cls: 'text-orange-700 border-orange-200 bg-orange-50 hover:bg-orange-100' },
+                { id: 'weekly_report' as const, label: 'Weekly Report', cls: 'text-purple-700 border-purple-200 bg-purple-50 hover:bg-purple-100' },
+              ]).map((t) => (
+                <Button key={t.id} size="sm" variant="outline" onClick={() => runTask(t.id)} disabled={!!running} className={t.cls}>
+                  {running === t.id
+                    ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Running…</>
+                    : <><Play className="w-3.5 h-3.5 mr-1.5" />{t.label}</>}
+                </Button>
+              ))}
             </div>
           </div>
 
@@ -573,6 +564,110 @@ export function SEODashboard({ clientId, clientName }: SEODashboardProps) {
               ))}
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Reddit Queue */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+            <MessageCircle className="w-4 h-4 text-orange-500" />
+            Reddit Review Queue
+            {data.reddit_queue.length > 0 && (
+              <Badge className="bg-orange-100 text-orange-700 border-orange-200 text-xs ml-auto">
+                {data.reddit_queue.filter(r => r.status === 'pending_review').length} pending
+              </Badge>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
+          {data.reddit_queue.length === 0 ? (
+            <p className="text-sm text-gray-500 py-4 text-center">No Reddit posts found yet. Click "Reddit Scan" above to search for relevant discussions in {(data.setup as Record<string, unknown>)?.city as string || 'your city'}.</p>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              {data.reddit_queue.slice(0, 5).map((item, i) => (
+                <div key={i} className="py-3 flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-800 truncate">{item.title as string}</p>
+                    <p className="text-xs text-gray-500">r/{String(item.subreddit)} · {Number(item.num_comments)} comments</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Badge className={`text-xs ${(item.status as string) === 'pending_review' ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
+                      {(item.status as string) === 'pending_review' ? 'Needs review' : String(item.status)}
+                    </Badge>
+                    {(item.url as string | null) && (
+                      <a href={item.url as string} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-orange-600">
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Weekly Report */}
+      {data.last_report && typeof data.last_report === 'object' && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-purple-600" />
+              Latest Weekly Report
+              <span className="ml-auto text-xs text-gray-400 font-normal">
+                {(data.last_report as Record<string, unknown>).report_date as string}
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <p className="text-sm text-gray-700 mb-3">{(data.last_report as Record<string, unknown>).summary as string}</p>
+            {((data.last_report as Record<string, unknown>).action_items as string[] || []).length > 0 && (
+              <div>
+                <p className="text-xs font-semibold text-gray-500 mb-2">Action Items</p>
+                <ul className="space-y-1">
+                  {((data.last_report as Record<string, unknown>).action_items as string[]).map((item, i) => (
+                    <li key={i} className="text-sm text-amber-700 flex gap-2">
+                      <span className="text-amber-500 shrink-0">→</span>{item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Publishing Platforms */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+            <Globe className="w-4 h-4 text-blue-600" />
+            Publishing Platforms
+            <Badge className="ml-auto bg-blue-100 text-blue-700 border-blue-200 text-xs">Phase 2</Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <p className="text-xs text-gray-500 mb-3">Content will be published to these platforms automatically. Direct API publishing (no browser automation).</p>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { name: 'WordPress.com', type: 'Web 2.0', icon: '📝', note: 'REST API' },
+              { name: 'Blogger', type: 'Web 2.0', icon: '📰', note: 'Google Blogger API v3' },
+              { name: 'Telegraph', type: 'Web 2.0', icon: '✈️', note: 'No auth required' },
+              { name: 'Notion', type: 'Web 2.0 + Stack', icon: '📓', note: 'Notion API' },
+              { name: 'Google Docs', type: 'Semantic Stack', icon: '📄', note: 'Google Docs API' },
+              { name: 'GitHub Pages', type: 'Semantic Stack', icon: '⚡', note: 'GitHub REST API' },
+              { name: 'Google Sites', type: 'Semantic Stack', icon: '🌐', note: 'Google Sites API' },
+            ].map((p, i) => (
+              <div key={i} className="flex items-start gap-2 p-2.5 bg-gray-50 border border-gray-200 rounded-md">
+                <span className="text-base">{p.icon}</span>
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-gray-800">{p.name}</p>
+                  <p className="text-[10px] text-gray-400">{p.type} · {p.note}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </CardContent>
       </Card>
 
