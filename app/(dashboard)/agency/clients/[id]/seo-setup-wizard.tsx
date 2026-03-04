@@ -102,6 +102,9 @@ export function SEOSetupWizard({ clientId, clientName, onComplete, onCancel }: S
       if (!res.ok) throw new Error(result.error || 'Activation failed');
       if (result.checkoutUrl) {
         window.location.href = result.checkoutUrl;
+      } else if (result.redirectUrl) {
+        // Redirect directly to the client's SEO tab
+        window.location.href = result.redirectUrl;
       } else {
         onComplete();
       }
