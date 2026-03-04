@@ -272,9 +272,20 @@ export function SEODashboard({ clientId, clientName }: SEODashboardProps) {
             Veterinary SEO Worker · Premium Template
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={fetchData}>
-          <RefreshCw className="w-4 h-4 mr-1" /> Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <a
+            href={`/agency/clients/${clientId}/seo-guide`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-md transition-colors"
+          >
+            <FileText className="w-3.5 h-3.5" />
+            Client PDF Guide
+          </a>
+          <Button variant="outline" size="sm" onClick={fetchData}>
+            <RefreshCw className="w-4 h-4 mr-1" /> Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Getting Started Guide — always visible, collapsible */}
