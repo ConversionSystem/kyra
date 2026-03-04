@@ -56,6 +56,7 @@ import ClientActivityHeatmap from '@/components/dashboard/client-activity-heatma
 import { VoiceChannelCard } from '@/components/dashboard/voice-channel-card';
 import RoiSummaryCard from '@/components/dashboard/roi-summary-card';
 import { MemoryBrowser } from './memory-browser';
+import { SEODashboard } from './seo-dashboard';
 
 // ── Setup Nudge Banner ────────────────────────────────────────────────────────
 
@@ -122,7 +123,7 @@ interface ChatMessage {
   content: string;
 }
 
-type Tab = 'chat' | 'personality' | 'settings' | 'ghl' | 'permissions' | 'usage' | 'conversations' | 'channels' | 'portal' | 'memory';
+type Tab = 'chat' | 'personality' | 'settings' | 'ghl' | 'permissions' | 'usage' | 'conversations' | 'channels' | 'portal' | 'memory' | 'seo';
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'chat', label: 'Test Chat', icon: MessageSquare },
@@ -135,6 +136,7 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'channels', label: 'Channels', icon: Radio },
   { id: 'portal', label: 'Client Portal', icon: Users },
   { id: 'memory', label: 'AI Memory', icon: Database },
+  { id: 'seo', label: 'SEO', icon: BarChart3 },
 ];
 
 interface ClientDetailViewProps {
@@ -323,6 +325,10 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
 
       {activeTab === 'memory' && (
         <MemoryBrowser clientId={initialClient.id} clientName={initialClient.name || 'Client'} />
+      )}
+
+      {activeTab === 'seo' && (
+        <SEODashboard clientId={initialClient.id} clientName={initialClient.name || 'Client'} />
       )}
     </div>
   );
