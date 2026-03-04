@@ -1,0 +1,42 @@
+{
+  "description": "GEO test query templates. {{CITY}}, {{CLINIC_NAME}}, {{SERVICE}} are replaced at runtime.",
+  "queries": [
+    "Best veterinarian in {{CITY}}",
+    "Top rated vet clinic in {{CITY}}",
+    "Emergency vet near {{CITY}}",
+    "Best animal hospital in {{CITY}}",
+    "Veterinarian recommendations {{CITY}}",
+    "Where should I take my dog to the vet in {{CITY}}",
+    "Best vet for {{SERVICE}} in {{CITY}}",
+    "Affordable vet in {{CITY}}",
+    "Most trusted veterinarian {{CITY}}",
+    "Exotic pet vet {{CITY}}",
+    "24 hour emergency vet {{CITY}}",
+    "Best cat vet in {{CITY}}",
+    "Pet dental care {{CITY}}",
+    "Veterinary surgery {{CITY}}",
+    "Best vet clinic near {{ADDRESS_AREA}}",
+    "Who is the best veterinarian in {{CITY}} area",
+    "Vet clinic with good reviews {{CITY}}",
+    "New puppy vet {{CITY}} recommendation",
+    "Senior pet care veterinarian {{CITY}}",
+    "Veterinary wellness exam {{CITY}}",
+    "Best pet hospital {{CITY}} {{STATE}}",
+    "Recommended animal doctor {{CITY}}",
+    "Pet vaccination clinic {{CITY}}",
+    "Vet that treats exotic animals {{CITY}}",
+    "Most experienced veterinarian {{CITY}}"
+  ],
+  "providers": [
+    {
+      "name": "chatgpt",
+      "model": "gpt-4o-mini",
+      "description": "OpenAI ChatGPT — largest user base for AI search"
+    },
+    {
+      "name": "perplexity",
+      "model": "sonar",
+      "description": "Perplexity AI — growing search alternative with citations"
+    }
+  ]
+}
