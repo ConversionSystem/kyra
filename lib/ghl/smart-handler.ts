@@ -15,6 +15,7 @@ import { getValidToken } from './api';
 import { getMemories, buildMemoryContext } from '@/lib/crm/relationship-memory';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { logActivity } from '@/lib/crm/activities';
+import { dispatchWebhookEvent } from '@/lib/agency/webhook-dispatcher';
 import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -440,6 +441,15 @@ async function handleEscalation(
   });
 
   console.log(`[smart-handler] 🚨 Escalation logged for ${ctx.contactName}: ${reason}`);
+
+  // Fire escalation webhook
+  dispatchWebhookEvent(ctx.client.agency_id, 'escalation', {
+    contact_name: ctx.contactName,
+    contact_id: ctx.contactId,
+    reason,
+    channel: ctx.messageType,
+    last_message: ctx.messageBody.slice(0, 500),
+  }).catch(() => {});
 }
 
 // ── Wake Word Checker ─────────────────────────────────────────────────────────
