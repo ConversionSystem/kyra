@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ContentPanel } from './content-panel';
+import { NAPAuditPanel } from './nap-audit-panel';
 
 // ── Getting Started Guide ─────────────────────────────────────────────────────
 
@@ -493,45 +494,7 @@ export function SEODashboard({ clientId, clientName }: SEODashboardProps) {
       </Card>
 
       {/* NAP Audit */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-emerald-600" />
-            NAP Consistency Audit
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0">
-          {data.nap_status.length === 0 ? (
-            <p className="text-sm text-gray-500 py-6 text-center">
-              No NAP audit run yet. First audit runs on the next scheduled Wednesday.
-            </p>
-          ) : (
-            <div className="divide-y divide-gray-100">
-              {data.nap_status.map((entry, i) => (
-                <div key={i} className="py-3 flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-800">{entry.directory}</p>
-                    {entry.issues.length > 0 && (
-                      <p className="text-xs text-amber-600 mt-0.5">{entry.issues.join(' · ')}</p>
-                    )}
-                  </div>
-                  <Badge className={`text-xs ${
-                    entry.status === 'match'
-                      ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
-                      : entry.status === 'mismatch'
-                      ? 'bg-amber-100 text-amber-700 border-amber-200'
-                      : 'bg-gray-100 text-gray-500 border-gray-200'
-                  }`}>
-                    {entry.status === 'match' ? '✓ Consistent'
-                      : entry.status === 'mismatch' ? '⚠ Mismatch'
-                      : 'Not Found'}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <NAPAuditPanel entries={data.nap_status} />
 
       {/* Content Drafts + Published */}
       <ContentPanel entries={data.content_published} clientId={clientId} onRefresh={fetchData} />
