@@ -5,7 +5,7 @@ import {
   Search, MapPin, FileText, Globe, MessageCircle,
   BarChart3, Loader2, AlertTriangle, CheckCircle2, TrendingUp,
   TrendingDown, Minus, RefreshCw, ExternalLink, Calendar,
-  ChevronDown, ChevronUp, BookOpen, Zap, Clock,
+  ChevronDown, ChevronUp, BookOpen, Zap, Clock, Play,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -32,7 +32,7 @@ const GLOSSARY = [
 function GettingStartedGuide({ setup }: { setup: Record<string, unknown> }) {
   const [open, setOpen] = useState(true);
 
-  const clinicName = (setup?.clinicName as string) || 'your practice';
+  const clinicName = (setup?.clinic_name as string) || (setup?.clinicName as string) || 'your practice';
   const city = (setup?.city as string) || '';
   const services = (setup?.services as string[]) || [];
 
@@ -204,6 +204,31 @@ export function SEODashboard({ clientId, clientName }: SEODashboardProps) {
   const [data, setData] = useState<SEOData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [running, setRunning] = useState<string | null>(null);
+  const [runResult, setRunResult] = useState<{ task: string; ok: boolean; message: string } | null>(null);
+
+  const runTask = async (task: 'geo_test' | 'nap_audit') => {
+    setRunning(task);
+    setRunResult(null);
+    try {
+      const res = await fetch(`/api/agency/clients/${clientId}/seo/run`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ task }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setRunResult({ task, ok: false, message: json.error || 'Task failed' });
+      } else {
+        setRunResult({ task, ok: true, message: `${task === 'geo_test' ? 'GEO test' : 'NAP audit'} completed successfully! Refreshing data…` });
+        setTimeout(() => fetchData(), 1500);
+      }
+    } catch (err) {
+      setRunResult({ task, ok: false, message: err instanceof Error ? err.message : 'Unknown error' });
+    } finally {
+      setRunning(null);
+    }
+  };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -290,6 +315,59 @@ export function SEODashboard({ clientId, clientName }: SEODashboardProps) {
 
       {/* Getting Started Guide — always visible, collapsible */}
       <GettingStartedGuide setup={data.setup} />
+
+      {/* Run Now Panel */}
+      <Card className="border-gray-200">
+        <CardContent className="p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-gray-900">Run tasks now</p>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Don&apos;t wait for the weekly schedule — kick off a task immediately.
+                Requires <code className="text-xs bg-gray-100 px-1 rounded">OPENAI_API_KEY</code> + <code className="text-xs bg-gray-100 px-1 rounded">PERPLEXITY_API_KEY</code> for GEO,
+                and <code className="text-xs bg-gray-100 px-1 rounded">FIRECRAWL_API_KEY</code> for NAP.
+              </p>
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => runTask('geo_test')}
+                disabled={!!running}
+                className="text-indigo-700 border-indigo-200 bg-indigo-50 hover:bg-indigo-100"
+              >
+                {running === 'geo_test'
+                  ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Running…</>
+                  : <><Play className="w-3.5 h-3.5 mr-1.5" />Run GEO Test</>}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => runTask('nap_audit')}
+                disabled={!!running}
+                className="text-emerald-700 border-emerald-200 bg-emerald-50 hover:bg-emerald-100"
+              >
+                {running === 'nap_audit'
+                  ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Running…</>
+                  : <><Play className="w-3.5 h-3.5 mr-1.5" />Run NAP Audit</>}
+              </Button>
+            </div>
+          </div>
+
+          {runResult && (
+            <div className={`mt-3 rounded-md px-3 py-2 text-sm flex items-start gap-2 ${
+              runResult.ok
+                ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                : 'bg-red-50 text-red-800 border border-red-200'
+            }`}>
+              {runResult.ok
+                ? <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
+                : <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />}
+              <span>{runResult.message}</span>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

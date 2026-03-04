@@ -8,7 +8,7 @@ interface Props {
 }
 
 export function SEOGuidePrint({ clientName, setup, agencyName, agencyEmail }: Props) {
-  const clinicName = (setup?.clinicName as string) || clientName;
+  const clinicName = (setup?.clinic_name as string) || (setup?.clinicName as string) || clientName;
   const city = (setup?.city as string) || '';
   const address = (setup?.address as string) || '';
   const services = (setup?.services as string[]) || [];
