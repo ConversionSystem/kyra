@@ -38,7 +38,7 @@ interface Props {
   autoUpgradePlan: string | null; // plan to auto-trigger on mount
 }
 
-const PLAN_ORDER: Plan[] = ['free', 'starter', 'pro', 'scale'];
+const PLAN_ORDER: Plan[] = ['business_starter', 'starter', 'pro', 'scale'];
 
 function planIndex(p: string) {
   return PLAN_ORDER.indexOf(p as Plan);
@@ -331,10 +331,6 @@ export function BillingPageClient({ agency, clientCount, totalConversationsThisM
                   {isCurrent ? (
                     <Button className="w-full text-sm" size="sm" variant="outline" disabled>
                       <CheckCircle2 className="h-3.5 w-3.5 mr-1.5 text-green-500" /> Current Plan
-                    </Button>
-                  ) : id === 'free' ? (
-                    <Button className="w-full text-sm" size="sm" variant="outline" disabled>
-                      Free Plan
                     </Button>
                   ) : (
                     <Button
