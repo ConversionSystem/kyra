@@ -1,14 +1,153 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { getAllPremiumTemplates, type PremiumTemplate } from '@/lib/billing/premium-templates';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Sparkles, ArrowRight, Check } from 'lucide-react';
-import Link from 'next/link';
+import { Sparkles, ArrowRight, Check, Loader2, X, Search } from 'lucide-react';
+import { SEOSetupWizard } from '../clients/[id]/seo-setup-wizard';
+
+interface Client {
+  id: string;
+  name: string;
+  settings?: Record<string, unknown>;
+}
+
+// ── Client Picker Modal ────────────────────────────────────────────────────
+
+function ClientPickerModal({
+  templateId,
+  onSelect,
+  onClose,
+}: {
+  templateId: string;
+  onSelect: (client: Client) => void;
+  onClose: () => void;
+}) {
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    fetch('/api/agency/clients')
+      .then((r) => r.json())
+      .then((data) => setClients(data.clients ?? data ?? []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const filtered = clients.filter((c) => {
+    const alreadyActive = c.settings?.premium_template === templateId;
+    const matchesSearch = c.name?.toLowerCase().includes(search.toLowerCase());
+    return !alreadyActive && matchesSearch;
+  });
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+          <h2 className="text-base font-semibold text-gray-900">Choose a Client</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Search */}
+        <div className="px-5 py-3 border-b border-gray-100">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-md text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              placeholder="Search clients..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              autoFocus
+            />
+          </div>
+        </div>
+
+        {/* Client List */}
+        <div className="max-h-72 overflow-y-auto divide-y divide-gray-100">
+          {loading ? (
+            <div className="flex items-center justify-center py-10 text-gray-400">
+              <Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading clients...
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="py-10 text-center">
+              <p className="text-sm text-gray-500">
+                {clients.length === 0 ? 'No clients yet. Create a client first.' : 'All eligible clients already have this template.'}
+              </p>
+            </div>
+          ) : (
+            filtered.map((client) => (
+              <button
+                key={client.id}
+                onClick={() => onSelect(client)}
+                className="w-full flex items-center justify-between px-5 py-3 hover:bg-gray-50 text-left transition-colors"
+              >
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{client.name}</p>
+                </div>
+                <ArrowRight className="w-4 h-4 text-gray-400" />
+              </button>
+            ))
+          )}
+        </div>
+
+        <div className="px-5 py-3 border-t border-gray-100">
+          <Button variant="ghost" size="sm" onClick={onClose} className="w-full">Cancel</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Setup Wizard Modal ─────────────────────────────────────────────────────
+
+function SetupWizardModal({
+  client,
+  onComplete,
+  onClose,
+}: {
+  client: Client;
+  onComplete: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40">
+      <div className="min-h-full flex items-start justify-center py-10 px-4">
+        <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+            <h2 className="text-base font-semibold text-gray-900">
+              🐾 Vet SEO Worker — {client.name}
+            </h2>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="p-6">
+            <SEOSetupWizard
+              clientId={client.id}
+              clientName={client.name}
+              onComplete={() => { onComplete(); onClose(); }}
+              onCancel={onClose}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Main Page ──────────────────────────────────────────────────────────────
 
 export function PremiumTemplatesPage() {
   const templates = getAllPremiumTemplates();
+  const [pickingFor, setPickingFor] = useState<string | null>(null);
+  const [wizardClient, setWizardClient] = useState<Client | null>(null);
+  const [activated, setActivated] = useState<string | null>(null);
 
   return (
     <div className="max-w-5xl mx-auto p-4 sm:p-6 md:p-8 space-y-6">
@@ -16,17 +155,34 @@ export function PremiumTemplatesPage() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
           <Sparkles className="w-6 h-6 text-amber-500" />
-          Premium AI Worker Templates
+          Worker Templates
         </h1>
         <p className="text-gray-500 mt-1 text-sm">
           Deploy specialized AI workers for your clients. All LLM tokens, API costs, and infrastructure included — one flat monthly price.
         </p>
       </div>
 
+      {/* Success banner */}
+      {activated && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 flex items-center gap-3">
+          <Check className="w-5 h-5 text-emerald-600 shrink-0" />
+          <p className="text-sm text-emerald-700 font-medium">
+            SEO Worker activated! Check the client's <strong>SEO tab</strong> to monitor progress.
+          </p>
+          <button onClick={() => setActivated(null)} className="ml-auto text-emerald-400 hover:text-emerald-600">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Template Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {templates.map((template) => (
-          <TemplateCard key={template.id} template={template} />
+          <TemplateCard
+            key={template.id}
+            template={template}
+            onDeploy={() => setPickingFor(template.id)}
+          />
         ))}
 
         {/* Coming Soon */}
@@ -37,11 +193,42 @@ export function PremiumTemplatesPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Client Picker Modal */}
+      {pickingFor && !wizardClient && (
+        <ClientPickerModal
+          templateId={pickingFor}
+          onSelect={(client) => {
+            setWizardClient(client);
+          }}
+          onClose={() => setPickingFor(null)}
+        />
+      )}
+
+      {/* Setup Wizard Modal */}
+      {wizardClient && (
+        <SetupWizardModal
+          client={wizardClient}
+          onComplete={() => setActivated(wizardClient.name)}
+          onClose={() => {
+            setWizardClient(null);
+            setPickingFor(null);
+          }}
+        />
+      )}
     </div>
   );
 }
 
-function TemplateCard({ template }: { template: PremiumTemplate }) {
+// ── Template Card ──────────────────────────────────────────────────────────
+
+function TemplateCard({
+  template,
+  onDeploy,
+}: {
+  template: PremiumTemplate;
+  onDeploy: () => void;
+}) {
   return (
     <Card className="hover:border-blue-300 transition-colors">
       <CardContent className="p-6">
@@ -80,11 +267,9 @@ function TemplateCard({ template }: { template: PremiumTemplate }) {
           </p>
         </div>
 
-        <Link href={`/agency/clients?activate_template=${template.id}`}>
-          <Button className="w-full">
-            Deploy for a Client <ArrowRight className="w-4 h-4 ml-1" />
-          </Button>
-        </Link>
+        <Button className="w-full" onClick={onDeploy}>
+          Deploy for a Client <ArrowRight className="w-4 h-4 ml-1" />
+        </Button>
       </CardContent>
     </Card>
   );
