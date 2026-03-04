@@ -1,21 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAgencyAdmin } from '@/lib/agency/middleware';
 import { createClient } from '@/lib/supabase/server';
-import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
-import { getAgencyForUser } from '@/lib/agency/queries';
 import { getPremiumTemplate } from '@/lib/billing/premium-templates';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
-  // ── Auth ──────────────────────────────────────────────────────────────
+  // ── Auth — same pattern as /api/agency/clients ────────────────────────
+  const authResult = await requireAgencyAdmin();
+  if (authResult.error) {
+    return NextResponse.json(
+      { error: authResult.error.message },
+      { status: authResult.error.status },
+    );
+  }
+
+  const { agency } = authResult.data;
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-  const result = await getAgencyForUser(user.id);
-  if (!result) return NextResponse.json({ error: 'No agency found for this user' }, { status: 403 });
-
-  const agencyId = result.agency.id;
 
   // ── Parse body ────────────────────────────────────────────────────────
   const body = await request.json();
@@ -31,35 +32,26 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: `Unknown template: ${templateId}` }, { status: 400 });
   }
 
-  // ── Fetch client (user-scoped — same client as works in the picker) ──
-  // NOTE: service role key may be missing in env; user client definitely works
-  const { data: clientRow, error: clientErr } = await supabase
+  // ── Fetch client — same query as /api/agency/clients GET ─────────────
+  const { data: allClients, error: listErr } = await supabase
     .from('agency_clients')
-    .select('id, name, agency_id, settings')
-    .eq('id', clientId)
-    .single();
+    .select('id, name, settings')
+    .eq('agency_id', agency.id);
 
-  if (clientErr || !clientRow) {
-    console.error('[premium-template] Client lookup failed:', {
-      clientId,
-      agencyId,
-      error: clientErr?.message,
-      code: clientErr?.code,
-    });
-    return NextResponse.json(
-      { error: `Client not found (id: ${clientId})` },
-      { status: 404 },
-    );
+  if (listErr) {
+    console.error('[premium-template] agency_clients list failed:', listErr);
+    return NextResponse.json({ error: `DB error: ${listErr.message}` }, { status: 500 });
   }
 
-  // ── Verify ownership ──────────────────────────────────────────────────
-  if (clientRow.agency_id !== agencyId) {
-    console.error('[premium-template] Agency mismatch:', {
-      clientId,
-      clientAgencyId: clientRow.agency_id,
-      userAgencyId: agencyId,
-    });
-    return NextResponse.json({ error: 'This client does not belong to your agency' }, { status: 403 });
+  console.log(`[premium-template] agency ${agency.id} has ${allClients?.length ?? 0} clients. Looking for: ${clientId}`);
+  console.log('[premium-template] IDs available:', allClients?.map(c => c.id));
+
+  const clientRow = allClients?.find(c => c.id === clientId);
+  if (!clientRow) {
+    return NextResponse.json(
+      { error: `Client not found. Available IDs: ${allClients?.map(c => c.id).join(', ')}` },
+      { status: 404 },
+    );
   }
 
   const clientSettings = (clientRow.settings as Record<string, unknown>) ?? {};
@@ -85,28 +77,13 @@ export async function POST(request: NextRequest) {
     const { error: updateErr } = await supabase
       .from('agency_clients')
       .update({ settings: newSettings })
-      .eq('id', clientId);
+      .eq('id', clientId)
+      .eq('agency_id', agency.id);
 
     if (updateErr) {
       console.error('[premium-template] Update failed:', updateErr);
       return NextResponse.json(
-        { error: `Database update failed: ${updateErr.message}` },
-        { status: 500 },
-      );
-    }
-
-    // Verify it persisted
-    const { data: verify } = await supabase
-      .from('agency_clients')
-      .select('settings')
-      .eq('id', clientId)
-      .single();
-
-    const saved = (verify?.settings as Record<string, unknown>)?.premium_template;
-    if (saved !== templateId) {
-      console.error('[premium-template] Verification failed. Saved:', saved, 'Expected:', templateId);
-      return NextResponse.json(
-        { error: 'Activation did not persist — try again' },
+        { error: `Update failed: ${updateErr.message}` },
         { status: 500 },
       );
     }
@@ -136,12 +113,11 @@ export async function POST(request: NextRequest) {
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/agency/clients/${clientId}?tab=seo&activated=true`,
       cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/agency/clients/${clientId}?tab=settings`,
-      client_reference_id: user.id,
+      client_reference_id: agency.id,
       metadata: {
-        agency_id: agencyId,
+        agency_id: agency.id,
         client_id: clientId,
         template_id: templateId,
-        user_id: user.id,
       },
     });
 
