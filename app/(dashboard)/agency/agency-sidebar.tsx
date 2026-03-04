@@ -81,6 +81,7 @@ const navSections: NavSection[] = [
     label: 'AI Worker',
     collapsible: true,
     items: [
+      { label: 'AI Setup', href: '/agency/ai-setup', icon: Sparkles },
       { label: 'Worker Templates', href: '/agency/templates', icon: Sparkles },
       { label: 'AI Agents', href: '/agency/agents', icon: Bot },
       { label: 'Channels', href: '/agency/channels', icon: Radio },
@@ -147,6 +148,7 @@ const soloNavSections: NavSection[] = [
     label: 'AI Worker',
     collapsible: true,
     items: [
+      { label: 'AI Setup', href: '/agency/ai-setup', icon: Sparkles },
       { label: 'Worker Templates', href: '/agency/templates', icon: Sparkles },
       { label: 'Channels', href: '/agency/channels', icon: Radio },
       { label: 'Chat Widget', href: '/agency/widget', icon: MessageCircle },
