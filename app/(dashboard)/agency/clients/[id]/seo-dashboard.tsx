@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ContentPanel } from './content-panel';
 
 // ── Getting Started Guide ─────────────────────────────────────────────────────
 
@@ -176,9 +177,13 @@ interface NapEntry {
 interface ContentEntry {
   title: string;
   platform: string;
-  url: string;
+  url: string | null;
   type: 'press_release' | 'web20' | 'semantic_stack';
   published_at: string;
+  status?: 'draft' | 'published';
+  body?: string;
+  target_keyword?: string;
+  word_count?: number;
 }
 
 interface SEOData {
@@ -528,44 +533,8 @@ export function SEODashboard({ clientId, clientName }: SEODashboardProps) {
         </CardContent>
       </Card>
 
-      {/* Published Content */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-            <Globe className="w-4 h-4 text-blue-600" />
-            Published Content
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0">
-          {data.content_published.length === 0 ? (
-            <p className="text-sm text-gray-500 py-6 text-center">
-              No content published yet. Content creation begins after the first GEO baseline.
-            </p>
-          ) : (
-            <div className="divide-y divide-gray-100">
-              {data.content_published.map((entry, i) => (
-                <div key={i} className="py-3 flex items-center justify-between">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-800 truncate">{entry.title}</p>
-                    <p className="text-xs text-gray-500">{entry.platform} · {new Date(entry.published_at).toLocaleDateString()}</p>
-                  </div>
-                  <div className="flex items-center gap-2 ml-3">
-                    <Badge className="text-xs bg-gray-100 text-gray-600 border-gray-200">
-                      {entry.type === 'press_release' ? 'PR' : entry.type === 'web20' ? 'Web 2.0' : 'Stack'}
-                    </Badge>
-                    {entry.url && (
-                      <a href={entry.url} target="_blank" rel="noopener noreferrer"
-                        className="text-gray-400 hover:text-indigo-600">
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Content Drafts + Published */}
+      <ContentPanel entries={data.content_published} clientId={clientId} onRefresh={fetchData} />
 
       {/* Reddit Queue */}
       <Card>
