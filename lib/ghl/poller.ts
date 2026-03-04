@@ -30,6 +30,7 @@ import { deductCredit } from '@/lib/billing/credit-engine';
 import { routeMessage } from './model-router';
 import { callLLMWithTools } from './direct-llm';
 import { getCustomerMemory, updateCustomerMemory, formatMemoryForPrompt, extractFactsFromConversation } from '@/lib/memory/customer-memory';
+import { isReviewGateActive, queueForReview } from './review-gate';
 import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
 
 const GHL_API_BASE = 'https://services.leadconnectorhq.com';
@@ -580,8 +581,27 @@ async function processConversation(
   const processingTimeMs = Date.now() - processingStart;
   console.log(`[ghl/poller] 🤖 AI response (${aiResponse.length} chars, ${processingTimeMs}ms)${escalation ? ' 🚨 ESCALATION' : ''}${!outputScan.safe ? ' 🛡️ output-sanitized' : ''}, sending to ${contactName}`);
 
-  // ── Send reply back through GHL ─────────────────────────────────────
-  await sendGHLMessage(client.id, token, conv.contactId, aiResponse, messageType);
+  // ── Check review gate before sending ─────────────────────────────────
+  const shouldReview = await isReviewGateActive(client.agency_id, client.id);
+
+  if (shouldReview) {
+    await queueForReview({
+      clientId: client.id,
+      agencyId: client.agency_id,
+      contactId: conv.contactId,
+      contactName,
+      contactPhone: conv.phone || contactInfo?.phone || null,
+      contactEmail: contactInfo?.email || null,
+      conversationId: conv.id,
+      channel: formatChannelName(messageType),
+      userMessage: latestInbound.body,
+      aiResponse,
+      responseTimeMs: processingTimeMs,
+    });
+    console.log(`[ghl/poller] 📋 Response queued for review (not sent to ${contactName})`);
+  } else {
+    await sendGHLMessage(client.id, token, conv.contactId, aiResponse, messageType);
+  }
 
   // ── Save to DB (client_conversations for memory) ──────────────────────
   try {
