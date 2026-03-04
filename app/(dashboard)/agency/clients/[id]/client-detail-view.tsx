@@ -77,7 +77,7 @@ function SetupNudgeBanner({
 
   const missing: { label: string; tab: Tab; desc: string }[] = [];
   if (!hasPersonality) missing.push({ label: 'Add Personality', tab: 'personality', desc: 'Train the AI with persona, greeting, and instructions' });
-  if (!hasGHL) missing.push({ label: 'Connect GHL', tab: 'ghl', desc: 'Link a GHL sub-account so the AI responds to your contacts' });
+  // GHL nudge removed from global banner — shown only inside the GHL tab
 
   if (missing.length === 0) return null;
 
