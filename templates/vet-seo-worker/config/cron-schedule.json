@@ -1,0 +1,56 @@
+{
+  "description": "Cron schedule for the Vet SEO Worker. All times in the client's local timezone.",
+  "jobs": [
+    {
+      "id": "geo-test-weekly",
+      "skill": "geo-tester",
+      "schedule": "0 9 * * 1",
+      "description": "Weekly GEO visibility test — every Monday at 9 AM",
+      "enabled": true
+    },
+    {
+      "id": "nap-audit-weekly",
+      "skill": "nap-auditor",
+      "schedule": "0 10 * * 3",
+      "description": "Weekly NAP consistency audit — every Wednesday at 10 AM",
+      "enabled": true
+    },
+    {
+      "id": "ugc-monitor-morning",
+      "skill": "ugc-monitor",
+      "schedule": "0 8 * * *",
+      "description": "Daily Reddit/UGC scan — every day at 8 AM",
+      "enabled": true
+    },
+    {
+      "id": "ugc-monitor-evening",
+      "skill": "ugc-monitor",
+      "schedule": "0 18 * * *",
+      "description": "Daily Reddit/UGC scan — every day at 6 PM",
+      "enabled": true
+    },
+    {
+      "id": "seo-report-weekly",
+      "skill": "seo-reporter",
+      "schedule": "0 15 * * 5",
+      "description": "Weekly SEO report — every Friday at 3 PM",
+      "enabled": true
+    },
+    {
+      "id": "content-batch-tue",
+      "skill": "seo-content-writer",
+      "schedule": "0 9 * * 2",
+      "description": "Content creation batch — Tuesday at 9 AM",
+      "enabled": true,
+      "params": { "count": 2, "types": ["web20", "press_release"] }
+    },
+    {
+      "id": "content-batch-thu",
+      "skill": "seo-content-writer",
+      "schedule": "0 9 * * 4",
+      "description": "Content creation batch — Thursday at 9 AM",
+      "enabled": true,
+      "params": { "count": 2, "types": ["web20", "semantic_stack"] }
+    }
+  ]
+}
