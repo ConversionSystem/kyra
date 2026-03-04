@@ -31,10 +31,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: `Unknown template: ${templateId}` }, { status: 400 });
   }
 
-  // ── Fetch client (service role — no RLS) ─────────────────────────────
-  const admin = createServiceClientWithoutCookies();
-
-  const { data: clientRow, error: clientErr } = await admin
+  // ── Fetch client (user-scoped — same client as works in the picker) ──
+  // NOTE: service role key may be missing in env; user client definitely works
+  const { data: clientRow, error: clientErr } = await supabase
     .from('agency_clients')
     .select('id, name, agency_id, settings')
     .eq('id', clientId)
@@ -83,7 +82,7 @@ export async function POST(request: NextRequest) {
       premium_template_status: 'active',
     };
 
-    const { error: updateErr } = await admin
+    const { error: updateErr } = await supabase
       .from('agency_clients')
       .update({ settings: newSettings })
       .eq('id', clientId);
@@ -97,7 +96,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify it persisted
-    const { data: verify } = await admin
+    const { data: verify } = await supabase
       .from('agency_clients')
       .select('settings')
       .eq('id', clientId)
