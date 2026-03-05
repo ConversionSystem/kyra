@@ -43,6 +43,9 @@ export default async function AgencyBillingPage({
     0
   );
 
+  const agencySettings = (result.agency.settings ?? {}) as Record<string, unknown>;
+  const isSolo = agencySettings.account_type === 'solo';
+
   return (
     <BillingPageClient
       agency={agency as { id: string; name: string; plan: string; stripe_customer_id: string | null }}
@@ -50,6 +53,7 @@ export default async function AgencyBillingPage({
       totalConversationsThisMonth={totalConversationsThisMonth}
       checkoutStatus={checkout ?? null}
       autoUpgradePlan={upgrade ?? null}
+      isSolo={isSolo}
     />
   );
 }
