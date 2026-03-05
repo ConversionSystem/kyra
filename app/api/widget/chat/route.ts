@@ -25,6 +25,14 @@ import {
   getLeadCapturePrompt,
 } from '@/lib/chat/lead-capture';
 import { deductCredits, requireCredits } from '@/lib/billing/credit-engine';
+import { resolveClientGateway } from '@/lib/ovh/provisioner';
+
+// CORS headers required on EVERY response — the widget is embedded on external sites
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+};
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -55,14 +63,14 @@ export async function POST(request: NextRequest) {
   // Rate limit by IP
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
   if (isRateLimited(ip)) {
-    return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
+    return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429, headers: CORS });
   }
 
   let body: Record<string, unknown>;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400, headers: CORS });
   }
 
   const clientId = body.clientId as string | undefined;
@@ -72,11 +80,11 @@ export async function POST(request: NextRequest) {
   const sourceUrl = body.sourceUrl as string | undefined;
 
   if (!clientId || !message?.trim()) {
-    return NextResponse.json({ error: 'clientId and message are required' }, { status: 400 });
+    return NextResponse.json({ error: 'clientId and message are required' }, { status: 400, headers: CORS });
   }
 
   if (message.length > 2000) {
-    return NextResponse.json({ error: 'Message too long (max 2000 chars)' }, { status: 400 });
+    return NextResponse.json({ error: 'Message too long (max 2000 chars)' }, { status: 400, headers: CORS });
   }
 
   const supabase = getSupabase();
@@ -89,23 +97,29 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (dbErr || !client) {
-    return NextResponse.json({ error: 'Client not found' }, { status: 404 });
+    return NextResponse.json({ error: 'Client not found' }, { status: 404, headers: CORS });
   }
 
   if (client.status !== 'active' && client.status !== 'setup') {
-    return NextResponse.json({ error: 'Client AI not active' }, { status: 403 });
+    return NextResponse.json({ error: 'Client AI not active' }, { status: 403, headers: CORS });
   }
 
-  if (!client.gateway_url || !['running', 'starting'].includes(client.gateway_status || '')) {
-    return NextResponse.json({ error: 'AI not available' }, { status: 503 });
+  // Use resolveClientGateway to get a fresh read of the gateway URL/token/status.
+  // Falls back gracefully if the DB check shows the container isn't ready.
+  const gateway = await resolveClientGateway(clientId);
+  if (!gateway) {
+    return NextResponse.json({ error: 'AI not available' }, { status: 503, headers: CORS });
   }
 
-  // ── Credit check ────────────────────────────────────────────────────────────
+  const liveGatewayUrl = gateway.url;
+  const liveGatewayToken = gateway.token;
+
+  // ── Credit check ──────────────────────────────────────────────────────────
   const creditCheck = await requireCredits(client.agency_id, 'chat.message');
   if (!creditCheck.allowed) {
     return NextResponse.json(
       { error: 'AI unavailable — account credits depleted' },
-      { status: 503, headers: { 'Access-Control-Allow-Origin': '*' } },
+      { status: 503, headers: CORS },
     );
   }
 
@@ -152,11 +166,11 @@ export async function POST(request: NextRequest) {
   // ── Call AI Gateway ────────────────────────────────────────────────────────
   let aiResponse = '';
   try {
-    const chatRes = await fetch(`${client.gateway_url}/v1/chat/completions`, {
+    const chatRes = await fetch(`${liveGatewayUrl}/v1/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${client.gateway_token}`,
+        Authorization: `Bearer ${liveGatewayToken}`,
       },
       body: JSON.stringify({
         model: 'openai/gpt-4o-mini',
@@ -174,7 +188,7 @@ export async function POST(request: NextRequest) {
     if (!chatRes.ok) {
       const errText = await chatRes.text().catch(() => '');
       console.error(`[widget/chat] Gateway error ${chatRes.status}: ${errText.slice(0, 200)}`);
-      return NextResponse.json({ error: 'AI unavailable' }, { status: 503 });
+      return NextResponse.json({ error: 'AI unavailable' }, { status: 503, headers: CORS });
     }
 
     const data = await chatRes.json();
@@ -182,11 +196,11 @@ export async function POST(request: NextRequest) {
   } catch (err: unknown) {
     const errMsg = err instanceof Error ? err.message : String(err);
     console.error(`[widget/chat] Gateway timeout/error: ${errMsg}`);
-    return NextResponse.json({ error: 'AI unavailable' }, { status: 503 });
+    return NextResponse.json({ error: 'AI unavailable' }, { status: 503, headers: CORS });
   }
 
   if (!aiResponse.trim()) {
-    return NextResponse.json({ error: 'Empty AI response' }, { status: 503 });
+    return NextResponse.json({ error: 'Empty AI response' }, { status: 503, headers: CORS });
   }
 
   // ── Log to client_conversations ──────────────────────────────────────────
@@ -279,24 +293,11 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json(
     { response: aiResponse, sessionId: resolvedSessionId, leadCaptured },
-    {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      },
-    },
+    { headers: CORS },
   );
 }
 
 // CORS preflight
 export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 204,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-    },
-  });
+  return new NextResponse(null, { status: 204, headers: CORS });
 }
