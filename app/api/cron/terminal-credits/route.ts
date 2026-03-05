@@ -21,7 +21,6 @@
 import { NextResponse } from 'next/server';
 import { createClient as createSupabaseServiceClient } from '@supabase/supabase-js';
 import { deductCredits } from '@/lib/billing/credit-engine';
-import { resolveAgencyApiKey } from '@/lib/billing/byok';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
@@ -54,7 +53,7 @@ async function getContainerTokenUsage(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ tool: 'sessions_list', args: {} }),
-      signal: AbortSignal.timeout(8_000),
+      signal: AbortSignal.timeout(4_000),
     });
 
     if (!res.ok) return null;
@@ -144,63 +143,72 @@ export async function GET(request: Request) {
     totalCreditsDeducted: 0,
   };
 
-  // Process containers in parallel batches of 10 (avoid hammering all at once)
-  const BATCH = 10;
-  for (let i = 0; i < allContainers.length; i += BATCH) {
-    const batch = allContainers.slice(i, i + BATCH);
-    await Promise.all(batch.map(async (client) => {
-      // BYOK bypass
-      const resolved = await resolveAgencyApiKey(client.agency_id).catch(() => null);
-      if (resolved?.isByok) {
-        results.skippedByok++;
+  // Pre-fetch all BYOK statuses in one query to avoid N×1 DB round-trips
+  const allAgencyIds = [...new Set(allContainers.map(c => c.agency_id))];
+  const { data: byokRows } = await supabase
+    .from('agencies')
+    .select('id, api_keys')
+    .in('id', allAgencyIds);
+
+  const byokSet = new Set<string>();
+  for (const row of byokRows ?? []) {
+    const keys = (row.api_keys as Record<string, string>) ?? {};
+    // BYOK = agency has their own API key configured
+    if (Object.values(keys).some(v => v && v.startsWith('sk-'))) {
+      byokSet.add(row.id);
+    }
+  }
+
+  // Process ALL containers in parallel (HTTP calls are fast ~200ms each)
+  await Promise.all(allContainers.map(async (client) => {
+    if (byokSet.has(client.agency_id)) {
+      results.skippedByok++;
+      return;
+    }
+
+    try {
+      const currentTokens = await getContainerTokenUsage(client.gateway_url, client.gateway_token);
+
+      if (currentTokens === null) {
+        results.skippedUnreachable++;
         return;
       }
 
-      try {
-        const currentTokens = await getContainerTokenUsage(client.gateway_url, client.gateway_token);
+      results.checked++;
 
-        if (currentTokens === null) {
-          results.skippedUnreachable++;
-          return;
-        }
+      const lastKnownTokens = (client.settings.terminal_tokens_last_known as number) ?? 0;
+      const deltaTokens = Math.max(0, currentTokens - lastKnownTokens);
 
-        results.checked++;
+      // Always save the latest token baseline
+      await supabase
+        .from(client.table)
+        .update({
+          settings: {
+            ...client.settings,
+            terminal_tokens_last_known: currentTokens,
+            terminal_tokens_last_checked: new Date().toISOString(),
+          },
+        })
+        .eq('id', client.id);
 
-        const lastKnownTokens = (client.settings.terminal_tokens_last_known as number) ?? 0;
-        const deltaTokens = Math.max(0, currentTokens - lastKnownTokens);
+      if (deltaTokens < CREDIT_TOKENS_THRESHOLD) return; // Not enough for 1 credit yet
 
-        // Always save the latest token count
-        const newSettings = {
-          ...client.settings,
-          terminal_tokens_last_known: currentTokens,
-          terminal_tokens_last_checked: new Date().toISOString(),
-        };
+      const creditsToDeduct = Math.floor(deltaTokens / CREDIT_TOKENS_THRESHOLD);
 
-        await supabase
-          .from(client.table)
-          .update({ settings: newSettings })
-          .eq('id', client.id);
+      await deductCredits(client.agency_id, 'chat.message', {
+        multiplier: creditsToDeduct,
+        clientId: client.table === 'agency_clients' ? client.id : null,
+        description: `Terminal: ${deltaTokens.toLocaleString()} tokens → ${creditsToDeduct} credit${creditsToDeduct !== 1 ? 's' : ''} (${client.name})`,
+      });
 
-        if (deltaTokens < CREDIT_TOKENS_THRESHOLD) return; // Not enough for 1 credit yet
-
-        const creditsToDeduct = Math.floor(deltaTokens / CREDIT_TOKENS_THRESHOLD);
-
-        await deductCredits(client.agency_id, 'chat.message', {
-          multiplier: creditsToDeduct,
-          clientId: client.table === 'agency_clients' ? client.id : null,
-          description: `Terminal: ${deltaTokens.toLocaleString()} tokens → ${creditsToDeduct} credit${creditsToDeduct !== 1 ? 's' : ''} (${client.name})`,
-        });
-
-        results.deducted++;
-        results.totalCreditsDeducted += creditsToDeduct;
-
-        console.log(`[terminal-credits] ${client.name} (${client.table}): +${deltaTokens} tokens → -${creditsToDeduct} credits`);
-      } catch (err) {
-        console.error(`[terminal-credits] Error processing ${client.name}:`, err);
-        results.errors++;
-      }
-    }));
-  }
+      results.deducted++;
+      results.totalCreditsDeducted += creditsToDeduct;
+      console.log(`[terminal-credits] ${client.name}: +${deltaTokens} tokens → -${creditsToDeduct} credits`);
+    } catch (err) {
+      console.error(`[terminal-credits] Error processing ${client.name}:`, err);
+      results.errors++;
+    }
+  }));
 
   return NextResponse.json({ ok: true, ...results });
 }
