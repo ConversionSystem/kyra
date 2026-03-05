@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react';
 import {
   Activity, DollarSign, MessageSquare, Zap, Bot, Clock,
   TrendingUp, AlertTriangle, CheckCircle2, XCircle, Loader2,
-  ChevronUp, ChevronDown, ArrowUpDown,
+  ChevronUp, ChevronDown, ArrowUpDown, ExternalLink,
 } from 'lucide-react';
+import Link from 'next/link';
+import { SectionNav } from '@/components/dashboard/section-nav';
 
 interface ClientUsage {
   client_id: string;
@@ -73,6 +75,8 @@ export function UsageDashboard() {
   }
 
   return (
+    <div className="space-y-0">
+    <SectionNav currentHref="/agency/usage" />
     <div className="p-4 sm:p-6 md:p-8 max-w-6xl space-y-6">
       {/* Header */}
       <div>
@@ -154,12 +158,16 @@ export function UsageDashboard() {
                 {sorted.map(c => (
                   <tr key={c.client_id} className="hover:bg-gray-50 transition">
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
+                      <Link
+                        href={`/agency/clients/${c.client_id}`}
+                        className="flex items-center gap-2 group"
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center group-hover:bg-indigo-100 transition">
                           <Bot className="h-4 w-4 text-indigo-600" />
                         </div>
-                        <span className="font-medium text-gray-900 truncate max-w-[180px]">{c.client_name}</span>
-                      </div>
+                        <span className="font-medium text-gray-900 truncate max-w-[180px] group-hover:text-indigo-600 transition">{c.client_name}</span>
+                        <ExternalLink className="h-3 w-3 text-gray-300 group-hover:text-indigo-400 shrink-0 transition" />
+                      </Link>
                     </td>
                     <td className="px-3 py-3">
                       <StatusBadge status={c.status} />
@@ -211,6 +219,7 @@ export function UsageDashboard() {
           <p className="mt-0.5">Based on average tokens per conversation (~800) and current model pricing. Actual costs depend on conversation length and API provider rates.</p>
         </div>
       </div>
+    </div>
     </div>
   );
 }
