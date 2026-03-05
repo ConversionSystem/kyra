@@ -9,10 +9,10 @@ import PublicFooter from '@/components/layout/public-footer';
 
 export const metadata: Metadata = {
   title: 'Kyra — Autonomous AI Workers for GHL Agencies | Powered by OpenClaw',
-  description: 'Deploy autonomous AI workers to every client in your portfolio. Powered by OpenClaw — the enterprise AI runtime that never stops. Manage your entire AI workforce from one command center.',
+  description: 'Kyra is a white-label AI workforce platform built on OpenClaw for agencies. Deploy, manage, and monetize autonomous AI workers for your clients — without writing code, without managing infrastructure.',
   openGraph: {
     title: 'Kyra — The AI Workforce Platform for Agencies',
-    description: 'Deploy autonomous AI workers to every client. They operate 24/7, remember everything, and work across every channel. Powered by OpenClaw.',
+    description: 'Kyra is a white-label AI workforce platform built on OpenClaw for agencies. Deploy, manage, and monetize autonomous AI workers for your clients — without writing code, without managing infrastructure.',
     url: 'https://kyra.conversionsystem.com',
   },
   alternates: { canonical: 'https://kyra.conversionsystem.com' },
@@ -78,7 +78,7 @@ export default function HomePage() {
               Not chatbots. Workers.
             </h1>
             <p className="text-slate-300 text-lg sm:text-xl leading-relaxed mb-8 max-w-lg">
-              Kyra deploys autonomous AI workers — powered by OpenClaw — to every client in your portfolio. They operate 24/7, remember everything, and work across every channel. You manage them all from one command center.
+              Kyra is a white-label AI workforce platform built on OpenClaw for agencies. Deploy, manage, and monetize autonomous AI workers for your clients — without writing code, without managing infrastructure.
             </p>
 
             {/* Stats row */}
@@ -86,8 +86,8 @@ export default function HomePage() {
               {[
                 { value: '24/7', label: 'Never stops working' },
                 { value: '< 60s', label: 'First response time' },
-                { value: '∞', label: 'Memory across sessions' },
-                { value: 'BYOK', label: 'Any AI model' },
+                { value: '30+', label: 'Client AI workers' },
+                { value: '7-day', label: 'Free trial' },
               ].map((s) => (
                 <div key={s.label} className="bg-white/10 border border-white/10 rounded-xl p-3 text-center">
                   <p className="text-xl font-black text-white">{s.value}</p>
@@ -516,7 +516,7 @@ export default function HomePage() {
               Deploy Your First AI Worker →
             </Link>
             <p className="text-indigo-300 text-sm mt-4">
-              Free during beta · No credit card required · OpenClaw-powered
+              7-day free trial · No credit card required · OpenClaw-powered
             </p>
           </div>
         </div>
