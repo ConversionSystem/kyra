@@ -1,46 +1,52 @@
 /**
- * Referral Activation Gate
+ * Referral Activation Gate — Email Confirmation
  *
- * Referrer credits are NOT granted on signup — only when the referred user
- * sends their first real AI message. This prevents fake email abuse.
+ * Referrer credits are granted when the referred user CONFIRMS THEIR EMAIL.
+ * This stops disposable/fake emails dead while keeping zero friction for real users.
  *
  * Flow:
- *   1. Referred user signs up → status = 'signed_up', referrer gets 0 credits
- *   2. Referred user's first AI message fires → checkAndActivateReferral()
- *   3. If pending referral found → grant referrer credits, set status = 'activated'
+ *   1. Friend signs up via referral link → status = 'signed_up', referrer_credits_granted = 0
+ *   2. Supabase sends confirmation email
+ *   3. Friend clicks confirm → /api/auth/callback fires → calls checkAndActivateReferral()
+ *   4. confirmed_at is set → grant referrer 100/150 credits → status = 'activated'
  *
- * Call from: /api/widget/chat and any other chat completion routes (fire-and-forget).
+ * Called from: app/api/auth/callback/route.ts (after exchangeCodeForSession)
  */
 
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { addCredits } from '@/lib/billing/credit-engine';
 
-export async function checkAndActivateReferral(referredAgencyId: string): Promise<void> {
+export async function checkAndActivateReferral(referredUserId: string): Promise<void> {
   const db = createServiceClientWithoutCookies();
 
-  // Find a pending referral for this agency (signed_up but not yet activated)
+  // 1. Verify the user's email is actually confirmed
+  const { data: { user }, error: userErr } = await db.auth.admin.getUserById(referredUserId);
+  if (userErr || !user?.email_confirmed_at) return; // Not confirmed yet — do nothing
+
+  // 2. Find their agency
+  const { data: member } = await db
+    .from('agency_members')
+    .select('agency_id')
+    .eq('user_id', referredUserId)
+    .limit(1)
+    .single();
+
+  if (!member) return;
+
+  // 3. Find a pending referral for this agency (signed_up but not yet activated)
   const { data: referral } = await db
     .from('agency_referrals')
-    .select('id, referrer_id, early_bird, referrer_credits_granted')
-    .eq('referred_id', referredAgencyId)
+    .select('id, referrer_id, early_bird')
+    .eq('referred_id', member.agency_id)
     .eq('status', 'signed_up')
     .limit(1)
     .single();
 
   if (!referral) return; // No pending referral — nothing to do
 
-  // Verify this really is their first conversation (double-check against gaming)
-  const { count } = await db
-    .from('client_conversations')
-    .select('id', { count: 'exact', head: true })
-    .eq('agency_id', referredAgencyId);
-
-  // Only activate on first message (count = 1 means this is it)
-  if ((count ?? 0) > 1) return;
-
   const referrerCredits = referral.early_bird ? 150 : 100;
 
-  // Mark as activated immediately (prevent double-grant race condition)
+  // 4. Atomic update — only fires once (guard against duplicate callbacks)
   const { error: updateErr } = await db
     .from('agency_referrals')
     .update({
@@ -49,27 +55,27 @@ export async function checkAndActivateReferral(referredAgencyId: string): Promis
       paid_out_at: new Date().toISOString(),
     })
     .eq('id', referral.id)
-    .eq('status', 'signed_up'); // Only update if still signed_up (atomic guard)
+    .eq('status', 'signed_up'); // Only update if still pending (prevents double-grant)
 
   if (updateErr) {
     console.warn('[referral-activation] Update failed (possible race):', updateErr.message);
     return;
   }
 
-  // Grant referrer their credits
+  // 5. Grant referrer credits
   try {
     await addCredits(
       referral.referrer_id,
       referrerCredits,
       'bonus',
       referral.early_bird
-        ? `Early Bird referral activated 🚀 — your friend sent their first AI message (+50 early bird bonus)`
-        : `Referral activated 🎉 — your friend sent their first AI message`,
+        ? `Early Bird referral activated 🚀 — your friend confirmed their email! (+50 early bird bonus)`
+        : `Referral activated 🎉 — your friend confirmed their email and is ready to go!`,
     );
-    console.log(`[referral-activation] Granted ${referrerCredits} credits to ${referral.referrer_id} — referral ${referral.id} activated`);
+    console.log(`[referral-activation] Granted ${referrerCredits} credits to ${referral.referrer_id}`);
   } catch (e) {
     console.error('[referral-activation] Credit grant failed:', e);
-    // Roll back status so it can retry next message
+    // Roll back so it can retry on next callback
     await db
       .from('agency_referrals')
       .update({ status: 'signed_up', referrer_credits_granted: 0, paid_out_at: null })
@@ -77,7 +83,7 @@ export async function checkAndActivateReferral(referredAgencyId: string): Promis
     return;
   }
 
-  // Streak bonus check (same as before — based on activated referrals now)
+  // 6. Streak bonus — 3 activations in 7 days
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 3_600_000).toISOString();
   const { count: weeklyActivated } = await db
     .from('agency_referrals')
@@ -91,7 +97,7 @@ export async function checkAndActivateReferral(referredAgencyId: string): Promis
       referral.referrer_id,
       50,
       'bonus',
-      'Streak bonus 🔥 — 3 referrals activated in 7 days!',
+      'Streak bonus 🔥 — 3 referrals confirmed in 7 days!',
     ).catch(e => console.warn('[referral-activation] Streak bonus failed:', e));
   }
 }
