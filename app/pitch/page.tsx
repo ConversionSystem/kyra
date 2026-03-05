@@ -101,9 +101,9 @@ const SLIDES = [
     title: 'Charge $500–$2,000/month per AI worker.',
     subtitle: 'Your cost to Kyra: $99–$499/month for all of them.',
     table: [
-      { plan: 'Lite', cost: '$99/mo', clients: '5 clients', revenue: '$5,000/mo', margin: '$4,901' },
-      { plan: 'Pro', cost: '$249/mo', clients: '15 clients', revenue: '$15,000/mo', margin: '$14,751' },
-      { plan: 'Scale', cost: '$499/mo', clients: '50 clients', revenue: '$50,000/mo', margin: '$49,501' },
+      { plan: 'Lite', cost: '$99/mo', clients: '3 clients', revenue: '$2,991/mo', margin: '$2,892' },
+      { plan: 'Pro', cost: '$249/mo', clients: '10 clients', revenue: '$9,970/mo', margin: '$9,721' },
+      { plan: 'Scale', cost: '$499/mo', clients: '30 clients', revenue: '$29,910/mo', margin: '$29,411' },
     ],
     tableNote: 'Assumes $1,000/client/month billing. API costs ~$1–3/client/month.',
     cta: null,
