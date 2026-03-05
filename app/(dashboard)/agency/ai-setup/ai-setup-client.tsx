@@ -1,290 +1,617 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+// ============================================================================
+// AI Templates — Unified Template Gallery
+//
+// Single place to browse and apply AI templates to client containers.
+// Templates fall into two categories:
+//   1. By Role  — what kind of job does the AI do (sales, support, intake, etc.)
+//   2. By Industry — pre-built personas for specific verticals (plumbing, dental, etc.)
+//
+// Flow: Browse → "Apply" → pick client → fill variables → one API call deploys it live
+// ============================================================================
+
+import { useState, useEffect, useCallback } from 'react';
 import {
   Sparkles, Search, Target, Shield, Smartphone, Phone, ClipboardList,
-  MessageCircle, BarChart3, ArrowRight, CheckCircle2, Loader2, Zap,
-  Wrench, Flame, Snowflake, Sun, Leaf, Home, Star,
-  Bot, UserCheck, Briefcase, Brain,
+  MessageCircle, BarChart3, ArrowRight, CheckCircle2, Loader2, X,
+  ChevronDown, User, Building2, Info, AlertTriangle,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
-type Tab = 'roles' | 'industry' | 'packages';
+// ── Types ─────────────────────────────────────────────────────────────────────
 
-// ─── Role Templates ─────────────────────────────────────────────────────────
+type Category = 'all' | 'role' | 'industry';
 
-const ROLES = [
-  { id: 'researcher', emoji: '🔍', icon: Search, name: 'Researcher', desc: 'Monitors trends, compiles reports, surfaces insights daily', color: 'bg-blue-50 border-blue-200' },
-  { id: 'sales-qualifier', emoji: '🎯', icon: Target, name: 'Sales Qualifier', desc: 'Qualifies inbound leads, scores them, books meetings', color: 'bg-indigo-50 border-indigo-200' },
-  { id: 'brand-voice', emoji: '🛡️', icon: Shield, name: 'Brand Voice Guard', desc: 'Reviews content, ensures brand guideline alignment', color: 'bg-purple-50 border-purple-200' },
-  { id: 'social-scout', emoji: '📱', icon: Smartphone, name: 'Social Scout', desc: 'Tracks social mentions, trends, competitor activity', color: 'bg-pink-50 border-pink-200' },
-  { id: 'appointment-setter', emoji: '📞', icon: Phone, name: 'Appointment Setter', desc: 'Books calls, sends reminders, handles reschedules', color: 'bg-green-50 border-green-200' },
-  { id: 'intake-specialist', emoji: '📋', icon: ClipboardList, name: 'Intake Specialist', desc: 'Collects client info, fills intake forms, routes to team', color: 'bg-amber-50 border-amber-200' },
-  { id: 'community-manager', emoji: '💬', icon: MessageCircle, name: 'Community Manager', desc: 'Answers FAQs, moderates tone, escalates when needed', color: 'bg-teal-50 border-teal-200' },
-  { id: 'weekly-reporter', emoji: '📊', icon: BarChart3, name: 'Weekly Reporter', desc: 'Compiles weekly activity into a clear summary report', color: 'bg-orange-50 border-orange-200' },
-];
+interface TemplateCard {
+  id: string;
+  type: 'role' | 'industry';
+  emoji: string;
+  name: string;
+  description: string;
+  industry?: string;
+  tags: string[];
+  variableCount?: number;
+  variables?: Array<{ key: string; label: string; placeholder: string; required: boolean }>;
+}
 
-// ─── Quick Setup Packages ────────────────────────────────────────────────────
-
-const PACKAGES = [
-  { id: 'plumbing', emoji: '🔧', name: 'Plumbing Pro', desc: 'Emergency dispatch, appointment booking, invoice follow-up', agents: 3, automations: 6, color: 'bg-blue-50 border-blue-200' },
-  { id: 'hvac', emoji: '❄️', name: 'HVAC Pro', desc: 'Service scheduling, maintenance reminders, emergency routing', agents: 3, automations: 6, color: 'bg-cyan-50 border-cyan-200' },
-  { id: 'electrical', emoji: '⚡', name: 'Electrical Pro', desc: 'Quote requests, safety compliance, job scheduling', agents: 3, automations: 6, color: 'bg-amber-50 border-amber-200' },
-  { id: 'cleaning', emoji: '🧹', name: 'Cleaning Pro', desc: 'Recurring bookings, quality check-ins, review requests', agents: 3, automations: 6, color: 'bg-green-50 border-green-200' },
-  { id: 'landscaping', emoji: '🌿', name: 'Landscaping Pro', desc: 'Seasonal scheduling, weather-aware follow-ups', agents: 3, automations: 6, color: 'bg-emerald-50 border-emerald-200' },
-  { id: 'roofing', emoji: '🏠', name: 'Roofing Pro', desc: 'Storm response, inspection scheduling, insurance follow-up', agents: 3, automations: 6, color: 'bg-slate-50 border-slate-200' },
-];
-
-// ─── Industry Template Store ─────────────────────────────────────────────────
-
-interface IndustryTemplate {
+interface Client {
   id: string;
   name: string;
-  industry: string;
-  emoji: string;
-  description: string;
-  tags: string[];
-  variableCount: number;
-  toolCount: number;
+  status: string;
+  gateway_status?: string;
 }
 
-interface AISetupProps {
+// ── Role Definitions ──────────────────────────────────────────────────────────
+
+const ROLE_TEMPLATES: TemplateCard[] = [
+  {
+    id: 'researcher', type: 'role', emoji: '🔍', name: 'Researcher',
+    description: 'Monitors trends, compiles reports, surfaces actionable insights daily.',
+    tags: ['research', 'reports', 'analysis'],
+    variables: [{ key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false }],
+  },
+  {
+    id: 'sales-qualifier', type: 'role', emoji: '🎯', name: 'Sales Qualifier',
+    description: 'Qualifies inbound leads, scores urgency, and books meetings automatically.',
+    tags: ['leads', 'booking', 'qualification'],
+    variables: [{ key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false }],
+  },
+  {
+    id: 'brand-voice', type: 'role', emoji: '🛡️', name: 'Brand Voice Guard',
+    description: 'Reviews content, flags off-brand language, suggests on-brand alternatives.',
+    tags: ['content', 'branding', 'review'],
+    variables: [{ key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false }],
+  },
+  {
+    id: 'social-scout', type: 'role', emoji: '📱', name: 'Social Scout',
+    description: 'Tracks social mentions, competitor activity, and trending topics.',
+    tags: ['social', 'monitoring', 'competitors'],
+    variables: [{ key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false }],
+  },
+  {
+    id: 'appointment-setter', type: 'role', emoji: '📞', name: 'Appointment Setter',
+    description: 'Books calls, sends reminders, handles reschedules with zero friction.',
+    tags: ['scheduling', 'calendar', 'reminders'],
+    variables: [{ key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false }],
+  },
+  {
+    id: 'intake-specialist', type: 'role', emoji: '📋', name: 'Intake Specialist',
+    description: 'Collects client info, fills intake forms, routes to the right team member.',
+    tags: ['intake', 'onboarding', 'forms'],
+    variables: [{ key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false }],
+  },
+  {
+    id: 'community-manager', type: 'role', emoji: '💬', name: 'Community Manager',
+    description: 'Answers FAQs, maintains brand tone, escalates complex issues to humans.',
+    tags: ['community', 'support', 'FAQ'],
+    variables: [{ key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false }],
+  },
+  {
+    id: 'weekly-reporter', type: 'role', emoji: '📊', name: 'Weekly Reporter',
+    description: 'Compiles weekly business activity into a clear, actionable summary report.',
+    tags: ['reports', 'analytics', 'weekly'],
+    variables: [{ key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false }],
+  },
+];
+
+// ── Main Component ────────────────────────────────────────────────────────────
+
+interface Props {
   agencyId: string;
   businessName: string;
-  dbTemplates?: Array<{ id: string; name: string; industry: string; icon?: string | null; description?: string | null }>;
 }
 
-export function AISetupClient({ agencyId, businessName, dbTemplates }: AISetupProps) {
-  const [activeTab, setActiveTab] = useState<Tab>('roles');
-  const [templates, setTemplates] = useState<IndustryTemplate[]>([]);
-  const [loadingTemplates, setLoadingTemplates] = useState(false);
+export function AISetupClient({ agencyId, businessName }: Props) {
+  const [category, setCategory] = useState<Category>('all');
   const [search, setSearch] = useState('');
-  const [activating, setActivating] = useState<string | null>(null);
-  const [activated, setActivated] = useState<Set<string>>(new Set());
+  const [industryTemplates, setIndustryTemplates] = useState<TemplateCard[]>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(true);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loadingClients, setLoadingClients] = useState(true);
 
+  // Apply modal state
+  const [applyTemplate, setApplyTemplate] = useState<TemplateCard | null>(null);
+  const [selectedClient, setSelectedClient] = useState<string>('');
+  const [variables, setVariables] = useState<Record<string, string>>({});
+  const [applying, setApplying] = useState(false);
+  const [applyResult, setApplyResult] = useState<{
+    success: boolean;
+    message: string;
+    warning?: string;
+    containerPushed?: boolean;
+  } | null>(null);
+
+  // Load industry templates from API
   useEffect(() => {
-    if (activeTab === 'industry' && templates.length === 0) {
-      setLoadingTemplates(true);
-      fetch('/api/templates')
-        .then(r => r.ok ? r.json() : { templates: [] })
-        .then(d => { setTemplates(d.templates || []); setLoadingTemplates(false); })
-        .catch(() => setLoadingTemplates(false));
-    }
-  }, [activeTab, templates.length]);
+    fetch('/api/templates')
+      .then(r => r.ok ? r.json() : { templates: [] })
+      .then(d => {
+        const mapped: TemplateCard[] = (d.templates || []).map((t: {
+          id: string; name: string; industry: string; emoji: string;
+          description: string; tags: string[]; variableCount: number;
+        }) => ({
+          id: t.id,
+          type: 'industry' as const,
+          emoji: t.emoji,
+          name: t.name,
+          description: t.description,
+          industry: t.industry,
+          tags: t.tags || [],
+          variableCount: t.variableCount,
+        }));
+        setIndustryTemplates(mapped);
+      })
+      .catch(() => {})
+      .finally(() => setLoadingTemplates(false));
+  }, []);
 
-  const handleActivatePackage = async (pkgId: string) => {
-    setActivating(pkgId);
-    await fetch('/api/packages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ package_id: pkgId }),
-    });
-    setActivated(prev => new Set([...prev, pkgId]));
-    setActivating(null);
+  // Load clients
+  useEffect(() => {
+    fetch('/api/agency/clients')
+      .then(r => r.json())
+      .then(d => {
+        const list = (d.clients || []).filter((c: Client) =>
+          c.status === 'active' || c.status === 'setup'
+        );
+        setClients(list);
+        if (list.length === 1) setSelectedClient(list[0].id);
+      })
+      .catch(() => {})
+      .finally(() => setLoadingClients(false));
+  }, []);
+
+  // Build full template list
+  const allTemplates: TemplateCard[] = [
+    ...ROLE_TEMPLATES,
+    ...industryTemplates,
+  ];
+
+  // Filter
+  const filtered = allTemplates.filter(t => {
+    if (category === 'role' && t.type !== 'role') return false;
+    if (category === 'industry' && t.type !== 'industry') return false;
+    if (search) {
+      const q = search.toLowerCase();
+      return (
+        t.name.toLowerCase().includes(q) ||
+        t.description.toLowerCase().includes(q) ||
+        t.industry?.toLowerCase().includes(q) ||
+        t.tags.some(tag => tag.toLowerCase().includes(q))
+      );
+    }
+    return true;
+  });
+
+  // Open apply modal
+  const openApply = useCallback(async (template: TemplateCard) => {
+    setApplyTemplate(template);
+    setApplyResult(null);
+
+    // Pre-load industry template variables if needed
+    if (template.type === 'industry' && !template.variables) {
+      try {
+        const res = await fetch(`/api/templates?id=${template.id}`);
+        const data = await res.json();
+        if (data.template?.variables) {
+          setIndustryTemplates(prev => prev.map(t =>
+            t.id === template.id ? { ...t, variables: data.template.variables } : t
+          ));
+          setApplyTemplate(prev => prev ? { ...prev, variables: data.template.variables } : prev);
+        }
+      } catch { /* ignore */ }
+    }
+
+    // Init variables with business name if available
+    const initVars: Record<string, string> = {};
+    if (businessName) initVars.business_name = businessName;
+    setVariables(initVars);
+  }, [businessName]);
+
+  const closeApply = () => {
+    setApplyTemplate(null);
+    setApplyResult(null);
+    setVariables({});
   };
 
-  const filteredTemplates = templates.filter(t =>
-    !search || t.name.toLowerCase().includes(search.toLowerCase()) || t.industry.toLowerCase().includes(search.toLowerCase())
-  );
+  const handleApply = async () => {
+    if (!applyTemplate || !selectedClient) return;
+
+    setApplying(true);
+    setApplyResult(null);
+
+    try {
+      const res = await fetch('/api/agency/ai-setup/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientId: selectedClient,
+          type: applyTemplate.type,
+          templateId: applyTemplate.id,
+          variables,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setApplyResult({ success: false, message: data.error || 'Failed to apply template' });
+      } else {
+        const clientName = clients.find(c => c.id === selectedClient)?.name || 'client';
+        setApplyResult({
+          success: true,
+          message: `${applyTemplate.name} applied to ${clientName}.${data.containerPushed ? ' AI is live now.' : ''}`,
+          warning: data.warning,
+          containerPushed: data.containerPushed,
+        });
+      }
+    } catch {
+      setApplyResult({ success: false, message: 'Network error. Please try again.' });
+    } finally {
+      setApplying(false);
+    }
+  };
+
+  const roleCnt = ROLE_TEMPLATES.length;
+  const industryCnt = industryTemplates.length;
 
   return (
-    <div className="p-4 sm:p-6 md:p-8 max-w-5xl space-y-6">
+    <div className="max-w-6xl mx-auto p-4 sm:p-6">
       {/* Header */}
-      <div>
+      <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <Sparkles className="h-6 w-6 text-indigo-600" /> AI Setup
+          <Sparkles className="h-6 w-6 text-indigo-600" />
+          AI Templates
         </h1>
         <p className="text-sm text-gray-500 mt-1">
-          Configure your AI worker — pick a role, choose an industry template, or deploy a ready-made package
+          Pick a template → choose which client to configure → it deploys instantly to their AI worker.
         </p>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl overflow-x-auto">
-        {[
-          { key: 'roles' as Tab, label: 'By Role', desc: 'What your AI does' },
-          { key: 'industry' as Tab, label: 'By Industry', desc: 'Industry-specific AI' },
-          { key: 'packages' as Tab, label: 'Quick Packages', desc: 'One-click deploy' },
-        ].map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition min-w-[120px] ${
-              activeTab === tab.key
-                ? 'bg-white text-indigo-700 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            {tab.label}
-          </button>
+      {/* How it works banner */}
+      <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 mb-6 flex items-start gap-3">
+        <Info className="h-5 w-5 text-indigo-500 shrink-0 mt-0.5" />
+        <div className="text-sm text-indigo-700">
+          <strong>How it works:</strong> Click &quot;Apply&quot; on any template, select which client&apos;s AI worker to configure,
+          fill in the details, and hit Apply. The AI&apos;s personality updates live on the container — no redeploy needed.
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-6">
+        {/* Category pills */}
+        <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
+          {([
+            { key: 'all' as Category, label: 'All', count: allTemplates.length },
+            { key: 'role' as Category, label: '👤 By Role', count: roleCnt },
+            { key: 'industry' as Category, label: '🏭 By Industry', count: industryCnt },
+          ] as const).map(({ key, label, count }) => (
+            <button
+              key={key}
+              onClick={() => setCategory(key)}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
+                category === key
+                  ? 'bg-white shadow text-gray-900'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {label}
+              {count > 0 && (
+                <span className={`ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full ${
+                  category === key ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-200 text-gray-500'
+                }`}>
+                  {count}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* Search */}
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <input
+            className="w-full pl-9 pr-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            placeholder="Search templates..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+        </div>
+      </div>
+
+      {/* Template Grid */}
+      {loadingTemplates ? (
+        <div className="py-16 text-center text-gray-400">
+          <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
+          Loading templates...
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="py-16 text-center">
+          <Sparkles className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+          <p className="text-gray-500">No templates match your search</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {filtered.map(template => (
+            <TemplateCardView
+              key={`${template.type}:${template.id}`}
+              template={template}
+              onApply={() => openApply(template)}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* No clients warning */}
+      {!loadingClients && clients.length === 0 && (
+        <div className="mt-8 bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3">
+          <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+          <div className="text-sm text-amber-700">
+            <strong>No active clients yet.</strong> You need to create a client first before applying a template.{' '}
+            <a href="/agency/clients/new" className="underline font-medium">Create your first client →</a>
+          </div>
+        </div>
+      )}
+
+      {/* Apply Modal */}
+      {applyTemplate && (
+        <ApplyModal
+          template={applyTemplate}
+          clients={clients}
+          selectedClient={selectedClient}
+          setSelectedClient={setSelectedClient}
+          variables={variables}
+          setVariables={setVariables}
+          applying={applying}
+          result={applyResult}
+          onApply={handleApply}
+          onClose={closeApply}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── Template Card ─────────────────────────────────────────────────────────────
+
+function TemplateCardView({
+  template,
+  onApply,
+}: {
+  template: TemplateCard;
+  onApply: () => void;
+}) {
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl p-5 hover:border-indigo-200 hover:shadow-sm transition-all flex flex-col">
+      {/* Header */}
+      <div className="flex items-start justify-between mb-3">
+        <span className="text-3xl">{template.emoji}</span>
+        <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+          template.type === 'role'
+            ? 'bg-indigo-50 text-indigo-600'
+            : 'bg-emerald-50 text-emerald-600'
+        }`}>
+          {template.type === 'role' ? '👤 Role' : `🏭 ${template.industry}`}
+        </span>
+      </div>
+
+      {/* Content */}
+      <h3 className="font-semibold text-gray-900 mb-1">{template.name}</h3>
+      <p className="text-xs text-gray-500 mb-3 flex-1 line-clamp-2">{template.description}</p>
+
+      {/* Tags */}
+      <div className="flex flex-wrap gap-1 mb-4">
+        {template.tags.slice(0, 3).map(tag => (
+          <span key={tag} className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-md">
+            {tag}
+          </span>
         ))}
       </div>
 
-      {/* ═══ ROLES TAB ═══ */}
-      {activeTab === 'roles' && (
-        <>
-          <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4">
-            <p className="text-sm text-indigo-700">
-              <span className="font-semibold">Role templates</span> — pre-configured by what your AI <em>does</em>.
-              Pick a role and your AI worker is ready to go.
-            </p>
-          </div>
+      {/* Action */}
+      <button
+        onClick={onApply}
+        className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
+      >
+        Apply to Client
+        <ArrowRight className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
+}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            {ROLES.map(role => {
-              const Icon = role.icon;
-              return (
-                <div key={role.id}
-                  className={`rounded-xl border p-5 hover:shadow-md transition-all ${role.color}`}>
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-9 h-9 rounded-lg bg-white/70 flex items-center justify-center">
-                      <Icon className="h-5 w-5 text-gray-700" />
-                    </div>
-                    <span className="text-lg">{role.emoji}</span>
-                  </div>
-                  <h3 className="font-semibold text-gray-900 mb-1">{role.name}</h3>
-                  <p className="text-xs text-gray-600 mb-4 line-clamp-2">{role.desc}</p>
-                  <a href={`/agency/clients/new?role=${role.id}`}>
-                    <Button variant="outline" size="sm" className="w-full text-xs">
-                      Use Role <ArrowRight className="h-3 w-3 ml-1" />
-                    </Button>
-                  </a>
+// ── Apply Modal ───────────────────────────────────────────────────────────────
+
+function ApplyModal({
+  template,
+  clients,
+  selectedClient,
+  setSelectedClient,
+  variables,
+  setVariables,
+  applying,
+  result,
+  onApply,
+  onClose,
+}: {
+  template: TemplateCard;
+  clients: Client[];
+  selectedClient: string;
+  setSelectedClient: (id: string) => void;
+  variables: Record<string, string>;
+  setVariables: (v: Record<string, string>) => void;
+  applying: boolean;
+  result: { success: boolean; message: string; warning?: string; containerPushed?: boolean } | null;
+  onApply: () => void;
+  onClose: () => void;
+}) {
+  const setVar = (key: string, value: string) =>
+    setVariables({ ...variables, [key]: value });
+
+  const selectedClientData = clients.find(c => c.id === selectedClient);
+  const canApply = !!selectedClient && !applying;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={!applying ? onClose : undefined} />
+
+      {/* Panel */}
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between p-5 border-b sticky top-0 bg-white z-10">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">{template.emoji}</span>
+            <div>
+              <h2 className="font-semibold text-gray-900">Apply: {template.name}</h2>
+              <p className="text-xs text-gray-500">{template.description}</p>
+            </div>
+          </div>
+          {!applying && (
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1">
+              <X className="h-5 w-5" />
+            </button>
+          )}
+        </div>
+
+        <div className="p-5 space-y-5">
+          {/* Success / Error result */}
+          {result && (
+            <div className={`rounded-xl p-4 flex gap-3 ${
+              result.success
+                ? 'bg-green-50 border border-green-200'
+                : 'bg-red-50 border border-red-200'
+            }`}>
+              {result.success ? (
+                <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
+              ) : (
+                <AlertTriangle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+              )}
+              <div>
+                <p className={`text-sm font-medium ${result.success ? 'text-green-700' : 'text-red-700'}`}>
+                  {result.message}
+                </p>
+                {result.warning && (
+                  <p className="text-xs text-amber-600 mt-1">{result.warning}</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Client picker */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <Building2 className="inline h-4 w-4 mr-1 text-gray-400" />
+              Which client gets this AI?
+            </label>
+            {clients.length === 0 ? (
+              <div className="text-sm text-amber-600 bg-amber-50 rounded-lg p-3">
+                No active clients found.{' '}
+                <a href="/agency/clients/new" className="underline">Create one first →</a>
+              </div>
+            ) : clients.length === 1 ? (
+              <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-3 border">
+                <span className="text-xl">🤖</span>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{clients[0].name}</p>
+                  <p className="text-xs text-gray-400">
+                    {clients[0].gateway_status === 'running' ? '🟢 Running — changes apply instantly' : '⚪ Offline — changes saved for next start'}
+                  </p>
                 </div>
-              );
-            })}
+              </div>
+            ) : (
+              <div className="relative">
+                <select
+                  value={selectedClient}
+                  onChange={e => setSelectedClient(e.target.value)}
+                  className="w-full pl-4 pr-8 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none appearance-none bg-white"
+                >
+                  <option value="">— Select a client —</option>
+                  {clients.map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}{c.gateway_status === 'running' ? ' (live)' : ''}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+              </div>
+            )}
+            {selectedClientData && clients.length > 1 && (
+              <p className="text-xs text-gray-400 mt-1.5">
+                {selectedClientData.gateway_status === 'running'
+                  ? '🟢 Container is running — changes will apply instantly'
+                  : '⚪ Container offline — config saved, applies on next start'}
+              </p>
+            )}
           </div>
-        </>
-      )}
 
-      {/* ═══ INDUSTRY TAB ═══ */}
-      {activeTab === 'industry' && (
-        <>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input
-              className="w-full pl-9 pr-4 py-2.5 border rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-              placeholder="Search by industry or template name..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
-          </div>
-
-          {loadingTemplates ? (
-            <div className="py-12 text-center text-gray-400">
-              <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
-              Loading templates...
-            </div>
-          ) : filteredTemplates.length === 0 ? (
-            <div className="py-12 text-center">
-              <Sparkles className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-              <p className="text-gray-500">No templates found</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredTemplates.map(t => (
-                <div key={t.id}
-                  className="bg-white border border-gray-200 rounded-xl p-5 hover:border-indigo-200 hover:shadow-sm transition">
-                  <div className="flex items-start gap-3 mb-3">
-                    <span className="text-2xl">{t.emoji}</span>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-gray-900">{t.name}</h3>
-                      <Badge className="mt-1 text-[10px] bg-gray-100 text-gray-600 border-gray-200">{t.industry}</Badge>
-                    </div>
-                  </div>
-                  <p className="text-xs text-gray-500 mb-3 line-clamp-2">{t.description}</p>
-                  <div className="flex items-center gap-3 text-[10px] text-gray-400 mb-4">
-                    <span className="flex items-center gap-0.5">
-                      <Zap className="h-3 w-3" /> {t.toolCount} tools
-                    </span>
-                    <span>{t.variableCount} variables</span>
-                  </div>
-                  <a href={`/agency/setup?template=${t.id}`}>
-                    <Button variant="outline" size="sm" className="w-full text-xs">
-                      Use Template <ArrowRight className="h-3 w-3 ml-1" />
-                    </Button>
-                  </a>
+          {/* Variables */}
+          {template.variables && template.variables.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="h-px flex-1 bg-gray-100" />
+                <span className="text-xs text-gray-400 font-medium">Configure</span>
+                <div className="h-px flex-1 bg-gray-100" />
+              </div>
+              {template.variables.map(v => (
+                <div key={v.key}>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {v.label}
+                    {v.required && <span className="text-red-500 ml-0.5">*</span>}
+                  </label>
+                  <input
+                    type="text"
+                    value={variables[v.key] || ''}
+                    onChange={e => setVar(v.key, e.target.value)}
+                    placeholder={v.placeholder}
+                    className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  />
                 </div>
               ))}
             </div>
           )}
 
-          {/* DB Templates (agency-custom) */}
-          {(dbTemplates || []).length > 0 && (
-            <>
-              <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wide mt-6">Your Custom Templates</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {(dbTemplates || []).map(t => (
-                  <div key={t.id} className="bg-white border border-gray-200 rounded-xl p-5 hover:border-indigo-200 transition">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xl">{t.icon || '🤖'}</span>
-                      <div>
-                        <h3 className="font-semibold text-gray-900">{t.name}</h3>
-                        <span className="text-[10px] text-gray-400">{t.industry}</span>
-                      </div>
-                    </div>
-                    {t.description && <p className="text-xs text-gray-500">{t.description}</p>}
-                  </div>
-                ))}
-              </div>
-            </>
+          {/* Industry template variable loader (show a note + load variables) */}
+          {template.type === 'industry' && !template.variables && (
+            <div className="text-center py-4 text-gray-400">
+              <Loader2 className="h-5 w-5 animate-spin mx-auto mb-1" />
+              <p className="text-xs">Loading template fields...</p>
+            </div>
           )}
-        </>
-      )}
 
-      {/* ═══ PACKAGES TAB ═══ */}
-      {activeTab === 'packages' && (
-        <>
-          <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-            <p className="text-sm text-green-700">
-              <span className="font-semibold">One-click packages</span> — deploys AI agents, autopilot sequences,
-              and smart routing for your industry. Everything configured in seconds.
-            </p>
+          {/* Apply / Close buttons */}
+          <div className="flex gap-3 pt-2">
+            {result?.success ? (
+              <button
+                onClick={onClose}
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-green-600 text-white hover:bg-green-700 transition-colors"
+              >
+                Done ✓
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={onClose}
+                  disabled={applying}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={onApply}
+                  disabled={!canApply || !selectedClient}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {applying ? (
+                    <><Loader2 className="h-4 w-4 animate-spin" /> Applying...</>
+                  ) : (
+                    <>Apply Now <ArrowRight className="h-4 w-4" /></>
+                  )}
+                </button>
+              </>
+            )}
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {PACKAGES.map(pkg => {
-              const isDone = activated.has(pkg.id);
-              const isLoading = activating === pkg.id;
-
-              return (
-                <div key={pkg.id}
-                  className={`rounded-xl border p-5 transition-all ${isDone ? 'border-green-300 bg-green-50' : `${pkg.color} hover:shadow-md`}`}>
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-2xl">{pkg.emoji}</span>
-                    <h3 className="font-semibold text-gray-900">{pkg.name}</h3>
-                    {isDone && <CheckCircle2 className="h-4 w-4 text-green-500 ml-auto" />}
-                  </div>
-                  <p className="text-xs text-gray-600 mb-3">{pkg.desc}</p>
-                  <div className="flex items-center gap-3 text-[10px] text-gray-400 mb-4">
-                    <span className="flex items-center gap-0.5">
-                      <Bot className="h-3 w-3" /> {pkg.agents} agents
-                    </span>
-                    <span className="flex items-center gap-0.5">
-                      <Zap className="h-3 w-3" /> {pkg.automations} automations
-                    </span>
-                  </div>
-                  <Button
-                    size="sm"
-                    className={`w-full text-xs ${isDone ? 'bg-green-600 hover:bg-green-700' : 'bg-indigo-600 hover:bg-indigo-700'} text-white`}
-                    disabled={isLoading || isDone}
-                    onClick={() => handleActivatePackage(pkg.id)}
-                  >
-                    {isLoading ? (
-                      <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Deploying...</>
-                    ) : isDone ? (
-                      <><CheckCircle2 className="h-3 w-3 mr-1" /> Activated</>
-                    ) : (
-                      <><Zap className="h-3 w-3 mr-1" /> Deploy Package</>
-                    )}
-                  </Button>
-                </div>
-              );
-            })}
-          </div>
-        </>
-      )}
+        </div>
+      </div>
     </div>
   );
 }
