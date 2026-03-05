@@ -26,6 +26,7 @@ import {
 } from '@/lib/chat/lead-capture';
 import { deductCredits, requireCredits } from '@/lib/billing/credit-engine';
 import { resolveClientGateway } from '@/lib/ovh/provisioner';
+import { checkAndActivateReferral } from '@/lib/billing/referral-activation';
 
 // CORS headers required on EVERY response — the widget is embedded on external sites
 const CORS = {
@@ -229,6 +230,11 @@ export async function POST(request: NextRequest) {
     clientId: client.id,
     description: `Web chat: ${message.trim().slice(0, 60)}`,
   });
+
+  // ── Referral Activation Gate (fire-and-forget) ──────────────────────────
+  // Grants referrer credits on referred user's first AI message.
+  // Prevents fake-email abuse — referrer only gets paid when friend actually uses the product.
+  void checkAndActivateReferral(client.agency_id);
 
   // ── Lead Capture (fire-and-forget) ─────────────────────────────────────────
   // Build full conversation including current exchange
