@@ -96,16 +96,16 @@ const PLANS = [
     name: 'Lite',
     price: '$99',
     per: '/mo',
-    clients: '1–3 clients',
-    features: ['3 AI workers', 'All 21 industry templates', 'GHL CRM sync', 'Conversation history', 'Email escalation alerts'],
+    clients: 'Up to 3 clients',
+    features: ['3 AI workers', '500 platform credits/mo', 'All 21 industry templates', 'GHL CRM sync', 'Conversation history', 'Email escalation alerts'],
     highlight: false,
   },
   {
     name: 'Pro',
     price: '$249',
     per: '/mo',
-    clients: '5–15 clients',
-    features: ['15 AI workers', 'Everything in Lite', 'White-label dashboard', 'Custom AI personalities', 'Priority support', 'Usage analytics'],
+    clients: 'Up to 10 clients',
+    features: ['10 AI workers', '1,500 platform credits/mo', 'Everything in Lite', 'White-label dashboard', 'Custom AI personalities', 'Priority support', 'Usage analytics'],
     highlight: true,
     badge: 'Most Popular',
   },
@@ -113,8 +113,8 @@ const PLANS = [
     name: 'Scale',
     price: '$499',
     per: '/mo',
-    clients: 'Unlimited clients',
-    features: ['Unlimited AI workers', 'Everything in Pro', 'Dedicated onboarding', 'API access', 'Custom integrations', 'SLA guarantee'],
+    clients: 'Up to 30 clients',
+    features: ['30 AI workers', '2,500 platform credits/mo', 'Everything in Pro', 'Dedicated onboarding', 'API access', 'Custom integrations', 'SLA guarantee'],
     highlight: false,
   },
 ];
@@ -378,7 +378,7 @@ export default function GhlMarketplacePage() {
               },
               {
                 q: 'How do billing and credits work?',
-                a: 'Your agency gets $2 in free credits on signup (good for ~200 test conversations). After that, you can purchase credit packs or add your own API key (Anthropic, OpenAI, etc.) to power the AI directly.',
+                a: 'Every paid plan includes monthly platform credits — Lite: 500, Pro: 1,500, Scale: 2,500. Credits power AI conversations without needing your own API key. Need more? Add your own OpenAI or Anthropic key (BYOK) at any time.',
               },
               {
                 q: 'Is there a limit on how many messages the AI sends per client?',
@@ -403,7 +403,7 @@ export default function GhlMarketplacePage() {
         <div className="max-w-2xl mx-auto">
           <h2 className="text-3xl sm:text-4xl font-black mb-4">Deploy your first AI worker today.</h2>
           <p className="text-indigo-200 text-lg mb-8">
-            Connect GHL. Pick a template. Live in 10 minutes. Free $2 in credits included.
+            Connect GHL. Pick a template. Live in 10 minutes. 7-day free trial included.
           </p>
           <Link
             href="/signup/agency"
