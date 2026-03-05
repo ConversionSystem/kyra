@@ -324,9 +324,10 @@ export async function POST(request: NextRequest) {
           ? (Date.now() - new Date(referrerAgency.created_at).getTime()) / 3_600_000
           : 999;
         const isEarlyBird = hoursElapsed < 48;
-        const referrerCredits = isEarlyBird ? 150 : 100;
 
-        // Log the referral record
+        // Log the referral record — referrer_credits_granted = 0 until activation
+        // Referrer credits are held until friend sends their FIRST real AI message
+        // (prevents fake email abuse — see lib/billing/referral-activation.ts)
         const { error: insertErr } = await serviceClient
           .from('agency_referrals')
           .insert({
@@ -335,7 +336,7 @@ export async function POST(request: NextRequest) {
             referred_email: user.email,
             status: 'signed_up',
             early_bird: isEarlyBird,
-            referrer_credits_granted: referrerCredits,
+            referrer_credits_granted: 0,   // Granted on activation, not signup
             friend_credits_granted: 100,
           });
 
@@ -344,19 +345,9 @@ export async function POST(request: NextRequest) {
           return;
         }
 
-        console.log(`[referral] Agency ${agency.id} referred by ${referralId} | earlyBird=${isEarlyBird} | referrerCredits=${referrerCredits}`);
+        console.log(`[referral] Agency ${agency.id} referred by ${referralId} | earlyBird=${isEarlyBird} | referrer credits PENDING activation`);
 
-        // 🎁 Reward the REFERRER
-        await addCredits(
-          referralId,
-          referrerCredits,
-          'bonus',
-          isEarlyBird
-            ? `Early Bird referral reward — +50 bonus for sharing within 48hrs! ${agency.name} joined via your link 🚀`
-            : `Referral reward — ${agency.name} joined using your link 🎉`,
-        );
-
-        // 🎁 Reward the FRIEND (new user — double-sided Dropbox mechanic)
+        // 🎁 Reward the FRIEND immediately (motivates them to actually use it)
         await addCredits(
           agency.id,
           100,
@@ -364,24 +355,8 @@ export async function POST(request: NextRequest) {
           'Welcome referral bonus — a friend referred you to Kyra. Enjoy 100 free AI credits! 🎁',
         );
 
-        // 🏆 Streak bonus — 3 referrals within 7 days
-        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 3_600_000).toISOString();
-        const { count: recentCount } = await serviceClient
-          .from('agency_referrals')
-          .select('id', { count: 'exact', head: true })
-          .eq('referrer_id', referralId)
-          .gte('created_at', sevenDaysAgo);
-
-        if (recentCount === 3) {
-          // Exactly 3 (this one just inserted) = streak milestone hit
-          await addCredits(
-            referralId,
-            50,
-            'bonus',
-            'Streak bonus — 3 referrals in 7 days! 🔥',
-          );
-          console.log(`[referral] Streak bonus granted to ${referralId}`);
-        }
+        // ⏳ Referrer credits are granted when friend sends first AI message
+        // See: lib/billing/referral-activation.ts → called from /api/widget/chat
       } catch (e) {
         console.warn('[referral] Reward error:', e);
       }
