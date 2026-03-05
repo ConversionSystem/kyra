@@ -17,9 +17,17 @@
 
 import { NextResponse } from 'next/server';
 import { createClient as createSupabaseServiceClient } from '@supabase/supabase-js';
-import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { deductCredits } from '@/lib/billing/credit-engine';
 import { resolveAgencyApiKey } from '@/lib/billing/byok';
+
+// Use direct Supabase client for all DB ops — avoids next/headers cookies() in cron context
+function getDb() {
+  return createSupabaseServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false, autoRefreshToken: false } },
+  );
+}
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -87,11 +95,8 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const supabase = createSupabaseServiceClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  );
-  const db = createServiceClientWithoutCookies();
+  const supabase = getDb();
+  const db = supabase; // Same client for conversations insert
 
   // Query BOTH tables — gateway_url is a TOP-LEVEL COLUMN, not inside settings JSONB
   const [{ data: clients }, { data: agencyContainers }] = await Promise.all([
