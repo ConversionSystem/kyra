@@ -17,6 +17,7 @@ import {
   MessageCircle, BarChart3, ArrowRight, CheckCircle2, Loader2, X,
   ChevronDown, User, Building2, Info, AlertTriangle,
 } from 'lucide-react';
+import { SectionNav } from '@/components/dashboard/section-nav';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -255,6 +256,8 @@ export function AISetupClient({ agencyId, businessName }: Props) {
   const industryCnt = industryTemplates.length;
 
   return (
+    <div className="space-y-0">
+    <SectionNav currentHref="/agency/ai-setup" />
     <div className="max-w-6xl mx-auto p-4 sm:p-6">
       {/* Header */}
       <div className="mb-6">
@@ -367,6 +370,7 @@ export function AISetupClient({ agencyId, businessName }: Props) {
           onClose={closeApply}
         />
       )}
+    </div>
     </div>
   );
 }

@@ -8,6 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Loader2, Zap, ChevronDown, ChevronUp, Clock, Users, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AISuggestButton } from '@/components/ai/suggest-button';
+import { SectionNav } from '@/components/dashboard/section-nav';
 
 interface AutopilotAction {
   id: string;
@@ -120,6 +121,8 @@ export function AutopilotClient() {
   }
 
   return (
+    <div className="space-y-0">
+    <SectionNav currentHref="/agency/autopilot" />
     <div className="p-4 sm:p-6 md:p-8 space-y-6 max-w-3xl">
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
@@ -127,7 +130,7 @@ export function AutopilotClient() {
             <Zap className="w-6 h-6 text-blue-600" /> Autopilot
           </h1>
           <p className="text-gray-500 mt-1">
-            Your AI worker acts on its own — follow-ups, reminders, reviews, reports. Set it and forget it.
+            Scheduled AI actions across all your clients — follow-ups, reminders, reviews, weekly reports. Set it and forget it.
           </p>
         </div>
         <AISuggestButton
@@ -301,6 +304,7 @@ export function AutopilotClient() {
           </div>
         )}
       </div>
+    </div>
     </div>
   );
 }
