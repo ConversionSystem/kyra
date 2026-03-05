@@ -11,7 +11,7 @@ type Props = { params: Promise<{ code: string }> };
 export default async function InvitePage({ params }: Props) {
   const { code } = await params;
 
-  if (!code || code.length < 4) redirect('/signup/agency');
+  if (!code || code.length < 4) redirect('/solo');
 
   const db = createServiceClientWithoutCookies();
 
@@ -25,8 +25,8 @@ export default async function InvitePage({ params }: Props) {
   const agency = agencies?.[0];
 
   if (!agency) {
-    // Invalid code — send to plain signup
-    redirect('/signup/agency');
+    // Invalid code — send to solo signup
+    redirect('/solo');
   }
 
   // Increment click counter
@@ -37,7 +37,7 @@ export default async function InvitePage({ params }: Props) {
     .update({ settings: { ...settings, invite_clicks: clicks } })
     .eq('id', agency.id);
 
-  // Redirect to signup with referral context (7-day trial, friend credit bonus)
-  const signupUrl = `/signup/agency?ref=${encodeURIComponent(agency.id)}&from=${encodeURIComponent(agency.name)}&trial=7&bonus=100`;
+  // Redirect to /solo (free entry point) with referral context
+  const signupUrl = `/solo?ref=${encodeURIComponent(agency.id)}&from=${encodeURIComponent(agency.name)}`;
   redirect(signupUrl);
 }
