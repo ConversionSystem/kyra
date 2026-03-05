@@ -107,7 +107,7 @@ export default function GHLPage() {
         </div>
 
         <p className="mt-4 text-sm text-gray-400">
-          Free to start · No credit card · White-label from day one
+          7-day free trial · No credit card · White-label from day one · 500 credits included
         </p>
       </section>
 
@@ -281,7 +281,7 @@ export default function GHLPage() {
             See pricing
           </Link>
         </div>
-        <p className="mt-4 text-sm text-gray-400">Free plan available · No credit card required</p>
+        <p className="mt-4 text-sm text-gray-400">7-day free trial · No credit card required · 500 credits included</p>
       </section>
 
       <PublicFooter />
