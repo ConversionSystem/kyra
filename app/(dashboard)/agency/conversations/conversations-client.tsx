@@ -115,6 +115,7 @@ export default function ConversationsClient({ clients }: { clients: Client[] }) 
       case 'Web Chat':
       case 'Live Chat': return <Globe className="h-3.5 w-3.5" />;
       case 'telegram': return <MessageCircle className="h-3.5 w-3.5" />;
+      case 'terminal': return <MessageSquare className="h-3.5 w-3.5" />;
       default: return <MessageCircle className="h-3.5 w-3.5" />;
     }
   };
