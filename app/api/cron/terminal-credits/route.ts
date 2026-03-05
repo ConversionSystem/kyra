@@ -1,43 +1,39 @@
 /**
  * GET /api/cron/terminal-credits
- * Runs EVERY MINUTE via Vercel cron (was: every 10 minutes).
+ * Runs EVERY MINUTE via Vercel cron.
  *
- * Does two things per container per run:
- * 1. CREDITS: Diff token usage since last run → deduct 1 credit per 2000 new tokens
- * 2. CONVERSATIONS: Pull new messages from terminal sessions → log to client_conversations
- *    so they appear in the Conversations page alongside widget/GHL messages
+ * Two jobs per run:
+ * 1. CREDITS — diff token usage since last run → deduct 1 credit per 2000 new tokens
+ * 2. CONVERSATIONS — pull new terminal messages → write to client_conversations
+ *    so they show up in the Conversations page
  *
- * Uses OpenClaw HTTP Tools Invoke API:
- *   POST {gatewayUrl}/tools/invoke  { tool: "sessions_list" }   → token counts
- *   POST {gatewayUrl}/tools/invoke  { tool: "sessions_history" } → messages
- *
- * BYOK: uses resolveAgencyApiKey() — agencies with own API keys skip credit deduction
- * (they pay their own LLM costs; we don't double-charge)
+ * IMPORTANT: This file must NOT import anything that transitively imports next/headers.
+ * All @/lib imports (credit-engine, byok, server.ts) pull in next/headers → 500 crash.
+ * All DB and billing logic is inlined here using only @supabase/supabase-js directly.
  */
 
 import { NextResponse } from 'next/server';
-import { createClient as createSupabaseServiceClient } from '@supabase/supabase-js';
-import { deductCredits } from '@/lib/billing/credit-engine';
-// NOTE: Do NOT import resolveAgencyApiKey or createServiceClientWithoutCookies here —
-// both transitively import next/headers which crashes in Vercel cron context.
-// BYOK check is inlined below using direct Supabase client.
-
-// Use direct Supabase client for all DB ops — avoids next/headers cookies() in cron context
-function getDb() {
-  return createSupabaseServiceClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false, autoRefreshToken: false } },
-  );
-}
+import { createClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
 const CRON_SECRET = process.env.CRON_SECRET || '';
-const CREDIT_TOKENS_THRESHOLD = 2000; // tokens per 1 credit
+const CREDIT_TOKENS_THRESHOLD = 2_000; // 1 credit per 2000 tokens
+const CREDIT_COST = 1;                 // credits per threshold
 
-// ── Types ────────────────────────────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+interface GatewayTarget {
+  id: string;
+  agency_id: string;
+  name: string;
+  settings: Record<string, unknown>;
+  gateway_url: string;
+  gateway_token: string;
+  table: 'agency_clients' | 'agencies';
+  client_id: string | null;
+}
 
 interface SessionRow {
   key: string;
@@ -46,47 +42,82 @@ interface SessionRow {
   outputTokens?: number;
 }
 
-interface MessageContent { type: string; text?: string }
+interface MsgContent { type: string; text?: string }
 interface HistoryMessage {
   role: 'user' | 'assistant';
-  content: MessageContent[];
+  content: MsgContent[];
   timestamp?: number;
-  model?: string;
 }
 
-type GatewayTarget = {
-  id: string;
-  agency_id: string;
-  name: string;
-  settings: Record<string, unknown>;
-  gateway_url: string;
-  gateway_token: string;
-  table: 'agency_clients' | 'agencies';
-  // For agency_clients, this is the client_id. For agencies, null.
-  client_id: string | null;
-};
-
-// ── OpenClaw HTTP helpers ─────────────────────────────────────────────────────
+// ── OpenClaw HTTP helper ──────────────────────────────────────────────────────
 
 async function invokeGatewayTool(
   gatewayUrl: string,
   authToken: string,
   tool: string,
   args: Record<string, unknown> = {},
-): Promise<unknown | null> {
+): Promise<Record<string, unknown> | null> {
   try {
     const res = await fetch(`${gatewayUrl.replace(/\/$/, '')}/tools/invoke`, {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({ tool, args }),
       signal: AbortSignal.timeout(5_000),
     });
     if (!res.ok) return null;
-    const data = await res.json();
-    return data?.ok ? data.result?.details : null;
+    const data = await res.json() as { ok?: boolean; result?: { details?: Record<string, unknown> } };
+    return data?.ok ? (data.result?.details ?? null) : null;
   } catch {
     return null;
   }
+}
+
+// ── Inline credit deduction (avoids next/headers transitive import) ───────────
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function deductTerminalCredits(
+  supabase: ReturnType<typeof createClient<any>>,
+  agencyId: string,
+  clientId: string | null,
+  credits: number,
+  description: string,
+) {
+  const { data: current } = await supabase
+    .from('agency_credits')
+    .select('balance, lifetime_used')
+    .eq('agency_id', agencyId)
+    .single();
+
+  const currentBalance = (current?.balance as number) ?? 0;
+  if (currentBalance < credits) return false; // insufficient
+
+  const newBalance = currentBalance - credits;
+  const newLifetime = ((current?.lifetime_used as number) ?? 0) + credits;
+
+  const { error } = await supabase
+    .from('agency_credits')
+    .update({
+      balance: newBalance,
+      lifetime_used: newLifetime,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('agency_id', agencyId);
+
+  if (error) return false;
+
+  // Log transaction
+  await supabase.from('credit_transactions').insert({
+    agency_id: agencyId,
+    amount: -credits,
+    type: 'usage',
+    description,
+    client_id: clientId,
+  });
+
+  return true;
 }
 
 // ── Main handler ──────────────────────────────────────────────────────────────
@@ -97,48 +128,68 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const supabase = getDb();
-  const db = supabase; // Same client for conversations insert
+  // Direct Supabase service client — NO next/headers, NO cookies
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false, autoRefreshToken: false } },
+  );
 
   // Query BOTH tables — gateway_url is a TOP-LEVEL COLUMN, not inside settings JSONB
-  const [{ data: clients }, { data: agencyContainers }] = await Promise.all([
+  const [{ data: clientRows }, { data: agencyRows }] = await Promise.all([
     supabase
       .from('agency_clients')
-      .select('id, agency_id, name, settings, gateway_url, gateway_token, gateway_status')
+      .select('id, agency_id, name, settings, gateway_url, gateway_token')
       .not('gateway_url', 'is', null)
       .eq('gateway_status', 'running'),
     supabase
       .from('agencies')
-      .select('id, name, settings, gateway_url, gateway_token, gateway_status')
+      .select('id, name, settings, gateway_url, gateway_token')
       .not('gateway_url', 'is', null)
       .eq('gateway_status', 'running'),
   ]);
 
   const allContainers: GatewayTarget[] = [
-    ...(clients ?? []).map(c => ({
-      id: c.id,
-      agency_id: c.agency_id,
-      name: c.name,
-      settings: (c.settings ?? {}) as Record<string, unknown>,
+    ...(clientRows ?? []).map(c => ({
+      id: c.id as string,
+      agency_id: c.agency_id as string,
+      name: c.name as string,
+      settings: ((c.settings ?? {}) as Record<string, unknown>),
       gateway_url: c.gateway_url as string,
       gateway_token: c.gateway_token as string,
       table: 'agency_clients' as const,
-      client_id: c.id,
+      client_id: c.id as string,
     })),
-    ...(agencyContainers ?? []).map(a => ({
-      id: a.id,
-      agency_id: a.id,
-      name: `${a.name} (Agency Terminal)`,
-      settings: (a.settings ?? {}) as Record<string, unknown>,
+    ...(agencyRows ?? []).map(a => ({
+      id: a.id as string,
+      agency_id: a.id as string,
+      name: `${a.name as string} (Agency Terminal)`,
+      settings: ((a.settings ?? {}) as Record<string, unknown>),
       gateway_url: a.gateway_url as string,
       gateway_token: a.gateway_token as string,
       table: 'agencies' as const,
-      client_id: null, // Agency terminals don't have a client_id
+      client_id: null,
     })),
   ];
 
   if (allContainers.length === 0) {
     return NextResponse.json({ ok: true, processed: 0, message: 'No active gateways' });
+  }
+
+  // Pre-fetch BYOK flags — one batch query, no resolveAgencyApiKey (next/headers)
+  const allAgencyIds = [...new Set(allContainers.map(c => c.agency_id))];
+  const { data: byokRows } = await supabase
+    .from('agencies')
+    .select('id, api_keys')
+    .in('id', allAgencyIds);
+
+  const byokSet = new Set<string>();
+  for (const row of byokRows ?? []) {
+    const keys = ((row.api_keys ?? {}) as Record<string, unknown>);
+    const providers = ['openai', 'anthropic', 'openrouter', 'google'] as const;
+    if (providers.some(p => typeof keys[p] === 'string' && (keys[p] as string).startsWith('sk-'))) {
+      byokSet.add(row.id as string);
+    }
   }
 
   const results = {
@@ -152,34 +203,14 @@ export async function GET(request: Request) {
     totalCreditsDeducted: 0,
   };
 
-  // Pre-fetch BYOK status for all agencies in one query (no resolveAgencyApiKey — see import note)
-  const allAgencyIds = [...new Set(allContainers.map(c => c.agency_id))];
-  const { data: byokRows } = await supabase
-    .from('agencies')
-    .select('id, api_keys')
-    .in('id', allAgencyIds);
-
-  // Build a Set of agency IDs that have their own provider keys (BYOK)
-  const byokMap = new Map<string, true>();
-  for (const row of byokRows ?? []) {
-    const keys = (row.api_keys as Record<string, unknown>) ?? {};
-    const providers = ['openai', 'anthropic', 'openrouter', 'google'] as const;
-    if (providers.some(p => keys[p] && String(keys[p]).startsWith('sk-'))) {
-      byokMap.set(row.id, true);
-    }
-  }
-
-  // Process all containers in parallel
+  // Process all containers in parallel (HTTP tools/invoke is ~200ms each)
   await Promise.all(allContainers.map(async (container) => {
     try {
-      // ── BYOK check (inlined — can't import byok.ts/resolveAgencyApiKey, see note above) ──
-      // An agency is BYOK if agencies.api_keys has openai/anthropic/openrouter/google key set
-      const agencyForByok = byokMap.get(container.agency_id);
-      const isByok = agencyForByok != null;
+      const isByok = byokSet.has(container.agency_id);
 
-      // ── 1. Fetch token usage + session list ────────────────────────────────
+      // ── 1. Fetch sessions list → token count ──────────────────────────────
       const sessionsResult = await invokeGatewayTool(
-        container.gateway_url, container.gateway_token, 'sessions_list', {}
+        container.gateway_url, container.gateway_token, 'sessions_list', {},
       ) as { sessions?: SessionRow[] } | null;
 
       if (!sessionsResult?.sessions) {
@@ -188,33 +219,36 @@ export async function GET(request: Request) {
       }
 
       results.checked++;
-
       const sessions = sessionsResult.sessions;
-      const currentTokens = sessions.reduce((sum, s) => {
-        return sum + (s.totalTokens ?? (s.inputTokens ?? 0) + (s.outputTokens ?? 0));
-      }, 0);
+      const currentTokens = sessions.reduce(
+        (sum, s) => sum + (s.totalTokens ?? (s.inputTokens ?? 0) + (s.outputTokens ?? 0)),
+        0,
+      );
 
-      // ── 2. Deduct credits (skip if BYOK) ───────────────────────────────────
+      // ── 2. Deduct credits for new token usage ─────────────────────────────
       if (!isByok) {
-        const lastKnownTokens = (container.settings.terminal_tokens_last_known as number) ?? 0;
-        const deltaTokens = Math.max(0, currentTokens - lastKnownTokens);
+        const lastKnown = (container.settings.terminal_tokens_last_known as number) ?? 0;
+        const delta = Math.max(0, currentTokens - lastKnown);
 
-        if (deltaTokens >= CREDIT_TOKENS_THRESHOLD) {
-          const creditsToDeduct = Math.floor(deltaTokens / CREDIT_TOKENS_THRESHOLD);
-          await deductCredits(container.agency_id, 'chat.message', {
-            multiplier: creditsToDeduct,
-            clientId: container.client_id,
-            description: `Terminal: ${deltaTokens.toLocaleString()} tokens → ${creditsToDeduct} credit${creditsToDeduct !== 1 ? 's' : ''} (${container.name})`,
-          });
-          results.deducted++;
-          results.totalCreditsDeducted += creditsToDeduct;
+        if (delta >= CREDIT_TOKENS_THRESHOLD) {
+          const credits = Math.floor(delta / CREDIT_TOKENS_THRESHOLD) * CREDIT_COST;
+          const ok = await deductTerminalCredits(
+            supabase,
+            container.agency_id,
+            container.client_id,
+            credits,
+            `Terminal: ${delta.toLocaleString()} tokens → ${credits} credit${credits !== 1 ? 's' : ''} (${container.name})`,
+          );
+          if (ok) {
+            results.deducted++;
+            results.totalCreditsDeducted += credits;
+          }
         }
       } else {
         results.skippedByok++;
       }
 
-      // ── 3. Sync terminal conversations → client_conversations ──────────────
-      // Pull messages from each session and log any we haven't seen before
+      // ── 3. Sync terminal conversations → client_conversations ─────────────
       const lastSyncedTs = (container.settings.terminal_last_synced_ts as number) ?? 0;
       let latestTs = lastSyncedTs;
       let newConversations = 0;
@@ -222,29 +256,25 @@ export async function GET(request: Request) {
       for (const session of sessions) {
         const history = await invokeGatewayTool(
           container.gateway_url, container.gateway_token, 'sessions_history',
-          { sessionKey: session.key, limit: 50 }
+          { sessionKey: session.key, limit: 50 },
         ) as { messages?: HistoryMessage[] } | null;
 
         if (!history?.messages) continue;
 
-        // Find user→assistant pairs that happened AFTER our last sync
         const messages = history.messages;
         for (let i = 0; i < messages.length - 1; i++) {
           const userMsg = messages[i];
-          const assistantMsg = messages[i + 1];
-
-          if (userMsg.role !== 'user' || assistantMsg.role !== 'assistant') continue;
+          const asstMsg = messages[i + 1];
+          if (userMsg.role !== 'user' || asstMsg.role !== 'assistant') continue;
 
           const ts = userMsg.timestamp ?? 0;
-          if (ts <= lastSyncedTs) continue; // Already logged
+          if (ts <= lastSyncedTs) continue;
 
           const userText = userMsg.content.find(c => c.type === 'text')?.text ?? '';
-          const aiText = assistantMsg.content.find(c => c.type === 'text')?.text ?? '';
-
+          const aiText = asstMsg.content.find(c => c.type === 'text')?.text ?? '';
           if (!userText || !aiText) continue;
 
-          // Insert into client_conversations so it shows in the Conversations page
-          const { error: convErr } = await db.from('client_conversations').insert({
+          const { error: convErr } = await supabase.from('client_conversations').insert({
             agency_id: container.agency_id,
             client_id: container.client_id,
             channel: 'terminal',
@@ -254,16 +284,16 @@ export async function GET(request: Request) {
             source_url: container.gateway_url,
             created_at: new Date(ts).toISOString(),
           });
-          if (!convErr) newConversations++;
 
+          if (!convErr) newConversations++;
           if (ts > latestTs) latestTs = ts;
-          i++; // Skip the assistant message (already consumed)
+          i++; // consumed assistant message
         }
       }
 
       results.conversationsLogged += newConversations;
 
-      // ── 4. Save updated state ──────────────────────────────────────────────
+      // ── 4. Persist updated state ──────────────────────────────────────────
       await supabase.from(container.table).update({
         settings: {
           ...container.settings,
