@@ -1,5 +1,5 @@
 // GET /ref/[agencyId]
-// Referral redirect — sets a cookie then forwards to /signup/agency
+// Referral redirect — sets a cookie then forwards to /solo (free entry point)
 // Short, shareable URL that agencies put in their bio, DMs, cold emails etc.
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -11,7 +11,7 @@ export async function GET(
   const { agencyId } = await params;
 
   const response = NextResponse.redirect(
-    new URL(`/signup/agency?ref=${agencyId}`, _request.url)
+    new URL(`/solo?ref=${agencyId}`, _request.url)
   );
 
   // 30-day referral cookie — survives multiple visits

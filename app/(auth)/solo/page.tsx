@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   Loader2,
@@ -47,9 +47,14 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
   );
 }
 
-export default function SoloSignupPage() {
+function SoloSignupPageInner() {
   const router = useRouter();
   const supabase = createClient();
+  const searchParams = useSearchParams();
+
+  // Referral tracking — populated when user arrives via /invite/[code] or /ref/[agencyId]
+  const referralId = searchParams.get('ref') || undefined;
+  const referralFrom = searchParams.get('from') || undefined;
 
   const [businessName, setBusinessName] = useState('');
   const [fullName, setFullName] = useState('');
@@ -69,7 +74,7 @@ export default function SoloSignupPage() {
       const res = await fetch('/api/auth/solo-signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ businessName, fullName, email, password, websiteUrl: websiteUrl || undefined }),
+        body: JSON.stringify({ businessName, fullName, email, password, websiteUrl: websiteUrl || undefined, referralId }),
       });
 
       const data = await res.json();
@@ -109,6 +114,17 @@ export default function SoloSignupPage() {
         {error && (
           <div className="mb-4 rounded-xl bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-400">
             {error}
+          </div>
+        )}
+
+        {/* Referral welcome banner */}
+        {referralFrom && (
+          <div className="mb-4 rounded-xl bg-indigo-500/10 border border-indigo-500/30 px-4 py-3 flex items-center gap-3">
+            <span className="text-xl">🎁</span>
+            <div>
+              <p className="text-sm font-semibold text-indigo-300">{referralFrom} is giving you 100 free AI credits</p>
+              <p className="text-xs text-slate-400">Sign up free — credits added instantly, no card required.</p>
+            </div>
           </div>
         )}
 
@@ -588,5 +604,14 @@ export default function SoloSignupPage() {
         </div>
       </footer>
     </div>
+  );
+}
+
+// Wrap with Suspense — required because useSearchParams() needs it in Next.js app router
+export default function SoloSignupPage() {
+  return (
+    <Suspense>
+      <SoloSignupPageInner />
+    </Suspense>
   );
 }
