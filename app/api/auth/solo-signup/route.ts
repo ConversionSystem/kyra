@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  const { businessName, fullName, email, password, websiteUrl } = body;
+  const { businessName, fullName, email, password, websiteUrl, referralId } = body as typeof body & { referralId?: string };
 
   // ── Validate ────────────────────────────────────────────────────────────
   if (!businessName || !fullName || !email || !password) {
@@ -148,6 +148,65 @@ export async function POST(request: NextRequest) {
     console.log(`[solo-signup] 🎁 Granted ${SOLO_WELCOME_CREDITS} credits to ${agency.id}`);
   } catch (err) {
     console.warn('[solo-signup] Failed to grant credits (non-fatal):', err);
+  }
+
+  // ── 5b. Referral Machine — double-sided rewards ─────────────────────────
+  if (referralId && referralId !== agency.id) {
+    void (async () => {
+      try {
+        const { data: referrerAgency } = await supabase
+          .from('agencies')
+          .select('created_at')
+          .eq('id', referralId)
+          .single();
+
+        const hoursElapsed = referrerAgency
+          ? (Date.now() - new Date(referrerAgency.created_at).getTime()) / 3_600_000
+          : 999;
+        const isEarlyBird = hoursElapsed < 48;
+        const referrerCredits = isEarlyBird ? 150 : 100;
+
+        await supabase.from('agency_referrals').insert({
+          referrer_id: referralId,
+          referred_id: agency.id,
+          referred_email: email,
+          status: 'signed_up',
+          early_bird: isEarlyBird,
+          referrer_credits_granted: referrerCredits,
+          friend_credits_granted: 100,
+        });
+
+        await addCredits(
+          referralId,
+          referrerCredits,
+          'bonus',
+          isEarlyBird
+            ? `Early Bird referral reward — ${businessName} joined via your link 🚀 (+50 early bird bonus)`
+            : `Referral reward — ${businessName} joined using your link 🎉`,
+        );
+
+        await addCredits(
+          agency.id,
+          100,
+          'bonus',
+          'Welcome referral bonus — a friend referred you to Kyra. Enjoy 100 free AI credits! 🎁',
+        );
+
+        // Streak bonus check
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 3_600_000).toISOString();
+        const { count: recentCount } = await supabase
+          .from('agency_referrals')
+          .select('id', { count: 'exact', head: true })
+          .eq('referrer_id', referralId)
+          .gte('created_at', sevenDaysAgo);
+
+        if (recentCount === 3) {
+          await addCredits(referralId, 50, 'bonus', 'Streak bonus — 3 referrals in 7 days! 🔥');
+        }
+      } catch (e) {
+        console.warn('[solo-signup] Referral reward error:', e);
+      }
+    })();
   }
 
   // ── 6. Create a client record (owner IS the client) ────────────────────
