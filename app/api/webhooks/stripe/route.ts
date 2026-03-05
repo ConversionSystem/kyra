@@ -19,6 +19,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { stripe, planFromPriceId, type StripePlan } from '@/lib/stripe/config';
+import { PLANS } from '@/lib/billing/plans';
+import { addCredits } from '@/lib/billing/credit-engine';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 
 // Stripe requires the raw body for signature verification
@@ -39,6 +41,23 @@ async function updateAgencyPlan(
     updates.stripe_subscription_id = subscriptionId;
   }
 
+  // ── Solo → Agency upgrade: convert account_type when a paid plan activates ──
+  // Solo users who upgrade to Lite/Pro/Scale must get full agency access.
+  // The account_type flag controls which nav/features they see — must be updated.
+  if (plan !== 'free') {
+    const { data: current } = await db()
+      .from('agencies')
+      .select('settings')
+      .eq('id', agencyId)
+      .single();
+
+    const currentSettings = ((current?.settings ?? {}) as Record<string, unknown>);
+    if (currentSettings.account_type === 'solo') {
+      updates.settings = { ...currentSettings, account_type: 'agency' };
+      console.log(`[stripe/webhook] Solo→Agency upgrade for ${agencyId} on plan ${plan}`);
+    }
+  }
+
   const { error } = await db()
     .from('agencies')
     .update(updates)
@@ -47,6 +66,25 @@ async function updateAgencyPlan(
   if (error) {
     console.error('[stripe/webhook] Failed to update agency plan:', error);
     throw error;
+  }
+
+  // ── Grant monthly credits for the new plan ──────────────────────────────
+  // Paid plans include credits/mo. Grant them on activation and renewal.
+  if (plan !== 'free') {
+    const planConfig = PLANS[plan as keyof typeof PLANS];
+    if (planConfig?.monthlyCredits > 0) {
+      try {
+        await addCredits(
+          agencyId,
+          planConfig.monthlyCredits,
+          'bonus',
+          `${planConfig.name} plan — ${planConfig.monthlyCredits} monthly credits`,
+        );
+        console.log(`[stripe/webhook] Granted ${planConfig.monthlyCredits} credits to ${agencyId} for ${plan}`);
+      } catch (creditErr) {
+        console.warn(`[stripe/webhook] Failed to grant credits for ${agencyId}:`, creditErr);
+      }
+    }
   }
 
   console.log(`[stripe/webhook] Agency ${agencyId} → plan=${plan}`, subscriptionId ? `sub=${subscriptionId}` : '');

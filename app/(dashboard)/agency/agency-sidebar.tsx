@@ -346,6 +346,19 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
         </div>
       </div>
 
+      {/* Upgrade to agency banner — solo free users only */}
+      {isSolo && plan === 'free' && (
+        <div className="px-3 pt-3">
+          <a
+            href="/agency/billing"
+            className="block w-full rounded-xl border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 px-3 py-2.5 transition"
+          >
+            <p className="text-xs font-bold text-indigo-300 mb-0.5">Ready for more?</p>
+            <p className="text-[10px] text-indigo-400/80 leading-snug">Upgrade to manage multiple clients & unlock agency features</p>
+          </a>
+        </div>
+      )}
+
       {/* AI Worker Terminal — only for solo users (their personal AI worker).
           Agency users create AI workers as clients instead. */}
       {isSolo && (

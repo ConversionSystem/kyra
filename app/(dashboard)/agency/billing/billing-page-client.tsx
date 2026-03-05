@@ -36,6 +36,7 @@ interface Props {
   totalConversationsThisMonth: number;
   checkoutStatus: string | null;  // 'success' | 'cancelled' | null
   autoUpgradePlan: string | null; // plan to auto-trigger on mount
+  isSolo?: boolean;               // solo account — show upgrade-to-agency banner
 }
 
 const PLAN_ORDER: Plan[] = ['starter', 'pro', 'scale'];
@@ -56,7 +57,7 @@ function formatUsd(n: number): string {
   return `$${Math.round(n).toLocaleString()}`;
 }
 
-export function BillingPageClient({ agency, clientCount, totalConversationsThisMonth, checkoutStatus, autoUpgradePlan }: Props) {
+export function BillingPageClient({ agency, clientCount, totalConversationsThisMonth, checkoutStatus, autoUpgradePlan, isSolo }: Props) {
   const router = useRouter();
   const currentPlan = agency.plan as Plan;
   const [loading, setLoading] = useState<Plan | null>(null);
@@ -129,6 +130,30 @@ export function BillingPageClient({ agency, clientCount, totalConversationsThisM
           Manage your subscription, upgrade your plan, and view billing history.
         </p>
       </div>
+
+      {/* ── Solo → Agency upgrade banner ──────────────────────────────── */}
+      {isSolo && currentPlan === 'free' && (
+        <div className="rounded-xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-purple-50 p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <Users className="h-4 w-4 text-indigo-600" />
+              <p className="text-sm font-bold text-indigo-900">Ready to manage multiple clients?</p>
+            </div>
+            <p className="text-sm text-indigo-700">
+              Upgrade to an Agency plan to deploy AI workers for your clients, add white-label branding, and unlock full agency features.
+              Your existing AI worker and credits carry over.
+            </p>
+          </div>
+          <button
+            onClick={() => handleUpgrade('starter')}
+            disabled={loading !== null}
+            className="shrink-0 flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold px-4 py-2.5 rounded-xl transition disabled:opacity-50"
+          >
+            {loading === 'starter' ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUpRight className="h-4 w-4" />}
+            Upgrade to Agency →
+          </button>
+        </div>
+      )}
 
       {/* Checkout status banner — upgrade celebration */}
       {checkoutStatus === 'success' && (

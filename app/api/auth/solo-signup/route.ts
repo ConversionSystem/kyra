@@ -6,7 +6,7 @@ import { provisionClientGateway } from '@/lib/ovh/provisioner';
 import { buildInjectionDefensePromptSuffix } from '@/lib/security/prompt-injection';
 
 const SOLO_WELCOME_CREDITS = 50;
-const SOLO_WELCOME_DESCRIPTION = 'Kyra Solo Free Beta — welcome credits';
+const SOLO_WELCOME_DESCRIPTION = 'Kyra Solo Free — 50 welcome credits';
 
 function getServiceSupabase() {
   return createClient(
