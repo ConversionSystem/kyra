@@ -38,6 +38,7 @@ import {
   ChevronDown,
   ChevronRight,
   Star,
+  Gift,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AgencySettings } from '@/lib/agency/types';
@@ -113,6 +114,7 @@ const navSections: NavSection[] = [
     items: [
       { label: 'Billing', href: '/agency/billing', icon: CreditCard },
       { label: 'Credits', href: '/agency/credits', icon: Coins },
+      { label: 'Referrals', href: '/agency/referrals', icon: Gift },
       { label: 'API Keys', href: '/agency/api-keys', icon: KeyRound },
       { label: 'Settings', href: '/agency/settings', icon: Settings },
     ],
@@ -159,6 +161,7 @@ const soloNavSections: NavSection[] = [
     items: [
       { label: 'Billing', href: '/agency/billing', icon: CreditCard },
       { label: 'Credits', href: '/agency/credits', icon: Coins },
+      { label: 'Referrals', href: '/agency/referrals', icon: Gift },
       { label: 'Settings', href: '/agency/settings', icon: Settings },
     ],
   },

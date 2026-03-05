@@ -22,7 +22,7 @@ interface Referral {
 interface Stats {
   total: number;
   signedUp: number;
-  converted: number;
+  activated: number;
   weeklyCount: number;
   creditsEarned: number;
 }
@@ -37,13 +37,15 @@ interface Props {
 
 const statusColors: Record<string, string> = {
   pending:   'bg-gray-100 text-gray-600 border-gray-200',
-  signed_up: 'bg-blue-50 text-blue-700 border-blue-200',
+  signed_up: 'bg-amber-50 text-amber-700 border-amber-200',
+  activated: 'bg-green-50 text-green-700 border-green-200',
   converted: 'bg-green-50 text-green-700 border-green-200',
 };
 
 const statusLabels: Record<string, string> = {
   pending:   'Pending',
-  signed_up: 'Signed Up ✓',
+  signed_up: 'Joined — awaiting first message',
+  activated: 'Active ✓',
   converted: 'Converted ⭐',
 };
 
@@ -190,8 +192,8 @@ export default function ReferralsClient({ agencyId: _agencyId, agencyName, agenc
       {/* ── Stats ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { icon: Users, label: 'Total referred', value: stats.total, color: 'text-gray-600', bg: 'bg-gray-50' },
-          { icon: TrendingUp, label: 'Friends joined', value: stats.signedUp, color: 'text-blue-600', bg: 'bg-blue-50' },
+          { icon: Users, label: 'Links clicked', value: stats.total, color: 'text-gray-600', bg: 'bg-gray-50' },
+          { icon: TrendingUp, label: 'Activated (credits earned)', value: stats.activated, color: 'text-green-600', bg: 'bg-green-50' },
           { icon: Gift, label: 'Credits earned', value: stats.creditsEarned > 0 ? `${stats.creditsEarned.toLocaleString()}` : '—', color: 'text-indigo-600', bg: 'bg-indigo-50' },
           { icon: Flame, label: 'This week (streak)', value: `${stats.weeklyCount}/3`, color: 'text-orange-600', bg: 'bg-orange-50' },
         ].map(({ icon: Icon, label, value, color, bg }) => (
