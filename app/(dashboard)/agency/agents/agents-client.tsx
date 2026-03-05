@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Bot, Send, ChevronDown, ChevronUp, Loader2, Zap, Info, FlaskConical } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { SectionNav } from '@/components/dashboard/section-nav';
 
 interface AgentInfo {
   id: string;
@@ -127,15 +128,17 @@ export function AgentsClient() {
   }
 
   return (
+    <div className="space-y-0">
+      <SectionNav currentHref="/agency/agents" />
     <div className="p-4 sm:p-6 md:p-8 space-y-6 max-w-3xl">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Bot className="w-6 h-6" /> AI Agents
+            <Bot className="w-6 h-6" /> Smart Routing
           </h1>
           <p className="text-gray-500 mt-1">
-            Deploy specialized AI workers for different departments. Each handles their area of expertise.
+            Auto-route incoming messages to the right AI department based on intent. Enable the agents you need and test routing live.
           </p>
         </div>
         <Badge variant="outline" className="border-gray-200 text-gray-700 text-sm">
@@ -311,6 +314,7 @@ export function AgentsClient() {
           );
         })}
       </div>
+    </div>
     </div>
   );
 }
