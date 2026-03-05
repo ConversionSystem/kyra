@@ -5,7 +5,7 @@
 // Day 1  (24h after signup)   — "Did you connect your first client AI?"
 // Day 3  (72h after signup)   — "What other agencies did in their first 3 days"
 // Day 5  (5d after signup)    — Upgrade nudge (if still on free plan)
-// Day 7  (7d after signup)    — Final push + 30-day trial expiry warning
+// Day 7  (7d after signup)    — Final push + 7-day trial expiry warning
 //
 // Requires RESEND_API_KEY env var. Silently skips if missing.
 // ============================================================================
@@ -160,8 +160,8 @@ function day5Email(agency: Agency): { subject: string; html: string } {
           <td style="padding:10px 12px;font-size:18px;">${icon}</td>
         </tr>`).join('')}
     </table>
-    ${p(`Every plan includes a <strong>30-day free trial</strong>. No charge today.`)}
-    ${btn('Start 30-day free trial', `${APP_URL}/agency/billing?upgrade=starter`)}
+    ${p(`Every plan includes a <strong>7-day free trial</strong>. No charge today.`)}
+    ${btn('Start 7-day free trial', `${APP_URL}/agency/billing?upgrade=starter`)}
     ${p(`Your trial starts the moment you click. Cancel anytime in the first 30 days — you won't be charged.`, true)}`;
 
   return {
@@ -182,7 +182,7 @@ function day7Email(agency: Agency): { subject: string; html: string } {
     ${p(`You've been on Kyra's free plan for a week. If the AI handled even one conversation for you — it paid for itself.`)}
     ${p(`Lite is <strong>$99/month</strong> for 5 client AIs. Most agencies charge their clients <strong>$500–$2,000/month</strong> per AI. The math is obvious.`)}
     ${btn('Start free trial — $0 today', `${APP_URL}/agency/billing?upgrade=starter`)}
-    ${p(`30-day free trial. Cancel anytime. No credit card games.`)}
+    ${p(`7-day free trial. Cancel anytime. No credit card games.`)}
     ${p(`If this isn't the right time, no worries — your free account stays active and your 1 client AI keeps working.`, true)}
     ${p(`— Angel`, true)}`;
 

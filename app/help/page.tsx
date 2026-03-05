@@ -98,7 +98,7 @@ const SECTIONS = [
     faqs: [
       {
         q: 'What does each plan include?',
-        a: 'Free: 1 AI worker, all features. Lite ($99/mo): 5 AI workers + BYOK + weekly reports. Pro ($249/mo): 15 AI workers + white-label + pitch pages + referral program. Scale ($499/mo): 50 AI workers + everything. All paid plans include a 30-day free trial.',
+        a: 'Lite ($99/mo): 3 AI workers + 500 credits/mo. Pro ($249/mo): 10 AI workers + 1,500 credits/mo + white-label. Scale ($499/mo): 30 AI workers + 2,500 credits/mo + everything. All paid plans include a 7-day free trial.',
       },
       {
         q: 'What is BYOK (Bring Your Own Key)?',
@@ -109,7 +109,7 @@ const SECTIONS = [
         a: 'Yes. Cancel anytime from your Billing page. Your plan stays active until the end of the billing period, then reverts to Free (1 client). No cancellation fees.',
       },
       {
-        q: 'How does billing work for the 30-day trial?',
+        q: 'How does billing work for the 7-day trial?',
         a: 'Enter your card to start the trial. You won\'t be charged for 30 days. If you cancel before the trial ends, you pay nothing. After 30 days, your card is charged for the monthly rate.',
       },
       {
