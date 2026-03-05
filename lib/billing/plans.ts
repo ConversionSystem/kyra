@@ -5,12 +5,14 @@
  * Each plan has a hard client limit enforced at creation time.
  */
 
-export type Plan = 'free' | 'business_starter' | 'starter' | 'pro' | 'scale';
+export type Plan = 'free' | 'starter' | 'pro' | 'scale';
 
 export interface PlanConfig {
   name: string;
   price: number;            // USD/month
   maxClients: number;       // max client AI workers
+  monthlyCredits: number;   // platform credits included per month (0 = BYOK only)
+  trialDays: number;        // free trial length in days
   description: string;
   features: string[];
   highlighted?: boolean;
@@ -25,9 +27,12 @@ export const PLANS: Record<Plan, PlanConfig> = {
     name: 'Free Trial',
     price: 0,
     maxClients: 1,
-    description: '14-day trial to test the platform. Upgrade to keep your AI worker running.',
+    monthlyCredits: 50,
+    trialDays: 7,
+    description: '7-day trial to test the platform. Upgrade to keep your AI worker running.',
     features: [
-      '1 client AI worker (14-day trial)',
+      '1 client AI worker (7-day trial)',
+      '50 platform credits included',
       '21 industry templates',
       'Telegram, SMS, web chat',
       'GHL integration',
@@ -37,38 +42,21 @@ export const PLANS: Record<Plan, PlanConfig> = {
     cta: 'Start Trial',
     stripePriceKey: 'free',
   },
-  business_starter: {
-    name: 'Business Starter',
-    price: 49,
-    maxClients: 1,
-    description: 'Perfect for agencies deploying their first AI worker.',
-    features: [
-      '1 client AI worker',
-      '21 industry templates',
-      'Telegram, SMS, web chat',
-      'GHL integration',
-      'BYOK (Bring Your Own AI Keys)',
-      'AI Sales Pipeline',
-      'Lead discovery & enrichment',
-      'Auto-qualifying AI worker',
-      'Client conversation history',
-    ],
-    badge: 'STARTER',
-    badgeColor: 'bg-green-100 text-green-700',
-    cta: 'Start for $49/mo',
-    stripePriceKey: 'business_starter',
-  },
   starter: {
     name: 'Lite',
     price: 99,
     maxClients: 3,
+    monthlyCredits: 500,
+    trialDays: 7,
     description: 'Launch your AI agency with your first 3 clients.',
     features: [
       '3 client AI workers',
-      'Everything in Business Starter',
+      '500 platform credits / month',
+      '21 industry templates',
+      'Telegram, SMS, web chat',
+      'GHL integration',
       'Full analytics dashboard',
-      'AI Sales Pipeline (unlimited campaigns)',
-      'Proactive lead outreach',
+      'AI Sales Pipeline',
       'Smart escalation alerts',
       'Weekly performance reports',
     ],
@@ -81,9 +69,12 @@ export const PLANS: Record<Plan, PlanConfig> = {
     name: 'Pro',
     price: 249,
     maxClients: 10,
+    monthlyCredits: 1500,
+    trialDays: 7,
     description: 'For growing agencies managing multiple clients.',
     features: [
       '10 client AI workers',
+      '1,500 platform credits / month',
       'Everything in Lite',
       'White-label branding',
       'AI lead discovery, enrichment & closing',
@@ -103,12 +94,14 @@ export const PLANS: Record<Plan, PlanConfig> = {
     name: 'Scale',
     price: 499,
     maxClients: 30,
+    monthlyCredits: 2500,
+    trialDays: 7,
     description: 'Built for high-volume agencies running 30+ AI workers.',
     features: [
       '30 client AI workers',
+      '2,500 platform credits / month',
       'Everything in Pro',
       'AI Sales Pipeline (unlimited + priority)',
-      'AI lead discovery, enrichment & auto-closing',
       'Dedicated infrastructure',
       'Custom domain per agency',
       'SLA uptime guarantee',

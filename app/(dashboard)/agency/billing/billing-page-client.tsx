@@ -38,7 +38,7 @@ interface Props {
   autoUpgradePlan: string | null; // plan to auto-trigger on mount
 }
 
-const PLAN_ORDER: Plan[] = ['business_starter', 'starter', 'pro', 'scale'];
+const PLAN_ORDER: Plan[] = ['starter', 'pro', 'scale'];
 
 function planIndex(p: string) {
   return PLAN_ORDER.indexOf(p as Plan);
@@ -349,7 +349,7 @@ export function BillingPageClient({ agency, clientCount, totalConversationsThisM
                   )}
 
                   {isUpgrade && !isCurrent && (
-                    <p className="text-[10px] text-gray-400 text-center mt-2">30-day free trial • Cancel anytime</p>
+                    <p className="text-[10px] text-gray-400 text-center mt-2">7-day free trial • Cancel anytime</p>
                   )}
                 </CardContent>
               </Card>
@@ -364,7 +364,7 @@ export function BillingPageClient({ agency, clientCount, totalConversationsThisM
           <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
             <div className="flex items-center gap-2">
               <Star className="h-4 w-4 text-amber-400" />
-              <span>All paid plans include a <strong>30-day free trial</strong> — no charge today.</span>
+              <span>All paid plans include a <strong>7-day free trial</strong> — no charge today.</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4 text-green-500" />
