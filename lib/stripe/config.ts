@@ -17,14 +17,13 @@ export const stripe = process.env.STRIPE_SECRET_KEY
 // Price IDs — set via env vars, created in Stripe Dashboard
 // ============================================================================
 
-export type StripePlan = 'business_starter' | 'starter' | 'pro' | 'scale';
+export type StripePlan = 'starter' | 'pro' | 'scale';
 
 interface PriceConfig {
   priceId: string;
 }
 
 export const STRIPE_PRICES: Record<StripePlan | 'per_client', PriceConfig> = {
-  business_starter: { priceId: process.env.STRIPE_BUSINESS_STARTER_PRICE_ID ?? '' },
   starter: { priceId: process.env.STRIPE_STARTER_PRICE_ID ?? '' },
   pro: { priceId: process.env.STRIPE_PRO_PRICE_ID ?? '' },
   scale: { priceId: process.env.STRIPE_SCALE_PRICE_ID ?? '' },
