@@ -196,7 +196,7 @@ export default function SoloSignupPage() {
         <div className="w-full lg:w-[380px] lg:sticky lg:top-24 shrink-0">
           <div className="inline-flex items-center gap-2 bg-emerald-500/20 border border-emerald-500/30 rounded-full px-4 py-1.5 text-sm font-medium mb-6">
             <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse inline-block" />
-            Free during beta — no credit card
+            Free to start — no credit card required
           </div>
 
           <h1 className="text-3xl sm:text-4xl font-black mb-3 leading-tight">
@@ -488,7 +488,7 @@ export default function SoloSignupPage() {
               { old: '"I tried AI chatbots before. They were terrible."', truth: 'Chatbots follow scripts. Kyra reads your entire website, learns your services and pricing, remembers past conversations, and responds like a human who actually works at your business.' },
               { old: '"I\'ll set this up when things calm down."', truth: 'You\'re busy because you\'re doing everything yourself. Kyra handles leads at 11pm, answers the same questions for the 50th time, and follows up automatically. The busy IS why you need this.' },
               { old: '"AI will make my business feel impersonal."', truth: 'Your AI is trained on YOUR voice, YOUR website, YOUR way of doing things. Customers think they\'re talking to your team. And you can review every conversation.' },
-              { old: '"Free? What\'s the catch?"', truth: 'The catch is we want you to love it so much you tell other business owners. That\'s it. 50 free credits (one-time), full CRM, web chat — free. No credit card. No trial that expires.' },
+              { old: '"Free? What\'s the catch?"', truth: 'The catch is we want you to love it so much you tell other business owners. That\'s it. 50 platform credits included, full CRM, web chat — free. No credit card.' },
             ].map((item, i) => (
               <div key={i} className="border border-white/10 rounded-xl p-5 bg-white/[0.02] hover:bg-white/[0.04] transition">
                 <p className="text-red-400/70 text-sm font-semibold line-through mb-2">{item.old}</p>
@@ -512,7 +512,7 @@ export default function SoloSignupPage() {
           <div className="space-y-3">
             <FAQItem
               question="Is this really free?"
-              answer="Yes. During the beta, you get a full AI worker, CRM, web chat, and 50 free credits (one-time) — completely free. No credit card required. When we launch paid tiers, early beta users will be grandfathered in."
+              answer="Yes. During the beta, you get a full AI worker, CRM, web chat, and 50 platform credits included — completely free. No credit card required. Need more? Upgrade to an agency plan anytime."
             />
             <FAQItem
               question="Do I need to be technical?"
@@ -520,7 +520,7 @@ export default function SoloSignupPage() {
             />
             <FAQItem
               question="What counts as a 'credit'?"
-              answer="One credit = one AI conversation turn. When a customer asks your AI a question and gets a response, that's one credit. 50 free credits (one-time) covers most solo businesses. Need more? Upgrade anytime."
+              answer="One credit = one AI conversation turn. When a customer asks your AI a question and gets a response, that's one credit. 50 platform credits included covers most solo businesses. Need more? Upgrade anytime."
             />
             <FAQItem
               question="How does the AI know about my business?"
