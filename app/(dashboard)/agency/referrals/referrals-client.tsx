@@ -44,8 +44,8 @@ const statusColors: Record<string, string> = {
 
 const statusLabels: Record<string, string> = {
   pending:   'Pending',
-  signed_up: 'Joined — awaiting first message',
-  activated: 'Active ✓',
+  signed_up: 'Joined — awaiting email confirm',
+  activated: 'Confirmed ✓',
   converted: 'Converted ⭐',
 };
 
