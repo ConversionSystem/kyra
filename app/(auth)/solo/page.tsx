@@ -89,7 +89,7 @@ export default function SoloSignupPage() {
         return;
       }
 
-      router.push('/agency');
+      router.push(`/signup/success?agencyId=${data.agencyId || ''}&next=/agency`);
       router.refresh();
     } catch {
       setError('An unexpected error occurred. Please try again.');
