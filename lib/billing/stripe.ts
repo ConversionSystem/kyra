@@ -19,10 +19,9 @@ export function getStripe(): Stripe {
  * Stripe Price IDs for each plan.
  * Set these in env vars after creating products in Stripe Dashboard.
  *
- * Plans: free (trial), business_starter ($49), starter/lite ($99), pro ($249), scale ($499)
+ * Plans: free (7-day trial), starter/lite ($99), pro ($249), scale ($499)
  */
 export const STRIPE_PRICE_IDS: Record<string, string | undefined> = {
-  business_starter: process.env.STRIPE_PRICE_BUSINESS_STARTER,
   starter: process.env.STRIPE_PRICE_STARTER,
   pro: process.env.STRIPE_PRICE_PRO,
   scale: process.env.STRIPE_PRICE_SCALE,
@@ -34,7 +33,7 @@ export const STRIPE_PRICE_IDS: Record<string, string | undefined> = {
 export async function createCheckoutSession(opts: {
   userId: string;
   email: string;
-  plan: 'business_starter' | 'starter' | 'pro' | 'scale';
+  plan: 'starter' | 'pro' | 'scale';
   successUrl: string;
   cancelUrl: string;
   customerId?: string;
