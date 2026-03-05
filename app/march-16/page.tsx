@@ -10,26 +10,26 @@ export const metadata: Metadata = {
 
 const PLANS = [
   {
-    name: 'Starter',
+    name: 'Lite',
     price: '$99',
     period: '/mo',
-    clients: 'Up to 5 clients',
-    features: ['5 AI worker deployments', 'Agency command center', 'GHL + SMS + WhatsApp', 'BYOK (any AI model)'],
+    clients: 'Up to 3 clients',
+    features: ['3 AI worker deployments', '500 credits/mo included', 'Agency command center', 'GHL + SMS + web chat', 'BYOK (any AI model)'],
   },
   {
     name: 'Pro',
     price: '$249',
     period: '/mo',
-    clients: 'Up to 15 clients',
+    clients: 'Up to 10 clients',
     highlight: true,
-    features: ['15 AI worker deployments', 'White-label billing (Stripe)', 'Priority support', 'All channels'],
+    features: ['10 AI worker deployments', '1,500 credits/mo included', 'White-label dashboard', 'Priority support', 'All channels'],
   },
   {
     name: 'Scale',
     price: '$499',
     period: '/mo',
-    clients: 'Unlimited clients',
-    features: ['Unlimited deployments', 'Custom onboarding', 'Dedicated success manager', 'SLA guarantee'],
+    clients: 'Up to 30 clients',
+    features: ['30 AI worker deployments', '2,500 credits/mo included', 'Custom onboarding', 'Dedicated success manager', 'SLA guarantee'],
   },
 ];
 
@@ -47,7 +47,7 @@ const PRODUCT_CARDS = [
   {
     icon: '💳',
     title: 'White-Label Revenue',
-    desc: 'Set your price. Stripe collects it. Agencies are charging $297–$497/mo per client. 15 clients on Pro = $4,455/mo in new recurring revenue.',
+    desc: 'Set your price. Stripe collects it. Agencies are charging $500–$2,000/mo per client. 10 clients on Pro = $9,970/mo in new recurring revenue.',
   },
   {
     icon: '🔑',
