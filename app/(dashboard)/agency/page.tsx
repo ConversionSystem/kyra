@@ -22,6 +22,7 @@ import ClientSparkline from '@/components/dashboard/client-sparkline';
 import RevenueUnlockCard from '@/components/dashboard/revenue-unlock-card';
 import TrialCountdownBanner from '@/components/dashboard/trial-countdown-banner';
 import ReferralShareWidget from '@/components/dashboard/referral-share-widget';
+import { ReferralNudge } from '@/components/dashboard/referral-nudge';
 import { UltronSummaryCard } from '@/components/dashboard/ultron-summary-card';
 import RoiSummaryCard from '@/components/dashboard/roi-summary-card';
 import SoloOverview from '@/components/dashboard/solo-overview';
@@ -412,12 +413,21 @@ export default async function AgencyOverviewPage() {
         </div>
       )}
 
+      {/* ── Referral Nudges (early bird + low credits) ── */}
+      <ReferralNudge
+        balance={agencyCredits.balance}
+        agencyCreatedAt={agency.created_at ?? new Date().toISOString()}
+        referralUrl={agency.settings?.invite_code
+          ? `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://kyra.conversionsystem.com'}/invite/${agency.settings.invite_code}`
+          : undefined}
+      />
+
       {/* ── Referral Share Widget ── */}
       <div className="mb-6">
         <ReferralShareWidget
           agencyId={agency.id}
           referralCount={referralData.count}
-          creditsEarned={referralData.count * 500}
+          creditsEarned={referralData.count * 100}
         />
       </div>
 
