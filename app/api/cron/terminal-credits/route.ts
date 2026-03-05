@@ -1,21 +1,25 @@
 /**
- * POST /api/cron/terminal-credits
+ * GET /api/cron/terminal-credits
  *
- * Reconcile credits for OpenClaw terminal usage.
+ * Reconcile credits for OpenClaw terminal (gateway) usage.
  *
  * OpenClaw terminals connect directly to containers via WebSocket — Kyra
  * never sees those messages, so credits are never auto-deducted.
  *
  * This cron runs every 10 minutes and:
- * 1. Lists all active containers (agency_clients with a provisioned gateway)
+ * 1. Lists all active containers (agency_clients with gateway_url set)
  * 2. Queries each container's sessions via WebSocket RPC to get total token usage
  * 3. Compares against last-known token count stored in agency_clients.settings
  * 4. Deducts 1 credit per CREDIT_TOKENS_THRESHOLD tokens used since last check
+ *
+ * ROOT CAUSE OF PRIOR BUG: was filtering .not('settings->gateway_url', 'is', null)
+ * but gateway_url is a TOP-LEVEL COLUMN, not inside the settings JSONB.
  */
 
 import { NextResponse } from 'next/server';
 import { createClient as createSupabaseServiceClient } from '@supabase/supabase-js';
 import { deductCredits } from '@/lib/billing/credit-engine';
+import { resolveAgencyApiKey } from '@/lib/billing/byok';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -129,11 +133,13 @@ export async function GET(request: Request) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
 
-  // Get all clients with an active gateway
+  // ── FIX: gateway_url is a TOP-LEVEL COLUMN, not inside settings JSONB ──
+  // Previous bug: .not('settings->gateway_url', 'is', null) → found 0 clients
   const { data: clients } = await supabase
     .from('agency_clients')
-    .select('id, agency_id, name, settings')
-    .not('settings->gateway_url', 'is', null);
+    .select('id, agency_id, name, settings, gateway_url, gateway_token, gateway_status')
+    .not('gateway_url', 'is', null)
+    .eq('gateway_status', 'running');
 
   if (!clients || clients.length === 0) {
     return NextResponse.json({ ok: true, processed: 0, message: 'No active gateways' });
@@ -142,16 +148,25 @@ export async function GET(request: Request) {
   const results = {
     checked: 0,
     deducted: 0,
+    skippedByok: 0,
     errors: 0,
     totalCreditsDeducted: 0,
   };
 
   for (const client of clients) {
+    // ── FIX: read from top-level columns, not settings JSONB ──
+    const gatewayUrl = client.gateway_url as string;
+    const authToken = client.gateway_token as string;
     const settings = (client.settings as Record<string, unknown>) ?? {};
-    const gatewayUrl = settings.gateway_url as string | undefined;
-    const authToken = settings.gateway_token as string | undefined;
 
     if (!gatewayUrl || !authToken) continue;
+
+    // BYOK bypass: if the agency uses their own API key, don't charge platform credits
+    const resolved = await resolveAgencyApiKey(client.agency_id).catch(() => null);
+    if (resolved?.isByok) {
+      results.skippedByok++;
+      continue;
+    }
 
     results.checked++;
 
@@ -159,7 +174,8 @@ export async function GET(request: Request) {
       const currentTokens = await getContainerTokenUsage(gatewayUrl, authToken);
 
       if (currentTokens === null) {
-        // Container unreachable — skip, try next time
+        // Container unreachable — skip silently, try next run
+        console.log(`[terminal-credits] ${client.name}: unreachable, skipping`);
         continue;
       }
 
@@ -167,7 +183,7 @@ export async function GET(request: Request) {
       const deltaTokens = Math.max(0, currentTokens - lastKnownTokens);
 
       if (deltaTokens < CREDIT_TOKENS_THRESHOLD) {
-        // Not enough new tokens for even 1 credit — save and skip
+        // Not enough new tokens for even 1 credit — save baseline and skip
         await supabase
           .from('agency_clients')
           .update({
@@ -191,7 +207,7 @@ export async function GET(request: Request) {
         description: `Terminal usage: ${deltaTokens.toLocaleString()} tokens (${creditsToDeduct} credit${creditsToDeduct !== 1 ? 's' : ''}) — ${client.name}`,
       });
 
-      // Save new baseline (only account for tokens we charged for)
+      // Save new baseline (only account for tokens we charged for, remainder carries over)
       await supabase
         .from('agency_clients')
         .update({
