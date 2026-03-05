@@ -31,6 +31,7 @@ const CHANNEL_META: Record<string, { label: string; icon: React.ElementType; col
   ghl_sms:    { label: 'GHL SMS',      icon: Smartphone,    color: 'bg-green-50 text-green-600 border-green-200' },
   ghl_email:  { label: 'GHL Email',    icon: MessageSquare, color: 'bg-orange-50 text-orange-600 border-orange-200' },
   whatsapp:   { label: 'WhatsApp',     icon: Smartphone,    color: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
+  terminal:   { label: 'Terminal',     icon: MessageSquare, color: 'bg-gray-100 text-gray-600 border-gray-300' },
 };
 
 function timeAgo(dateStr: string) {
