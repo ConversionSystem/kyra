@@ -133,15 +133,39 @@ export async function GET(request: Request) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
 
-  // ── FIX: gateway_url is a TOP-LEVEL COLUMN, not inside settings JSONB ──
-  // Previous bug: .not('settings->gateway_url', 'is', null) → found 0 clients
-  const { data: clients } = await supabase
-    .from('agency_clients')
-    .select('id, agency_id, name, settings, gateway_url, gateway_token, gateway_status')
-    .not('gateway_url', 'is', null)
-    .eq('gateway_status', 'running');
+  // ── Query BOTH agency_clients AND agencies tables ──
+  // agency_clients: per-client AI worker containers
+  // agencies: agency owner's own OpenClaw terminal container
+  const [{ data: clients }, { data: agencyContainers }] = await Promise.all([
+    supabase
+      .from('agency_clients')
+      .select('id, agency_id, name, settings, gateway_url, gateway_token, gateway_status')
+      .not('gateway_url', 'is', null)
+      .eq('gateway_status', 'running'),
+    supabase
+      .from('agencies')
+      .select('id, name, settings, gateway_url, gateway_token, gateway_status')
+      .not('gateway_url', 'is', null)
+      .eq('gateway_status', 'running'),
+  ]);
 
-  if (!clients || clients.length === 0) {
+  // Normalise into a single list — agency containers use agency_id = their own id
+  type GatewayTarget = {
+    id: string;
+    agency_id: string;
+    name: string;
+    settings: Record<string, unknown>;
+    gateway_url: string;
+    gateway_token: string;
+    table: 'agency_clients' | 'agencies';
+  };
+
+  const allContainers: GatewayTarget[] = [
+    ...(clients ?? []).map(c => ({ ...c, agency_id: c.agency_id, settings: (c.settings ?? {}) as Record<string, unknown>, gateway_url: c.gateway_url as string, gateway_token: c.gateway_token as string, table: 'agency_clients' as const })),
+    ...(agencyContainers ?? []).map(a => ({ ...a, agency_id: a.id, settings: (a.settings ?? {}) as Record<string, unknown>, gateway_url: a.gateway_url as string, gateway_token: a.gateway_token as string, table: 'agencies' as const })),
+  ];
+
+  if (allContainers.length === 0) {
     return NextResponse.json({ ok: true, processed: 0, message: 'No active gateways' });
   }
 
@@ -153,11 +177,10 @@ export async function GET(request: Request) {
     totalCreditsDeducted: 0,
   };
 
-  for (const client of clients) {
-    // ── FIX: read from top-level columns, not settings JSONB ──
-    const gatewayUrl = client.gateway_url as string;
-    const authToken = client.gateway_token as string;
-    const settings = (client.settings as Record<string, unknown>) ?? {};
+  for (const client of allContainers) {
+    const gatewayUrl = client.gateway_url;
+    const authToken = client.gateway_token;
+    const settings = client.settings;
 
     if (!gatewayUrl || !authToken) continue;
 
@@ -185,7 +208,7 @@ export async function GET(request: Request) {
       if (deltaTokens < CREDIT_TOKENS_THRESHOLD) {
         // Not enough new tokens for even 1 credit — save baseline and skip
         await supabase
-          .from('agency_clients')
+          .from(client.table)
           .update({
             settings: {
               ...settings,
@@ -209,7 +232,7 @@ export async function GET(request: Request) {
 
       // Save new baseline (only account for tokens we charged for, remainder carries over)
       await supabase
-        .from('agency_clients')
+        .from(client.table)
         .update({
           settings: {
             ...settings,
