@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { deductCredits } from "@/lib/billing/credit-engine";
+import { resolveAgencyApiKey } from "@/lib/billing/byok";
 
 const WEBHOOK_SECRET = "kyra-usage-2026";
 
@@ -35,6 +36,12 @@ export async function POST(req: NextRequest) {
 
   if (error || !client?.agency_id) {
     return NextResponse.json({ error: "client not found" }, { status: 404 });
+  }
+
+  // BYOK bypass: if the agency uses their own API key, don't charge platform credits
+  const resolved = await resolveAgencyApiKey(client.agency_id).catch(() => null);
+  if (resolved?.isByok) {
+    return NextResponse.json({ ok: true, deducted: 0, reason: "byok" });
   }
 
   for (let i = 0; i < count; i++) {
