@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Sparkles, ArrowRight, Check, Loader2, X, Search } from 'lucide-react';
 import { SEOSetupWizard } from '../clients/[id]/seo-setup-wizard';
+import { SectionNav } from '@/components/dashboard/section-nav';
 
 interface Client {
   id: string;
@@ -150,15 +151,18 @@ export function PremiumTemplatesPage() {
   const [activated, setActivated] = useState<string | null>(null);
 
   return (
+    <div className="space-y-0">
+    <SectionNav currentHref="/agency/templates" />
     <div className="max-w-5xl mx-auto p-4 sm:p-6 md:p-8 space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
           <Sparkles className="w-6 h-6 text-amber-500" />
-          Worker Templates
+          Premium Templates
         </h1>
         <p className="text-gray-500 mt-1 text-sm">
-          Deploy specialized AI workers for your clients. All LLM tokens, API costs, and infrastructure included — one flat monthly price.
+          Specialized AI workers with everything included — LLM costs, SEO tools, and infrastructure — at a flat monthly price per client.
+          For free AI personality configuration, see <a href="/agency/ai-setup" className="text-indigo-600 hover:underline">AI Templates →</a>
         </p>
       </div>
 
@@ -216,6 +220,7 @@ export function PremiumTemplatesPage() {
           }}
         />
       )}
+    </div>
     </div>
   );
 }
