@@ -121,7 +121,10 @@ function AgencySignupPage() {
         promo_code: promoCode || undefined,
         referral_source: referralSource || undefined,
       });
-      router.push('/onboarding');
+      // Send to referral success screen (shows link + early bird countdown)
+      // then onboarding handles the rest
+      const successUrl = `/signup/success?agencyId=${data.agencyId || ''}&next=/onboarding`;
+      router.push(successUrl);
       router.refresh();
     } catch {
       setError('An unexpected error occurred. Please try again.');
