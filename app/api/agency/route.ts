@@ -309,34 +309,81 @@ export async function POST(request: NextRequest) {
     }).catch(err => console.warn('[welcome-email] Failed to send:', err));
   }
 
-  // ── Referral tracking + reward (fire-and-forget) ────────────────────────
+  // ── Referral Machine — double-sided rewards + early bird + streak ──────
   if (referralId && referralId !== agency.id) {
     void (async () => {
-      const { error } = await serviceClient
-        .from('agency_referrals')
-        .insert({
-          referrer_id: referralId,
-          referred_id: agency.id,
-          referred_email: user.email,
-          status: 'signed_up',
-        });
-      if (error) {
-        console.warn('[referral] Failed to log:', error.message);
-        return;
-      }
-      console.log(`[referral] Agency ${agency.id} referred by ${referralId}`);
-
-      // 🎁 Reward the referrer with 500 credits ($5 value)
       try {
+        // Determine if referrer is within their 48-hour Early Bird window
+        const { data: referrerAgency } = await serviceClient
+          .from('agencies')
+          .select('created_at')
+          .eq('id', referralId)
+          .single();
+
+        const hoursElapsed = referrerAgency
+          ? (Date.now() - new Date(referrerAgency.created_at).getTime()) / 3_600_000
+          : 999;
+        const isEarlyBird = hoursElapsed < 48;
+        const referrerCredits = isEarlyBird ? 150 : 100;
+
+        // Log the referral record
+        const { error: insertErr } = await serviceClient
+          .from('agency_referrals')
+          .insert({
+            referrer_id: referralId,
+            referred_id: agency.id,
+            referred_email: user.email,
+            status: 'signed_up',
+            early_bird: isEarlyBird,
+            referrer_credits_granted: referrerCredits,
+            friend_credits_granted: 100,
+          });
+
+        if (insertErr) {
+          console.warn('[referral] Failed to log:', insertErr.message);
+          return;
+        }
+
+        console.log(`[referral] Agency ${agency.id} referred by ${referralId} | earlyBird=${isEarlyBird} | referrerCredits=${referrerCredits}`);
+
+        // 🎁 Reward the REFERRER
         await addCredits(
           referralId,
-          500,
+          referrerCredits,
           'bonus',
-          `Referral reward — ${agency.name} signed up via your link 🎉`,
+          isEarlyBird
+            ? `Early Bird referral reward — +50 bonus for sharing within 48hrs! ${agency.name} joined via your link 🚀`
+            : `Referral reward — ${agency.name} joined using your link 🎉`,
         );
-        console.log(`[referral] Granted 500 credits to referrer ${referralId}`);
+
+        // 🎁 Reward the FRIEND (new user — double-sided Dropbox mechanic)
+        await addCredits(
+          agency.id,
+          100,
+          'bonus',
+          'Welcome referral bonus — a friend referred you to Kyra. Enjoy 100 free AI credits! 🎁',
+        );
+
+        // 🏆 Streak bonus — 3 referrals within 7 days
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 3_600_000).toISOString();
+        const { count: recentCount } = await serviceClient
+          .from('agency_referrals')
+          .select('id', { count: 'exact', head: true })
+          .eq('referrer_id', referralId)
+          .gte('created_at', sevenDaysAgo);
+
+        if (recentCount === 3) {
+          // Exactly 3 (this one just inserted) = streak milestone hit
+          await addCredits(
+            referralId,
+            50,
+            'bonus',
+            'Streak bonus — 3 referrals in 7 days! 🔥',
+          );
+          console.log(`[referral] Streak bonus granted to ${referralId}`);
+        }
       } catch (e) {
-        console.warn('[referral] Failed to grant reward credits:', e);
+        console.warn('[referral] Reward error:', e);
       }
     })();
   }
