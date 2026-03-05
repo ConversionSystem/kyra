@@ -18,7 +18,9 @@
 import { NextResponse } from 'next/server';
 import { createClient as createSupabaseServiceClient } from '@supabase/supabase-js';
 import { deductCredits } from '@/lib/billing/credit-engine';
-import { resolveAgencyApiKey } from '@/lib/billing/byok';
+// NOTE: Do NOT import resolveAgencyApiKey or createServiceClientWithoutCookies here —
+// both transitively import next/headers which crashes in Vercel cron context.
+// BYOK check is inlined below using direct Supabase client.
 
 // Use direct Supabase client for all DB ops — avoids next/headers cookies() in cron context
 function getDb() {
@@ -150,12 +152,30 @@ export async function GET(request: Request) {
     totalCreditsDeducted: 0,
   };
 
+  // Pre-fetch BYOK status for all agencies in one query (no resolveAgencyApiKey — see import note)
+  const allAgencyIds = [...new Set(allContainers.map(c => c.agency_id))];
+  const { data: byokRows } = await supabase
+    .from('agencies')
+    .select('id, api_keys')
+    .in('id', allAgencyIds);
+
+  // Build a Set of agency IDs that have their own provider keys (BYOK)
+  const byokMap = new Map<string, true>();
+  for (const row of byokRows ?? []) {
+    const keys = (row.api_keys as Record<string, unknown>) ?? {};
+    const providers = ['openai', 'anthropic', 'openrouter', 'google'] as const;
+    if (providers.some(p => keys[p] && String(keys[p]).startsWith('sk-'))) {
+      byokMap.set(row.id, true);
+    }
+  }
+
   // Process all containers in parallel
   await Promise.all(allContainers.map(async (container) => {
     try {
-      // ── BYOK check using proper resolveAgencyApiKey ────────────────────────
-      const keyInfo = await resolveAgencyApiKey(container.agency_id).catch(() => null);
-      const isByok = keyInfo?.isByok ?? false;
+      // ── BYOK check (inlined — can't import byok.ts/resolveAgencyApiKey, see note above) ──
+      // An agency is BYOK if agencies.api_keys has openai/anthropic/openrouter/google key set
+      const agencyForByok = byokMap.get(container.agency_id);
+      const isByok = agencyForByok != null;
 
       // ── 1. Fetch token usage + session list ────────────────────────────────
       const sessionsResult = await invokeGatewayTool(
