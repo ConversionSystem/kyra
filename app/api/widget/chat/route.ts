@@ -203,10 +203,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Empty AI response' }, { status: 503, headers: CORS });
   }
 
-  // ── Log to client_conversations ──────────────────────────────────────────
-  // Includes session_id for accurate session grouping and source_url for
-  // page-level analytics. Both are critical for the analytics dashboard.
-  void supabase
+  // ── Log conversation to DB (awaited — must complete before response) ────────
+  // NOTE: fire-and-forget was causing silent data loss on Vercel serverless —
+  // the function can be killed right after sending the response, before async
+  // operations complete. We await the insert so it always persists.
+  const { error: insertError } = await supabase
     .from('client_conversations')
     .insert({
       client_id: client.id,
@@ -216,13 +217,15 @@ export async function POST(request: NextRequest) {
       ai_response: aiResponse,
       session_id: resolvedSessionId,
       source_url: sourceUrl || null,
-    })
-    .then(({ error }) => {
-      if (error) console.error('[widget/chat] Log error:', error.message);
     });
 
-  // Deduct credit for this widget chat message
-  void deductCredits(client.agency_id, 'chat.message', {
+  if (insertError) {
+    // Log but don't fail the request — user should still get their response
+    console.error('[widget/chat] DB insert failed:', insertError.message, insertError.code);
+  }
+
+  // Deduct credit (also awaited to avoid billing gaps)
+  await deductCredits(client.agency_id, 'chat.message', {
     clientId: client.id,
     description: `Web chat: ${message.trim().slice(0, 60)}`,
   });
