@@ -37,7 +37,7 @@
     },
     {
       "path": "/api/cron/terminal-credits",
-      "schedule": "*/10 * * * *"
+      "schedule": "* * * * *"
     }
   ]
 }
