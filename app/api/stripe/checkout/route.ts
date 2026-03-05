@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
       cancel_url: `${appUrl}/agency/billing?checkout=cancelled`,
       metadata: { agency_id: agencyData.id, plan },
       subscription_data: {
-        trial_period_days: 30,
+        trial_period_days: 7,
         metadata: { agency_id: agencyData.id },
       },
     });
