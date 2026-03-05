@@ -15,13 +15,13 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Sparkles, Search, Target, Shield, Smartphone, Phone, ClipboardList,
   MessageCircle, BarChart3, ArrowRight, CheckCircle2, Loader2, X,
-  ChevronDown, User, Building2, Info, AlertTriangle,
+  ChevronDown, User, Building2, Info, AlertTriangle, Star, ExternalLink,
 } from 'lucide-react';
 import { SectionNav } from '@/components/dashboard/section-nav';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Category = 'all' | 'role' | 'industry';
+type Category = 'all' | 'role' | 'industry' | 'premium';
 
 interface TemplateCard {
   id: string;
@@ -287,6 +287,7 @@ export function AISetupClient({ agencyId, businessName }: Props) {
             { key: 'all' as Category, label: 'All', count: allTemplates.length },
             { key: 'role' as Category, label: '👤 By Role', count: roleCnt },
             { key: 'industry' as Category, label: '🏭 By Industry', count: industryCnt },
+            { key: 'premium' as Category, label: '⭐ Premium', count: null },
           ] as const).map(({ key, label, count }) => (
             <button
               key={key}
@@ -298,7 +299,7 @@ export function AISetupClient({ agencyId, businessName }: Props) {
               }`}
             >
               {label}
-              {count > 0 && (
+              {count !== null && count > 0 && (
                 <span className={`ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full ${
                   category === key ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-200 text-gray-500'
                 }`}>
@@ -321,18 +322,47 @@ export function AISetupClient({ agencyId, businessName }: Props) {
         </div>
       </div>
 
-      {/* Template Grid */}
-      {loadingTemplates ? (
+      {/* ── Premium Templates tab — full-page embed ── */}
+      {category === 'premium' && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50/40 p-6">
+          <div className="flex items-start gap-4 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+              <Star className="h-5 w-5 text-amber-600" />
+            </div>
+            <div>
+              <h2 className="font-bold text-gray-900">Premium Templates</h2>
+              <p className="text-sm text-gray-500 mt-0.5">
+                Specialized AI workers with everything included — LLM costs, industry tools, and infrastructure at a flat monthly rate per client.
+                Free templates are in the By Role and By Industry tabs above.
+              </p>
+            </div>
+          </div>
+          {/* Inline iframe-free embed — redirect to premium templates page */}
+          <a
+            href="/agency/templates"
+            className="flex items-center justify-between w-full bg-white border border-amber-200 rounded-xl px-5 py-4 hover:border-amber-400 hover:shadow-sm transition group"
+          >
+            <div>
+              <p className="font-semibold text-gray-900 text-sm">Browse Premium Templates →</p>
+              <p className="text-xs text-gray-500 mt-0.5">Vet SEO Worker, Cannabis AI, and more industry specialists</p>
+            </div>
+            <ExternalLink className="h-4 w-4 text-gray-300 group-hover:text-amber-500 transition" />
+          </a>
+        </div>
+      )}
+
+      {/* Template Grid — only shown when not on Premium tab */}
+      {category !== 'premium' && loadingTemplates ? (
         <div className="py-16 text-center text-gray-400">
           <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
           Loading templates...
         </div>
-      ) : filtered.length === 0 ? (
+      ) : category !== 'premium' && filtered.length === 0 ? (
         <div className="py-16 text-center">
           <Sparkles className="h-8 w-8 text-gray-300 mx-auto mb-2" />
           <p className="text-gray-500">No templates match your search</p>
         </div>
-      ) : (
+      ) : category !== 'premium' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filtered.map(template => (
             <TemplateCardView
@@ -342,7 +372,7 @@ export function AISetupClient({ agencyId, businessName }: Props) {
             />
           ))}
         </div>
-      )}
+      ) : null}
 
       {/* No clients warning */}
       {!loadingClients && clients.length === 0 && (

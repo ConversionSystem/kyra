@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
   // ── Conversations from web_chat channel ──────────────────────────────────
   let convoQuery = supabase
     .from('client_conversations')
-    .select('id, client_id, user_message, ai_response, channel, created_at')
+    .select('id, client_id, user_message, ai_response, channel, session_id, source_url, created_at')
     .eq('agency_id', agency.id)
     .eq('channel', 'web_chat')
     .gte('created_at', since)
@@ -93,25 +93,18 @@ export async function GET(request: NextRequest) {
   // ── Compute Analytics ────────────────────────────────────────────────────
   const totalMessages = convos.length;
 
-  // Estimate unique sessions by grouping messages within 30-min windows
+  // ── Session counting: prefer real session_id, fallback to 30-min windows ──
   const sessions = new Map<string, { messages: number; firstAt: number; lastAt: number }>();
   for (const c of convos) {
-    const clientKey = c.client_id || 'unknown';
     const time = new Date(c.created_at).getTime();
+    // Use the real session_id if present (new conversations), else estimate by time window
+    const sessionKey = c.session_id || `${c.client_id || 'unknown'}:${Math.floor(time / (30 * 60 * 1000))}`;
 
-    // Find if there's an active session for this client within 30 min
-    let matched = false;
-    for (const [key, session] of sessions) {
-      if (key.startsWith(clientKey) && time - session.lastAt < 30 * 60 * 1000) {
-        session.messages += 1;
-        session.lastAt = time;
-        matched = true;
-        break;
-      }
-    }
-
-    if (!matched) {
-      const sessionKey = `${clientKey}:${time}`;
+    if (sessions.has(sessionKey)) {
+      const s = sessions.get(sessionKey)!;
+      s.messages += 1;
+      s.lastAt = time;
+    } else {
       sessions.set(sessionKey, { messages: 1, firstAt: time, lastAt: time });
     }
   }
@@ -180,6 +173,18 @@ export async function GET(request: NextRequest) {
       messages: stats.messages,
       sessions: stats.sessionIds.size || Math.ceil(stats.messages / avgMessagesPerSession) || 1,
     }));
+  }
+
+  // Also pull source pages from conversations (more complete than just leads)
+  for (const c of convos) {
+    if (c.source_url) {
+      try {
+        const pathname = new URL(c.source_url).pathname;
+        topSources[pathname] = (topSources[pathname] || 0) + 1;
+      } catch {
+        topSources[c.source_url] = (topSources[c.source_url] || 0) + 1;
+      }
+    }
   }
 
   // Top sources sorted
