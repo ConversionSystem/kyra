@@ -164,27 +164,19 @@ export async function POST(request: NextRequest) {
           ? (Date.now() - new Date(referrerAgency.created_at).getTime()) / 3_600_000
           : 999;
         const isEarlyBird = hoursElapsed < 48;
-        const referrerCredits = isEarlyBird ? 150 : 100;
 
+        // Log referral — referrer credits held at 0 until friend activates
         await supabase.from('agency_referrals').insert({
           referrer_id: referralId,
           referred_id: agency.id,
           referred_email: email,
           status: 'signed_up',
           early_bird: isEarlyBird,
-          referrer_credits_granted: referrerCredits,
+          referrer_credits_granted: 0,   // Granted on first AI message (activation gate)
           friend_credits_granted: 100,
         });
 
-        await addCredits(
-          referralId,
-          referrerCredits,
-          'bonus',
-          isEarlyBird
-            ? `Early Bird referral reward — ${businessName} joined via your link 🚀 (+50 early bird bonus)`
-            : `Referral reward — ${businessName} joined using your link 🎉`,
-        );
-
+        // 🎁 Friend gets credits immediately (motivates real usage)
         await addCredits(
           agency.id,
           100,
@@ -192,17 +184,8 @@ export async function POST(request: NextRequest) {
           'Welcome referral bonus — a friend referred you to Kyra. Enjoy 100 free AI credits! 🎁',
         );
 
-        // Streak bonus check
-        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 3_600_000).toISOString();
-        const { count: recentCount } = await supabase
-          .from('agency_referrals')
-          .select('id', { count: 'exact', head: true })
-          .eq('referrer_id', referralId)
-          .gte('created_at', sevenDaysAgo);
-
-        if (recentCount === 3) {
-          await addCredits(referralId, 50, 'bonus', 'Streak bonus — 3 referrals in 7 days! 🔥');
-        }
+        // ⏳ Referrer credits granted when friend sends first AI message
+        // See: lib/billing/referral-activation.ts → called from /api/widget/chat
       } catch (e) {
         console.warn('[solo-signup] Referral reward error:', e);
       }
