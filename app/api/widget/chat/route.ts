@@ -189,7 +189,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Empty AI response' }, { status: 503 });
   }
 
-  // ── Log to client_conversations + deduct credit (fire-and-forget) ───────────
+  // ── Log to client_conversations ──────────────────────────────────────────
+  // Includes session_id for accurate session grouping and source_url for
+  // page-level analytics. Both are critical for the analytics dashboard.
   void supabase
     .from('client_conversations')
     .insert({
@@ -198,6 +200,8 @@ export async function POST(request: NextRequest) {
       channel: 'web_chat',
       user_message: message.trim(),
       ai_response: aiResponse,
+      session_id: resolvedSessionId,
+      source_url: sourceUrl || null,
     })
     .then(({ error }) => {
       if (error) console.error('[widget/chat] Log error:', error.message);

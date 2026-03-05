@@ -83,7 +83,6 @@ const navSections: NavSection[] = [
     collapsible: true,
     items: [
       { label: 'AI Templates', href: '/agency/ai-setup', icon: Sparkles },
-      { label: 'Premium Templates', href: '/agency/templates', icon: Star },
       { label: 'Smart Routing', href: '/agency/agents', icon: Bot },
       { label: 'Channels', href: '/agency/channels', icon: Radio },
       { label: 'Voice AI', href: '/agency/voice', icon: Phone },
@@ -150,7 +149,6 @@ const soloNavSections: NavSection[] = [
     collapsible: true,
     items: [
       { label: 'AI Templates', href: '/agency/ai-setup', icon: Sparkles },
-      { label: 'Premium Templates', href: '/agency/templates', icon: Star },
       { label: 'Channels', href: '/agency/channels', icon: Radio },
       { label: 'Chat Widget', href: '/agency/widget', icon: MessageCircle },
     ],
@@ -359,41 +357,7 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
         </div>
       )}
 
-      {/* AI Worker Terminal — only for solo users (their personal AI worker).
-          Agency users create AI workers as clients instead. */}
-      {isSolo && (
-        <div className="px-3 pt-3">
-          <a
-            href={agencyGatewayUrl
-              ? (agencyGatewayToken ? `${agencyGatewayUrl}?token=${agencyGatewayToken}` : agencyGatewayUrl)
-              : '#'}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => {
-              if (!agencyGatewayUrl) e.preventDefault();
-              setMobileOpen(false);
-            }}
-            className={cn(
-              'flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all',
-              agencyGatewayUrl
-                ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-emerald-600 hover:to-teal-600 shadow-lg shadow-emerald-500/25'
-                : 'bg-gray-800 text-gray-500 cursor-not-allowed'
-            )}
-          >
-            {provisioningGateway
-              ? <Loader2 className="h-5 w-5 shrink-0 animate-spin" />
-              : <Terminal className="h-5 w-5 shrink-0" />
-            }
-            {provisioningGateway ? 'Starting AI...' : 'My AI Worker'}
-            {agencyGatewayUrl && !provisioningGateway && (
-              <ExternalLink className="h-3.5 w-3.5 ml-auto opacity-70" />
-            )}
-          </a>
-          {!agencyGatewayUrl && !provisioningGateway && (
-            <p className="text-[10px] text-gray-500 px-1 mt-1.5">Setting up your AI worker — refresh in a moment</p>
-          )}
-        </div>
-      )}
+      {/* My AI Worker button removed — access AI via client terminal */}
 
       {/* Navigation */}
       <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
