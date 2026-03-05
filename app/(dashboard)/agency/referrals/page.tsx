@@ -31,8 +31,8 @@ export default async function ReferralsPage() {
 
   const stats = {
     total: referrals?.length ?? 0,
-    signedUp: referrals?.filter(r => r.status !== 'pending').length ?? 0,
-    converted: referrals?.filter(r => ['converted', 'paid_out'].includes(r.status)).length ?? 0,
+    signedUp: referrals?.filter(r => ['signed_up', 'activated', 'converted'].includes(r.status)).length ?? 0,
+    activated: referrals?.filter(r => ['activated', 'converted'].includes(r.status)).length ?? 0,
     weeklyCount,
     creditsEarned,
   };
