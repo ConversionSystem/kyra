@@ -7,6 +7,7 @@ import {
   Sparkles, GripVertical, Settings, Copy, Save,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { SectionNav } from '@/components/dashboard/section-nav';
 
 // ── Types ──
 
@@ -163,6 +164,8 @@ export function PipelineBuilderClient({ initialPipelines }: { initialPipelines: 
   };
 
   return (
+    <div className="space-y-0">
+    <SectionNav currentHref="/agency/pipelines" />
     <div className="p-4 sm:p-6 md:p-8 max-w-5xl space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-3">
@@ -361,6 +364,7 @@ export function PipelineBuilderClient({ initialPipelines }: { initialPipelines: 
           )}
         </div>
       </div>
+    </div>
     </div>
   );
 }

@@ -37,6 +37,7 @@ import {
   LogOut,
   ChevronDown,
   ChevronRight,
+  Star,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AgencySettings } from '@/lib/agency/types';
@@ -82,6 +83,7 @@ const navSections: NavSection[] = [
     collapsible: true,
     items: [
       { label: 'AI Templates', href: '/agency/ai-setup', icon: Sparkles },
+      { label: 'Premium Templates', href: '/agency/templates', icon: Star },
       { label: 'Smart Routing', href: '/agency/agents', icon: Bot },
       { label: 'Channels', href: '/agency/channels', icon: Radio },
       { label: 'Voice AI', href: '/agency/voice', icon: Phone },
@@ -148,6 +150,7 @@ const soloNavSections: NavSection[] = [
     collapsible: true,
     items: [
       { label: 'AI Templates', href: '/agency/ai-setup', icon: Sparkles },
+      { label: 'Premium Templates', href: '/agency/templates', icon: Star },
       { label: 'Channels', href: '/agency/channels', icon: Radio },
       { label: 'Chat Widget', href: '/agency/widget', icon: MessageCircle },
     ],
