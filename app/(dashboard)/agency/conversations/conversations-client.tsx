@@ -107,11 +107,14 @@ export default function ConversationsClient({ clients }: { clients: Client[] }) 
 
   const getChannelIcon = (channel: string) => {
     switch (channel) {
+      case 'sms':
       case 'SMS': return <Smartphone className="h-3.5 w-3.5" />;
       case 'Phone': return <Phone className="h-3.5 w-3.5" />;
       case 'Email': return <Mail className="h-3.5 w-3.5" />;
+      case 'web_chat':
       case 'Web Chat':
       case 'Live Chat': return <Globe className="h-3.5 w-3.5" />;
+      case 'telegram': return <MessageCircle className="h-3.5 w-3.5" />;
       default: return <MessageCircle className="h-3.5 w-3.5" />;
     }
   };

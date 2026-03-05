@@ -22,13 +22,14 @@ interface Conversation {
 interface Client { id: string; name: string; industry: string | null; }
 
 const CHANNEL_META: Record<string, { label: string; icon: React.ElementType; color: string }> = {
-  test_chat:  { label: 'Test Chat',  icon: MessageSquare, color: 'bg-blue-50 text-blue-600 border-blue-200' },
-  portal:     { label: 'Portal',     icon: Globe,         color: 'bg-purple-50 text-purple-600 border-purple-200' },
-  telegram:   { label: 'Telegram',   icon: Send,          color: 'bg-sky-50 text-sky-600 border-sky-200' },
-  sms:        { label: 'SMS',        icon: Smartphone,    color: 'bg-green-50 text-green-600 border-green-200' },
-  ghl_sms:    { label: 'GHL SMS',    icon: Smartphone,    color: 'bg-green-50 text-green-600 border-green-200' },
-  ghl_email:  { label: 'GHL Email',  icon: MessageSquare, color: 'bg-orange-50 text-orange-600 border-orange-200' },
-  whatsapp:   { label: 'WhatsApp',   icon: Smartphone,    color: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
+  test_chat:  { label: 'Test Chat',    icon: MessageSquare, color: 'bg-blue-50 text-blue-600 border-blue-200' },
+  web_chat:   { label: 'Chat Widget',  icon: Globe,         color: 'bg-indigo-50 text-indigo-600 border-indigo-200' },
+  portal:     { label: 'Portal',       icon: Globe,         color: 'bg-purple-50 text-purple-600 border-purple-200' },
+  telegram:   { label: 'Telegram',     icon: Send,          color: 'bg-sky-50 text-sky-600 border-sky-200' },
+  sms:        { label: 'SMS',          icon: Smartphone,    color: 'bg-green-50 text-green-600 border-green-200' },
+  ghl_sms:    { label: 'GHL SMS',      icon: Smartphone,    color: 'bg-green-50 text-green-600 border-green-200' },
+  ghl_email:  { label: 'GHL Email',    icon: MessageSquare, color: 'bg-orange-50 text-orange-600 border-orange-200' },
+  whatsapp:   { label: 'WhatsApp',     icon: Smartphone,    color: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
 };
 
 function timeAgo(dateStr: string) {
