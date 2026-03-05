@@ -104,9 +104,9 @@ export function ConversationsFeed() {
     };
   }, [searchInput]);
 
-  // Auto-refresh every 30s
+  // Auto-refresh every 10s — fast enough to feel live
   useEffect(() => {
-    const t = setInterval(() => load({ reset: true }), 30_000);
+    const t = setInterval(() => load({ reset: true }), 10_000);
     return () => clearInterval(t);
   }, [load]);
 
