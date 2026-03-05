@@ -248,29 +248,25 @@ export default function WidgetBuilderPage() {
         )}
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit mb-6">
-        <button
-          onClick={() => setActiveTab('builder')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-            activeTab === 'builder' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700'
-          }`}
-        >
-          <Palette className="h-4 w-4" />
-          Builder
-        </button>
-        <button
-          onClick={() => setActiveTab('analytics')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-            activeTab === 'analytics' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700'
-          }`}
+      {/* Single tab — Builder only. Conversations live in the Conversations inbox. */}
+      <div className="mb-4 flex items-center justify-between">
+        <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
+          <div className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium bg-white shadow text-gray-900">
+            <Palette className="h-4 w-4" />
+            Builder
+          </div>
+        </div>
+        <a
+          href={`/agency/conversations?channel=web_chat${selectedClient ? `&clientId=${selectedClient}` : ''}`}
+          className="flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
         >
           <BarChart3 className="h-4 w-4" />
-          Analytics
-        </button>
+          View chat conversations
+          <ChevronRight className="h-3.5 w-3.5" />
+        </a>
       </div>
 
-      {activeTab === 'builder' ? (
+      {true ? (
         <WidgetBuilder
           config={config}
           setConfig={setConfig}
