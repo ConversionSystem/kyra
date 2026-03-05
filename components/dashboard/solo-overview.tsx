@@ -472,46 +472,7 @@ export default function SoloOverview({
         </Card>
       </div>
 
-      {/* ── Setup Progress (only show if not fully done) ── */}
-      {setupComplete < setupTotal && (
-        <div className="mb-6">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
-            Setup Progress — {setupComplete}/{setupTotal}
-          </h2>
-          {/* Progress bar */}
-          <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden mb-3">
-            <div className="h-full bg-indigo-500 rounded-full transition-all" style={{ width: `${setupPct}%` }} />
-          </div>
-          <div className="grid sm:grid-cols-3 gap-3">
-            {setupSteps.map((step) => {
-              const Icon = step.icon;
-              if (step.done) {
-                return (
-                  <div key={step.label} className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-green-100 bg-green-50/50">
-                    <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-green-800 line-through">{step.label}</p>
-                      <p className="text-[11px] text-green-600">Complete</p>
-                    </div>
-                  </div>
-                );
-              }
-              return (
-                <Link key={step.label} href={step.href}>
-                  <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-amber-200 bg-amber-50/50 cursor-pointer hover:border-amber-300 transition">
-                    <Icon className="h-4 w-4 text-amber-600 shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-900">{step.label}</p>
-                      <p className="text-[11px] text-gray-500">{step.desc}</p>
-                    </div>
-                    <ArrowRight className="h-3 w-3 text-amber-400 ml-auto shrink-0" />
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      )}
+      {/* Setup Progress removed — not useful per product feedback */}
 
       {/* ── Live Activity Feed ── */}
       <div className="mb-6">
