@@ -13,7 +13,7 @@ export default function ConversationsPage() {
           Conversations
         </h1>
         <p className="text-sm text-gray-500 mt-1">
-          Every message your AI workers send and receive — across all clients, in one place.
+          Every message across all clients and channels — Test Chat, Chat Widget, GHL SMS, Telegram, and more.
         </p>
       </div>
       <Suspense fallback={
