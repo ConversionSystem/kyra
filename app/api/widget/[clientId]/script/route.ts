@@ -49,6 +49,9 @@ export async function GET(
   const widgetTitle = (cfg.widget_title as string) || `Chat with ${client.name}`;
   const widgetColor = (cfg.widget_color as string) || '#6366f1'; // indigo default
   const widgetGreeting = (cfg.widget_greeting as string) || `Hi! 👋 How can I help you today?`;
+  const widgetPoweredBy = cfg.widget_powered_by !== false; // default true
+  const widgetPosition = (cfg.widget_position as string) || 'bottom-right';
+  const widgetAvatarEmoji = (cfg.widget_avatar as string) || '🤖';
   const apiBase = (process.env.NEXT_PUBLIC_APP_URL || 'https://kyra.conversionsystem.com').replace(/\/$/, '');
 
   // The entire widget as a self-contained IIFE
@@ -61,6 +64,9 @@ export async function GET(
   var TITLE = ${JSON.stringify(widgetTitle)};
   var COLOR = ${JSON.stringify(widgetColor)};
   var GREETING = ${JSON.stringify(widgetGreeting)};
+  var POWERED_BY = ${JSON.stringify(widgetPoweredBy)};
+  var POSITION = ${JSON.stringify(widgetPosition)};
+  var AVATAR = ${JSON.stringify(widgetAvatarEmoji)};
   var STORAGE_KEY = 'kyra_session_' + CLIENT_ID;
 
   // Don't init twice
@@ -70,11 +76,11 @@ export async function GET(
   // ── Styles ──────────────────────────────────────────────────────────────────
   var style = document.createElement('style');
   style.textContent = [
-    '#kyra-widget-btn { position:fixed; bottom:24px; right:24px; width:60px; height:60px; border-radius:50%; background:' + COLOR + '; border:none; cursor:pointer; box-shadow:0 4px 20px rgba(0,0,0,0.25); z-index:99999; display:flex; align-items:center; justify-content:center; transition:transform 0.2s; }',
+    '#kyra-widget-btn { position:fixed; bottom:24px; ' + (POSITION === 'bottom-left' ? 'left:24px;' : 'right:24px;') + ' width:60px; height:60px; border-radius:50%; background:' + COLOR + '; border:none; cursor:pointer; box-shadow:0 4px 20px rgba(0,0,0,0.25); z-index:99999; display:flex; align-items:center; justify-content:center; transition:transform 0.2s; }',
     '#kyra-widget-btn:hover { transform:scale(1.08); }',
     '#kyra-widget-btn svg { width:28px; height:28px; fill:white; }',
     '#kyra-widget-badge { position:absolute; top:-2px; right:-2px; width:16px; height:16px; background:#ef4444; border-radius:50%; display:none; }',
-    '#kyra-widget-panel { position:fixed; bottom:96px; right:24px; width:360px; max-width:calc(100vw - 48px); height:520px; max-height:calc(100vh - 120px); background:#fff; border-radius:16px; box-shadow:0 8px 40px rgba(0,0,0,0.18); z-index:99998; display:flex; flex-direction:column; overflow:hidden; transition:opacity 0.2s,transform 0.2s; transform-origin:bottom right; }',
+    '#kyra-widget-panel { position:fixed; bottom:96px; ' + (POSITION === 'bottom-left' ? 'left:24px; transform-origin:bottom left;' : 'right:24px; transform-origin:bottom right;') + ' width:360px; max-width:calc(100vw - 48px); height:520px; max-height:calc(100vh - 120px); background:#fff; border-radius:16px; box-shadow:0 8px 40px rgba(0,0,0,0.18); z-index:99998; display:flex; flex-direction:column; overflow:hidden; transition:opacity 0.2s,transform 0.2s; }',
     '#kyra-widget-panel.hidden { opacity:0; transform:scale(0.92); pointer-events:none; }',
     '#kyra-widget-header { background:' + COLOR + '; padding:16px; display:flex; align-items:center; gap:10px; }',
     '#kyra-widget-header .avatar { width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }',
@@ -127,7 +133,7 @@ export async function GET(
   panel.className = 'hidden';
   panel.innerHTML = [
     '<div id="kyra-widget-header">',
-    '  <div class="avatar">🤖</div>',
+    '  <div class="avatar">' + AVATAR + '</div>',
     '  <div><div class="title">' + TITLE + '</div><div class="subtitle">Typically replies instantly</div></div>',
     '  <button class="close-btn" aria-label="Close chat">✕</button>',
     '</div>',
@@ -138,7 +144,7 @@ export async function GET(
     '    <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>',
     '  </button>',
     '</div>',
-    '<div id="kyra-widget-powered">⚡ AI by <a href="https://kyra.conversionsystem.com/signup/agency?utm_source=widget&utm_medium=powered_by&utm_campaign=viral" target="_blank" rel="noopener" title="Get your own AI worker — free to start">Kyra</a> · <a href="https://kyra.conversionsystem.com/signup/agency?utm_source=widget&utm_medium=powered_by&utm_campaign=viral" target="_blank" rel="noopener" style="color:#9ca3af;font-weight:normal">Get one free →</a></div>',
+    POWERED_BY ? '<div id="kyra-widget-powered">⚡ AI by <a href="https://kyra.conversionsystem.com/signup/agency?utm_source=widget&utm_medium=powered_by&utm_campaign=viral" target="_blank" rel="noopener" title="Get your own AI worker — free to start">Kyra</a> · <a href="https://kyra.conversionsystem.com/signup/agency?utm_source=widget&utm_medium=powered_by&utm_campaign=viral" target="_blank" rel="noopener" style="color:#9ca3af;font-weight:normal">Get one free →</a></div>' : '',
   ].join('');
   document.body.appendChild(panel);
 
@@ -156,7 +162,7 @@ export async function GET(
     var msgEl = document.createElement('div');
     msgEl.className = 'kyra-msg ' + role;
     if (role === 'bot') {
-      msgEl.innerHTML = '<div class="kyra-msg-avatar">🤖</div><div class="kyra-msg-bubble">' + escHtml(text) + '</div>';
+      msgEl.innerHTML = '<div class="kyra-msg-avatar">' + AVATAR + '</div><div class="kyra-msg-bubble">' + escHtml(text) + '</div>';
     } else {
       msgEl.innerHTML = '<div class="kyra-msg-bubble">' + escHtml(text) + '</div>';
     }
@@ -169,7 +175,7 @@ export async function GET(
     var el = document.createElement('div');
     el.className = 'kyra-msg bot';
     el.id = 'kyra-typing';
-    el.innerHTML = '<div class="kyra-msg-avatar">🤖</div><div class="kyra-msg-bubble kyra-typing"><span></span><span></span><span></span></div>';
+    el.innerHTML = '<div class="kyra-msg-avatar">' + AVATAR + '</div><div class="kyra-msg-bubble kyra-typing"><span></span><span></span><span></span></div>';
     messagesEl.appendChild(el);
     scrollToBottom();
   }
