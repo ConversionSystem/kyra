@@ -158,7 +158,7 @@ While GoHighLevel gives you the CRM, pipeline, and marketing infrastructure — 
 • Lite: $99/mo — 5 client AI workers
 • Pro: $249/mo — 15 client AI workers  
 • Scale: $499/mo — 50 client AI workers
-• All paid plans include 30-day free trial
+• All paid plans include 7-day free trial
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✅ WHO THIS IS FOR
@@ -174,7 +174,7 @@ Get started free: kyra.conversionsystem.com`;
 
 const CATEGORY = 'Agency Management (primary); Client Reporting & Analytics (secondary)';
 const PRICING_TIER =
-  'Freemium — Free plan available. Paid plans from $99/mo (Lite, 5 clients) to $499/mo (Scale, 50 clients). 30-day free trial on all paid plans.';
+  'Freemium — Free plan available. Paid plans from $99/mo (Lite, 5 clients) to $499/mo (Scale, 50 clients). 7-day free trial on all paid plans.';
 const WEBSITE = 'https://kyra.conversionsystem.com';
 const SUPPORT_EMAIL = 'angel@conversionsystem.com';
 const WEBHOOK_URL = 'https://kyra.conversionsystem.com/api/ghl/poll (Vercel cron — polls every minute)';
@@ -191,7 +191,7 @@ const SCREENSHOTS = [
   { label: 'Pitch Generator — shareable industry pitch links (dental, auto, cannabis, etc.)' },
   { label: 'Public Pitch Page — animated SMS demo + ROI calculator (no login)' },
   { label: 'Demo page — /demo/dental animated SMS conversation (shareable with prospects)' },
-  { label: 'Billing page — plan upgrade flow with 30-day trial messaging' },
+  { label: 'Billing page — plan upgrade flow with 7-day trial messaging' },
 ];
 
 export default function GHLListingPage() {
