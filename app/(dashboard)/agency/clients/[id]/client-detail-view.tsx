@@ -132,8 +132,7 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'ghl', label: 'GHL', icon: Link2 },
   { id: 'permissions', label: 'Permissions', icon: Shield },
   { id: 'usage', label: 'Usage', icon: BarChart3 },
-  // Conversations tab removed — all conversations visible in /agency/conversations
-  // { id: 'conversations', label: 'Conversations', icon: Inbox },
+  { id: 'conversations', label: 'Conversations', icon: Inbox },
   { id: 'channels', label: 'Channels', icon: Radio },
   { id: 'portal', label: 'Client Portal', icon: Users },
   { id: 'memory', label: 'AI Memory', icon: Database },
@@ -309,17 +308,7 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
 
       {/* Tab content */}
       {activeTab === 'chat' && (
-        <div>
-          <div className="flex justify-end mb-3">
-            <a
-              href={`/agency/conversations?clientId=${initialClient.id}`}
-              className="flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-800 font-medium"
-            >
-              View conversation history →
-            </a>
-          </div>
-          <TestChatTab client={initialClient} />
-        </div>
+        <TestChatTab client={initialClient} />
       )}
       {activeTab === 'personality' && (
         <AIPersonalityTab client={initialClient} />
