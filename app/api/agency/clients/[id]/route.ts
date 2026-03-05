@@ -117,9 +117,20 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   if (body.name !== undefined) updates.name = body.name;
   if (body.industry !== undefined) updates.industry = body.industry;
   if (body.status !== undefined) updates.status = body.status;
-  if (body.container_config !== undefined) updates.container_config = body.container_config;
 
   const supabase = await createClient();
+
+  // Merge container_config JSONB if provided (never replace — preserves persona/instructions/widget fields)
+  if (body.container_config !== undefined && typeof body.container_config === 'object') {
+    const { data: existingForCfg } = await supabase
+      .from('agency_clients')
+      .select('container_config')
+      .eq('id', id)
+      .eq('agency_id', agency.id)
+      .single();
+    const currentCfg = (existingForCfg?.container_config ?? {}) as Record<string, unknown>;
+    updates.container_config = { ...currentCfg, ...body.container_config };
+  }
 
   // Merge settings JSONB if provided
   if (body.settings !== undefined && typeof body.settings === 'object') {

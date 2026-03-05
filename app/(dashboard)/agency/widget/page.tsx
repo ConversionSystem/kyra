@@ -98,6 +98,7 @@ export default function WidgetBuilderPage() {
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [analyticsDays, setAnalyticsDays] = useState(30);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsError, setAnalyticsError] = useState<string | null>(null);
 
   // Clients for embed code
   const [clients, setClients] = useState<Array<{ id: string; name: string }>>([]);
@@ -135,6 +136,7 @@ export default function WidgetBuilderPage() {
           position: cfg.widget_position || prev.position,
           autoOpen: cfg.widget_auto_open || false,
           autoOpenDelay: cfg.widget_auto_open_delay || 5,
+          poweredBy: cfg.widget_powered_by !== undefined ? Boolean(cfg.widget_powered_by) : true,
         }));
       })
       .catch(() => {});
@@ -143,14 +145,20 @@ export default function WidgetBuilderPage() {
   // Load analytics
   const fetchAnalytics = useCallback(async () => {
     setAnalyticsLoading(true);
+    setAnalyticsError(null);
     try {
       const params = new URLSearchParams({ days: String(analyticsDays) });
       if (selectedClient) params.set('clientId', selectedClient);
       const res = await fetch(`/api/agency/analytics/chat-widget?${params}`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
       const data = await res.json();
       setAnalytics(data);
-    } catch {
-      console.error('Failed to load analytics');
+    } catch (err) {
+      console.error('Failed to load analytics:', err);
+      setAnalyticsError(err instanceof Error ? err.message : 'Failed to load analytics');
     } finally {
       setAnalyticsLoading(false);
     }
@@ -177,6 +185,7 @@ export default function WidgetBuilderPage() {
             widget_position: config.position,
             widget_auto_open: config.autoOpen,
             widget_auto_open_delay: config.autoOpenDelay,
+            widget_powered_by: config.poweredBy,
           },
         }),
       });
@@ -281,8 +290,10 @@ export default function WidgetBuilderPage() {
         <WidgetAnalytics
           analytics={analytics}
           loading={analyticsLoading}
+          error={analyticsError}
           days={analyticsDays}
           setDays={setAnalyticsDays}
+          onRetry={fetchAnalytics}
         />
       )}
     </div>
@@ -672,15 +683,19 @@ function WidgetBuilder({
 function WidgetAnalytics({
   analytics,
   loading,
+  error,
   days,
   setDays,
+  onRetry,
 }: {
   analytics: Analytics | null;
   loading: boolean;
+  error: string | null;
   days: number;
   setDays: (d: number) => void;
+  onRetry: () => void;
 }) {
-  if (loading || !analytics) {
+  if (loading) {
     return (
       <div className="animate-pulse space-y-6">
         <div className="grid grid-cols-4 gap-4">
@@ -688,6 +703,24 @@ function WidgetAnalytics({
         </div>
         <div className="h-64 bg-gray-200 rounded-xl" />
         <div className="h-48 bg-gray-200 rounded-xl" />
+      </div>
+    );
+  }
+
+  if (error || !analytics) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mb-4">
+          <BarChart3 className="h-7 w-7 text-red-400" />
+        </div>
+        <h3 className="text-base font-semibold text-gray-800 mb-1">Failed to load analytics</h3>
+        <p className="text-sm text-gray-500 mb-4 max-w-xs">{error || 'No data available. Try refreshing.'}</p>
+        <button
+          onClick={onRetry}
+          className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition-colors"
+        >
+          Retry
+        </button>
       </div>
     );
   }
