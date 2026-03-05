@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   Inbox, Loader2, User, Bot, Clock, RefreshCw,
@@ -43,6 +44,7 @@ function timeAgo(dateStr: string) {
 }
 
 export function ConversationsFeed() {
+  const searchParams = useSearchParams();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [total, setTotal] = useState(0);
@@ -50,8 +52,9 @@ export function ConversationsFeed() {
   const [refreshing, setRefreshing] = useState(false);
   const [migrationRequired, setMigrationRequired] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [filterClient, setFilterClient] = useState('');
-  const [filterChannel, setFilterChannel] = useState('');
+  // Pre-select filters from URL params (e.g. ?channel=web_chat&clientId=xxx)
+  const [filterClient, setFilterClient] = useState(() => searchParams?.get('clientId') || '');
+  const [filterChannel, setFilterChannel] = useState(() => searchParams?.get('channel') || '');
   const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState(''); // debounced
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
