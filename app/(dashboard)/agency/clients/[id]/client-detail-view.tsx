@@ -1570,6 +1570,7 @@ function ConversationsTab({ client }: { client: AgencyClient }) {
 
   const channelBadge: Record<string, string> = {
     test_chat: 'bg-blue-50 text-blue-600 border-blue-200',
+    web_chat:  'bg-indigo-50 text-indigo-600 border-indigo-200',
     portal: 'bg-purple-50 text-purple-600 border-purple-200',
     telegram: 'bg-sky-50 text-sky-600 border-sky-200',
     sms: 'bg-green-50 text-green-600 border-green-200',
@@ -1579,7 +1580,7 @@ function ConversationsTab({ client }: { client: AgencyClient }) {
   };
 
   const channelLabel: Record<string, string> = {
-    test_chat: 'Test Chat', portal: 'Portal', telegram: 'Telegram',
+    test_chat: 'Test Chat', web_chat: 'Chat Widget', portal: 'Portal', telegram: 'Telegram',
     sms: 'SMS', ghl_sms: 'GHL SMS', ghl_email: 'GHL Email', whatsapp: 'WhatsApp',
   };
 
