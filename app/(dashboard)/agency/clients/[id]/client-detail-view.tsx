@@ -54,6 +54,7 @@ import AISuggestionsCard from '@/components/dashboard/ai-suggestions-card';
 import ClientStatusBanner from '@/components/dashboard/client-status-banner';
 import ClientActivityHeatmap from '@/components/dashboard/client-activity-heatmap';
 import { VoiceChannelCard } from '@/components/dashboard/voice-channel-card';
+import { VoiceClient } from '@/app/(dashboard)/agency/voice/voice-client';
 import RoiSummaryCard from '@/components/dashboard/roi-summary-card';
 import { MemoryBrowser } from './memory-browser';
 import { CustomerIntelligence } from './customer-intelligence';
@@ -125,7 +126,7 @@ interface ChatMessage {
   content: string;
 }
 
-type Tab = 'chat' | 'personality' | 'settings' | 'ghl' | 'permissions' | 'usage' | 'conversations' | 'channels' | 'portal' | 'memory' | 'seo' | 'capabilities';
+type Tab = 'chat' | 'personality' | 'settings' | 'ghl' | 'permissions' | 'usage' | 'conversations' | 'channels' | 'portal' | 'memory' | 'seo' | 'capabilities' | 'voice';
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'chat', label: 'Test Chat', icon: MessageSquare },
@@ -139,6 +140,7 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'portal', label: 'Client Portal', icon: Users },
   { id: 'memory', label: 'AI Memory', icon: Database },
   { id: 'capabilities', label: 'AI Capabilities', icon: Zap },
+  { id: 'voice', label: 'Voice AI', icon: Phone },
   { id: 'seo', label: 'SEO', icon: BarChart3 },
 ];
 
@@ -354,6 +356,16 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
 
       {activeTab === 'capabilities' && (
         <AICapabilities clientId={initialClient.id} />
+      )}
+
+      {activeTab === 'voice' && (
+        <VoiceClient
+          agencyId={initialClient.agency_id}
+          clientId={initialClient.id}
+          clientName={initialClient.name ?? 'Client'}
+          voiceConfig={(initialClient.container_config as Record<string, unknown>)?.voice_config as Record<string, string> | null ?? null}
+          isSolo={false}
+        />
       )}
 
       {activeTab === 'seo' && (
