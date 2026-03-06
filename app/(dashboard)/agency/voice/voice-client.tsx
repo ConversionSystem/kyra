@@ -152,6 +152,7 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
   );
   const [selectedProvider, setSelectedProvider] = useState<string>(initialConfig?.provider ?? '');
   const [apiKey, setApiKey] = useState('');
+  const [areaCode, setAreaCode] = useState('');
   const [aiName, setAiName] = useState(initialConfig?.aiName ?? 'Alex');
   const [selectedVoice, setSelectedVoice] = useState(initialConfig?.voiceId ?? 'default');
   const [language, setLanguage] = useState(initialConfig?.language ?? 'en');
@@ -204,6 +205,7 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
           clientId,
           provider: selectedProvider,
           apiKey: apiKey.trim(),
+          areaCode: areaCode.replace(/\D/g, '').slice(0, 3) || undefined,
           aiName,
           voiceId: selectedVoice !== 'default' ? selectedVoice : undefined,
           language,
@@ -381,7 +383,7 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
                 Kyra Native is built directly into your platform. Voice is handled by Deepgram + OpenClaw TTS — billed through your Kyra credits (~3 credits/min). No third-party signup required.
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               <div className="flex flex-wrap gap-3">
                 <div className="flex items-center gap-1.5 text-xs font-medium text-indigo-700 bg-indigo-100 rounded-lg px-3 py-1.5">
                   🎙️ Deepgram STT — best-in-class accuracy
@@ -392,6 +394,17 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
                 <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-100 rounded-lg px-3 py-1.5">
                   💳 ~3 credits/min (vs $0.15+ elsewhere)
                 </div>
+              </div>
+              <div>
+                <label className="text-sm text-gray-600 mb-1 block">Area Code <span className="text-gray-400">(optional — for your phone number)</span></label>
+                <Input
+                  placeholder="e.g. 415"
+                  maxLength={3}
+                  value={areaCode}
+                  onChange={(e) => setAreaCode(e.target.value.replace(/\D/g, ''))}
+                  className="w-32"
+                />
+                <p className="text-xs text-gray-400 mt-1">Leave blank for any US number</p>
               </div>
             </CardContent>
           </Card>
@@ -658,25 +671,8 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
         </Card>
       )}
 
-      {/* Kyra Native status banner */}
-      {isKyraNative && (
-        <Card className="border-amber-200 bg-amber-50/60">
-          <CardContent className="pt-5 pb-5">
-            <div className="flex items-start gap-3">
-              <span className="text-xl">🚧</span>
-              <div>
-                <p className="font-semibold text-amber-900 text-sm">Phone number provisioning coming soon</p>
-                <p className="text-xs text-amber-700 mt-1 leading-relaxed">
-                  Kyra Native voice is configured and ready. Inbound call routing via a dedicated phone number is being built — it requires a Twilio or Deepgram SIP trunk integration. For now, your AI can respond to calls routed through your existing phone system via the webhook. We&apos;ll notify you when direct number provisioning is live.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Test Call — not available for Kyra Native yet */}
-      {!isKyraNative && <Card>
+      {/* Test Call */}
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <PhoneCall className="w-5 h-5 text-blue-600" />
@@ -706,7 +702,7 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
             </Button>
           </form>
         </CardContent>
-      </Card>}
+      </Card>
 
       {/* Call Logs */}
       <Card>
