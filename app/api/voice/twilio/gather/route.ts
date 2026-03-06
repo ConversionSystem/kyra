@@ -17,6 +17,21 @@ export const maxDuration = 30;
 // In-memory call history (keyed by CallSid). Resets on cold start — acceptable for voice.
 const callHistory = new Map<string, Array<{ role: 'user' | 'assistant'; content: string }>>();
 
+// Map voiceId to AWS Polly Neural voice name for Twilio
+const POLLY_VOICE_MAP: Record<string, string> = {
+  default: 'Polly.Matthew-Neural',    // Male, American
+  alex:    'Polly.Matthew-Neural',    // Male, American (warm, professional)
+  sarah:   'Polly.Joanna-Neural',     // Female, American (friendly)
+  james:   'Polly.Brian-Neural',      // Male, British (polished)
+  emma:    'Polly.Emma-Neural',       // Female, British (elegant)
+  liam:    'Polly.Russell-Neural',    // Male, Australian (casual)
+  sofia:   'Polly.Lupe-Neural',       // Female, Spanish-bilingual (energetic)
+};
+
+function getPollyVoice(voiceId?: string): string {
+  return POLLY_VOICE_MAP[voiceId?.toLowerCase() ?? 'default'] ?? 'Polly.Matthew-Neural';
+}
+
 function twiml(xml: string) {
   return new NextResponse(
     `<?xml version="1.0" encoding="UTF-8"?><Response>${xml}</Response>`,
@@ -58,7 +73,7 @@ export async function POST(req: NextRequest) {
     const gatherUrl = `${process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, '')}/api/voice/twilio/gather?clientId=${clientId}`;
     return twiml(`
       <Gather input="speech" timeout="4" speechTimeout="auto" action="${gatherUrl}" method="POST" language="en-US">
-        <Say voice="Polly.Joanna-Neural">Sorry, I didn't catch that. Could you repeat?</Say>
+        <Say voice="Polly.Matthew-Neural">Sorry, I didn't catch that. Could you repeat?</Say>
       </Gather>
       <Hangup/>
     `);
@@ -99,6 +114,7 @@ export async function POST(req: NextRequest) {
 
   const cfg = (client.container_config as Record<string, unknown>) ?? {};
   const voiceCfg = (cfg.voice_config as Record<string, unknown>) ?? {};
+  const pollyVoice = getPollyVoice(voiceCfg.voiceId as string | undefined);
   const aiName = (voiceCfg.aiName as string) ?? 'Alex';
   const persona = (cfg.persona as string) ?? `You are ${aiName}, an AI assistant for ${client.name}.`;
   const language = (voiceCfg.language as string) ?? 'en-US';
@@ -125,7 +141,7 @@ ${cfg.booking_url ? `Booking: ${cfg.booking_url}` : ''}`.trim();
   // Credit check
   const creditCheck = await requireCredits(client.agency_id, 'channel.voice_call');
   if (!creditCheck.allowed) {
-    return twiml('<Say voice="Polly.Joanna-Neural">I\'m sorry, service is temporarily unavailable. Please call back later. Goodbye!</Say><Hangup/>');
+    return twiml(`<Say voice="${pollyVoice}">I'm sorry, service is temporarily unavailable. Please call back later. Goodbye!</Say><Hangup/>`);
   }
 
   // Call AI via OpenClaw gateway
@@ -186,14 +202,14 @@ ${cfg.booking_url ? `Booking: ${cfg.booking_url}` : ''}`.trim();
   // Detect goodbye to hang up gracefully
   if (isGoodbyeIntent(aiResponse) || isGoodbyeIntent(speechResult)) {
     callHistory.delete(callSid);
-    return twiml(`<Say voice="Polly.Joanna-Neural">${safeResponse}</Say><Hangup/>`);
+    return twiml(`<Say voice="${pollyVoice}">${safeResponse}</Say><Hangup/>`);
   }
 
   const gatherUrl = `${process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, '')}/api/voice/twilio/gather?clientId=${clientId}`;
 
   // Respond and listen for next turn
   return twiml(`
-    <Say voice="Polly.Joanna-Neural">${safeResponse}</Say>
+    <Say voice="${pollyVoice}">${safeResponse}</Say>
     <Gather input="speech" timeout="4" speechTimeout="auto" action="${gatherUrl}" method="POST" language="${language}">
     </Gather>
     <Hangup/>
