@@ -15,11 +15,62 @@ import { processInboundMessage } from '@/lib/ghl/webhook-handler';
 import type { GHLWebhookPayload } from '@/lib/ghl/types';
 import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
 
+// ── Webhook Authentication ──────────────────────────────────────────────────
+// GHL Marketplace signed webhooks include a signature header.
+// For GHL Workflow "Custom Webhook" actions, we use a shared secret appended
+// as a query param (?secret=...) or header (x-kyra-secret).
+//
+// If GHL_WEBHOOK_SECRET is set, ALL requests must pass either:
+//   a) A valid GHL HMAC signature (x-ghl-signature), OR
+//   b) A matching x-kyra-secret header / ?secret= query param
+//
+// If GHL_WEBHOOK_SECRET is NOT set, we skip verification (dev mode / legacy).
+// Set GHL_WEBHOOK_SECRET in Vercel env vars to enable enforcement.
+async function verifyGhlWebhook(request: NextRequest, rawBody: string): Promise<boolean> {
+  const secret = process.env.GHL_WEBHOOK_SECRET;
+
+  // Not configured → allow all (warn in production)
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      console.warn('[ghl/webhook] ⚠️  GHL_WEBHOOK_SECRET not set — webhook verification disabled!');
+    }
+    return true;
+  }
+
+  // Check shared secret header or query param (used in GHL Workflow custom webhooks)
+  const headerSecret = request.headers.get('x-kyra-secret');
+  const querySecret = new URL(request.url).searchParams.get('secret');
+  if (headerSecret === secret || querySecret === secret) {
+    return true;
+  }
+
+  // Check GHL HMAC signature (used in GHL Marketplace webhooks)
+  const ghlSignature = request.headers.get('x-ghl-signature') || request.headers.get('x-hub-signature-256');
+  if (ghlSignature && rawBody) {
+    const { createHmac } = await import('crypto');
+    const expected = 'sha256=' + createHmac('sha256', secret).update(rawBody).digest('hex');
+    if (ghlSignature === expected) {
+      return true;
+    }
+  }
+
+  console.warn('[ghl/webhook] ⛔ Rejected request — invalid webhook signature');
+  return false;
+}
+
 export async function POST(request: NextRequest) {
+  const rawBodyText = await request.text();
+
+  // Verify webhook authenticity
+  const isValid = await verifyGhlWebhook(request, rawBodyText);
+  if (!isValid) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
   let raw: Record<string, unknown>;
 
   try {
-    raw = await request.json();
+    raw = JSON.parse(rawBodyText);
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }

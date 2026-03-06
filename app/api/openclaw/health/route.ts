@@ -1,13 +1,21 @@
 import { NextResponse } from 'next/server';
 import { healthCheck } from '@/lib/openclaw/client';
+import { requireAgencyMember } from '@/lib/agency/middleware';
 
 /**
  * GET /api/openclaw/health
  *
  * Check if the OpenClaw Gateway is running and connected.
  * Used by the dashboard to show gateway status.
+ * Requires an authenticated agency member.
  */
 export async function GET() {
+  // Auth check — must be a logged-in agency member
+  const auth = await requireAgencyMember();
+  if (auth.error) {
+    return NextResponse.json({ error: auth.error.message }, { status: auth.error.status });
+  }
+
   try {
     const status = await healthCheck();
 
@@ -30,7 +38,7 @@ export async function GET() {
     return NextResponse.json({
       connected: false,
       realOpenClaw: false,
-      error: String(error),
+      error: 'Health check failed',
     }, { status: 500 });
   }
 }
