@@ -186,9 +186,10 @@ ${cfg.booking_url ? `Booking: ${cfg.booking_url}` : ''}`.trim();
   // Deduct credits
   void deductCredits(client.agency_id, 'channel.voice_call');
 
-  // Log conversation to Supabase
+  // Log conversation to Supabase (store both client_id and agency_id for flexible querying)
   supabase.from('voice_call_logs').upsert({
     client_id: clientId,
+    agency_id: client.agency_id,
     call_sid: callSid,
     caller_number: callerNumber,
     turns: history.length / 2,

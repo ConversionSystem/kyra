@@ -20,10 +20,11 @@ export async function GET(req: NextRequest) {
   if (!entityId) return NextResponse.json({ calls: [] });
 
   const svc = createServiceClientWithoutCookies();
+  // Query by client_id OR agency_id — handles both per-client and agency-level voice
   const { data: calls, error } = await svc
     .from('voice_call_logs')
     .select('*')
-    .eq('client_id', entityId)
+    .or(`client_id.eq.${entityId},agency_id.eq.${entityId}`)
     .order('updated_at', { ascending: false })
     .limit(limit);
 
