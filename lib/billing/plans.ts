@@ -27,12 +27,12 @@ export const PLANS: Record<Plan, PlanConfig> = {
     name: 'Free (Beta)',
     price: 0,
     maxClients: 1,
-    monthlyCredits: 50,
+    monthlyCredits: 0,
     trialDays: 0,         // No expiry during beta
     description: 'Free forever during beta. No credit card required.',
     features: [
       '1 AI worker',
-      '50 platform credits / month',
+      '50 credits (one-time welcome gift)',
       // AI Worker
       'Custom AI personality & name',
       'AI auto-training from website',
