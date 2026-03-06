@@ -89,6 +89,8 @@ interface TestState {
   error?: string;
 }
 
+import { OpenAIEndpointSection } from './openai-endpoint-section';
+
 interface ApiKeysClientProps {
   agencyId: string;
 }
@@ -592,6 +594,9 @@ export function ApiKeysClient({ agencyId: _agencyId }: ApiKeysClientProps) {
           ))}
         </div>
       </div>
+
+      {/* ── OpenAI-Compatible Endpoint ───────────────────────────────────── */}
+      <OpenAIEndpointSection agencyId={_agencyId} clients={[]} />
     </div>
   );
 }

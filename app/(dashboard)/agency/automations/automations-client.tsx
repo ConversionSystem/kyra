@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { TriggersClient } from './triggers-client';
 import {
   Zap,
   Plus,
@@ -193,6 +194,7 @@ export default function AutomationsClient() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'templates' | 'custom'>('templates');
+  const [pageTab, setPageTab] = useState<'scheduled' | 'triggers'>('scheduled');
 
   // Create form
   const [newName, setNewName] = useState('');
@@ -304,22 +306,48 @@ export default function AutomationsClient() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => { setRefreshing(true); fetchJobs(); }}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
-          >
-            <RefreshCw className={cn('h-3.5 w-3.5', refreshing && 'animate-spin')} />
-            Refresh
-          </button>
-          <button
-            onClick={() => { setActiveTab('templates'); setShowCreate(true); }}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-colors"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            New Automation
-          </button>
+          {pageTab === 'scheduled' && (
+            <button
+              onClick={() => { setRefreshing(true); fetchJobs(); }}
+              className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
+            >
+              <RefreshCw className={cn('h-3.5 w-3.5', refreshing && 'animate-spin')} />
+              Refresh
+            </button>
+          )}
+          {pageTab === 'scheduled' && (
+            <button
+              onClick={() => { setActiveTab('templates'); setShowCreate(true); }}
+              className="flex items-center gap-1.5 px-4 py-2 text-sm text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-colors"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              New Automation
+            </button>
+          )}
         </div>
       </div>
+
+      {/* ── Page Tabs ───────────────────────────────────────────────────── */}
+      <div className="flex gap-1 p-1 bg-gray-100 rounded-xl max-w-xs">
+        <button
+          onClick={() => setPageTab('scheduled')}
+          className={cn('flex-1 py-2 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5', pageTab === 'scheduled' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700')}
+        >
+          <Clock className="h-3 w-3" /> Scheduled
+        </button>
+        <button
+          onClick={() => setPageTab('triggers')}
+          className={cn('flex-1 py-2 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5', pageTab === 'triggers' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700')}
+        >
+          <Zap className="h-3 w-3" /> Event Triggers
+        </button>
+      </div>
+
+      {/* ── Event Triggers (new tab) ─────────────────────────────────────── */}
+      {pageTab === 'triggers' && <TriggersClient />}
+
+      {/* ── Scheduled automations (original content) ─────────────────────── */}
+      {pageTab === 'scheduled' && <>
 
       {/* ── Error ───────────────────────────────────────────────────────── */}
       {error && (
@@ -610,6 +638,8 @@ export default function AutomationsClient() {
           </div>
         </div>
       )}
+
+      </> /* end scheduled tab */}
     </div>
   );
 }
