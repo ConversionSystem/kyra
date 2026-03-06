@@ -144,6 +144,30 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'seo', label: 'SEO', icon: BarChart3 },
 ];
 
+// Grouped sidebar navigation — desktop only
+const TAB_GROUPS: { label: string; tabs: typeof TABS }[] = [
+  {
+    label: 'Communicate',
+    tabs: TABS.filter(t => ['chat', 'conversations', 'channels'].includes(t.id)),
+  },
+  {
+    label: 'Configure',
+    tabs: TABS.filter(t => ['personality', 'capabilities', 'voice', 'settings'].includes(t.id)),
+  },
+  {
+    label: 'Integrate',
+    tabs: TABS.filter(t => ['ghl', 'permissions'].includes(t.id)),
+  },
+  {
+    label: 'Analyze',
+    tabs: TABS.filter(t => ['usage', 'memory', 'seo'].includes(t.id)),
+  },
+  {
+    label: 'Portal',
+    tabs: TABS.filter(t => ['portal'].includes(t.id)),
+  },
+];
+
 interface ClientDetailViewProps {
   client: AgencyClient;
   role: AgencyMember['role'];
@@ -230,147 +254,185 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
   }, []);
 
   return (
-    <div className="p-4 sm:p-6 md:p-8 max-w-5xl">
-      {/* Back link */}
-      <Link
-        href="/agency/clients"
-        className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-gray-700 transition-colors mb-4 sm:mb-6"
-      >
-        <ArrowLeft className="h-3 w-3" />
-        Back to Clients
-      </Link>
+    <div className="flex flex-col min-h-full">
 
-      {/* SEO Worker Activation Banner */}
-      {justActivated && activeTab === 'seo' && (
-        <div className="mb-4 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3 flex items-center gap-3">
-          <span className="text-emerald-600 text-lg">🐾</span>
-          <div>
-            <p className="text-sm font-semibold text-emerald-800">Veterinary SEO Worker activated!</p>
-            <p className="text-xs text-emerald-600">First GEO visibility test will run Monday. NAP audit runs Wednesday. Weekly reports every Friday.</p>
-          </div>
-        </div>
-      )}
+      {/* ── Top Header (full-width) ─────────────────────────────────────── */}
+      <div className="px-4 sm:px-6 md:px-8 pt-4 sm:pt-6 pb-4 border-b border-gray-100 bg-white">
+        {/* Back link */}
+        <Link
+          href="/agency/clients"
+          className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-700 transition-colors mb-4"
+        >
+          <ArrowLeft className="h-3 w-3" />
+          Back to Clients
+        </Link>
 
-      {/* Client Header */}
-      <div className="flex items-start gap-3 sm:gap-4 mb-6">
-        <div className="h-11 w-11 sm:h-14 sm:w-14 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center text-lg sm:text-xl font-bold text-gray-700 shrink-0">
-          {initialClient.name.charAt(0).toUpperCase()}
-        </div>
-        <div className="min-w-0 flex-1">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">{initialClient.name}</h1>
-          <div className="flex flex-wrap items-center gap-2 mt-1">
-            <Badge className={statusColors[initialClient.status]}>
-              {initialClient.status}
-            </Badge>
-            <span className="text-sm text-gray-400">
-              {initialClient.industry || 'No industry'}
-            </span>
-            {initialClient.template && (
-              <span className="text-sm text-gray-400 hidden sm:inline">
-                · {initialClient.template.name}
-              </span>
-            )}
-          </div>
-        </div>
-        {/* Show Deploy AI button if gateway not running */}
-        {(!initialClient.gateway_status || initialClient.gateway_status === 'error') && (
-          <div className="shrink-0">
-            <ReprovisionButton clientId={initialClient.id} />
+        {/* SEO Worker Activation Banner */}
+        {justActivated && activeTab === 'seo' && (
+          <div className="mb-4 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 flex items-center gap-3">
+            <span className="text-emerald-600 text-lg">🐾</span>
+            <div>
+              <p className="text-sm font-semibold text-emerald-800">Veterinary SEO Worker activated!</p>
+              <p className="text-xs text-emerald-600">First GEO visibility test will run Monday. NAP audit runs Wednesday. Weekly reports every Friday.</p>
+            </div>
           </div>
         )}
+
+        {/* Client Header */}
+        <div className="flex items-start gap-3 sm:gap-4">
+          <div className="h-11 w-11 sm:h-14 sm:w-14 rounded-2xl bg-gradient-to-br from-indigo-100 to-indigo-200 border border-indigo-200 flex items-center justify-center text-lg sm:text-xl font-bold text-indigo-700 shrink-0">
+            {initialClient.name.charAt(0).toUpperCase()}
+          </div>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">{initialClient.name}</h1>
+            <div className="flex flex-wrap items-center gap-2 mt-1">
+              <Badge className={statusColors[initialClient.status]}>
+                {initialClient.status}
+              </Badge>
+              <span className="text-sm text-gray-400">
+                {initialClient.industry || 'No industry'}
+              </span>
+              {initialClient.template && (
+                <span className="text-sm text-gray-400 hidden sm:inline">
+                  · {initialClient.template.name}
+                </span>
+              )}
+            </div>
+          </div>
+          {(!initialClient.gateway_status || initialClient.gateway_status === 'error') && (
+            <div className="shrink-0">
+              <ReprovisionButton clientId={initialClient.id} />
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Tab bar — scrollable on mobile */}
-      <div className="border-b border-gray-200 mb-6 -mx-4 sm:mx-0 px-4 sm:px-0">
-        <nav className="flex gap-1 -mb-px overflow-x-auto scrollbar-hide">
-          {TABS.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => handleTabChange(tab.id)}
-                className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap shrink-0 ${
-                  isActive
-                    ? 'border-indigo-600 text-indigo-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-                <span className="hidden sm:inline">{tab.label}</span>
-                <span className="sm:hidden">{tab.label.split(' ').pop()}</span>
-              </button>
-            );
-          })}
-        </nav>
-      </div>
+      {/* ── Body: sidebar nav + content ───────────────────────────────── */}
+      <div className="flex flex-1 min-h-0">
 
-      {/* Status banners — gateway errors, GHL disconnect, missing API key */}
-      <ClientStatusBanner client={initialClient} />
+        {/* Left sidebar nav — desktop only */}
+        <aside className="hidden md:flex flex-col w-52 shrink-0 border-r border-gray-100 bg-white pt-4 pb-8 px-3 sticky top-0 self-start max-h-screen overflow-y-auto">
+          {TAB_GROUPS.map((group, gi) => (
+            <div key={group.label} className={gi > 0 ? 'mt-5' : ''}>
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest px-3 mb-1">
+                {group.label}
+              </p>
+              {group.tabs.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => handleTabChange(tab.id)}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors mb-0.5 ${
+                      isActive
+                        ? 'bg-indigo-50 text-indigo-700'
+                        : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
+                    }`}
+                  >
+                    <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-indigo-600' : 'text-gray-400'}`} />
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </aside>
 
-      {/* Setup nudge — shown when AI has no personality or GHL configured */}
-      <SetupNudgeBanner client={initialClient} onTabChange={handleTabChange} />
-
-      {/* Tab content */}
-      {activeTab === 'chat' && (
-        <TestChatTab client={initialClient} />
-      )}
-      {activeTab === 'personality' && (
-        <AIPersonalityTab client={initialClient} />
-      )}
-      {activeTab === 'settings' && (
-        <SettingsTab client={initialClient} role={role} onRefresh={() => router.refresh()} />
-      )}
-      {activeTab === 'ghl' && (
-        <GHLTab client={initialClient} onRefresh={() => router.refresh()} />
-      )}
-      {activeTab === 'permissions' && (
-        <PermissionsTab client={initialClient} />
-      )}
-      {activeTab === 'usage' && (
-        <UsageTab client={initialClient} />
-      )}
-      {activeTab === 'conversations' && (
-        <ConversationsTab client={initialClient} />
-      )}
-      {activeTab === 'channels' && (
-        <ChannelsTab client={initialClient} />
-      )}
-      {activeTab === 'portal' && (
-        <PortalTab client={initialClient} />
-      )}
-
-      {activeTab === 'memory' && (
-        <div className="space-y-0">
-          {/* Customer Intelligence — what the AI learned about each contact */}
-          <CustomerIntelligence clientId={initialClient.id} />
-          {/* Raw OpenClaw memory files (MEMORY.md, persona context) */}
-          <div className="border-t border-gray-200 mt-6 pt-6 px-4 sm:px-6">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
-              AI Context Files (Advanced)
-            </p>
-            <MemoryBrowser clientId={initialClient.id} clientName={initialClient.name || 'Client'} />
+        {/* Mobile: horizontal scrollable tab bar */}
+        <div className="md:hidden w-full">
+          <div className="border-b border-gray-200 overflow-x-auto scrollbar-hide bg-white">
+            <nav className="flex gap-0.5 px-4 -mb-px">
+              {TABS.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => handleTabChange(tab.id)}
+                    className={`flex items-center gap-1.5 px-3 py-3 text-xs font-medium border-b-2 transition-colors whitespace-nowrap shrink-0 ${
+                      isActive
+                        ? 'border-indigo-600 text-indigo-600'
+                        : 'border-transparent text-gray-500'
+                    }`}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </nav>
           </div>
         </div>
-      )}
 
-      {activeTab === 'capabilities' && (
-        <AICapabilities clientId={initialClient.id} />
-      )}
+        {/* ── Content pane ────────────────────────────────────────────── */}
+        <main className="flex-1 min-w-0 p-4 sm:p-6 md:p-8">
+          {/* Status banners — gateway errors, GHL disconnect, missing API key */}
+          <ClientStatusBanner client={initialClient} />
 
-      {activeTab === 'voice' && (
-        <VoiceClient
-          agencyId={initialClient.agency_id}
-          clientId={initialClient.id}
-          clientName={initialClient.name ?? 'Client'}
-          voiceConfig={(initialClient.container_config as Record<string, unknown>)?.voice_config as Record<string, string> | null ?? null}
-          isSolo={false}
-        />
-      )}
+          {/* Setup nudge — shown when AI has no personality or GHL configured */}
+          <SetupNudgeBanner client={initialClient} onTabChange={handleTabChange} />
+
+          {/* Tab content */}
+          {activeTab === 'chat' && (
+            <TestChatTab client={initialClient} />
+          )}
+          {activeTab === 'personality' && (
+            <AIPersonalityTab client={initialClient} />
+          )}
+          {activeTab === 'settings' && (
+            <SettingsTab client={initialClient} role={role} onRefresh={() => router.refresh()} />
+          )}
+          {activeTab === 'ghl' && (
+            <GHLTab client={initialClient} onRefresh={() => router.refresh()} />
+          )}
+          {activeTab === 'permissions' && (
+            <PermissionsTab client={initialClient} />
+          )}
+          {activeTab === 'usage' && (
+            <UsageTab client={initialClient} />
+          )}
+          {activeTab === 'conversations' && (
+            <ConversationsTab client={initialClient} />
+          )}
+          {activeTab === 'channels' && (
+            <ChannelsTab client={initialClient} />
+          )}
+          {activeTab === 'portal' && (
+            <PortalTab client={initialClient} />
+          )}
+
+                {activeTab === 'memory' && (
+            <div className="space-y-0">
+              <CustomerIntelligence clientId={initialClient.id} />
+              <div className="border-t border-gray-200 mt-6 pt-6 px-4 sm:px-6">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
+                  AI Context Files (Advanced)
+                </p>
+                <MemoryBrowser clientId={initialClient.id} clientName={initialClient.name || 'Client'} />
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'capabilities' && (
+            <AICapabilities clientId={initialClient.id} />
+          )}
+
+          {activeTab === 'voice' && (
+            <VoiceClient
+              agencyId={initialClient.agency_id}
+              clientId={initialClient.id}
+              clientName={initialClient.name ?? 'Client'}
+              voiceConfig={(initialClient.container_config as Record<string, unknown>)?.voice_config as Record<string, string> | null ?? null}
+              isSolo={false}
+            />
+          )}
 
       {activeTab === 'seo' && (
-        <SEODashboard clientId={initialClient.id} clientName={initialClient.name || 'Client'} />
-      )}
+            <SEODashboard clientId={initialClient.id} clientName={initialClient.name || 'Client'} />
+          )}
+        </main>
+      </div>{/* end body */}
     </div>
   );
 }
