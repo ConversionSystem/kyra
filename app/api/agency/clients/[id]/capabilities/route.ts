@@ -87,21 +87,10 @@ export async function PATCH(
 
   if (dbErr) return NextResponse.json({ error: dbErr.message }, { status: 500 });
 
-  // Patch OpenClaw gateway config if this tool has a skill mapping
-  const skillIds = SKILL_MAP[toolId] ?? [];
-  if (skillIds.length > 0) {
-    try {
-      // Build skills config — enabled skills get added to the openclaw config
-      const currentSkills: Record<string, { enabled: boolean }> = {};
-      for (const skill of skillIds) {
-        currentSkills[skill] = { enabled };
-      }
-      await patchGatewayConfig(id, { skills: currentSkills });
-    } catch (e) {
-      console.error('[capabilities] Failed to patch gateway config:', e);
-      // Don't fail the request — DB is source of truth, gateway picks up on restart
-    }
-  }
+  // NOTE: Do NOT write skills.* keys to gateway config — OpenClaw rejects them as invalid.
+  // Capabilities are stored in Supabase only (agency_clients.settings.capabilities).
+  // The gateway uses tools via its own skill system, not config keys.
+  void patchGatewayConfig; // imported but intentionally unused for capabilities
 
   return NextResponse.json({ ok: true, capabilities });
 }
