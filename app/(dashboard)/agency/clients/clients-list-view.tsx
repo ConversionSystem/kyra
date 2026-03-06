@@ -206,7 +206,7 @@ export function ClientsListView({ clients, plan = 'free', clientLimit = 1 }: Cli
   return (
     <div className="p-4 sm:p-6 md:p-8 max-w-5xl">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 overflow-x-hidden">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Clients</h1>
           <p className="text-sm text-gray-500 mt-1">
@@ -268,7 +268,7 @@ export function ClientsListView({ clients, plan = 'free', clientLimit = 1 }: Cli
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
+      <div className="flex flex-col sm:flex-row gap-3 mb-6 overflow-x-hidden">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
@@ -378,7 +378,7 @@ export function ClientsListView({ clients, plan = 'free', clientLimit = 1 }: Cli
         <>
           {/* Desktop table */}
           <div className="hidden md:block rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-            <table className="w-full text-sm">
+            <table className="min-w-full w-full text-sm">
               <thead>
                 <tr className="text-gray-500 text-left border-b border-gray-200">
                   <th className="pl-4 pr-2 py-4 w-8">
@@ -424,7 +424,7 @@ export function ClientsListView({ clients, plan = 'free', clientLimit = 1 }: Cli
                     </td>
                     <td className="p-4 text-gray-700">{client.industry || '—'}</td>
                     <td className="p-4">
-                      <div className="flex flex-col gap-1">
+                      <div className="flex flex-col gap-1 overflow-x-hidden">
                         <Badge className={statusColors[client.status]}>{client.status}</Badge>
                         <GatewayDot status={client.gateway_status ?? null} />
                       </div>

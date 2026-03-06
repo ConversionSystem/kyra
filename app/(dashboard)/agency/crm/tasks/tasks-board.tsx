@@ -83,7 +83,7 @@ export function TasksBoard() {
 
   if (loading) {
     return (
-      <div className="p-8 flex items-center justify-center min-h-[400px]">
+      <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center min-h-[400px]">
         <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
       </div>
     );
@@ -92,7 +92,7 @@ export function TasksBoard() {
   return (
     <div className="p-4 sm:p-6 md:p-8 max-w-7xl space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <CheckSquare className="h-6 w-6 text-indigo-600" /> Tasks
@@ -214,7 +214,7 @@ export function TasksBoard() {
       {view === 'list' && (
         <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
           {tasks.length === 0 ? (
-            <div className="p-8 text-center text-gray-400">
+            <div className="p-4 sm:p-6 lg:p-8 text-center text-gray-400">
               <CheckSquare className="h-8 w-8 mx-auto mb-2 text-gray-300" />
               <p>No tasks yet. Create your first task to get started.</p>
             </div>
@@ -437,7 +437,7 @@ function AddTaskModal({ defaultStatus, onClose, onCreated }: {
             value={form.description}
             onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
           />
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-gray-500 mb-1 block">Due Date</label>
               <input

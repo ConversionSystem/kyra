@@ -112,7 +112,7 @@ export function SetupWizardClient({ agencyId, existingName }: Props) {
             <h1 className="text-2xl font-bold text-gray-900">What kind of business do you run?</h1>
             <p className="text-gray-500 mt-1">We&apos;ll customize your AI worker for your industry.</p>
           </div>
-          <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 sm:grid-cols-5 gap-3">
             {INDUSTRIES.map(ind => (
               <button key={ind.id} onClick={() => setIndustry(ind.id)} className={cn(
                 'flex flex-col items-center gap-2 p-3 rounded-xl border transition-all',
@@ -142,7 +142,7 @@ export function SetupWizardClient({ agencyId, existingName }: Props) {
               <label className="text-sm text-gray-600 mb-1 block">Your Name <span className="text-red-500">*</span></label>
               <Input value={ownerName} onChange={e => setOwnerName(e.target.value)} placeholder="Mike Johnson" />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm text-gray-600 mb-1 block">City / Area</label>
                 <Input value={city} onChange={e => setCity(e.target.value)} placeholder="Austin, TX" />
@@ -199,7 +199,7 @@ export function SetupWizardClient({ agencyId, existingName }: Props) {
             </div>
             <div>
               <label className="text-sm text-gray-600 mb-2 block">Tone</label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {TONES.map(t => (
                   <button key={t.id} onClick={() => setTone(t.id)} className={cn(
                     'flex items-center gap-3 p-3 rounded-xl border transition-all text-left',
@@ -214,7 +214,7 @@ export function SetupWizardClient({ agencyId, existingName }: Props) {
                 ))}
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm text-gray-600 mb-1 block">Google Review Link</label>
                 <Input value={reviewLink} onChange={e => setReviewLink(e.target.value)} placeholder="https://g.page/..." />

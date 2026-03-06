@@ -103,7 +103,7 @@ export function DealsKanban() {
 
   if (loading) {
     return (
-      <div className="p-8 flex items-center justify-center min-h-[400px]">
+      <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center min-h-[400px]">
         <div className="animate-pulse text-gray-400 flex items-center gap-2">
           <Target className="h-5 w-5" /> Loading deals...
         </div>
@@ -115,9 +115,9 @@ export function DealsKanban() {
   const wonValue = stats?.byStage?.won?.value || 0;
 
   return (
-    <div className="p-6 space-y-5 min-h-screen">
+    <div className="p-4 sm:p-6 space-y-5 min-h-screen">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <Target className="h-6 w-6 text-indigo-600" /> Deals
@@ -280,7 +280,7 @@ function DealCard({ deal, onDragStart, onDelete, onClick }: {
         ${Number(deal.value).toLocaleString()}
       </p>
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
         <div className="flex items-center gap-2">
           {initials && (
             <div className={`w-6 h-6 rounded-full ${color} flex items-center justify-center text-white text-[10px] font-bold`}>
@@ -452,13 +452,13 @@ function DealSlideOver({ deal, onClose, onUpdate, onDelete }: {
           </div>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-6">
           {/* Value + Stage */}
           {editing ? (
             <div className="space-y-3">
               <input className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                 placeholder="Deal name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="relative">
                   <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <input className="w-full border rounded-lg pl-8 pr-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
@@ -469,7 +469,7 @@ function DealSlideOver({ deal, onClose, onUpdate, onDelete }: {
                   {STAGES.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
                 </select>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-gray-500 mb-1 block">Probability %</label>
                   <input className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
@@ -519,7 +519,7 @@ function DealSlideOver({ deal, onClose, onUpdate, onDelete }: {
           {/* Details */}
           <div className="bg-gray-50 rounded-xl p-4 space-y-3">
             <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wide">Details</h3>
-            <div className="grid grid-cols-2 gap-y-2 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 text-sm">
               <span className="text-gray-500">Deal Age</span>
               <span className="text-gray-900 font-medium">{dealAge} days</span>
               

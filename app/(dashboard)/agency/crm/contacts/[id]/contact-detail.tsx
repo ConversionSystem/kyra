@@ -186,7 +186,7 @@ export function ContactDetailView() {
 
   if (loading) {
     return (
-      <div className="p-8 flex items-center justify-center min-h-[400px]">
+      <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center min-h-[400px]">
         <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
       </div>
     );
@@ -194,7 +194,7 @@ export function ContactDetailView() {
 
   if (!contact) {
     return (
-      <div className="p-8 text-center">
+      <div className="p-4 sm:p-6 lg:p-8 text-center">
         <p className="text-gray-500">Contact not found</p>
         <Button variant="outline" className="mt-4" onClick={() => router.push('/agency/crm/contacts')}>
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Contacts
@@ -235,7 +235,7 @@ export function ContactDetailView() {
         <div className="h-2 bg-gradient-to-r from-indigo-500 to-purple-500" />
 
         <div className="p-6">
-          <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-5">
+          <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-5 overflow-x-hidden">
             {/* Avatar */}
             <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl ${color} flex items-center justify-center text-white text-xl sm:text-2xl font-bold shrink-0 shadow-lg`}>
               {initials}
@@ -386,7 +386,7 @@ export function ContactDetailView() {
         </div>
 
         {/* ═══ QUICK STATS BAR ═══ */}
-        <div className="border-t border-gray-100 bg-gray-50/50 px-4 sm:px-6 py-3 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+        <div className="border-t border-gray-100 bg-gray-50/50 px-4 sm:px-6 py-3 grid grid-cols-1 sm:grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
           <div className="text-center">
             <p className="text-xs text-gray-500">Activities</p>
             <p className="text-lg font-bold text-gray-900">{(contact.activities || []).length}</p>
@@ -677,7 +677,7 @@ export function ContactDetailView() {
                     };
                     return (
                       <div key={deal.id} className={`bg-white border border-gray-200 border-l-4 ${stageColors[deal.stage] || ''} rounded-xl p-4`}>
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
                           <div>
                             <h4 className="font-semibold text-gray-900">{deal.name}</h4>
                             <p className="text-xs text-gray-500 capitalize mt-0.5">{deal.stage} · {deal.probability}% probability</p>
@@ -793,7 +793,7 @@ function DetailRow({ label, value, children }: { label: string; value?: string; 
 function TimelineItem({ activity, isLast }: { activity: CrmActivity; isLast: boolean }) {
   return (
     <div className="flex gap-3">
-      <div className="flex flex-col items-center">
+      <div className="flex flex-col items-center overflow-x-hidden">
         <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
           <TimelineIcon type={activity.type} actor={activity.actor} />
         </div>

@@ -56,7 +56,7 @@ export function MergeTool() {
 
   if (loading) {
     return (
-      <div className="p-8 flex items-center justify-center min-h-[400px]">
+      <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center min-h-[400px]">
         <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
       </div>
     );

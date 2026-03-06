@@ -10,7 +10,7 @@ function CopyField({ label, value, mono, note }: { label: string; value: string;
   return (
     <Card className="mb-4">
       <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
           <CardTitle className="text-sm font-semibold text-gray-700">{label}</CardTitle>
           <Button
             size="sm"

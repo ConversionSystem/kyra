@@ -191,7 +191,7 @@ export function PremiumTemplatesPage() {
 
         {/* Coming Soon */}
         <Card className="border-dashed">
-          <CardContent className="p-6 flex flex-col items-center justify-center text-center h-full min-h-48">
+          <CardContent className="p-4 sm:p-6 flex flex-col items-center justify-center text-center h-full min-h-48">
             <p className="text-sm font-medium text-gray-400 mb-1">More templates coming soon</p>
             <p className="text-xs text-gray-300">Restaurant SEO · Real Estate · Medical Practice · Legal</p>
           </CardContent>

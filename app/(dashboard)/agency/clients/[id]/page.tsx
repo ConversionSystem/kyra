@@ -25,7 +25,7 @@ export default async function ClientDetailPage({ params }: ClientDetailPageProps
   if (!client || client.agency_id !== result.agency.id) notFound();
 
   return (
-    <Suspense fallback={<div className="p-8 text-gray-400">Loading...</div>}>
+    <Suspense fallback={<div className="p-4 sm:p-6 lg:p-8 text-gray-400">Loading...</div>}>
       <ClientDetailView client={client} role={result.role} />
     </Suspense>
   );

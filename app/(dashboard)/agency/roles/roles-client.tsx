@@ -131,7 +131,7 @@ function DeployModal({
         </div>
 
         {/* Body */}
-        <div className="p-6 space-y-5">
+        <div className="p-4 sm:p-6 space-y-5">
           {/* Trait pills */}
           <div className="flex flex-wrap gap-1.5">
             {role.traits.map(t => (
@@ -163,7 +163,7 @@ function DeployModal({
           {tab === 'existing' && (
             <div className="space-y-4">
               {done ? (
-                <div className="flex flex-col items-center gap-3 py-4 text-center">
+                <div className="flex flex-col items-center gap-3 py-4 text-center overflow-x-hidden">
                   <CheckCircle className="h-12 w-12 text-green-500" />
                   <div>
                     <p className="font-semibold text-gray-900">Role Applied! 🎉</p>
@@ -394,7 +394,7 @@ export function RolesPageClient({ plan }: { plan: Plan }) {
         ))}
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-gradient-to-br from-gray-50 to-indigo-50/30 p-6">
+      <div className="rounded-xl border border-gray-200 bg-gradient-to-br from-gray-50 to-indigo-50/30 p-4 sm:p-6">
         <div className="flex items-start gap-4">
           <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-indigo-100 text-indigo-600 shrink-0">
             <Mail className="h-5 w-5" />

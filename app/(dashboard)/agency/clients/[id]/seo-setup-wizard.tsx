@@ -203,7 +203,7 @@ export function SEOSetupWizard({ clientId, clientName, onComplete, onCancel }: S
                 Services Offered
               </h3>
               <p className="text-sm text-gray-500">Select all services this clinic provides. These drive keyword targeting and content creation.</p>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {SERVICE_OPTIONS.map((service) => (
                   <button
                     key={service.value}

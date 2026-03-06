@@ -151,7 +151,7 @@ export default function PipelineAnalytics() {
   return (
     <div className="space-y-6">
       {/* Header with time range selector */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
         <div>
           <h2 className="text-lg font-semibold text-gray-900">Pipeline Analytics</h2>
           <p className="text-sm text-gray-500">Track campaign performance and conversion rates</p>
@@ -177,7 +177,7 @@ export default function PipelineAnalytics() {
       </div>
 
       {/* Overview KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         <KpiCard
           title="Total Leads"
           value={overview.total_leads}
@@ -437,7 +437,7 @@ function CampaignLeaderboard({ campaigns }: { campaigns: CampaignMetric[] }) {
             onClick={() => setExpanded(expanded === c.id ? null : c.id)}
             className="w-full text-left p-3 rounded-lg border border-gray-100 hover:border-gray-200 hover:bg-gray-50/50 transition"
           >
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
               <div className="flex items-center gap-2 min-w-0">
                 <span className={`text-xs font-bold ${i === 0 ? 'text-amber-500' : 'text-gray-400'}`}>
                   #{i + 1}
@@ -479,7 +479,7 @@ function CampaignLeaderboard({ campaigns }: { campaigns: CampaignMetric[] }) {
           {/* Expanded details */}
           {expanded === c.id && (
             <div className="ml-6 mt-1 mb-2 p-3 rounded-lg bg-gray-50 border border-gray-100">
-              <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div>
                   <span className="text-gray-400">Industry</span>
                   <p className="font-medium text-gray-700">{c.industry || '—'}</p>
@@ -696,7 +696,7 @@ function CloserPerformance({ stats }: { stats: CloserStats }) {
   return (
     <div className="space-y-4">
       {/* Stats grid */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="p-3 rounded-lg bg-purple-50 border border-purple-100 text-center">
           <div className="text-2xl font-bold text-purple-700">{stats.total_responses}</div>
           <div className="text-[10px] text-purple-500 uppercase tracking-wide mt-0.5">AI Responses</div>
@@ -820,7 +820,7 @@ function ActivityChart({ data }: { data: DailyActivity[] }) {
       </div>
 
       {/* Summary */}
-      <div className="mt-4 pt-3 border-t border-gray-100 grid grid-cols-3 gap-4 text-center">
+      <div className="mt-4 pt-3 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-center">
         <div>
           <div className="text-lg font-bold text-blue-600">
             {displayData.reduce((s, d) => s + d.created, 0)}

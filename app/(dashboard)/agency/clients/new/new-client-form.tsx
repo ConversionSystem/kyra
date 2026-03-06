@@ -101,7 +101,7 @@ function SetupWizard({ clientId, clientName, defaultNorthStar, agentRole, onDone
           <h3 className="text-lg font-bold text-white">Set Up Your AI Worker</h3>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-6">
           {/* North Star Goal */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700">
@@ -152,7 +152,7 @@ function SetupWizard({ clientId, clientName, defaultNorthStar, agentRole, onDone
                       : 'border-gray-200 bg-gray-50 hover:border-gray-300'
                   }`}
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
                     <div>
                       <p className="text-sm font-medium text-gray-900">{option.label}</p>
                       <p className="text-xs text-gray-400 mt-0.5">{option.description}</p>
@@ -282,7 +282,7 @@ function TemplatePreviewModal({
           </button>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-6">
           {/* Description */}
           <p className="text-sm text-gray-500 leading-relaxed">{template.description}</p>
 
@@ -727,7 +727,7 @@ export function NewClientForm({ agencyId, templates, defaultTemplateId, defaultR
                     : 'border-gray-200/80 bg-gray-100 hover:bg-gray-100/70 hover:border-gray-300'
                 }`}
               >
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
                   <div className="flex items-center gap-3">
                     <span className="text-2xl">📝</span>
                     <div>

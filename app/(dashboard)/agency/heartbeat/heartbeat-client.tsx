@@ -146,7 +146,7 @@ export function HeartbeatClient({ clients }: HeartbeatClientProps) {
       {/* Client grid */}
       {clients.length === 0 ? (
         <Card>
-          <CardContent className="p-8 text-center">
+          <CardContent className="p-4 sm:p-6 lg:p-8 text-center">
             <p className="text-gray-400">No clients yet. Add your first client to start monitoring.</p>
           </CardContent>
         </Card>

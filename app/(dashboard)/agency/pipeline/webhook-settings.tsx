@@ -181,7 +181,7 @@ export default function WebhookSettings() {
     <div className="space-y-6">
 
       {/* ═══ HEADER ═══ */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
         <div>
           <div className="flex items-center gap-2">
             <Webhook className="h-5 w-5 text-indigo-500" />
@@ -371,7 +371,7 @@ export default function WebhookSettings() {
             {/* Step 1: Choose your tool */}
             <div className="mb-5">
               <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Step 1 — Which tool are you connecting?</p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 sm:grid-cols-3 gap-2">
                 {TEMPLATES.map(t => (
                   <button key={t.name}
                     onClick={() => { setSelectedTemplate(t.name); setNewName(t.name); setNewUrl(''); }}
@@ -456,7 +456,7 @@ export default function WebhookSettings() {
                   </label>
                   <div className="border-t border-gray-100 my-2" />
                   <p className="text-[10px] text-gray-400 mb-1">Or pick specific events:</p>
-                  <div className="grid grid-cols-2 gap-1">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
                     {ALL_EVENTS.map(ev => (
                       <label key={ev.value} className="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" checked={newEvents.has('*') || newEvents.has(ev.value)}
