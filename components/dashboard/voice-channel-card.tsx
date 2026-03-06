@@ -111,7 +111,8 @@ export function VoiceChannelCard({ client }: Props) {
   };
 
   const handleSync = async () => {
-    if (!apiKey) { setSyncError('API key required'); return; }
+    // Kyra Native doesn't need an API key
+    if (selectedProvider !== 'openclaw' && !apiKey) { setSyncError('API key required'); return; }
     setSyncing(true);
     setSyncError('');
     setSyncSuccess('');
@@ -446,19 +447,29 @@ export function VoiceChannelCard({ client }: Props) {
               </div>
             </div>
 
-            {/* API key */}
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                {VOICE_PROVIDERS[selectedProvider].name} API Key *
-              </label>
-              <input
-                type="password"
-                value={apiKey}
-                onChange={e => setApiKey(e.target.value)}
-                placeholder={selectedProvider === 'vapi' ? 'vapi-...' : selectedProvider === 'retell' ? 'key_...' : 'sf_...'}
-                className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200 font-mono"
-              />
-            </div>
+            {/* API key — hidden for Kyra Native */}
+            {selectedProvider === 'openclaw' ? (
+              <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-3 flex items-start gap-2">
+                <span className="text-indigo-600 text-base">✓</span>
+                <div>
+                  <p className="text-xs font-semibold text-indigo-800">No API key needed</p>
+                  <p className="text-xs text-indigo-600 mt-0.5">Kyra Native is built in — powered by Deepgram + OpenClaw TTS, billed through your credits (~3/min).</p>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                  {VOICE_PROVIDERS[selectedProvider].name} API Key *
+                </label>
+                <input
+                  type="password"
+                  value={apiKey}
+                  onChange={e => setApiKey(e.target.value)}
+                  placeholder={selectedProvider === 'vapi' ? 'vapi-...' : selectedProvider === 'retell' ? 'key_...' : 'sf_...'}
+                  className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200 font-mono"
+                />
+              </div>
+            )}
 
             {/* AI name + area code */}
             <div className="grid sm:grid-cols-2 gap-3">
@@ -496,7 +507,7 @@ export function VoiceChannelCard({ client }: Props) {
 
             <Button
               onClick={handleSync}
-              disabled={syncing || !apiKey}
+              disabled={syncing || (selectedProvider !== 'openclaw' && !apiKey)}
               className="w-full bg-purple-600 hover:bg-purple-700 text-white gap-2"
             >
               {syncing
