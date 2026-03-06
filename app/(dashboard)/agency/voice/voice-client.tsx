@@ -170,13 +170,14 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
   const [provisioning, setProvisioning] = useState(false);
 
   const loadCallLogs = useCallback(async () => {
-    if (!clientId) return;
+    const id = clientId ?? agencyId;
+    if (!id) return;
     setLoadingLogs(true);
     try {
-      const res = await fetch(`/api/agency/conversations?clientId=${clientId}&channel=voice&limit=20`);
+      const res = await fetch(`/api/voice/call-logs?entityId=${id}&limit=20`);
       if (res.ok) {
         const data = await res.json();
-        setCallLogs(data.conversations ?? []);
+        setCallLogs(data.calls ?? []);
       }
     } catch { /* ignore */ }
     setLoadingLogs(false);
