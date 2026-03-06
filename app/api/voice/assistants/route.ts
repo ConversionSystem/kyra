@@ -83,15 +83,26 @@ export async function POST(req: NextRequest) {
     syncedAt: new Date().toISOString(),
   };
 
-  await svc
-    .from('agency_clients')
-    .update({
-      container_config: {
-        ...cfg,
-        voice_config: updatedVoiceConfig,
-      },
-    })
-    .eq('id', clientId);
+  // Save voice config: if clientId matches a client, save to agency_clients
+  // otherwise (agency-level voice), save to agencies.settings
+  const { data: matchedClient } = await svc
+    .from('agency_clients').select('id').eq('id', clientId).single();
+
+  if (matchedClient) {
+    await svc
+      .from('agency_clients')
+      .update({ container_config: { ...cfg, voice_config: updatedVoiceConfig } })
+      .eq('id', clientId);
+  } else {
+    // Agency-level voice — clientId is actually agencyId
+    const { data: agencyData } = await svc
+      .from('agencies').select('settings').eq('id', clientId).single();
+    const agencySettings = (agencyData?.settings as Record<string, unknown>) ?? {};
+    await svc
+      .from('agencies')
+      .update({ settings: { ...agencySettings, voice_config: updatedVoiceConfig } })
+      .eq('id', clientId);
+  }
 
   return NextResponse.json({
     ok: true,
