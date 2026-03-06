@@ -36,7 +36,8 @@ jobs:
         run: npx tsc --noEmit
 
       - name: Lint
-        run: npm run lint --if-present
+        # Use ESLint CLI directly — `next lint` is deprecated and exits 1 for warnings
+        run: npx eslint . --ext .ts,.tsx --max-warnings 9999 --if-present
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Job 2: Deploy — only runs on push to main AFTER CI passes
