@@ -84,7 +84,7 @@ const PROVIDERS = [
     name: 'Kyra Native',
     logo: '🦞',
     description: 'Built on Deepgram + OpenClaw TTS. No third-party account needed. Billed through Kyra credits.',
-    pricing: '~3 credits/min (vs $0.15+ elsewhere)',
+    pricing: '~5 credits/min (vs $0.25+ elsewhere)',
     bestFor: 'Agencies who want one bill. Simplest setup.',
     signupUrl: '',
     docsUrl: '',
@@ -97,7 +97,7 @@ const PROVIDERS = [
     name: 'VAPI',
     logo: '🔊',
     description: 'Most flexible, developer-friendly. Best API.',
-    pricing: '~$0.15–0.20/min all-in',
+    pricing: '~$0.25+ elsewhere',
     bestFor: 'Custom setups, full control',
     signupUrl: 'https://dashboard.vapi.ai',
     docsUrl: 'https://docs.vapi.ai',
@@ -402,7 +402,7 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
                 No External Account Needed
               </CardTitle>
               <CardDescription>
-                Kyra Native is built directly into your platform. Voice is handled by Deepgram + OpenClaw TTS — billed through your Kyra credits (~3 credits/min). No third-party signup required.
+                Kyra Native is built directly into your platform. Voice is handled by Deepgram + OpenClaw TTS — billed through your Kyra credits (~5 credits/min). No third-party signup required.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -414,7 +414,7 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
                   🔊 OpenClaw TTS — natural voices
                 </div>
                 <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-100 rounded-lg px-3 py-1.5">
-                  💳 ~3 credits/min (vs $0.15+ elsewhere)
+                  💳 ~5 credits/min (vs $0.25+ elsewhere)
                 </div>
               </div>
               <div>
