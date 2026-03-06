@@ -612,7 +612,7 @@ export function LeadsPipelineClient({ initialPipelineState }: Props) {
       <OutreachWebhookSetup compact />
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
           { icon: Flame,     label: 'Hot leads',     value: hotLeads,    color: 'text-red-500' },
           { icon: Zap,       label: 'In progress',   value: inProgress,  color: 'text-indigo-500' },

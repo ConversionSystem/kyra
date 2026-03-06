@@ -307,7 +307,7 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
       </div>
 
       {/* ── Body: sidebar nav + content ───────────────────────────────── */}
-      <div className="flex flex-1 min-h-0">
+      <div className="flex flex-col md:flex-row flex-1 min-h-0">
 
         {/* Left sidebar nav — desktop only */}
         <aside className="hidden md:flex flex-col w-52 shrink-0 border-r border-gray-100 bg-white pt-4 pb-8 px-3 sticky top-0 self-start max-h-screen overflow-y-auto">
@@ -365,7 +365,7 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
         </div>
 
         {/* ── Content pane ────────────────────────────────────────────── */}
-        <main className="flex-1 min-w-0 p-4 sm:p-6 md:p-8">
+        <main className="flex-1 min-w-0 overflow-y-auto p-4 sm:p-6 md:p-8">
           {/* Status banners — gateway errors, GHL disconnect, missing API key */}
           <ClientStatusBanner client={initialClient} />
 

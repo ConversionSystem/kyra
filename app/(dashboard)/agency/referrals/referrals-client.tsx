@@ -190,7 +190,7 @@ export default function ReferralsClient({ agencyId: _agencyId, agencyName, agenc
       </div>
 
       {/* ── Stats ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { icon: Users, label: 'Links clicked', value: stats.total, color: 'text-gray-600', bg: 'bg-gray-50' },
           { icon: TrendingUp, label: 'Activated (credits earned)', value: stats.activated, color: 'text-green-600', bg: 'bg-green-50' },
