@@ -26,15 +26,33 @@ export const PLANS: Record<Plan, PlanConfig> = {
   free: {
     name: 'Free (Beta)',
     price: 0,
-    maxClients: 999,      // Unlimited while Kyra is in beta
-    monthlyCredits: 500,
+    maxClients: 1,
+    monthlyCredits: 50,
     trialDays: 0,         // No expiry during beta
-    description: 'Full access while Kyra is in beta. No credit card required.',
+    description: 'Free forever during beta. No credit card required.',
     features: [
-      'Unlimited AI workers (beta)',
-      '500 platform credits / month',
-      'All features included',
-      'No credit card required',
+      '1 AI worker',
+      '50 platform credits / month',
+      // AI Worker
+      'Custom AI personality & name',
+      'AI auto-training from website',
+      'Knowledge base builder',
+      'Multi-channel messaging (SMS, Telegram, web chat)',
+      'Voice AI (inbound & outbound calls)',
+      'Smart escalation to human',
+      'Conversation inbox',
+      // CRM
+      'Full CRM — contacts, companies, deals',
+      'Pipeline management',
+      'Contact segments & tags',
+      'Task management',
+      'Lead capture from web chat',
+      'Import / export contacts',
+      'CRM analytics',
+      // Automation
+      'Proactive AI automations',
+      'Event triggers',
+      'GHL integration',
     ],
     badge: 'BETA',
     badgeColor: 'bg-green-100 text-green-700',
