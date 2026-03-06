@@ -165,7 +165,7 @@ async function extractKnowledge(
         ...(isOpenRouter ? { 'HTTP-Referer': 'https://kyra.conversionsystem.com', 'X-Title': 'Kyra Auto-Train' } : {}),
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: isOpenRouter ? 'openai/gpt-4o-mini' : 'gpt-4o-mini',
         messages: [
           {
             role: 'system',
