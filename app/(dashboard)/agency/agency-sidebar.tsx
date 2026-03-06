@@ -194,7 +194,7 @@ function CollapsibleSection({
     return (
       <div>
         <div className={cn(
-          'text-[10px] uppercase tracking-widest font-medium px-3 pt-4 pb-1',
+          'text-[9px] uppercase tracking-widest font-medium px-2.5 pt-3 pb-0.5',
           hasBranding ? 'text-white/40' : 'text-gray-500'
         )}>
           {label}
@@ -209,7 +209,7 @@ function CollapsibleSection({
       <button
         onClick={() => setOpen(!open)}
         className={cn(
-          'flex items-center justify-between w-full text-[10px] uppercase tracking-widest font-medium px-3 pt-4 pb-1 transition-colors',
+          'flex items-center justify-between w-full text-[9px] uppercase tracking-widest font-medium px-2.5 pt-3 pb-0.5 transition-colors',
           hasBranding ? 'text-white/40 hover:text-white/60' : 'text-gray-500 hover:text-gray-300'
         )}
       >
@@ -306,14 +306,14 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
       {/* Header */}
       <div
         className={cn(
-          'p-4 border-b',
+          'px-3 py-3 border-b',
           hasBranding ? 'border-white/10' : 'border-gray-800'
         )}
       >
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
             {logoUrl ? (
-              <div className="h-9 w-9 rounded-lg bg-white/20 flex items-center justify-center overflow-hidden shrink-0">
+              <div className="h-7 w-7 rounded-lg bg-white/20 flex items-center justify-center overflow-hidden shrink-0">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={logoUrl}
@@ -325,7 +325,7 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
                 />
               </div>
             ) : null}
-            <h2 className={cn('text-lg font-semibold truncate', 'text-white')}>
+            <h2 className={cn('text-sm font-semibold truncate', 'text-white')}>
               {companyName}
             </h2>
           </div>
@@ -339,8 +339,8 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
           </button>
         </div>
 
-        <div className="flex items-center gap-2 mt-2">
-          <Badge className={cn('capitalize', planColors[plan] ?? planColors.starter)}>
+        <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+          <Badge className={cn('capitalize text-[10px] px-1.5 py-0', planColors[plan] ?? planColors.starter)}>
             {plan}
           </Badge>
           <CreditBadge />
@@ -363,7 +363,7 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
       {/* My AI Worker button removed — access AI via client terminal */}
 
       {/* Navigation */}
-      <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
+      <nav className="flex-1 px-2 py-2 space-y-0 overflow-y-auto">
         {(isSolo ? soloNavSections : navSections).map((section, si) => {
           const sectionHrefPrefixes = section.items.map(i => i.href);
           const isSectionActive = section.collapsible && sectionHrefPrefixes.some(
@@ -390,7 +390,7 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
                     href={item.href}
                     onClick={() => setMobileOpen(false)}
                     className={cn(
-                      'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
+                      'flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs transition-colors',
                       isActive
                         ? hasBranding
                           ? 'bg-white/20 text-white font-medium'
@@ -400,7 +400,7 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
                           : 'text-gray-400 hover:bg-gray-800 hover:text-white'
                     )}
                   >
-                    <item.icon className="h-4 w-4 shrink-0" />
+                    <item.icon className="h-3.5 w-3.5 shrink-0" />
                     {item.label}
                     {item.href === '/agency/conversations' && escalationCount > 0 && (
                       <span className="ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 leading-none">
@@ -415,15 +415,15 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
         })}
         {/* Master Control link — only for ConversionSystem */}
         {isMaster && (
-          <div className="pt-3">
-            <div className={cn('text-[10px] uppercase tracking-widest font-medium px-3 pb-1', hasBranding ? 'text-white/40' : 'text-gray-500')}>
+          <div className="pt-2">
+            <div className={cn('text-[9px] uppercase tracking-widest font-medium px-2.5 pb-1', hasBranding ? 'text-white/40' : 'text-gray-500')}>
               Platform
             </div>
             <Link
               href="/master"
               onClick={() => setMobileOpen(false)}
               className={cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
+                'flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs transition-colors',
                 pathname.startsWith('/master')
                   ? 'bg-yellow-500/20 text-yellow-300 font-medium'
                   : hasBranding
@@ -431,23 +431,21 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
                     : 'text-gray-400 hover:bg-gray-800 hover:text-white'
               )}
             >
-              <Crown className="h-4 w-4 shrink-0 text-yellow-400" />
+              <Crown className="h-3.5 w-3.5 shrink-0 text-yellow-400" />
               Master Control
             </Link>
           </div>
         )}
       </nav>
 
-      {/* Terminal block removed from bottom — now at top for all accounts */}
-
       {/* Log Out */}
-      <div className="px-3 pb-3 mt-auto border-t border-gray-800 pt-3">
+      <div className="px-2 pb-2 mt-auto border-t border-gray-800 pt-2">
         <form action="/api/auth/signout" method="POST">
           <button
             type="submit"
-            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-500 hover:text-red-400 hover:bg-gray-800/50 rounded-lg transition"
+            className="flex items-center gap-2 w-full px-2.5 py-1.5 text-xs text-gray-500 hover:text-red-400 hover:bg-gray-800/50 rounded-lg transition"
           >
-            <LogOut className="h-4 w-4" />
+            <LogOut className="h-3.5 w-3.5" />
             Log Out
           </button>
         </form>
@@ -483,7 +481,7 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
       {/* Mobile sidebar (slide-in) */}
       <aside
         className={cn(
-          'lg:hidden fixed top-0 left-0 bottom-0 z-50 w-72 flex flex-col transition-transform duration-200 ease-in-out bg-gray-900',
+          'lg:hidden fixed top-0 left-0 bottom-0 z-50 w-60 flex flex-col transition-transform duration-200 ease-in-out bg-gray-900',
           mobileOpen ? 'translate-x-0' : '-translate-x-full',
         )}
       >
@@ -492,7 +490,7 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
 
       {/* Desktop sidebar (always visible) */}
       <aside
-        className="hidden lg:flex w-64 border-r border-gray-800 bg-gray-900 flex-col shrink-0"
+        className="hidden lg:flex w-52 border-r border-gray-800 bg-gray-900 flex-col shrink-0"
       >
         {sidebarContent}
       </aside>
