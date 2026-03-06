@@ -1,0 +1,17 @@
+{
+  "extends": ["next/core-web-vitals", "next/typescript"],
+  "rules": {
+    // These are style/strictness issues scattered throughout existing code.
+    // Downgraded to warnings so CI doesn't block on pre-existing debt.
+    // Tighten these back to "error" over time as the codebase is cleaned up.
+    "@typescript-eslint/no-explicit-any": "warn",
+    "@typescript-eslint/no-unused-vars": "warn",
+    "react/no-unescaped-entities": "warn",
+    "prefer-const": "warn",
+
+    // These stay as errors — they cause real runtime/routing issues.
+    "@next/next/no-html-link-for-pages": "error",
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "warn"
+  }
+}

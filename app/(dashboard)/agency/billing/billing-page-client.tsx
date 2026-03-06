@@ -5,6 +5,7 @@
 // ============================================================================
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -178,9 +179,9 @@ export function BillingPageClient({ agency, clientCount, totalConversationsThisM
                 </div>
               ))}
             </div>
-            <a href="/agency/clients/new" className="block w-full text-center bg-white text-indigo-700 font-black py-3 rounded-xl hover:bg-indigo-50 transition text-sm">
+            <Link href="/agency/clients/new" className="block w-full text-center bg-white text-indigo-700 font-black py-3 rounded-xl hover:bg-indigo-50 transition text-sm">
               Add Your First Client Now →
-            </a>
+            </Link>
           </div>
         </div>
       )}
