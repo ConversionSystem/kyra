@@ -167,6 +167,7 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
   const [expandedCall, setExpandedCall] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [testingCall, setTestingCall] = useState(false);
+  const [provisioning, setProvisioning] = useState(false);
 
   const loadCallLogs = useCallback(async () => {
     if (!clientId) return;
@@ -254,6 +255,26 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
       setError(err instanceof Error ? err.message : 'Test call failed');
     }
     setTestingCall(false);
+  };
+
+  const provisionPhone = async () => {
+    if (!entityId) return;
+    setProvisioning(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/voice/assistants/provision-phone', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId: entityId, areaCode: undefined }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to provision phone number');
+      setConfig(prev => prev ? { ...prev, phoneNumber: data.phoneNumber, phoneNumberId: data.phoneNumberId } : prev);
+      setSuccess(`Phone number ${data.phoneNumber} provisioned!`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Provisioning failed');
+    }
+    setProvisioning(false);
   };
 
   const entityId = clientId ?? agencyId;
@@ -355,7 +376,7 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
     const provider = PROVIDERS.find(p => p.id === selectedProvider)!;
 
     return (
-      <div className="space-y-6 max-w-2xl">
+      <div className="p-4 sm:p-6 md:p-8 space-y-6 max-w-2xl">
         <div>
           <Button variant="ghost" size="sm" onClick={() => setStep('provider')} className="text-gray-500 -ml-2 mb-2">
             ← Back to providers
@@ -609,8 +630,15 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
               </div>
               <div>
                 <div className="text-xs text-gray-400">Phone Number</div>
-                {isKyraNative ? (
-                  <div className="text-amber-600 font-semibold text-sm">Coming Soon</div>
+                {isKyraNative && (!config?.phoneNumber || config.phoneNumber === 'pending') ? (
+                  <button
+                    onClick={provisionPhone}
+                    disabled={provisioning}
+                    className="text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg px-3 py-1.5 mt-0.5 flex items-center gap-1.5 disabled:opacity-50"
+                  >
+                    {provisioning ? <Loader2 className="w-3 h-3 animate-spin" /> : <Phone className="w-3 h-3" />}
+                    {provisioning ? 'Provisioning...' : 'Get Phone Number'}
+                  </button>
                 ) : (
                   <div className="text-gray-900 font-mono font-bold">
                     {config?.phoneNumber || 'Provisioning...'}
