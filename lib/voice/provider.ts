@@ -89,7 +89,7 @@ export const VOICE_PROVIDERS: Record<VoiceProvider, {
   openclaw: {
     name: 'Kyra Native',
     description: 'Built on Deepgram + OpenClaw TTS. No third-party account needed.',
-    pricing: '~3 credits/min (vs $0.15+ elsewhere)',
+    pricing: '~5 credits/min (vs $0.25+ elsewhere)',
     bestFor: 'Agencies who want one bill. Simplest setup.',
     docsUrl: '',
     signupUrl: '',
@@ -97,7 +97,7 @@ export const VOICE_PROVIDERS: Record<VoiceProvider, {
   vapi: {
     name: 'VAPI',
     description: 'Most flexible, developer-friendly. Best API.',
-    pricing: '~$0.05/min platform + voice/LLM costs (~$0.15-0.20/min all-in)',
+    pricing: '~$0.05/min platform + voice/LLM costs (~$0.25+ elsewhere)',
     bestFor: 'Custom setups, developers, flexible configuration',
     docsUrl: 'https://docs.vapi.ai',
     signupUrl: 'https://dashboard.vapi.ai',
