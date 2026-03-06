@@ -194,6 +194,7 @@ export default function AutomationsClient() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'templates' | 'custom'>('templates');
+  const [pageTab, setPageTab] = useState<'scheduled' | 'triggers'>('scheduled');
 
   // Create form
   const [newName, setNewName] = useState('');
@@ -289,11 +290,6 @@ export default function AutomationsClient() {
       </div>
     );
   }
-
-  // ── Page-level tab state ─────────────────────────────────────────────────────
-// Wraps both "Scheduled" (cron jobs) and "Triggers" (event-based) in one page.
-
-  const [pageTab, setPageTab] = useState<'scheduled' | 'triggers'>('scheduled');
 
   return (
     <div className="p-4 sm:p-6 md:p-8 space-y-8 max-w-5xl">
