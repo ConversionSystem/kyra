@@ -56,6 +56,8 @@ import ClientActivityHeatmap from '@/components/dashboard/client-activity-heatma
 import { VoiceChannelCard } from '@/components/dashboard/voice-channel-card';
 import RoiSummaryCard from '@/components/dashboard/roi-summary-card';
 import { MemoryBrowser } from './memory-browser';
+import { CustomerIntelligence } from './customer-intelligence';
+import { AICapabilities } from './ai-capabilities';
 import { SEODashboard } from './seo-dashboard';
 
 // ── Setup Nudge Banner ────────────────────────────────────────────────────────
@@ -123,7 +125,7 @@ interface ChatMessage {
   content: string;
 }
 
-type Tab = 'chat' | 'personality' | 'settings' | 'ghl' | 'permissions' | 'usage' | 'conversations' | 'channels' | 'portal' | 'memory' | 'seo';
+type Tab = 'chat' | 'personality' | 'settings' | 'ghl' | 'permissions' | 'usage' | 'conversations' | 'channels' | 'portal' | 'memory' | 'seo' | 'capabilities';
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'chat', label: 'Test Chat', icon: MessageSquare },
@@ -136,6 +138,7 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'channels', label: 'Channels', icon: Radio },
   { id: 'portal', label: 'Client Portal', icon: Users },
   { id: 'memory', label: 'AI Memory', icon: Database },
+  { id: 'capabilities', label: 'AI Capabilities', icon: Zap },
   { id: 'seo', label: 'SEO', icon: BarChart3 },
 ];
 
@@ -336,7 +339,21 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
       )}
 
       {activeTab === 'memory' && (
-        <MemoryBrowser clientId={initialClient.id} clientName={initialClient.name || 'Client'} />
+        <div className="space-y-0">
+          {/* Customer Intelligence — what the AI learned about each contact */}
+          <CustomerIntelligence clientId={initialClient.id} />
+          {/* Raw OpenClaw memory files (MEMORY.md, persona context) */}
+          <div className="border-t border-gray-200 mt-6 pt-6 px-4 sm:px-6">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
+              AI Context Files (Advanced)
+            </p>
+            <MemoryBrowser clientId={initialClient.id} clientName={initialClient.name || 'Client'} />
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'capabilities' && (
+        <AICapabilities clientId={initialClient.id} />
       )}
 
       {activeTab === 'seo' && (
