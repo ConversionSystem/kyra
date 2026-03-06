@@ -51,12 +51,14 @@ interface CallLog {
 }
 
 const PROVIDER_COLORS: Record<VoiceProvider, string> = {
+  openclaw: 'bg-indigo-600',
   vapi: 'bg-purple-600',
   synthflow: 'bg-blue-600',
   retell: 'bg-green-600',
 };
 
 const PROVIDER_LOGOS: Record<VoiceProvider, string> = {
+  openclaw: '🦞',
   vapi: '🎙️',
   synthflow: '⚡',
   retell: '🔄',
