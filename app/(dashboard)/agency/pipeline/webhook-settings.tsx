@@ -181,7 +181,7 @@ export default function WebhookSettings() {
     <div className="space-y-6">
 
       {/* ═══ HEADER ═══ */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
             <Webhook className="h-5 w-5 text-indigo-500" />

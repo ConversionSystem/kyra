@@ -599,7 +599,7 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
 
   return (
     <div className="p-4 sm:p-6 md:p-8 space-y-6 max-w-4xl">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Voice AI</h1>
           <p className="text-sm text-gray-500 mt-1">Your AI worker is answering phone calls for {clientName}.</p>
@@ -736,7 +736,7 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
       {/* Call Logs */}
       <Card>
         <CardHeader>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle className="flex items-center gap-2">
               <MessageSquare className="w-5 h-5 text-gray-400" />
               Call History
@@ -767,7 +767,7 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
                   onClick={() => setExpandedCall(expandedCall === call.id ? null : call.id)}
                   className="w-full text-left bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition-colors"
                 >
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-3">
                       <div className={cn(
                         'w-8 h-8 rounded-full flex items-center justify-center',

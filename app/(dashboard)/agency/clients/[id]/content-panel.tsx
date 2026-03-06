@@ -154,7 +154,7 @@ export function ContentPanel({ entries, clientId, onRefresh }: Props) {
   return (
     <Card>
       <CardHeader className="pb-3">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
             <Globe className="w-4 h-4 text-blue-600" />
             Content

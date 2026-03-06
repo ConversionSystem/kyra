@@ -381,7 +381,7 @@ export function ApiKeysClient({ agencyId: _agencyId }: ApiKeysClientProps) {
               }`}
             >
               <CardHeader className="pb-3">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-3">
                     <span className="text-xl">{provider.icon}</span>
                     <div>

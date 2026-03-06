@@ -161,7 +161,7 @@ export function PackagesClient({ businessName }: Props) {
                   {s.step}
                 </div>
                 <div className="flex-1">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <p className="text-gray-900 font-medium">{s.title}</p>
                     <Badge variant="outline" className="text-xs text-gray-500">{s.estimated}</Badge>
                   </div>

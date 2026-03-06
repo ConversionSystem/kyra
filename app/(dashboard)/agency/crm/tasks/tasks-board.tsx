@@ -92,7 +92,7 @@ export function TasksBoard() {
   return (
     <div className="p-4 sm:p-6 md:p-8 max-w-7xl space-y-5">
       {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <CheckSquare className="h-6 w-6 text-indigo-600" /> Tasks

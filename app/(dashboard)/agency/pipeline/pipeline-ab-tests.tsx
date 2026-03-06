@@ -134,7 +134,7 @@ export default function PipelineABTests() {
     <div className="space-y-6">
 
       {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
             <FlaskConical className="h-5 w-5 text-violet-500" />
@@ -315,7 +315,7 @@ function ABTestCard({
     }`}>
       {/* Header */}
       <button onClick={onToggle} className="w-full text-left p-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3 min-w-0">
             <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${
               isActive ? 'bg-violet-100' : hasWinner ? 'bg-green-100' : 'bg-gray-100'

@@ -242,7 +242,7 @@ export function TriggersClient() {
     <div className="space-y-6 p-4 sm:p-6">
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 overflow-x-hidden">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Zap className="h-5 w-5 text-amber-500" />

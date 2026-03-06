@@ -198,7 +198,7 @@ export default function AnalyticsClient() {
   return (
     <div className="space-y-6">
       {/* Controls */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex gap-2">
           {[7, 14, 30, 60].map(d => (
             <button

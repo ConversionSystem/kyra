@@ -503,7 +503,7 @@ export function LeadsPipelineClient({ initialPipelineState }: Props) {
         </div>
 
         {/* 🚀 Buttons */}
-        <div className="flex flex-col items-end gap-2 overflow-x-hidden">
+        <div className="flex flex-col items-end gap-2">
           {/* Channel 4: Outbound Campaign */}
           <Button
             onClick={() => launchOutreachCampaign(LEADS.filter(l => l.email && !['replied','interested','booked','closed'].includes(outreachState[l.id]?.status ?? '')))}
