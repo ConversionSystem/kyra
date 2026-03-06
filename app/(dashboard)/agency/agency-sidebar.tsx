@@ -96,7 +96,7 @@ const navSections: NavSection[] = [
     items: [
       { label: 'Autopilot', href: '/agency/autopilot', icon: ZapIcon },
       { label: 'Pipelines', href: '/agency/pipelines', icon: GitBranch },
-      { label: 'Automations', href: '/agency/automations', icon: Zap },
+      { label: 'Proactive AI', href: '/agency/automations', icon: Zap },
     ],
   },
   {
