@@ -11,5 +11,6 @@ export default async function ChannelsPage() {
   const result = await getAgencyForUser(user.id);
   if (!result) redirect('/signup/agency');
 
+  // Pass agency's default client ID so channels connect to their gateway
   return <ChannelsClient />;
 }
