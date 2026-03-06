@@ -162,7 +162,7 @@ export function CustomerIntelligence({ clientId }: { clientId: string }) {
     <div className="space-y-6 p-4 sm:p-6">
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 overflow-x-hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-2">
           <div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center">
             <Brain className="h-5 w-5 text-indigo-600" />

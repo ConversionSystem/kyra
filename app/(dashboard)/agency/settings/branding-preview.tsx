@@ -53,7 +53,7 @@ export function BrandingPreview({
           </span>
 
           {/* Fake nav items */}
-          <div className="flex flex-col gap-1.5 w-full mt-1 overflow-x-hidden">
+          <div className="flex flex-col gap-1.5 w-full mt-1">
             <div
               className="h-5 rounded px-2 flex items-center"
               style={{ backgroundColor: 'rgba(255,255,255,0.25)' }}

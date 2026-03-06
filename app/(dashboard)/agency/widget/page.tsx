@@ -474,7 +474,7 @@ function WidgetBuilder({
           )}
 
           {/* Powered by */}
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <label className="block text-sm font-medium text-gray-700">&quot;Powered by Kyra&quot; badge</label>
               <p className="text-xs text-gray-500">Free marketing — recommended for free tier</p>
@@ -705,7 +705,7 @@ function WidgetAnalytics({
 
   if (error || !analytics) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-center overflow-x-hidden">
+      <div className="flex flex-col items-center justify-center py-20 text-center">
         <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mb-4">
           <BarChart3 className="h-7 w-7 text-red-400" />
         </div>

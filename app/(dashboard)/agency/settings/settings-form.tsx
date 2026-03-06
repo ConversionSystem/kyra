@@ -559,7 +559,7 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
                   Invitation sent successfully.
                 </div>
               )}
-              <div className="flex flex-col sm:flex-row gap-3 overflow-x-hidden">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <Input
                   type="email"
                   value={inviteEmail}

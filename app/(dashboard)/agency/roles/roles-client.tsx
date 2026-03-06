@@ -163,7 +163,7 @@ function DeployModal({
           {tab === 'existing' && (
             <div className="space-y-4">
               {done ? (
-                <div className="flex flex-col items-center gap-3 py-4 text-center overflow-x-hidden">
+                <div className="flex flex-col items-center gap-3 py-4 text-center">
                   <CheckCircle className="h-12 w-12 text-green-500" />
                   <div>
                     <p className="font-semibold text-gray-900">Role Applied! 🎉</p>

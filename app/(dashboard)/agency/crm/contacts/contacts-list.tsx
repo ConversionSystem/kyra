@@ -190,7 +190,7 @@ export function ContactsList() {
   return (
     <div className="p-4 sm:p-6 md:p-8 space-y-0">
       {/* ═══ HEADER ═══ */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-1 overflow-x-hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-1">
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold text-gray-900">Contacts</h1>
           <span className="text-sm font-medium text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full">
@@ -251,7 +251,7 @@ export function ContactsList() {
           </div>
 
           {/* Filter bar */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mb-4 overflow-x-hidden">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mb-4">
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)}
                 className={`text-xs ${showFilters ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : ''}`}>
@@ -411,7 +411,7 @@ export function ContactsList() {
 
           {/* Pagination */}
           {totalPages > 0 && (
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 overflow-x-hidden">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4">
               <div className="text-sm text-gray-500">
                 Page {page} of {totalPages}
               </div>

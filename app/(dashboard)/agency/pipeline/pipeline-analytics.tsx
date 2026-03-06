@@ -151,7 +151,7 @@ export default function PipelineAnalytics() {
   return (
     <div className="space-y-6">
       {/* Header with time range selector */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-lg font-semibold text-gray-900">Pipeline Analytics</h2>
           <p className="text-sm text-gray-500">Track campaign performance and conversion rates</p>
@@ -437,7 +437,7 @@ function CampaignLeaderboard({ campaigns }: { campaigns: CampaignMetric[] }) {
             onClick={() => setExpanded(expanded === c.id ? null : c.id)}
             className="w-full text-left p-3 rounded-lg border border-gray-100 hover:border-gray-200 hover:bg-gray-50/50 transition"
           >
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2 min-w-0">
                 <span className={`text-xs font-bold ${i === 0 ? 'text-amber-500' : 'text-gray-400'}`}>
                   #{i + 1}
