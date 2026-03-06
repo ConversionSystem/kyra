@@ -178,7 +178,7 @@ export default function ConversationsClient({ clients }: { clients: Client[] }) 
     <div className="flex flex-col h-full">
       {/* Stats */}
       {stats && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
           <div className="p-3 bg-white rounded-xl border border-gray-200">
             <p className="text-2xl font-bold text-gray-900">{stats.today}</p>
             <p className="text-xs text-gray-500">Today</p>

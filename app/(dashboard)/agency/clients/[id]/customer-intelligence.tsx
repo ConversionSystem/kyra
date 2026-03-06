@@ -182,7 +182,7 @@ export function CustomerIntelligence({ clientId }: { clientId: string }) {
       </div>
 
       {/* ── Stats row ────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { label: 'Customers Tracked', value: total, icon: '👥', color: 'text-indigo-600' },
           { label: 'Facts Learned', value: totalFacts, icon: '🧠', color: 'text-violet-600' },
@@ -291,7 +291,7 @@ export function CustomerIntelligence({ clientId }: { clientId: string }) {
                 <div className="px-4 pb-5 space-y-5 border-t border-gray-100 pt-4">
 
                   {/* Contact info */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
                     {mem.phone && (
                       <div className="bg-gray-50 rounded-xl p-3">
                         <div className="text-gray-400 mb-0.5">Phone</div>

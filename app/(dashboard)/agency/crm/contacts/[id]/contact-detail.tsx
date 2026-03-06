@@ -386,7 +386,7 @@ export function ContactDetailView() {
         </div>
 
         {/* ═══ QUICK STATS BAR ═══ */}
-        <div className="border-t border-gray-100 bg-gray-50/50 px-4 sm:px-6 py-3 grid grid-cols-1 sm:grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+        <div className="border-t border-gray-100 bg-gray-50/50 px-4 sm:px-6 py-3 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
           <div className="text-center">
             <p className="text-xs text-gray-500">Activities</p>
             <p className="text-lg font-bold text-gray-900">{(contact.activities || []).length}</p>
