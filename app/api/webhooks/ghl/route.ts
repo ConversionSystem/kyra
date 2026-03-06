@@ -28,6 +28,34 @@ import { sendGHLMessage, getValidToken } from '@/lib/ghl/api';
 
 const API_SECRET = process.env.KYRA_API_SECRET;
 
+// ── Webhook Verification ────────────────────────────────────────────────────
+// Uses GHL_WEBHOOK_SECRET (set in Vercel env vars) to verify incoming requests.
+// Accepts: HMAC signature (GHL Marketplace) OR shared-secret header/query (Workflow).
+async function verifyGhlWebhook(request: NextRequest, rawBody: string): Promise<boolean> {
+  const secret = process.env.GHL_WEBHOOK_SECRET;
+
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      console.warn('[ghl-webhook] ⚠️  GHL_WEBHOOK_SECRET not set — webhook verification disabled!');
+    }
+    return true;
+  }
+
+  const headerSecret = request.headers.get('x-kyra-secret');
+  const querySecret = new URL(request.url).searchParams.get('secret');
+  if (headerSecret === secret || querySecret === secret) return true;
+
+  const ghlSignature = request.headers.get('x-ghl-signature') || request.headers.get('x-hub-signature-256');
+  if (ghlSignature && rawBody) {
+    const { createHmac } = await import('crypto');
+    const expected = 'sha256=' + createHmac('sha256', secret).update(rawBody).digest('hex');
+    if (ghlSignature === expected) return true;
+  }
+
+  console.warn('[ghl-webhook] ⛔ Rejected request — invalid webhook signature');
+  return false;
+}
+
 /**
  * POST /api/webhooks/ghl
  *
@@ -37,9 +65,17 @@ const API_SECRET = process.env.KYRA_API_SECRET;
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
 
+  const rawBodyText = await request.text();
+
+  // Verify webhook authenticity
+  const isValid = await verifyGhlWebhook(request, rawBodyText);
+  if (!isValid) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
   let body: GHLWebhookPayload;
   try {
-    body = (await request.json()) as GHLWebhookPayload;
+    body = JSON.parse(rawBodyText) as GHLWebhookPayload;
   } catch {
     console.error('[ghl-webhook] Invalid JSON payload');
     return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });

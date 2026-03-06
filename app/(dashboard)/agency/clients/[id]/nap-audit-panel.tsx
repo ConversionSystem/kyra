@@ -1,6 +1,7 @@
 'use client';
 
-import { MapPin, ExternalLink, CheckCircle2, AlertTriangle, HelpCircle } from 'lucide-react';
+import { useState } from 'react';
+import { MapPin, ExternalLink, CheckCircle2, AlertTriangle, HelpCircle, Copy, Check } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface NapEntry {
