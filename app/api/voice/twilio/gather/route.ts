@@ -64,13 +64,36 @@ export async function POST(req: NextRequest) {
     `);
   }
 
-  // Load client
+  // Load client — try agency_clients first, then agencies (for agency-level / solo voice)
   const supabase = createServiceClientWithoutCookies();
-  const { data: client } = await supabase
+  let client: { id: string; name: string; container_config: unknown; agency_id: string } | null = null;
+
+  const { data: clientRow } = await supabase
     .from('agency_clients')
     .select('id, name, container_config, agency_id')
     .eq('id', clientId)
     .single();
+
+  if (clientRow) {
+    client = clientRow;
+  } else {
+    // Fallback: agency-level voice (solo user or agency's own AI)
+    const { data: agencyRow } = await supabase
+      .from('agencies')
+      .select('id, name, settings')
+      .eq('id', clientId)
+      .single();
+    if (agencyRow) {
+      client = {
+        id: agencyRow.id,
+        name: agencyRow.name,
+        container_config: (agencyRow.settings as Record<string, unknown>)?.voice_config
+          ? { voice_config: (agencyRow.settings as Record<string, unknown>).voice_config }
+          : {},
+        agency_id: agencyRow.id,
+      };
+    }
+  }
 
   if (!client) return twiml('<Say>Sorry, service not found.</Say><Hangup/>');
 
