@@ -483,7 +483,7 @@ export function PerformanceClient({ clients, agencyId, agencySettings }: Perform
             </div>
 
             {/* Report summary */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {topStats.map((stat) => (
                 <div key={stat.label} className="text-center">
                   <p className="text-2xl font-bold text-gray-900">{stat.value}</p>

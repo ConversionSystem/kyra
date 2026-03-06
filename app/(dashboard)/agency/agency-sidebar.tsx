@@ -11,7 +11,7 @@ import {
   BarChart3,
   Radio,
   KeyRound,
-  Inbox,
+
   Contact as ContactIcon,
   Target as TargetIcon,
   BarChart3 as CrmChartIcon,
@@ -72,7 +72,6 @@ const navSections: NavSection[] = [
     label: 'CRM',
     collapsible: true,
     items: [
-      { label: 'Command Feed', href: '/agency/crm', icon: Inbox },
       { label: 'Contacts', href: '/agency/crm/contacts', icon: ContactIcon },
       { label: 'Deals', href: '/agency/crm/deals', icon: TargetIcon },
       { label: 'Tasks', href: '/agency/crm/tasks', icon: CheckSquare },

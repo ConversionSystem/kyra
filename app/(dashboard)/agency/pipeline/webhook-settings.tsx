@@ -371,7 +371,7 @@ export default function WebhookSettings() {
             {/* Step 1: Choose your tool */}
             <div className="mb-5">
               <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Step 1 — Which tool are you connecting?</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 sm:grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {TEMPLATES.map(t => (
                   <button key={t.name}
                     onClick={() => { setSelectedTemplate(t.name); setNewName(t.name); setNewUrl(''); }}
