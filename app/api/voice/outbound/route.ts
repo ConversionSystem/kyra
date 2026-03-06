@@ -18,18 +18,37 @@ export async function POST(req: NextRequest) {
   }
 
   const svc = createServiceClientWithoutCookies();
-  const { data: client } = await svc
+  let client: { id: string; name: string; container_config: unknown; agency_id: string } | null = null;
+  let cfg: Record<string, unknown> = {};
+
+  const { data: clientRow } = await svc
     .from('agency_clients')
     .select('id, name, container_config, agency_id')
     .eq('id', clientId)
     .single();
 
+  if (clientRow) {
+    client = clientRow;
+    cfg = (client.container_config as Record<string, unknown>) ?? {};
+  } else {
+    // Fallback: agency-level voice
+    const { data: agencyRow } = await svc
+      .from('agencies')
+      .select('id, name, settings')
+      .eq('id', clientId)
+      .single();
+    if (agencyRow) {
+      client = { id: agencyRow.id, name: agencyRow.name, container_config: agencyRow.settings, agency_id: agencyRow.id };
+      cfg = (agencyRow.settings as Record<string, unknown>) ?? {};
+    }
+  }
+
   if (!client) return NextResponse.json({ error: 'Client not found' }, { status: 404 });
 
-  const cfg = (client.container_config as Record<string, unknown>) ?? {};
   const voiceConfig = (cfg.voice_config as Record<string, string>) ?? {};
 
-  if (!voiceConfig.enabled || !voiceConfig.apiKey) {
+  const isKyraNative = voiceConfig.provider === 'openclaw';
+  if (!voiceConfig.enabled || (!isKyraNative && !voiceConfig.apiKey)) {
     return NextResponse.json({ error: 'Voice not configured for this client' }, { status: 400 });
   }
 
