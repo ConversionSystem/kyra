@@ -94,7 +94,7 @@ export function ReviewQueueClient() {
       {showSettings && (
         <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
           <h3 className="text-sm font-semibold text-gray-900">Review Gate Settings</h3>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm font-medium text-gray-700">Enable Review Gates</p>
               <p className="text-xs text-gray-500 mt-0.5">

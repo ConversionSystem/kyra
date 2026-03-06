@@ -45,7 +45,7 @@ export function CrmAnalytics() {
   return (
     <div className="max-w-6xl mx-auto p-4 sm:p-6 md:p-8 space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <BarChart3 className="h-6 w-6 text-indigo-600" /> CRM Analytics

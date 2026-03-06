@@ -230,7 +230,7 @@ export default function PermissionsCard({ clientId }: PermissionsCardProps) {
   return (
     <Card className="mb-6">
       <CardHeader>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
               <Shield className="h-4 w-4" />
@@ -263,7 +263,7 @@ export default function PermissionsCard({ clientId }: PermissionsCardProps) {
 
         {/* Monitor Only — special toggle at the top */}
         <div className="rounded-lg border border-yellow-200 bg-yellow-50/50 p-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-3">
               <ShieldAlert className="mt-0.5 h-5 w-5 text-yellow-600" />
               <div>

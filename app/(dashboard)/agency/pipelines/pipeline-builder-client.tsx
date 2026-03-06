@@ -230,7 +230,7 @@ export function PipelineBuilderClient({ initialPipelines }: { initialPipelines: 
                   selectedId === p.id ? 'border-indigo-300 ring-2 ring-indigo-100' : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-sm font-semibold text-gray-900 truncate">{p.name}</p>
                   <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
                     p.status === 'active' ? 'bg-green-100 text-green-700'

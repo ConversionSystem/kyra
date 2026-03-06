@@ -222,7 +222,7 @@ export function AutopilotClient() {
               return (
                 <Card key={act.id} className={cn('transition-all', !act.enabled && 'opacity-60')}>
                   <CardContent className="py-4">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex items-center gap-3 flex-1 min-w-0">
                         <span className="text-2xl">{act.emoji}</span>
                         <div className="min-w-0">

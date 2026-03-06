@@ -93,7 +93,7 @@ export function CrmCommandFeed() {
   return (
     <div className="p-4 sm:p-6 md:p-8 max-w-7xl space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <Inbox className="h-6 w-6 text-indigo-600" /> CRM
@@ -241,7 +241,7 @@ export function CrmCommandFeed() {
       </div>
 
       {/* Quick Actions */}
-      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 overflow-x-hidden">
+      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
         <Button
           onClick={() => router.push('/agency/crm/contacts')}
           variant="outline"

@@ -235,7 +235,7 @@ export function ContactDetailView() {
         <div className="h-2 bg-gradient-to-r from-indigo-500 to-purple-500" />
 
         <div className="p-6">
-          <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-5 overflow-x-hidden">
+          <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-5">
             {/* Avatar */}
             <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl ${color} flex items-center justify-center text-white text-xl sm:text-2xl font-bold shrink-0 shadow-lg`}>
               {initials}
@@ -677,7 +677,7 @@ export function ContactDetailView() {
                     };
                     return (
                       <div key={deal.id} className={`bg-white border border-gray-200 border-l-4 ${stageColors[deal.stage] || ''} rounded-xl p-4`}>
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                           <div>
                             <h4 className="font-semibold text-gray-900">{deal.name}</h4>
                             <p className="text-xs text-gray-500 capitalize mt-0.5">{deal.stage} · {deal.probability}% probability</p>
@@ -793,7 +793,7 @@ function DetailRow({ label, value, children }: { label: string; value?: string; 
 function TimelineItem({ activity, isLast }: { activity: CrmActivity; isLast: boolean }) {
   return (
     <div className="flex gap-3">
-      <div className="flex flex-col items-center overflow-x-hidden">
+      <div className="flex flex-col items-center">
         <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
           <TimelineIcon type={activity.type} actor={activity.actor} />
         </div>

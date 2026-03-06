@@ -295,7 +295,7 @@ export default function AutomationsClient() {
     <div className="p-4 sm:p-6 md:p-8 space-y-8 max-w-5xl">
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 overflow-x-hidden">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Sparkles className="h-5 w-5 text-indigo-500" />
@@ -359,7 +359,7 @@ export default function AutomationsClient() {
       {/* ── Active automations ───────────────────────────────────────────── */}
       {jobs.length > 0 && (
         <div className="space-y-3">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Active Automations</h2>
             <span className="text-xs text-gray-400">{jobs.filter(j => j.enabled).length}/{jobs.length} running</span>
           </div>
@@ -530,7 +530,7 @@ export default function AutomationsClient() {
                       {t.icon}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <span className="text-sm font-semibold text-gray-900">{t.name}</span>
                         <span className="text-[10px] text-gray-400 font-medium">{t.subtitle}</span>
                       </div>

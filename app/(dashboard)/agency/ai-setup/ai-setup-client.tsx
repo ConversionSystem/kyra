@@ -281,7 +281,7 @@ export function AISetupClient({ agencyId, businessName }: Props) {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6 overflow-x-hidden">
+      <div className="flex flex-col sm:flex-row gap-3 mb-6">
         {/* Category pills */}
         <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
           {([
