@@ -18,7 +18,8 @@ export async function POST(req: NextRequest) {
     areaCode,
   } = await req.json();
 
-  if (!clientId || !provider || !apiKey) {
+  // Kyra Native (openclaw) doesn't require an external API key
+  if (!clientId || !provider || (!apiKey && provider !== 'openclaw')) {
     return NextResponse.json({ error: 'clientId, provider, and apiKey required' }, { status: 400 });
   }
 

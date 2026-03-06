@@ -4,6 +4,7 @@
 import { VapiClient } from './vapi';
 import { SynthflowClient } from './synthflow';
 import { RetellClient } from './retell';
+import { KyraNativeClient } from './kyra-native';
 import type { VoiceProvider, VoiceProviderClient, VoiceAssistantConfig } from './types';
 
 export function getVoiceProvider(provider: VoiceProvider, apiKey: string): VoiceProviderClient {
@@ -11,6 +12,7 @@ export function getVoiceProvider(provider: VoiceProvider, apiKey: string): Voice
     case 'vapi':      return new VapiClient(apiKey);
     case 'synthflow': return new SynthflowClient(apiKey);
     case 'retell':    return new RetellClient(apiKey);
+    case 'openclaw':  return new KyraNativeClient();
     default: throw new Error(`Unknown voice provider: ${provider}`);
   }
 }
@@ -84,6 +86,14 @@ export const VOICE_PROVIDERS: Record<VoiceProvider, {
   docsUrl: string;
   signupUrl: string;
 }> = {
+  openclaw: {
+    name: 'Kyra Native',
+    description: 'Built on Deepgram + OpenClaw TTS. No third-party account needed.',
+    pricing: '~3 credits/min (vs $0.15+ elsewhere)',
+    bestFor: 'Agencies who want one bill. Simplest setup.',
+    docsUrl: '',
+    signupUrl: '',
+  },
   vapi: {
     name: 'VAPI',
     description: 'Most flexible, developer-friendly. Best API.',
