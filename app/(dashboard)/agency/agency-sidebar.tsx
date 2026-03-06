@@ -84,7 +84,7 @@ const navSections: NavSection[] = [
     collapsible: true,
     items: [
       { label: 'AI Templates', href: '/agency/ai-setup', icon: Sparkles },
-      { label: 'Smart Routing', href: '/agency/agents', icon: Bot },
+      { label: 'AI Teams', href: '/agency/agents', icon: Bot },
       { label: 'Channels', href: '/agency/channels', icon: Radio },
       { label: 'Voice AI', href: '/agency/voice', icon: Phone },
       { label: 'Chat Widget', href: '/agency/widget', icon: MessageCircle },
