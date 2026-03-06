@@ -12,6 +12,7 @@
 // ============================================================================
 
 import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import {
   Sparkles, Search, Target, Shield, Smartphone, Phone, ClipboardList,
   MessageCircle, BarChart3, ArrowRight, CheckCircle2, Loader2, X,
@@ -380,7 +381,7 @@ export function AISetupClient({ agencyId, businessName }: Props) {
           <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
           <div className="text-sm text-amber-700">
             <strong>No active clients yet.</strong> You need to create a client first before applying a template.{' '}
-            <a href="/agency/clients/new" className="underline font-medium">Create your first client →</a>
+            <Link href="/agency/clients/new" className="underline font-medium">Create your first client →</Link>
           </div>
         </div>
       )}
@@ -540,7 +541,7 @@ function ApplyModal({
             {clients.length === 0 ? (
               <div className="text-sm text-amber-600 bg-amber-50 rounded-lg p-3">
                 No active clients found.{' '}
-                <a href="/agency/clients/new" className="underline">Create one first →</a>
+                <Link href="/agency/clients/new" className="underline">Create one first →</Link>
               </div>
             ) : clients.length === 1 ? (
               <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-3 border">
