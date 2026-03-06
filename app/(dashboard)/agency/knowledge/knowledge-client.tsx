@@ -257,7 +257,7 @@ export default function KnowledgeClient({ clients }: { clients: Client[] }) {
       )}
 
       {/* Actions */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 overflow-x-hidden">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <input
@@ -421,7 +421,7 @@ export default function KnowledgeClient({ clients }: { clients: Client[] }) {
 
       {/* Documents List */}
       {filteredDocs.length === 0 && !showCreate ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center overflow-x-hidden">
+        <div className="flex flex-col items-center justify-center py-16 text-center">
           <div className="p-4 bg-emerald-50 rounded-xl mb-4">
             <BookOpen className="h-10 w-10 text-emerald-600" />
           </div>

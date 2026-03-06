@@ -117,7 +117,7 @@ export function DealsKanban() {
   return (
     <div className="p-4 sm:p-6 space-y-5 min-h-screen">
       {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <Target className="h-6 w-6 text-indigo-600" /> Deals
@@ -280,7 +280,7 @@ function DealCard({ deal, onDragStart, onDelete, onClick }: {
         ${Number(deal.value).toLocaleString()}
       </p>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           {initials && (
             <div className={`w-6 h-6 rounded-full ${color} flex items-center justify-center text-white text-[10px] font-bold`}>

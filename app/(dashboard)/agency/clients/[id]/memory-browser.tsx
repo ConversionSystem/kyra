@@ -98,7 +98,7 @@ export function MemoryBrowser({ clientId, clientName }: MemoryBrowserProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-lg font-semibold text-white flex items-center gap-2">
             <Brain className="w-5 h-5 text-purple-400" />

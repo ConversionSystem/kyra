@@ -152,7 +152,7 @@ function SetupWizard({ clientId, clientName, defaultNorthStar, agentRole, onDone
                       : 'border-gray-200 bg-gray-50 hover:border-gray-300'
                   }`}
                 >
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <p className="text-sm font-medium text-gray-900">{option.label}</p>
                       <p className="text-xs text-gray-400 mt-0.5">{option.description}</p>
@@ -727,7 +727,7 @@ export function NewClientForm({ agencyId, templates, defaultTemplateId, defaultR
                     : 'border-gray-200/80 bg-gray-100 hover:bg-gray-100/70 hover:border-gray-300'
                 }`}
               >
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-3">
                     <span className="text-2xl">📝</span>
                     <div>

@@ -293,7 +293,7 @@ export function SEODashboard({ clientId, clientName }: SEODashboardProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
             <Search className="w-5 h-5 text-indigo-600" />
@@ -325,7 +325,7 @@ export function SEODashboard({ clientId, clientName }: SEODashboardProps) {
       {/* Run Now Panel */}
       <Card className="border-gray-200">
         <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 overflow-x-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <p className="text-sm font-semibold text-gray-900">Run tasks now</p>
               <p className="text-xs text-gray-500 mt-0.5">
@@ -444,7 +444,7 @@ export function SEODashboard({ clientId, clientName }: SEODashboardProps) {
       {/* GEO Scores */}
       <Card>
         <CardHeader className="pb-3">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
               <Search className="w-4 h-4 text-indigo-600" />
               GEO Visibility Tests

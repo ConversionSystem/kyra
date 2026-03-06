@@ -139,7 +139,7 @@ export function WebhookSettingsClient({ agencyId, initialConfig }: WebhookSettin
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Link href="/agency/settings" className="text-sm text-gray-400 hover:text-white">

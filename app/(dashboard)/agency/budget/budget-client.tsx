@@ -64,7 +64,7 @@ function InlineEditor({
   };
 
   return (
-    <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end overflow-x-hidden">
+    <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
       <div>
         <label className="text-xs text-gray-500 mb-1 block">Monthly Budget (conversations)</label>
         <Input

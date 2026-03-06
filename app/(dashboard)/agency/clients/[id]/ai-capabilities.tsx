@@ -158,7 +158,7 @@ export function AICapabilities({ clientId }: { clientId: string }) {
     <div className="space-y-6 p-4 sm:p-6">
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 overflow-x-hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h2 className="text-lg font-bold text-gray-900">AI Capabilities</h2>
           <p className="text-xs text-gray-500 mt-0.5">
