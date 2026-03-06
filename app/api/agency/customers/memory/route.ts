@@ -74,3 +74,45 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({ memories: memories ?? [] });
 }
+
+/**
+ * POST /api/agency/customers/memory
+ * Add a manual fact to a customer's memory profile.
+ * Body: { clientId, contactId, fact, source }
+ */
+export async function POST(req: NextRequest) {
+  const sb = await createClient();
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const { clientId, contactId, fact, source = 'manual' } = await req.json();
+  if (!clientId || !contactId || !fact) {
+    return NextResponse.json({ error: 'clientId, contactId, and fact are required' }, { status: 400 });
+  }
+
+  const supabase = createServiceClientWithoutCookies();
+
+  // Load existing memory
+  const { data: existing } = await supabase
+    .from('customer_memory')
+    .select('*')
+    .eq('client_id', clientId)
+    .eq('contact_id', contactId)
+    .single();
+
+  if (!existing) {
+    return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
+  }
+
+  const facts = Array.isArray(existing.facts) ? existing.facts : [];
+  facts.push({ fact, source, date: new Date().toISOString().split('T')[0] });
+
+  const { error } = await supabase
+    .from('customer_memory')
+    .update({ facts, updated_at: new Date().toISOString() })
+    .eq('client_id', clientId)
+    .eq('contact_id', contactId);
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ ok: true });
+}
