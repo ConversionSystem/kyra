@@ -58,11 +58,16 @@ async function fetchPage(url: string): Promise<{ url: string; text: string; titl
   try {
     const res = await fetch(url, {
       headers: {
-        'User-Agent': 'Kyra/1.0 (AI Worker Training — https://kyra.conversionsystem.com)',
-        Accept: 'text/html',
+        // Use a realistic browser UA to bypass Cloudflare bot detection
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Cache-Control': 'no-cache',
       },
-      signal: AbortSignal.timeout(10_000),
+      signal: AbortSignal.timeout(15_000),
       redirect: 'follow',
+      cache: 'no-store',
     });
 
     if (!res.ok) return null;
@@ -70,6 +75,14 @@ async function fetchPage(url: string): Promise<{ url: string; text: string; titl
     if (!contentType.includes('text/html')) return null;
 
     const html = await res.text();
+
+    // Detect Cloudflare/bot challenge pages (empty after strip)
+    const isChallenge = html.includes('cf-browser-verification') ||
+      html.includes('Just a moment') ||
+      html.includes('challenge-platform') ||
+      html.includes('_cf_chl_opt');
+    if (isChallenge) return null;
+
     const text = htmlToText(html);
     if (text.length < 50) return null;
 
