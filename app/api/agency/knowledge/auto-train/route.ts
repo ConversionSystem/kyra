@@ -152,15 +152,22 @@ async function extractKnowledge(
   pagesText: string,
   clientName: string,
 ): Promise<ExtractedKnowledge | null> {
+  // Use OpenRouter as primary (cheaper + same API), fall back to OpenAI direct key
+  const openrouterKey = process.env.OPENROUTER_API_KEY;
   const openaiKey = process.env.OPENAI_API_KEY;
-  if (!openaiKey) return null;
+  const apiKey = openrouterKey ?? openaiKey;
+  const apiUrl = openrouterKey
+    ? 'https://openrouter.ai/api/v1/chat/completions'
+    : 'https://api.openai.com/v1/chat/completions';
+  if (!apiKey) return null;
 
   try {
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    const res = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${openaiKey}`,
+        Authorization: `Bearer ${apiKey}`,
+        ...(openrouterKey ? { 'HTTP-Referer': 'https://kyra.conversionsystem.com', 'X-Title': 'Kyra Auto-Train' } : {}),
       },
       body: JSON.stringify({
         model: 'gpt-4o-mini',

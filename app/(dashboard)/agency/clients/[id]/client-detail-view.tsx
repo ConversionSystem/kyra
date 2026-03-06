@@ -53,7 +53,6 @@ import HealthScoreBadge from '@/components/dashboard/health-score-badge';
 import AISuggestionsCard from '@/components/dashboard/ai-suggestions-card';
 import ClientStatusBanner from '@/components/dashboard/client-status-banner';
 import ClientActivityHeatmap from '@/components/dashboard/client-activity-heatmap';
-import { VoiceChannelCard } from '@/components/dashboard/voice-channel-card';
 import { VoiceClient } from '@/app/(dashboard)/agency/voice/voice-client';
 import RoiSummaryCard from '@/components/dashboard/roi-summary-card';
 import { MemoryBrowser } from './memory-browser';
@@ -289,12 +288,12 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
               <Badge className={statusColors[initialClient.status]}>
                 {initialClient.status}
               </Badge>
-              <span className="text-sm text-gray-400">
-                {initialClient.industry || 'No industry'}
-              </span>
+              {initialClient.industry && initialClient.industry !== 'General' && (
+                <span className="text-sm text-gray-400">{initialClient.industry}</span>
+              )}
               {initialClient.template && (
-                <span className="text-sm text-gray-400 hidden sm:inline">
-                  · {initialClient.template.name}
+                <span className="text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full hidden sm:inline">
+                  {initialClient.template.name}
                 </span>
               )}
             </div>
@@ -396,7 +395,7 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
             <ConversationsTab client={initialClient} />
           )}
           {activeTab === 'channels' && (
-            <ChannelsTab client={initialClient} />
+            <ChannelsTab client={initialClient} onTabChange={handleTabChange} />
           )}
           {activeTab === 'portal' && (
             <PortalTab client={initialClient} />
@@ -1890,7 +1889,7 @@ function ZapierChannelCard({
 // ── Channels Tab ──────────────────────────────────────────────────────────────
 // Shows all available channels: web chat embed, email outreach, WhatsApp, voice.
 
-function ChannelsTab({ client }: { client: AgencyClient }) {
+function ChannelsTab({ client, onTabChange }: { client: AgencyClient; onTabChange?: (tab: Tab) => void }) {
   const [copied, setCopied] = useState<string | null>(null);
   const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://kyra.conversionsystem.com';
   const scriptTag = `<script src="${appUrl}/api/widget/${client.id}/script" defer></script>`;
@@ -2098,8 +2097,28 @@ Authorization: Bearer YOUR_KYRA_API_SECRET
         </CardContent>
       </Card>
 
-      {/* ── Voice AI — VAPI / Synthflow / Retell ─────────────────────── */}
-      <VoiceChannelCard client={client} />
+      {/* ── Voice AI — managed in dedicated tab ──────────────────────── */}
+      <Card className="rounded-2xl border border-gray-200 shadow-sm">
+        <CardContent className="pt-6">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shrink-0">
+                <Phone className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 text-sm">Voice AI</h3>
+                <p className="text-xs text-gray-500 mt-0.5">Inbound & outbound phone calls powered by Kyra Native</p>
+              </div>
+            </div>
+            <button
+              onClick={() => onTabChange?.('voice')}
+              className="shrink-0 text-xs font-medium text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors"
+            >
+              Configure →
+            </button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
