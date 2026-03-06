@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
 
   if (!speechResult.trim()) {
     // No speech detected — prompt again
-    const gatherUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/voice/twilio/gather?clientId=${clientId}`;
+    const gatherUrl = `${process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, '')}/api/voice/twilio/gather?clientId=${clientId}`;
     return twiml(`
       <Gather input="speech" timeout="4" speechTimeout="auto" action="${gatherUrl}" method="POST" language="en-US">
         <Say voice="Polly.Joanna-Neural">Sorry, I didn't catch that. Could you repeat?</Say>
@@ -166,7 +166,7 @@ ${cfg.booking_url ? `Booking: ${cfg.booking_url}` : ''}`.trim();
     return twiml(`<Say voice="Polly.Joanna-Neural">${safeResponse}</Say><Hangup/>`);
   }
 
-  const gatherUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/voice/twilio/gather?clientId=${clientId}`;
+  const gatherUrl = `${process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, '')}/api/voice/twilio/gather?clientId=${clientId}`;
 
   // Respond and listen for next turn
   return twiml(`

@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
   const aiName = (voiceCfg.aiName as string) ?? 'Alex';
   const businessName = client?.name ?? 'us';
 
-  const gatherUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/voice/twilio/gather?clientId=${clientId}`;
+  const gatherUrl = `${process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, '')}/api/voice/twilio/gather?clientId=${clientId}`;
 
   return twiml(`
     <Gather input="speech" timeout="4" speechTimeout="auto" action="${gatherUrl}" method="POST" language="en-US">
