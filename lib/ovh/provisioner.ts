@@ -829,14 +829,27 @@ export async function resolveClientGateway(
 ): Promise<{ url: string; token: string } | null> {
   const supabase = getSupabase();
 
+  // Try agency_clients first (normal per-client lookup)
   const { data: client } = await supabase
     .from('agency_clients')
     .select('gateway_url, gateway_token, gateway_status')
     .eq('id', clientId)
     .single();
 
-  if (!client?.gateway_url || !client?.gateway_token) return null;
-  if (!['running', 'starting'].includes(client.gateway_status || '')) return null;
+  if (client?.gateway_url && client?.gateway_token) {
+    if (!['running', 'starting'].includes(client.gateway_status || '')) return null;
+    return { url: client.gateway_url, token: client.gateway_token };
+  }
 
-  return { url: client.gateway_url, token: client.gateway_token };
+  // Fallback: try agencies table (for agency-level voice / solo users)
+  const { data: agency } = await supabase
+    .from('agencies')
+    .select('gateway_url, gateway_token, gateway_status')
+    .eq('id', clientId)
+    .single();
+
+  if (!agency?.gateway_url || !agency?.gateway_token) return null;
+  if (!['running', 'starting'].includes(agency.gateway_status || '')) return null;
+
+  return { url: agency.gateway_url, token: agency.gateway_token };
 }
