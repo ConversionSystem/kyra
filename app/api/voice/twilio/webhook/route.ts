@@ -13,6 +13,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 
+// Shared voice map — must match gather/route.ts
+const POLLY_VOICE_MAP: Record<string, string> = {
+  default: 'Polly.Matthew-Neural',
+  alex:    'Polly.Matthew-Neural',
+  sarah:   'Polly.Joanna-Neural',
+  james:   'Polly.Brian-Neural',
+  emma:    'Polly.Emma-Neural',
+  liam:    'Polly.Russell-Neural',
+  sofia:   'Polly.Lupe-Neural',
+};
+function getPollyVoice(voiceId?: string): string {
+  return POLLY_VOICE_MAP[voiceId?.toLowerCase() ?? 'default'] ?? 'Polly.Matthew-Neural';
+}
+
 export const dynamic = 'force-dynamic';
 
 function twiml(xml: string) {
@@ -28,25 +42,41 @@ export async function POST(req: NextRequest) {
 
   // Load client config to get AI name
   const supabase = createServiceClientWithoutCookies();
-  const { data: client } = await supabase
+  const { data: clientRow } = await supabase
     .from('agency_clients')
     .select('name, container_config')
     .eq('id', clientId)
     .single();
 
-  const cfg = (client?.container_config as Record<string, unknown>) ?? {};
+  // Fallback to agencies table for agency-level voice
+  let cfg: Record<string, unknown> = (clientRow?.container_config as Record<string, unknown>) ?? {};
+  let clientName = clientRow?.name;
+  if (!clientRow) {
+    const { data: agencyRow } = await supabase
+      .from('agencies')
+      .select('name, settings')
+      .eq('id', clientId)
+      .single();
+    if (agencyRow) {
+      clientName = agencyRow.name;
+      cfg = (agencyRow.settings as Record<string, unknown>) ?? {};
+    }
+  }
+
   const voiceCfg = (cfg.voice_config as Record<string, unknown>) ?? {};
   const aiName = (voiceCfg.aiName as string) ?? 'Alex';
-  const businessName = client?.name ?? 'us';
+  const businessName = clientName ?? 'us';
+  const pollyVoice = getPollyVoice(voiceCfg.voiceId as string | undefined);
+  const language = (voiceCfg.language as string) ?? 'en-US';
 
   const gatherUrl = `${process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, '')}/api/voice/twilio/gather?clientId=${clientId}`;
 
   // Greet + start gathering speech
   return twiml(`
-    <Gather input="speech" timeout="4" speechTimeout="auto" action="${gatherUrl}" method="POST" language="en-US">
-      <Say voice="Polly.Joanna-Neural">Hi, thanks for calling ${businessName}! This is ${aiName}, your AI assistant. How can I help you today?</Say>
+    <Gather input="speech" timeout="4" speechTimeout="auto" action="${gatherUrl}" method="POST" language="${language}">
+      <Say voice="${pollyVoice}">Hi, thanks for calling ${businessName}! This is ${aiName}, your AI assistant. How can I help you today?</Say>
     </Gather>
-    <Say voice="Polly.Joanna-Neural">I didn't catch that. Please call back if you need assistance. Goodbye!</Say>
+    <Say voice="${pollyVoice}">I didn't catch that. Please call back if you need assistance. Goodbye!</Say>
     <Hangup/>
   `);
 }
