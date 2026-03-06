@@ -134,7 +134,7 @@ export default function PipelineABTests() {
     <div className="space-y-6">
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
         <div>
           <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
             <FlaskConical className="h-5 w-5 text-violet-500" />
@@ -166,7 +166,7 @@ export default function PipelineABTests() {
 
       {/* Quick Stats */}
       {tests.length > 0 && (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div className="bg-white border border-gray-200 rounded-xl p-4 text-center">
             <div className="text-2xl font-bold text-violet-600">{tests.length}</div>
             <div className="text-xs text-gray-500 mt-0.5">Total Tests</div>
@@ -315,7 +315,7 @@ function ABTestCard({
     }`}>
       {/* Header */}
       <button onClick={onToggle} className="w-full text-left p-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
           <div className="flex items-center gap-3 min-w-0">
             <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${
               isActive ? 'bg-violet-100' : hasWinner ? 'bg-green-100' : 'bg-gray-100'
@@ -373,7 +373,7 @@ function ABTestCard({
       {expanded && (
         <div className="border-t border-gray-100 p-4 space-y-4">
           {/* Variant Comparison */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <VariantPanel
               label={test.variant_a.label}
               variant={test.variant_a}
@@ -550,7 +550,7 @@ function VariantPanel({
       </div>
 
       {/* Stats grid */}
-      <div className="grid grid-cols-3 gap-2 text-center">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-center">
         <div>
           <div className="text-sm font-semibold text-gray-900">{stats.assigned}</div>
           <div className="text-[9px] text-gray-400">Assigned</div>
@@ -740,7 +740,7 @@ function CreateTestModal({
           )}
 
           {/* Test Name + Campaign */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-medium text-gray-600 mb-1 block">Test name *</label>
               <input
@@ -765,7 +765,7 @@ function CreateTestModal({
           </div>
 
           {/* Settings */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <div>
               <label className="text-xs font-medium text-gray-600 mb-1 block">Test type</label>
               <select

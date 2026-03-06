@@ -64,7 +64,7 @@ function InlineEditor({
   };
 
   return (
-    <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
+    <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end overflow-x-hidden">
       <div>
         <label className="text-xs text-gray-500 mb-1 block">Monthly Budget (conversations)</label>
         <Input
@@ -175,14 +175,14 @@ export function BudgetClient({ clients: initialClients }: BudgetClientProps) {
       {/* Table */}
       {initialClients.length === 0 ? (
         <Card>
-          <CardContent className="p-8 text-center">
+          <CardContent className="p-4 sm:p-6 lg:p-8 text-center">
             <p className="text-gray-400">No clients yet.</p>
           </CardContent>
         </Card>
       ) : (
         <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="min-w-full w-full text-sm">
               <thead>
                 <tr className="text-gray-500 text-left border-b border-gray-200">
                   <th className="p-4 font-medium">Client</th>

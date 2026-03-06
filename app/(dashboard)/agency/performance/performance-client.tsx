@@ -262,7 +262,7 @@ export function PerformanceClient({ clients, agencyId, agencySettings }: Perform
       </div>
 
       {/* Top stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {topStats.map((stat) => (
           <Card key={stat.label}>
             <CardContent className="p-4 flex items-center gap-3">
@@ -348,7 +348,7 @@ export function PerformanceClient({ clients, agencyId, agencySettings }: Perform
       {clients.length > 0 && (
         <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden mb-8">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="min-w-full w-full text-sm">
               <thead>
                 <tr className="text-gray-500 text-left border-b border-gray-200">
                   <th className="p-4 font-medium">Client</th>
@@ -483,7 +483,7 @@ export function PerformanceClient({ clients, agencyId, agencySettings }: Perform
             </div>
 
             {/* Report summary */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 sm:grid-cols-4 gap-4">
               {topStats.map((stat) => (
                 <div key={stat.label} className="text-center">
                   <p className="text-2xl font-bold text-gray-900">{stat.value}</p>

@@ -31,8 +31,8 @@ export function CrmAnalytics() {
       .catch(() => { setError(true); setLoading(false); });
   }, []);
 
-  if (loading) return <div className="p-8 text-center text-gray-400 animate-pulse">Loading analytics...</div>;
-  if (error || !data) return <div className="p-8 text-center text-gray-500">Failed to load analytics.</div>;
+  if (loading) return <div className="p-4 sm:p-6 lg:p-8 text-center text-gray-400 animate-pulse">Loading analytics...</div>;
+  if (error || !data) return <div className="p-4 sm:p-6 lg:p-8 text-center text-gray-500">Failed to load analytics.</div>;
 
   const stages = ['lead', 'contact', 'customer', 'churned'];
   const stageColors: Record<string, string> = { lead: '#6366f1', contact: '#8b5cf6', customer: '#22c55e', churned: '#9ca3af' };
@@ -45,7 +45,7 @@ export function CrmAnalytics() {
   return (
     <div className="max-w-6xl mx-auto p-4 sm:p-6 md:p-8 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <BarChart3 className="h-6 w-6 text-indigo-600" /> CRM Analytics
@@ -69,7 +69,7 @@ export function CrmAnalytics() {
       </div>
 
       {/* KPI Row */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
         <KpiCard icon={<Users className="h-5 w-5 text-indigo-600" />} label="Total Contacts" value={data.contacts.total} />
         <KpiCard icon={<DollarSign className="h-5 w-5 text-green-600" />} label="Pipeline Value" value={`$${(data.deals.totalValue / 1000).toFixed(1)}K`} />
         <KpiCard icon={<TrendingUp className="h-5 w-5 text-purple-600" />} label="Forecast Revenue" value={`$${((data.forecast?.expected_revenue || 0) / 1000).toFixed(1)}K`} />
@@ -77,7 +77,7 @@ export function CrmAnalytics() {
       </div>
 
       {/* Conversion Funnel */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6">
+      <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
         <h2 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
           <Target className="h-4 w-4 text-indigo-500" /> Conversion Funnel
         </h2>
@@ -86,7 +86,7 @@ export function CrmAnalytics() {
           values={stages.filter(s => s !== 'churned').map(s => data.contacts.byStage[s] || 0)}
           colors={stages.filter(s => s !== 'churned').map(s => stageColors[s])}
         />
-        <div className="grid grid-cols-3 gap-4 mt-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
           <div className="text-center">
             <p className="text-2xl font-bold text-gray-900">{((data.conversions?.lead_to_contact || 0) * 100).toFixed(1)}%</p>
             <p className="text-xs text-gray-500">Lead → Contact</p>
@@ -104,7 +104,7 @@ export function CrmAnalytics() {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-6">
         {/* Deal Pipeline */}
-        <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
           <h2 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
             <DollarSign className="h-4 w-4 text-green-500" /> Deal Pipeline
           </h2>
@@ -135,7 +135,7 @@ export function CrmAnalytics() {
         </div>
 
         {/* Source Breakdown */}
-        <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
           <h2 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
             <Zap className="h-4 w-4 text-amber-500" /> Contact Sources
           </h2>
@@ -143,7 +143,7 @@ export function CrmAnalytics() {
         </div>
 
         {/* Activity Trends */}
-        <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
           <h2 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
             <Clock className="h-4 w-4 text-blue-500" /> Activity (Last 14 Days)
           </h2>
@@ -159,7 +159,7 @@ export function CrmAnalytics() {
         </div>
 
         {/* Top Contacts */}
-        <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
           <h2 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
             <Flame className="h-4 w-4 text-red-500" /> Top Contacts by Score
           </h2>

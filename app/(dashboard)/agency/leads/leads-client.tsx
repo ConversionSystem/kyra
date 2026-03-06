@@ -503,7 +503,7 @@ export function LeadsPipelineClient({ initialPipelineState }: Props) {
         </div>
 
         {/* 🚀 Buttons */}
-        <div className="flex flex-col items-end gap-2">
+        <div className="flex flex-col items-end gap-2 overflow-x-hidden">
           {/* Channel 4: Outbound Campaign */}
           <Button
             onClick={() => launchOutreachCampaign(LEADS.filter(l => l.email && !['replied','interested','booked','closed'].includes(outreachState[l.id]?.status ?? '')))}
@@ -612,7 +612,7 @@ export function LeadsPipelineClient({ initialPipelineState }: Props) {
       <OutreachWebhookSetup compact />
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 sm:grid-cols-4 gap-4">
         {[
           { icon: Flame,     label: 'Hot leads',     value: hotLeads,    color: 'text-red-500' },
           { icon: Zap,       label: 'In progress',   value: inProgress,  color: 'text-indigo-500' },

@@ -190,7 +190,7 @@ export function ContactsList() {
   return (
     <div className="p-4 sm:p-6 md:p-8 space-y-0">
       {/* ═══ HEADER ═══ */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-1">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-1 overflow-x-hidden">
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold text-gray-900">Contacts</h1>
           <span className="text-sm font-medium text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full">
@@ -251,7 +251,7 @@ export function ContactsList() {
           </div>
 
           {/* Filter bar */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mb-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mb-4 overflow-x-hidden">
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)}
                 className={`text-xs ${showFilters ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : ''}`}>
@@ -376,7 +376,7 @@ export function ContactsList() {
           ) : (
             <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="min-w-full w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-100 bg-gray-50/60">
                       <th className="w-10 pl-4 pr-1 py-3">
@@ -411,7 +411,7 @@ export function ContactsList() {
 
           {/* Pagination */}
           {totalPages > 0 && (
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 overflow-x-hidden">
               <div className="text-sm text-gray-500">
                 Page {page} of {totalPages}
               </div>
@@ -471,7 +471,7 @@ export function ContactsList() {
             </div>
           ) : (
             <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-              <table className="w-full text-sm">
+              <table className="min-w-full w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50/60">
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
@@ -702,7 +702,7 @@ function AddContactModal({ onClose, onCreated }: { onClose: () => void; onCreate
           <Plus className="h-5 w-5 text-indigo-600" /> Add Contact
         </h3>
         <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <input className="border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
               placeholder="First name" value={form.first_name} onChange={e => setForm(f => ({ ...f, first_name: e.target.value }))} />
             <input className="border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
@@ -769,7 +769,7 @@ function AddCompanyModal({ onClose, onCreated }: { onClose: () => void; onCreate
             placeholder="Website" value={form.website} onChange={e => setForm(f => ({ ...f, website: e.target.value }))} />
           <input className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
             placeholder="Industry" value={form.industry} onChange={e => setForm(f => ({ ...f, industry: e.target.value }))} />
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <input className="border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
               placeholder="City" value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} />
             <input className="border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"

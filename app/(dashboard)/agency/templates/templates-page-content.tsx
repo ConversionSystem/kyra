@@ -232,7 +232,7 @@ export function TemplatesPageContent({ templates }: TemplatesPageContentProps) {
             </h2>
             {builtIn.length === 0 ? (
               <Card>
-                <CardContent className="p-8 text-center">
+                <CardContent className="p-4 sm:p-6 lg:p-8 text-center">
                   <FileText className="h-8 w-8 text-gray-500 mx-auto mb-3" />
                   <p className="text-gray-400">No built-in templates available yet.</p>
                 </CardContent>
@@ -323,7 +323,7 @@ export function TemplatesPageContent({ templates }: TemplatesPageContentProps) {
             </h2>
             {custom.length === 0 ? (
               <Card>
-                <CardContent className="p-8 text-center">
+                <CardContent className="p-4 sm:p-6 lg:p-8 text-center">
                   <div className="rounded-full bg-gray-100 h-12 w-12 flex items-center justify-center mx-auto mb-4">
                     <Plus className="h-5 w-5 text-gray-400" />
                   </div>

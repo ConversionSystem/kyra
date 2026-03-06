@@ -159,7 +159,7 @@ export function BillingPageClient({ agency, clientCount, totalConversationsThisM
       {/* Checkout status banner — upgrade celebration */}
       {checkoutStatus === 'success' && (
         <div className="rounded-xl overflow-hidden border border-indigo-200">
-          <div className="bg-gradient-to-br from-indigo-600 to-blue-700 text-white p-6">
+          <div className="bg-gradient-to-br from-indigo-600 to-blue-700 text-white p-4 sm:p-6">
             <div className="flex items-start gap-4 mb-4">
               <div className="text-4xl">🎉</div>
               <div>
@@ -344,7 +344,7 @@ export function BillingPageClient({ agency, clientCount, totalConversationsThisM
                   <p className="text-xs text-gray-500">{plan.description}</p>
                 </CardHeader>
 
-                <CardContent className="flex flex-col flex-1">
+                <CardContent className="flex flex-col flex-1 overflow-x-hidden">
                   <ul className="space-y-1.5 mb-5 flex-1">
                     {plan.features.map((f) => (
                       <li key={f} className="flex items-start gap-2 text-xs text-gray-700">

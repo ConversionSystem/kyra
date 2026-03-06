@@ -75,7 +75,7 @@ export function TagsManager() {
 
   if (loading) {
     return (
-      <div className="p-8 flex items-center justify-center min-h-[400px]">
+      <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center min-h-[400px]">
         <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
       </div>
     );
@@ -84,7 +84,7 @@ export function TagsManager() {
   return (
     <div className="p-4 sm:p-6 md:p-8 max-w-3xl space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <Tag className="h-6 w-6 text-indigo-600" /> Tags

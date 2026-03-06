@@ -87,13 +87,13 @@ export function IntelligenceDashboard() {
   };
 
   if (loading) {
-    return <div className="p-8 text-center text-gray-400 animate-pulse">Loading intelligence...</div>;
+    return <div className="p-4 sm:p-6 lg:p-8 text-center text-gray-400 animate-pulse">Loading intelligence...</div>;
   }
 
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <Brain className="h-6 w-6 text-indigo-600" /> AI Intelligence
@@ -114,12 +114,12 @@ export function IntelligenceDashboard() {
 
       {/* Autopilot Digest */}
       {digest && (
-        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl p-6">
+        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl p-4 sm:p-6">
           <h2 className="text-sm font-bold text-gray-900 flex items-center gap-2 mb-3">
             <Bot className="h-4 w-4 text-indigo-600" /> DEAL AUTOPILOT DIGEST
           </h2>
           <p className="text-sm text-gray-700 mb-3">{digest.summary}</p>
-          <div className="grid grid-cols-3 gap-3 mb-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-3">
             <div className="text-center p-2 bg-white/60 rounded-xl">
               <p className="text-xl font-bold text-gray-900">{digest.deals_worked}</p>
               <p className="text-[10px] text-gray-500">Deals Analyzed</p>
@@ -160,12 +160,12 @@ export function IntelligenceDashboard() {
 
       {/* Revenue Forecast */}
       {forecasts.length > 0 && (
-        <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
           <h2 className="text-sm font-bold text-gray-900 flex items-center gap-2 mb-4">
             <TrendingUp className="h-4 w-4 text-green-500" /> AI REVENUE FORECAST
           </h2>
 
-          <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <div className="p-4 bg-gray-50 rounded-xl text-center">
               <p className="text-xs text-gray-500 mb-1">Stage-Based Pipeline</p>
               <p className="text-2xl font-bold text-gray-900">${weightedPipeline.stage.toLocaleString()}</p>
@@ -223,7 +223,7 @@ export function IntelligenceDashboard() {
 
       {/* Cross-Contact Intelligence */}
       {companies.length > 0 && (
-        <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
           <h2 className="text-sm font-bold text-gray-900 flex items-center gap-2 mb-4">
             <Building2 className="h-4 w-4 text-purple-500" /> CROSS-CONTACT INTELLIGENCE
             <span className="bg-purple-100 text-purple-700 text-xs font-bold px-2 py-0.5 rounded-full">
@@ -259,7 +259,7 @@ export function IntelligenceDashboard() {
                 {expandedCompany === co.company_id && (
                   <div className="px-4 pb-4 border-t border-gray-100">
                     {/* Contacts */}
-                    <div className="grid grid-cols-2 gap-2 mt-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
                       {co.contacts.map(c => (
                         <div key={c.id}
                           onClick={() => router.push(`/agency/crm/contacts/${c.id}`)}

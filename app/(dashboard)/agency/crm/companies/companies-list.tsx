@@ -40,7 +40,7 @@ export function CompaniesList() {
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <Building2 className="h-6 w-6 text-indigo-600" /> Companies
@@ -79,7 +79,7 @@ export function CompaniesList() {
           <p className="text-sm text-gray-400 mt-1">Companies are auto-created when you add contacts with a company name.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {companies.map(co => (
             <div key={co.id}
               className="bg-white border border-gray-200 rounded-xl p-4 hover:border-indigo-200 hover:shadow-sm transition cursor-pointer"
@@ -123,7 +123,7 @@ export function CompaniesList() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
           <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
             <ChevronLeft className="h-4 w-4 mr-1" /> Previous
           </Button>
@@ -179,7 +179,7 @@ function AddCompanyModal({ onClose, onCreated }: { onClose: () => void; onCreate
             placeholder="Website" value={form.website} onChange={e => setForm(f => ({ ...f, website: e.target.value }))} />
           <input className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
             placeholder="Industry" value={form.industry} onChange={e => setForm(f => ({ ...f, industry: e.target.value }))} />
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <input className="border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
               placeholder="City" value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} />
             <input className="border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"

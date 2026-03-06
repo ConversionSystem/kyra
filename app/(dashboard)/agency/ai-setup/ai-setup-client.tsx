@@ -281,7 +281,7 @@ export function AISetupClient({ agencyId, businessName }: Props) {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
+      <div className="flex flex-col sm:flex-row gap-3 mb-6 overflow-x-hidden">
         {/* Category pills */}
         <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
           {([
@@ -325,7 +325,7 @@ export function AISetupClient({ agencyId, businessName }: Props) {
 
       {/* ── Premium Templates tab — full-page embed ── */}
       {category === 'premium' && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50/40 p-6">
+        <div className="rounded-xl border border-amber-200 bg-amber-50/40 p-4 sm:p-6">
           <div className="flex items-start gap-4 mb-6">
             <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
               <Star className="h-5 w-5 text-amber-600" />
