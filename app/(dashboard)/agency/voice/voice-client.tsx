@@ -80,6 +80,19 @@ interface Props {
 
 const PROVIDERS = [
   {
+    id: 'openclaw',
+    name: 'Kyra Native',
+    logo: '🦞',
+    description: 'Built on Deepgram + OpenClaw TTS. No third-party account needed. Billed through Kyra credits.',
+    pricing: '~3 credits/min (vs $0.15+ elsewhere)',
+    bestFor: 'Agencies who want one bill. Simplest setup.',
+    signupUrl: '',
+    docsUrl: '',
+    color: 'border-indigo-200 bg-indigo-50/50 hover:border-indigo-300',
+    badge: '🔥 Best Value',
+    badgeColor: 'bg-indigo-100 text-indigo-700',
+  },
+  {
     id: 'vapi',
     name: 'VAPI',
     logo: '🔊',
@@ -89,7 +102,7 @@ const PROVIDERS = [
     signupUrl: 'https://dashboard.vapi.ai',
     docsUrl: 'https://docs.vapi.ai',
     color: 'border-blue-200 bg-blue-50/50 hover:border-blue-300',
-    badge: 'Recommended',
+    badge: 'Most Popular',
     badgeColor: 'bg-blue-100 text-blue-700',
   },
   {
