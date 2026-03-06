@@ -1,29 +1,48 @@
 /**
- * Kyra Native voice provider — Deepgram STT + OpenClaw TTS
- * No external API key required. Billed through Kyra credits (~3/min).
- *
- * Unlike VAPI/Synthflow/Retell, there's no third-party "assistant ID" to create.
- * The OpenClaw gateway handles call routing natively. This client stores config
- * in container_config and returns a synthetic assistantId.
+ * Kyra Native voice provider — Deepgram STT + OpenClaw TTS + Twilio phone numbers
+ * No separate API key required — billed through Kyra credits (~3/min).
  */
 import type {
   VoiceProviderClient, VoiceAssistantConfig, VoiceProviderConfig,
   OutboundCallRequest, CallRecord, PhoneNumber,
 } from './types';
+import { hasTwilioCredentials, searchAvailableNumbers, purchasePhoneNumber, makeOutboundCall } from './twilio-phone';
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://kyra.conversionsystem.com';
 
 export class KyraNativeClient implements VoiceProviderClient {
-  // No external service — config stored locally in Supabase / container_config
   constructor() {}
 
-  async syncAssistant(clientId: string, config: VoiceAssistantConfig): Promise<{ assistantId: string }> {
-    // Kyra Native stores assistant config locally — no external API call needed
+  async syncAssistant(clientId: string, _config: VoiceAssistantConfig): Promise<{ assistantId: string }> {
+    // No external assistant to sync — config stored in Supabase/container_config
     return { assistantId: `kyra_${clientId}` };
   }
 
-  async provisionPhoneNumber(_assistantId: string, _areaCode?: string): Promise<PhoneNumber> {
-    // Phone number provisioning via Deepgram SIP — not yet implemented.
-    // Return a placeholder so the flow completes; real number set up separately.
-    return { id: 'pending', number: 'pending', provider: 'openclaw' };
+  async provisionPhoneNumber(assistantId: string, areaCode?: string): Promise<PhoneNumber> {
+    // assistantId format: 'kyra_{clientId}'
+    const clientId = assistantId.replace('kyra_', '');
+
+    if (!hasTwilioCredentials()) {
+      // Graceful fallback if Twilio not configured
+      console.warn('[KyraNative] Twilio credentials missing — phone number not provisioned');
+      return { id: 'pending', number: 'pending', provider: 'openclaw' };
+    }
+
+    const webhookUrl = `${APP_URL}/api/voice/twilio/webhook?clientId=${clientId}`;
+
+    // Search for an available number
+    const available = await searchAvailableNumbers(areaCode);
+    if (!available) {
+      throw new Error('No phone numbers available for this area code. Try a different area code.');
+    }
+
+    // Purchase it
+    const purchased = await purchasePhoneNumber(available, webhookUrl);
+    return {
+      id: purchased.sid,
+      number: purchased.phoneNumber,
+      provider: 'openclaw',
+    };
   }
 
   async listPhoneNumbers(): Promise<PhoneNumber[]> {
@@ -31,18 +50,32 @@ export class KyraNativeClient implements VoiceProviderClient {
   }
 
   async startOutboundCall(
-    _req: OutboundCallRequest,
-    _config: VoiceProviderConfig,
+    req: OutboundCallRequest,
+    config: VoiceProviderConfig,
     _assistantConfig: VoiceAssistantConfig
   ): Promise<{ callId: string }> {
-    throw new Error('Kyra Native outbound calls not yet implemented');
+    if (!hasTwilioCredentials()) throw new Error('Twilio credentials not configured');
+    if (!config.phoneNumber || config.phoneNumber === 'pending') {
+      throw new Error('No phone number provisioned yet');
+    }
+
+    const clientId = config.phoneNumberId?.replace('kyra_', '') ?? '';
+    const twimlUrl = `${APP_URL}/api/voice/twilio/outbound-twiml?clientId=${clientId}`;
+
+    const { callSid } = await makeOutboundCall({
+      to: req.toNumber,
+      from: config.phoneNumber,
+      twimlUrl,
+    });
+    return { callId: callSid };
   }
 
   parseWebhook(_body: unknown, _headers: Record<string, string>): CallRecord | null {
+    // Kyra Native webhooks handled by /api/voice/twilio/webhook
     return null;
   }
 
   async deleteAssistant(_assistantId: string): Promise<void> {
-    // No-op — nothing to delete externally
+    // No-op
   }
 }
