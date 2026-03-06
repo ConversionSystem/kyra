@@ -8,8 +8,24 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
-import { resolveClientGateway } from '@/lib/ovh/provisioner';
 import { deductCredits, requireCredits } from '@/lib/billing/credit-engine';
+
+// Cache client config per clientId — avoids repeated Supabase queries mid-call
+// TTL 5 min — fast enough to pick up config changes without DB hit every turn
+const clientConfigCache = new Map<string, { ts: number; data: ClientVoiceConfig }>();
+const CONFIG_TTL_MS = 5 * 60 * 1000;
+
+interface ClientVoiceConfig {
+  name: string;
+  agency_id: string;
+  persona: string;
+  voiceCfg: Record<string, unknown>;
+  llmKey: string;
+  llmUrl: string;
+  llmModel: string;
+}
+
+const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -79,97 +95,102 @@ export async function POST(req: NextRequest) {
     `);
   }
 
-  // Load client — try agency_clients first, then agencies (for agency-level / solo voice)
+  // Load client config — use cache to avoid Supabase query on every turn
   const supabase = createServiceClientWithoutCookies();
-  let client: { id: string; name: string; container_config: unknown; agency_id: string } | null = null;
+  let vcfg = clientConfigCache.get(clientId);
 
-  const { data: clientRow } = await supabase
-    .from('agency_clients')
-    .select('id, name, container_config, agency_id')
-    .eq('id', clientId)
-    .single();
+  if (!vcfg || Date.now() - vcfg.ts > CONFIG_TTL_MS) {
+    // Cache miss — fetch from DB
+    let name = '', agency_id = '', persona = '';
+    let voiceCfg: Record<string, unknown> = {};
+    let cfg: Record<string, unknown> = {};
 
-  if (clientRow) {
-    client = clientRow;
-  } else {
-    // Fallback: agency-level voice (solo user or agency's own AI)
-    const { data: agencyRow } = await supabase
-      .from('agencies')
-      .select('id, name, settings')
-      .eq('id', clientId)
-      .single();
-    if (agencyRow) {
-      client = {
-        id: agencyRow.id,
-        name: agencyRow.name,
-        container_config: (agencyRow.settings as Record<string, unknown>)?.voice_config
-          ? { voice_config: (agencyRow.settings as Record<string, unknown>).voice_config }
-          : {},
-        agency_id: agencyRow.id,
-      };
+    const { data: clientRow } = await supabase
+      .from('agency_clients')
+      .select('id, name, container_config, agency_id')
+      .eq('id', clientId).single();
+
+    if (clientRow) {
+      cfg = (clientRow.container_config as Record<string, unknown>) ?? {};
+      voiceCfg = (cfg.voice_config as Record<string, unknown>) ?? {};
+      name = clientRow.name;
+      agency_id = clientRow.agency_id;
+      // Get agency API keys
+      const { data: agRow } = await supabase
+        .from('agencies').select('api_keys').eq('id', agency_id).single();
+      const agKeys = (agRow?.api_keys as Record<string, string>) ?? {};
+      const llmKey = process.env.OPENROUTER_API_KEY || agKeys.openrouter || agKeys.openai || '';
+      const llmUrl = (process.env.OPENROUTER_API_KEY || agKeys.openrouter) ? OPENROUTER_URL : 'https://api.openai.com/v1/chat/completions';
+      const llmModel = llmUrl.includes('openrouter') ? 'openai/gpt-4o-mini' : 'gpt-4o-mini';
+      persona = (cfg.persona as string) ?? '';
+      vcfg = { ts: Date.now(), data: { name, agency_id, persona, voiceCfg, llmKey, llmUrl, llmModel } };
+      clientConfigCache.set(clientId, vcfg);
+    } else {
+      // Fallback: agency-level voice
+      const { data: agencyRow } = await supabase
+        .from('agencies').select('id, name, settings, api_keys').eq('id', clientId).single();
+      if (!agencyRow) return twiml('<Say>Sorry, service not found.</Say><Hangup/>');
+      const agKeys = (agencyRow.api_keys as Record<string, string>) ?? {};
+      const s = (agencyRow.settings as Record<string, unknown>) ?? {};
+      voiceCfg = (s.voice_config as Record<string, unknown>) ?? {};
+      const llmKey = process.env.OPENROUTER_API_KEY || agKeys.openrouter || agKeys.openai || '';
+      const llmUrl = (process.env.OPENROUTER_API_KEY || agKeys.openrouter) ? OPENROUTER_URL : 'https://api.openai.com/v1/chat/completions';
+      const llmModel = llmUrl.includes('openrouter') ? 'openai/gpt-4o-mini' : 'gpt-4o-mini';
+      vcfg = { ts: Date.now(), data: { name: agencyRow.name, agency_id: agencyRow.id, persona: '', voiceCfg, llmKey, llmUrl, llmModel } };
+      clientConfigCache.set(clientId, vcfg);
     }
   }
 
-  if (!client) return twiml('<Say>Sorry, service not found.</Say><Hangup/>');
-
-  const cfg = (client.container_config as Record<string, unknown>) ?? {};
-  const voiceCfg = (cfg.voice_config as Record<string, unknown>) ?? {};
+  const { name: clientName, agency_id, voiceCfg, persona, llmKey, llmUrl, llmModel } = vcfg.data;
   const pollyVoice = getPollyVoice(voiceCfg.voiceId as string | undefined);
   const aiName = (voiceCfg.aiName as string) ?? 'Alex';
-  const persona = (cfg.persona as string) ?? `You are ${aiName}, an AI assistant for ${client.name}.`;
   const language = (voiceCfg.language as string) ?? 'en-US';
 
-  // Build system prompt for voice context
-  const systemPrompt = `${persona}
+  const systemPrompt = `${persona || `You are ${aiName}, an AI assistant for ${clientName}.`}
 
 IMPORTANT VOICE RULES:
-- You are on a PHONE CALL. Keep responses short — max 2 sentences.
-- No bullet points, no markdown, no lists. Speak naturally.
-- If you need to share a URL or number, say it digit by digit or spell it out.
-- End naturally; don't say "Is there anything else?" every turn — only ask once.
-- Caller's phone: ${callerNumber}
-- Business: ${client.name}
-
-${cfg.services ? `Services: ${cfg.services}` : ''}
-${cfg.hours ? `Hours: ${cfg.hours}` : ''}
-${cfg.booking_url ? `Booking: ${cfg.booking_url}` : ''}`.trim();
+- You are on a PHONE CALL. Keep responses SHORT — 1-2 sentences max.
+- No bullet points, no markdown. Speak naturally and conversationally.
+- Caller's phone: ${callerNumber}`.trim();
 
   // Retrieve or initialize call history
   const history = callHistory.get(callSid) ?? [];
   history.push({ role: 'user', content: speechResult });
 
   // Credit check
-  const creditCheck = await requireCredits(client.agency_id, 'channel.voice_call');
+  const creditCheck = await requireCredits(agency_id, 'channel.voice_call');
   if (!creditCheck.allowed) {
     return twiml(`<Say voice="${pollyVoice}">I'm sorry, service is temporarily unavailable. Please call back later. Goodbye!</Say><Hangup/>`);
   }
 
-  // Call AI via OpenClaw gateway
+  // Call LLM directly — skip VPS gateway hop for lower latency
   let aiResponse = '';
   try {
-    const gateway = await resolveClientGateway(clientId);
-    if (!gateway) throw new Error('Gateway unavailable');
-
-    const aiRes = await fetch(`${gateway.url}/v1/chat/completions`, {
+    if (!llmKey) throw new Error('No LLM key configured');
+    const aiRes = await fetch(llmUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${gateway.token}`,
+        Authorization: `Bearer ${llmKey}`,
+        ...(llmUrl.includes('openrouter') ? { 'HTTP-Referer': 'https://kyra.conversionsystem.com', 'X-Title': 'Kyra Voice' } : {}),
       },
       body: JSON.stringify({
-        model: 'openai/gpt-4o-mini',
+        model: llmModel,
         messages: [
           { role: 'system', content: systemPrompt },
-          ...history.slice(-8), // last 8 turns for context
+          ...history.slice(-6),
         ],
-        temperature: 0.7,
-        max_tokens: 120,
+        temperature: 0.6,
+        max_tokens: 80,  // shorter = faster TTS + lower latency
       }),
+      signal: AbortSignal.timeout(8000),
     });
 
     if (aiRes.ok) {
       const data = await aiRes.json();
-      aiResponse = data.choices?.[0]?.message?.content ?? '';
+      aiResponse = data.choices?.[0]?.message?.content?.trim() ?? '';
+    } else {
+      console.error('[voice/gather] LLM error:', aiRes.status, await aiRes.text().catch(() => ''));
     }
   } catch (err) {
     console.error('[voice/twilio/gather] AI error:', err);
@@ -184,12 +205,12 @@ ${cfg.booking_url ? `Booking: ${cfg.booking_url}` : ''}`.trim();
   callHistory.set(callSid, history.slice(-20)); // keep last 20 turns in memory
 
   // Deduct credits
-  void deductCredits(client.agency_id, 'channel.voice_call');
+  void deductCredits(agency_id, 'channel.voice_call');
 
   // Log conversation to Supabase (store both client_id and agency_id for flexible querying)
   supabase.from('voice_call_logs').upsert({
     client_id: clientId,
-    agency_id: client.agency_id,
+    agency_id: agency_id,
     call_sid: callSid,
     caller_number: callerNumber,
     turns: history.length / 2,
@@ -207,11 +228,12 @@ ${cfg.booking_url ? `Booking: ${cfg.booking_url}` : ''}`.trim();
   }
 
   const gatherUrl = `${process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, '')}/api/voice/twilio/gather?clientId=${clientId}`;
+  const lang = language.includes('-') ? language : `${language}-US`;
 
   // Respond and listen for next turn
   return twiml(`
     <Say voice="${pollyVoice}">${safeResponse}</Say>
-    <Gather input="speech" timeout="4" speechTimeout="auto" action="${gatherUrl}" method="POST" language="${language}">
+    <Gather input="speech" timeout="4" speechTimeout="auto" action="${gatherUrl}" method="POST" language="${lang}">
     </Gather>
     <Hangup/>
   `);
