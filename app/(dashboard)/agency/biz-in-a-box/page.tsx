@@ -170,7 +170,7 @@ export default function BizInABoxPage() {
       </div>
 
       {/* Quick links */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
         {[
           { label: 'Send a Demo', href: '/demo/dental', icon: Zap, color: 'text-indigo-600' },
           { label: 'Build Proposal', href: '/agency/proposal', icon: FileText, color: 'text-indigo-600' },

@@ -232,7 +232,7 @@ export function SegmentsClient() {
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Filters</p>
               <div className="space-y-2">
                 {newFilters.map((filter, idx) => (
-                  <div key={idx} className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                  <div key={idx} className="flex flex-col sm:flex-row items-start sm:items-center gap-2 overflow-x-hidden">
                     <select
                       value={filter.field}
                       onChange={e => {

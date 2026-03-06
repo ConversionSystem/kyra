@@ -474,7 +474,7 @@ function WidgetBuilder({
           )}
 
           {/* Powered by */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
             <div>
               <label className="block text-sm font-medium text-gray-700">&quot;Powered by Kyra&quot; badge</label>
               <p className="text-xs text-gray-500">Free marketing — recommended for free tier</p>
@@ -694,7 +694,7 @@ function WidgetAnalytics({
   if (loading) {
     return (
       <div className="animate-pulse space-y-6">
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map(i => <div key={i} className="h-24 bg-gray-200 rounded-xl" />)}
         </div>
         <div className="h-64 bg-gray-200 rounded-xl" />
@@ -705,7 +705,7 @@ function WidgetAnalytics({
 
   if (error || !analytics) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-center">
+      <div className="flex flex-col items-center justify-center py-20 text-center overflow-x-hidden">
         <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mb-4">
           <BarChart3 className="h-7 w-7 text-red-400" />
         </div>
@@ -744,7 +744,7 @@ function WidgetAnalytics({
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         <KpiCard
           icon={<MessageCircle className="h-5 w-5 text-blue-500" />}
           label="Conversations"

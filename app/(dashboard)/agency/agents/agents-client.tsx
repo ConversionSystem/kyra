@@ -132,7 +132,7 @@ export function AgentsClient() {
       <SectionNav currentHref="/agency/agents" />
     <div className="p-4 sm:p-6 md:p-8 space-y-6 max-w-3xl">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <Bot className="w-6 h-6" /> AI Teams
@@ -220,7 +220,7 @@ export function AgentsClient() {
             )}>
               <CardContent className="py-4 space-y-0">
                 {/* Main row */}
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     <span className="text-2xl">{agent.emoji}</span>
                     <div className="min-w-0">

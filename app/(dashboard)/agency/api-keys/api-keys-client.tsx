@@ -254,7 +254,7 @@ export function ApiKeysClient({ agencyId: _agencyId }: ApiKeysClientProps) {
 
   if (isLoading) {
     return (
-      <div className="p-8 flex items-center justify-center">
+      <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
       </div>
     );
@@ -381,7 +381,7 @@ export function ApiKeysClient({ agencyId: _agencyId }: ApiKeysClientProps) {
               }`}
             >
               <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
                   <div className="flex items-center gap-3">
                     <span className="text-xl">{provider.icon}</span>
                     <div>

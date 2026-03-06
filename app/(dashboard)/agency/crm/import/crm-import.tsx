@@ -219,12 +219,12 @@ export function CrmImport() {
 
       {/* Results */}
       {result && (
-        <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
           <div className="flex items-center gap-2 mb-4">
             <CheckCircle2 className="h-5 w-5 text-green-500" />
             <h3 className="font-bold text-gray-900">Import Complete</h3>
           </div>
-          <div className="grid grid-cols-3 gap-4 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
             <div className="text-center p-3 bg-green-50 rounded-xl">
               <p className="text-2xl font-bold text-green-700">{result.imported}</p>
               <p className="text-xs text-green-600">Imported</p>

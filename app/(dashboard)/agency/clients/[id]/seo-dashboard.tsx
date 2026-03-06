@@ -293,7 +293,7 @@ export function SEODashboard({ clientId, clientName }: SEODashboardProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
         <div>
           <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
             <Search className="w-5 h-5 text-indigo-600" />
@@ -325,7 +325,7 @@ export function SEODashboard({ clientId, clientName }: SEODashboardProps) {
       {/* Run Now Panel */}
       <Card className="border-gray-200">
         <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 overflow-x-hidden">
             <div>
               <p className="text-sm font-semibold text-gray-900">Run tasks now</p>
               <p className="text-xs text-gray-500 mt-0.5">
@@ -367,7 +367,7 @@ export function SEODashboard({ clientId, clientName }: SEODashboardProps) {
       </Card>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         {/* GEO Score */}
         <Card>
           <CardContent className="p-4">
@@ -444,7 +444,7 @@ export function SEODashboard({ clientId, clientName }: SEODashboardProps) {
       {/* GEO Scores */}
       <Card>
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
             <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
               <Search className="w-4 h-4 text-indigo-600" />
               GEO Visibility Tests
@@ -461,7 +461,7 @@ export function SEODashboard({ clientId, clientName }: SEODashboardProps) {
             </p>
           ) : (
             <div className="max-h-64 overflow-y-auto rounded-md border border-gray-100">
-              <table className="w-full text-sm">
+              <table className="min-w-full w-full text-sm">
                 <thead className="bg-gray-50 text-gray-500 text-xs">
                   <tr>
                     <th className="text-left px-4 py-2 font-medium">Query</th>
@@ -581,7 +581,7 @@ export function SEODashboard({ clientId, clientName }: SEODashboardProps) {
         </CardHeader>
         <CardContent className="pt-0">
           <p className="text-xs text-gray-500 mb-3">Content will be published to these platforms automatically. Direct API publishing (no browser automation).</p>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {[
               { name: 'WordPress.com', type: 'Web 2.0', icon: '📝', note: 'REST API' },
               { name: 'Blogger', type: 'Web 2.0', icon: '📰', note: 'Google Blogger API v3' },

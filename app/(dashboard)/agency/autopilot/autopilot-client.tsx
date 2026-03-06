@@ -155,7 +155,7 @@ export function AutopilotClient() {
             <Switch checked={enabled} onCheckedChange={toggleAutopilot} />
           </div>
           {enabled && (
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               <div className="bg-gray-50 rounded-lg p-3 text-center">
                 <p className="text-2xl font-bold text-gray-900">{stats.enabledCount}</p>
                 <p className="text-gray-500 text-xs">Active Actions</p>
@@ -222,7 +222,7 @@ export function AutopilotClient() {
               return (
                 <Card key={act.id} className={cn('transition-all', !act.enabled && 'opacity-60')}>
                   <CardContent className="py-4">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
                       <div className="flex items-center gap-3 flex-1 min-w-0">
                         <span className="text-2xl">{act.emoji}</span>
                         <div className="min-w-0">
