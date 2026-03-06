@@ -110,7 +110,7 @@ export function ReviewsClient({ agencyId, clientId, businessName, reviewConfig, 
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
         {[
           { label: 'Requests Sent', value: stats?.totalSent ?? 0, icon: Send, bg: 'bg-blue-50', color: 'text-blue-600' },
           { label: 'Response Rate', value: `${stats?.responseRate ?? 0}%`, icon: MessageSquare, bg: 'bg-emerald-50', color: 'text-emerald-600' },
@@ -139,7 +139,7 @@ export function ReviewsClient({ agencyId, clientId, businessName, reviewConfig, 
           <CardTitle className="text-lg">How It Works</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-center">
             {[
               { emoji: '💬', title: 'AI Asks', desc: '"How was your experience?" after service' },
               { emoji: '⭐', title: 'Customer Rates', desc: 'Replies with 1-5 or a comment' },
@@ -215,7 +215,7 @@ export function ReviewsClient({ agencyId, clientId, businessName, reviewConfig, 
           <CardDescription>Preview what your customers will receive</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="text-sm text-gray-600 mb-1 block">Customer Name</label>
               <Input

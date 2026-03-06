@@ -80,7 +80,7 @@ export function CrmCommandFeed() {
 
   if (loading) {
     return (
-      <div className="p-8 flex items-center justify-center min-h-[400px]">
+      <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center min-h-[400px]">
         <div className="animate-pulse text-gray-400 flex items-center gap-2">
           <Inbox className="h-5 w-5" /> Loading CRM...
         </div>
@@ -93,7 +93,7 @@ export function CrmCommandFeed() {
   return (
     <div className="p-4 sm:p-6 md:p-8 max-w-7xl space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <Inbox className="h-6 w-6 text-indigo-600" /> CRM
@@ -211,7 +211,7 @@ export function CrmCommandFeed() {
         </h2>
         <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
           {(feed?.recent_activities || []).length === 0 ? (
-            <div className="p-6 text-center text-sm text-gray-400">
+            <div className="p-4 sm:p-6 text-center text-sm text-gray-400">
               No activity yet. Create your first contact or run a pipeline campaign.
             </div>
           ) : (
@@ -241,7 +241,7 @@ export function CrmCommandFeed() {
       </div>
 
       {/* Quick Actions */}
-      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 overflow-x-hidden">
         <Button
           onClick={() => router.push('/agency/crm/contacts')}
           variant="outline"

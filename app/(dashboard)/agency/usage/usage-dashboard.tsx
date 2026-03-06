@@ -90,7 +90,7 @@ export function UsageDashboard() {
 
       {/* KPI Cards */}
       {totals && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           <KpiCard icon={Bot} label="Total Workers" value={totals.total_clients} color="bg-indigo-50 text-indigo-600 border-indigo-200" />
           <KpiCard icon={CheckCircle2} label="Active" value={totals.active_clients} color="bg-green-50 text-green-600 border-green-200" />
           <KpiCard icon={MessageSquare} label="Today" value={totals.conversations_today} color="bg-blue-50 text-blue-600 border-blue-200" />
@@ -142,7 +142,7 @@ export function UsageDashboard() {
       ) : (
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="min-w-full w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50/60">
                   <SortTh label="AI Worker" sortKey="name" current={sort} asc={sortAsc} onClick={handleSort} />

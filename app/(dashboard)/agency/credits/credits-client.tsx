@@ -340,7 +340,7 @@ export function CreditsClient({
       )}
 
       {/* Balance card */}
-      <div className="rounded-xl border border-indigo-200 bg-gradient-to-br from-indigo-50 via-white to-purple-50 p-6">
+      <div className="rounded-xl border border-indigo-200 bg-gradient-to-br from-indigo-50 via-white to-purple-50 p-4 sm:p-6">
         <div className="flex flex-wrap items-center gap-6">
           <div className="flex items-center gap-4">
             <div className="h-16 w-16 rounded-xl bg-indigo-600 flex items-center justify-center shrink-0">

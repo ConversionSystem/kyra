@@ -253,7 +253,7 @@ export default function RevenueCalculator({ realClientCount }: { realClientCount
             <Zap className="h-4 w-4 text-amber-500" />
             Real agency pricing in the wild
           </h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             {[
               { industry: 'Cannabis Dispensary', price: '$1,500–$3,000', tag: '🌿 Our specialty' },
               { industry: 'Medical / Dental', price: '$800–$2,500', tag: '💊 High demand' },

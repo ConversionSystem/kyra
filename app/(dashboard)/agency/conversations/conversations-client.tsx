@@ -175,10 +175,10 @@ export default function ConversationsClient({ clients }: { clients: Client[] }) 
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full overflow-x-hidden">
       {/* Stats */}
       {stats && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
           <div className="p-3 bg-white rounded-xl border border-gray-200">
             <p className="text-2xl font-bold text-gray-900">{stats.today}</p>
             <p className="text-xs text-gray-500">Today</p>
@@ -263,7 +263,7 @@ export default function ConversationsClient({ clients }: { clients: Client[] }) 
         {/* List */}
         <div className={`flex-1 space-y-1 overflow-y-auto ${selectedConv ? 'hidden sm:block sm:max-w-md' : ''}`}>
           {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="flex flex-col items-center justify-center py-16 text-center overflow-x-hidden">
               <MessageSquare className="h-10 w-10 text-gray-300 mb-3" />
               <p className="text-gray-500 text-sm">
                 {conversations.length === 0
@@ -297,7 +297,7 @@ export default function ConversationsClient({ clients }: { clients: Client[] }) 
                       <p className="text-xs text-gray-500 truncate">{conv.clientName}</p>
                     </div>
                   </div>
-                  <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                  <div className="flex flex-col items-end gap-1 flex-shrink-0 overflow-x-hidden">
                     <span className="text-xs text-gray-400">{formatTime(conv.lastMessageAt)}</span>
                     <span className="inline-flex items-center gap-1 text-xs text-gray-400">
                       {getChannelIcon(conv.channel)}
@@ -320,7 +320,7 @@ export default function ConversationsClient({ clients }: { clients: Client[] }) 
           <div className="flex-1 bg-white rounded-xl border border-gray-200 flex flex-col min-h-[400px]">
             {/* Detail Header */}
             <div className="p-4 border-b border-gray-100">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center">
                     <User className="h-5 w-5 text-indigo-600" />

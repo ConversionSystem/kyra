@@ -454,7 +454,7 @@ export default function PipelineClient() {
             {/* ═══ LEAD SOURCE SELECTOR ═══ */}
             <div>
               <label className="text-xs font-medium text-gray-600 mb-2 block">Where to find leads</label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                 {([
                   { key: 'google_maps', icon: Map, label: 'Google Maps', desc: 'Real businesses, verified data', badge: 'Recommended', badgeColor: 'bg-green-100 text-green-700' },
                   { key: 'ai_discovery', icon: Cpu, label: 'AI Discovery', desc: 'AI-generated, may need verification', badge: 'Free', badgeColor: 'bg-blue-100 text-blue-700' },
@@ -481,7 +481,7 @@ export default function PipelineClient() {
             {/* Google Maps & AI Discovery fields */}
             {form.lead_source !== 'csv_upload' && (
               <>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs font-medium text-gray-600 mb-1 block">Industry *</label>
                     <input className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="e.g. Cannabis Dispensaries" value={form.target_industry} onChange={e => setForm(f => ({ ...f, target_industry: e.target.value }))} />
@@ -491,7 +491,7 @@ export default function PipelineClient() {
                     <input className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="e.g. Los Angeles, CA" value={form.target_location} onChange={e => setForm(f => ({ ...f, target_location: e.target.value }))} />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs font-medium text-gray-600 mb-1 block">Target role</label>
                     <input className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="e.g. Owner, CEO" value={form.target_role} onChange={e => setForm(f => ({ ...f, target_role: e.target.value }))} />
@@ -547,7 +547,7 @@ export default function PipelineClient() {
                 <span className="text-[9px] font-bold bg-amber-200 text-amber-800 px-1.5 py-0.5 rounded">NEW</span>
               </div>
               <p className="text-xs text-amber-700 mb-3">80% of sales require 5+ follow-ups. Leads who don&apos;t reply get automated, personalized follow-ups.</p>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 <div>
                   <label className="text-[10px] font-bold text-amber-700 mb-1 block">Follow-ups</label>
                   <select className="w-full border border-amber-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none bg-white" value={form.follow_up_count} onChange={e => setForm(f => ({ ...f, follow_up_count: Number(e.target.value) }))}>
@@ -864,7 +864,7 @@ export default function PipelineClient() {
 
                   {/* Research insights */}
                   {ed.company_context && (
-                    <div className="px-4 py-3 bg-gray-50 border-b border-gray-100 grid grid-cols-2 gap-2">
+                    <div className="px-4 py-3 bg-gray-50 border-b border-gray-100 grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <div><p className="text-[10px] font-bold text-purple-500">ABOUT</p><p className="text-xs text-gray-700">{ed.company_context}</p></div>
                       {ed.likely_pain_points && <div><p className="text-[10px] font-bold text-red-500">PAIN POINTS</p><p className="text-xs text-gray-700">{ed.likely_pain_points}</p></div>}
                     </div>

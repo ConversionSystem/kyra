@@ -200,7 +200,7 @@ export default function IntegrationsPage() {
         <div className="bg-white border-2 border-indigo-200 rounded-xl overflow-hidden shadow-sm mb-4">
           {/* GHL Header */}
           <div className="p-5 bg-gradient-to-r from-indigo-50 to-white">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm border text-2xl">📊</div>
                 <div>
@@ -337,7 +337,7 @@ export default function IntegrationsPage() {
                 <p><strong>3.</strong> Click <strong>&quot;Create Private Integration&quot;</strong></p>
                 <p><strong>4.</strong> Name it <strong>&quot;Kyra AI Pipeline&quot;</strong></p>
                 <p><strong>5.</strong> In <strong>Scopes</strong>, enable these permissions:</p>
-                <div className="bg-white/70 rounded-lg p-2 mt-1 grid grid-cols-2 gap-1">
+                <div className="bg-white/70 rounded-lg p-2 mt-1 grid grid-cols-1 sm:grid-cols-2 gap-1">
                   {[
                     'contacts.write', 'contacts.readonly',
                     'conversations.write', 'conversations.readonly',

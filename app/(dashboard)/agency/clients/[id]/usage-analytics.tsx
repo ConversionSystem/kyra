@@ -476,7 +476,7 @@ export function UsageAnalytics({ clientId, creditLimit = 1000 }: UsageAnalyticsP
   return (
     <div className="space-y-6 mb-6">
       {/* ── Stats Cards ─────────────────────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard
           icon={<MessageSquare className="h-4 w-4" />}
           label="Messages"

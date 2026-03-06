@@ -224,7 +224,7 @@ export function NAPAuditPanel({ entries }: { entries: NapEntry[] }) {
         {matches.length > 0 && (
           <div>
             <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wide mb-2 mt-3">✓ Consistent</p>
-            <div className="grid grid-cols-2 gap-1.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
               {matches.map((entry, i) => {
                 const links = DIRECTORY_LINKS[entry.directory];
                 return (
@@ -250,7 +250,7 @@ export function NAPAuditPanel({ entries }: { entries: NapEntry[] }) {
           <div>
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 mt-3">Not Listed (opportunity)</p>
             <p className="text-xs text-gray-400 mb-2">Getting listed on these directories will improve your local SEO and AI citations.</p>
-            <div className="grid grid-cols-2 gap-1.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
               {missing.map((entry, i) => {
                 const links = DIRECTORY_LINKS[entry.directory];
                 const isBlocked = entry.status === 'blocked' || entry.issues.some(i => i.includes('blocked'));

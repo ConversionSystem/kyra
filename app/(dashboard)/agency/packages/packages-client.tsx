@@ -133,7 +133,7 @@ export function PackagesClient({ businessName }: Props) {
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Card>
             <CardHeader className="pb-2"><CardTitle className="text-sm text-gray-500">AI Agents</CardTitle></CardHeader>
             <CardContent className="space-y-1.5">
@@ -161,7 +161,7 @@ export function PackagesClient({ businessName }: Props) {
                   {s.step}
                 </div>
                 <div className="flex-1">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between overflow-x-hidden">
                     <p className="text-gray-900 font-medium">{s.title}</p>
                     <Badge variant="outline" className="text-xs text-gray-500">{s.estimated}</Badge>
                   </div>

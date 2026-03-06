@@ -441,7 +441,7 @@ export default async function AgencyOverviewPage() {
       {/* Sales Lead Widget removed — was hardcoded dummy data */}
 
       {/* ── Stats Bar ── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-4">
         {/* AI Workers */}
         <Card>
           <CardContent className="p-5">
@@ -586,7 +586,7 @@ export default async function AgencyOverviewPage() {
           {/* Fleet Table */}
           <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="min-w-full w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50/50">
                     <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">AI Worker</th>
@@ -872,7 +872,7 @@ export default async function AgencyOverviewPage() {
         return (
           <div className="rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-white overflow-hidden">
             {/* Header */}
-            <div className="p-6 border-b border-indigo-100 flex items-center gap-3">
+            <div className="p-4 sm:p-6 border-b border-indigo-100 flex items-center gap-3">
               <div className="rounded-xl bg-indigo-600 p-2.5">
                 <Rocket className="h-5 w-5 text-white" />
               </div>

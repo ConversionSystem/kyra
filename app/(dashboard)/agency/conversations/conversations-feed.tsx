@@ -232,7 +232,7 @@ CREATE POLICY "Service insert" ON client_conversations FOR INSERT WITH CHECK (tr
       </div>
 
       {conversations.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
+        <div className="flex flex-col items-center justify-center py-20 gap-3 text-center overflow-x-hidden">
           <Inbox className="h-12 w-12 text-gray-200" />
           <p className="font-medium text-gray-500">No conversations yet</p>
           <p className="text-sm text-gray-400 max-w-sm">
@@ -296,7 +296,7 @@ CREATE POLICY "Service insert" ON client_conversations FOR INSERT WITH CHECK (tr
                     </div>
 
                     {/* Meta */}
-                    <div className="flex flex-col items-end gap-1.5 shrink-0">
+                    <div className="flex flex-col items-end gap-1.5 shrink-0 overflow-x-hidden">
                       <span className="text-[10px] text-gray-400 flex items-center gap-1">
                         <Clock className="h-3 w-3" />
                         {timeAgo(conv.created_at)}
