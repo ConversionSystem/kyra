@@ -189,7 +189,8 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
       setError('No client configured yet. Please set up your AI worker first.');
       return;
     }
-    if (!apiKey.trim()) {
+    // Kyra Native doesn't need an external API key
+    if (selectedProvider !== 'openclaw' && !apiKey.trim()) {
       setError('Please enter your API key.');
       return;
     }
@@ -362,36 +363,65 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
             Set Up {provider.name}
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            Connect your {provider.name} account to give your AI worker a phone line.
+            {provider.id === 'openclaw'
+              ? 'Customize your AI voice worker. No external accounts or API keys needed.'
+              : `Connect your ${provider.name} account to give your AI worker a phone line.`}
           </p>
         </div>
 
-        {/* Step 1: API Key */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold">1</span>
-              Connect Your Account
-            </CardTitle>
-            <CardDescription>
-              Get your API key from{' '}
-              <a href={provider.signupUrl} target="_blank" rel="noopener" className="text-blue-600 hover:underline">
-                {provider.name} Dashboard <ExternalLink className="w-3 h-3 inline" />
-              </a>
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div>
-              <label className="text-sm text-gray-600 mb-1 block">API Key</label>
-              <Input
-                type="password"
-                placeholder={`Paste your ${provider.name} API key...`}
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-              />
-            </div>
-          </CardContent>
-        </Card>
+        {/* Step 1: API Key (skipped for Kyra Native) */}
+        {provider.id === 'openclaw' ? (
+          <Card className="border-indigo-200 bg-indigo-50/40">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-xs flex items-center justify-center font-bold">✓</span>
+                No External Account Needed
+              </CardTitle>
+              <CardDescription>
+                Kyra Native is built directly into your platform. Voice is handled by Deepgram + OpenClaw TTS — billed through your Kyra credits (~3 credits/min). No third-party signup required.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-3">
+                <div className="flex items-center gap-1.5 text-xs font-medium text-indigo-700 bg-indigo-100 rounded-lg px-3 py-1.5">
+                  🎙️ Deepgram STT — best-in-class accuracy
+                </div>
+                <div className="flex items-center gap-1.5 text-xs font-medium text-indigo-700 bg-indigo-100 rounded-lg px-3 py-1.5">
+                  🔊 OpenClaw TTS — natural voices
+                </div>
+                <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-100 rounded-lg px-3 py-1.5">
+                  💳 ~3 credits/min (vs $0.15+ elsewhere)
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold">1</span>
+                Connect Your Account
+              </CardTitle>
+              <CardDescription>
+                Get your API key from{' '}
+                <a href={provider.signupUrl} target="_blank" rel="noopener" className="text-blue-600 hover:underline">
+                  {provider.name} Dashboard <ExternalLink className="w-3 h-3 inline" />
+                </a>
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div>
+                <label className="text-sm text-gray-600 mb-1 block">API Key</label>
+                <Input
+                  type="password"
+                  placeholder={`Paste your ${provider.name} API key...`}
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Step 2: AI Name & Voice */}
         <Card>
@@ -461,31 +491,45 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
           </CardContent>
         </Card>
 
-        {/* Step 3: Webhook URL */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold">3</span>
-              Set Up Webhook
-            </CardTitle>
-            <CardDescription>
-              Add this URL in your {provider.name} dashboard under webhook/callback settings
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              <code className="flex-1 bg-gray-50 border border-gray-200 rounded-md px-3 py-2 text-sm text-blue-700 font-mono overflow-x-auto">
-                {webhookUrl}
-              </code>
-              <Button variant="outline" size="sm" onClick={copyWebhook} className="shrink-0">
-                {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
-              </Button>
-            </div>
-            <p className="text-xs text-gray-400 mt-2">
-              This is where {provider.name} sends call events. Kyra logs every call to your CRM automatically.
-            </p>
-          </CardContent>
-        </Card>
+        {/* Step 3: Webhook URL (Kyra Native handles this automatically) */}
+        {provider.id === 'openclaw' ? (
+          <Card className="border-emerald-200 bg-emerald-50/40">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 text-xs flex items-center justify-center font-bold">✓</span>
+                Webhooks Handled Automatically
+              </CardTitle>
+              <CardDescription>
+                Because Kyra Native is built into your platform, call events are captured automatically — no webhook setup needed. Every call is transcribed and logged to your CRM in real time.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold">3</span>
+                Set Up Webhook
+              </CardTitle>
+              <CardDescription>
+                Add this URL in your {provider.name} dashboard under webhook/callback settings
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 bg-gray-50 border border-gray-200 rounded-md px-3 py-2 text-sm text-blue-700 font-mono overflow-x-auto">
+                  {webhookUrl}
+                </code>
+                <Button variant="outline" size="sm" onClick={copyWebhook} className="shrink-0">
+                  {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                </Button>
+              </div>
+              <p className="text-xs text-gray-400 mt-2">
+                This is where {provider.name} sends call events. Kyra logs every call to your CRM automatically.
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm flex items-center gap-2">
@@ -495,7 +539,7 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
 
         <Button
           onClick={handleSetup}
-          disabled={saving || !apiKey.trim()}
+          disabled={saving || (selectedProvider !== 'openclaw' && !apiKey.trim())}
           className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 text-lg"
         >
           {saving ? (
