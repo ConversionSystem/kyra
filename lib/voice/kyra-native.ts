@@ -8,7 +8,7 @@ import type {
 } from './types';
 import { hasTwilioCredentials, searchAvailableNumbers, purchasePhoneNumber, makeOutboundCall } from './twilio-phone';
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://kyra.conversionsystem.com';
+const APP_URL = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://kyra.conversionsystem.com').replace(/\/+$/, '');
 
 export class KyraNativeClient implements VoiceProviderClient {
   constructor() {}
