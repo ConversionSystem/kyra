@@ -560,6 +560,8 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
 
   // ── Render: Active Dashboard ────────────────────────────────────────────
 
+  const isKyraNative = config?.provider === 'openclaw';
+
   return (
     <div className="p-4 sm:p-6 md:p-8 space-y-6 max-w-4xl">
       <div className="flex items-center justify-between">
@@ -594,9 +596,13 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
               </div>
               <div>
                 <div className="text-xs text-gray-400">Phone Number</div>
-                <div className="text-gray-900 font-mono font-bold">
-                  {config?.phoneNumber || 'Provisioning...'}
-                </div>
+                {isKyraNative ? (
+                  <div className="text-amber-600 font-semibold text-sm">Coming Soon</div>
+                ) : (
+                  <div className="text-gray-900 font-mono font-bold">
+                    {config?.phoneNumber || 'Provisioning...'}
+                  </div>
+                )}
               </div>
             </div>
           </CardContent>
@@ -633,25 +639,44 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
         </Card>
       </div>
 
-      {/* Webhook URL */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm text-gray-500">Webhook URL</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-2">
-            <code className="flex-1 bg-gray-50 border border-gray-200 rounded-md px-3 py-2 text-sm text-blue-700 font-mono overflow-x-auto">
-              {webhookUrl}
-            </code>
-            <Button variant="outline" size="sm" onClick={copyWebhook} className="shrink-0">
-              {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Webhook URL — only for external providers, not Kyra Native */}
+      {!isKyraNative && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm text-gray-500">Webhook URL</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 bg-gray-50 border border-gray-200 rounded-md px-3 py-2 text-sm text-blue-700 font-mono overflow-x-auto">
+                {webhookUrl}
+              </code>
+              <Button variant="outline" size="sm" onClick={copyWebhook} className="shrink-0">
+                {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Test Call */}
-      <Card>
+      {/* Kyra Native status banner */}
+      {isKyraNative && (
+        <Card className="border-amber-200 bg-amber-50/60">
+          <CardContent className="pt-5 pb-5">
+            <div className="flex items-start gap-3">
+              <span className="text-xl">🚧</span>
+              <div>
+                <p className="font-semibold text-amber-900 text-sm">Phone number provisioning coming soon</p>
+                <p className="text-xs text-amber-700 mt-1 leading-relaxed">
+                  Kyra Native voice is configured and ready. Inbound call routing via a dedicated phone number is being built — it requires a Twilio or Deepgram SIP trunk integration. For now, your AI can respond to calls routed through your existing phone system via the webhook. We&apos;ll notify you when direct number provisioning is live.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Test Call — not available for Kyra Native yet */}
+      {!isKyraNative && <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <PhoneCall className="w-5 h-5 text-blue-600" />
@@ -681,7 +706,7 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
             </Button>
           </form>
         </CardContent>
-      </Card>
+      </Card>}
 
       {/* Call Logs */}
       <Card>
