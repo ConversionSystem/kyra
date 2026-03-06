@@ -202,14 +202,20 @@ async function extractKnowledge(
     });
 
     if (!res.ok) {
-      console.error('[auto-train] OpenAI error:', res.status);
+      const errBody = await res.text().catch(() => '');
+      console.error('[auto-train] LLM error:', res.status, errBody.slice(0, 300));
       return null;
     }
 
     const data = await res.json();
     const raw = data?.choices?.[0]?.message?.content || '';
     const clean = raw.replace(/```json?\s*/gi, '').replace(/```/g, '').trim();
-    return JSON.parse(clean);
+    try {
+      return JSON.parse(clean);
+    } catch (parseErr) {
+      console.error('[auto-train] JSON parse failed. Raw:', raw.slice(0, 200));
+      return null;
+    }
   } catch (err) {
     console.error('[auto-train] Extraction failed:', err);
     return null;
