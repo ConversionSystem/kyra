@@ -194,7 +194,7 @@ function CollapsibleSection({
     return (
       <div>
         <div className={cn(
-          'text-[9px] uppercase tracking-widest font-medium px-2.5 pt-3 pb-0.5',
+          'text-[10px] uppercase tracking-widest font-medium px-2.5 pt-4 pb-1',
           hasBranding ? 'text-white/40' : 'text-gray-500'
         )}>
           {label}
@@ -209,7 +209,7 @@ function CollapsibleSection({
       <button
         onClick={() => setOpen(!open)}
         className={cn(
-          'flex items-center justify-between w-full text-[9px] uppercase tracking-widest font-medium px-2.5 pt-3 pb-0.5 transition-colors',
+          'flex items-center justify-between w-full text-[10px] uppercase tracking-widest font-medium px-2.5 pt-4 pb-1 transition-colors',
           hasBranding ? 'text-white/40 hover:text-white/60' : 'text-gray-500 hover:text-gray-300'
         )}
       >
@@ -313,7 +313,7 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 min-w-0">
             {logoUrl ? (
-              <div className="h-7 w-7 rounded-lg bg-white/20 flex items-center justify-center overflow-hidden shrink-0">
+              <div className="h-8 w-8 rounded-lg bg-white/20 flex items-center justify-center overflow-hidden shrink-0">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={logoUrl}
@@ -325,7 +325,7 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
                 />
               </div>
             ) : null}
-            <h2 className={cn('text-sm font-semibold truncate', 'text-white')}>
+            <h2 className={cn('text-base font-semibold truncate', 'text-white')}>
               {companyName}
             </h2>
           </div>
@@ -390,7 +390,7 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
                     href={item.href}
                     onClick={() => setMobileOpen(false)}
                     className={cn(
-                      'flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs transition-colors',
+                      'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors',
                       isActive
                         ? hasBranding
                           ? 'bg-white/20 text-white font-medium'
@@ -400,7 +400,7 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
                           : 'text-gray-400 hover:bg-gray-800 hover:text-white'
                     )}
                   >
-                    <item.icon className="h-3.5 w-3.5 shrink-0" />
+                    <item.icon className="h-4 w-4 shrink-0" />
                     {item.label}
                     {item.href === '/agency/conversations' && escalationCount > 0 && (
                       <span className="ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 leading-none">
@@ -423,7 +423,7 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
               href="/master"
               onClick={() => setMobileOpen(false)}
               className={cn(
-                'flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs transition-colors',
+                'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors',
                 pathname.startsWith('/master')
                   ? 'bg-yellow-500/20 text-yellow-300 font-medium'
                   : hasBranding
@@ -431,7 +431,7 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
                     : 'text-gray-400 hover:bg-gray-800 hover:text-white'
               )}
             >
-              <Crown className="h-3.5 w-3.5 shrink-0 text-yellow-400" />
+              <Crown className="h-4 w-4 shrink-0 text-yellow-400" />
               Master Control
             </Link>
           </div>
@@ -443,9 +443,9 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
         <form action="/api/auth/signout" method="POST">
           <button
             type="submit"
-            className="flex items-center gap-2 w-full px-2.5 py-1.5 text-xs text-gray-500 hover:text-red-400 hover:bg-gray-800/50 rounded-lg transition"
+            className="flex items-center gap-2 w-full px-2.5 py-2 text-sm text-gray-500 hover:text-red-400 hover:bg-gray-800/50 rounded-lg transition"
           >
-            <LogOut className="h-3.5 w-3.5" />
+            <LogOut className="h-4 w-4" />
             Log Out
           </button>
         </form>
