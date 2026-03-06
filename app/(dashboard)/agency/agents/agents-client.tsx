@@ -135,10 +135,10 @@ export function AgentsClient() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Bot className="w-6 h-6" /> Smart Routing
+            <Bot className="w-6 h-6" /> AI Teams
           </h1>
           <p className="text-gray-500 mt-1">
-            Auto-route incoming messages to the right AI department based on intent. Enable the agents you need and test routing live.
+            Give your AI worker a full team. Each specialist handles what they&apos;re best at — booking, sales, support, follow-up — automatically.
           </p>
         </div>
         <Badge variant="outline" className="border-gray-200 text-gray-700 text-sm">
@@ -205,7 +205,7 @@ export function AgentsClient() {
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-start gap-2">
         <Info className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
         <p className="text-blue-700 text-sm">
-          Enable agents to specialize your AI worker. When Smart Routing is on, customer messages are analyzed and forwarded to the best agent automatically.
+          Enable agents to specialize your AI worker. When AI Teams is on, customer messages are analyzed and forwarded to the best agent automatically.
         </p>
       </div>
 
