@@ -832,7 +832,7 @@ export async function resolveClientGateway(
   // Try agency_clients first (normal per-client lookup)
   const { data: client } = await supabase
     .from('agency_clients')
-    .select('gateway_url, gateway_token, gateway_status')
+    .select('gateway_url, gateway_token, gateway_status, agency_id')
     .eq('id', clientId)
     .single();
 
@@ -841,11 +841,15 @@ export async function resolveClientGateway(
     return { url: client.gateway_url, token: client.gateway_token };
   }
 
-  // Fallback: try agencies table (for agency-level voice / solo users)
+  // Fallback: use the agency's own gateway.
+  // If we found a client record but it has no gateway, use client.agency_id.
+  // If clientId is itself an agencyId (agency-level voice), use it directly.
+  const agencyLookupId = (client as { agency_id?: string } | null)?.agency_id ?? clientId;
+
   const { data: agency } = await supabase
     .from('agencies')
     .select('gateway_url, gateway_token, gateway_status')
-    .eq('id', clientId)
+    .eq('id', agencyLookupId)
     .single();
 
   if (!agency?.gateway_url || !agency?.gateway_token) return null;

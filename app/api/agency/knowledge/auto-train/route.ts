@@ -151,15 +151,10 @@ interface ExtractedKnowledge {
 async function extractKnowledge(
   pagesText: string,
   clientName: string,
+  apiKey: string,
+  apiUrl: string,
 ): Promise<ExtractedKnowledge | null> {
-  // Use OpenRouter as primary (cheaper + same API), fall back to OpenAI direct key
-  const openrouterKey = process.env.OPENROUTER_API_KEY;
-  const openaiKey = process.env.OPENAI_API_KEY;
-  const apiKey = openrouterKey ?? openaiKey;
-  const apiUrl = openrouterKey
-    ? 'https://openrouter.ai/api/v1/chat/completions'
-    : 'https://api.openai.com/v1/chat/completions';
-  if (!apiKey) return null;
+  const isOpenRouter = apiUrl.includes('openrouter');
 
   try {
     const res = await fetch(apiUrl, {
@@ -167,7 +162,7 @@ async function extractKnowledge(
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
-        ...(openrouterKey ? { 'HTTP-Referer': 'https://kyra.conversionsystem.com', 'X-Title': 'Kyra Auto-Train' } : {}),
+        ...(isOpenRouter ? { 'HTTP-Referer': 'https://kyra.conversionsystem.com', 'X-Title': 'Kyra Auto-Train' } : {}),
       },
       body: JSON.stringify({
         model: 'gpt-4o-mini',
@@ -254,6 +249,28 @@ export async function POST(request: NextRequest) {
     .eq('agency_id', agency.id)
     .single();
 
+  // Resolve API key for AI extraction:
+  // 1. Platform OPENROUTER_API_KEY (Vercel env)
+  // 2. Platform OPENAI_API_KEY (Vercel env)
+  // 3. Agency's own stored OpenRouter key
+  // 4. Agency's own stored OpenAI key
+  const { data: agencyRow } = await supabase
+    .from('agencies')
+    .select('api_keys')
+    .eq('id', agency.id)
+    .single();
+  const agencyApiKeys = (agencyRow?.api_keys as Record<string, string>) ?? {};
+  const extractionKey =
+    process.env.OPENROUTER_API_KEY ||
+    process.env.OPENAI_API_KEY ||
+    agencyApiKeys.openrouter ||
+    agencyApiKeys.openai ||
+    null;
+  const extractionUrl =
+    (process.env.OPENROUTER_API_KEY || agencyApiKeys.openrouter)
+      ? 'https://openrouter.ai/api/v1/chat/completions'
+      : 'https://api.openai.com/v1/chat/completions';
+
   if (!client) {
     return NextResponse.json({ error: 'Client not found' }, { status: 404 });
   }
@@ -274,7 +291,14 @@ export async function POST(request: NextRequest) {
     .slice(0, 60_000); // Keep within token limits
 
   // Step 3: AI extraction
-  const knowledge = await extractKnowledge(combinedText, client.name);
+  if (!extractionKey) {
+    return NextResponse.json(
+      { error: 'AI extraction not available. Please add an API key in Settings → API Keys.' },
+      { status: 400 },
+    );
+  }
+
+  const knowledge = await extractKnowledge(combinedText, client.name, extractionKey, extractionUrl);
   if (!knowledge) {
     return NextResponse.json(
       { error: 'AI extraction failed. The website may be blocking scrapers.' },
