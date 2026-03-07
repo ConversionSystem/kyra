@@ -6,19 +6,19 @@ import { X, Sparkles, ArrowRight } from 'lucide-react';
 
 // Bump this version string whenever new features are added.
 // Users who dismissed an older version will see the banner again.
-const BANNER_VERSION = '2026-03-03-v1';
+const BANNER_VERSION = '2026-03-07-v1';
 const STORAGE_KEY = `kyra_whats_new_dismissed_${BANNER_VERSION}`;
 
 const LATEST_FEATURES = [
+  { emoji: '🎁', text: 'Referral Program — earn 100 credits for every friend you invite; friends get 100 credits too' },
+  { emoji: '📞', text: 'Voice AI — inbound & outbound calls now available. Answer leads by phone, book appointments, escalate to humans' },
+  { emoji: '⚡', text: 'Automation Triggers — automate your AI worker on real-world events (GHL webhook, new contact, deal stage change)' },
+  { emoji: '🧠', text: 'Customer Intelligence — AI-powered contact insights, relationship memory, and engagement scoring' },
+  { emoji: '💬', text: 'Conversations Inbox — all channels (SMS, Telegram, web chat, voice) unified in one real-time feed' },
+  { emoji: '🪟', text: 'Chat Widget — embed Kyra on any website; tracks source URL and session for full analytics' },
   { emoji: '🎯', text: 'Mission Control fleet view — see every AI worker\'s status, today\'s activity, and errors at a glance' },
-  { emoji: '🔗', text: 'Pipeline Builder — chain AI agents together: research → write → review → publish' },
   { emoji: '🛡️', text: 'Review Gates — approve AI responses before they send. Human-in-the-loop control' },
-  { emoji: '📊', text: 'Token Usage Dashboard — per-client cost tracking with margin visibility' },
-  { emoji: '🚨', text: 'Alert Rules — get notified when agents go offline, tokens spike, or conversations stale' },
-  { emoji: '✨', text: 'AI Suggest buttons — one-click AI recommendations on every page (agents, tasks, autopilot)' },
-  { emoji: '🎪', text: 'Saved Segments — filter contacts by stage, score, tags, and save for reuse' },
-  { emoji: '🚀', text: 'Interactive guided tour — 9-step walkthrough for new users' },
-  { emoji: '📈', text: 'Performance CSV export — download reports for clients' },
+  { emoji: '📈', text: 'Performance CSV export + per-client cost tracking with margin visibility' },
 ];
 
 export default function WhatsNewBanner() {

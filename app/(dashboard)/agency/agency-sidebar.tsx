@@ -143,6 +143,7 @@ const soloNavSections: NavSection[] = [
       { label: 'Contacts', href: '/agency/crm/contacts', icon: ContactIcon },
       { label: 'Deals', href: '/agency/crm/deals', icon: TargetIcon },
       { label: 'Tasks', href: '/agency/crm/tasks', icon: CheckSquare },
+      { label: 'Analytics', href: '/agency/crm/analytics', icon: CrmChartIcon },
     ],
   },
   {
@@ -151,7 +152,15 @@ const soloNavSections: NavSection[] = [
     items: [
       { label: 'AI Templates', href: '/agency/ai-setup', icon: Sparkles },
       { label: 'Channels', href: '/agency/channels', icon: Radio },
+      { label: 'Voice AI', href: '/agency/voice', icon: Phone },
       { label: 'Chat Widget', href: '/agency/widget', icon: MessageCircle },
+    ],
+  },
+  {
+    label: 'Automation',
+    collapsible: true,
+    items: [
+      { label: 'Proactive AI', href: '/agency/automations', icon: ZapIcon },
     ],
   },
   {
