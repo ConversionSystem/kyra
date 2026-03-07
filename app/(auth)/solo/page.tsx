@@ -52,9 +52,13 @@ function SoloSignupPageInner() {
   const supabase = createClient();
   const searchParams = useSearchParams();
 
-  // Referral tracking — populated when user arrives via /invite/[code] or /ref/[agencyId]
-  const referralId = searchParams.get('ref') || undefined;
-  const referralFrom = searchParams.get('from') || undefined;
+  // Referral tracking — URL params first, cookie fallback (survives tab closes + in-app browsers)
+  const referralId = searchParams.get('ref') || (typeof document !== 'undefined'
+    ? document.cookie.split('; ').find(r => r.startsWith('kyra_ref='))?.split('=')[1]
+    : undefined) || undefined;
+  const referralFrom = searchParams.get('from') || (typeof document !== 'undefined'
+    ? decodeURIComponent(document.cookie.split('; ').find(r => r.startsWith('kyra_ref_name='))?.split('=').slice(1).join('=') ?? '')
+    : undefined) || undefined;
 
   const [businessName, setBusinessName] = useState('');
   const [fullName, setFullName] = useState('');
@@ -119,10 +123,19 @@ function SoloSignupPageInner() {
 
         {/* Referral welcome banner */}
         {referralFrom && (
+          <div className="mb-4 rounded-xl bg-gradient-to-r from-indigo-500/20 to-violet-500/20 border border-indigo-500/40 px-4 py-4 flex items-start gap-3">
+            <span className="text-2xl shrink-0">🎁</span>
+            <div>
+              <p className="text-sm font-bold text-white">{referralFrom} gave you 100 free AI credits</p>
+              <p className="text-xs text-indigo-300 mt-0.5">Credits are added to your account the moment you sign up — no card required, no trial expiry.</p>
+            </div>
+          </div>
+        )}
+        {!referralFrom && referralId && (
           <div className="mb-4 rounded-xl bg-indigo-500/10 border border-indigo-500/30 px-4 py-3 flex items-center gap-3">
             <span className="text-xl">🎁</span>
             <div>
-              <p className="text-sm font-semibold text-indigo-300">{referralFrom} is giving you 100 free AI credits</p>
+              <p className="text-sm font-bold text-white">You were invited — 100 free AI credits waiting</p>
               <p className="text-xs text-slate-400">Sign up free — credits added instantly, no card required.</p>
             </div>
           </div>
