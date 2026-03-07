@@ -9,6 +9,30 @@ import PublicFooter from '@/components/layout/public-footer';
 
 const PLANS = [
   {
+    name: 'Solo Pro',
+    monthly: 49, annual: 39,
+    annualSave: 120,
+    period: '/month',
+    desc: 'Your personal AI worker. Handles leads, books appointments, answers calls 24/7.',
+    cta: 'Start Solo Pro',
+    href: '/solo?plan=solo_pro',
+    featured: false,
+    badge: 'FOR SOLO BUSINESSES',
+    features: [
+      '1 AI worker (no expiry)',
+      '200 platform credits / month',
+      'Voice AI (inbound & outbound calls)',
+      'SMS, Telegram & web chat',
+      'Full CRM — contacts, deals, pipeline',
+      'Proactive AI automations',
+      'GHL integration',
+      'Advanced analytics',
+      'Priority support',
+      'Referral program',
+    ],
+    limits: [],
+  },
+  {
     name: 'Lite',
     monthly: 99, annual: 79,
     annualSave: 240,
@@ -118,7 +142,7 @@ export default function PricingPage() {
       {/* Header */}
       <section className="py-20 text-center px-4">
         <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 text-sm font-medium mb-6">
-          Start at $99/mo · 7-day free trial · Cancel anytime
+          Solo from $49/mo · Agency from $99/mo · 7-day free trial · Cancel anytime
         </div>
         <h1 className="text-4xl sm:text-5xl font-black mb-4">
           Pricing for agencies that mean business.
@@ -235,10 +259,32 @@ export default function PricingPage() {
           })}
         </div>
 
+        {/* Voice Add-on */}
+        <div className="mt-6 rounded-2xl border border-emerald-500/30 bg-emerald-950/30 p-5 sm:p-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-bold text-emerald-400 text-sm uppercase tracking-wide">📞 Voice AI Add-on</span>
+                <span className="text-xs bg-emerald-800/50 text-emerald-300 px-2 py-0.5 rounded-full">Works on any plan</span>
+              </div>
+              <p className="text-2xl font-black text-white">$79<span className="text-slate-400 text-base font-normal">/mo</span>
+                <span className="text-sm text-slate-400 font-normal ml-2">or $63/mo billed annually</span>
+              </p>
+              <p className="text-slate-400 text-sm mt-1">500 AI calling minutes · inbound + outbound · transcripts · auto-escalation to human</p>
+            </div>
+            <a
+              href="/solo?addon=voice"
+              className="shrink-0 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-3 rounded-xl transition text-sm whitespace-nowrap"
+            >
+              Add Voice AI →
+            </a>
+          </div>
+        </div>
+
         {/* OpenClaw math callout */}
         <div className="mt-6 rounded-2xl border border-indigo-500/30 bg-indigo-950/40 p-5 text-center">
           <p className="text-indigo-200 text-sm font-semibold">
-            💡 Platform credits are included — no API keys needed to start. Lite: 500 credits/mo · Pro: 1,500 · Scale: 2,500. Need more? Bring your own key (BYOK).
+            💡 Platform credits are included — no API keys needed to start. Solo Pro: 200 credits/mo · Lite: 500 · Pro: 1,500 · Scale: 2,500. Bring your own key (BYOK) for Lite+.
           </p>
         </div>
 

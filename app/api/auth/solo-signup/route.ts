@@ -37,7 +37,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  const { businessName, fullName, email, password, websiteUrl, referralId } = body as typeof body & { referralId?: string };
+  const { businessName, fullName, email, password, websiteUrl } = body as typeof body & { referralId?: string };
+  // Referral: prefer body value (from URL param), fall back to cookie (survives navigation + tab closes)
+  const cookieRef = request.cookies.get('kyra_ref')?.value;
+  const referralId = (body as typeof body & { referralId?: string }).referralId || cookieRef || undefined;
 
   // ── Validate ────────────────────────────────────────────────────────────
   if (!businessName || !fullName || !email || !password) {
@@ -156,13 +159,16 @@ export async function POST(request: NextRequest) {
       try {
         const { data: referrerAgency } = await supabase
           .from('agencies')
-          .select('created_at')
+          .select('id, created_at, settings')
           .eq('id', referralId)
           .single();
 
-        const hoursElapsed = referrerAgency
-          ? (Date.now() - new Date(referrerAgency.created_at).getTime()) / 3_600_000
-          : 999;
+        if (!referrerAgency) {
+          console.warn(`[solo-signup] Referral ID not found: ${referralId}`);
+          return;
+        }
+
+        const hoursElapsed = (Date.now() - new Date(referrerAgency.created_at).getTime()) / 3_600_000;
         const isEarlyBird = hoursElapsed < 48;
 
         // Log referral — referrer credits held at 0 until friend activates
@@ -172,20 +178,32 @@ export async function POST(request: NextRequest) {
           referred_email: email,
           status: 'signed_up',
           early_bird: isEarlyBird,
-          referrer_credits_granted: 0,   // Granted on first AI message (activation gate)
+          referrer_credits_granted: 0,
           friend_credits_granted: 100,
         });
 
-        // 🎁 Friend gets credits immediately (motivates real usage)
+        // ✅ Increment invite_signups on referrer's agency settings
+        const referrerSettings = (referrerAgency.settings ?? {}) as Record<string, unknown>;
+        const currentSignups = (referrerSettings.invite_signups as number) ?? 0;
+        await supabase
+          .from('agencies')
+          .update({
+            settings: {
+              ...referrerSettings,
+              invite_signups: currentSignups + 1,
+            },
+          })
+          .eq('id', referralId);
+
+        // 🎁 Friend gets 100 credits immediately
         await addCredits(
           agency.id,
           100,
           'bonus',
-          'Welcome referral bonus — a friend referred you to Kyra. Enjoy 100 free AI credits! 🎁',
+          'Welcome bonus 🎁 — your friend referred you to Kyra. Enjoy 100 free AI credits!',
         );
 
-        // ⏳ Referrer credits granted when friend sends first AI message
-        // See: lib/billing/referral-activation.ts → called from /api/widget/chat
+        console.log(`[solo-signup] Referral recorded: ${referralId} → ${agency.id} (earlyBird: ${isEarlyBird})`);
       } catch (e) {
         console.warn('[solo-signup] Referral reward error:', e);
       }
