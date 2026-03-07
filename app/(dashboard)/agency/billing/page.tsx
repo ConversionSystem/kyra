@@ -8,7 +8,7 @@ export const metadata = { title: 'Billing — Kyra' };
 export default async function AgencyBillingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ upgrade?: string; checkout?: string }>;
+  searchParams: Promise<{ upgrade?: string; checkout?: string; voice?: string }>;
 }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -17,12 +17,12 @@ export default async function AgencyBillingPage({
   const result = await getAgencyForUser(user.id);
   if (!result) redirect('/signup/agency');
 
-  const { upgrade, checkout } = await searchParams;
+  const { upgrade, checkout, voice } = await searchParams;
 
   // Fetch agency details with billing fields
   const { data: agency } = await supabase
     .from('agencies')
-    .select('id, name, plan, stripe_customer_id')
+    .select('id, name, plan, stripe_customer_id, settings')
     .eq('id', result.agency.id)
     .single();
 
@@ -46,12 +46,17 @@ export default async function AgencyBillingPage({
   const agencySettings = (result.agency.settings ?? {}) as Record<string, unknown>;
   const isSolo = agencySettings.account_type === 'solo';
 
+  // Derive checkout status — voice=success takes priority
+  const checkoutStatus = voice === 'success' ? 'voice_success'
+    : voice === 'cancelled' ? 'cancelled'
+    : checkout ?? null;
+
   return (
     <BillingPageClient
-      agency={agency as { id: string; name: string; plan: string; stripe_customer_id: string | null }}
+      agency={agency as { id: string; name: string; plan: string; stripe_customer_id: string | null; settings?: Record<string, unknown> }}
       clientCount={clientCount}
       totalConversationsThisMonth={totalConversationsThisMonth}
-      checkoutStatus={checkout ?? null}
+      checkoutStatus={checkoutStatus}
       autoUpgradePlan={upgrade ?? null}
       isSolo={isSolo}
     />

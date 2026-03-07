@@ -5,7 +5,7 @@
  * Each plan has a hard client limit enforced at creation time.
  */
 
-export type Plan = 'free' | 'starter' | 'pro' | 'scale';
+export type Plan = 'free' | 'solo_pro' | 'starter' | 'pro' | 'scale';
 
 export interface PlanConfig {
   name: string;
@@ -60,6 +60,31 @@ export const PLANS: Record<Plan, PlanConfig> = {
     badgeColor: 'bg-green-100 text-green-700',
     cta: 'Get Started Free',
     stripePriceKey: 'free',
+  },
+  solo_pro: {
+    name: 'Solo Pro',
+    price: 49,
+    maxClients: 1,
+    monthlyCredits: 200,
+    trialDays: 7,
+    description: 'Your personal AI worker — unlimited conversations, priority support.',
+    features: [
+      '1 AI worker (no expiry)',
+      '200 platform credits / month',
+      'All Free features included',
+      'Advanced analytics & ROI dashboard',
+      'Priority email support',
+      'Voice AI (inbound & outbound calls)',
+      'Multi-channel messaging (SMS, Telegram, web chat)',
+      'Full CRM — contacts, deals, pipeline',
+      'Proactive AI automations',
+      'GHL integration',
+      'Referral program (earn credits per referral)',
+    ],
+    badge: 'SOLO PRO',
+    badgeColor: 'bg-violet-100 text-violet-700',
+    cta: 'Upgrade to Solo Pro',
+    stripePriceKey: 'solo_pro',
   },
   starter: {
     name: 'Lite',
@@ -202,3 +227,35 @@ export function classifyChatAction(opts: {
   if (opts.hasWebSearch) return 'web_search';
   return 'chat';
 }
+
+// ── Annual Pricing ────────────────────────────────────────────────────────────
+
+/** Annual pricing for each plan — monthly equivalent when billed yearly (20% off) */
+export const ANNUAL_PRICES: Partial<Record<Plan, { monthly: number; annualTotal: number; savings: number }>> = {
+  solo_pro: { monthly: 39,  annualTotal: 468,  savings: 120  },
+  starter:  { monthly: 79,  annualTotal: 948,  savings: 240  },
+  pro:      { monthly: 199, annualTotal: 2388, savings: 600  },
+  scale:    { monthly: 399, annualTotal: 4788, savings: 1200 },
+};
+
+// ── Voice Add-on ──────────────────────────────────────────────────────────────
+
+/** Voice AI add-on — 500 minutes/month of inbound + outbound AI calling */
+export const VOICE_ADDON = {
+  name: 'Voice AI Add-on',
+  price: 79,
+  annualMonthly: 63,
+  annualTotal: 756,
+  annualSavings: 192,
+  description: '500 minutes/month of AI phone calls — inbound & outbound. Add to any plan.',
+  features: [
+    '500 AI calling minutes / month',
+    'Inbound call answering (24/7)',
+    'Outbound AI call campaigns',
+    'Call transcripts & recordings',
+    'Auto-escalation to human',
+    'Works alongside any Kyra plan',
+  ],
+  stripePriceKey: 'voice_addon',
+  stripePriceKeyAnnual: 'voice_addon_annual',
+};
