@@ -5,10 +5,20 @@ import {
   RefreshCw, TrendingUp, TrendingDown, Users, MessageSquare,
   DollarSign, Zap, Gift, Building2, BarChart3, Activity,
   ArrowUpRight, ArrowDownRight, Minus, CreditCard, Flame,
-  UserCheck, Globe, Phone,
+  UserCheck, Globe, Phone, DatabaseZap, CheckCircle2, AlertCircle,
 } from 'lucide-react';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
+
+interface SyncResult {
+  ok: boolean;
+  masterAgencyId: string;
+  total: number;
+  synced: number;
+  skipped: number;
+  errors: number;
+  errorDetails: string[];
+}
 
 interface Stats {
   mrr: number;
@@ -129,6 +139,9 @@ export default function AdminDashboardClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<SyncResult | null>(null);
+  const [syncError, setSyncError] = useState<string | null>(null);
 
   const fetchStats = async () => {
     setLoading(true);
@@ -142,6 +155,22 @@ export default function AdminDashboardClient() {
       setError(e instanceof Error ? e.message : 'Unknown error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const syncLeads = async () => {
+    setSyncing(true);
+    setSyncResult(null);
+    setSyncError(null);
+    try {
+      const res = await fetch('/api/admin/sync-leads', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      setSyncResult(data as SyncResult);
+    } catch (e: unknown) {
+      setSyncError(e instanceof Error ? e.message : 'Sync failed');
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -529,6 +558,87 @@ export default function AdminDashboardClient() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+        </div>
+
+        {/* ── Lead Sync ────────────────────────────────────────────────── */}
+        <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <DatabaseZap className="h-4 w-4 text-indigo-500" />
+                <h2 className="font-bold text-gray-900">Sync All Leads → CRM</h2>
+              </div>
+              <p className="text-sm text-gray-500">
+                Backfill every Kyra signup into your master CRM as a contact.
+                Safe to run multiple times — skips emails already in CRM.
+              </p>
+            </div>
+            <button
+              onClick={syncLeads}
+              disabled={syncing}
+              className="shrink-0 flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold text-sm px-5 py-2.5 rounded-xl transition"
+            >
+              {syncing
+                ? <><RefreshCw className="h-4 w-4 animate-spin" /> Syncing…</>
+                : <><DatabaseZap className="h-4 w-4" /> Sync Now</>}
+            </button>
+          </div>
+
+          {/* Result */}
+          {syncResult && (
+            <div className="mt-4 rounded-xl bg-green-50 border border-green-200 p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                <p className="font-bold text-green-800 text-sm">Sync complete</p>
+              </div>
+              <div className="grid grid-cols-4 gap-3">
+                {[
+                  { label: 'Total agencies', value: syncResult.total },
+                  { label: 'Synced to CRM', value: syncResult.synced, highlight: true },
+                  { label: 'Already existed', value: syncResult.skipped },
+                  { label: 'Errors', value: syncResult.errors, isError: true },
+                ].map(s => (
+                  <div key={s.label} className={`rounded-lg p-3 text-center ${s.highlight ? 'bg-green-100' : s.isError && s.value > 0 ? 'bg-red-50' : 'bg-white border border-green-100'}`}>
+                    <p className={`text-2xl font-black tabular-nums ${s.highlight ? 'text-green-700' : s.isError && s.value > 0 ? 'text-red-600' : 'text-gray-900'}`}>{s.value}</p>
+                    <p className="text-[10px] text-gray-500 mt-0.5">{s.label}</p>
+                  </div>
+                ))}
+              </div>
+              {syncResult.errors > 0 && syncResult.errorDetails.length > 0 && (
+                <details className="mt-3">
+                  <summary className="text-xs text-red-600 cursor-pointer font-medium">
+                    View {syncResult.errors} error{syncResult.errors !== 1 ? 's' : ''}
+                  </summary>
+                  <ul className="mt-2 space-y-1">
+                    {syncResult.errorDetails.map((e, i) => (
+                      <li key={i} className="text-[11px] text-red-500 font-mono">{e}</li>
+                    ))}
+                  </ul>
+                </details>
+              )}
+              <p className="text-[10px] text-green-600 mt-2">
+                Master CRM ID: <span className="font-mono">{syncResult.masterAgencyId}</span>
+                {' · '}View contacts at{' '}
+                <a href="/agency/crm/contacts" className="underline" target="_blank">CRM → Contacts</a>
+              </p>
+            </div>
+          )}
+
+          {syncError && (
+            <div className="mt-4 rounded-xl bg-red-50 border border-red-200 p-4 flex items-start gap-2">
+              <AlertCircle className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-bold text-red-800">Sync failed</p>
+                <p className="text-xs text-red-600 mt-0.5">{syncError}</p>
+                {syncError.includes('MASTER_AGENCY_ID') && (
+                  <p className="text-xs text-red-500 mt-2">
+                    Add <code className="bg-red-100 px-1 rounded">MASTER_AGENCY_ID</code> to Vercel env vars
+                    — your Conversion System agency UUID from Supabase.
+                  </p>
+                )}
+              </div>
             </div>
           )}
         </div>
