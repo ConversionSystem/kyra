@@ -53,6 +53,8 @@ export const PLANS: Record<Plan, PlanConfig> = {
       'Proactive AI automations',
       'Event triggers',
       'GHL integration',
+      // Growth
+      'Referral program (earn credits for every friend you invite)',
     ],
     badge: 'BETA',
     badgeColor: 'bg-green-100 text-green-700',
