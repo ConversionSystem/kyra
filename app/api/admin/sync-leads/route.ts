@@ -180,7 +180,7 @@ export async function POST() {
       score_label:      scoreLabel,
       avatar_color:     pickColor(email),
       tags,
-      notes:            noteLines,
+      ai_summary:       noteLines,
       ai_next_action:   aiNextAction,
       last_activity_at: agency.created_at,
       created_at:       agency.created_at, // preserve original signup date
