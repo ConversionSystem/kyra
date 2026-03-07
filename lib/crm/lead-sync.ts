@@ -106,7 +106,7 @@ export async function syncLeadToCRM(lead: LeadData): Promise<void> {
       score_label:      scoreLabel,
       avatar_color:     pickColor(lead.email),
       tags,
-      notes: notes,
+      ai_summary:       notes,
       ai_next_action:   lead.plan === 'free'
         ? 'Send onboarding email — free user, nurture to Solo Pro or Agency plan'
         : 'Follow up — new paying customer, confirm onboarding success',
