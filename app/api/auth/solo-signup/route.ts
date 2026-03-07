@@ -4,6 +4,7 @@ import { isValidSlug, toSlug } from '@/lib/agency/utils';
 import { addCredits } from '@/lib/billing/credit-engine';
 import { provisionClientGateway } from '@/lib/ovh/provisioner';
 import { buildInjectionDefensePromptSuffix } from '@/lib/security/prompt-injection';
+import { syncLeadToCRM } from '@/lib/crm/lead-sync';
 
 const SOLO_WELCOME_CREDITS = 50;
 const SOLO_WELCOME_DESCRIPTION = 'Kyra Solo Free — 50 welcome credits';
@@ -153,7 +154,19 @@ export async function POST(request: NextRequest) {
     console.warn('[solo-signup] Failed to grant credits (non-fatal):', err);
   }
 
-  // ── 5b. Referral Machine — double-sided rewards ─────────────────────────
+  // ── 5b. Sync lead to master CRM ────────────────────────────────────────
+  void syncLeadToCRM({
+    fullName,
+    email,
+    businessName,
+    websiteUrl: websiteUrl || null,
+    accountType: 'solo',
+    plan: 'free',
+    agencyId: agency.id,
+    referredBy: referralId,
+  });
+
+  // ── 5c. Referral Machine — double-sided rewards ─────────────────────────
   if (referralId && referralId !== agency.id) {
     void (async () => {
       try {
