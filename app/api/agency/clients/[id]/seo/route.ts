@@ -57,6 +57,9 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
   const contentPublished = (seoData.content_published as unknown[]) || [];
   const redditQueue = (seoData.reddit_queue as Array<Record<string, unknown>>) || [];
 
+  // Publishing platforms: defaults to ['telegraph'] if not set
+  const publishingPlatforms = (seoData.publishing_platforms as string[]) ?? ['telegraph'];
+
   return NextResponse.json({
     template: 'vet-seo-worker',
     status: clientSettings.premium_template_status || 'active',
@@ -65,6 +68,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     geo_scores: geoScores,
     nap_status: napStatus,
     content_published: contentPublished,
+    publishing_platforms: publishingPlatforms,
     outreach_pipeline: (seoData.outreach_pipeline as unknown[]) || [],
     reddit_queue: redditQueue,
     last_report: seoData.last_report || null,
@@ -158,4 +162,37 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     .eq('id', id);
 
   return NextResponse.json({ ok: true, dataType });
+}
+
+// PATCH — update a single field in seo_data (e.g. publishing_platforms)
+export async function PATCH(request: NextRequest, { params }: RouteParams) {
+  const { id } = await params;
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const result = await getAgencyForUser(user.id);
+  if (!result) return NextResponse.json({ error: 'No agency' }, { status: 403 });
+
+  const client = await getAgencyClient(id);
+  if (!client || client.agency_id !== result.agency.id) {
+    return NextResponse.json({ error: 'Client not found' }, { status: 404 });
+  }
+
+  const body = await request.json() as { field: string; value: unknown };
+  const { field, value } = body;
+
+  const PATCHABLE = ['publishing_platforms', 'geo_score_current', 'geo_score_trend'];
+  if (!PATCHABLE.includes(field)) {
+    return NextResponse.json({ error: 'Field not patchable' }, { status: 400 });
+  }
+
+  const settings = ((client.settings as Record<string, unknown>) ?? {});
+  const seoData  = ((settings.seo_data as Record<string, unknown>) ?? {});
+  seoData[field] = value;
+  settings.seo_data = seoData;
+
+  await supabase.from('agency_clients').update({ settings }).eq('id', id);
+
+  return NextResponse.json({ ok: true, field });
 }
