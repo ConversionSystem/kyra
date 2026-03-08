@@ -7,7 +7,6 @@ import { Menu, X } from 'lucide-react';
 const NAV_LINKS = [
   { href: '/use-cases', label: 'Use Cases' },
   { href: '/guides', label: 'Setup Guides' },
-  { href: '/pricing', label: 'Pricing' },
   { href: '/blog', label: 'Blog' },
   { href: '/ghl', label: 'For GHL' },
   { href: '/openclaw', label: 'OpenClaw →' },
@@ -44,7 +43,7 @@ export default function PublicNav() {
               Sign in
             </Link>
             <Link
-              href="/signup/agency"
+              href="/solo"
               className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
             >
               Get Started Free
@@ -84,7 +83,7 @@ export default function PublicNav() {
               Sign in
             </Link>
             <Link
-              href="/signup/agency"
+              href="/solo"
               onClick={() => setOpen(false)}
               className="block w-full text-center bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-3 rounded-lg transition-colors min-h-[44px] flex items-center justify-center"
             >

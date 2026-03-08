@@ -121,7 +121,7 @@ export default async function ForPage({ searchParams }: Props) {
           <div className="flex items-center gap-2 font-black text-xl">
             <span className="text-indigo-600">⚡</span> Kyra
           </div>
-          <Link href="/signup/agency" className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold px-4 py-2 rounded-lg transition">
+          <Link href="/solo" className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold px-4 py-2 rounded-lg transition">
             Start Free →
           </Link>
         </div>
@@ -148,10 +148,10 @@ export default async function ForPage({ searchParams }: Props) {
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <Link
-                href={`/signup/agency${params.ref ? `?ref=${params.ref}` : ''}`}
+                href={`/solo${params.ref ? `?ref=${params.ref}` : ''}`}
                 className="inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-lg px-8 py-4 rounded-xl transition text-center"
               >
-                Start Free — $2 in Credits Included
+                Start Free — No Credit Card Required
               </Link>
               <Link
                 href={`/try/${niche.demoSlug}`}
@@ -299,7 +299,7 @@ export default async function ForPage({ searchParams }: Props) {
             $2 in credits included — enough to test with a real client immediately.
           </p>
           <Link
-            href={`/signup/agency${params.ref ? `?ref=${params.ref}` : ''}`}
+            href={`/solo${params.ref ? `?ref=${params.ref}` : ''}`}
             className="inline-block bg-white text-indigo-900 font-black text-xl px-10 py-5 rounded-xl hover:bg-indigo-50 transition"
           >
             Get Started Free →
