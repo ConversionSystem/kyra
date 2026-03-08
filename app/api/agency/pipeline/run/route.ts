@@ -66,6 +66,7 @@ export async function POST(req: NextRequest) {
   const resolved = await resolveAgencyApiKey(agencyId);
   const openaiKey = resolved.apiKey || process.env.OPENAI_API_KEY;
   const isByok = resolved.isByok;
+  const skipCredits = resolved.skipCredits ?? false;
   const outscraperKey = (settings.outscraper_api_key as string) || process.env.OUTSCRAPER_API_KEY || '';
   const enrichModel = enrich_model || (settings.pipeline_model as string) || resolved.model || 'gpt-4o';
 
@@ -74,7 +75,7 @@ export async function POST(req: NextRequest) {
   }
 
   // ── Pre-flight credit check (skip if BYOK) ──────────────────────────────
-  if (!isByok) {
+  if (!skipCredits) {
     const creditCheck = await requireCredits(agencyId, 'pipeline.find_leads');
     if (!creditCheck.allowed) {
       return NextResponse.json({
@@ -170,7 +171,7 @@ export async function POST(req: NextRequest) {
         }
 
         // ═══ DEDUCT CREDITS (skip if BYOK) ═══
-        if (!isByok) {
+        if (!skipCredits) {
           await deductCredits(agencyId, 'pipeline.find_leads', {
             description: `Find leads: "${name}" (${result.leads.length} leads via ${result.source})`,
           });
