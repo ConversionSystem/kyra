@@ -5,6 +5,7 @@ import { addCredits } from '@/lib/billing/credit-engine';
 import { provisionClientGateway } from '@/lib/ovh/provisioner';
 import { buildInjectionDefensePromptSuffix } from '@/lib/security/prompt-injection';
 import { syncLeadToCRM } from '@/lib/crm/lead-sync';
+import { activateReferral } from '@/lib/billing/referral-activation';
 
 const SOLO_WELCOME_CREDITS = 50;
 const SOLO_WELCOME_DESCRIPTION = 'Kyra Solo Free — 50 welcome credits';
@@ -184,16 +185,16 @@ export async function POST(request: NextRequest) {
         const hoursElapsed = (Date.now() - new Date(referrerAgency.created_at).getTime()) / 3_600_000;
         const isEarlyBird = hoursElapsed < 48;
 
-        // Log referral — referrer credits held at 0 until friend activates
-        await supabase.from('agency_referrals').insert({
+        // Log referral row (status: signed_up — activateReferral flips it immediately)
+        const { data: referralRow } = await supabase.from('agency_referrals').insert({
           referrer_id: referralId,
           referred_id: agency.id,
           referred_email: email,
           status: 'signed_up',
           early_bird: isEarlyBird,
           referrer_credits_granted: 0,
-          friend_credits_granted: 100,
-        });
+          friend_credits_granted: 0,
+        }).select('id').single();
 
         // ✅ Increment invite_signups on referrer's agency settings
         const referrerSettings = (referrerAgency.settings ?? {}) as Record<string, unknown>;
@@ -208,15 +209,12 @@ export async function POST(request: NextRequest) {
           })
           .eq('id', referralId);
 
-        // 🎁 Friend gets 100 credits immediately
-        await addCredits(
-          agency.id,
-          100,
-          'bonus',
-          'Welcome bonus 🎁 — your friend referred you to Kyra. Enjoy 100 free AI credits!',
-        );
+        // 🎁 Activate immediately — grant referrer + friend credits now (no email gate)
+        if (referralRow?.id) {
+          await activateReferral(referralRow.id, referralId, agency.id, isEarlyBird);
+        }
 
-        console.log(`[solo-signup] Referral recorded: ${referralId} → ${agency.id} (earlyBird: ${isEarlyBird})`);
+        console.log(`[solo-signup] Referral activated: ${referralId} → ${agency.id} (earlyBird: ${isEarlyBird})`);
       } catch (e) {
         console.warn('[solo-signup] Referral reward error:', e);
       }
