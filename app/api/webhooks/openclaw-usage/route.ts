@@ -38,10 +38,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "client not found" }, { status: 404 });
   }
 
-  // BYOK bypass: if the agency uses their own API key, don't charge platform credits
+  // BYOK bypass: only skip credits for paid plans using their own API key.
+  // Free plan agencies still consume platform credits regardless of BYOK.
   const resolved = await resolveAgencyApiKey(client.agency_id).catch(() => null);
-  if (resolved?.isByok) {
-    return NextResponse.json({ ok: true, deducted: 0, reason: "byok" });
+  if (resolved?.skipCredits) {
+    return NextResponse.json({ ok: true, deducted: 0, reason: "byok_paid" });
   }
 
   for (let i = 0; i < count; i++) {

@@ -200,6 +200,7 @@ export async function POST(req: NextRequest) {
   }
   const apiKey = resolved.apiKey;
   const isByok = resolved.isByok;
+  const skipCredits = resolved.skipCredits ?? false;
 
   const svc = createServiceClientWithoutCookies();
 
@@ -213,7 +214,7 @@ export async function POST(req: NextRequest) {
 
   // ── Pre-flight credit check (2 credits per lead) — SKIP if BYOK ──
   const enrichableLeads = leads.filter((l: Record<string, unknown>) => l.stage === 'approved' || l.stage === 'found');
-  if (!isByok) {
+  if (!skipCredits) {
     const creditCheck = await requireCredits(agencyId, 'pipeline.enrich', enrichableLeads.length);
     if (!creditCheck.allowed) {
       return NextResponse.json({
@@ -499,7 +500,7 @@ Return JSON:
   const errors = results.filter(r => r.status === 'error').length;
 
   // Deduct credits for successfully enriched leads only — SKIP if BYOK
-  if (enriched > 0 && !isByok) {
+  if (enriched > 0 && !skipCredits) {
     await deductCredits(agencyId, 'pipeline.enrich', {
       multiplier: enriched,
       description: `Enrich ${enriched} leads`,
@@ -517,7 +518,7 @@ Return JSON:
     with_phones: withPhones,
     with_socials: withSocials,
     byok: isByok,
-    credits_charged: isByok ? 0 : enriched * 2,
+    credits_charged: skipCredits ? 0 : enriched * 2,
     results,
   });
 }

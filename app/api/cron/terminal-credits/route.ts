@@ -177,18 +177,22 @@ export async function GET(request: Request) {
   }
 
   // Pre-fetch BYOK flags — one batch query, no resolveAgencyApiKey (next/headers)
+  // skipCredits = true only for PAID BYOK agencies (free plan BYOK still pays credits)
+  const PAID_PLANS = new Set(['starter', 'pro', 'scale', 'solo_pro', 'beta']);
   const allAgencyIds = [...new Set(allContainers.map(c => c.agency_id))];
   const { data: byokRows } = await supabase
     .from('agencies')
-    .select('id, api_keys')
+    .select('id, api_keys, plan')
     .in('id', allAgencyIds);
 
-  const byokSet = new Set<string>();
+  const skipCreditsSet = new Set<string>();
   for (const row of byokRows ?? []) {
     const keys = ((row.api_keys ?? {}) as Record<string, unknown>);
     const providers = ['openai', 'anthropic', 'openrouter', 'google'] as const;
-    if (providers.some(p => typeof keys[p] === 'string' && (keys[p] as string).startsWith('sk-'))) {
-      byokSet.add(row.id as string);
+    const hasByok = providers.some(p => typeof keys[p] === 'string' && (keys[p] as string).startsWith('sk-'));
+    const isPaid = PAID_PLANS.has(row.plan as string);
+    if (hasByok && isPaid) {
+      skipCreditsSet.add(row.id as string);
     }
   }
 
@@ -206,7 +210,7 @@ export async function GET(request: Request) {
   // Process all containers in parallel (HTTP tools/invoke is ~200ms each)
   await Promise.all(allContainers.map(async (container) => {
     try {
-      const isByok = byokSet.has(container.agency_id);
+      const isByok = skipCreditsSet.has(container.agency_id);
 
       // ── 1. Fetch sessions list → token count ──────────────────────────────
       const sessionsResult = await invokeGatewayTool(
