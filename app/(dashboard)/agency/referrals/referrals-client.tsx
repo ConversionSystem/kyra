@@ -21,6 +21,7 @@ interface Referral {
 
 interface Stats {
   total: number;
+  inviteClicks: number;
   signedUp: number;
   activated: number;
   weeklyCount: number;
@@ -192,9 +193,9 @@ export default function ReferralsClient({ agencyId: _agencyId, agencyName, agenc
       {/* ── Stats ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { icon: Users, label: 'Links clicked', value: stats.total, color: 'text-gray-600', bg: 'bg-gray-50' },
-          { icon: TrendingUp, label: 'Activated (credits earned)', value: stats.activated, color: 'text-green-600', bg: 'bg-green-50' },
-          { icon: Gift, label: 'Credits earned', value: stats.creditsEarned > 0 ? `${stats.creditsEarned.toLocaleString()}` : '—', color: 'text-indigo-600', bg: 'bg-indigo-50' },
+          { icon: Users, label: 'Link clicks', value: stats.inviteClicks > 0 ? stats.inviteClicks : stats.total, color: 'text-gray-600', bg: 'bg-gray-50' },
+          { icon: TrendingUp, label: 'Signed up', value: stats.total, color: 'text-blue-600', bg: 'bg-blue-50' },
+          { icon: Gift, label: 'Activated (credits earned)', value: stats.activated, color: 'text-green-600', bg: 'bg-green-50' },
           { icon: Flame, label: 'This week (streak)', value: `${stats.weeklyCount}/3`, color: 'text-orange-600', bg: 'bg-orange-50' },
         ].map(({ icon: Icon, label, value, color, bg }) => (
           <Card key={label}>
