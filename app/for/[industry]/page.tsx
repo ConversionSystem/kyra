@@ -196,7 +196,7 @@ export default async function ForIndustryPage({ params }: Params) {
             className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-8 py-4 rounded-xl transition text-base">
             💬 Try the AI Live
           </Link>
-          <Link href="/signup/agency"
+          <Link href="/solo"
             className="bg-white/10 hover:bg-white/15 border border-white/10 text-white font-semibold px-8 py-4 rounded-xl transition text-base">
             Start Free — No Credit Card
           </Link>
@@ -280,7 +280,7 @@ export default async function ForIndustryPage({ params }: Params) {
             ))}
           </div>
           <div className="flex flex-wrap gap-3">
-            <Link href="/signup/agency" className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-3 rounded-xl transition">
+            <Link href="/solo" className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-3 rounded-xl transition">
               Start Free — No Credit Card
             </Link>
             <Link href="/pricing" className="bg-white/10 hover:bg-white/15 border border-white/10 text-white font-semibold px-6 py-3 rounded-xl transition">

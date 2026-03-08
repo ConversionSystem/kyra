@@ -87,7 +87,7 @@ export default function HomePage() {
                 { value: '24/7', label: 'Never stops working' },
                 { value: '< 60s', label: 'First response time' },
                 { value: '30+', label: 'Client AI workers' },
-                { value: '7-day', label: 'Free trial' },
+                { value: 'Free', label: 'No credit card' },
               ].map((s) => (
                 <div key={s.label} className="bg-white/10 border border-white/10 rounded-xl p-3 text-center">
                   <p className="text-xl font-black text-white">{s.value}</p>
@@ -99,7 +99,7 @@ export default function HomePage() {
             {/* CTAs */}
             <div className="flex flex-col sm:flex-row gap-3">
               <Link
-                href="/signup/agency"
+                href="/solo"
                 className="inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 transition text-white font-bold text-lg px-8 py-4 rounded-xl"
               >
                 Deploy Your First AI Worker →
@@ -510,13 +510,13 @@ export default function HomePage() {
               Connect your GoHighLevel account. Pick a template. Your first AI worker is live in under 5 minutes.
             </p>
             <Link
-              href="/signup/agency"
+              href="/solo"
               className="inline-flex items-center gap-2 bg-white text-indigo-700 font-black text-lg px-10 py-4 rounded-xl hover:bg-indigo-50 transition"
             >
               Deploy Your First AI Worker →
             </Link>
             <p className="text-indigo-300 text-sm mt-4">
-              7-day free trial · No credit card required · OpenClaw-powered
+              Free to start · No credit card required · OpenClaw-powered
             </p>
           </div>
         </div>
