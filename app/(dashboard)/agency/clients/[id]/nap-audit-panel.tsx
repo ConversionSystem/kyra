@@ -9,71 +9,79 @@ interface NapEntry {
   status: 'match' | 'mismatch' | 'not_found' | 'error' | 'blocked';
   issues: string[];
   last_checked?: string;
+  listing_url?: string; // actual scraped listing URL (when found)
 }
 
-// Direct links to each directory's management/search page
-const DIRECTORY_LINKS: Record<string, { manage: string; search: string }> = {
-  'Google Business Profile': {
-    manage: 'https://business.google.com',
-    search: 'https://www.google.com/maps/search/',
-  },
-  'Yelp': {
-    manage: 'https://biz.yelp.com',
-    search: 'https://www.yelp.com/search?find_desc=veterinarian',
-  },
-  'Facebook': {
-    manage: 'https://www.facebook.com/business',
-    search: 'https://www.facebook.com/search/pages/?q=veterinarian',
-  },
-  'YellowPages': {
-    manage: 'https://www.yellowpages.com/business/login',
-    search: 'https://www.yellowpages.com/search?search_terms=veterinarian',
-  },
-  'Healthgrades': {
-    manage: 'https://www.healthgrades.com/business',
-    search: 'https://www.healthgrades.com/find-a-doctor',
-  },
-  'BBB': {
-    manage: 'https://www.bbb.org/businesses',
-    search: 'https://www.bbb.org/search?type=accredited&find_text=veterinarian',
-  },
-  'Manta': {
-    manage: 'https://www.manta.com/manage',
-    search: 'https://www.manta.com/search?search=veterinarian',
-  },
-  'Superpages': {
-    manage: 'https://www.superpages.com/advertise',
-    search: 'https://www.superpages.com/search?search_terms=veterinarian',
-  },
-  'Angi': {
-    manage: 'https://pro.angi.com',
-    search: 'https://www.angi.com/companylist/us/veterinarians.htm',
-  },
-  'VetRatingz': {
-    manage: 'https://www.vetratingz.com/add-listing',
-    search: 'https://www.vetratingz.com',
-  },
-  'AVMA Find-a-Vet': {
-    manage: 'https://www.avma.org/membership/member-services/practice-listing',
-    search: 'https://www.avma.org/resources-tools/pet-owners/petcare/finding-a-veterinarian',
-  },
-  'PetDesk': {
-    manage: 'https://www.petdesk.com/for-vets',
-    search: 'https://www.petdesk.com',
-  },
-  'BringFido': {
-    manage: 'https://www.bringfido.com/add-listing',
-    search: 'https://www.bringfido.com/attraction/type/vets',
-  },
-  'CitySearch': {
-    manage: 'https://www.citysearch.com',
-    search: 'https://www.citysearch.com/search?what=veterinarian',
-  },
-  'MapQuest': {
-    manage: 'https://business.mapquest.com',
-    search: 'https://www.mapquest.com/search/results?query=veterinarian',
-  },
+// Management portal URLs — where the business owner logs in to update their listing
+const DIRECTORY_MANAGE: Record<string, string> = {
+  'Google Business Profile': 'https://business.google.com',
+  'Yelp':                    'https://biz.yelp.com',
+  'Facebook':                'https://www.facebook.com/business',
+  'YellowPages':             'https://www.yellowpages.com/business/login',
+  'Healthgrades':            'https://www.healthgrades.com/business',
+  'BBB':                     'https://www.bbb.org/businesses',
+  'Manta':                   'https://www.manta.com/manage',
+  'Superpages':              'https://www.superpages.com/advertise',
+  'Angi':                    'https://pro.angi.com',
+  'VetRatingz':              'https://www.vetratingz.com/add-listing',
+  'AVMA Find-a-Vet':         'https://www.avma.org/membership/member-services/practice-listing',
+  'PetDesk':                 'https://www.petdesk.com/for-vets',
+  'BringFido':               'https://www.bringfido.com/add-listing',
+  'CitySearch':              'https://www.citysearch.com',
+  'MapQuest':                'https://business.mapquest.com',
 };
+
+/**
+ * Build a personalized search URL for a directory using the business name + city.
+ * This sends the user directly to search results for THEIR specific business,
+ * not a generic category page.
+ */
+function buildSearchUrl(directory: string, businessName: string, city: string): string {
+  const q  = encodeURIComponent(businessName);
+  const loc = encodeURIComponent(city);
+  const qLoc = encodeURIComponent(`${businessName} ${city}`);
+
+  const patterns: Record<string, string> = {
+    'Google Business Profile': `https://www.google.com/maps/search/${qLoc}`,
+    'Yelp':         `https://www.yelp.com/search?find_desc=${q}&find_loc=${loc}`,
+    'Facebook':     `https://www.facebook.com/search/pages/?q=${qLoc}`,
+    'YellowPages':  `https://www.yellowpages.com/search?search_terms=${q}&geo_location_terms=${loc}`,
+    'Healthgrades': `https://www.healthgrades.com/search?what=${q}&where=${loc}`,
+    'BBB':          `https://www.bbb.org/search?find_text=${q}&find_loc=${loc}`,
+    'Manta':        `https://www.manta.com/search?search=${qLoc}`,
+    'Superpages':   `https://www.superpages.com/search?search_terms=${q}&geo_location_terms=${loc}`,
+    'Angi':         `https://www.angi.com/search?what=${q}&where=${loc}`,
+    'VetRatingz':   `https://www.vetratingz.com/search?q=${qLoc}`,
+    'AVMA Find-a-Vet': `https://www.avma.org/resources-tools/pet-owners/petcare/finding-a-veterinarian`,
+    'PetDesk':      `https://www.petdesk.com/search?q=${qLoc}`,
+    'BringFido':    `https://www.bringfido.com/search/?action=search&q=${qLoc}`,
+    'CitySearch':   `https://www.citysearch.com/search?what=${q}&where=${loc}`,
+    'MapQuest':     `https://www.mapquest.com/search/results?query=${qLoc}`,
+  };
+
+  return patterns[directory] ?? `https://www.google.com/search?q=${qLoc}+${encodeURIComponent(directory)}`;
+}
+
+/**
+ * Get the best link for a directory entry:
+ * 1. Use actual scraped listing_url if available (most specific)
+ * 2. Fall back to personalized search URL with business name + city
+ * Never return generic homepage or category links.
+ */
+function getDirectoryLink(
+  entry: NapEntry,
+  businessName: string,
+  city: string,
+  mode: 'view' | 'manage',
+): string {
+  if (mode === 'view' && entry.listing_url) {
+    return entry.listing_url; // exact listing page from scraper
+  }
+  if (mode === 'manage' && DIRECTORY_MANAGE[entry.directory]) {
+    return DIRECTORY_MANAGE[entry.directory];
+  }
+  return buildSearchUrl(entry.directory, businessName, city);
+}
 
 /**
  * Parse raw issue string into a human-readable label.
@@ -127,7 +135,7 @@ function IssueRow({ raw }: { raw: string }) {
   );
 }
 
-export function NAPAuditPanel({ entries }: { entries: NapEntry[] }) {
+export function NAPAuditPanel({ entries, businessName = '', city = '' }: { entries: NapEntry[]; businessName?: string; city?: string }) {
   if (entries.length === 0) {
     return (
       <Card>
@@ -191,23 +199,26 @@ export function NAPAuditPanel({ entries }: { entries: NapEntry[] }) {
             <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-2">⚠ Needs Fixing</p>
             <div className="space-y-2">
               {mismatches.map((entry, i) => {
-                const links = DIRECTORY_LINKS[entry.directory];
+                const viewUrl   = getDirectoryLink(entry, businessName, city, 'view');
+                const manageUrl = getDirectoryLink(entry, businessName, city, 'manage');
                 return (
                   <div key={i} className="border border-amber-200 rounded-lg p-3 bg-amber-50/50">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
-                        {links ? (
-                          <a href={links.manage} target="_blank" rel="noopener noreferrer"
-                            className="text-sm font-semibold text-indigo-700 hover:text-indigo-900 flex items-center gap-1 w-fit">
-                            {entry.directory}
-                            <ExternalLink className="w-3 h-3 shrink-0" />
-                          </a>
-                        ) : (
-                          <p className="text-sm font-semibold text-gray-800">{entry.directory}</p>
-                        )}
+                        {/* Link to the actual listing so they can see what's wrong */}
+                        <a href={viewUrl} target="_blank" rel="noopener noreferrer"
+                          className="text-sm font-semibold text-indigo-700 hover:text-indigo-900 flex items-center gap-1 w-fit">
+                          {entry.directory}
+                          <ExternalLink className="w-3 h-3 shrink-0" />
+                        </a>
                         {entry.issues.map((issue, j) => (
                           <IssueRow key={j} raw={issue} />
                         ))}
+                        {/* Separate manage link */}
+                        <a href={manageUrl} target="_blank" rel="noopener noreferrer"
+                          className="mt-1.5 inline-flex items-center gap-1 text-[11px] text-indigo-500 hover:text-indigo-700">
+                          Update listing →
+                        </a>
                       </div>
                       <span className="text-xs px-2 py-0.5 bg-amber-100 text-amber-700 rounded border border-amber-300 font-medium shrink-0">
                         Fix needed
@@ -226,18 +237,14 @@ export function NAPAuditPanel({ entries }: { entries: NapEntry[] }) {
             <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wide mb-2 mt-3">✓ Consistent</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
               {matches.map((entry, i) => {
-                const links = DIRECTORY_LINKS[entry.directory];
+                const viewUrl = getDirectoryLink(entry, businessName, city, 'view');
                 return (
                   <div key={i} className="flex items-center gap-2 px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-lg">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                    {links ? (
-                      <a href={links.search} target="_blank" rel="noopener noreferrer"
-                        className="text-xs font-medium text-emerald-800 hover:text-indigo-700 truncate">
-                        {entry.directory}
-                      </a>
-                    ) : (
-                      <span className="text-xs font-medium text-emerald-800 truncate">{entry.directory}</span>
-                    )}
+                    <a href={viewUrl} target="_blank" rel="noopener noreferrer"
+                      className="text-xs font-medium text-emerald-800 hover:text-indigo-700 truncate">
+                      {entry.directory}
+                    </a>
                   </div>
                 );
               })}
@@ -252,22 +259,18 @@ export function NAPAuditPanel({ entries }: { entries: NapEntry[] }) {
             <p className="text-xs text-gray-400 mb-2">Getting listed on these directories will improve your local SEO and AI citations.</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
               {missing.map((entry, i) => {
-                const links = DIRECTORY_LINKS[entry.directory];
-                const isBlocked = entry.status === 'blocked' || entry.issues.some(i => i.includes('blocked'));
+                const manageUrl = getDirectoryLink(entry, businessName, city, 'manage');
+                const isBlocked = entry.status === 'blocked' || entry.issues.some(issue => issue.includes('blocked'));
                 return (
                   <div key={i} className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg">
                     {isBlocked
                       ? <HelpCircle className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                       : <AlertTriangle className="w-3.5 h-3.5 text-gray-300 shrink-0" />}
-                    {links ? (
-                      <a href={links.manage} target="_blank" rel="noopener noreferrer"
-                        className="text-xs font-medium text-gray-600 hover:text-indigo-700 truncate flex items-center gap-1">
-                        {entry.directory}
-                        <ExternalLink className="w-2.5 h-2.5 shrink-0 opacity-50" />
-                      </a>
-                    ) : (
-                      <span className="text-xs font-medium text-gray-500 truncate">{entry.directory}</span>
-                    )}
+                    <a href={manageUrl} target="_blank" rel="noopener noreferrer"
+                      className="text-xs font-medium text-gray-600 hover:text-indigo-700 truncate flex items-center gap-1">
+                      {entry.directory}
+                      <ExternalLink className="w-2.5 h-2.5 shrink-0 opacity-50" />
+                    </a>
                   </div>
                 );
               })}
