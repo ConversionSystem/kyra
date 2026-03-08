@@ -494,7 +494,11 @@ export function SEODashboard({ clientId, clientName }: SEODashboardProps) {
       </Card>
 
       {/* NAP Audit */}
-      <NAPAuditPanel entries={data.nap_status} />
+      <NAPAuditPanel
+        entries={data.nap_status}
+        businessName={clientName}
+        city={(data.setup as Record<string, unknown>)?.city as string || ''}
+      />
 
       {/* Content Drafts + Published */}
       <ContentPanel entries={data.content_published} clientId={clientId} onRefresh={fetchData} />

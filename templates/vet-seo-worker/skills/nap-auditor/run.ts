@@ -20,6 +20,7 @@ interface DirectoryResult {
   found_data: Partial<MasterNAP> | null;
   issues: string[];
   last_checked: string;
+  listing_url?: string; // actual URL of the business listing page (not the search URL)
 }
 
 interface NAPAuditReport {
@@ -335,6 +336,8 @@ export async function runNAPAudit(
             found_data: foundData,
             issues,
             last_checked: today,
+            // Store the actual listing URL (scraped.url is the final URL after redirects)
+            listing_url: scraped.url !== searchUrl ? scraped.url : undefined,
           };
 
           if (status === 'mismatch') {
