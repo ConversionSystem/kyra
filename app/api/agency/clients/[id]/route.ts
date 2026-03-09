@@ -117,6 +117,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   if (body.name !== undefined) updates.name = body.name;
   if (body.industry !== undefined) updates.industry = body.industry;
   if (body.status !== undefined) updates.status = body.status;
+  if (body.ai_model !== undefined) updates.ai_model = body.ai_model;
 
   const supabase = await createClient();
 
