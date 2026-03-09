@@ -167,9 +167,9 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   // Docker env vars require container recreation — done async to not block the response.
   if (body.ai_model !== undefined) {
     const maxTier = getRouterTierForModel(body.ai_model);
-    void updateContainerTier(id, maxTier).then(result => {
+    void updateContainerTier(id, maxTier, body.ai_model).then(result => {
       if (result.ok) {
-        console.log(`[model] Container ${id} updated to KYRA_MAX_TIER=${maxTier} (${body.ai_model})`);
+        console.log(`[model] Container ${id} updated to KYRA_MAX_TIER=${maxTier} model=${body.ai_model}`);
       } else {
         console.warn(`[model] Failed to update container tier for ${id}:`, result.error);
       }

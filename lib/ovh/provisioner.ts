@@ -717,18 +717,19 @@ export async function updateContainerApiKey(
 }
 
 /**
- * Update KYRA_MAX_TIER on a running container when the agency changes
- * the client's AI model in the dashboard. Requires container recreation
- * since Docker env vars can't be changed on running containers.
+ * Update KYRA_MAX_TIER + openclaw.json model on a running container
+ * when the agency changes the client's AI model in the dashboard.
+ * Requires container recreation since Docker env vars can't be changed on running containers.
  */
 export async function updateContainerTier(
   clientId: string,
-  maxTier: number
+  maxTier: number,
+  modelId?: string
 ): Promise<{ ok: boolean; error?: string }> {
   try {
     const res = await provisionerFetch(`/containers/${clientId}/update-tier`, {
       method: 'POST',
-      body: JSON.stringify({ maxTier }),
+      body: JSON.stringify({ maxTier, modelId }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
