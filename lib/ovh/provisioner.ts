@@ -707,6 +707,30 @@ export async function updateContainerApiKey(
   }
 }
 
+/**
+ * Update KYRA_MAX_TIER on a running container when the agency changes
+ * the client's AI model in the dashboard. Requires container recreation
+ * since Docker env vars can't be changed on running containers.
+ */
+export async function updateContainerTier(
+  clientId: string,
+  maxTier: number
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await provisionerFetch(`/containers/${clientId}/update-tier`, {
+      method: 'POST',
+      body: JSON.stringify({ maxTier }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+      return { ok: false, error: err.error || `Provisioner returned ${res.status}` };
+    }
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
 // ============ Agency Gateway ============
 
 /**

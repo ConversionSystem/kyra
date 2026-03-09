@@ -28,6 +28,14 @@ export function ModelSelector({ value, onChange, disabled }: ModelSelectorProps)
 
   return (
     <div className="space-y-4">
+      <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs text-blue-300">
+        <Zap className="w-3.5 h-3.5 mt-0.5 shrink-0 text-blue-400" />
+        <span>
+          <strong>Smart routing active.</strong> Simple messages (greetings, FAQs) use fast models at no cost.
+          Your selected model is the <strong>maximum</strong> used for complex queries.
+          The OpenClaw terminal always shows <code className="bg-blue-900/40 px-1 rounded">openai/gpt-4o-mini</code> — this is normal.
+        </span>
+      </div>
       {(['mini', 'standard', 'reasoning', 'premium'] as const).map(tier => {
         const models = byTier[tier];
         if (!models.length) return null;

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { requireAgencyMember, requireAgencyAdmin, requireAgencyOwner } from '@/lib/agency/middleware';
-import { updateClientConfig } from '@/lib/ovh/provisioner';
+import { updateClientConfig, updateContainerTier } from '@/lib/ovh/provisioner';
+import { getRouterTierForModel } from '@/lib/billing/model-credits';
 import type { UpdateClientRequest } from '@/lib/agency/types';
 
 /**
@@ -160,6 +161,19 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   if (error || !client) {
     console.error('Failed to update client:', error);
     return NextResponse.json({ error: 'Failed to update client' }, { status: 500 });
+  }
+
+  // ── Update KYRA_MAX_TIER on container when AI model changes (fire-and-forget) ──
+  // Docker env vars require container recreation — done async to not block the response.
+  if (body.ai_model !== undefined) {
+    const maxTier = getRouterTierForModel(body.ai_model);
+    void updateContainerTier(id, maxTier).then(result => {
+      if (result.ok) {
+        console.log(`[model] Container ${id} updated to KYRA_MAX_TIER=${maxTier} (${body.ai_model})`);
+      } else {
+        console.warn(`[model] Failed to update container tier for ${id}:`, result.error);
+      }
+    });
   }
 
   // ── Push personality to container SOUL.md (fire-and-forget) ──────────────

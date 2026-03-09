@@ -451,6 +451,66 @@ app.post('/containers/:id/start', async (req, res) => {
   }
 });
 
+// ============ UPDATE TIER (recreate container with new KYRA_MAX_TIER) ============
+// Called when agency changes a client's AI model in the dashboard.
+// Env vars can't be changed without recreating the container.
+app.post('/containers/:id/update-tier', auth, async (req, res) => {
+  const clientId = req.params.id;
+  const maxTier = req.body.maxTier ?? 2;
+  const containerName = `kyra-cl-${clientId}`;
+
+  try {
+    const container = docker.getContainer(containerName);
+    const insp = await container.inspect();
+
+    // Build new env: replace KYRA_MAX_TIER, keep everything else
+    const newEnv = (insp.Config.Env || []).map(e =>
+      e.startsWith('KYRA_MAX_TIER=') ? `KYRA_MAX_TIER=${maxTier}` : e
+    );
+    // Add if not already present
+    if (!newEnv.some(e => e.startsWith('KYRA_MAX_TIER='))) {
+      newEnv.push(`KYRA_MAX_TIER=${maxTier}`);
+    }
+
+    // Stop and remove
+    try { await container.stop({ t: 5 }); } catch (_) {}
+    await container.remove();
+
+    // Recreate with updated env
+    const newContainer = await docker.createContainer({
+      name: containerName,
+      Image: insp.Config.Image,
+      Hostname: containerName,
+      Cmd: insp.Config.Cmd,
+      Env: newEnv,
+      Labels: insp.Config.Labels,
+      HostConfig: {
+        Memory: insp.HostConfig.Memory,
+        CpuShares: insp.HostConfig.CpuShares,
+        Binds: (insp.Mounts || []).filter(m => m.Type === 'bind').map(m => `${m.Source}:${m.Destination}`),
+        NetworkMode: 'kyra-net',
+        RestartPolicy: insp.HostConfig.RestartPolicy || { Name: '' },
+      },
+    });
+
+    // Reconnect extra networks
+    const networks = Object.keys(insp.NetworkSettings.Networks || {});
+    for (const net of networks.slice(1)) {
+      try {
+        const network = docker.getNetwork(net);
+        await network.connect({ Container: newContainer.id });
+      } catch (_) {}
+    }
+
+    await newContainer.start();
+    console.log(`[TIER] ${containerName} updated to KYRA_MAX_TIER=${maxTier}`);
+    res.json({ ok: true, clientId, maxTier, containerId: newContainer.id });
+  } catch (err) {
+    console.error(`[TIER] Failed to update tier for ${containerName}:`, err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ============ STOP CONTAINER ============
 app.post('/containers/:id/stop', async (req, res) => {
   try {
