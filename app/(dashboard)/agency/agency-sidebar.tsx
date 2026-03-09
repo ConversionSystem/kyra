@@ -39,6 +39,7 @@ import {
   ChevronRight,
   Star,
   Gift,
+  Cpu,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AgencySettings } from '@/lib/agency/types';
@@ -150,6 +151,7 @@ const soloNavSections: NavSection[] = [
     label: 'AI Worker',
     collapsible: true,
     items: [
+      { label: 'AI Model', href: '/agency/ai-model', icon: Cpu },
       { label: 'AI Templates', href: '/agency/ai-setup', icon: Sparkles },
       { label: 'Channels', href: '/agency/channels', icon: Radio },
       { label: 'Voice AI', href: '/agency/voice', icon: Phone },
