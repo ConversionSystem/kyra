@@ -13,11 +13,8 @@ import {
   Zap,
   ArrowRight,
   Sparkles,
-  Globe,
   Terminal,
   AlertTriangle,
-  CheckCircle2,
-  Clock,
   TrendingUp,
   Activity,
   Wifi,
@@ -56,7 +53,6 @@ interface SoloOverviewProps {
     created_at: string;
   }[];
   clientId: string | null;
-  agencyId: string;
   hasKnowledge: boolean;
   hasPersonality: boolean;
   clients: MissionControlClient[];
@@ -95,12 +91,10 @@ export default function SoloOverview({
   conversationsTotal,
   recentConversations,
   clientId,
-  agencyId,
   hasKnowledge,
   hasPersonality,
   clients,
 }: SoloOverviewProps) {
-  const embedId = clientId ?? agencyId;
   const isOnline = gatewayStatus === 'running';
 
   // Live credit tracking — poll every 15s + reconcile on mount
@@ -592,20 +586,29 @@ export default function SoloOverview({
 
       {/* ── Credits Warning ── */}
       {liveBalance <= 10 && (
-        <Card className="border-amber-200 bg-amber-50/50">
+        <Card className={liveBalance === 0 ? 'border-red-200 bg-red-50/50' : 'border-amber-200 bg-amber-50/50'}>
           <CardContent className="p-4 flex items-center gap-4">
-            <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
+            <AlertTriangle className={`h-5 w-5 shrink-0 ${liveBalance === 0 ? 'text-red-600' : 'text-amber-600'}`} />
             <div className="flex-1">
-              <p className="text-sm font-semibold text-amber-900">
+              <p className={`text-sm font-semibold ${liveBalance === 0 ? 'text-red-900' : 'text-amber-900'}`}>
                 {liveBalance === 0 ? 'Out of credits — AI worker paused' : `Only ${liveBalance} credits remaining`}
               </p>
-              <p className="text-xs text-amber-700 mt-0.5">
-                Top up to keep your AI worker responding.
+              <p className={`text-xs mt-0.5 ${liveBalance === 0 ? 'text-red-700' : 'text-amber-700'}`}>
+                {estimatedDaysLeft <= 30
+                  ? `At current usage pace, you have about ${Math.max(0, estimatedDaysLeft)} day${estimatedDaysLeft === 1 ? '' : 's'} left.`
+                  : 'Open Upgrade to top up, add your own API key, or earn bonus credits.'}
               </p>
             </div>
-            <Link href="/agency/credits">
-              <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-xs shrink-0">Get Credits</Button>
-            </Link>
+            <div className="flex items-center gap-2 shrink-0">
+              <Link href="/agency/upgrade">
+                <Button size="sm" className={`${liveBalance === 0 ? 'bg-red-600 hover:bg-red-700' : 'bg-amber-600 hover:bg-amber-700'} text-xs shrink-0`}>
+                  Upgrade
+                </Button>
+              </Link>
+              <Link href="/agency/referrals">
+                <Button size="sm" variant="outline" className="text-xs shrink-0">Free Credits</Button>
+              </Link>
+            </div>
           </CardContent>
         </Card>
       )}

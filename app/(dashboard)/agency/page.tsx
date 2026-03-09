@@ -179,7 +179,6 @@ export default async function AgencyOverviewPage() {
         conversationsTotal={soloConvosTotal}
         recentConversations={soloConversations}
         clientId={soloClient?.id ?? null}
-        agencyId={agency.id}
         hasKnowledge={!!(soloConfig.knowledge_trained || soloConfig.website_url)}
         hasPersonality={!!(soloConfig.persona || soloConfig.instructions)}
         clients={soloClients.map(c => ({
@@ -199,6 +198,9 @@ export default async function AgencyOverviewPage() {
   // Show trial credits banner when: still on welcome credits, haven't purchased yet
   const showTrialCreditsBanner = agencyCredits.lifetimePurchased === 0 && agencyCredits.balance > 0;
 
+  // Low-credit upgrade prompt
+  const showLowCreditsUpgradePrompt = agencyCredits.balance <= 10;
+
   // Stats
   const totalCount = clients.length;
   const activeNow = clients.filter((c) => c.gateway_status === 'running').length;
@@ -206,6 +208,11 @@ export default async function AgencyOverviewPage() {
   const needAttention = clients.filter(
     (c) => c.gateway_status === 'running' && c.usage_this_month === 0,
   ).length;
+
+  const avgDailyConversationPace = totalUsage > 0 ? totalUsage / Math.max(new Date().getDate(), 1) : 0;
+  const estimatedLowCreditDaysLeft = avgDailyConversationPace > 0
+    ? Math.floor(agencyCredits.balance / avgDailyConversationPace)
+    : null;
 
   // Checklist props
   const checklistProps = {
@@ -372,6 +379,35 @@ export default async function AgencyOverviewPage() {
             <Link href="/agency/api-keys">
               <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-xs h-8 px-3">
                 Add API Key
+              </Button>
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* ── Critical Low Credits Prompt ── */}
+      {showLowCreditsUpgradePrompt && (
+        <div className={`mt-4 flex items-center gap-4 rounded-xl border px-4 py-3.5 ${agencyCredits.balance === 0 ? 'border-red-200 bg-red-50' : 'border-amber-200 bg-amber-50'}`}>
+          <AlertTriangle className={`h-5 w-5 shrink-0 ${agencyCredits.balance === 0 ? 'text-red-600' : 'text-amber-600'}`} />
+          <div className="flex-1 min-w-0">
+            <p className={`text-sm font-semibold ${agencyCredits.balance === 0 ? 'text-red-900' : 'text-amber-900'}`}>
+              {agencyCredits.balance === 0 ? 'Out of credits — AI responses may pause' : `Only ${agencyCredits.balance} credits left`}
+            </p>
+            <p className={`text-xs mt-0.5 ${agencyCredits.balance === 0 ? 'text-red-700' : 'text-amber-700'}`}>
+              {estimatedLowCreditDaysLeft !== null
+                ? `At current pace you have about ${estimatedLowCreditDaysLeft} day${estimatedLowCreditDaysLeft === 1 ? '' : 's'} before empty.`
+                : 'Open Upgrade to top up, add your own API key, or earn free credits.'}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Link href="/agency/upgrade">
+              <Button size="sm" className={`${agencyCredits.balance === 0 ? 'bg-red-600 hover:bg-red-700' : 'bg-amber-600 hover:bg-amber-700'} text-xs h-8 px-3`}>
+                Upgrade
+              </Button>
+            </Link>
+            <Link href="/agency/referrals">
+              <Button size="sm" variant="outline" className="text-xs h-8 px-3">
+                Free Credits
               </Button>
             </Link>
           </div>
