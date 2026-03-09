@@ -898,6 +898,99 @@ app.get('/image/status', async (req, res) => {
   }
 });
 
+// ============ BULK MIGRATE EXISTING CONTAINERS TO KYRA-ROUTER ============
+app.post('/router/migrate-all', auth, async (req, res) => {
+  const dryRun = req.query.dry_run === 'true';
+  const results = { migrated: [], skipped: [], failed: [], dry_run: dryRun };
+
+  try {
+    // Ensure router is running first
+    await ensureKyraRouter();
+
+    const allContainers = await docker.listContainers({ all: true });
+    const kyraContainers = allContainers.filter(c =>
+      c.Labels && c.Labels['kyra.managed'] === 'true' &&
+      c.Labels['kyra.role'] !== 'router'  // skip the router itself
+    );
+
+    console.log(`[migrate-all] Found ${kyraContainers.length} Kyra containers`);
+
+    for (const c of kyraContainers) {
+      const name = c.Names[0].replace('/', '');
+      try {
+        const container = docker.getContainer(c.Id);
+        const info = await container.inspect();
+
+        // Check if already has OPENAI_BASE_URL pointing to kyra-router
+        const currentEnv = info.Config.Env || [];
+        const alreadyRouted = currentEnv.some(e =>
+          e.startsWith('OPENAI_BASE_URL=') && e.includes('kyra-router')
+        );
+
+        if (alreadyRouted) {
+          results.skipped.push({ name, reason: 'already_routed' });
+          continue;
+        }
+
+        if (dryRun) {
+          results.migrated.push({ name, dry_run: true });
+          continue;
+        }
+
+        // Build new env — add/replace OPENAI_BASE_URL
+        const newEnv = currentEnv
+          .filter(e => !e.startsWith('OPENAI_BASE_URL='))
+          .concat(`OPENAI_BASE_URL=${KYRA_ROUTER_URL}`);
+
+        const wasRunning = info.State.Running;
+
+        // Stop and remove (data is safe in bind mount)
+        if (wasRunning) await container.stop({ t: 5 });
+        await container.remove();
+
+        // Recreate with same config + new env
+        const newContainer = await docker.createContainer({
+          Image: info.Config.Image,
+          name: name,
+          Hostname: info.Config.Hostname,
+          Cmd: info.Config.Cmd,
+          Env: newEnv,
+          Labels: info.Config.Labels,
+          HostConfig: {
+            ...info.HostConfig,
+            // Normalize restart policy
+            RestartPolicy: info.HostConfig.RestartPolicy || { Name: 'unless-stopped' },
+          },
+        });
+
+        if (wasRunning) await newContainer.start();
+        results.migrated.push({ name, restarted: wasRunning });
+        console.log(`[migrate-all] ✅ ${name} — kyra-router wired`);
+
+      } catch (err) {
+        console.error(`[migrate-all] ❌ ${name}:`, err.message);
+        results.failed.push({ name, error: err.message });
+      }
+
+      // Small delay between containers to avoid overwhelming the VPS
+      await new Promise(r => setTimeout(r, 500));
+    }
+
+    res.json({
+      ...results,
+      summary: {
+        total: kyraContainers.length,
+        migrated: results.migrated.length,
+        skipped: results.skipped.length,
+        failed: results.failed.length,
+      }
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message, results });
+  }
+});
+
 // ============ ROUTER MANAGEMENT ENDPOINT ============
 app.get('/router/status', auth, async (req, res) => {
   try {
