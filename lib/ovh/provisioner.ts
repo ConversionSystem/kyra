@@ -928,6 +928,25 @@ export async function getRouterStatus(): Promise<{
   }
 }
 
+/**
+ * Push per-client quick-answer templates to kyra-router.
+ * Templates are answered at Tier-0 ($0) — no LLM call, no credits consumed.
+ */
+export async function pushClientTemplates(
+  clientId: string,
+  templates: Record<string, string>
+): Promise<boolean> {
+  try {
+    const res = await provisionerFetch(`/containers/${clientId}/templates`, {
+      method: 'POST',
+      body: JSON.stringify({ templates }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 export async function migrateAllContainersToRouter(
   dryRun = false
 ): Promise<{

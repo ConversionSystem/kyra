@@ -28,6 +28,7 @@ import RoiSummaryCard from '@/components/dashboard/roi-summary-card';
 import SoloOverview from '@/components/dashboard/solo-overview';
 import { LaunchProgress } from '@/components/onboarding/launch-progress';
 import { FleetStatusBar } from '@/components/dashboard/fleet-status-bar';
+import RouterSavingsWidget from '@/components/dashboard/router-savings-widget';
 import { StartTourButton } from '@/components/onboarding/guided-tour';
 
 function getGreeting(): string {
@@ -395,6 +396,11 @@ export default async function AgencyOverviewPage() {
 
       {/* ── Setup Checklist ── */}
       <AgencyChecklist {...checklistProps} />
+
+      {/* ── AI Cost Savings Widget ── */}
+      <div className="mb-6">
+        <RouterSavingsWidget />
+      </div>
 
       {/* ── ROI Summary Card — shows once conversations have started ── */}
       {totalUsage > 0 && (

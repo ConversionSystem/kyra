@@ -56,6 +56,7 @@ import ClientActivityHeatmap from '@/components/dashboard/client-activity-heatma
 import { VoiceClient } from '@/app/(dashboard)/agency/voice/voice-client';
 import RoiSummaryCard from '@/components/dashboard/roi-summary-card';
 import { ModelSelector } from '@/components/dashboard/model-selector';
+import QuickAnswersEditor from '@/components/dashboard/quick-answers-editor';
 import { MemoryBrowser } from './memory-browser';
 import { CustomerIntelligence } from './customer-intelligence';
 import { AICapabilities } from './ai-capabilities';
@@ -1530,6 +1531,9 @@ function SettingsTab({
           )}
         </CardContent>
       </Card>
+
+      {/* Quick Answers — free template injection */}
+      <QuickAnswersEditor clientId={client.id} />
 
       {/* Private Notes */}
       <Card>
