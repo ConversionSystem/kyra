@@ -304,36 +304,33 @@ app.post('/containers', async (req, res) => {
     // BYOK routing rule:
     //   - Agency uses platform key (no BYOK): inject only OPENAI_API_KEY + OPENAI_BASE_URL
     //     → all AI calls route through kyra-router for cost savings
-    //   - Agency uses own Anthropic/Google key (BYOK): inject their keys directly,
+    //   - Agency brings ANY key of their own (BYOK): inject their keys directly,
     //     NO OPENAI_BASE_URL → OpenClaw calls their provider directly (bypasses router)
     //     Reason: the router saves Kyra money by using platform keys. If the client
     //     is paying with their own key, the router adds no value and breaks their model.
+    //     Rule: ANY BYOK key (Anthropic, OpenAI, OpenRouter, Google) = bypass router.
     //
     const providedApiKeys = req.body.apiKeys || {};
-    const hasByokNonOpenAI = !!(providedApiKeys.anthropic || providedApiKeys.google);
+    const PROVIDER_ENV_MAP = {
+      openai: 'OPENAI_API_KEY',
+      anthropic: 'ANTHROPIC_API_KEY',
+      google: 'GOOGLE_AI_API_KEY',
+      openrouter: 'OPENROUTER_API_KEY',
+    };
+    const hasByok = Object.entries(providedApiKeys).some(
+      ([p, k]) => PROVIDER_ENV_MAP[p] && typeof k === 'string' && k.length > 0
+    );
     const apiKeyEnvs = [];
 
-    if (hasByokNonOpenAI) {
-      // BYOK with Anthropic/Google: inject all their keys, skip OPENAI_BASE_URL
-      const PROVIDER_ENV_MAP = {
-        openai: 'OPENAI_API_KEY',
-        anthropic: 'ANTHROPIC_API_KEY',
-        google: 'GOOGLE_AI_API_KEY',
-        openrouter: 'OPENROUTER_API_KEY',
-      };
+    if (hasByok) {
+      // BYOK: inject all their keys, skip OPENAI_BASE_URL entirely
       for (const [provider, key] of Object.entries(providedApiKeys)) {
         const envName = PROVIDER_ENV_MAP[provider];
         if (envName && key && typeof key === 'string') apiKeyEnvs.push(`${envName}=${key}`);
       }
     } else {
-      // Platform key or OpenAI BYOK: route through kyra-router
-      if (providedApiKeys.openai) {
-        apiKeyEnvs.push(`OPENAI_API_KEY=${providedApiKeys.openai}`);
-      }
-      // Fallback to provisioner's own OpenAI key
-      if (apiKeyEnvs.length === 0) {
-        apiKeyEnvs.push(`OPENAI_API_KEY=${process.env.OPENAI_API_KEY || ''}`);
-      }
+      // Platform key: route through kyra-router using Kyra's OpenAI key
+      apiKeyEnvs.push(`OPENAI_API_KEY=${process.env.OPENAI_API_KEY || ''}`);
     }
 
     // Ensure the shared kyra-router is running before creating new containers
@@ -351,9 +348,9 @@ app.post('/containers', async (req, res) => {
         `OPENCLAW_GATEWAY_TOKEN=${authToken}`,
         `KYRA_AUTH_TOKEN=${authToken}`,
         `NODE_OPTIONS=--max-old-space-size=${memoryMb}`,
-        // Route through kyra-router only when NOT using BYOK Anthropic/Google keys.
-        // BYOK clients call their provider directly (router adds no value, breaks their model).
-        ...(hasByokNonOpenAI ? [] : [
+        // Route through kyra-router only when NOT using any BYOK key.
+        // Any BYOK agency (any provider) calls their provider directly — router adds no value.
+        ...(hasByok ? [] : [
           `OPENAI_BASE_URL=${KYRA_ROUTER_URL}`,
           `KYRA_MAX_TIER=${req.body.routerMaxTier ?? 2}`,
         ]),
