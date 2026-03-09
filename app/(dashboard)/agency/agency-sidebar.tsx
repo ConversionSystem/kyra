@@ -153,7 +153,6 @@ const soloNavSections: NavSection[] = [
     collapsible: true,
     items: [
       { label: 'AI Model', href: '/agency/ai-model', icon: Cpu },
-      { label: 'Quick Answers', href: '/agency/quick-answers', icon: Zap, badge: 'Free' },
       { label: 'AI Templates', href: '/agency/ai-setup', icon: Sparkles },
       { label: 'Channels', href: '/agency/channels', icon: Radio },
       { label: 'Voice AI', href: '/agency/voice', icon: Phone },

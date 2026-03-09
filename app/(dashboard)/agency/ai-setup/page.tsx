@@ -13,10 +13,24 @@ export default async function AISetupPage() {
   const result = await getAgencyForUser(user.id);
   if (!result) redirect('/signup/agency');
 
+  const settings = (result.agency.settings as Record<string, unknown>) ?? {};
+  let clientId = (settings.solo_client_id as string) ?? null;
+
+  if (!clientId) {
+    const { data: firstClient } = await supabase
+      .from('agency_clients')
+      .select('id')
+      .eq('agency_id', result.agency.id)
+      .limit(1)
+      .maybeSingle();
+    clientId = firstClient?.id ?? null;
+  }
+
   return (
     <AISetupClient
       agencyId={result.agency.id}
       businessName={result.agency.name}
+      clientId={clientId}
     />
   );
 }
