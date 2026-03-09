@@ -165,13 +165,13 @@ export async function provisionClientGateway(
       if (agencyApiKeys[provider]) apiKeysForContainer[provider] = agencyApiKeys[provider];
     }
 
-    // If agency has a preferred model, update openclaw.json defaults via config
-    const agentModel = winningKey ? {
-      primary: winningKey.model,
-      fallbacks: winningKey.provider === 'anthropic'
-        ? ['anthropic/claude-haiku-4-5']
-        : ['openai/gpt-4o-mini'],
-    } : undefined;
+    // Always use openai/gpt-4o-mini as the OpenClaw model — all calls route through
+    // kyra-router which intelligently escalates based on KYRA_MAX_TIER. Never pass
+    // anthropic/google models directly — they bypass the router entirely.
+    const agentModel = {
+      primary: 'openai/gpt-4o-mini',
+      fallbacks: ['openai/gpt-4o'],
+    };
 
     // Resolve KYRA_MAX_TIER based on client's selected AI model
     const { data: clientData } = await supabase
@@ -181,6 +181,12 @@ export async function provisionClientGateway(
       .single();
     const routerMaxTier = getRouterTierForModel(clientData?.ai_model);
 
+    // Only pass OpenAI key to container — Anthropic/Google keys are used by kyra-router
+    // directly (not by the container). Passing Anthropic key to containers is harmless
+    // but confusing; we strip it to keep containers clean.
+    const openAiKey = apiKeysForContainer['openai'];
+    const cleanApiKeys = openAiKey ? { openai: openAiKey } : undefined;
+
     // Call OVH provisioner
     const res = await provisionerFetch('/containers', {
       method: 'POST',
@@ -189,7 +195,7 @@ export async function provisionClientGateway(
         agencyId,
         clientName: clientName || undefined,
         config,
-        apiKeys: Object.keys(apiKeysForContainer).length > 0 ? apiKeysForContainer : undefined,
+        apiKeys: cleanApiKeys,
         agentModel,
         routerMaxTier,  // passed to provisioner → sets KYRA_MAX_TIER on container
         resources: {
@@ -772,7 +778,8 @@ Be direct, strategic, and action-oriented. The agency owner is busy building a b
         // NOTE: uses default kyra-cl- prefix so Traefik/nginx routes it correctly
         config: { soulMd, userMd },
         apiKeys: Object.keys(apiKeysForContainer).length > 0 ? apiKeysForContainer : undefined,
-        agentModel: winningKey ? { primary: winningKey.model, fallbacks: [winningKey.model] } : undefined,
+        // Always use openai/gpt-4o-mini — routes through kyra-router
+        agentModel: { primary: 'openai/gpt-4o-mini', fallbacks: ['openai/gpt-4o'] },
         resources: { memoryMb: 1024, cpuShares: 256 },
       }),
     });
