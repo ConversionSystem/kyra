@@ -334,6 +334,8 @@ app.post('/containers', async (req, res) => {
         `NODE_OPTIONS=--max-old-space-size=${memoryMb}`,
         // Route all AI calls through kyra-router for 60-90% cost savings
         `OPENAI_BASE_URL=${KYRA_ROUTER_URL}`,
+        // Set max model tier based on client's selected AI model (from Kyra dashboard)
+        `KYRA_MAX_TIER=${req.body.routerMaxTier ?? 2}`,
         ...apiKeyEnvs,
       ],
       Labels: {
