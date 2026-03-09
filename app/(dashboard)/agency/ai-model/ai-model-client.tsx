@@ -7,9 +7,10 @@ import { Cpu, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 
 interface AiModelClientProps {
   initialModel: string;
+  availableProviders: ('openai' | 'anthropic' | 'google')[];
 }
 
-export function AiModelClient({ initialModel }: AiModelClientProps) {
+export function AiModelClient({ initialModel, availableProviders }: AiModelClientProps) {
   const [aiModel, setAiModel] = useState(initialModel);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -73,6 +74,7 @@ export function AiModelClient({ initialModel }: AiModelClientProps) {
             value={aiModel}
             onChange={handleModelChange}
             disabled={saving}
+            availableProviders={availableProviders}
           />
         </CardContent>
       </Card>

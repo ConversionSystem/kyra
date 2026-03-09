@@ -17,7 +17,6 @@ export default async function AiModelPage() {
   const settings = (agency.settings as Record<string, unknown>) ?? {};
 
   // Model preference — stored in agency.settings.ai_model
-  // Falls back to solo_client_id's ai_model if set, then defaults to gpt-4o-mini
   let currentModel = (settings.ai_model as string) ?? 'gpt-4o-mini';
 
   // If agency settings doesn't have ai_model yet, check the client row
@@ -33,6 +32,27 @@ export default async function AiModelPage() {
     }
   }
 
-  // Always show the selector — never redirect or show "not set up"
-  return <AiModelClient initialModel={currentModel} />;
+  // Determine which providers the agency has BYOK keys for
+  const { data: agencyRow } = await supabase
+    .from('agencies')
+    .select('api_keys')
+    .eq('id', agency.id)
+    .single();
+
+  const apiKeys = (agencyRow?.api_keys as Record<string, unknown>) ?? {};
+  const availableProviders: ('openai' | 'anthropic' | 'google')[] = ['openai'];
+  if (apiKeys.anthropic) availableProviders.push('anthropic');
+  if (apiKeys.google) availableProviders.push('google');
+  // OpenRouter can serve any provider
+  if (apiKeys.openrouter) {
+    if (!availableProviders.includes('anthropic')) availableProviders.push('anthropic');
+    if (!availableProviders.includes('google')) availableProviders.push('google');
+  }
+
+  return (
+    <AiModelClient
+      initialModel={currentModel}
+      availableProviders={availableProviders}
+    />
+  );
 }
