@@ -20,6 +20,7 @@ const PROVISIONER_SECRET = process.env.OVH_PROVISIONER_SECRET || '';
 const GATEWAY_DOMAIN = 'gw.kyra.conversionsystem.com';
 
 import { resolveOcModel } from '@/lib/agency/ai-models';
+import { getRouterTierForModel } from '@/lib/billing/model-credits';
 
 /**
  * Given an agencies.api_keys record, return the winning provider + key + model.
@@ -172,6 +173,14 @@ export async function provisionClientGateway(
         : ['openai/gpt-4o-mini'],
     } : undefined;
 
+    // Resolve KYRA_MAX_TIER based on client's selected AI model
+    const { data: clientData } = await supabase
+      .from('agency_clients')
+      .select('ai_model')
+      .eq('id', clientId)
+      .single();
+    const routerMaxTier = getRouterTierForModel(clientData?.ai_model);
+
     // Call OVH provisioner
     const res = await provisionerFetch('/containers', {
       method: 'POST',
@@ -182,6 +191,7 @@ export async function provisionClientGateway(
         config,
         apiKeys: Object.keys(apiKeysForContainer).length > 0 ? apiKeysForContainer : undefined,
         agentModel,
+        routerMaxTier,  // passed to provisioner → sets KYRA_MAX_TIER on container
         resources: {
           memoryMb: resources.memoryMb || 1024,  // OpenClaw needs ~350MB min; 256 causes OOM crash
           cpuShares: resources.cpuShares || 256,
