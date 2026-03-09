@@ -273,7 +273,7 @@ export default function ROICalculatorPage() {
                 <CheckCircle className="h-8 w-8 text-green-400 mx-auto mb-3" />
                 <p className="font-bold text-white mb-1">Your ROI report is on the way!</p>
                 <p className="text-sm text-slate-400 mb-4">Check your inbox for the full breakdown + implementation guide.</p>
-                <Link href="/signup/agency" className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-3 rounded-xl w-full justify-center transition">
+                <Link href="/solo" className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-3 rounded-xl w-full justify-center transition">
                   Start Free — Deploy in 10 Minutes <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>
@@ -306,7 +306,7 @@ export default function ROICalculatorPage() {
                   </button>
                 </form>
                 <div className="border-t border-gray-100 pt-3 text-center">
-                  <Link href="/signup/agency" className="inline-flex items-center gap-1.5 text-sm text-indigo-600 hover:text-indigo-800 font-semibold">
+                  <Link href="/solo" className="inline-flex items-center gap-1.5 text-sm text-indigo-600 hover:text-indigo-800 font-semibold">
                     Or start free now → <ArrowRight className="h-3.5 w-3.5" />
                   </Link>
                 </div>
