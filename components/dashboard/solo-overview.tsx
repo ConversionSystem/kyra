@@ -26,6 +26,8 @@ import {
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import RouterSavingsWidget from '@/components/dashboard/router-savings-widget';
+import QuickAnswersEditor from '@/components/dashboard/quick-answers-editor';
 
 interface MissionControlClient {
   id: string;
@@ -474,6 +476,11 @@ export default function SoloOverview({
 
       {/* Setup Progress removed — not useful per product feedback */}
 
+      {/* ── AI Cost Savings ── */}
+      <div className="mb-6">
+        <RouterSavingsWidget />
+      </div>
+
       {/* ── Live Activity Feed ── */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
@@ -532,6 +539,13 @@ export default function SoloOverview({
           </Card>
         )}
       </div>
+
+      {/* ── Quick Answers — free template injection ── */}
+      {clientId && (
+        <div className="mb-6">
+          <QuickAnswersEditor clientId={clientId} />
+        </div>
+      )}
 
       {/* ── Embed Code ── */}
       {clientId && (
