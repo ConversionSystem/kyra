@@ -29,6 +29,7 @@ import SoloOverview from '@/components/dashboard/solo-overview';
 import { LaunchProgress } from '@/components/onboarding/launch-progress';
 import { FleetStatusBar } from '@/components/dashboard/fleet-status-bar';
 import { StartTourButton } from '@/components/onboarding/guided-tour';
+import LowCreditBanner from '@/components/dashboard/low-credit-banner';
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -337,6 +338,9 @@ export default async function AgencyOverviewPage() {
           </Button>
         </Link>
       </div>
+
+      {/* ── Low Credit Banner (shows when agency credits ≤ 10) ── */}
+      <LowCreditBanner balance={agencyCredits.balance} />
 
       {/* ── What's New Banner (platform admin only) ── */}
       {isAdmin && <WhatsNewBanner />}
