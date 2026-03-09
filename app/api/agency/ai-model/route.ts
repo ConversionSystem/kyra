@@ -51,7 +51,7 @@ export async function PATCH(req: NextRequest) {
 
     // 3. Update container tier (non-fatal if it fails)
     try {
-      await updateContainerTier(soloClientId, modelDef.routerMaxTier);
+      await updateContainerTier(soloClientId, modelDef.routerMaxTier, modelId);
     } catch {
       // Container update failed — model preference still saved, will apply on next provision
     }
@@ -70,7 +70,7 @@ export async function PATCH(req: NextRequest) {
         .update({ ai_model: modelId })
         .eq('id', firstClient.id);
       try {
-        await updateContainerTier(firstClient.id, modelDef.routerMaxTier);
+        await updateContainerTier(firstClient.id, modelDef.routerMaxTier, modelId);
       } catch { /* non-fatal */ }
     }
   }
