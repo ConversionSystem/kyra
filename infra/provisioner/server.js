@@ -22,6 +22,61 @@ const NETWORK_NAME = 'kyra-net';
 const DOMAIN_SUFFIX = 'gw.kyra.conversionsystem.com';
 const GATEWAY_IMAGE = 'kyra-gateway:latest';
 
+// Kyra Router — shared sidecar for intelligent model routing
+// One instance per VPS. All OpenClaw containers route through it.
+const KYRA_ROUTER_IMAGE = 'kyra-router:latest';
+const KYRA_ROUTER_NAME = 'kyra-router';
+const KYRA_ROUTER_PORT = 8104;
+const KYRA_ROUTER_URL = `http://${KYRA_ROUTER_NAME}:${KYRA_ROUTER_PORT}/v1`;
+
+/**
+ * Ensure the shared kyra-router container is running.
+ * Called once at provisioner startup and before any new container is created.
+ */
+async function ensureKyraRouter() {
+  try {
+    const existing = docker.getContainer(KYRA_ROUTER_NAME);
+    const info = await existing.inspect();
+    if (info.State.Running) {
+      console.log('[kyra-router] already running');
+      return;
+    }
+    console.log('[kyra-router] starting stopped container...');
+    await existing.start();
+    return;
+  } catch (_) {
+    // Container doesn't exist — create it
+  }
+
+  console.log('[kyra-router] creating shared router container...');
+  try {
+    const container = await docker.createContainer({
+      Image: KYRA_ROUTER_IMAGE,
+      name: KYRA_ROUTER_NAME,
+      Hostname: KYRA_ROUTER_NAME,
+      Env: [
+        `OPENAI_API_KEY=${process.env.OPENAI_API_KEY || ''}`,
+        `ANTHROPIC_API_KEY=${process.env.ANTHROPIC_API_KEY || ''}`,
+        `OPENROUTER_API_KEY=${process.env.OPENROUTER_API_KEY || ''}`,
+        `KYRA_MAX_TIER=2`,        // cap at GPT-4o-mini / Haiku by default
+        `KYRA_DAILY_CAP=50.00`,   // $50/day across all containers (shared)
+        `KYRA_MONTHLY_BUDGET=500.00`,
+      ],
+      Labels: { 'kyra.managed': 'true', 'kyra.role': 'router' },
+      HostConfig: {
+        Memory: 256 * 1024 * 1024,   // 256MB — lightweight Python service
+        NetworkMode: NETWORK_NAME,
+        RestartPolicy: { Name: 'unless-stopped' },
+      },
+    });
+    await container.start();
+    console.log('[kyra-router] started successfully');
+  } catch (err) {
+    console.error('[kyra-router] failed to start:', err.message);
+    // Non-fatal — containers will fall back to direct API calls
+  }
+}
+
 // Build the default openclaw.json for a new client container
 function buildOpenclawConfig(authToken, clientId, agencyId, clientName, agentModel) {
   const agentName = clientName ? clientName.trim() : 'AI Assistant';
@@ -262,6 +317,9 @@ app.post('/containers', async (req, res) => {
       apiKeyEnvs.push(`OPENAI_API_KEY=${process.env.OPENAI_API_KEY || ''}`);
     }
 
+    // Ensure the shared kyra-router is running before creating new containers
+    await ensureKyraRouter();
+
     // Create container
     const container = await docker.createContainer({
       Image: GATEWAY_IMAGE,
@@ -274,6 +332,8 @@ app.post('/containers', async (req, res) => {
         `OPENCLAW_GATEWAY_TOKEN=${authToken}`,
         `KYRA_AUTH_TOKEN=${authToken}`,
         `NODE_OPTIONS=--max-old-space-size=${memoryMb}`,
+        // Route all AI calls through kyra-router for 60-90% cost savings
+        `OPENAI_BASE_URL=${KYRA_ROUTER_URL}`,
         ...apiKeyEnvs,
       ],
       Labels: {
@@ -838,14 +898,137 @@ app.get('/image/status', async (req, res) => {
   }
 });
 
+// ============ BULK MIGRATE EXISTING CONTAINERS TO KYRA-ROUTER ============
+app.post('/router/migrate-all', auth, async (req, res) => {
+  const dryRun = req.query.dry_run === 'true';
+  const results = { migrated: [], skipped: [], failed: [], dry_run: dryRun };
+
+  try {
+    // Ensure router is running first
+    await ensureKyraRouter();
+
+    const allContainers = await docker.listContainers({ all: true });
+    const kyraContainers = allContainers.filter(c =>
+      c.Labels && c.Labels['kyra.managed'] === 'true' &&
+      c.Labels['kyra.role'] !== 'router'  // skip the router itself
+    );
+
+    console.log(`[migrate-all] Found ${kyraContainers.length} Kyra containers`);
+
+    for (const c of kyraContainers) {
+      const name = c.Names[0].replace('/', '');
+      try {
+        const container = docker.getContainer(c.Id);
+        const info = await container.inspect();
+
+        // Check if already has OPENAI_BASE_URL pointing to kyra-router
+        const currentEnv = info.Config.Env || [];
+        const alreadyRouted = currentEnv.some(e =>
+          e.startsWith('OPENAI_BASE_URL=') && e.includes('kyra-router')
+        );
+
+        if (alreadyRouted) {
+          results.skipped.push({ name, reason: 'already_routed' });
+          continue;
+        }
+
+        if (dryRun) {
+          results.migrated.push({ name, dry_run: true });
+          continue;
+        }
+
+        // Build new env — add/replace OPENAI_BASE_URL
+        const newEnv = currentEnv
+          .filter(e => !e.startsWith('OPENAI_BASE_URL='))
+          .concat(`OPENAI_BASE_URL=${KYRA_ROUTER_URL}`);
+
+        const wasRunning = info.State.Running;
+
+        // Stop and remove (data is safe in bind mount)
+        if (wasRunning) await container.stop({ t: 5 });
+        await container.remove();
+
+        // Recreate with same config + new env
+        const newContainer = await docker.createContainer({
+          Image: info.Config.Image,
+          name: name,
+          Hostname: info.Config.Hostname,
+          Cmd: info.Config.Cmd,
+          Env: newEnv,
+          Labels: info.Config.Labels,
+          HostConfig: {
+            ...info.HostConfig,
+            // Normalize restart policy
+            RestartPolicy: info.HostConfig.RestartPolicy || { Name: 'unless-stopped' },
+          },
+        });
+
+        if (wasRunning) await newContainer.start();
+        results.migrated.push({ name, restarted: wasRunning });
+        console.log(`[migrate-all] ✅ ${name} — kyra-router wired`);
+
+      } catch (err) {
+        console.error(`[migrate-all] ❌ ${name}:`, err.message);
+        results.failed.push({ name, error: err.message });
+      }
+
+      // Small delay between containers to avoid overwhelming the VPS
+      await new Promise(r => setTimeout(r, 500));
+    }
+
+    res.json({
+      ...results,
+      summary: {
+        total: kyraContainers.length,
+        migrated: results.migrated.length,
+        skipped: results.skipped.length,
+        failed: results.failed.length,
+      }
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message, results });
+  }
+});
+
+// ============ ROUTER MANAGEMENT ENDPOINT ============
+app.get('/router/status', auth, async (req, res) => {
+  try {
+    const container = docker.getContainer(KYRA_ROUTER_NAME);
+    const info = await container.inspect();
+    res.json({
+      running: info.State.Running,
+      started: info.State.StartedAt,
+      image: info.Config.Image,
+      url: KYRA_ROUTER_URL,
+    });
+  } catch (_) {
+    res.json({ running: false, url: KYRA_ROUTER_URL });
+  }
+});
+
+app.post('/router/restart', auth, async (req, res) => {
+  try {
+    await ensureKyraRouter();
+    res.json({ ok: true, message: 'kyra-router running' });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 // ============ START SERVER ============
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Kyra Provisioner API running on port ${PORT}`);
   console.log(`   Domain: ${DOMAIN_SUFFIX}`);
   console.log(`   Data: ${DATA_DIR}`);
   console.log(`   Dynamic routes: ${DYNAMIC_DIR}`);
-  
+
   // Ensure directories exist
   fs.mkdirSync(DATA_DIR, { recursive: true });
   fs.mkdirSync(DYNAMIC_DIR, { recursive: true });
+
+  // Start shared kyra-router on boot (non-blocking)
+  ensureKyraRouter().catch(err =>
+    console.warn('[kyra-router] startup warning:', err.message)
+  );
 });

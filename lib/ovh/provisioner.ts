@@ -857,3 +857,40 @@ export async function resolveClientGateway(
 
   return { url: agency.gateway_url, token: agency.gateway_token };
 }
+
+// ─── Kyra Router ──────────────────────────────────────────────────────────────
+
+export async function getRouterStatus(): Promise<{
+  running: boolean;
+  url: string;
+  started?: string;
+} | null> {
+  try {
+    const res = await provisionerFetch('/router/status');
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+
+export async function migrateAllContainersToRouter(
+  dryRun = false
+): Promise<{
+  summary: { total: number; migrated: number; skipped: number; failed: number };
+  migrated: { name: string }[];
+  skipped: { name: string; reason: string }[];
+  failed: { name: string; error: string }[];
+  dry_run: boolean;
+} | null> {
+  try {
+    const res = await provisionerFetch(
+      `/router/migrate-all${dryRun ? '?dry_run=true' : ''}`,
+      { method: 'POST' }
+    );
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
