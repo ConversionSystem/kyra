@@ -417,6 +417,11 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
                         {escalationCount > 9 ? '9+' : escalationCount}
                       </span>
                     )}
+                    {item.href === '/agency/ai-model' && !isActive && (
+                      <span className="ml-auto bg-indigo-500 text-white text-[9px] font-bold rounded px-1.5 py-0.5 leading-none uppercase tracking-wide">
+                        New
+                      </span>
+                    )}
                   </Link>
                 );
               })}
