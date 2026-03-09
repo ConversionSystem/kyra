@@ -168,21 +168,24 @@ export async function provisionClientGateway(
     // BYOK routing rule:
     // - BYOK with Anthropic/Google key → use their model directly (bypass router)
     // - Platform key or OpenAI BYOK → use openai/gpt-4o-mini + router
-    const hasByokNonOpenAI = !!(apiKeysForContainer['anthropic'] || apiKeysForContainer['google']);
+    // BYOK routing rule:
+    // If the agency has provided ANY key of their own (any provider), bypass kyra-router.
+    // The router only saves Kyra money when Kyra's platform keys are in use.
+    // If the client is paying with their own key, the router adds zero value — bypass it.
+    const hasByok = Object.values(apiKeysForContainer).some(v => typeof v === 'string' && v.length > 0);
 
     let agentModel: { primary: string; fallbacks: string[] };
     let cleanApiKeys: Record<string, string> | undefined;
 
-    if (hasByokNonOpenAI) {
-      // BYOK: use their provider's model directly, pass all their keys
+    if (hasByok) {
+      // BYOK: use their provider's model directly, pass all their keys, no router
       const byokModel = winningKey?.model ?? 'anthropic/claude-sonnet-4-5';
       agentModel = { primary: byokModel, fallbacks: ['openai/gpt-4o-mini'] };
       cleanApiKeys = { ...apiKeysForContainer }; // pass all keys
     } else {
       // Platform key: route through kyra-router, always use openai/gpt-4o-mini
       agentModel = { primary: 'openai/gpt-4o-mini', fallbacks: ['openai/gpt-4o'] };
-      const openAiKey = apiKeysForContainer['openai'];
-      cleanApiKeys = openAiKey ? { openai: openAiKey } : undefined;
+      cleanApiKeys = undefined; // provisioner injects platform key
     }
 
     // Resolve KYRA_MAX_TIER based on client's selected AI model
@@ -808,8 +811,11 @@ Be direct, strategic, and action-oriented. The agency owner is busy building a b
         // NOTE: uses default kyra-cl- prefix so Traefik/nginx routes it correctly
         config: { soulMd, userMd },
         apiKeys: Object.keys(apiKeysForContainer).length > 0 ? apiKeysForContainer : undefined,
-        // Always use openai/gpt-4o-mini — routes through kyra-router
-        agentModel: { primary: 'openai/gpt-4o-mini', fallbacks: ['openai/gpt-4o'] },
+        // BYOK rule: if agency has any key of their own → use it directly (bypass router).
+        // Server.js enforces this via hasByok check — agentModel is set to their provider's model.
+        agentModel: winningKey
+          ? { primary: winningKey.model, fallbacks: ['openai/gpt-4o-mini'] }
+          : { primary: 'openai/gpt-4o-mini', fallbacks: ['openai/gpt-4o'] },
         resources: { memoryMb: 1024, cpuShares: 256 },
       }),
     });
