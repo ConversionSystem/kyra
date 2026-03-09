@@ -69,7 +69,7 @@ export default function CannabisPage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link
-                href="/signup/agency"
+                href="/solo"
                 className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-green-500 hover:bg-green-400 transition font-bold text-green-950 text-lg"
               >
                 Deploy Free — No Card Required
@@ -268,7 +268,7 @@ export default function CannabisPage() {
                 ))}
               </ul>
               <Link
-                href="/signup/agency"
+                href="/solo"
                 className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-green-400 hover:bg-green-300 transition font-bold text-green-950 text-lg w-full justify-center"
               >
                 Deploy Your Dispensary AI — Free
@@ -290,7 +290,7 @@ export default function CannabisPage() {
             Cannabis customers text before they visit. The dispensary that answers fastest wins the sale.
           </p>
           <Link
-            href="/signup/agency"
+            href="/solo"
             className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-green-600 hover:bg-green-500 transition font-bold text-white text-lg"
           >
             Get Your Dispensary AI Free
