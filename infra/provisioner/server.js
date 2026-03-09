@@ -299,20 +299,17 @@ app.post('/containers', async (req, res) => {
     const memoryMb = resources.memoryMb || 1024;
     const cpuShares = resources.cpuShares || 256;
 
-    // Build API key env vars — use agency-provided keys if available, fall back to provisioner default
-    const PROVIDER_ENV_MAP = {
-      openai: 'OPENAI_API_KEY',
-      anthropic: 'ANTHROPIC_API_KEY',
-      openrouter: 'OPENROUTER_API_KEY',
-      google: 'GOOGLE_AI_API_KEY',
-    };
+    // Build API key env vars.
+    // IMPORTANT: Only set OPENAI_API_KEY in containers. All AI calls route through
+    // kyra-router (via OPENAI_BASE_URL). The router holds Anthropic/Google keys itself.
+    // Putting Anthropic/Google keys directly in containers would let OpenClaw bypass the
+    // router by calling providers directly when the model is set to anthropic/* or google/*.
     const providedApiKeys = req.body.apiKeys || {};
     const apiKeyEnvs = [];
-    for (const [provider, key] of Object.entries(providedApiKeys)) {
-      const envName = PROVIDER_ENV_MAP[provider];
-      if (envName && key) apiKeyEnvs.push(`${envName}=${key}`);
+    if (providedApiKeys.openai) {
+      apiKeyEnvs.push(`OPENAI_API_KEY=${providedApiKeys.openai}`);
     }
-    // Fallback to provisioner's own key if agency hasn't set any
+    // Fallback to provisioner's own OpenAI key
     if (apiKeyEnvs.length === 0) {
       apiKeyEnvs.push(`OPENAI_API_KEY=${process.env.OPENAI_API_KEY || ''}`);
     }
