@@ -19,8 +19,24 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
 const CRON_SECRET = process.env.CRON_SECRET || '';
-const CREDIT_TOKENS_THRESHOLD = 2_000; // 1 credit per 2000 tokens
-const CREDIT_COST = 1;                 // credits per threshold
+
+// Model credit rates — must match lib/billing/model-credits.ts
+// (duplicated here to avoid next/headers transitive import)
+const MODEL_CREDITS_PER_TURN: Record<string, number> = {
+  'gpt-4o-mini':       1,
+  'claude-haiku-3-5':  1,
+  'gemini-2.0-flash':  1,
+  'gpt-4o':            5,
+  'claude-sonnet-3-7': 5,
+  'claude-sonnet-4-6': 5,
+  'gemini-2.0-pro':    5,
+  'o3-mini':          10,
+  'o1':               10,
+  'claude-opus-4-6':  25,
+  'gpt-4.5':          25,
+  'o3':               25,
+};
+const DEFAULT_CREDITS_PER_TURN = 1;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -33,6 +49,7 @@ interface GatewayTarget {
   gateway_token: string;
   table: 'agency_clients' | 'agencies';
   client_id: string | null;
+  ai_model: string | null;
 }
 
 interface SessionRow {
@@ -139,7 +156,7 @@ export async function GET(request: Request) {
   const [{ data: clientRows }, { data: agencyRows }] = await Promise.all([
     supabase
       .from('agency_clients')
-      .select('id, agency_id, name, settings, gateway_url, gateway_token')
+      .select('id, agency_id, name, settings, gateway_url, gateway_token, ai_model')
       .not('gateway_url', 'is', null)
       .eq('gateway_status', 'running'),
     supabase
@@ -159,6 +176,7 @@ export async function GET(request: Request) {
       gateway_token: c.gateway_token as string,
       table: 'agency_clients' as const,
       client_id: c.id as string,
+      ai_model: (c.ai_model as string | null) ?? 'gpt-4o-mini',
     })),
     ...(agencyRows ?? []).map(a => ({
       id: a.id as string,
@@ -169,6 +187,7 @@ export async function GET(request: Request) {
       gateway_token: a.gateway_token as string,
       table: 'agencies' as const,
       client_id: null,
+      ai_model: 'gpt-4o-mini', // agency terminals bill at base rate
     })),
   ];
 
@@ -224,38 +243,15 @@ export async function GET(request: Request) {
 
       results.checked++;
       const sessions = sessionsResult.sessions;
-      const currentTokens = sessions.reduce(
-        (sum, s) => sum + (s.totalTokens ?? (s.inputTokens ?? 0) + (s.outputTokens ?? 0)),
-        0,
-      );
 
-      // ── 2. Deduct credits for new token usage ─────────────────────────────
-      if (!isByok) {
-        const lastKnown = (container.settings.terminal_tokens_last_known as number) ?? 0;
-        const delta = Math.max(0, currentTokens - lastKnown);
-
-        if (delta >= CREDIT_TOKENS_THRESHOLD) {
-          const credits = Math.floor(delta / CREDIT_TOKENS_THRESHOLD) * CREDIT_COST;
-          const ok = await deductTerminalCredits(
-            supabase,
-            container.agency_id,
-            container.client_id,
-            credits,
-            `Terminal: ${delta.toLocaleString()} tokens → ${credits} credit${credits !== 1 ? 's' : ''} (${container.name})`,
-          );
-          if (ok) {
-            results.deducted++;
-            results.totalCreditsDeducted += credits;
-          }
-        }
-      } else {
-        results.skippedByok++;
-      }
-
-      // ── 3. Sync terminal conversations → client_conversations ─────────────
+      // ── 2 + 3. Sync conversations AND bill per turn ───────────────────────
+      // Billing is now PER CONVERSATION TURN using the client's selected model rate.
+      // This replaces the old token-threshold approach (which missed short conversations).
+      const creditsPerTurn = MODEL_CREDITS_PER_TURN[container.ai_model ?? ''] ?? DEFAULT_CREDITS_PER_TURN;
       const lastSyncedTs = (container.settings.terminal_last_synced_ts as number) ?? 0;
       let latestTs = lastSyncedTs;
       let newConversations = 0;
+      let newTurns = 0;
 
       for (const session of sessions) {
         const history = await invokeGatewayTool(
@@ -278,6 +274,7 @@ export async function GET(request: Request) {
           const aiText = asstMsg.content.find(c => c.type === 'text')?.text ?? '';
           if (!userText || !aiText) continue;
 
+          // Record the conversation
           const { error: convErr } = await supabase.from('client_conversations').insert({
             agency_id: container.agency_id,
             client_id: container.client_id,
@@ -291,18 +288,36 @@ export async function GET(request: Request) {
 
           if (!convErr) newConversations++;
           if (ts > latestTs) latestTs = ts;
+          newTurns++;
           i++; // consumed assistant message
         }
       }
 
       results.conversationsLogged += newConversations;
 
+      // ── Deduct credits for new turns (model-rate based) ──────────────────
+      if (!isByok && newTurns > 0) {
+        const credits = newTurns * creditsPerTurn;
+        const ok = await deductTerminalCredits(
+          supabase,
+          container.agency_id,
+          container.client_id,
+          credits,
+          `Terminal: ${newTurns} turn${newTurns !== 1 ? 's' : ''} × ${creditsPerTurn} credit${creditsPerTurn !== 1 ? 's' : ''} (${container.ai_model ?? 'gpt-4o-mini'}) · ${container.name}`,
+        );
+        if (ok) {
+          results.deducted++;
+          results.totalCreditsDeducted += credits;
+        }
+      } else if (isByok) {
+        results.skippedByok++;
+      }
+
       // ── 4. Persist updated state ──────────────────────────────────────────
       await supabase.from(container.table).update({
         settings: {
           ...container.settings,
-          terminal_tokens_last_known: currentTokens,
-          terminal_tokens_last_checked: new Date().toISOString(),
+          terminal_last_checked: new Date().toISOString(),
           terminal_last_synced_ts: latestTs,
         },
       }).eq('id', container.id);
