@@ -397,11 +397,6 @@ export default async function AgencyOverviewPage() {
       {/* ── Setup Checklist ── */}
       <AgencyChecklist {...checklistProps} />
 
-      {/* ── AI Cost Savings Widget ── */}
-      <div className="mb-6">
-        <RouterSavingsWidget />
-      </div>
-
       {/* ── ROI Summary Card — shows once conversations have started ── */}
       {totalUsage > 0 && (
         <div className="mb-6">
