@@ -34,7 +34,7 @@ export function AiModelClient({ initialModel }: AiModelClientProps) {
   };
 
   return (
-    <div className="p-4 sm:p-6 md:p-8 max-w-3xl">
+    <div className="p-4 sm:p-6 md:p-8">
       <div className="flex items-center gap-3 mb-6">
         <div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center">
           <Cpu className="h-5 w-5 text-indigo-600" />
@@ -42,7 +42,7 @@ export function AiModelClient({ initialModel }: AiModelClientProps) {
         <div>
           <h1 className="text-xl font-bold text-gray-900">AI Model</h1>
           <p className="text-sm text-gray-500">
-            Choose which AI model powers your AI worker. More powerful models cost more credits per turn.
+            Choose which AI model powers your AI worker. More powerful models cost more credits per conversation turn.
           </p>
         </div>
       </div>
@@ -51,8 +51,7 @@ export function AiModelClient({ initialModel }: AiModelClientProps) {
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Select Model</CardTitle>
           <CardDescription>
-            Simple messages (greetings, FAQs) are always handled by the fast model at no cost.
-            Your selection is the <strong>maximum</strong> used for complex queries.
+            Every conversation turn is billed at the rate of your selected model. Choose based on the intelligence level your customers need.
           </CardDescription>
         </CardHeader>
         <CardContent>
