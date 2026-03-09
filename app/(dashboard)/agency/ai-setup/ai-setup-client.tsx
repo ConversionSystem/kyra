@@ -17,8 +17,10 @@ import {
   Sparkles, Search, Target, Shield, Smartphone, Phone, ClipboardList,
   MessageCircle, BarChart3, ArrowRight, CheckCircle2, Loader2, X,
   ChevronDown, User, Building2, Info, AlertTriangle, Star, ExternalLink,
+  Zap,
 } from 'lucide-react';
 import { SectionNav } from '@/components/dashboard/section-nav';
+import QuickAnswersEditor from '@/components/dashboard/quick-answers-editor';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -101,9 +103,10 @@ const ROLE_TEMPLATES: TemplateCard[] = [
 interface Props {
   agencyId: string;
   businessName: string;
+  clientId?: string | null;
 }
 
-export function AISetupClient({ agencyId, businessName }: Props) {
+export function AISetupClient({ agencyId, businessName, clientId }: Props) {
   const [category, setCategory] = useState<Category>('all');
   const [search, setSearch] = useState('');
   const [industryTemplates, setIndustryTemplates] = useState<TemplateCard[]>([]);
@@ -401,6 +404,34 @@ export function AISetupClient({ agencyId, businessName }: Props) {
           onClose={closeApply}
         />
       )}
+      {/* ── Business Info — zero-cost instant answers ── */}
+      <div className="mt-10 pt-8 border-t border-gray-200">
+        <div className="flex items-start gap-3 mb-5">
+          <div className="h-9 w-9 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0 mt-0.5">
+            <Zap className="h-5 w-5 text-emerald-600" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">Business Info</h2>
+            <p className="text-sm text-gray-500 mt-0.5">
+              <strong>Different from templates above.</strong> These aren&apos;t AI responses —
+              they&apos;re hardcoded facts your AI returns <em>instantly</em> at <strong>zero
+              credits</strong>, before any AI model is called. Your hours, address, pricing, FAQs.
+            </p>
+          </div>
+        </div>
+
+        {clientId ? (
+          <QuickAnswersEditor clientId={clientId} />
+        ) : (
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 text-center">
+            <Zap className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+            <p className="text-sm font-medium text-gray-500">No active AI worker yet</p>
+            <p className="text-xs text-gray-400 mt-1">
+              Apply a template above to activate your AI worker, then come back to add Business Info.
+            </p>
+          </div>
+        )}
+      </div>
     </div>
     </div>
   );
@@ -647,6 +678,7 @@ function ApplyModal({
           </div>
         </div>
       </div>
+
     </div>
   );
 }
