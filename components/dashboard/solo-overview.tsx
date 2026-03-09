@@ -192,6 +192,11 @@ export default function SoloOverview({
         )}
       </div>
 
+      {/* ── AI Cost Savings ── */}
+      <div className="mb-4">
+        <RouterSavingsWidget />
+      </div>
+
       {/* ── System Status Banner ── */}
       <Card className={`mb-6 border-l-4 ${isOnline ? 'border-l-green-500' : 'border-l-red-500'}`}>
         <CardContent className="p-4">
@@ -475,11 +480,6 @@ export default function SoloOverview({
       </div>
 
       {/* Setup Progress removed — not useful per product feedback */}
-
-      {/* ── AI Cost Savings ── */}
-      <div className="mb-6">
-        <RouterSavingsWidget />
-      </div>
 
       {/* ── Live Activity Feed ── */}
       <div className="mb-6">

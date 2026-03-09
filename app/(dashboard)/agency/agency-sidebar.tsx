@@ -51,6 +51,7 @@ interface NavItem {
   href: string;
   icon: LucideIcon;
   masterOnly?: boolean;
+  badge?: string;
 }
 
 interface NavSection {
@@ -152,6 +153,7 @@ const soloNavSections: NavSection[] = [
     collapsible: true,
     items: [
       { label: 'AI Model', href: '/agency/ai-model', icon: Cpu },
+      { label: 'Quick Answers', href: '/agency/quick-answers', icon: Zap, badge: 'Free' },
       { label: 'AI Templates', href: '/agency/ai-setup', icon: Sparkles },
       { label: 'Channels', href: '/agency/channels', icon: Radio },
       { label: 'Voice AI', href: '/agency/voice', icon: Phone },
@@ -420,6 +422,11 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
                     {item.href === '/agency/ai-model' && !isActive && (
                       <span className="ml-auto bg-indigo-500 text-white text-[9px] font-bold rounded px-1.5 py-0.5 leading-none uppercase tracking-wide">
                         New
+                      </span>
+                    )}
+                    {item.badge && item.href !== '/agency/ai-model' && !isActive && (
+                      <span className="ml-auto bg-emerald-500 text-white text-[9px] font-bold rounded px-1.5 py-0.5 leading-none uppercase tracking-wide">
+                        {item.badge}
                       </span>
                     )}
                   </Link>
