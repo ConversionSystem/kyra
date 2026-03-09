@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { SectionNav } from '@/components/dashboard/section-nav';
 import { TriggersClient } from './triggers-client';
 import {
   Zap,
@@ -292,6 +293,8 @@ export default function AutomationsClient() {
   }
 
   return (
+    <div className="space-y-0">
+    <SectionNav currentHref="/agency/automations" />
     <div className="p-4 sm:p-6 md:p-8 space-y-8 max-w-5xl">
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
@@ -640,6 +643,7 @@ export default function AutomationsClient() {
       )}
 
       </> /* end scheduled tab */}
+    </div>
     </div>
   );
 }

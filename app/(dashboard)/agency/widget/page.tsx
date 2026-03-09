@@ -11,6 +11,7 @@
 // ============================================================================
 
 import { useState, useEffect, useCallback } from 'react';
+import { SectionNav } from '@/components/dashboard/section-nav';
 import {
   Palette,
   Code,
@@ -224,6 +225,8 @@ export default function WidgetBuilderPage() {
   };
 
   return (
+    <div className="space-y-0">
+    <SectionNav currentHref="/agency/widget" />
     <div className="max-w-7xl mx-auto p-4 sm:p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
@@ -292,6 +295,7 @@ export default function WidgetBuilderPage() {
           onRetry={fetchAnalytics}
         />
       )}
+    </div>
     </div>
   );
 }
