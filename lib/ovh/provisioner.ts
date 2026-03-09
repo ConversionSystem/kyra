@@ -165,13 +165,25 @@ export async function provisionClientGateway(
       if (agencyApiKeys[provider]) apiKeysForContainer[provider] = agencyApiKeys[provider];
     }
 
-    // Always use openai/gpt-4o-mini as the OpenClaw model — all calls route through
-    // kyra-router which intelligently escalates based on KYRA_MAX_TIER. Never pass
-    // anthropic/google models directly — they bypass the router entirely.
-    const agentModel = {
-      primary: 'openai/gpt-4o-mini',
-      fallbacks: ['openai/gpt-4o'],
-    };
+    // BYOK routing rule:
+    // - BYOK with Anthropic/Google key → use their model directly (bypass router)
+    // - Platform key or OpenAI BYOK → use openai/gpt-4o-mini + router
+    const hasByokNonOpenAI = !!(apiKeysForContainer['anthropic'] || apiKeysForContainer['google']);
+
+    let agentModel: { primary: string; fallbacks: string[] };
+    let cleanApiKeys: Record<string, string> | undefined;
+
+    if (hasByokNonOpenAI) {
+      // BYOK: use their provider's model directly, pass all their keys
+      const byokModel = winningKey?.model ?? 'anthropic/claude-sonnet-4-5';
+      agentModel = { primary: byokModel, fallbacks: ['openai/gpt-4o-mini'] };
+      cleanApiKeys = { ...apiKeysForContainer }; // pass all keys
+    } else {
+      // Platform key: route through kyra-router, always use openai/gpt-4o-mini
+      agentModel = { primary: 'openai/gpt-4o-mini', fallbacks: ['openai/gpt-4o'] };
+      const openAiKey = apiKeysForContainer['openai'];
+      cleanApiKeys = openAiKey ? { openai: openAiKey } : undefined;
+    }
 
     // Resolve KYRA_MAX_TIER based on client's selected AI model
     const { data: clientData } = await supabase
@@ -180,12 +192,6 @@ export async function provisionClientGateway(
       .eq('id', clientId)
       .single();
     const routerMaxTier = getRouterTierForModel(clientData?.ai_model);
-
-    // Only pass OpenAI key to container — Anthropic/Google keys are used by kyra-router
-    // directly (not by the container). Passing Anthropic key to containers is harmless
-    // but confusing; we strip it to keep containers clean.
-    const openAiKey = apiKeysForContainer['openai'];
-    const cleanApiKeys = openAiKey ? { openai: openAiKey } : undefined;
 
     // Call OVH provisioner
     const res = await provisionerFetch('/containers', {
