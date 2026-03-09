@@ -6,11 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Cpu, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 
 interface AiModelClientProps {
-  clientId: string;
   initialModel: string;
 }
 
-export function AiModelClient({ clientId, initialModel }: AiModelClientProps) {
+export function AiModelClient({ initialModel }: AiModelClientProps) {
   const [aiModel, setAiModel] = useState(initialModel);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -20,10 +19,10 @@ export function AiModelClient({ clientId, initialModel }: AiModelClientProps) {
     setSaving(true);
     setSaveMsg(null);
     try {
-      const res = await fetch(`/api/agency/clients/${clientId}`, {
+      const res = await fetch('/api/agency/ai-model', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ai_model: modelId }),
+        body: JSON.stringify({ model: modelId }),
       });
       if (!res.ok) throw new Error('Failed to save');
       setSaveMsg({ type: 'success', text: 'AI model updated. Takes effect on next conversation.' });
