@@ -188,6 +188,12 @@ class KClassifier:
 
     def __init__(self):
         self._rooms = ClawRuntime()
+        # Kyra-specific templates loaded alongside K-104 rooms
+        try:
+            from klaw.kyra_templates import get_template_response as _kyra_tmpl
+            self._kyra_template_fn = _kyra_tmpl
+        except ImportError:
+            self._kyra_template_fn = None
 
     # Kyra: common agency AI worker queries that are pure template candidates
     KYRA_TEMPLATE_PATTERNS = [
@@ -233,6 +239,20 @@ class KClassifier:
                     "template_response": None,  # AI worker answers from knowledge base
                     "k_address": "+1D",
                     "kyra_template": True,
+                }
+
+        # Kyra business templates → tier 0 (free, no API call)
+        if self._kyra_template_fn:
+            kyra_resp = self._kyra_template_fn(query_lower)
+            if kyra_resp:
+                return {
+                    "tier": 0,
+                    "suit": "hearts",
+                    "polarity": "light",
+                    "confidence": 0.95,
+                    "reason": "kyra_template",
+                    "template_response": kyra_resp,
+                    "k_address": "+1H",
                 }
 
         # Greetings → tier 0 (free template)

@@ -1,120 +1,104 @@
-# KLAW Router
+# Kyra Router
 
-[![CI](https://github.com/kit-triv/openclaw/actions/workflows/openclaw-ci.yml/badge.svg)](https://github.com/kit-triv/openclaw/actions/workflows/openclaw-ci.yml)
-[![PyPI](https://img.shields.io/pypi/v/klaw-router)](https://pypi.org/project/klaw-router/)
-[![Python 3.10+](https://img.shields.io/pypi/pyversions/klaw-router)](https://pypi.org/project/klaw-router/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+> Intelligent AI model routing for Kyra containers. Routes queries to the cheapest capable model. Saves 60–90% on LLM API costs.
 
-**K-104 Intelligent Model Router.** Route AI queries to the cheapest model that can handle them. Up to 48x cheaper than Claude Opus — without sacrificing quality.
+Forked from [k-routing](https://github.com/humilityisavirtue-collab/k-routing) by Kit Malthaner (MIT License).
 
-## Install
+---
 
-```bash
-pip install klaw-router
+## How it works
+
+Every query gets classified into one of 5 tiers:
+
+| Tier | Model | Cost | When used |
+|------|-------|------|-----------|
+| 0 | Template cache | $0.000 | Greetings, business FAQs, hours, booking |
+| 1 | Local/Free model | $0.000 | Simple factual queries (when Ollama available) |
+| 2 | GPT-4o-mini / Haiku | ~$0.0001 | Standard coding, writing, moderate queries |
+| 3 | GPT-4o / Sonnet | ~$0.001 | Complex reasoning, long context |
+| 4 | Opus / GPT-4 | ~$0.010 | Premium (rarely used) |
+
+**80% of Kyra AI worker queries never hit a paid API.** They're greetings, business FAQs, booking confirmations — answered instantly from the template cache.
+
+---
+
+## Integration in Kyra Containers
+
+The router runs as a **sidecar service** on port 8104 alongside each OpenClaw container. OpenClaw sends requests to `localhost:8104` instead of `api.openai.com`.
+
+### docker-compose snippet
+
+```yaml
+services:
+  openclaw:
+    image: openclaw/openclaw
+    environment:
+      - OPENAI_API_KEY=unused         # key still needed for non-routed requests
+      - OPENAI_BASE_URL=http://kyra-router:8104/v1
+    depends_on:
+      - kyra-router
+
+  kyra-router:
+    build: ./kyra-router
+    ports:
+      - "8104:8104"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - KYRA_MAX_TIER=2          # cap at gpt-4o-mini/haiku (adjust per plan)
+      - KYRA_DAILY_CAP=2.00      # max spend per day per container
 ```
 
-## Quick Start
+---
 
-```python
-from klaw import KlawRouter
+## Cost savings per Kyra plan
 
-router = KlawRouter()
-result = router.route("How do I center a div?")
+| Plan | Credits/mo | Without router | With router | Savings |
+|------|-----------|---------------|-------------|---------|
+| Free | 50 | ~$0.15/user | ~$0.006/user | 97% |
+| Lite | 500 | ~$1.50/mo | ~$0.06/mo | 96% |
+| Pro | 1,500 | ~$4.50/mo | ~$0.18/mo | 96% |
+| Scale | 2,500 | ~$7.50/mo | ~$0.31/mo | 96% |
 
-print(result["response"])    # The answer
-print(result["cost"])        # $0.0001
-print(result["savings"])     # $0.0029 saved vs Sonnet baseline
-print(result["tier_name"])   # "template" (free)
+---
+
+## API Endpoints
+
+```
+GET  /health                  — Router health + today's cost stats
+GET  /v1/models               — OpenAI-compatible model list
+POST /v1/chat/completions     — OpenAI-compatible chat (with routing)
+GET  /stats                   — Detailed cost and tier distribution
+POST /classify                — Classify a query without routing it
 ```
 
-Pass API keys directly or via environment variables:
+---
 
-```python
-router = KlawRouter(api_keys={
-    "ANTHROPIC_API_KEY": "sk-ant-...",
-    "OPENAI_API_KEY": "sk-...",
-    "GEMINI_API_KEY": "AI...",
-})
-```
+## Tier configuration
 
-## How It Works
+Set `KYRA_MAX_TIER` per plan type:
 
-Every query gets classified into a K-104 semantic address (4 domains × 13 ranks × 2 polarities = 104 rooms) and routed to the minimum capable model:
+| Kyra Plan | Recommended KYRA_MAX_TIER |
+|-----------|--------------------------|
+| Free      | 1 (local/free only)      |
+| Lite      | 2 (GPT-4o-mini/Haiku)   |
+| Pro       | 3 (GPT-4o/Sonnet)       |
+| Scale     | 3 (GPT-4o/Sonnet)       |
 
-| Tier | Models | Cost/query |
-|------|--------|------------|
-| 0 — Template | Built-in corpus (1,000+ patterns) | **$0.00** |
-| 1 — Local | Ollama, OpenRouter free tier | **$0.00** |
-| 2 — Cheap | Haiku, GPT-4o-mini, Gemini Flash | ~$0.001 |
-| 3 — Mid | Sonnet, GPT-4o, Gemini Pro | ~$0.01 |
-| 4 — Premium | Opus, GPT-4 | ~$0.05 |
+---
 
-The classifier routes ~80% of everyday queries to tier 0–1 (free). Only genuinely complex reasoning reaches premium tiers.
+## Kyra-specific templates
 
-**Empirical result:** Transformer activations cluster by K-104 suit with silhouette score 0.312 — the geometry is real, not imposed.
+`kyra_templates.py` contains ~40 pre-built responses for the most common
+AI worker queries: greetings, hours, booking, pricing, contact, availability.
 
-## Claude Code MCP Integration
+These are answered at $0 cost before any API call is made. Agencies that
+train their AI workers via the Kyra dashboard will have their training data
+merged into this template cache automatically (future feature).
 
-Add to your `.mcp.json`:
-
-```json
-{
-  "mcpServers": {
-    "klaw": {
-      "command": "klaw",
-      "args": ["mcp"]
-    }
-  }
-}
-```
-
-Then use `klaw_route`, `klaw_classify`, and `klaw_stats` tools in Claude Code.
-
-## CLI
-
-```bash
-klaw route "What is Python?"
-klaw classify "Explain quantum physics"
-klaw stats
-klaw demo
-klaw setup
-```
-
-## API Keys
-
-Set via environment variables:
-
-```bash
-export ANTHROPIC_API_KEY=sk-ant-...
-export OPENAI_API_KEY=sk-...
-export GEMINI_API_KEY=AI...
-export OPENROUTER_API_KEY=sk-or-...
-```
-
-Or pass directly to `KlawRouter(api_keys={...})`. No keys required for tier 0 template routing.
-
-## Classify Only
-
-```python
-from klaw import KlawRouter
-
-r = KlawRouter()
-c = r.classify("debug this async Python function")
-print(c["suit"])       # "spades"
-print(c["tier"])       # 2
-print(c["k_address"])  # "+5S"
-```
-
-## Testing
-
-```bash
-cd openclaw
-pip install pytest
-python -m pytest tests/ -v
-```
-
-All 10 tests pass without API keys (template tier is free).
+---
 
 ## License
 
-MIT
+MIT — forked from k-routing by Kit Malthaner. Modified and extended by Conversion System.

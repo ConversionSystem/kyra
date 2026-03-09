@@ -2,21 +2,18 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install dependencies
-COPY pyproject.toml .
-COPY src/ src/
-RUN pip install --no-cache-dir fastapi uvicorn && \
-    pip install --no-cache-dir -e .
+# Install kyra-router from local source
+COPY . /app/kyra-router/
+RUN pip install --no-cache-dir /app/kyra-router/[dev] && \
+    pip install --no-cache-dir fastapi uvicorn
 
-# Copy rooms.claw template database
-COPY rooms.claw /app/rooms.claw
-
-# Expose OpenAI-compatible port
+# Expose the OpenAI-compatible port
 EXPOSE 8104
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8104/health')"
+# Environment defaults (override via docker run -e or docker-compose)
+ENV KYRA_MAX_TIER=2
+ENV KYRA_DAILY_CAP=2.00
+ENV KYRA_MONTHLY_BUDGET=30.00
 
-# Start the router
-CMD ["uvicorn", "klaw.api:app", "--host", "0.0.0.0", "--port", "8104", "--workers", "1"]
+# Start the OpenAI-compatible proxy
+CMD ["uvicorn", "klaw.api:app", "--host", "0.0.0.0", "--port", "8104"]
