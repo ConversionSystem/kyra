@@ -262,17 +262,31 @@ export async function GET(request: Request) {
         if (!history?.messages) continue;
 
         const messages = history.messages;
-        for (let i = 0; i < messages.length - 1; i++) {
+        // OpenClaw emits 2+ assistant messages per turn:
+        // [user] → [assistant placeholder] → [assistant real response] → [user] ...
+        // We must find the LAST non-empty assistant message for each user turn.
+        let i = 0;
+        while (i < messages.length) {
           const userMsg = messages[i];
-          const asstMsg = messages[i + 1];
-          if (userMsg.role !== 'user' || asstMsg.role !== 'assistant') continue;
+          if (userMsg.role !== 'user') { i++; continue; }
 
           const ts = userMsg.timestamp ?? 0;
-          if (ts <= lastSyncedTs) continue;
+          const userText = userMsg.content.find((c: MsgContent) => c.type === 'text')?.text ?? '';
 
-          const userText = userMsg.content.find(c => c.type === 'text')?.text ?? '';
-          const aiText = asstMsg.content.find(c => c.type === 'text')?.text ?? '';
-          if (!userText || !aiText) continue;
+          // Collect all consecutive assistant messages after this user message
+          let j = i + 1;
+          let lastAiText = '';
+          while (j < messages.length && messages[j].role === 'assistant') {
+            const candidate = messages[j].content.find((c: MsgContent) => c.type === 'text')?.text ?? '';
+            if (candidate.trim()) lastAiText = candidate; // keep the last non-empty one
+            j++;
+          }
+
+          // Advance i past all consumed messages
+          i = j;
+
+          if (!userText || !lastAiText) continue;
+          if (ts <= lastSyncedTs) continue;
 
           // Record the conversation
           const { error: convErr } = await supabase.from('client_conversations').insert({
@@ -280,7 +294,7 @@ export async function GET(request: Request) {
             client_id: container.client_id,
             channel: 'terminal',
             user_message: userText,
-            ai_response: aiText,
+            ai_response: lastAiText,
             session_id: session.key,
             source_url: container.gateway_url,
             created_at: new Date(ts).toISOString(),
@@ -289,7 +303,6 @@ export async function GET(request: Request) {
           if (!convErr) newConversations++;
           if (ts > latestTs) latestTs = ts;
           newTurns++;
-          i++; // consumed assistant message
         }
       }
 
