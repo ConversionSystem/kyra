@@ -10,7 +10,7 @@ import PublicFooter from '@/components/layout/public-footer';
 const PLANS = [
   {
     name: 'Solo Pro',
-    monthly: 49, annual: 39,
+    monthly: 39, annual: 29,
     annualSave: 120,
     period: '/month',
     desc: 'Your personal AI worker. Handles leads, books appointments, answers calls 24/7.',
@@ -142,7 +142,7 @@ export default function PricingPage() {
       {/* Header */}
       <section className="py-20 text-center px-4">
         <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 text-sm font-medium mb-6">
-          Solo from $49/mo · Agency from $99/mo · 7-day free trial · Cancel anytime
+          Solo from $39/mo · Agency from $99/mo · 7-day free trial · Cancel anytime
         </div>
         <h1 className="text-4xl sm:text-5xl font-black mb-4">
           Pricing for agencies that mean business.
