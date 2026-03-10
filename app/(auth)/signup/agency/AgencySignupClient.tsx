@@ -123,8 +123,8 @@ function AgencySignupPage() {
       });
       // Send to referral success screen (shows link + early bird countdown)
       // then onboarding handles the rest
-      const successUrl = `/signup/success?agencyId=${data.agencyId || ''}&next=/onboarding`;
-      router.push(successUrl);
+      // Redirect to billing — new agency accounts must pick a paid plan
+      router.push(`/agency/billing?required=true`);
       router.refresh();
     } catch {
       setError('An unexpected error occurred. Please try again.');
@@ -187,7 +187,7 @@ function AgencySignupPage() {
                 {fromAgency} invited you to Kyra
               </p>
               <p className="text-indigo-300 text-xs mt-0.5">
-                {trialDays ? `You get a free ${trialDays}-day trial — no credit card required.` : 'Sign up to get started with your free trial.'}
+                Create your account, then pick a plan to get started.
               </p>
             </div>
           </div>
@@ -197,7 +197,7 @@ function AgencySignupPage() {
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2 bg-white/10 border border-white/10 rounded-full px-4 py-1.5 text-sm font-medium mb-6">
             <span className="h-2 w-2 rounded-full bg-green-400 animate-pulse inline-block" />
-            {fromAgency ? `${trialDays || '30'}-day free trial — invited by ${fromAgency}` : 'Free during beta — no credit card required'}
+            {fromAgency ? `Invited by ${fromAgency} — set up your agency in 2 minutes` : 'Plans from $99/mo — deploy your first AI worker today'}
           </div>
           <h1 className="text-3xl sm:text-4xl font-black mb-3">
             {step === 1 ? 'Deploy your first autonomous AI worker.' : 'Name your agency'}
@@ -336,14 +336,14 @@ function AgencySignupPage() {
               <div className="bg-indigo-600/10 border border-indigo-500/20 rounded-2xl p-5 mb-5">
                 <div className="flex items-center gap-2 mb-3">
                   <Zap className="h-4 w-4 text-indigo-400" />
-                  <p className="text-sm font-semibold text-indigo-300">Free beta access includes:</p>
+                  <p className="text-sm font-semibold text-indigo-300">Every plan includes:</p>
                 </div>
                 <ul className="space-y-1.5">
                   {[
                     'AI workers for your GHL clients',
-                    'One agency dashboard for all clients',
+                    'One dashboard for all clients',
                     'GHL integration (SMS, email, CRM)',
-                    'Bring your own OpenAI API key',
+                    'Bring your own API key (use your credits)',
                     'White-label — your brand, your clients',
                   ].map(f => (
                     <li key={f} className="flex items-center gap-2 text-sm text-slate-300">
@@ -352,6 +352,7 @@ function AgencySignupPage() {
                     </li>
                   ))}
                 </ul>
+                <p className="text-xs text-slate-500 mt-3">Plans from $99/mo · Cancel anytime</p>
               </div>
 
               <div className="flex gap-3">

@@ -21,6 +21,15 @@ export default async function AgencyLayout({
   const { agency, role } = result;
   const isMaster = ['hello@conversionsystem.com', 'angel@conversionsystem.com'].includes(user.email ?? '');
 
+  // Block dashboard access for unpaid agency accounts.
+  // Solo accounts (account_type === 'solo') are exempt — they have a free tier.
+  // Master emails are exempt.
+  const accountType = (agency.settings as Record<string, unknown>)?.account_type as string | undefined;
+  const isSolo = accountType === 'solo';
+  if (!isMaster && !isSolo && agency.plan === 'free') {
+    redirect('/agency/billing?required=true');
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 lg:flex">
       <AgencySidebar agencyName={agency.name} plan={agency.plan} settings={agency.settings} isMaster={isMaster} />

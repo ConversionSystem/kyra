@@ -31,6 +31,7 @@ interface Props {
   checkoutStatus: string | null;
   autoUpgradePlan: string | null;
   isSolo?: boolean;
+  requirePlan?: boolean;
   // Seed values for real-time
   initialCreditsBalance?: number;
   initialCreditsUsed?: number;
@@ -43,6 +44,7 @@ export function BillingPageClient({
   checkoutStatus,
   autoUpgradePlan,
   isSolo,
+  requirePlan = false,
   initialCreditsBalance = 0,
   initialCreditsUsed = 0,
 }: Props) {
@@ -115,7 +117,7 @@ export function BillingPageClient({
     try {
       const body = isVoiceAddon
         ? { addon: 'voice', billing }
-        : { plan: planOrAddon, billing };
+        : { plan: planOrAddon, billing, ...(requirePlan ? { successRedirect: '/onboarding' } : {}) };
       const res = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -175,6 +177,21 @@ export function BillingPageClient({
           </button>
         </div>
       </div>
+
+      {/* ── Required plan gate banner ── */}
+      {requirePlan && (
+        <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-5 flex items-start gap-4">
+          <div className="h-9 w-9 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
+            <Crown className="h-5 w-5 text-indigo-600" />
+          </div>
+          <div>
+            <p className="font-semibold text-indigo-900">Choose a plan to activate your agency</p>
+            <p className="text-sm text-indigo-700 mt-0.5">
+              Your account is ready. Pick a plan below to deploy your first AI worker and start serving clients.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* ── Status Banners ── */}
       {checkoutStatus === 'voice_success' && (
