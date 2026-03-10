@@ -405,6 +405,7 @@ export default function MasterDashboard() {
               <h3 className="text-sm font-semibold text-white mb-3">Quick Links</h3>
               <div className="space-y-1.5">
                 {[
+                  { label: '⚙️ Accounts Admin', href: '/master/accounts', icon: Crown },
                   { label: 'Agency Dashboard', href: '/agency', icon: Building2 },
                   { label: 'Solo Landing', href: '/solo', icon: Users },
                   { label: 'VPS Provisioner', href: 'https://provisioner.gw.kyra.conversionsystem.com/health', icon: Server, ext: true },
