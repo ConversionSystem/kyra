@@ -19,7 +19,7 @@ export async function GET() {
   // Fetch agencies
   const { data: agencies, error: agErr } = await admin
     .from('agencies')
-    .select('id, name, slug, plan, settings, owner_id, created_at, website_url')
+    .select('id, name, slug, plan, settings, owner_id, created_at')
     .order('created_at', { ascending: false });
 
   if (agErr) {
@@ -73,7 +73,7 @@ export async function GET() {
     owner_id: a.owner_id,
     email: emailMap[a.owner_id] ?? null,
     created_at: a.created_at,
-    website_url: a.website_url,
+    website_url: (a.settings as Record<string, unknown>)?.website_url ?? null,
     credits: creditsMap[a.id] ?? { balance: 0, lifetime_used: 0, lifetime_purchased: 0 },
     clients: clientsMap[a.id] ?? { total: 0, running: 0 },
     solo_client_id: (a.settings as Record<string, unknown>)?.solo_client_id ?? null,
