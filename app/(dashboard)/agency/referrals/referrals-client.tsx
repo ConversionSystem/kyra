@@ -161,7 +161,7 @@ Here's what it does on autopilot:
 
 Setup takes about 20 minutes. Zero code required.
 
-I have 100 free AI credits to give you — no card needed, cancel anytime. Just sign up and start testing:
+I have 100 bonus AI credits — no card needed. Just sign up and start testing:
 
 ${inviteUrl}
 
@@ -193,7 +193,7 @@ Setup was around 20 minutes. No developers. No code.
 
 If you're running a business that gets inbound communications and you're still handling it manually — I genuinely think this is worth your time.
 
-Here are 100 free AI credits to try it yourself:
+Here are 100 bonus AI credits to try it yourself:
 ${inviteUrl}`,
 
     'WhatsApp':
@@ -283,7 +283,7 @@ Worth checking out 🤙`,
             step: '2',
             emoji: '🙋',
             title: 'They sign up free',
-            desc: 'No credit card required. They start a free trial in under 2 minutes and get 100 credits to explore.',
+            desc: 'No credit card required. They sign up in under 2 minutes and get 100 bonus credits to explore.',
           },
           {
             step: '3',
@@ -446,7 +446,7 @@ Worth checking out 🤙`,
                 WhatsApp
               </a>
               <a
-                href={`mailto:?subject=${encodeURIComponent('100 free AI credits — no card needed')}&body=${encodeURIComponent(shareMessages['Email'])}`}
+                href={`mailto:?subject=${encodeURIComponent('100 bonus credits — no card needed')}&body=${encodeURIComponent(shareMessages['Email'])}`}
                 className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gray-100 border border-gray-200 text-gray-700 text-xs font-semibold hover:bg-gray-200 transition-colors"
               >
                 <Mail className="h-3.5 w-3.5 shrink-0" />
