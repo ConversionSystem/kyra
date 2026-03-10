@@ -220,7 +220,7 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         from: 'Kyra AI <welcome@kyra.conversionsystem.com>',
         to: user.email,
-        subject: `Welcome to Kyra — you have $2 in free credits 🎁`,
+        subject: `Welcome to Kyra — your AI worker is ready 🎁`,
         html: `
 <!DOCTYPE html>
 <html>
@@ -244,7 +244,7 @@ export async function POST(request: NextRequest) {
         ${agency.name} is live. 🎉
       </h1>
       <p style="color:#c7d2fe;font-size:15px;margin:0;line-height:1.6;">
-        Your agency dashboard is ready. We've loaded <strong style="color:white;">$2 in free credits</strong> — enough to run ~200 AI conversations while you evaluate. Here's how to get live in 10 minutes.
+        Your agency dashboard is ready. We've loaded <strong style="color:white;">50 welcome credits</strong> to get you started. Here's how to get live in 10 minutes.
       </p>
     </div>
 
@@ -252,8 +252,8 @@ export async function POST(request: NextRequest) {
     <div style="background:#1e293b;border-radius:16px;padding:20px 24px;margin-bottom:24px;border:1px solid rgba(99,102,241,0.3);display:flex;align-items:center;gap:16px;">
       <span style="font-size:28px;">🪙</span>
       <div>
-        <p style="color:white;font-weight:700;font-size:14px;margin:0 0 4px;">200 Kyra Credits — already in your account</p>
-        <p style="color:#94a3b8;font-size:13px;margin:0;line-height:1.5;">That's ~200 AI conversations, on us. Add your own API key or top up when you're ready to scale.</p>
+        <p style="color:white;font-weight:700;font-size:14px;margin:0 0 4px;">50 welcome credits — already in your account</p>
+        <p style="color:#94a3b8;font-size:13px;margin:0;line-height:1.5;">50 welcome credits are already in your account. Add your own API key or top up credits when you're ready to scale.</p>
       </div>
     </div>
 
