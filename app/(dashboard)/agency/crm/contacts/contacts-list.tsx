@@ -471,6 +471,7 @@ export function ContactsList() {
             </div>
           ) : (
             <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+              <div className="overflow-x-auto">
               <table className="min-w-full w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50/60">
@@ -520,6 +521,7 @@ export function ContactsList() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
           )}
 
