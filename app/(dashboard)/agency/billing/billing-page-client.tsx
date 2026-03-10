@@ -172,7 +172,7 @@ export function BillingPageClient({
               {[
                 { label: 'Client slots', value: String(PLANS[currentPlan]?.maxClients ?? '?') },
                 { label: 'Revenue potential', value: `$${((PLANS[currentPlan]?.maxClients ?? 1) * 997).toLocaleString()}/mo` },
-                { label: 'ROI at 1 client', value: `${Math.round((997 - (PLANS[currentPlan]?.price ?? 49)) / Math.max(1, PLANS[currentPlan]?.price ?? 49))}×` },
+                { label: 'ROI at 1 client', value: `${Math.round((997 - (PLANS[currentPlan]?.price ?? 39)) / Math.max(1, PLANS[currentPlan]?.price ?? 39))}×` },
               ].map(s => (
                 <div key={s.label} className="bg-white/15 rounded-xl p-3 text-center">
                   <p className="text-xl font-black text-white">{s.value}</p>
