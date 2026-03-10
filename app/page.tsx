@@ -82,7 +82,7 @@ export default function HomePage() {
             </p>
 
             {/* Stats row */}
-            <div className="grid grid-cols-4 gap-3 mb-8">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
               {[
                 { value: '24/7', label: 'Never stops working' },
                 { value: '< 60s', label: 'First response time' },
