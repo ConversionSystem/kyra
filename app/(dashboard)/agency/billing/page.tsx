@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getAgencyForUser } from '@/lib/agency/queries';
+import { getAgencyCredits } from '@/lib/billing/credit-engine';
 import { BillingPageClient } from './billing-page-client';
 
 export const metadata = { title: 'Billing — Kyra' };
@@ -46,6 +47,9 @@ export default async function AgencyBillingPage({
   const agencySettings = (result.agency.settings ?? {}) as Record<string, unknown>;
   const isSolo = agencySettings.account_type === 'solo';
 
+  // Seed credits for real-time component
+  const credits = await getAgencyCredits(result.agency.id).catch(() => ({ balance: 0, lifetimeUsed: 0 }));
+
   // Derive checkout status — voice=success takes priority
   const checkoutStatus = voice === 'success' ? 'voice_success'
     : voice === 'cancelled' ? 'cancelled'
@@ -59,6 +63,8 @@ export default async function AgencyBillingPage({
       checkoutStatus={checkoutStatus}
       autoUpgradePlan={upgrade ?? null}
       isSolo={isSolo}
+      initialCreditsBalance={credits.balance}
+      initialCreditsUsed={credits.lifetimeUsed}
     />
   );
 }
