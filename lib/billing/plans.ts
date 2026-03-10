@@ -63,7 +63,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
   },
   solo_pro: {
     name: 'Solo Pro',
-    price: 49,
+    price: 39,
     maxClients: 1,
     monthlyCredits: 200,
     trialDays: 7,
@@ -232,7 +232,7 @@ export function classifyChatAction(opts: {
 
 /** Annual pricing for each plan — monthly equivalent when billed yearly (20% off) */
 export const ANNUAL_PRICES: Partial<Record<Plan, { monthly: number; annualTotal: number; savings: number }>> = {
-  solo_pro: { monthly: 39,  annualTotal: 468,  savings: 120  },
+  solo_pro: { monthly: 29,  annualTotal: 348,  savings: 120  },
   starter:  { monthly: 79,  annualTotal: 948,  savings: 240  },
   pro:      { monthly: 199, annualTotal: 2388, savings: 600  },
   scale:    { monthly: 399, annualTotal: 4788, savings: 1200 },
