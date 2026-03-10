@@ -9,12 +9,12 @@ Go to: **dashboard.stripe.com → Products → + Add product**
 
 Create the following. For each, copy the **Price ID** (starts with `price_...`).
 
-### Solo Pro — $49/month
+### Solo Pro — $39/month
 
 | Field | Value |
 |-------|-------|
 | Product name | Kyra Solo Pro |
-| Price | $49.00 |
+| Price | $39.00 |
 | Billing period | Monthly |
 | → Price ID | `STRIPE_SOLO_PRO_PRICE_ID` |
 
@@ -22,8 +22,8 @@ Add a second price to the **same product**:
 
 | Field | Value |
 |-------|-------|
-| Price | $468.00 |
-| Billing period | Yearly |
+| Price | $348.00 |
+| Billing period | Yearly ($29/mo × 12) |
 | → Price ID | `STRIPE_SOLO_PRO_ANNUAL_PRICE_ID` |
 
 ---
@@ -116,8 +116,8 @@ Or push any commit to main — Vercel auto-deploys.
 ## Step 4 — Test
 
 1. Go to kyra.conversionsystem.com/agency/billing
-2. Click "Upgrade to Solo Pro" → should open Stripe Checkout at $49/mo
-3. Toggle "Annual" → Solo Pro price should show $39/mo
+2. Click "Upgrade to Solo Pro" → should open Stripe Checkout at $39/mo
+3. Toggle "Annual" → Solo Pro price should show $29/mo ($348/yr)
 4. Click "Add Voice AI" → should open Stripe Checkout at $79/mo
 5. Check /pricing — Solo Pro should appear as first plan
 
