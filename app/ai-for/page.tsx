@@ -36,7 +36,7 @@ export default function AiForIndexPage() {
       <nav className="border-b border-gray-100 px-4 py-4">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <Link href="/" className="font-black text-xl"><span className="text-indigo-600">⚡</span> Kyra</Link>
-          <Link href="/signup/agency" className="bg-indigo-600 text-white font-bold text-sm px-4 py-2 rounded-lg">Start Free →</Link>
+          <Link href="/solo" className="bg-indigo-600 text-white font-bold text-sm px-4 py-2 rounded-lg">Start Free →</Link>
         </div>
       </nav>
       <div className="max-w-4xl mx-auto px-4 py-16">
@@ -63,7 +63,7 @@ export default function AiForIndexPage() {
               </span>
             ))}
           </div>
-          <p className="text-xs text-gray-400 mt-3">All 21 templates available inside the platform. <Link href="/signup/agency" className="text-indigo-500 underline">Start free →</Link></p>
+          <p className="text-xs text-gray-400 mt-3">All 21 templates available inside the platform. <Link href="/solo" className="text-indigo-500 underline">Start free →</Link></p>
         </div>
       </div>
       <PublicFooter />

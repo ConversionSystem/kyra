@@ -3,10 +3,14 @@
  *
  * When an agency adds their own OpenAI/Anthropic/etc key,
  * they should NOT be charged platform credits for AI operations
- * that use their key.
+ * that use their key — BUT ONLY on paid plans.
  *
- * This module resolves which API key to use and whether
- * credits should be charged.
+ * Free plan agencies with BYOK still consume platform credits.
+ * They're using our routing, CRM, and infrastructure regardless
+ * of whose API key pays the model bill.
+ *
+ * isByok  = uses their API key (always set if they have one)
+ * skipCredits = true only for paid BYOK accounts (starter/pro/scale/solo_pro)
  */
 
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
@@ -15,15 +19,18 @@ export interface ResolvedKey {
   apiKey: string;
   provider: 'openai' | 'anthropic' | 'openrouter' | 'google';
   model: string;
-  isByok: boolean;  // true = agency's own key, skip credits
+  isByok: boolean;       // true = using agency's own API key
+  skipCredits: boolean;  // true = do NOT deduct platform credits (paid BYOK only)
 }
+
+const PAID_PLANS = new Set(['starter', 'pro', 'scale', 'solo_pro', 'beta']);
 
 /**
  * Resolve the best API key for an agency.
  * Priority: agency BYOK → platform default
  *
- * Returns { apiKey, provider, model, isByok }
- * isByok=true means the agency is using their own key — don't charge credits.
+ * Returns { apiKey, provider, model, isByok, skipCredits }
+ * skipCredits=true only when agency is on a paid plan AND using their own key.
  */
 export async function resolveAgencyApiKey(
   agencyId: string,
@@ -33,12 +40,13 @@ export async function resolveAgencyApiKey(
 
   const { data: agency } = await supabase
     .from('agencies')
-    .select('api_keys')
+    .select('api_keys, plan')
     .eq('id', agencyId)
     .single();
 
   const keys = (agency?.api_keys as Record<string, unknown>) || {};
   const selectedModels = (keys.selected_models as Record<string, string>) || {};
+  const isPaidPlan = PAID_PLANS.has(agency?.plan ?? '');
 
   // Check if agency has their own key for the preferred provider
   if (keys[preferredProvider]) {
@@ -47,6 +55,7 @@ export async function resolveAgencyApiKey(
       provider: preferredProvider,
       model: selectedModels[preferredProvider] || getDefaultModel(preferredProvider),
       isByok: true,
+      skipCredits: isPaidPlan, // only skip credits for paid plans
     };
   }
 
@@ -62,6 +71,7 @@ export async function resolveAgencyApiKey(
         provider,
         model: selectedModels[provider] || getDefaultModel(provider),
         isByok: true,
+        skipCredits: isPaidPlan,
       };
     }
   }
@@ -73,6 +83,7 @@ export async function resolveAgencyApiKey(
     provider: 'openai',
     model: 'gpt-4o',
     isByok: false,
+    skipCredits: false,
   };
 }
 

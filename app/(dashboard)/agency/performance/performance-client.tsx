@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { SectionNav } from '@/components/dashboard/section-nav';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -223,6 +224,8 @@ export function PerformanceClient({ clients, agencyId, agencySettings }: Perform
   const fmt = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
   return (
+    <div className="space-y-0">
+    <SectionNav currentHref="/agency/performance" />
     <div className="p-4 sm:p-6 md:p-8 max-w-6xl">
       <ResendSetupBanner />
 
@@ -530,6 +533,7 @@ export function PerformanceClient({ clients, agencyId, agencySettings }: Perform
           </div>
         </CardContent>
       </Card>
+    </div>
     </div>
   );
 }

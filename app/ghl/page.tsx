@@ -92,7 +92,7 @@ export default function GHLPage() {
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
-            href="/signup/agency"
+            href="/solo"
             className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-8 py-4 rounded-xl transition text-lg"
           >
             Deploy your first AI worker free
@@ -107,7 +107,7 @@ export default function GHLPage() {
         </div>
 
         <p className="mt-4 text-sm text-gray-400">
-          7-day free trial · No credit card · White-label from day one · 500 credits included
+          Free to start · No credit card · White-label from day one · 500 credits included
         </p>
       </section>
 
@@ -247,7 +247,7 @@ export default function GHLPage() {
             and shape the roadmap. GHL + Kyra is a powerful combination — let&apos;s build it together.
           </p>
           <Link
-            href="/signup/agency"
+            href="/solo"
             className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-8 py-3.5 rounded-xl transition"
           >
             Apply for early access
@@ -268,7 +268,7 @@ export default function GHLPage() {
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
-            href="/signup/agency"
+            href="/solo"
             className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-10 py-4 rounded-xl transition text-lg"
           >
             Start free
@@ -281,7 +281,7 @@ export default function GHLPage() {
             See pricing
           </Link>
         </div>
-        <p className="mt-4 text-sm text-gray-400">7-day free trial · No credit card required · 500 credits included</p>
+        <p className="mt-4 text-sm text-gray-400">Free to start · No credit card required · 500 credits included</p>
       </section>
 
       <PublicFooter />

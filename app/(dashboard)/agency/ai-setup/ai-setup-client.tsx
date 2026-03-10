@@ -17,8 +17,10 @@ import {
   Sparkles, Search, Target, Shield, Smartphone, Phone, ClipboardList,
   MessageCircle, BarChart3, ArrowRight, CheckCircle2, Loader2, X,
   ChevronDown, User, Building2, Info, AlertTriangle, Star, ExternalLink,
+  Zap,
 } from 'lucide-react';
 import { SectionNav } from '@/components/dashboard/section-nav';
+import QuickAnswersEditor from '@/components/dashboard/quick-answers-editor';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -101,9 +103,11 @@ const ROLE_TEMPLATES: TemplateCard[] = [
 interface Props {
   agencyId: string;
   businessName: string;
+  clientId?: string | null;
+  isSolo?: boolean;
 }
 
-export function AISetupClient({ agencyId, businessName }: Props) {
+export function AISetupClient({ agencyId, businessName, clientId, isSolo }: Props) {
   const [category, setCategory] = useState<Category>('all');
   const [search, setSearch] = useState('');
   const [industryTemplates, setIndustryTemplates] = useState<TemplateCard[]>([]);
@@ -184,7 +188,7 @@ export function AISetupClient({ agencyId, businessName }: Props) {
     return true;
   });
 
-  // Open apply modal
+  // Open apply modal (or apply directly for solo with simple templates)
   const openApply = useCallback(async (template: TemplateCard) => {
     setApplyTemplate(template);
     setApplyResult(null);
@@ -216,7 +220,9 @@ export function AISetupClient({ agencyId, businessName }: Props) {
   };
 
   const handleApply = async () => {
-    if (!applyTemplate || !selectedClient) return;
+    // For solo accounts, use clientId directly (no client picker)
+    const targetClient = isSolo ? (clientId ?? selectedClient) : selectedClient;
+    if (!applyTemplate || !targetClient) return;
 
     setApplying(true);
     setApplyResult(null);
@@ -226,7 +232,7 @@ export function AISetupClient({ agencyId, businessName }: Props) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          clientId: selectedClient,
+          clientId: targetClient,
           type: applyTemplate.type,
           templateId: applyTemplate.id,
           variables,
@@ -238,7 +244,7 @@ export function AISetupClient({ agencyId, businessName }: Props) {
       if (!res.ok) {
         setApplyResult({ success: false, message: data.error || 'Failed to apply template' });
       } else {
-        const clientName = clients.find(c => c.id === selectedClient)?.name || 'client';
+        const clientName = isSolo ? businessName : (clients.find(c => c.id === targetClient)?.name || 'client');
         setApplyResult({
           success: true,
           message: `${applyTemplate.name} applied to ${clientName}.${data.containerPushed ? ' AI is live now.' : ''}`,
@@ -370,13 +376,14 @@ export function AISetupClient({ agencyId, businessName }: Props) {
               key={`${template.type}:${template.id}`}
               template={template}
               onApply={() => openApply(template)}
+              isSolo={isSolo}
             />
           ))}
         </div>
       ) : null}
 
-      {/* No clients warning */}
-      {!loadingClients && clients.length === 0 && (
+      {/* No clients warning — only for agency accounts, not solo */}
+      {!isSolo && !loadingClients && clients.length === 0 && (
         <div className="mt-8 bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3">
           <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
           <div className="text-sm text-amber-700">
@@ -391,7 +398,7 @@ export function AISetupClient({ agencyId, businessName }: Props) {
         <ApplyModal
           template={applyTemplate}
           clients={clients}
-          selectedClient={selectedClient}
+          selectedClient={isSolo ? (clientId ?? null) : selectedClient}
           setSelectedClient={setSelectedClient}
           variables={variables}
           setVariables={setVariables}
@@ -399,8 +406,38 @@ export function AISetupClient({ agencyId, businessName }: Props) {
           result={applyResult}
           onApply={handleApply}
           onClose={closeApply}
+          isSolo={isSolo}
+          soloBusinessName={businessName}
         />
       )}
+      {/* ── Business Info — zero-cost instant answers ── */}
+      <div className="mt-10 pt-8 border-t border-gray-200">
+        <div className="flex items-start gap-3 mb-5">
+          <div className="h-9 w-9 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0 mt-0.5">
+            <Zap className="h-5 w-5 text-emerald-600" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">Business Info</h2>
+            <p className="text-sm text-gray-500 mt-0.5">
+              <strong>Different from templates above.</strong> These aren&apos;t AI responses —
+              they&apos;re hardcoded facts your AI returns <em>instantly</em> at <strong>zero
+              credits</strong>, before any AI model is called. Your hours, address, pricing, FAQs.
+            </p>
+          </div>
+        </div>
+
+        {clientId ? (
+          <QuickAnswersEditor clientId={clientId} />
+        ) : (
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 text-center">
+            <Zap className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+            <p className="text-sm font-medium text-gray-500">No active AI worker yet</p>
+            <p className="text-xs text-gray-400 mt-1">
+              Apply a template above to activate your AI worker, then come back to add Business Info.
+            </p>
+          </div>
+        )}
+      </div>
     </div>
     </div>
   );
@@ -411,9 +448,11 @@ export function AISetupClient({ agencyId, businessName }: Props) {
 function TemplateCardView({
   template,
   onApply,
+  isSolo,
 }: {
   template: TemplateCard;
   onApply: () => void;
+  isSolo?: boolean;
 }) {
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-5 hover:border-indigo-200 hover:shadow-sm transition-all flex flex-col">
@@ -447,7 +486,7 @@ function TemplateCardView({
         onClick={onApply}
         className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
       >
-        Apply to Client
+        {isSolo ? 'Apply to My AI Worker' : 'Apply to Client'}
         <ArrowRight className="h-3.5 w-3.5" />
       </button>
     </div>
@@ -467,10 +506,12 @@ function ApplyModal({
   result,
   onApply,
   onClose,
+  isSolo,
+  soloBusinessName,
 }: {
   template: TemplateCard;
   clients: Client[];
-  selectedClient: string;
+  selectedClient: string | null;
   setSelectedClient: (id: string) => void;
   variables: Record<string, string>;
   setVariables: (v: Record<string, string>) => void;
@@ -478,12 +519,15 @@ function ApplyModal({
   result: { success: boolean; message: string; warning?: string; containerPushed?: boolean } | null;
   onApply: () => void;
   onClose: () => void;
+  isSolo?: boolean;
+  soloBusinessName?: string;
 }) {
   const setVar = (key: string, value: string) =>
     setVariables({ ...variables, [key]: value });
 
   const selectedClientData = clients.find(c => c.id === selectedClient);
-  const canApply = !!selectedClient && !applying;
+  // Solo: always can apply (target is the agency's own AI worker); agency: need a client selected
+  const canApply = (isSolo || !!selectedClient) && !applying;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
@@ -532,52 +576,62 @@ function ApplyModal({
             </div>
           )}
 
-          {/* Client picker */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <Building2 className="inline h-4 w-4 mr-1 text-gray-400" />
-              Which client gets this AI?
-            </label>
-            {clients.length === 0 ? (
-              <div className="text-sm text-amber-600 bg-amber-50 rounded-lg p-3">
-                No active clients found.{' '}
-                <Link href="/agency/clients/new" className="underline">Create one first →</Link>
+          {/* Solo: show AI worker target. Agency: show client picker */}
+          {isSolo ? (
+            <div className="flex items-center gap-3 bg-indigo-50 rounded-xl p-3 border border-indigo-100">
+              <span className="text-2xl">🤖</span>
+              <div>
+                <p className="text-sm font-semibold text-gray-900">{soloBusinessName || 'Your AI Worker'}</p>
+                <p className="text-xs text-indigo-600">🟢 Live — template applies instantly</p>
               </div>
-            ) : clients.length === 1 ? (
-              <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-3 border">
-                <span className="text-xl">🤖</span>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">{clients[0].name}</p>
-                  <p className="text-xs text-gray-400">
-                    {clients[0].gateway_status === 'running' ? '🟢 Running — changes apply instantly' : '⚪ Offline — changes saved for next start'}
-                  </p>
+            </div>
+          ) : (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Building2 className="inline h-4 w-4 mr-1 text-gray-400" />
+                Which client gets this AI?
+              </label>
+              {clients.length === 0 ? (
+                <div className="text-sm text-amber-600 bg-amber-50 rounded-lg p-3">
+                  No active clients found.{' '}
+                  <Link href="/agency/clients/new" className="underline">Create one first →</Link>
                 </div>
-              </div>
-            ) : (
-              <div className="relative">
-                <select
-                  value={selectedClient}
-                  onChange={e => setSelectedClient(e.target.value)}
-                  className="w-full pl-4 pr-8 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none appearance-none bg-white"
-                >
-                  <option value="">— Select a client —</option>
-                  {clients.map(c => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}{c.gateway_status === 'running' ? ' (live)' : ''}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-              </div>
-            )}
-            {selectedClientData && clients.length > 1 && (
-              <p className="text-xs text-gray-400 mt-1.5">
-                {selectedClientData.gateway_status === 'running'
-                  ? '🟢 Container is running — changes will apply instantly'
-                  : '⚪ Container offline — config saved, applies on next start'}
-              </p>
-            )}
-          </div>
+              ) : clients.length === 1 ? (
+                <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-3 border">
+                  <span className="text-xl">🤖</span>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{clients[0].name}</p>
+                    <p className="text-xs text-gray-400">
+                      {clients[0].gateway_status === 'running' ? '🟢 Running — changes apply instantly' : '⚪ Offline — changes saved for next start'}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="relative">
+                  <select
+                    value={selectedClient ?? ''}
+                    onChange={e => setSelectedClient(e.target.value)}
+                    className="w-full pl-4 pr-8 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none appearance-none bg-white"
+                  >
+                    <option value="">— Select a client —</option>
+                    {clients.map(c => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}{c.gateway_status === 'running' ? ' (live)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                </div>
+              )}
+              {selectedClientData && clients.length > 1 && (
+                <p className="text-xs text-gray-400 mt-1.5">
+                  {selectedClientData.gateway_status === 'running'
+                    ? '🟢 Container is running — changes will apply instantly'
+                    : '⚪ Container offline — config saved, applies on next start'}
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Variables */}
           {template.variables && template.variables.length > 0 && (
@@ -633,7 +687,7 @@ function ApplyModal({
                 </button>
                 <button
                   onClick={onApply}
-                  disabled={!canApply || !selectedClient}
+                  disabled={!canApply}
                   className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {applying ? (
@@ -647,6 +701,7 @@ function ApplyModal({
           </div>
         </div>
       </div>
+
     </div>
   );
 }

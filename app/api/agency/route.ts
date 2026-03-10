@@ -7,6 +7,7 @@ import { isValidSlug } from '@/lib/agency/utils';
 import type { CreateAgencyRequest, AgencyWithCounts } from '@/lib/agency/types';
 import { addCredits } from '@/lib/billing/credit-engine';
 import { WELCOME_CREDITS, WELCOME_CREDIT_DESCRIPTION, getPromoCode } from '@/lib/billing/credits';
+import { syncLeadToCRM } from '@/lib/crm/lead-sync';
 
 /**
  * GET /api/agency
@@ -163,6 +164,17 @@ export async function POST(request: NextRequest) {
   }
 
   console.log('[POST /api/agency] Success! Agency:', agency.id, 'User:', user.id);
+
+  // ── Sync lead to master CRM ──────────────────────────────────────────────
+  void syncLeadToCRM({
+    fullName: user.user_metadata?.full_name || name,
+    email: user.email || '',
+    businessName: name,
+    websiteUrl: null,
+    accountType: 'agency',
+    plan: dbPlan,
+    agencyId: agency.id,
+  });
 
   // ── Grant welcome credits ($2 free to test the platform) ────────────────
   // 200 credits = $2 worth. Enough to test, not enough to abuse.
