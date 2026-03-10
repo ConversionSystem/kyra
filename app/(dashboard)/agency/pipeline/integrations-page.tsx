@@ -266,7 +266,7 @@ export default function IntegrationsPage() {
             <div className="px-5 py-3 bg-gradient-to-r from-amber-50 to-orange-50 border-t border-amber-100">
               <p className="text-xs text-amber-800">
                 <strong>💡 Revenue impact:</strong> Agencies with GHL connected sell AI workers at $300-500/mo per client.
-                Without it, the AI can only notify — it can&apos;t act. That&apos;s the difference between a $99 tool and a $500 AI employee.
+                Without it, the AI can only notify — it can&apos;t act. That&apos;s the difference between a basic tool and a true AI worker.
               </p>
             </div>
           )}

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import {
-  Activity, DollarSign, MessageSquare, Zap, Bot, Clock,
+  Activity, Coins, MessageSquare, Zap, Bot, Clock,
   TrendingUp, AlertTriangle, CheckCircle2, XCircle, Loader2,
   ChevronUp, ChevronDown, ArrowUpDown, ExternalLink,
 } from 'lucide-react';
@@ -96,30 +96,30 @@ export function UsageDashboard() {
           <KpiCard icon={MessageSquare} label="Today" value={totals.conversations_today} color="bg-blue-50 text-blue-600 border-blue-200" />
           <KpiCard icon={MessageSquare} label="This Month" value={totals.conversations_month} color="bg-cyan-50 text-cyan-600 border-cyan-200" />
           <KpiCard icon={Zap} label="Tokens" value={formatTokens(totals.estimated_tokens)} color="bg-amber-50 text-amber-600 border-amber-200" />
-          <KpiCard icon={DollarSign} label="Est. Cost" value={`$${totals.estimated_cost_usd.toFixed(2)}`} color="bg-purple-50 text-purple-600 border-purple-200" />
+          <KpiCard icon={Coins} label="Credits Used" value={totals.estimated_tokens ? Math.round(totals.conversations_month) : 0} color="bg-indigo-50 text-indigo-600 border-indigo-200" />
         </div>
       )}
 
-      {/* Cost Breakdown Bar */}
-      {clients.length > 0 && totals && totals.estimated_cost_usd > 0 && (
+      {/* Activity Distribution Bar */}
+      {clients.length > 0 && totals && totals.conversations_month > 0 && (
         <div className="bg-white border border-gray-200 rounded-xl p-5">
-          <h3 className="text-sm font-semibold text-gray-900 mb-3">Cost Distribution</h3>
+          <h3 className="text-sm font-semibold text-gray-900 mb-3">Activity Distribution (this month)</h3>
           <div className="flex h-6 rounded-lg overflow-hidden">
-            {sorted.filter(c => c.estimated_cost_usd > 0).map((c, i) => {
-              const pct = (c.estimated_cost_usd / totals.estimated_cost_usd) * 100;
+            {sorted.filter(c => c.conversations_month > 0).map((c, i) => {
+              const pct = (c.conversations_month / totals.conversations_month) * 100;
               if (pct < 1) return null;
               const colors = ['bg-indigo-500', 'bg-blue-500', 'bg-cyan-500', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500', 'bg-purple-500', 'bg-teal-500'];
               return (
                 <div key={c.client_id} className={`${colors[i % colors.length]} relative group`} style={{ width: `${pct}%` }}>
                   <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 hidden group-hover:block bg-gray-900 text-white text-[10px] px-2 py-1 rounded whitespace-nowrap z-10">
-                    {c.client_name}: ${c.estimated_cost_usd.toFixed(2)} ({pct.toFixed(0)}%)
+                    {c.client_name}: {c.conversations_month} ({pct.toFixed(0)}%)
                   </div>
                 </div>
               );
             })}
           </div>
           <div className="flex flex-wrap gap-3 mt-3">
-            {sorted.filter(c => c.estimated_cost_usd > 0).slice(0, 8).map((c, i) => {
+            {sorted.filter(c => c.conversations_month > 0).slice(0, 8).map((c, i) => {
               const colors = ['bg-indigo-500', 'bg-blue-500', 'bg-cyan-500', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500', 'bg-purple-500', 'bg-teal-500'];
               return (
                 <div key={c.client_id} className="flex items-center gap-1.5 text-xs text-gray-600">
@@ -150,7 +150,7 @@ export function UsageDashboard() {
                   <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Model</th>
                   <SortTh label="Conversations" sortKey="convos" current={sort} asc={sortAsc} onClick={handleSort} />
                   <SortTh label="Tokens" sortKey="tokens" current={sort} asc={sortAsc} onClick={handleSort} className="hidden sm:table-cell" />
-                  <SortTh label="Est. Cost" sortKey="cost" current={sort} asc={sortAsc} onClick={handleSort} />
+                  <SortTh label="Activity" sortKey="convos" current={sort} asc={sortAsc} onClick={handleSort} />
                   <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">Last Activity</th>
                 </tr>
               </thead>
@@ -189,8 +189,8 @@ export function UsageDashboard() {
                       {formatTokens(c.estimated_tokens)}
                     </td>
                     <td className="px-3 py-3">
-                      <span className={`font-semibold ${c.estimated_cost_usd > 1 ? 'text-amber-600' : 'text-gray-600'}`}>
-                        ${c.estimated_cost_usd.toFixed(2)}
+                      <span className="font-semibold text-indigo-600">
+                        {c.conversations_month}
                       </span>
                     </td>
                     <td className="px-3 py-3 text-gray-500 hidden lg:table-cell">

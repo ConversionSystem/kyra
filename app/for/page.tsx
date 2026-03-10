@@ -296,7 +296,7 @@ export default async function ForPage({ searchParams }: Props) {
             Start free. Deploy in 10 minutes.
           </h2>
           <p className="text-indigo-200 mb-8 text-lg">
-            $2 in credits included — enough to test with a real client immediately.
+            50 welcome credits included — start testing with a real client immediately.
           </p>
           <Link
             href={`/solo${params.ref ? `?ref=${params.ref}` : ''}`}

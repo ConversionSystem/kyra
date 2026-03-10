@@ -148,7 +148,7 @@ export default function RevenueCalculator({ realClientCount }: { realClientCount
   const [numClients, setNumClients] = useState(Math.max(realClientCount, 1));
   const [pricePerClient, setPricePerClient] = useState(500);
 
-  const plan = numClients <= 1 ? 'free' : numClients <= 5 ? 'starter' : numClients <= 15 ? 'pro' : 'scale';
+  const plan = numClients <= 1 ? 'free' : numClients <= 3 ? 'starter' : numClients <= 10 ? 'pro' : 'scale';
   const kyraFee = PLAN_LIMITS[plan as keyof typeof PLAN_LIMITS].price;
   const grossRevenue = numClients * pricePerClient;
   const netRevenue = grossRevenue - kyraFee;
