@@ -182,13 +182,13 @@ export default async function AgencyOverviewPage() {
         totalConversations={totalUsage}
       />
 
-      {/* ── Trial credits banner ── */}
+      {/* ── Welcome credits banner ── */}
       {showTrialCreditsBanner && (
-        <div className="mb-4 flex items-center gap-4 rounded-xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-purple-50 px-4 py-3.5">
-          <span className="text-2xl shrink-0">🪙</span>
+        <div className="mb-4 flex items-center gap-4 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3.5">
+          <span className="text-2xl shrink-0">🎁</span>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-indigo-900">
-              You have {agencyCredits.balance} free credits — enough for ~{agencyCredits.balance} conversations
+              You have <strong>{agencyCredits.balance} welcome credits</strong> — your AI is ready to work.
             </p>
             <p className="text-xs text-indigo-600 mt-0.5">
               Top up or add your own API key when ready to scale.

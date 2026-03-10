@@ -154,11 +154,11 @@ While GoHighLevel gives you the CRM, pipeline, and marketing infrastructure — 
 ✅ PRICING
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-• Free: 1 client AI worker
-• Lite: $99/mo — 5 client AI workers
-• Pro: $249/mo — 15 client AI workers  
-• Scale: $499/mo — 50 client AI workers
-• All paid plans include 7-day free trial
+• Free: 1 AI worker
+• Solo Pro: $39/mo — 1 AI worker (personal)
+• Lite: $99/mo — 3 client AI workers
+• Pro: $249/mo — 10 client AI workers
+• Scale: $499/mo — 30 client AI workers
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✅ WHO THIS IS FOR
@@ -166,7 +166,7 @@ While GoHighLevel gives you the CRM, pipeline, and marketing infrastructure — 
 
 GHL agencies who want to add a recurring AI revenue stream. Charge clients $500–$5,000/month for a white-labeled AI worker. Kyra handles all the infrastructure — you set the price and keep the margin.
 
-Most agencies bill $997–$1,997/month per AI worker. At $99/month for 5 client slots, your margin starts on day 1.
+Most agencies bill $997–$1,997/month per AI worker. At $99/month for 3 client slots, your margin starts on day 1.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -174,7 +174,7 @@ Get started free: kyra.conversionsystem.com`;
 
 const CATEGORY = 'Agency Management (primary); Client Reporting & Analytics (secondary)';
 const PRICING_TIER =
-  'Freemium — Free plan available. Paid plans from $99/mo (Lite, 5 clients) to $499/mo (Scale, 50 clients). 7-day free trial on all paid plans.';
+  'Freemium — Free plan available. Paid plans from $39/mo (Solo Pro, 1 worker) to $499/mo (Scale, 30 clients). No credit card required to start.';
 const WEBSITE = 'https://kyra.conversionsystem.com';
 const SUPPORT_EMAIL = 'angel@conversionsystem.com';
 const WEBHOOK_URL = 'https://kyra.conversionsystem.com/api/ghl/poll (Vercel cron — polls every minute)';
@@ -191,7 +191,7 @@ const SCREENSHOTS = [
   { label: 'Pitch Generator — shareable industry pitch links (dental, auto, cannabis, etc.)' },
   { label: 'Public Pitch Page — animated SMS demo + ROI calculator (no login)' },
   { label: 'Demo page — /demo/dental animated SMS conversation (shareable with prospects)' },
-  { label: 'Billing page — plan upgrade flow with 7-day trial messaging' },
+  { label: 'Billing page — plan upgrade flow with annual/monthly toggle and live credit balance' },
 ];
 
 export default function GHLListingPage() {
