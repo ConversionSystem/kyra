@@ -8,6 +8,7 @@ type CheckoutBody = {
   plan?: string;
   billing?: 'monthly' | 'annual';
   addon?: 'voice';
+  successRedirect?: string; // e.g. '/onboarding' for new signups
 };
 
 /**
@@ -46,6 +47,8 @@ export async function POST(request: NextRequest) {
     const body = (await request.json()) as CheckoutBody;
     const billing = body.billing ?? 'monthly';
     const isAnnual = billing === 'annual';
+    const successRedirect = body.successRedirect ?? '/agency/billing?checkout=success';
+    const cancelRedirect = '/agency/billing?checkout=cancelled';
 
     const serviceClient = await createServiceClient();
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3001';
@@ -129,13 +132,10 @@ export async function POST(request: NextRequest) {
         customer: customerId,
         mode: 'subscription',
         line_items: [{ price: fallbackId, quantity: 1 }],
-        success_url: `${appUrl}/agency/billing?checkout=success`,
-        cancel_url: `${appUrl}/agency/billing?checkout=cancelled`,
+        success_url: `${appUrl}${successRedirect}`,
+        cancel_url: `${appUrl}${cancelRedirect}`,
         metadata: { agency_id: agencyData.id, plan, billing: 'monthly' },
-        subscription_data: {
-          trial_period_days: 7,
-          metadata: { agency_id: agencyData.id },
-        },
+        subscription_data: { metadata: { agency_id: agencyData.id } },
       });
 
       return NextResponse.json({ url: session.url });
@@ -145,14 +145,10 @@ export async function POST(request: NextRequest) {
       customer: customerId,
       mode: 'subscription',
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${appUrl}/agency/billing?checkout=success`,
-      cancel_url: `${appUrl}/agency/billing?checkout=cancelled`,
+      success_url: `${appUrl}${successRedirect}`,
+      cancel_url: `${appUrl}${cancelRedirect}`,
       metadata: { agency_id: agencyData.id, plan, billing },
-      subscription_data: {
-        // Annual plans don't get trial (they've already committed)
-        trial_period_days: isAnnual ? undefined : 7,
-        metadata: { agency_id: agencyData.id },
-      },
+      subscription_data: { metadata: { agency_id: agencyData.id } },
     });
 
     return NextResponse.json({ url: session.url });

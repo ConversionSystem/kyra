@@ -9,7 +9,7 @@ export const metadata = { title: 'Billing — Kyra' };
 export default async function AgencyBillingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ upgrade?: string; checkout?: string; voice?: string }>;
+  searchParams: Promise<{ upgrade?: string; checkout?: string; voice?: string; required?: string }>;
 }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -18,7 +18,7 @@ export default async function AgencyBillingPage({
   const result = await getAgencyForUser(user.id);
   if (!result) redirect('/signup/agency');
 
-  const { upgrade, checkout, voice } = await searchParams;
+  const { upgrade, checkout, voice, required } = await searchParams;
 
   // Fetch agency details with billing fields
   const { data: agency } = await supabase
@@ -63,6 +63,7 @@ export default async function AgencyBillingPage({
       checkoutStatus={checkoutStatus}
       autoUpgradePlan={upgrade ?? null}
       isSolo={isSolo}
+      requirePlan={required === 'true'}
       initialCreditsBalance={credits.balance}
       initialCreditsUsed={credits.lifetimeUsed}
     />
