@@ -29,6 +29,15 @@ const PLANS = ['free', 'solo_pro', 'starter', 'pro', 'scale'];
 const PLAN_LABELS: Record<string, string> = {
   free: 'Free', solo_pro: 'Solo Pro', starter: 'Lite', pro: 'Pro', scale: 'Scale',
 };
+const SORT_OPTIONS = [
+  { value: 'newest', label: 'Newest first' },
+  { value: 'oldest', label: 'Oldest first' },
+  { value: 'credits_desc', label: 'Highest credits' },
+  { value: 'credits_asc', label: 'Lowest credits' },
+  { value: 'name_asc', label: 'Name A → Z' },
+] as const;
+type SortOption = (typeof SORT_OPTIONS)[number]['value'];
+
 const PLAN_COLORS: Record<string, string> = {
   free: 'bg-gray-100 text-gray-600',
   solo_pro: 'bg-violet-100 text-violet-700',
@@ -374,6 +383,9 @@ export default function AccountsAdminClient() {
   const [search, setSearch] = useState('');
   const [filterPlan, setFilterPlan] = useState('all');
   const [filterType, setFilterType] = useState('all');
+  const [sortBy, setSortBy] = useState<SortOption>('newest');
+  const [onlyLowCredits, setOnlyLowCredits] = useState(false);
+  const [onlyNoWorkers, setOnlyNoWorkers] = useState(false);
   const [selected, setSelected] = useState<Account | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
 
@@ -413,13 +425,26 @@ export default function AccountsAdminClient() {
     });
   }
 
-  const filtered = accounts.filter(a => {
-    const q = search.toLowerCase();
-    const matchesSearch = !q || a.name.toLowerCase().includes(q) || (a.email ?? '').toLowerCase().includes(q) || a.id.toLowerCase().includes(q);
-    const matchesPlan = filterPlan === 'all' || a.plan === filterPlan;
-    const matchesType = filterType === 'all' || a.account_type === filterType;
-    return matchesSearch && matchesPlan && matchesType;
-  });
+  const filtered = accounts
+    .filter(a => {
+      const q = search.toLowerCase();
+      const matchesSearch = !q
+        || a.name.toLowerCase().includes(q)
+        || (a.email ?? '').toLowerCase().includes(q)
+        || a.id.toLowerCase().includes(q);
+      const matchesPlan = filterPlan === 'all' || a.plan === filterPlan;
+      const matchesType = filterType === 'all' || a.account_type === filterType;
+      const matchesLowCredits = !onlyLowCredits || a.credits.balance <= 50;
+      const matchesNoWorkers = !onlyNoWorkers || a.clients.running === 0;
+      return matchesSearch && matchesPlan && matchesType && matchesLowCredits && matchesNoWorkers;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'oldest') return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      if (sortBy === 'credits_desc') return b.credits.balance - a.credits.balance;
+      if (sortBy === 'credits_asc') return a.credits.balance - b.credits.balance;
+      if (sortBy === 'name_asc') return a.name.localeCompare(b.name);
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
 
   const stats = {
     total: accounts.length,
@@ -470,8 +495,8 @@ export default function AccountsAdminClient() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-4">
-        <div className="relative flex-1 min-w-[200px]">
+      <div className="flex flex-wrap gap-3 mb-2">
+        <div className="relative flex-1 min-w-[220px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <input
             value={search}
@@ -491,7 +516,37 @@ export default function AccountsAdminClient() {
           <option value="solo">Solo</option>
           <option value="agency">Agency</option>
         </select>
+        <select value={sortBy} onChange={e => setSortBy(e.target.value as SortOption)}
+          className="border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400">
+          {SORT_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+        </select>
         <span className="flex items-center text-sm text-gray-500 px-1">{filtered.length} accounts</span>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        <button
+          onClick={() => setOnlyLowCredits(v => !v)}
+          className={`text-xs px-3 py-1.5 rounded-full border transition ${onlyLowCredits ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-gray-200 text-gray-600 hover:border-amber-300 hover:text-amber-700'}`}
+        >
+          Low credits (≤50)
+        </button>
+        <button
+          onClick={() => setOnlyNoWorkers(v => !v)}
+          className={`text-xs px-3 py-1.5 rounded-full border transition ${onlyNoWorkers ? 'border-rose-300 bg-rose-50 text-rose-700' : 'border-gray-200 text-gray-600 hover:border-rose-300 hover:text-rose-700'}`}
+        >
+          No running workers
+        </button>
+        {(onlyLowCredits || onlyNoWorkers) && (
+          <button
+            onClick={() => {
+              setOnlyLowCredits(false);
+              setOnlyNoWorkers(false);
+            }}
+            className="text-xs px-3 py-1.5 rounded-full border border-gray-200 text-gray-500 hover:text-indigo-600 hover:border-indigo-300 transition"
+          >
+            Clear quick filters
+          </button>
+        )}
       </div>
 
       {/* Table */}
