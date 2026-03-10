@@ -263,7 +263,7 @@ export default function TryPage({ params }: { params: Promise<{ industry: string
               </div>
             )}
             <Link
-              href="/signup/agency"
+              href="/solo"
               className="bg-white text-gray-900 font-bold text-xs px-3 py-2 rounded-lg flex items-center gap-1.5 hover:bg-gray-100 transition"
             >
               <Zap className="h-3 w-3" style={{ color: config.color }} />
@@ -334,7 +334,7 @@ export default function TryPage({ params }: { params: Promise<{ industry: string
               <p className="text-sm text-indigo-200">
                 🎯 <strong>Like how this works?</strong> Deploy this AI for your clients in minutes.
               </p>
-              <Link href="/signup/agency"
+              <Link href="/solo"
                 className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-2 rounded-lg flex items-center gap-1 shrink-0 transition">
                 Try free <ArrowRight className="h-3 w-3" />
               </Link>

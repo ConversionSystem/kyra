@@ -1,0 +1,42 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "kyra-router"
+version = "0.1.0"
+description = "Kyra Router — Intelligent AI model routing. Routes queries to the cheapest model that can handle them. Saves 60-90% on LLM API costs."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [
+    { name = "Conversion System" },
+]
+keywords = ["ai", "routing", "cost-optimization", "llm", "claude", "openai"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "fastapi>=0.100.0",
+    "uvicorn>=0.23.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
+
+[project.scripts]
+kyra-router = "klaw.__main__:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/klaw"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/klaw/rooms.claw" = "klaw/rooms.claw"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]

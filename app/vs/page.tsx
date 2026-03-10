@@ -227,7 +227,7 @@ export default function VsPage() {
             <Link href="/try/realestate" className="bg-white/10 hover:bg-white/15 border border-white/10 text-white px-6 py-3 rounded-xl transition text-sm">
               🏡 Try Real Estate AI
             </Link>
-            <Link href="/signup/agency" className="bg-white/10 hover:bg-white/15 border border-white/10 text-white px-6 py-3 rounded-xl transition text-sm">
+            <Link href="/solo" className="bg-white/10 hover:bg-white/15 border border-white/10 text-white px-6 py-3 rounded-xl transition text-sm">
               Get Started Free
             </Link>
           </div>

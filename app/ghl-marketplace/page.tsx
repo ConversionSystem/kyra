@@ -91,34 +91,6 @@ const HOW_IT_WORKS = [
   },
 ];
 
-const PLANS = [
-  {
-    name: 'Lite',
-    price: '$99',
-    per: '/mo',
-    clients: 'Up to 3 clients',
-    features: ['3 AI workers', '500 platform credits/mo', 'All 21 industry templates', 'GHL CRM sync', 'Conversation history', 'Email escalation alerts'],
-    highlight: false,
-  },
-  {
-    name: 'Pro',
-    price: '$249',
-    per: '/mo',
-    clients: 'Up to 10 clients',
-    features: ['10 AI workers', '1,500 platform credits/mo', 'Everything in Lite', 'White-label dashboard', 'Custom AI personalities', 'Priority support', 'Usage analytics'],
-    highlight: true,
-    badge: 'Most Popular',
-  },
-  {
-    name: 'Scale',
-    price: '$499',
-    per: '/mo',
-    clients: 'Up to 30 clients',
-    features: ['30 AI workers', '2,500 platform credits/mo', 'Everything in Pro', 'Dedicated onboarding', 'API access', 'Custom integrations', 'SLA guarantee'],
-    highlight: false,
-  },
-];
-
 export default function GhlMarketplacePage() {
   return (
     <div className="bg-white text-gray-900 min-h-screen font-sans">
@@ -144,10 +116,10 @@ export default function GhlMarketplacePage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/signup/agency"
+              href="/solo"
               className="inline-block bg-white text-indigo-900 font-bold text-lg px-8 py-4 rounded-xl hover:bg-indigo-50 transition-colors"
             >
-              Start Free — $2 in Credits Included
+              Start Free — No Credit Card Required
             </Link>
             <Link
               href="/try/dental"
@@ -313,51 +285,6 @@ export default function GhlMarketplacePage() {
         </div>
       </section>
 
-      {/* ── Pricing ── */}
-      <section className="bg-gray-50 py-20 px-4">
-        <div className="max-w-5xl mx-auto">
-          <h2 className="text-3xl font-black text-center mb-3">Simple agency pricing</h2>
-          <p className="text-center text-gray-500 mb-12">One flat fee. Unlimited conversations per client. No per-message charges.</p>
-          <div className="grid sm:grid-cols-3 gap-6">
-            {PLANS.map((plan) => (
-              <div
-                key={plan.name}
-                className={`rounded-2xl p-7 border-2 ${
-                  plan.highlight ? 'border-indigo-500 bg-white shadow-lg shadow-indigo-100 scale-[1.02]' : 'border-gray-200 bg-white'
-                }`}
-              >
-                {plan.badge && (
-                  <span className="inline-block bg-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-full mb-4">
-                    {plan.badge}
-                  </span>
-                )}
-                <p className="text-lg font-bold text-gray-900">{plan.name}</p>
-                <div className="flex items-baseline gap-1 mt-2 mb-1">
-                  <span className="text-4xl font-black text-gray-900">{plan.price}</span>
-                  <span className="text-gray-500 text-sm">{plan.per}</span>
-                </div>
-                <p className="text-sm text-indigo-600 font-medium mb-5">{plan.clients}</p>
-                <ul className="space-y-2 mb-7">
-                  {plan.features.map((f) => (
-                    <li key={f} className="flex items-center gap-2 text-sm text-gray-600">
-                      <span className="text-green-500 font-bold">✓</span> {f}
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  href="/signup/agency"
-                  className={`block text-center font-bold py-3 rounded-xl transition-colors text-sm ${
-                    plan.highlight ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                  }`}
-                >
-                  Start Free →
-                </Link>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* ── FAQ ── */}
       <section className="py-20 px-4">
         <div className="max-w-3xl mx-auto">
@@ -403,10 +330,10 @@ export default function GhlMarketplacePage() {
         <div className="max-w-2xl mx-auto">
           <h2 className="text-3xl sm:text-4xl font-black mb-4">Deploy your first AI worker today.</h2>
           <p className="text-indigo-200 text-lg mb-8">
-            Connect GHL. Pick a template. Live in 10 minutes. 7-day free trial included.
+            Connect GHL. Pick a template. Live in 10 minutes. Free to start included.
           </p>
           <Link
-            href="/signup/agency"
+            href="/solo"
             className="inline-block bg-white text-indigo-900 font-black text-lg px-10 py-4 rounded-xl hover:bg-indigo-50 transition-colors"
           >
             Get Started Free →

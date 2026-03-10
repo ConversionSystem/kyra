@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ContentPanel } from './content-panel';
 import { NAPAuditPanel } from './nap-audit-panel';
+import { PublishingPlatformsPanel } from './publishing-platforms-panel';
 
 // ── Getting Started Guide ─────────────────────────────────────────────────────
 
@@ -194,6 +195,7 @@ interface SEOData {
   geo_scores: GeoScore[];
   nap_status: NapEntry[];
   content_published: ContentEntry[];
+  publishing_platforms: string[];
   outreach_pipeline: Array<Record<string, unknown>>;
   reddit_queue: Array<Record<string, unknown>>;
   last_report: Record<string, unknown> | string | null;
@@ -494,10 +496,19 @@ export function SEODashboard({ clientId, clientName }: SEODashboardProps) {
       </Card>
 
       {/* NAP Audit */}
-      <NAPAuditPanel entries={data.nap_status} />
+      <NAPAuditPanel
+        entries={data.nap_status}
+        businessName={clientName}
+        city={(data.setup as Record<string, unknown>)?.city as string || ''}
+      />
 
       {/* Content Drafts + Published */}
-      <ContentPanel entries={data.content_published} clientId={clientId} onRefresh={fetchData} />
+      <ContentPanel
+        entries={data.content_published}
+        clientId={clientId}
+        enabledPlatforms={data.publishing_platforms ?? ['telegraph']}
+        onRefresh={fetchData}
+      />
 
       {/* Reddit Queue */}
       <Card>
@@ -570,38 +581,15 @@ export function SEODashboard({ clientId, clientName }: SEODashboardProps) {
         </Card>
       )}
 
-      {/* Publishing Platforms */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-            <Globe className="w-4 h-4 text-blue-600" />
-            Publishing Platforms
-            <Badge className="ml-auto bg-blue-100 text-blue-700 border-blue-200 text-xs">Phase 2</Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <p className="text-xs text-gray-500 mb-3">Content will be published to these platforms automatically. Direct API publishing (no browser automation).</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {[
-              { name: 'WordPress.com', type: 'Web 2.0', icon: '📝', note: 'REST API' },
-              { name: 'Blogger', type: 'Web 2.0', icon: '📰', note: 'Google Blogger API v3' },
-              { name: 'Telegraph', type: 'Web 2.0', icon: '✈️', note: 'No auth required' },
-              { name: 'Notion', type: 'Web 2.0 + Stack', icon: '📓', note: 'Notion API' },
-              { name: 'Google Docs', type: 'Semantic Stack', icon: '📄', note: 'Google Docs API' },
-              { name: 'GitHub Pages', type: 'Semantic Stack', icon: '⚡', note: 'GitHub REST API' },
-              { name: 'Google Sites', type: 'Semantic Stack', icon: '🌐', note: 'Google Sites API' },
-            ].map((p, i) => (
-              <div key={i} className="flex items-start gap-2 p-2.5 bg-gray-50 border border-gray-200 rounded-md">
-                <span className="text-base">{p.icon}</span>
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold text-gray-800">{p.name}</p>
-                  <p className="text-[10px] text-gray-400">{p.type} · {p.note}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Publishing Platforms — interactive selector */}
+      <PublishingPlatformsPanel
+        clientId={clientId}
+        enabledPlatforms={data.publishing_platforms ?? ['telegraph']}
+        onPlatformsChange={(ids) => {
+          // Optimistically update local data so ContentPanel reacts immediately
+          setData(prev => prev ? { ...prev, publishing_platforms: ids } : prev);
+        }}
+      />
 
       {/* Setup Data */}
       <details className="group">

@@ -4,6 +4,8 @@ import { isValidSlug, toSlug } from '@/lib/agency/utils';
 import { addCredits } from '@/lib/billing/credit-engine';
 import { provisionClientGateway } from '@/lib/ovh/provisioner';
 import { buildInjectionDefensePromptSuffix } from '@/lib/security/prompt-injection';
+import { syncLeadToCRM } from '@/lib/crm/lead-sync';
+import { activateReferral } from '@/lib/billing/referral-activation';
 
 const SOLO_WELCOME_CREDITS = 50;
 const SOLO_WELCOME_DESCRIPTION = 'Kyra Solo Free — 50 welcome credits';
@@ -37,7 +39,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  const { businessName, fullName, email, password, websiteUrl, referralId } = body as typeof body & { referralId?: string };
+  const { businessName, fullName, email, password, websiteUrl } = body as typeof body & { referralId?: string };
+  // Referral: prefer body value (from URL param), fall back to cookie (survives navigation + tab closes)
+  const cookieRef = request.cookies.get('kyra_ref')?.value;
+  const referralId = (body as typeof body & { referralId?: string }).referralId || cookieRef || undefined;
 
   // ── Validate ────────────────────────────────────────────────────────────
   if (!businessName || !fullName || !email || !password) {
@@ -150,42 +155,66 @@ export async function POST(request: NextRequest) {
     console.warn('[solo-signup] Failed to grant credits (non-fatal):', err);
   }
 
-  // ── 5b. Referral Machine — double-sided rewards ─────────────────────────
+  // ── 5b. Sync lead to master CRM ────────────────────────────────────────
+  void syncLeadToCRM({
+    fullName,
+    email,
+    businessName,
+    websiteUrl: websiteUrl || null,
+    accountType: 'solo',
+    plan: 'free',
+    agencyId: agency.id,
+    referredBy: referralId,
+  });
+
+  // ── 5c. Referral Machine — double-sided rewards ─────────────────────────
   if (referralId && referralId !== agency.id) {
     void (async () => {
       try {
         const { data: referrerAgency } = await supabase
           .from('agencies')
-          .select('created_at')
+          .select('id, created_at, settings')
           .eq('id', referralId)
           .single();
 
-        const hoursElapsed = referrerAgency
-          ? (Date.now() - new Date(referrerAgency.created_at).getTime()) / 3_600_000
-          : 999;
+        if (!referrerAgency) {
+          console.warn(`[solo-signup] Referral ID not found: ${referralId}`);
+          return;
+        }
+
+        const hoursElapsed = (Date.now() - new Date(referrerAgency.created_at).getTime()) / 3_600_000;
         const isEarlyBird = hoursElapsed < 48;
 
-        // Log referral — referrer credits held at 0 until friend activates
-        await supabase.from('agency_referrals').insert({
+        // Log referral row (status: signed_up — activateReferral flips it immediately)
+        const { data: referralRow } = await supabase.from('agency_referrals').insert({
           referrer_id: referralId,
           referred_id: agency.id,
           referred_email: email,
           status: 'signed_up',
           early_bird: isEarlyBird,
-          referrer_credits_granted: 0,   // Granted on first AI message (activation gate)
-          friend_credits_granted: 100,
-        });
+          referrer_credits_granted: 0,
+          friend_credits_granted: 0,
+        }).select('id').single();
 
-        // 🎁 Friend gets credits immediately (motivates real usage)
-        await addCredits(
-          agency.id,
-          100,
-          'bonus',
-          'Welcome referral bonus — a friend referred you to Kyra. Enjoy 100 free AI credits! 🎁',
-        );
+        // ✅ Increment invite_signups on referrer's agency settings
+        const referrerSettings = (referrerAgency.settings ?? {}) as Record<string, unknown>;
+        const currentSignups = (referrerSettings.invite_signups as number) ?? 0;
+        await supabase
+          .from('agencies')
+          .update({
+            settings: {
+              ...referrerSettings,
+              invite_signups: currentSignups + 1,
+            },
+          })
+          .eq('id', referralId);
 
-        // ⏳ Referrer credits granted when friend sends first AI message
-        // See: lib/billing/referral-activation.ts → called from /api/widget/chat
+        // 🎁 Activate immediately — grant referrer + friend credits now (no email gate)
+        if (referralRow?.id) {
+          await activateReferral(referralRow.id, referralId, agency.id, isEarlyBird);
+        }
+
+        console.log(`[solo-signup] Referral activated: ${referralId} → ${agency.id} (earlyBird: ${isEarlyBird})`);
       } catch (e) {
         console.warn('[solo-signup] Referral reward error:', e);
       }

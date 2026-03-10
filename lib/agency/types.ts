@@ -140,6 +140,7 @@ export interface UpdateClientRequest {
   name?: string;
   industry?: string;
   status?: ClientStatus;
+  ai_model?: string;
   container_config?: Record<string, unknown>;
   settings?: Record<string, unknown>;
 }
