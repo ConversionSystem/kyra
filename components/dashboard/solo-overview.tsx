@@ -618,7 +618,7 @@ export default function SoloOverview({
             <AlertTriangle className={`h-5 w-5 shrink-0 ${liveBalance === 0 ? 'text-red-600' : 'text-amber-600'}`} />
             <div className="flex-1">
               <p className={`text-sm font-semibold ${liveBalance === 0 ? 'text-red-900' : 'text-amber-900'}`}>
-                {liveBalance === 0 ? 'Out of credits — AI worker paused' : `Only ${liveBalance} credits remaining`}
+                {liveBalance === 0 ? 'Out of credits — top up to keep your AI running' : `Only ${liveBalance} credits remaining — top up soon`}
               </p>
               <p className={`text-xs mt-0.5 ${liveBalance === 0 ? 'text-red-700' : 'text-amber-700'}`}>
                 {estimatedDaysLeft <= 30

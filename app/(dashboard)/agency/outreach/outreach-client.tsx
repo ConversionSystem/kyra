@@ -605,7 +605,7 @@ So I built Kyra — a platform that lets you add an AI worker to any GHL sub-acc
 
 We've used AI SMS to drive significant revenue for cannabis clients. Now I'm packaging that playbook for other agencies.
 
-Free to start (includes $2 in credits to test): kyra.conversionsystem.com
+Free to start with welcome credits: kyra.conversionsystem.com
 
 If you want to see it in action for a specific niche, comment below or DM me. Happy to do a quick demo.
 
