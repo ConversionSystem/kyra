@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
 
-const MASTER_EMAILS = ['hello@conversionsystem.com', 'angel@conversionsystem.com'];
-
 export const dynamic = 'force-dynamic';
+
+const MASTER_EMAILS = ['hello@conversionsystem.com', 'angel@conversionsystem.com'];
 
 export async function GET() {
   const sb = await createClient();

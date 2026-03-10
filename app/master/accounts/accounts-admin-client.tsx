@@ -370,6 +370,7 @@ function AccountDrawer({
 export default function AccountsAdminClient() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [filterPlan, setFilterPlan] = useState('all');
   const [filterType, setFilterType] = useState('all');
@@ -378,9 +379,20 @@ export default function AccountsAdminClient() {
 
   const fetch_ = useCallback(async () => {
     setLoading(true);
-    const res = await fetch('/api/admin/accounts');
-    const data = await res.json();
-    setAccounts(Array.isArray(data) ? data : []);
+    setFetchError(null);
+    try {
+      const res = await fetch('/api/admin/accounts');
+      const data = await res.json();
+      if (!res.ok) {
+        setFetchError(`API error ${res.status}: ${data?.error ?? 'Unknown error'}`);
+        setAccounts([]);
+      } else {
+        setAccounts(Array.isArray(data) ? data : []);
+      }
+    } catch (e) {
+      setFetchError(String(e));
+      setAccounts([]);
+    }
     setLastRefresh(new Date());
     setLoading(false);
   }, []);
@@ -432,6 +444,14 @@ export default function AccountsAdminClient() {
           <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
         </button>
       </div>
+
+      {/* Fetch error */}
+      {fetchError && (
+        <div className="mb-4 flex items-center gap-3 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span>{fetchError}</span>
+        </div>
+      )}
 
       {/* Summary Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
