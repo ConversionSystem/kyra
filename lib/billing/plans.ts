@@ -66,7 +66,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     price: 39,
     maxClients: 1,
     monthlyCredits: 200,
-    trialDays: 7,
+    trialDays: 0,
     description: 'Your personal AI worker — unlimited conversations, priority support.',
     features: [
       '1 AI worker (no expiry)',
@@ -91,7 +91,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     price: 99,
     maxClients: 3,
     monthlyCredits: 500,
-    trialDays: 7,
+    trialDays: 0,
     description: 'Launch your AI agency with your first 3 clients.',
     features: [
       '3 client AI workers',
@@ -114,7 +114,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     price: 249,
     maxClients: 10,
     monthlyCredits: 1500,
-    trialDays: 7,
+    trialDays: 0,
     description: 'For growing agencies managing multiple clients.',
     features: [
       '10 client AI workers',
@@ -139,7 +139,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     price: 499,
     maxClients: 30,
     monthlyCredits: 2500,
-    trialDays: 7,
+    trialDays: 0,
     description: 'Built for high-volume agencies running 30+ AI workers.',
     features: [
       '30 client AI workers',
