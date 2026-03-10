@@ -724,12 +724,13 @@ export async function updateContainerApiKey(
 export async function updateContainerTier(
   clientId: string,
   maxTier: number,
-  modelId?: string
+  modelId?: string,
+  clearByok?: boolean,
 ): Promise<{ ok: boolean; error?: string }> {
   try {
     const res = await provisionerFetch(`/containers/${clientId}/update-tier`, {
       method: 'POST',
-      body: JSON.stringify({ maxTier, modelId }),
+      body: JSON.stringify({ maxTier, modelId, clearByok: clearByok ?? false }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));

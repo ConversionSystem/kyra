@@ -9,7 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
-import { updateContainerApiKey } from '@/lib/ovh/provisioner';
+import { updateContainerApiKey, updateContainerTier } from '@/lib/ovh/provisioner';
 import { resolveModelLabel, DEFAULT_MODEL_ID } from '@/lib/agency/ai-models';
 
 const VALID_PROVIDERS = ['anthropic', 'openai', 'google', 'openrouter'] as const;
@@ -199,12 +199,59 @@ export async function DELETE(request: NextRequest) {
 
   if (error) return NextResponse.json({ error: 'Failed to remove key' }, { status: 500 });
 
-  void propagateToContainers(auth.member.agency_id, existingKeys, serviceClient);
+  // Check if any BYOK keys remain after deletion
+  const remainingByok = VALID_PROVIDERS.filter(p => !!existingKeys[p]);
+  if (remainingByok.length === 0) {
+    // Last BYOK key removed → switch all containers back to platform credit routing
+    void clearByokFromContainers(auth.member.agency_id, serviceClient);
+  } else {
+    // Still has keys → propagate remaining keys to containers
+    void propagateToContainers(auth.member.agency_id, existingKeys, serviceClient);
+  }
 
   const active = resolveActiveProvider(existingKeys, selectedModels);
   const configured = Object.fromEntries(VALID_PROVIDERS.map((p) => [p, !!existingKeys[p]]));
 
   return NextResponse.json({ success: true, configured, selectedModels, active });
+}
+
+// ── Switch all containers from BYOK back to platform credit billing ───────────
+
+async function clearByokFromContainers(
+  agencyId: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  serviceClient: any,
+) {
+  try {
+    const { data: clients } = await serviceClient
+      .from('agency_clients')
+      .select('id')
+      .eq('agency_id', agencyId)
+      .eq('gateway_status', 'running');
+
+    const { data: agencyRow } = await serviceClient
+      .from('agencies')
+      .select('id, gateway_status')
+      .eq('id', agencyId)
+      .single();
+
+    const containerIds: string[] = [
+      ...(clients?.map((c: { id: string }) => c.id) || []),
+      ...(agencyRow?.gateway_status === 'running' ? [agencyRow.id] : []),
+    ];
+
+    console.log(`[api-keys] Clearing BYOK from ${containerIds.length} containers → platform routing`);
+
+    for (const cId of containerIds) {
+      const result = await updateContainerTier(cId, 2, 'gpt-4o-mini', true /* clearByok */);
+      if (!result.ok) {
+        console.warn(`[api-keys] clearByok failed for container ${cId}:`, result.error);
+      }
+      await new Promise((r) => setTimeout(r, 3000));
+    }
+  } catch (err) {
+    console.error('[api-keys] clearByok error:', err);
+  }
 }
 
 // ── Shared: propagate to containers ──────────────────────────────────────────
@@ -245,7 +292,9 @@ async function propagateToContainers(
     console.log(`[api-keys] Propagating to ${containerIds.length} containers`);
 
     for (const cId of containerIds) {
-      if (Object.keys(keysToPropagate).length > 0) {
+      // Only call updateContainerApiKey when there are keys to propagate
+      // (empty = handled separately by clearByokFromContainers)
+      if (Object.keys(keysToPropagate).filter(k => k !== 'selected_models').length > 0) {
         const result = await updateContainerApiKey(cId, keysToPropagate);
         if (!result.ok) {
           console.warn(`[api-keys] Failed container ${cId}:`, (result as { ok: false; error: string }).error);
