@@ -88,11 +88,25 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Missing required fields: name, slug, plan' }, { status: 400 });
   }
 
-  // Validate plan
-  const validPlans = ['free', 'starter', 'pro', 'scale', 'beta'];
+  // Validate plan — 'free' is NOT allowed for agency accounts.
+  // Free accounts are solo-only (created via /api/auth/solo-signup with account_type=solo).
+  const validPlans = ['starter', 'pro', 'scale', 'beta', 'free']; // 'free' allowed only for internal/master use
   if (!validPlans.includes(plan)) {
     return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });
   }
+
+  // Block free plan for agency accounts — only solo accounts may be free
+  if ((plan as string) === 'free') {
+    // Check if this is a master/internal email — allow free for internal setup only
+    const masterEmails = ['hello@conversionsystem.com', 'angel@conversionsystem.com'];
+    if (!masterEmails.includes(user.email ?? '')) {
+      return NextResponse.json(
+        { error: 'Agency accounts require a paid plan. Visit /agency/billing to choose one.' },
+        { status: 403 }
+      );
+    }
+  }
+
   // Map 'beta' → 'pro' for DB storage (legacy beta = full access)
   const dbPlan = plan === 'beta' ? 'pro' : plan;
 
