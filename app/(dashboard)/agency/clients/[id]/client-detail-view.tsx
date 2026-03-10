@@ -55,6 +55,8 @@ import ClientStatusBanner from '@/components/dashboard/client-status-banner';
 import ClientActivityHeatmap from '@/components/dashboard/client-activity-heatmap';
 import { VoiceClient } from '@/app/(dashboard)/agency/voice/voice-client';
 import RoiSummaryCard from '@/components/dashboard/roi-summary-card';
+import { ModelSelector } from '@/components/dashboard/model-selector';
+import QuickAnswersEditor from '@/components/dashboard/quick-answers-editor';
 import { MemoryBrowser } from './memory-browser';
 import { CustomerIntelligence } from './customer-intelligence';
 import { AICapabilities } from './ai-capabilities';
@@ -1299,6 +1301,10 @@ function SettingsTab({
   const [name, setName] = useState(client.name);
   const [industry, setIndustry] = useState(client.industry);
   const [status, setStatus] = useState(client.status);
+  const [aiModel, setAiModel] = useState<string>(
+    (client as AgencyClient & { ai_model?: string }).ai_model ?? 'gpt-4o-mini'
+  );
+  const [isSavingModel, setIsSavingModel] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   // Internal agency notes — stored in settings.agency_notes
@@ -1348,6 +1354,26 @@ function SettingsTab({
       setSaveMessage({ type: 'error', text: 'Failed to save.' });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleSaveModel = async (modelId: string) => {
+    setAiModel(modelId);
+    setIsSavingModel(true);
+    setSaveMessage(null);
+    try {
+      const res = await fetch(`/api/agency/clients/${client.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ai_model: modelId }),
+      });
+      if (!res.ok) throw new Error('Failed to save model');
+      setSaveMessage({ type: 'success', text: 'AI model updated. Takes effect on next conversation.' });
+      onRefresh();
+    } catch {
+      setSaveMessage({ type: 'error', text: 'Failed to update model.' });
+    } finally {
+      setIsSavingModel(false);
     }
   };
 
@@ -1480,6 +1506,34 @@ function SettingsTab({
           </Button>
         </CardContent>
       </Card>
+
+      {/* AI Model Selection */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Brain className="h-5 w-5 text-purple-400" />
+            AI Model
+          </CardTitle>
+          <CardDescription>
+            Choose which AI model powers this client's AI worker. More powerful models cost more credits per conversation turn.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <ModelSelector
+            value={aiModel}
+            onChange={handleSaveModel}
+            disabled={isSavingModel || role === 'member'}
+          />
+          {isSavingModel && (
+            <p className="text-xs text-gray-400 flex items-center gap-1">
+              <Loader2 className="h-3 w-3 animate-spin" /> Saving model selection...
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Quick Answers — free template injection */}
+      <QuickAnswersEditor clientId={client.id} />
 
       {/* Private Notes */}
       <Card>

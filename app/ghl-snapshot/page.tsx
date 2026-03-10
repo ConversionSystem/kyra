@@ -66,7 +66,7 @@ export default function GHLSnapshotPage() {
           </div>
 
           <Link
-            href="/signup/agency?src=ghl-snapshot"
+            href="/solo?src=ghl-snapshot"
             className="inline-block bg-indigo-600 hover:bg-indigo-500 text-white font-black text-lg px-10 py-4 rounded-xl transition shadow-lg shadow-indigo-900/50"
           >
             Download Free Snapshot →
@@ -158,7 +158,7 @@ export default function GHLSnapshotPage() {
           <h2 className="text-3xl font-black mb-4">Ready to deploy AI workers for your clients?</h2>
           <p className="text-gray-500 mb-8">Free snapshot · Free Kyra account · No credit card required</p>
           <Link
-            href="/signup/agency?src=ghl-snapshot"
+            href="/solo?src=ghl-snapshot"
             className="inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-black text-lg px-10 py-4 rounded-xl transition"
           >
             Get the Free Snapshot →

@@ -13,11 +13,8 @@ import {
   Zap,
   ArrowRight,
   Sparkles,
-  Globe,
   Terminal,
   AlertTriangle,
-  CheckCircle2,
-  Clock,
   TrendingUp,
   Activity,
   Wifi,
@@ -26,6 +23,7 @@ import {
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+
 
 interface MissionControlClient {
   id: string;
@@ -55,7 +53,6 @@ interface SoloOverviewProps {
     created_at: string;
   }[];
   clientId: string | null;
-  agencyId: string;
   hasKnowledge: boolean;
   hasPersonality: boolean;
   clients: MissionControlClient[];
@@ -94,20 +91,23 @@ export default function SoloOverview({
   conversationsTotal,
   recentConversations,
   clientId,
-  agencyId,
   hasKnowledge,
   hasPersonality,
   clients,
 }: SoloOverviewProps) {
-  const embedId = clientId ?? agencyId;
   const isOnline = gatewayStatus === 'running';
 
   // Live credit tracking — poll every 15s + reconcile on mount
   const [liveBalance, setLiveBalance] = useState(creditsBalance);
   const [liveUsed, setLiveUsed] = useState(creditsUsed);
 
+  // Live conversation counts
+  const [liveConvosToday, setLiveConvosToday] = useState(conversationsToday);
+  const [liveConvosTotal, setLiveConvosTotal] = useState(conversationsTotal);
+  const [liveConversations, setLiveConversations] = useState(recentConversations);
+
   useEffect(() => {
-    // Reconcile credits on mount (catches untracked terminal usage)
+    // Reconcile credits on mount
     fetch('/api/agency/credits/reconcile', { method: 'POST' })
       .then(r => r.ok ? r.json() : null)
       .then(data => {
@@ -118,22 +118,44 @@ export default function SoloOverview({
       })
       .catch(() => {});
 
-    // Poll for fresh balance every 15 seconds
-    const poll = setInterval(() => {
+    const pollCredits = () => {
       fetch('/api/agency/credits')
         .then(r => r.ok ? r.json() : null)
         .then(data => {
           if (data) {
             setLiveBalance(data.balance ?? 0);
             setLiveUsed(data.lifetimeUsed ?? 0);
-            // Dispatch event for sidebar badge
             window.dispatchEvent(new Event('kyra:credit-update'));
           }
         })
         .catch(() => {});
-    }, 15_000);
+    };
 
-    return () => clearInterval(poll);
+    const pollConvos = () => {
+      fetch('/api/agency/analytics/overview')
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (data) {
+            setLiveConvosToday(data.conversations_today ?? liveConvosToday);
+          }
+        })
+        .catch(() => {});
+
+      fetch('/api/agency/conversations?limit=10')
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (data?.conversations) setLiveConversations(data.conversations.slice(0, 10));
+        })
+        .catch(() => {});
+    };
+
+    // Poll credits every 15s, convos every 20s
+    const creditPoll = setInterval(pollCredits, 15_000);
+    const convoPoll  = setInterval(pollConvos, 20_000);
+    pollConvos(); // immediate first poll
+
+    return () => { clearInterval(creditPoll); clearInterval(convoPoll); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const terminalUrl = gatewayUrl
     ? gatewayToken
@@ -152,15 +174,15 @@ export default function SoloOverview({
   const setupPct = Math.round((setupComplete / setupTotal) * 100);
 
   // Activity analysis
-  const avgPerDay = conversationsTotal > 0
-    ? Math.round((conversationsTotal / Math.max(new Date().getDate(), 1)) * 10) / 10
+  const avgPerDay = liveConvosTotal > 0
+    ? Math.round((liveConvosTotal / Math.max(new Date().getDate(), 1)) * 10) / 10
     : 0;
   const creditsRemaining = liveBalance;
   const estimatedDaysLeft = avgPerDay > 0 ? Math.floor(creditsRemaining / avgPerDay) : creditsRemaining > 0 ? 999 : 0;
 
   // Channel breakdown from recent conversations
   const channelCounts: Record<string, number> = {};
-  recentConversations.forEach(c => {
+  liveConversations.forEach(c => {
     const ch = c.channel || 'web_chat';
     channelCounts[ch] = (channelCounts[ch] || 0) + 1;
   });
@@ -236,7 +258,7 @@ export default function SoloOverview({
                 <MessageSquare className="h-4 w-4 text-blue-600" />
               </div>
               <div>
-                <p className="text-xl font-bold text-gray-900">{conversationsToday}</p>
+                <p className="text-xl font-bold text-gray-900">{liveConvosToday}</p>
                 <p className="text-[11px] text-gray-400">Today</p>
               </div>
             </div>
@@ -249,7 +271,7 @@ export default function SoloOverview({
                 <TrendingUp className="h-4 w-4 text-indigo-600" />
               </div>
               <div>
-                <p className="text-xl font-bold text-gray-900">{conversationsTotal}</p>
+                <p className="text-xl font-bold text-gray-900">{liveConvosTotal}</p>
                 <p className="text-[11px] text-gray-400">This month</p>
               </div>
             </div>
@@ -389,11 +411,11 @@ export default function SoloOverview({
                 </div>
                 <div className="flex items-center gap-6 text-center">
                   <div className="hidden sm:block">
-                    <p className={`text-lg font-bold ${conversationsToday > 0 ? 'text-indigo-600' : 'text-gray-300'}`}>{conversationsToday}</p>
+                    <p className={`text-lg font-bold ${conversationsToday > 0 ? 'text-indigo-600' : 'text-gray-300'}`}>{liveConvosToday}</p>
                     <p className="text-[10px] text-gray-400">Today</p>
                   </div>
                   <div className="hidden md:block">
-                    <p className="text-lg font-bold text-gray-600">{conversationsTotal}</p>
+                    <p className="text-lg font-bold text-gray-600">{liveConvosTotal}</p>
                     <p className="text-[10px] text-gray-400">Month</p>
                   </div>
                 </div>
@@ -483,9 +505,9 @@ export default function SoloOverview({
           </Link>
         </div>
 
-        {recentConversations.length > 0 ? (
+        {liveConversations.length > 0 ? (
           <div className="bg-white border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-50">
-            {recentConversations.map((conv) => (
+            {liveConversations.map((conv) => (
               <div key={conv.id} className="px-4 py-3 hover:bg-gray-50/50 transition">
                 <div className="flex items-center justify-between mb-1.5">
                   <div className="flex items-center gap-2">
@@ -591,20 +613,29 @@ export default function SoloOverview({
 
       {/* ── Credits Warning ── */}
       {liveBalance <= 10 && (
-        <Card className="border-amber-200 bg-amber-50/50">
+        <Card className={liveBalance === 0 ? 'border-red-200 bg-red-50/50' : 'border-amber-200 bg-amber-50/50'}>
           <CardContent className="p-4 flex items-center gap-4">
-            <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
+            <AlertTriangle className={`h-5 w-5 shrink-0 ${liveBalance === 0 ? 'text-red-600' : 'text-amber-600'}`} />
             <div className="flex-1">
-              <p className="text-sm font-semibold text-amber-900">
+              <p className={`text-sm font-semibold ${liveBalance === 0 ? 'text-red-900' : 'text-amber-900'}`}>
                 {liveBalance === 0 ? 'Out of credits — AI worker paused' : `Only ${liveBalance} credits remaining`}
               </p>
-              <p className="text-xs text-amber-700 mt-0.5">
-                Top up to keep your AI worker responding.
+              <p className={`text-xs mt-0.5 ${liveBalance === 0 ? 'text-red-700' : 'text-amber-700'}`}>
+                {estimatedDaysLeft <= 30
+                  ? `At current usage pace, you have about ${Math.max(0, estimatedDaysLeft)} day${estimatedDaysLeft === 1 ? '' : 's'} left.`
+                  : 'Open Upgrade to top up, add your own API key, or earn bonus credits.'}
               </p>
             </div>
-            <Link href="/agency/credits">
-              <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-xs shrink-0">Get Credits</Button>
-            </Link>
+            <div className="flex items-center gap-2 shrink-0">
+              <Link href="/agency/upgrade">
+                <Button size="sm" className={`${liveBalance === 0 ? 'bg-red-600 hover:bg-red-700' : 'bg-amber-600 hover:bg-amber-700'} text-xs shrink-0`}>
+                  Upgrade
+                </Button>
+              </Link>
+              <Link href="/agency/referrals">
+                <Button size="sm" variant="outline" className="text-xs shrink-0">Free Credits</Button>
+              </Link>
+            </div>
           </CardContent>
         </Card>
       )}

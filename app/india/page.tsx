@@ -65,7 +65,7 @@ export default function IndiaPage() {
         </div>
 
         <Link
-          href="/signup/agency?promo=INDIA2026&src=ghl-live-india"
+          href="/solo?promo=INDIA2026&src=ghl-live-india"
           className="inline-block bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xl px-10 py-5 rounded-2xl transition shadow-2xl shadow-indigo-900/50 w-full sm:w-auto"
         >
           Start Free — Use Code INDIA2026 →
@@ -210,7 +210,7 @@ export default function IndiaPage() {
             Kyra is that answer. And it's free to start.
           </p>
           <Link
-            href="/signup/agency?promo=INDIA2026&src=ghl-live-india"
+            href="/solo?promo=INDIA2026&src=ghl-live-india"
             className="inline-block bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xl px-10 py-5 rounded-2xl transition shadow-2xl shadow-indigo-900/50 w-full sm:w-auto"
           >
             Start Free — Code INDIA2026 →

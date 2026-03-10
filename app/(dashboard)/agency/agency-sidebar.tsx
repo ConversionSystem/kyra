@@ -39,6 +39,7 @@ import {
   ChevronRight,
   Star,
   Gift,
+  Cpu,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AgencySettings } from '@/lib/agency/types';
@@ -50,6 +51,7 @@ interface NavItem {
   href: string;
   icon: LucideIcon;
   masterOnly?: boolean;
+  badge?: string;
 }
 
 interface NavSection {
@@ -59,23 +61,18 @@ interface NavSection {
   defaultOpen?: boolean;
 }
 
-// ─── Agency Nav (collapsible groups, minimal top-level) ────────────────────
+// ─── Agency Nav (minimal sidebar — sub-pages live inside their sections) ────
 const navSections: NavSection[] = [
   {
     items: [
       { label: 'Mission Control', href: '/agency', icon: Activity },
       { label: 'Clients', href: '/agency/clients', icon: Users },
-      { label: 'Conversations', href: '/agency/conversations', icon: MessageSquare },
     ],
   },
   {
-    label: 'CRM',
-    collapsible: true,
+    // CRM = single link; Contacts/Deals/Tasks/Analytics navigate from within CRM
     items: [
-      { label: 'Contacts', href: '/agency/crm/contacts', icon: ContactIcon },
-      { label: 'Deals', href: '/agency/crm/deals', icon: TargetIcon },
-      { label: 'Tasks', href: '/agency/crm/tasks', icon: CheckSquare },
-      { label: 'Analytics', href: '/agency/crm/analytics', icon: CrmChartIcon },
+      { label: 'CRM', href: '/agency/crm/contacts', icon: ContactIcon },
     ],
   },
   {
@@ -86,25 +83,19 @@ const navSections: NavSection[] = [
       { label: 'AI Teams', href: '/agency/agents', icon: Bot },
       { label: 'Channels', href: '/agency/channels', icon: Radio },
       { label: 'Voice AI', href: '/agency/voice', icon: Phone },
-      { label: 'Chat Widget', href: '/agency/widget', icon: MessageCircle },
+      // Chat Widget removed from sidebar — accessible via Channels → Web Chat
     ],
   },
   {
-    label: 'Automation',
-    collapsible: true,
+    // Automation = single link; Autopilot/Pipelines/Proactive AI inside
     items: [
-      { label: 'Autopilot', href: '/agency/autopilot', icon: ZapIcon },
-      { label: 'Pipelines', href: '/agency/pipelines', icon: GitBranch },
-      { label: 'Proactive AI', href: '/agency/automations', icon: Zap },
+      { label: 'Automation', href: '/agency/autopilot', icon: ZapIcon },
     ],
   },
   {
-    label: 'Insights',
-    collapsible: true,
+    // Insights = single link; Performance/Usage/Revenue inside
     items: [
-      { label: 'Performance', href: '/agency/performance', icon: BarChart3 },
-      { label: 'Token Usage', href: '/agency/usage', icon: Activity },
-      { label: 'Revenue', href: '/agency/revenue', icon: TrendingUp },
+      { label: 'Insights', href: '/agency/performance', icon: BarChart3 },
     ],
   },
   {
@@ -133,34 +124,30 @@ const soloNavSections: NavSection[] = [
   {
     items: [
       { label: 'Mission Control', href: '/agency', icon: Activity },
-      { label: 'Conversations', href: '/agency/conversations', icon: MessageSquare },
+      // Conversations removed — accessible from Mission Control
     ],
   },
   {
-    label: 'CRM',
-    collapsible: true,
+    // CRM = single link
     items: [
-      { label: 'Contacts', href: '/agency/crm/contacts', icon: ContactIcon },
-      { label: 'Deals', href: '/agency/crm/deals', icon: TargetIcon },
-      { label: 'Tasks', href: '/agency/crm/tasks', icon: CheckSquare },
-      { label: 'Analytics', href: '/agency/crm/analytics', icon: CrmChartIcon },
+      { label: 'CRM', href: '/agency/crm/contacts', icon: ContactIcon },
     ],
   },
   {
     label: 'AI Worker',
     collapsible: true,
     items: [
+      { label: 'AI Model', href: '/agency/ai-model', icon: Cpu },
       { label: 'AI Templates', href: '/agency/ai-setup', icon: Sparkles },
       { label: 'Channels', href: '/agency/channels', icon: Radio },
       { label: 'Voice AI', href: '/agency/voice', icon: Phone },
-      { label: 'Chat Widget', href: '/agency/widget', icon: MessageCircle },
+      // Chat Widget removed — accessible via Channels → Web Chat
     ],
   },
   {
-    label: 'Automation',
-    collapsible: true,
+    // Automation = single link
     items: [
-      { label: 'Proactive AI', href: '/agency/automations', icon: ZapIcon },
+      { label: 'Automation', href: '/agency/automations', icon: ZapIcon },
     ],
   },
   {
@@ -413,6 +400,16 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
                     {item.href === '/agency/conversations' && escalationCount > 0 && (
                       <span className="ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 leading-none">
                         {escalationCount > 9 ? '9+' : escalationCount}
+                      </span>
+                    )}
+                    {item.href === '/agency/ai-model' && !isActive && (
+                      <span className="ml-auto bg-indigo-500 text-white text-[9px] font-bold rounded px-1.5 py-0.5 leading-none uppercase tracking-wide">
+                        New
+                      </span>
+                    )}
+                    {item.badge && item.href !== '/agency/ai-model' && !isActive && (
+                      <span className="ml-auto bg-emerald-500 text-white text-[9px] font-bold rounded px-1.5 py-0.5 leading-none uppercase tracking-wide">
+                        {item.badge}
                       </span>
                     )}
                   </Link>

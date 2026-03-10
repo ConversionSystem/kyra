@@ -20,6 +20,7 @@ const PROVISIONER_SECRET = process.env.OVH_PROVISIONER_SECRET || '';
 const GATEWAY_DOMAIN = 'gw.kyra.conversionsystem.com';
 
 import { resolveOcModel } from '@/lib/agency/ai-models';
+import { getRouterTierForModel } from '@/lib/billing/model-credits';
 
 /**
  * Given an agencies.api_keys record, return the winning provider + key + model.
@@ -164,13 +165,36 @@ export async function provisionClientGateway(
       if (agencyApiKeys[provider]) apiKeysForContainer[provider] = agencyApiKeys[provider];
     }
 
-    // If agency has a preferred model, update openclaw.json defaults via config
-    const agentModel = winningKey ? {
-      primary: winningKey.model,
-      fallbacks: winningKey.provider === 'anthropic'
-        ? ['anthropic/claude-haiku-4-5']
-        : ['openai/gpt-4o-mini'],
-    } : undefined;
+    // BYOK routing rule:
+    // - BYOK with Anthropic/Google key → use their model directly (bypass router)
+    // - Platform key or OpenAI BYOK → use openai/gpt-4o-mini + router
+    // BYOK routing rule:
+    // If the agency has provided ANY key of their own (any provider), bypass kyra-router.
+    // The router only saves Kyra money when Kyra's platform keys are in use.
+    // If the client is paying with their own key, the router adds zero value — bypass it.
+    const hasByok = Object.values(apiKeysForContainer).some(v => typeof v === 'string' && v.length > 0);
+
+    let agentModel: { primary: string; fallbacks: string[] };
+    let cleanApiKeys: Record<string, string> | undefined;
+
+    if (hasByok) {
+      // BYOK: use their provider's model directly, pass all their keys, no router
+      const byokModel = winningKey?.model ?? 'anthropic/claude-sonnet-4-5';
+      agentModel = { primary: byokModel, fallbacks: ['openai/gpt-4o-mini'] };
+      cleanApiKeys = { ...apiKeysForContainer }; // pass all keys
+    } else {
+      // Platform key: route through kyra-router, always use openai/gpt-4o-mini
+      agentModel = { primary: 'openai/gpt-4o-mini', fallbacks: ['openai/gpt-4o'] };
+      cleanApiKeys = undefined; // provisioner injects platform key
+    }
+
+    // Resolve KYRA_MAX_TIER based on client's selected AI model
+    const { data: clientData } = await supabase
+      .from('agency_clients')
+      .select('ai_model')
+      .eq('id', clientId)
+      .single();
+    const routerMaxTier = getRouterTierForModel(clientData?.ai_model);
 
     // Call OVH provisioner
     const res = await provisionerFetch('/containers', {
@@ -180,8 +204,9 @@ export async function provisionClientGateway(
         agencyId,
         clientName: clientName || undefined,
         config,
-        apiKeys: Object.keys(apiKeysForContainer).length > 0 ? apiKeysForContainer : undefined,
+        apiKeys: cleanApiKeys,
         agentModel,
+        routerMaxTier,  // passed to provisioner → sets KYRA_MAX_TIER on container
         resources: {
           memoryMb: resources.memoryMb || 1024,  // OpenClaw needs ~350MB min; 256 causes OOM crash
           cpuShares: resources.cpuShares || 256,
@@ -691,6 +716,31 @@ export async function updateContainerApiKey(
   }
 }
 
+/**
+ * Update KYRA_MAX_TIER + openclaw.json model on a running container
+ * when the agency changes the client's AI model in the dashboard.
+ * Requires container recreation since Docker env vars can't be changed on running containers.
+ */
+export async function updateContainerTier(
+  clientId: string,
+  maxTier: number,
+  modelId?: string
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await provisionerFetch(`/containers/${clientId}/update-tier`, {
+      method: 'POST',
+      body: JSON.stringify({ maxTier, modelId }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+      return { ok: false, error: err.error || `Provisioner returned ${res.status}` };
+    }
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
 // ============ Agency Gateway ============
 
 /**
@@ -762,7 +812,11 @@ Be direct, strategic, and action-oriented. The agency owner is busy building a b
         // NOTE: uses default kyra-cl- prefix so Traefik/nginx routes it correctly
         config: { soulMd, userMd },
         apiKeys: Object.keys(apiKeysForContainer).length > 0 ? apiKeysForContainer : undefined,
-        agentModel: winningKey ? { primary: winningKey.model, fallbacks: [winningKey.model] } : undefined,
+        // BYOK rule: if agency has any key of their own → use it directly (bypass router).
+        // Server.js enforces this via hasByok check — agentModel is set to their provider's model.
+        agentModel: winningKey
+          ? { primary: winningKey.model, fallbacks: ['openai/gpt-4o-mini'] }
+          : { primary: 'openai/gpt-4o-mini', fallbacks: ['openai/gpt-4o'] },
         resources: { memoryMb: 1024, cpuShares: 256 },
       }),
     });
@@ -856,4 +910,60 @@ export async function resolveClientGateway(
   if (!['running', 'starting'].includes(agency.gateway_status || '')) return null;
 
   return { url: agency.gateway_url, token: agency.gateway_token };
+}
+
+// ─── Kyra Router ──────────────────────────────────────────────────────────────
+
+export async function getRouterStatus(): Promise<{
+  running: boolean;
+  url: string;
+  started?: string;
+} | null> {
+  try {
+    const res = await provisionerFetch('/router/status');
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Push per-client quick-answer templates to kyra-router.
+ * Templates are answered at Tier-0 ($0) — no LLM call, no credits consumed.
+ */
+export async function pushClientTemplates(
+  clientId: string,
+  templates: Record<string, string>
+): Promise<boolean> {
+  try {
+    const res = await provisionerFetch(`/containers/${clientId}/templates`, {
+      method: 'POST',
+      body: JSON.stringify({ templates }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+export async function migrateAllContainersToRouter(
+  dryRun = false
+): Promise<{
+  summary: { total: number; migrated: number; skipped: number; failed: number };
+  migrated: { name: string }[];
+  skipped: { name: string; reason: string }[];
+  failed: { name: string; error: string }[];
+  dry_run: boolean;
+} | null> {
+  try {
+    const res = await provisionerFetch(
+      `/router/migrate-all${dryRun ? '?dry_run=true' : ''}`,
+      { method: 'POST' }
+    );
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
 }

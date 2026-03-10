@@ -29,8 +29,13 @@ export default async function ReferralsPage() {
   // Credits earned from referrals
   const creditsEarned = referrals?.reduce((sum, r) => sum + (r.referrer_credits_granted ?? 0), 0) ?? 0;
 
+  // invite_clicks from agency settings — actual link click count
+  const settings = (result.agency.settings ?? {}) as Record<string, unknown>;
+  const inviteClicks = (settings.invite_clicks as number) ?? 0;
+
   const stats = {
-    total: referrals?.length ?? 0,
+    total: referrals?.length ?? 0,           // signups via referral link
+    inviteClicks,                             // raw link clicks (from /invite/[code])
     signedUp: referrals?.filter(r => ['signed_up', 'activated', 'converted'].includes(r.status)).length ?? 0,
     activated: referrals?.filter(r => ['activated', 'converted'].includes(r.status)).length ?? 0,
     weeklyCount,
