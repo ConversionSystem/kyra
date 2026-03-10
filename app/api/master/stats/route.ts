@@ -1,16 +1,20 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
 
 const MASTER_EMAILS = ['hello@conversionsystem.com', 'angel@conversionsystem.com'];
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
+  // Auth check (cookie-based)
   const sb = await createClient();
   const { data: { user } } = await sb.auth.getUser();
   if (!user || !MASTER_EMAILS.includes(user.email ?? '')) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
+
+  // All DB queries use service client (bypasses RLS — sees all rows)
+  const db = createServiceClientWithoutCookies();
 
   const now = new Date();
   const todayStart = new Date(now);
@@ -19,7 +23,7 @@ export async function GET() {
   const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
   // All agencies
-  const { data: agencies } = await sb
+  const { data: agencies } = await db
     .from('agencies')
     .select('id, name, slug, plan, account_level, created_at, settings, gateway_status, gateway_url')
     .order('created_at', { ascending: false });
@@ -31,7 +35,7 @@ export async function GET() {
   const agencyIds = realAgencies.map(a => a.id);
 
   // All clients
-  const { data: clients } = await sb
+  const { data: clients } = await db
     .from('agency_clients')
     .select('id, agency_id, name, status, gateway_status, usage_this_month, billing_amount_cents, created_at')
     .in('agency_id', agencyIds.length ? agencyIds : ['00000000-0000-0000-0000-000000000000']);
@@ -39,7 +43,7 @@ export async function GET() {
   const allClients = clients ?? [];
 
   // Credits across all agencies
-  const { data: creditTxns } = await sb
+  const { data: creditTxns } = await db
     .from('credit_transactions')
     .select('agency_id, amount, type, created_at')
     .in('agency_id', agencyIds.length ? agencyIds : ['00000000-0000-0000-0000-000000000000'])
@@ -61,19 +65,19 @@ export async function GET() {
   let conversationsThisWeek = 0;
   let recentConversations: { id: string; agency_id: string; channel: string; user_message: string; ai_response: string; created_at: string }[] = [];
   try {
-    const { count: todayCount } = await sb
+    const { count: todayCount } = await db
       .from('client_conversations')
       .select('id', { count: 'exact', head: true })
       .gte('created_at', todayStart.toISOString());
     conversationsToday = todayCount ?? 0;
 
-    const { count: weekCount } = await sb
+    const { count: weekCount } = await db
       .from('client_conversations')
       .select('id', { count: 'exact', head: true })
       .gte('created_at', weekAgo.toISOString());
     conversationsThisWeek = weekCount ?? 0;
 
-    const { data: recent } = await sb
+    const { data: recent } = await db
       .from('client_conversations')
       .select('id, agency_id, channel, user_message, ai_response, created_at')
       .order('created_at', { ascending: false })
