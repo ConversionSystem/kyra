@@ -13,28 +13,25 @@ async function requireMaster() {
 }
 
 // PATCH — update plan, account_type, name
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await requireMaster();
   if (!user) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
+  const { id } = await params;
   const admin = createServiceClientWithoutCookies();
   const body = await req.json();
   const { plan, account_type, name } = body;
 
-  // Build update object
   const updates: Record<string, unknown> = {};
   if (name) updates.name = name;
   if (plan) updates.plan = plan;
 
   if (account_type) {
-    // Fetch current settings to merge
-    const { data: ag } = await admin.from('agencies').select('settings').eq('id', params.id).single();
+    const { data: ag } = await admin.from('agencies').select('settings').eq('id', id).single();
     updates.settings = { ...(ag?.settings ?? {}), account_type };
-    // If converting to solo, ensure solo_client_id is set
     if (account_type === 'solo' && !ag?.settings?.solo_client_id) {
-      (updates.settings as Record<string, unknown>).solo_client_id = params.id;
+      (updates.settings as Record<string, unknown>).solo_client_id = id;
     }
-    // If converting to agency, remove solo_client_id
     if (account_type === 'agency') {
       delete (updates.settings as Record<string, unknown>).solo_client_id;
     }
@@ -43,7 +40,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const { data, error } = await admin
     .from('agencies')
     .update(updates)
-    .eq('id', params.id)
+    .eq('id', id)
     .select('id, name, plan, settings')
     .single();
 
@@ -52,15 +49,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 }
 
 // DELETE — full account deletion
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await requireMaster();
   if (!user) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
+  const { id: agencyId } = await params;
   const admin = createServiceClientWithoutCookies();
-  const agencyId = params.id;
   const errors: string[] = [];
 
-  // 1. Get agency + owner
   const { data: agency } = await admin
     .from('agencies')
     .select('owner_id, settings')
@@ -69,16 +65,13 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
 
   if (!agency) return NextResponse.json({ error: 'Agency not found' }, { status: 404 });
 
-  // 2. Get all client containers to stop
   const { data: clients } = await admin
     .from('agency_clients')
     .select('id, gateway_url')
     .eq('agency_id', agencyId);
 
-  // 3. Stop & remove containers via provisioner
   const clientIds = [
-    ...(clients ?? []).map(c => c.id),
-    // Also try agency's own container (solo_client_id or agencyId itself)
+    ...(clients ?? []).map((c: { id: string; gateway_url: string | null }) => c.id),
     agency.settings?.solo_client_id ?? agencyId,
   ];
   const uniqueIds = [...new Set(clientIds)];
@@ -94,13 +87,11 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     }
   }
 
-  // 4. Delete DB rows
   await admin.from('agency_clients').delete().eq('agency_id', agencyId);
   await admin.from('agency_credits').delete().eq('agency_id', agencyId);
   await admin.from('agency_members').delete().eq('agency_id', agencyId);
   await admin.from('agencies').delete().eq('id', agencyId);
 
-  // 5. Delete auth user
   if (agency.owner_id) {
     const { error: authErr } = await admin.auth.admin.deleteUser(agency.owner_id);
     if (authErr) errors.push(`Auth user: ${authErr.message}`);
