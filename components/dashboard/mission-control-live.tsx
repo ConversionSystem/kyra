@@ -439,7 +439,7 @@ export default function MissionControlLive({
               </div>
               <div className="px-4 py-2.5 bg-gray-50/80 border-t border-gray-100 flex items-center justify-between">
                 <span className="text-xs text-gray-400">Showing last {convos.length} conversations · auto-refreshes every 20s</span>
-                <Link href="/agency/conversations" className="text-xs text-indigo-500 hover:text-indigo-700 font-medium flex items-center gap-0.5">
+                <Link href="/agency/clients" className="text-xs text-indigo-500 hover:text-indigo-700 font-medium flex items-center gap-0.5">
                   Full history <ExternalLink className="h-3 w-3" />
                 </Link>
               </div>
