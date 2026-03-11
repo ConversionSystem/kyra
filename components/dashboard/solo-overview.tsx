@@ -23,6 +23,8 @@ import {
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import LowCreditBanner from '@/components/dashboard/low-credit-banner';
+import CreditWallModal from '@/components/dashboard/credit-wall-modal';
 
 
 interface MissionControlClient {
@@ -189,6 +191,12 @@ export default function SoloOverview({
 
   return (
     <div className="p-4 sm:p-6 md:p-8 max-w-5xl">
+      {/* ── Credit wall (blocks page when balance = 0) ── */}
+      {liveBalance === 0 && <CreditWallModal agencyId={agencyId} />}
+
+      {/* ── Low credit banner ── */}
+      <LowCreditBanner balance={liveBalance} />
+
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <div>
