@@ -2,10 +2,11 @@
   "git": {
     "deploymentEnabled": false
   },
+  "ignoreCommand": "exit 1",
   "crons": [
     {
       "path": "/api/ghl/poll",
-      "schedule": "* * * * *"
+      "schedule": "*/5 * * * *"
     },
     {
       "path": "/api/cron/weekly-report",
@@ -33,11 +34,11 @@
     },
     {
       "path": "/api/cron/alerts",
-      "schedule": "*/5 * * * *"
+      "schedule": "*/15 * * * *"
     },
     {
       "path": "/api/cron/terminal-credits",
-      "schedule": "* * * * *"
+      "schedule": "*/5 * * * *"
     }
   ]
 }
