@@ -106,6 +106,54 @@ Scrape veterinary directories and compare Name, Address, Phone data against the 
 - ~15 Firecrawl scrapes per audit × $0.005/scrape = ~$0.075 per audit
 - Weekly = ~$0.30/month per client
 
+## Pre-Filled Directory Submission Data (NEW)
+
+For every directory where the clinic is "not_found", generate a ready-to-submit data package:
+
+```json
+{
+  "directory": "Yelp",
+  "submission_url": "https://biz.yelp.com/signup",
+  "prefilled_data": {
+    "business_name": "Aborn Pet Hospital",
+    "address": "3286 Aborn Rd, San Jose, CA 95121",
+    "phone": "(408) 270-4600",
+    "website": "https://abornpethospital.com",
+    "categories": ["Veterinarian", "Animal Hospital", "Pet Services"],
+    "description": "Full-service veterinary hospital in San Jose serving the Aborn/Evergreen community. Services include wellness exams, dental care, surgery, vaccinations, and emergency care for dogs, cats, and exotic pets.",
+    "hours": "Mon-Fri 8am-6pm, Sat 9am-1pm",
+    "year_established": null,
+    "photos_note": "Upload exterior photo + waiting room + exam room"
+  }
+}
+```
+
+Generate the description using the clinic's service list and city — make it unique per directory (not copy-paste identical across all 15).
+
+Store as `dataType: "directory_submissions"` in seo_data.
+
+## Expanded Directory List (NEW — 20 directories)
+
+Add 5 more directories to the audit:
+
+16. **Nextdoor** — neighborhood social network (very high local SEO value)
+    - URL: `https://nextdoor.com/pages/{{CLINIC_NAME}}-{{CITY}}`
+    - Priority: high
+17. **Foursquare** — local business listings (feeds Apple Maps)
+    - URL: `https://foursquare.com/explore?q={{CLINIC_NAME}}&near={{CITY}}`
+    - Priority: medium
+18. **Apple Maps** — via Apple Business Connect
+    - URL: `https://businessconnect.apple.com`
+    - Priority: high (feeds Siri recommendations)
+19. **Bing Places** — Microsoft/Bing local listings
+    - URL: `https://www.bing.com/maps?q={{CLINIC_NAME}}+{{CITY}}`
+    - Priority: high (feeds Copilot AI recommendations)
+20. **Waze** — navigation app business listings
+    - URL: `https://www.waze.com/business`
+    - Priority: medium
+
+These 5 additions are critical for AI visibility — Apple Maps/Siri, Bing/Copilot, and Nextdoor all feed into AI-generated recommendations.
+
 ## Error Handling
 
 - If Firecrawl fails for a directory: mark as "error", try again next week

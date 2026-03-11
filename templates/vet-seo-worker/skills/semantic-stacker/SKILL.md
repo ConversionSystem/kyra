@@ -55,9 +55,60 @@ At the bottom of every stack page:
 • Why Pet Owners Trust Us: [Telegraph URL]
 ```
 
+## JSON-LD Schema Markup (NEW — Critical for AI Citation)
+
+ALL stack pages on HTML-supporting platforms (GitHub Pages, Google Sites) MUST include VeterinaryCare schema markup. This is what AI systems read to cite businesses.
+
+Inject this in the `<head>` of every HTML page:
+
+```html
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "VeterinaryCare",
+  "name": "{{CLINIC_NAME}}",
+  "description": "Full-service veterinary clinic in {{CITY}} offering {{SERVICES}}.",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "{{STREET_ADDRESS}}",
+    "addressLocality": "{{CITY}}",
+    "addressRegion": "{{STATE}}",
+    "postalCode": "{{ZIP}}",
+    "addressCountry": "US"
+  },
+  "telephone": "{{PHONE}}",
+  "url": "{{WEBSITE}}",
+  "image": "{{LOGO_URL}}",
+  "priceRange": "$$",
+  "openingHoursSpecification": {{HOURS_JSON}},
+  "geo": {
+    "@type": "GeoCoordinates",
+    "latitude": "{{LAT}}",
+    "longitude": "{{LNG}}"
+  },
+  "sameAs": [
+    "{{GBP_URL}}",
+    "{{FACEBOOK_URL}}",
+    "{{YELP_URL}}"
+  ],
+  "hasMap": "{{GOOGLE_MAPS_URL}}",
+  "areaServed": {
+    "@type": "City",
+    "name": "{{CITY}}"
+  }
+}
+</script>
+```
+
+Also add LocalBusiness and Organization markup for redundancy. AI systems vary in which schema types they prioritize.
+
+For non-HTML platforms (Notion, Google Docs, Telegraph):
+- Include structured NAP data in a clearly formatted block at the top
+- Use consistent formatting that AI crawlers can parse
+
 ## Setup Flow
 
-1. Create accounts/pages on each platform (one-time)
+1. **Auto-provisioned by Kyra** — platforms are created automatically when the SEO worker deploys (no manual setup)
 2. Generate unique content for each platform via content-writer skill
 3. Publish all 5 pages
 4. Add interlinks to all pages (requires knowing all URLs first)

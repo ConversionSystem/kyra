@@ -28,13 +28,32 @@ Generate SEO-optimized content for veterinary clinics: press releases, Web 2.0 a
 - **Template:** `prompts/stack-content.md`
 - **Frequency:** 5-7 per month per client (one per platform)
 
+## GEO-Driven Content Targeting (PRIORITY)
+
+Before generating content, ALWAYS check the content gap analysis data:
+
+1. Fetch `GET /api/agency/clients/{id}/seo` → look for `dataType: "content_gaps"`
+2. High-priority gaps get content FIRST — before any scheduled content
+3. Match gap themes to content types:
+   - "emergency" gaps → press release about emergency services + Web 2.0 article
+   - "specialty" gaps → semantic stack page about that specialty
+   - "location" gaps → location-focused Web 2.0 with neighborhood references
+4. After publishing gap-targeted content, re-test that query in the next GEO run
+
+Example flow:
+- GEO test shows 0% citation for "emergency vet near Fremont"
+- Content writer creates: "24/7 Emergency Veterinary Care at [Clinic] — What Fremont Pet Owners Need to Know"
+- Published to Telegraph + WordPress + GitHub Pages
+- Next week's GEO test re-checks that query → track improvement
+
 ## Content Calendar
 
 Generate a monthly content calendar based on:
-1. GEO test results (weak areas need content)
-2. Clinic services (rotate through all services)
-3. Seasonal relevance (flea/tick spring, holiday boarding, etc.)
-4. Platform coverage (ensure all platforms get content)
+1. **GEO content gaps (highest priority)** — queries where clinic has 0% citation
+2. **Competitor analysis** — topics where competitors are cited but client isn't
+3. Clinic services (rotate through all services)
+4. Seasonal relevance (flea/tick spring, holiday boarding, etc.)
+5. Platform coverage (ensure all platforms get content)
 
 ## Uniqueness Requirements
 

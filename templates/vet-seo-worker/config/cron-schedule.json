@@ -51,6 +51,29 @@
       "description": "Content creation batch — Thursday at 9 AM",
       "enabled": true,
       "params": { "count": 2, "types": ["web20", "semantic_stack"] }
+    },
+    {
+      "id": "gbp-post-tue",
+      "skill": "gbp-posts",
+      "schedule": "0 10 * * 2",
+      "description": "GBP post — Tuesday at 10 AM",
+      "enabled": true,
+      "params": { "post_type": "update" }
+    },
+    {
+      "id": "gbp-post-thu",
+      "skill": "gbp-posts",
+      "schedule": "0 10 * * 4",
+      "description": "GBP post — Thursday at 10 AM",
+      "enabled": true,
+      "params": { "post_type": "update_or_offer" }
+    },
+    {
+      "id": "backlink-scan-monthly",
+      "skill": "backlink-monitor",
+      "schedule": "0 8 1 * *",
+      "description": "Monthly backlink scan — 1st of each month at 8 AM",
+      "enabled": true
     }
   ]
 }

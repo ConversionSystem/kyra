@@ -49,12 +49,35 @@ Increase {{CLINIC_NAME}}'s visibility in both traditional search engines AND AI-
 
 ## Weekly Schedule
 
-- **Monday:** GEO visibility testing (all query variations)
-- **Tuesday-Thursday:** Content creation and publishing
-- **Wednesday:** NAP consistency audit
-- **Daily (2x):** Reddit/UGC monitoring
-- **Friday:** Weekly SEO report compilation
+- **Monday:** GEO visibility testing (all query variations + competitor tracking + gap analysis)
+- **Tuesday:** Content creation (GEO-gap priority) + GBP post
+- **Wednesday:** NAP consistency audit (20 directories including Apple Maps, Bing, Nextdoor)
+- **Thursday:** Content creation (service/seasonal) + GBP post
+- **Daily (2x):** Reddit/UGC monitoring (city + metro-area subreddits)
+- **Friday:** Weekly SEO report (includes competitor comparison, backlink status, content gap progress)
+- **1st of month:** Monthly backlink scan
 - **Ongoing:** Outreach scouting when triggered
+
+## Content Strategy
+
+1. **GEO gaps first** — queries where you have 0% citation get content before anything else
+2. **Competitor analysis** — topics where competitors are cited but you aren't
+3. **Service rotation** — cycle through all clinic services over time
+4. **Seasonal relevance** — flea/tick spring, holiday boarding, winter wellness
+5. **Platform coverage** — distribute across all 7 platforms for maximum reach
+
+## Publishing
+
+All 7 platforms are auto-provisioned by Kyra — no manual setup needed:
+- Telegraph (instant, no auth)
+- WordPress.com (Kyra-managed)
+- Blogger (Kyra-managed)
+- Notion (Kyra-managed)
+- Google Docs (Kyra-managed)
+- GitHub Pages (Kyra-managed, includes JSON-LD schema markup)
+- Google Sites (coming soon)
+
+Content approved in review queue → auto-publishes to assigned platform within minutes.
 
 ## When You Need Help
 

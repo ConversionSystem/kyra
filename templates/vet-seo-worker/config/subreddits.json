@@ -10,9 +10,41 @@
     "puppy101",
     "CatAdvice",
     "DogAdvice",
-    "PetAdvice"
+    "PetAdvice",
+    "reactivedogs",
+    "SeniorDogs",
+    "OldManDog"
   ],
-  "city_subreddits_note": "Populated per client based on city. Common format: r/CityName",
+  "metro_area_subreddits": {
+    "description": "Map cities to their metro-area subreddits for broader coverage.",
+    "Fremont": ["bayarea", "EastBay", "Fremont", "SanJose", "AlamedaCounty"],
+    "San Jose": ["bayarea", "SanJose", "SouthBay", "SiliconValley"],
+    "San Francisco": ["bayarea", "sanfrancisco", "SFBayHousing"],
+    "Oakland": ["bayarea", "oakland", "EastBay"],
+    "Los Angeles": ["LosAngeles", "SFV", "SouthBay", "SGV", "OrangeCounty"],
+    "San Diego": ["sandiego", "NorthCounty"],
+    "Sacramento": ["Sacramento", "NorCal"],
+    "Portland": ["Portland", "askportland"],
+    "Seattle": ["Seattle", "eastside", "Tacoma"],
+    "Denver": ["Denver", "aurora", "boulder", "FortCollins"],
+    "Austin": ["Austin", "AustinPets"],
+    "Dallas": ["Dallas", "DFW", "FortWorth", "plano"],
+    "Houston": ["houston", "HoustonPets"],
+    "Phoenix": ["phoenix", "Scottsdale", "Mesa", "Tempe"],
+    "Chicago": ["chicago", "ChicagoSuburbs"],
+    "Atlanta": ["Atlanta", "Gwinnett"],
+    "Miami": ["Miami", "SouthFlorida", "fortlauderdale"],
+    "Tampa": ["tampa", "StPetersburgFL", "ClearwaterFL"],
+    "Orlando": ["orlando", "CentralFlorida"],
+    "Charlotte": ["Charlotte", "NorthCarolina"],
+    "Nashville": ["nashville", "MiddleTennessee"],
+    "Omaha": ["Omaha", "Nebraska"],
+    "Columbus": ["Columbus", "Ohio"],
+    "Minneapolis": ["Minneapolis", "TwinCities", "minnesota"],
+    "Raleigh": ["raleigh", "triangle", "NorthCarolina"],
+    "default": ["{{CITY_SUB}}"]
+  },
+  "city_subreddits_note": "Auto-resolved at runtime: look up city in metro_area_subreddits, fall back to r/CityName if not mapped.",
   "keywords": [
     "vet",
     "veterinarian",
@@ -27,8 +59,15 @@
     "animal clinic",
     "pet hospital",
     "recommend a vet",
-    "good vet"
+    "good vet",
+    "cheap vet",
+    "affordable vet",
+    "exotic vet",
+    "cat vet",
+    "dog dentist",
+    "pet surgery",
+    "holistic vet"
   ],
   "max_post_age_hours": 48,
-  "min_relevance_score": 0.6
+  "min_relevance_score": 0.5
 }
