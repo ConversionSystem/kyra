@@ -348,18 +348,18 @@ export default function HomePage() {
             {[
               {
                 step: '01',
-                title: 'Connect your GHL sub-account',
-                desc: 'Paste your GHL Private Integration token. Your client\'s contacts, conversations, and CRM data are immediately available to the AI worker.',
+                title: 'Sign up and add a client',
+                desc: 'Create your agency account, add your first client. Kyra automatically provisions a dedicated AI worker with its own memory, tools, and channels.',
               },
               {
                 step: '02',
-                title: 'Pick an industry template',
-                desc: 'Choose from 50+ pre-built AI worker templates. Each one is trained for the industry — dental, real estate, cannabis, law, HVAC, and more. Customize the personality in minutes.',
+                title: 'Pick a template and customize',
+                desc: 'Choose from 50+ industry templates — dental, real estate, cannabis, law, HVAC, and more. Customize the personality, connect channels, and install skills from ClawHub.',
               },
               {
                 step: '03',
-                title: 'Watch your AI worker operate',
-                desc: 'Your AI worker starts handling conversations immediately. Monitor the live feed from your command center. Your client never sees a terminal — they just see results.',
+                title: 'Deploy and manage from one dashboard',
+                desc: 'Your AI worker goes live instantly across every connected channel. Monitor conversations, track performance, and manage your entire client portfolio from one screen.',
               },
             ].map((step) => (
               <div key={step.step} className="bg-white/5 border border-white/10 rounded-2xl p-6">
@@ -501,7 +501,7 @@ export default function HomePage() {
                 <p className="text-slate-400 text-sm">10 skills · 7 publishing platforms · Fully autonomous</p>
               </div>
               <div className="ml-auto shrink-0">
-                <span className="bg-amber-600/20 text-amber-300 text-sm font-bold px-3 py-1 rounded-lg">$79/mo</span>
+                <span className="bg-amber-600/20 text-amber-300 text-sm font-bold px-3 py-1 rounded-lg">Premium</span>
               </div>
             </div>
             <p className="text-slate-300 text-sm leading-relaxed mb-6">
