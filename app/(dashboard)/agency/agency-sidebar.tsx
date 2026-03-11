@@ -75,28 +75,9 @@ const navSections: NavSection[] = [
       { label: 'CRM', href: '/agency/crm/contacts', icon: ContactIcon },
     ],
   },
-  {
-    label: 'AI Worker',
-    collapsible: true,
-    items: [
-      { label: 'AI Templates', href: '/agency/ai-setup', icon: Sparkles },
-      { label: 'AI Teams', href: '/agency/agents', icon: Bot },
-      { label: 'Channels', href: '/agency/channels', icon: Radio },
-      { label: 'Voice AI', href: '/agency/voice', icon: Phone },
-    ],
-  },
-  {
-    // Automation = single link; Autopilot/Pipelines/Proactive AI inside
-    items: [
-      { label: 'Automation', href: '/agency/autopilot', icon: ZapIcon },
-    ],
-  },
-  {
-    // Insights = single link; Performance/Usage/Revenue inside
-    items: [
-      { label: 'Insights', href: '/agency/performance', icon: BarChart3 },
-    ],
-  },
+  // All AI Worker features (Templates, Teams, Channels, Voice, Automation, Insights)
+  // live inside each client's dashboard — no agency-level OpenClaw container exists.
+  // Agencies & solo users must create a client first, then configure everything there.
   {
     label: 'Account',
     collapsible: true,
