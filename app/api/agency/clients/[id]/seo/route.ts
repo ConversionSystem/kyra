@@ -240,13 +240,53 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   const body = await request.json() as { field: string; value: unknown };
   const { field, value } = body;
 
+  const settings = ((client.settings as Record<string, unknown>) ?? {});
+  const seoData  = ((settings.seo_data as Record<string, unknown>) ?? {});
+
+  // ── Admin actions ────────────────────────────────────────────────────
+  if (field === 'admin_action' && typeof value === 'object' && value !== null) {
+    const actionData = value as Record<string, unknown>;
+    const action = actionData.action as string;
+
+    switch (action) {
+      case 'start': {
+        settings.premium_template_status = 'active';
+        await supabase.from('agency_clients').update({ settings }).eq('id', id);
+        return NextResponse.json({ ok: true, action: 'start', status: 'active' });
+      }
+      case 'pause': {
+        settings.premium_template_status = 'paused';
+        await supabase.from('agency_clients').update({ settings }).eq('id', id);
+        return NextResponse.json({ ok: true, action: 'pause', status: 'paused' });
+      }
+      case 'delete': {
+        settings.premium_template_status = 'deleted';
+        // Keep data for recovery, just mark as deleted
+        await supabase.from('agency_clients').update({ settings }).eq('id', id);
+        return NextResponse.json({ ok: true, action: 'delete', status: 'deleted' });
+      }
+      case 'edit': {
+        const newSetup = actionData.setup as Record<string, unknown>;
+        if (newSetup) {
+          settings.premium_template_setup = {
+            ...((settings.premium_template_setup as Record<string, unknown>) ?? {}),
+            ...newSetup,
+          };
+        }
+        await supabase.from('agency_clients').update({ settings }).eq('id', id);
+        return NextResponse.json({ ok: true, action: 'edit' });
+      }
+      default:
+        return NextResponse.json({ error: `Unknown action: ${action}` }, { status: 400 });
+    }
+  }
+
+  // ── Standard field patches ───────────────────────────────────────────
   const PATCHABLE = ['publishing_platforms', 'geo_score_current', 'geo_score_trend'];
   if (!PATCHABLE.includes(field)) {
     return NextResponse.json({ error: 'Field not patchable' }, { status: 400 });
   }
 
-  const settings = ((client.settings as Record<string, unknown>) ?? {});
-  const seoData  = ((settings.seo_data as Record<string, unknown>) ?? {});
   seoData[field] = value;
   settings.seo_data = seoData;
 
