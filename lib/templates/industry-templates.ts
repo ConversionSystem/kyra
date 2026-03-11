@@ -324,7 +324,9 @@ Your name is {{ai_name}}. You're knowledgeable about cars, friendly, and honest.
       { key: 'business_hours', label: 'Hours', placeholder: 'Mon-Fri 7:30am-6pm, Sat 8am-3pm', required: true },
     ],
     suggestedTools: ['book_appointment', 'tag_contact'],
-    sampleFaqs: [],
+    sampleFaqs: [
+      { q: 'How long does a brake job take?', a: 'Most brake pad replacements take about 1-2 hours per axle. If rotors need resurfacing or replacing, it may take a bit longer. We can usually get you in and out same day!' },
+    ],
     automations: [
       { name: 'Service Reminder', description: 'Remind customer of next oil change in 3 months', trigger: '3_months_after_service' },
     ],
@@ -370,7 +372,9 @@ Your name is {{ai_name}}. You're energetic, motivating, and great at handling ob
       { key: 'promo', label: 'Current Promotion', placeholder: 'FREE 3-day trial, no commitment', required: false },
     ],
     suggestedTools: ['book_appointment', 'tag_contact', 'create_opportunity'],
-    sampleFaqs: [],
+    sampleFaqs: [
+      { q: 'How much is a membership?', a: 'We have plans starting at $29/month for basic gym access, up to $89/month for our Premium plan which includes unlimited classes and personal training sessions. Want to come in for a free trial first?' },
+    ],
     automations: [
       { name: 'Trial Follow-Up', description: 'Text 24h after trial: "How did you like it?"', trigger: 'trial_completed' },
     ],
@@ -419,7 +423,9 @@ Your name is {{ai_name}}. You're welcoming, warm, and make guests feel special.
       { key: 'business_hours', label: 'Hours', placeholder: 'Tue-Sun 5pm-10pm, closed Monday', required: true },
     ],
     suggestedTools: ['book_appointment', 'tag_contact', 'create_opportunity'],
-    sampleFaqs: [],
+    sampleFaqs: [
+      { q: 'Do you have vegetarian options?', a: 'Absolutely! We have several vegetarian and vegan dishes. Our chef is happy to modify most menu items to accommodate dietary needs — just let your server know.' },
+    ],
     automations: [
       { name: 'Post-Dinner Review', description: 'Text next day asking for review', trigger: 'reservation_completed' },
     ],
@@ -469,7 +475,9 @@ Your name is {{ai_name}}. You're calm under pressure, helpful, and knowledgeable
       { key: 'business_hours', label: 'Hours', placeholder: 'Mon-Sat 7am-7pm, Emergency: 24/7', required: true },
     ],
     suggestedTools: ['book_appointment', 'tag_contact', 'escalate_to_human', 'create_opportunity'],
-    sampleFaqs: [],
+    sampleFaqs: [
+      { q: 'My AC stopped working, can you come today?', a: 'We understand how urgent that is! We have same-day emergency service available. Let me get your address and we\'ll have a technician out as soon as possible.' },
+    ],
     automations: [
       { name: 'Seasonal Tune-Up', description: 'Remind customers before summer/winter', trigger: 'seasonal' },
     ],
@@ -516,7 +524,9 @@ Your name is {{ai_name}}. You're warm, excited about their milestones, and make 
       { key: 'availability', label: 'Available Days', placeholder: 'Weekends for weddings, weekdays for portraits', required: true },
     ],
     suggestedTools: ['book_appointment', 'tag_contact', 'create_opportunity'],
-    sampleFaqs: [],
+    sampleFaqs: [
+      { q: 'How far in advance should I book for a wedding?', a: 'We recommend booking 8-12 months in advance for weddings, especially for peak season (May-October). Popular dates go fast! But we always try to accommodate shorter timelines when possible.' },
+    ],
     automations: [
       { name: 'Post-Shoot Review', description: 'Request review 1 week after gallery delivery', trigger: 'gallery_delivered' },
     ],
