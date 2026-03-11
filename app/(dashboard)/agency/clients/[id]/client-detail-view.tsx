@@ -1869,6 +1869,86 @@ Authorization: Bearer YOUR_KYRA_API_SECRET
         </CardContent>
       </Card>
 
+      {/* ── Telegram ───────────────────────────────────────────────────── */}
+      <Card className="border-sky-100">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-sky-50 flex items-center justify-center">
+              <MessageSquare className="h-5 w-5 text-sky-600" />
+            </div>
+            <div>
+              <CardTitle className="text-base">Telegram</CardTitle>
+              <CardDescription className="text-xs">The fastest setup — get your AI worker live on Telegram in under 5 minutes</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="text-sm text-gray-600 space-y-2">
+          <p>Create a bot via <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" className="text-sky-600 hover:underline">@BotFather</a>, paste the token in the Terminal config, and your AI is live.</p>
+          <p className="text-xs text-gray-400">Configure via the <strong>Terminal</strong> → OpenClaw config → channels.telegram</p>
+        </CardContent>
+      </Card>
+
+      {/* ── Discord ─────────────────────────────────────────────────────── */}
+      <Card className="border-violet-100">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-violet-50 flex items-center justify-center">
+              <MessageCircle className="h-5 w-5 text-violet-600" />
+            </div>
+            <div>
+              <CardTitle className="text-base">Discord</CardTitle>
+              <CardDescription className="text-xs">Deploy your AI across Discord servers — great for community businesses</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="text-sm text-gray-600 space-y-2">
+          <p>Create a bot at the <a href="https://discord.com/developers/applications" target="_blank" rel="noopener noreferrer" className="text-violet-600 hover:underline">Discord Developer Portal</a>, add it to your server, and paste the token.</p>
+          <p className="text-xs text-gray-400">Configure via the <strong>Terminal</strong> → OpenClaw config → channels.discord</p>
+        </CardContent>
+      </Card>
+
+      {/* ── Slack ───────────────────────────────────────────────────────── */}
+      <Card className="border-orange-100">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-orange-50 flex items-center justify-center">
+              <MessageSquare className="h-5 w-5 text-orange-600" />
+            </div>
+            <div>
+              <CardTitle className="text-base">Slack</CardTitle>
+              <CardDescription className="text-xs">Add your AI worker to any Slack workspace</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="text-sm text-gray-600">
+          <p>Create a Slack App at <a href="https://api.slack.com/apps" target="_blank" rel="noopener noreferrer" className="text-orange-600 hover:underline">api.slack.com</a>, enable Socket Mode, and add the bot token.</p>
+          <p className="text-xs text-gray-400 mt-2">Configure via the <strong>Terminal</strong> → OpenClaw config → channels.slack</p>
+        </CardContent>
+      </Card>
+
+      {/* ── Signal / iMessage / Google Chat ──────────────────────────── */}
+      <Card className="border-gray-100">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-gray-50 flex items-center justify-center">
+              <Radio className="h-5 w-5 text-gray-600" />
+            </div>
+            <div>
+              <CardTitle className="text-base">More Channels</CardTitle>
+              <CardDescription className="text-xs">Signal, iMessage, Google Chat, IRC, Line — 20+ channels supported</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="text-sm text-gray-600">
+          <p>OpenClaw supports 20+ messaging channels. Configure any channel through the Terminal → OpenClaw gateway config.</p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {['Signal', 'iMessage', 'Google Chat', 'IRC', 'Line'].map(ch => (
+              <span key={ch} className="text-[11px] bg-gray-100 text-gray-600 border border-gray-200 px-2 py-0.5 rounded-full">{ch}</span>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* ── Voice AI — managed in dedicated tab ──────────────────────── */}
       <Card className="rounded-2xl border border-gray-200 shadow-sm">
         <CardContent className="pt-6">
