@@ -127,41 +127,37 @@ interface ChatMessage {
   content: string;
 }
 
-type Tab = 'chat' | 'personality' | 'settings' | 'ghl' | 'permissions' | 'usage' | 'conversations' | 'channels' | 'portal' | 'memory' | 'seo' | 'capabilities' | 'voice';
+type Tab = 'personality' | 'settings' | 'ghl' | 'usage' | 'conversations' | 'channels' | 'portal' | 'memory' | 'voice';
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
-  { id: 'chat', label: 'Test Chat', icon: MessageSquare },
   { id: 'personality', label: 'AI Personality', icon: Brain },
   { id: 'settings', label: 'Settings', icon: Settings },
   { id: 'ghl', label: 'GHL', icon: Link2 },
-  { id: 'permissions', label: 'Permissions', icon: Shield },
   { id: 'usage', label: 'Usage', icon: BarChart3 },
   { id: 'conversations', label: 'Conversations', icon: Inbox },
   { id: 'channels', label: 'Channels', icon: Radio },
   { id: 'portal', label: 'Client Portal', icon: Users },
   { id: 'memory', label: 'AI Memory', icon: Database },
-  { id: 'capabilities', label: 'AI Capabilities', icon: Zap },
   { id: 'voice', label: 'Voice AI', icon: Phone },
-  { id: 'seo', label: 'SEO', icon: BarChart3 },
 ];
 
 // Grouped sidebar navigation — desktop only
 const TAB_GROUPS: { label: string; tabs: typeof TABS }[] = [
   {
     label: 'Communicate',
-    tabs: TABS.filter(t => ['chat', 'conversations', 'channels'].includes(t.id)),
+    tabs: TABS.filter(t => ['conversations', 'channels'].includes(t.id)),
   },
   {
     label: 'Configure',
-    tabs: TABS.filter(t => ['personality', 'capabilities', 'voice', 'settings'].includes(t.id)),
+    tabs: TABS.filter(t => ['personality', 'voice', 'settings'].includes(t.id)),
   },
   {
     label: 'Integrate',
-    tabs: TABS.filter(t => ['ghl', 'permissions'].includes(t.id)),
+    tabs: TABS.filter(t => ['ghl'].includes(t.id)),
   },
   {
     label: 'Analyze',
-    tabs: TABS.filter(t => ['usage', 'memory', 'seo'].includes(t.id)),
+    tabs: TABS.filter(t => ['usage', 'memory'].includes(t.id)),
   },
   {
     label: 'Portal',
@@ -240,10 +236,10 @@ function ReprovisionButton({ clientId }: { clientId: string }) {
 export function ClientDetailView({ client: initialClient, role }: ClientDetailViewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialTab = (searchParams.get('tab') as Tab) || 'chat';
+  const initialTab = (searchParams.get('tab') as Tab) || 'personality';
   const justActivated = searchParams.get('activated') === 'true';
   const [activeTab, setActiveTab] = useState<Tab>(
-    TABS.some(t => t.id === initialTab) ? initialTab : 'chat'
+    TABS.some(t => t.id === initialTab) ? initialTab : 'personality'
   );
 
   // Update URL when tab changes (without full reload)
@@ -268,16 +264,7 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
           Back to Clients
         </Link>
 
-        {/* SEO Worker Activation Banner */}
-        {justActivated && activeTab === 'seo' && (
-          <div className="mb-4 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 flex items-center gap-3">
-            <span className="text-emerald-600 text-lg">🐾</span>
-            <div>
-              <p className="text-sm font-semibold text-emerald-800">Veterinary SEO Worker activated!</p>
-              <p className="text-xs text-emerald-600">First GEO visibility test will run Monday. NAP audit runs Wednesday. Weekly reports every Friday.</p>
-            </div>
-          </div>
-        )}
+
 
         {/* Client Header */}
         <div className="flex items-start gap-3 sm:gap-4">
@@ -375,9 +362,6 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
           <SetupNudgeBanner client={initialClient} onTabChange={handleTabChange} />
 
           {/* Tab content */}
-          {activeTab === 'chat' && (
-            <TestChatTab client={initialClient} />
-          )}
           {activeTab === 'personality' && (
             <AIPersonalityTab client={initialClient} />
           )}
@@ -386,9 +370,6 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
           )}
           {activeTab === 'ghl' && (
             <GHLTab client={initialClient} onRefresh={() => router.refresh()} />
-          )}
-          {activeTab === 'permissions' && (
-            <PermissionsTab client={initialClient} />
           )}
           {activeTab === 'usage' && (
             <UsageTab client={initialClient} />
@@ -415,10 +396,6 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
             </div>
           )}
 
-          {activeTab === 'capabilities' && (
-            <AICapabilities clientId={initialClient.id} />
-          )}
-
           {activeTab === 'voice' && (
             <VoiceClient
               agencyId={initialClient.agency_id}
@@ -429,9 +406,6 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
             />
           )}
 
-      {activeTab === 'seo' && (
-            <SEODashboard clientId={initialClient.id} clientName={initialClient.name || 'Client'} />
-          )}
         </main>
       </div>{/* end body */}
     </div>
@@ -1283,6 +1257,16 @@ function AIPersonalityTab({ client }: { client: AgencyClient }) {
         )}
       </Button>
     </div>
+
+      {/* AI Capabilities (merged from dedicated tab) */}
+      <div className="mt-8 pt-6 border-t border-gray-200">
+        <h3 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <Zap className="h-4 w-4 text-indigo-500" />
+          AI Capabilities
+        </h3>
+        <AICapabilities clientId={client.id} />
+      </div>
+    </div>
   );
 }
 
@@ -1624,6 +1608,15 @@ function SettingsTab({
           </CardContent>
         </Card>
       )}
+
+      {/* Permissions (merged from dedicated tab) */}
+      <div className="mt-8 pt-6 border-t border-gray-200">
+        <h3 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <Shield className="h-4 w-4 text-indigo-500" />
+          Permissions
+        </h3>
+        <PermissionsCard clientId={client.id} />
+      </div>
     </div>
   );
 }
