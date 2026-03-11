@@ -61,6 +61,9 @@ import { MemoryBrowser } from './memory-browser';
 import { CustomerIntelligence } from './customer-intelligence';
 import { AICapabilities } from './ai-capabilities';
 import { SEODashboard } from './seo-dashboard';
+import SkillsTab from '@/components/dashboard/client-tabs/skills-tab';
+import KnowledgeTab from '@/components/dashboard/client-tabs/knowledge-tab';
+import ScheduledTasksTab from '@/components/dashboard/client-tabs/scheduled-tasks-tab';
 
 // ── Setup Nudge Banner ────────────────────────────────────────────────────────
 
@@ -127,11 +130,13 @@ interface ChatMessage {
   content: string;
 }
 
-type Tab = 'terminal' | 'personality' | 'settings' | 'ghl' | 'usage' | 'conversations' | 'channels' | 'portal' | 'memory' | 'voice' | 'seo';
+type Tab = 'terminal' | 'personality' | 'skills' | 'knowledge' | 'settings' | 'ghl' | 'usage' | 'conversations' | 'channels' | 'portal' | 'memory' | 'voice' | 'seo' | 'scheduled-tasks';
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'terminal', label: 'Terminal', icon: Terminal },
   { id: 'personality', label: 'AI Personality', icon: Brain },
+  { id: 'skills', label: 'Skills', icon: Zap },
+  { id: 'knowledge', label: 'Knowledge Base', icon: Database },
   { id: 'settings', label: 'Settings', icon: Settings },
   { id: 'ghl', label: 'GHL', icon: Link2 },
   { id: 'usage', label: 'Usage', icon: BarChart3 },
@@ -141,6 +146,7 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'memory', label: 'AI Memory', icon: Database },
   { id: 'voice', label: 'Voice AI', icon: Phone },
   { id: 'seo', label: 'SEO', icon: BarChart3 },
+  { id: 'scheduled-tasks', label: 'Scheduled Tasks', icon: Clock },
 ];
 
 // Grouped sidebar navigation — desktop only
@@ -151,11 +157,11 @@ const TAB_GROUPS: { label: string; tabs: typeof TABS }[] = [
   },
   {
     label: 'Configure',
-    tabs: TABS.filter(t => ['personality', 'voice', 'settings'].includes(t.id)),
+    tabs: TABS.filter(t => ['personality', 'skills', 'knowledge', 'voice', 'settings'].includes(t.id)),
   },
   {
     label: 'Integrate',
-    tabs: TABS.filter(t => ['ghl'].includes(t.id)),
+    tabs: TABS.filter(t => ['ghl', 'scheduled-tasks'].includes(t.id)),
   },
   {
     label: 'Analyze',
@@ -370,6 +376,12 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
           {activeTab === 'personality' && (
             <AIPersonalityTab client={initialClient} />
           )}
+          {activeTab === 'skills' && (
+            <SkillsTab client={initialClient} />
+          )}
+          {activeTab === 'knowledge' && (
+            <KnowledgeTab client={initialClient} />
+          )}
           {activeTab === 'settings' && (
             <SettingsTab client={initialClient} role={role} onRefresh={() => router.refresh()} />
           )}
@@ -413,6 +425,9 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
 
           {activeTab === 'seo' && (
             <SEODashboard clientId={initialClient.id} clientName={initialClient.name || 'Client'} />
+          )}
+          {activeTab === 'scheduled-tasks' && (
+            <ScheduledTasksTab client={initialClient} />
           )}
 
         </main>
