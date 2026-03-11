@@ -1035,14 +1035,7 @@ function AIPersonalityTab({ client }: { client: AgencyClient }) {
         )}
       </Button>
 
-      {/* AI Capabilities (merged from dedicated tab) */}
-      <div className="mt-8 pt-6 border-t border-gray-200">
-        <h3 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <Zap className="h-4 w-4 text-indigo-500" />
-          AI Capabilities
-        </h3>
-        <AICapabilities clientId={client.id} />
-      </div>
+      {/* AI Capabilities removed — replaced by dedicated Skills tab */}
     </div>
   );
 }
@@ -1386,14 +1379,7 @@ function SettingsTab({
         </Card>
       )}
 
-      {/* Permissions (merged from dedicated tab) */}
-      <div className="mt-8 pt-6 border-t border-gray-200">
-        <h3 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <Shield className="h-4 w-4 text-indigo-500" />
-          Permissions
-        </h3>
-        <PermissionsCard clientId={client.id} />
-      </div>
+      {/* Permissions moved to GHL tab — they're GHL-specific actions */}
     </div>
   );
 }
@@ -1414,6 +1400,11 @@ function GHLTab({ client, onRefresh }: { client: AgencyClient; onRefresh: () => 
         onDisconnected={onRefresh}
         onConnected={onRefresh}
       />
+
+      {/* AI Permissions — controls what the AI can do in GHL */}
+      <div className="pt-6 border-t border-gray-200">
+        <PermissionsCard clientId={client.id} />
+      </div>
     </div>
   );
 }
