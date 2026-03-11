@@ -401,7 +401,7 @@ export default function SkillsTab({ client }: SkillsTabProps) {
               <div>
                 <h3 className="text-sm font-semibold text-indigo-900">ClawHub — Community Skills Marketplace</h3>
                 <p className="mt-1 text-xs text-indigo-700">
-                  Live skills from clawhub.com. Install to extend your AI worker&apos;s capabilities.
+                  Live skills from clawhub.ai. Install to extend your AI worker&apos;s capabilities.
                 </p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
@@ -412,7 +412,7 @@ export default function SkillsTab({ client }: SkillsTabProps) {
                   <RefreshCw className="h-3 w-3" /> Refresh
                 </button>
                 <a
-                  href="https://clawhub.com"
+                  href="https://clawhub.ai"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 transition-colors"
@@ -492,7 +492,7 @@ export default function SkillsTab({ client }: SkillsTabProps) {
                           </button>
                         )}
                         <a
-                          href={skill.url || `https://clawhub.com/skills/${skill.slug}`}
+                          href={skill.url || `https://clawhub.ai/skills/${skill.slug}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="rounded-lg border border-gray-200 p-1 text-gray-400 hover:text-indigo-600 hover:border-indigo-200 transition-colors"

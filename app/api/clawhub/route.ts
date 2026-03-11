@@ -1,15 +1,15 @@
 /**
- * GET /api/clawhub?q=search_term&category=category&page=1&limit=20
+ * GET /api/clawhub?q=search_term&limit=20
  * GET /api/clawhub?id=skill-slug  (single skill detail)
  *
- * Live proxy to ClawHub registry API.
+ * Live proxy to ClawHub registry API v1.
  * Caches results for 5 minutes to avoid rate limits.
  */
 import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-const CLAWHUB_REGISTRY = process.env.CLAWHUB_REGISTRY || 'https://clawhub.com';
+const CLAWHUB_API = process.env.CLAWHUB_REGISTRY || 'https://clawhub.ai';
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 min
 
 interface CacheEntry {
@@ -30,7 +30,6 @@ function getCached(key: string): unknown | null {
 }
 
 function setCache(key: string, data: unknown): void {
-  // Keep cache small — max 200 entries
   if (cache.size > 200) {
     const oldest = cache.keys().next().value;
     if (oldest) cache.delete(oldest);
@@ -38,99 +37,9 @@ function setCache(key: string, data: unknown): void {
   cache.set(key, { data, timestamp: Date.now() });
 }
 
-// ClawHub search API: GET /api/skills/search?q=term
-async function searchClawHub(query: string): Promise<ClawHubSkill[]> {
-  const cacheKey = `search:${query}`;
-  const cached = getCached(cacheKey);
-  if (cached) return cached as ClawHubSkill[];
+// ── Types ───────────────────────────────────────────────────────────────
 
-  try {
-    const res = await fetch(`${CLAWHUB_REGISTRY}/api/skills/search?q=${encodeURIComponent(query)}`, {
-      headers: { Accept: 'application/json' },
-      signal: AbortSignal.timeout(8000),
-    });
-
-    if (!res.ok) {
-      // Fallback: try the registry search endpoint
-      const fallbackRes = await fetch(`${CLAWHUB_REGISTRY}/api/registry/search?q=${encodeURIComponent(query)}`, {
-        headers: { Accept: 'application/json' },
-        signal: AbortSignal.timeout(8000),
-      });
-      if (!fallbackRes.ok) return [];
-      const data = await fallbackRes.json();
-      const skills = normalizeSkills(data);
-      setCache(cacheKey, skills);
-      return skills;
-    }
-
-    const data = await res.json();
-    const skills = normalizeSkills(data);
-    setCache(cacheKey, skills);
-    return skills;
-  } catch {
-    return [];
-  }
-}
-
-// ClawHub featured/popular: GET /api/skills/featured or /api/skills?sort=popular
-async function getFeatured(): Promise<ClawHubSkill[]> {
-  const cacheKey = 'featured';
-  const cached = getCached(cacheKey);
-  if (cached) return cached as ClawHubSkill[];
-
-  try {
-    // Try featured endpoint first
-    const res = await fetch(`${CLAWHUB_REGISTRY}/api/skills/featured`, {
-      headers: { Accept: 'application/json' },
-      signal: AbortSignal.timeout(8000),
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      const skills = normalizeSkills(data);
-      setCache(cacheKey, skills);
-      return skills;
-    }
-
-    // Fallback: popular sort
-    const fallbackRes = await fetch(`${CLAWHUB_REGISTRY}/api/skills?sort=popular&limit=50`, {
-      headers: { Accept: 'application/json' },
-      signal: AbortSignal.timeout(8000),
-    });
-
-    if (!fallbackRes.ok) return [];
-    const data = await fallbackRes.json();
-    const skills = normalizeSkills(data);
-    setCache(cacheKey, skills);
-    return skills;
-  } catch {
-    return [];
-  }
-}
-
-// Get single skill detail
-async function getSkillDetail(slug: string): Promise<ClawHubSkill | null> {
-  const cacheKey = `detail:${slug}`;
-  const cached = getCached(cacheKey);
-  if (cached) return cached as ClawHubSkill;
-
-  try {
-    const res = await fetch(`${CLAWHUB_REGISTRY}/api/skills/${encodeURIComponent(slug)}`, {
-      headers: { Accept: 'application/json' },
-      signal: AbortSignal.timeout(8000),
-    });
-
-    if (!res.ok) return null;
-    const data = await res.json();
-    const skill = normalizeSingleSkill(data);
-    if (skill) setCache(cacheKey, skill);
-    return skill;
-  } catch {
-    return null;
-  }
-}
-
-interface ClawHubSkill {
+export interface ClawHubSkill {
   slug: string;
   name: string;
   description: string;
@@ -140,57 +49,162 @@ interface ClawHubSkill {
   category: string;
   tags: string[];
   url: string;
-  createdAt: string;
   updatedAt: string;
 }
 
-function normalizeSingleSkill(raw: Record<string, unknown>): ClawHubSkill | null {
-  // Handle various API response shapes
-  const skill = (raw.skill || raw.data || raw) as Record<string, unknown>;
-  if (!skill || typeof skill !== 'object') return null;
+// ── API v1: /api/v1/search?q=term ──────────────────────────────────────
 
-  const slug = (skill.slug || skill.id || skill.name || '') as string;
-  if (!slug) return null;
+async function searchClawHub(query: string, limit: number): Promise<ClawHubSkill[]> {
+  const cacheKey = `search:${query}:${limit}`;
+  const cached = getCached(cacheKey);
+  if (cached) return cached as ClawHubSkill[];
 
+  try {
+    const url = new URL('/api/v1/search', CLAWHUB_API);
+    url.searchParams.set('q', query);
+    url.searchParams.set('limit', String(limit));
+
+    const res = await fetch(url.toString(), {
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(8000),
+    });
+
+    if (!res.ok) return [];
+
+    const data = await res.json() as { results?: Array<Record<string, unknown>> };
+    const skills = (data.results || []).map(normalizeSearchResult);
+    setCache(cacheKey, skills);
+    return skills;
+  } catch {
+    return [];
+  }
+}
+
+// ── API v1: /api/v1/skills?sort=updated&limit=N ───────────────────────
+
+async function getFeatured(limit: number): Promise<ClawHubSkill[]> {
+  const cacheKey = `featured:${limit}`;
+  const cached = getCached(cacheKey);
+  if (cached) return cached as ClawHubSkill[];
+
+  try {
+    const url = new URL('/api/v1/skills', CLAWHUB_API);
+    url.searchParams.set('limit', String(limit));
+    url.searchParams.set('sort', 'updated');
+
+    const res = await fetch(url.toString(), {
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(8000),
+    });
+
+    if (!res.ok) return [];
+
+    const data = await res.json() as { items?: Array<Record<string, unknown>> };
+    const skills = (data.items || []).map(normalizeListItem);
+    setCache(cacheKey, skills);
+    return skills;
+  } catch {
+    return [];
+  }
+}
+
+// ── API v1: /api/v1/skills/:slug ───────────────────────────────────────
+
+async function getSkillDetail(slug: string): Promise<ClawHubSkill | null> {
+  const cacheKey = `detail:${slug}`;
+  const cached = getCached(cacheKey);
+  if (cached) return cached as ClawHubSkill;
+
+  try {
+    const res = await fetch(`${CLAWHUB_API}/api/v1/skills/${encodeURIComponent(slug)}`, {
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(8000),
+    });
+
+    if (!res.ok) return null;
+
+    const data = await res.json() as Record<string, unknown>;
+    const skill = normalizeDetailResult(data);
+    if (skill) setCache(cacheKey, skill);
+    return skill;
+  } catch {
+    return null;
+  }
+}
+
+// ── Normalizers ─────────────────────────────────────────────────────────
+
+function normalizeSearchResult(raw: Record<string, unknown>): ClawHubSkill {
+  const slug = (raw.slug || '') as string;
   return {
     slug,
-    name: (skill.name || skill.title || slug) as string,
-    description: (skill.description || skill.desc || '') as string,
-    version: (skill.version || skill.latest_version || '1.0.0') as string,
-    author: (skill.author || skill.publisher || skill.owner || '') as string,
-    downloads: Number(skill.downloads || skill.installs || skill.download_count || 0),
-    category: (skill.category || skill.type || 'General') as string,
-    tags: Array.isArray(skill.tags) ? skill.tags as string[] : [],
-    url: `${CLAWHUB_REGISTRY}/skills/${slug}`,
-    createdAt: (skill.createdAt || skill.created_at || '') as string,
-    updatedAt: (skill.updatedAt || skill.updated_at || '') as string,
+    name: (raw.displayName || raw.name || slug) as string,
+    description: (raw.summary || raw.description || '') as string,
+    version: (raw.version || '') as string,
+    author: (raw.author || raw.publisher || '') as string,
+    downloads: Number(raw.downloads || raw.installs || 0),
+    category: (raw.category || 'General') as string,
+    tags: Array.isArray(raw.tags)
+      ? (raw.tags as string[])
+      : typeof raw.tags === 'object' && raw.tags
+        ? Object.keys(raw.tags as Record<string, unknown>)
+        : [],
+    url: `https://clawhub.ai/skills/${slug}`,
+    updatedAt: raw.updatedAt ? new Date(Number(raw.updatedAt)).toISOString() : '',
   };
 }
 
-function normalizeSkills(raw: unknown): ClawHubSkill[] {
-  // Handle: { skills: [...] }, { data: [...] }, { results: [...] }, or just [...]
-  let items: unknown[];
-  if (Array.isArray(raw)) {
-    items = raw;
-  } else if (typeof raw === 'object' && raw !== null) {
-    const obj = raw as Record<string, unknown>;
-    items = (obj.skills || obj.data || obj.results || obj.items || []) as unknown[];
-    if (!Array.isArray(items)) items = [];
-  } else {
-    return [];
-  }
-
-  return items
-    .map((item) => normalizeSingleSkill(item as Record<string, unknown>))
-    .filter((s): s is ClawHubSkill => s !== null);
+function normalizeListItem(raw: Record<string, unknown>): ClawHubSkill {
+  const slug = (raw.slug || '') as string;
+  return {
+    slug,
+    name: (raw.displayName || raw.name || slug) as string,
+    description: (raw.summary || raw.description || '') as string,
+    version: (raw.version || '') as string,
+    author: (raw.author || '') as string,
+    downloads: Number(raw.downloads || 0),
+    category: (raw.category || 'General') as string,
+    tags: Array.isArray(raw.tags)
+      ? (raw.tags as string[])
+      : typeof raw.tags === 'object' && raw.tags
+        ? Object.keys(raw.tags as Record<string, unknown>)
+        : [],
+    url: `https://clawhub.ai/skills/${slug}`,
+    updatedAt: raw.updatedAt ? new Date(Number(raw.updatedAt)).toISOString() : '',
+  };
 }
+
+function normalizeDetailResult(raw: Record<string, unknown>): ClawHubSkill | null {
+  const slug = (raw.slug || '') as string;
+  if (!slug) return null;
+
+  const latestVersion = raw.latestVersion as Record<string, unknown> | undefined;
+
+  return {
+    slug,
+    name: (raw.displayName || raw.name || slug) as string,
+    description: (raw.summary || raw.description || '') as string,
+    version: (latestVersion?.version || raw.version || '') as string,
+    author: (raw.author || raw.publisher || '') as string,
+    downloads: Number(raw.downloads || raw.installs || 0),
+    category: (raw.category || 'General') as string,
+    tags: Array.isArray(raw.tags)
+      ? (raw.tags as string[])
+      : typeof raw.tags === 'object' && raw.tags
+        ? Object.keys(raw.tags as Record<string, unknown>)
+        : [],
+    url: `https://clawhub.ai/skills/${slug}`,
+    updatedAt: raw.updatedAt ? new Date(Number(raw.updatedAt)).toISOString() : '',
+  };
+}
+
+// ── Handler ─────────────────────────────────────────────────────────────
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const query = searchParams.get('q');
   const skillId = searchParams.get('id');
-  const page = parseInt(searchParams.get('page') || '1', 10);
-  const limit = Math.min(parseInt(searchParams.get('limit') || '20', 10), 50);
+  const limit = Math.min(parseInt(searchParams.get('limit') || '30', 10), 50);
 
   // Single skill detail
   if (skillId) {
@@ -204,21 +218,13 @@ export async function GET(request: NextRequest) {
   // Search or browse
   let skills: ClawHubSkill[];
   if (query && query.trim()) {
-    skills = await searchClawHub(query.trim());
+    skills = await searchClawHub(query.trim(), limit);
   } else {
-    skills = await getFeatured();
+    skills = await getFeatured(limit);
   }
 
-  // Paginate
-  const total = skills.length;
-  const start = (page - 1) * limit;
-  const pageSkills = skills.slice(start, start + limit);
-
   return NextResponse.json({
-    skills: pageSkills,
-    total,
-    page,
-    limit,
-    hasMore: start + limit < total,
+    skills,
+    total: skills.length,
   });
 }
