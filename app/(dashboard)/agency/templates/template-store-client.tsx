@@ -57,6 +57,38 @@ export function TemplateStoreClient({ agencyId, businessName }: Props) {
   const [generatedSoul, setGeneratedSoul] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Community / Publish state (must be at top level — React hooks rules)
+  const [storeTab, setStoreTab] = useState<'official' | 'community' | 'publish'>('official');
+  const [communityTemplates, setCommunityTemplates] = useState<Array<Record<string, unknown>>>([]);
+  const [communityLoading, setCommunityLoading] = useState(false);
+  const [communitySearch, setCommunitySearch] = useState('');
+  const [communitySort, setCommunitySort] = useState<'popular' | 'newest' | 'name'>('popular');
+  const [installingId, setInstallingId] = useState<string | null>(null);
+  const [publishForm, setPublishForm] = useState({
+    name: '', industry: '', description: '', icon: '🤖',
+    tags: '', soul_template: '', suggested_tools: [] as string[],
+  });
+  const [publishing, setPublishing] = useState(false);
+  const [publishSuccess, setPublishSuccess] = useState(false);
+
+  const fetchCommunity = useCallback(async () => {
+    setCommunityLoading(true);
+    try {
+      const params = new URLSearchParams({ sort: communitySort });
+      if (communitySearch) params.set('q', communitySearch);
+      const res = await fetch(`/api/agency/templates/community?${params}`);
+      if (res.ok) {
+        const data = await res.json();
+        setCommunityTemplates(data.templates || []);
+      }
+    } catch { /* silent */ }
+    setCommunityLoading(false);
+  }, [communitySearch, communitySort]);
+
+  useEffect(() => {
+    if (storeTab === 'community') fetchCommunity();
+  }, [storeTab, fetchCommunity]);
+
   useEffect(() => {
     fetch('/api/templates')
       .then(r => r.json())
@@ -254,39 +286,6 @@ export function TemplateStoreClient({ agencyId, businessName }: Props) {
   }
 
   // ── Store View ────────────────────────────────────────────────────────
-
-  const [storeTab, setStoreTab] = useState<'official' | 'community' | 'publish'>('official');
-  const [communityTemplates, setCommunityTemplates] = useState<Array<Record<string, unknown>>>([]);
-  const [communityLoading, setCommunityLoading] = useState(false);
-  const [communitySearch, setCommunitySearch] = useState('');
-  const [communitySort, setCommunitySort] = useState<'popular' | 'newest' | 'name'>('popular');
-  const [installingId, setInstallingId] = useState<string | null>(null);
-
-  // Publish form state
-  const [publishForm, setPublishForm] = useState({
-    name: '', industry: '', description: '', icon: '🤖',
-    tags: '', soul_template: '', suggested_tools: [] as string[],
-  });
-  const [publishing, setPublishing] = useState(false);
-  const [publishSuccess, setPublishSuccess] = useState(false);
-
-  const fetchCommunity = useCallback(async () => {
-    setCommunityLoading(true);
-    try {
-      const params = new URLSearchParams({ sort: communitySort });
-      if (communitySearch) params.set('q', communitySearch);
-      const res = await fetch(`/api/agency/templates/community?${params}`);
-      if (res.ok) {
-        const data = await res.json();
-        setCommunityTemplates(data.templates || []);
-      }
-    } catch { /* silent */ }
-    setCommunityLoading(false);
-  }, [communitySearch, communitySort]);
-
-  useEffect(() => {
-    if (storeTab === 'community') fetchCommunity();
-  }, [storeTab, fetchCommunity]);
 
   const installCommunityTemplate = async (templateId: string) => {
     setInstallingId(templateId);
