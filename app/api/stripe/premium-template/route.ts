@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAgencyAdmin } from '@/lib/agency/middleware';
 import { createClient } from '@/lib/supabase/server';
 import { getPremiumTemplate } from '@/lib/billing/premium-templates';
+import { provisionPlatforms } from '@/lib/seo/platform-provisioner';
 
 export const dynamic = 'force-dynamic';
 
@@ -89,6 +90,20 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`[premium-template] ✅ ${templateId} activated for "${clientRow.name}" (${clientId})`);
+
+    if (templateId === 'vet-seo-worker') {
+      const setup = (body.setupData ?? {}) as Record<string, unknown>;
+      const clinicName = (setup.clinic_name as string) || (setup.clinicName as string) || clientRow.name || 'Veterinary Clinic';
+      const city = (setup.city as string) || '';
+
+      void provisionPlatforms(clientId, clinicName, city)
+        .then((statuses) => {
+          console.log('[premium-template] platform auto-provision complete', { clientId, statuses });
+        })
+        .catch((err) => {
+          console.error('[premium-template] platform auto-provision failed:', err);
+        });
+    }
 
     return NextResponse.json({
       ok: true,

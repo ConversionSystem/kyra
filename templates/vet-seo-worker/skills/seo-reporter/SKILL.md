@@ -12,9 +12,11 @@ Compile weekly SEO performance reports combining all worker activity into a clie
 ### 1. GEO Visibility Score
 - Current score (% of AI queries citing the clinic)
 - Trend vs last week (↑ ↓ →)
+- **Competitor comparison** — your score vs top 3 competitors (NEW)
 - Top performing queries
-- Queries where clinic is NOT appearing (opportunities)
+- Queries where clinic is NOT appearing (content gaps)
 - Provider breakdown (ChatGPT vs Perplexity)
+- **Content gap impact** — show which gaps got content this week and expected improvement (NEW)
 
 ### 2. NAP Consistency
 - Total directories audited
@@ -42,11 +44,24 @@ Compile weekly SEO performance reports combining all worker activity into a clie
 - Replies posted (after review)
 - Threads where clinic was mentioned organically
 
-### 6. Action Items for Agency
-- Directories needing manual update
-- Content pending review
+### 6. Backlink Profile (NEW)
+- Total backlinks and referring domains
+- New links this month vs last month
+- Outreach conversion rate (pitches → links)
+- Spam link warnings (if any detected)
+
+### 7. GBP Posts (NEW)
+- Posts published this week
+- Post engagement (views, clicks if available via API)
+- Upcoming post schedule
+
+### 8. Action Items for Agency
+- Directories needing manual update (with pre-filled submission data)
+- Content pending review in queue
 - Outreach pitches awaiting approval
-- Suggested strategy adjustments
+- GBP posts ready for review
+- Reddit drafts awaiting review
+- Suggested strategy adjustments based on competitor analysis
 
 ## Report Format
 
@@ -57,12 +72,24 @@ Generate in both JSON (for dashboard) and Markdown (for agency email/export):
 {
   "report_date": "2026-03-07",
   "period": "2026-03-01 to 2026-03-07",
-  "geo": { "score": 32, "trend": "up", "previous": 24 },
-  "nap": { "consistent": 10, "mismatches": 3, "not_found": 2 },
-  "content": { "published": 4, "pending_review": 2, "word_count": 3200 },
+  "geo": {
+    "score": 32,
+    "trend": "up",
+    "previous": 24,
+    "competitors": [
+      { "name": "VCA Fremont", "score": 55, "trend": "stable" },
+      { "name": "Banfield", "score": 40, "trend": "down" }
+    ],
+    "content_gaps_addressed": 2,
+    "content_gaps_remaining": 5
+  },
+  "nap": { "consistent": 12, "mismatches": 3, "not_found": 5, "total_directories": 20 },
+  "content": { "published": 6, "pending_review": 2, "word_count": 4800, "platforms_active": 5 },
   "outreach": { "targets": 8, "pitched": 3, "responses": 1, "links": 0 },
   "ugc": { "monitored": 47, "drafted": 3, "posted": 2 },
-  "action_items": ["Review 2 pending articles", "Update Yelp listing NAP"]
+  "backlinks": { "total": 47, "new": 3, "lost": 0, "referring_domains": 23 },
+  "gbp_posts": { "published": 2, "views": null, "clicks": null },
+  "action_items": ["Review 2 pending articles", "Update Yelp listing NAP", "Approve 1 GBP post", "Claim Nextdoor and Apple Maps listings"]
 }
 ```
 

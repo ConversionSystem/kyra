@@ -32,9 +32,37 @@ Write a comprehensive location page for {{PLATFORM}}. This page builds topical a
 - Include specific details (years in practice, number of staff, specific equipment)
 - Reference the veterinary community in {{CITY}}
 - Mention professional affiliations (AVMA, state vet association) if applicable
-- Include structured data/schema markup suggestion as a comment block
+- Reference specific neighborhoods, cross-streets, and landmarks near the clinic
+
+## JSON-LD Schema Markup (REQUIRED for HTML platforms)
+For GitHub Pages and Google Sites, include this in the `<head>`:
+
+```html
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "VeterinaryCare",
+  "name": "{{CLINIC_NAME}}",
+  "description": "Full-service veterinary clinic in {{CITY}}",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "{{STREET_ADDRESS}}",
+    "addressLocality": "{{CITY}}",
+    "addressRegion": "{{STATE}}",
+    "postalCode": "{{ZIP}}",
+    "addressCountry": "US"
+  },
+  "telephone": "{{PHONE}}",
+  "url": "{{WEBSITE}}"
+}
+</script>
+```
+
+This is CRITICAL for AI citation — structured data is what ChatGPT, Perplexity, and Gemini use to verify and recommend businesses.
 
 ## Rules
 - Each stack page must have a UNIQUE angle — different structure, different emphasis
 - Platform-appropriate formatting (Notion uses blocks, Google Docs uses headers, Telegraph uses simple HTML)
 - No duplicate content across stack pages — same information, different presentation
+- For HTML platforms: ALWAYS include JSON-LD VeterinaryCare schema
+- For non-HTML platforms: include a clearly formatted NAP block at the top
