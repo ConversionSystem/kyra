@@ -76,11 +76,13 @@ const navSections: NavSection[] = [
     ],
   },
   {
-    // AI Worker section removed — all features live inside client detail tabs:
-    // AI Personality (was AI Templates), Skills, Channels, Voice AI
-    // AI Teams kept as top-level since it's cross-client
+    label: 'AI Worker',
+    collapsible: true,
     items: [
+      { label: 'AI Templates', href: '/agency/ai-setup', icon: Sparkles },
       { label: 'AI Teams', href: '/agency/agents', icon: Bot },
+      { label: 'Channels', href: '/agency/channels', icon: Radio },
+      { label: 'Voice AI', href: '/agency/voice', icon: Phone },
     ],
   },
   {
