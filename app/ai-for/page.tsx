@@ -63,7 +63,7 @@ export default function AiForIndexPage() {
               </span>
             ))}
           </div>
-          <p className="text-xs text-gray-400 mt-3">All 21 templates available inside the platform. <Link href="/solo" className="text-indigo-500 underline">Start free →</Link></p>
+          <p className="text-xs text-gray-400 mt-3">All 50 templates available inside the platform. <Link href="/solo" className="text-indigo-500 underline">Start free →</Link></p>
         </div>
       </div>
       <PublicFooter />
