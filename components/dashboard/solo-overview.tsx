@@ -192,7 +192,7 @@ export default function SoloOverview({
   return (
     <div className="p-4 sm:p-6 md:p-8 max-w-5xl">
       {/* ── Credit wall (blocks page when balance = 0) ── */}
-      {liveBalance === 0 && <CreditWallModal agencyId={agencyId} />}
+      {liveBalance === 0 && <CreditWallModal agencyId="" />}
 
       {/* ── Low credit banner ── */}
       <LowCreditBanner balance={liveBalance} />
