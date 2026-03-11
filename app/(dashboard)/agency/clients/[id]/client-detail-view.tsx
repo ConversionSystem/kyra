@@ -127,9 +127,10 @@ interface ChatMessage {
   content: string;
 }
 
-type Tab = 'personality' | 'settings' | 'ghl' | 'usage' | 'conversations' | 'channels' | 'portal' | 'memory' | 'voice' | 'seo';
+type Tab = 'terminal' | 'personality' | 'settings' | 'ghl' | 'usage' | 'conversations' | 'channels' | 'portal' | 'memory' | 'voice' | 'seo';
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
+  { id: 'terminal', label: 'Terminal', icon: Terminal },
   { id: 'personality', label: 'AI Personality', icon: Brain },
   { id: 'settings', label: 'Settings', icon: Settings },
   { id: 'ghl', label: 'GHL', icon: Link2 },
@@ -146,7 +147,7 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
 const TAB_GROUPS: { label: string; tabs: typeof TABS }[] = [
   {
     label: 'Communicate',
-    tabs: TABS.filter(t => ['conversations', 'channels'].includes(t.id)),
+    tabs: TABS.filter(t => ['terminal', 'conversations', 'channels'].includes(t.id)),
   },
   {
     label: 'Configure',
@@ -237,10 +238,10 @@ function ReprovisionButton({ clientId }: { clientId: string }) {
 export function ClientDetailView({ client: initialClient, role }: ClientDetailViewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialTab = (searchParams.get('tab') as Tab) || 'personality';
+  const initialTab = (searchParams.get('tab') as Tab) || 'terminal';
   const justActivated = searchParams.get('activated') === 'true';
   const [activeTab, setActiveTab] = useState<Tab>(
-    TABS.some(t => t.id === initialTab) ? initialTab : 'personality'
+    TABS.some(t => t.id === initialTab) ? initialTab : 'terminal'
   );
 
   // Update URL when tab changes (without full reload)
@@ -363,6 +364,9 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
           <SetupNudgeBanner client={initialClient} onTabChange={handleTabChange} />
 
           {/* Tab content */}
+          {activeTab === 'terminal' && (
+            <TerminalTab client={initialClient} />
+          )}
           {activeTab === 'personality' && (
             <AIPersonalityTab client={initialClient} />
           )}
@@ -417,6 +421,79 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
   );
 }
 
+
+// ── Terminal Tab ──────────────────────────────────────────────────────────────
+
+function TerminalTab({ client }: { client: AgencyClient }) {
+  const [copied, setCopied] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const gatewayUrl = (client as any).gateway_url as string | undefined;
+  const gatewayToken = (client as any).gateway_token as string | undefined;
+  const gatewayUrlWithToken = gatewayUrl && gatewayToken
+    ? `${gatewayUrl}?token=${gatewayToken}`
+    : gatewayUrl || null;
+
+  if (!gatewayUrlWithToken) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <Terminal className="h-12 w-12 text-gray-300 mb-4" />
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Terminal Not Available</h3>
+        <p className="text-sm text-gray-500 max-w-md">
+          This client&apos;s AI worker hasn&apos;t been provisioned yet. The terminal will appear once the gateway is running.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className={isFullscreen ? 'fixed inset-0 z-50 bg-white' : 'space-y-3'}>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="text-xs text-gray-500">Connected to OpenClaw Gateway</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(gatewayUrlWithToken);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
+            }}
+            className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            {copied ? <CheckCircle2 className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+            {copied ? 'Copied' : 'Copy URL'}
+          </button>
+          <a
+            href={gatewayUrlWithToken}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs text-indigo-500 hover:text-indigo-700"
+          >
+            <ExternalLink className="h-3 w-3" />
+            Open in new tab
+          </a>
+          <button
+            onClick={() => setIsFullscreen(!isFullscreen)}
+            className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600"
+          >
+            {isFullscreen ? <X className="h-3 w-3" /> : <ExternalLink className="h-3 w-3" />}
+            {isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+          </button>
+        </div>
+      </div>
+      <div className={`rounded-xl border border-gray-200 overflow-hidden ${isFullscreen ? 'h-[calc(100vh-40px)]' : 'h-[600px]'}`}>
+        <iframe
+          src={gatewayUrlWithToken}
+          className="w-full h-full border-0"
+          allow="clipboard-write"
+          title={`${client.name} — OpenClaw Terminal`}
+        />
+      </div>
+    </div>
+  );
+}
 
 // ── AI Personality Tab ────────────────────────────────────────────────────────
 
