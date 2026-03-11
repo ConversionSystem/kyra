@@ -278,33 +278,8 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    // Only solo users get an agency-level gateway (their personal AI worker).
-    // Agency users create AI workers as clients — no agency-level container needed.
-    if (!isSolo) return;
-
-    fetch('/api/agency/gateway')
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.gatewayUrl && data.status === 'running') {
-          setAgencyGatewayUrl(data.gatewayUrl);
-          setAgencyGatewayToken(data.gatewayToken ?? null);
-        } else if (!data.gatewayUrl || data.status === 'not_provisioned' || data.status === 'error') {
-          setProvisioningGateway(true);
-          fetch('/api/agency/gateway', { method: 'POST' })
-            .then((r) => r.json())
-            .then((result) => {
-              if (result.gatewayUrl) {
-                setAgencyGatewayUrl(result.gatewayUrl);
-                setAgencyGatewayToken(result.gatewayToken ?? null);
-              }
-            })
-            .catch(() => {})
-            .finally(() => setProvisioningGateway(false));
-        }
-      })
-      .catch(() => {});
-  }, [isSolo]);
+  // Solo gateway provisioning removed — solo accounts now use client-level containers
+  // (auto-provisioned during signup in /api/auth/solo-signup)
 
   // Close mobile sidebar on route change
   useEffect(() => {
@@ -372,15 +347,15 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
         </div>
       </div>
 
-      {/* Upgrade to agency banner — solo free users only */}
-      {isSolo && plan === 'free' && (
+      {/* Upgrade banner — free users only */}
+      {plan === 'free' && (
         <div className="px-3 pt-3">
           <a
             href="/agency/billing"
             className="block w-full rounded-xl border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 px-3 py-2.5 transition"
           >
             <p className="text-xs font-bold text-indigo-300 mb-0.5">Ready for more?</p>
-            <p className="text-[10px] text-indigo-400/80 leading-snug">Upgrade to manage multiple clients & unlock agency features</p>
+            <p className="text-[10px] text-indigo-400/80 leading-snug">Upgrade to add more clients & unlock premium features</p>
           </a>
         </div>
       )}
@@ -389,7 +364,7 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
 
       {/* Navigation */}
       <nav className="flex-1 px-2 py-2 space-y-0 overflow-y-auto">
-        {(isSolo ? soloNavSections : navSections).map((section, si) => {
+        {navSections.map((section, si) => {
           const sectionHrefPrefixes = section.items.map(i => i.href);
           const isSectionActive = section.collapsible && sectionHrefPrefixes.some(
             href => href === '/agency' ? pathname === '/agency' : pathname.startsWith(href)

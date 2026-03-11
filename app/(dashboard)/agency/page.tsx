@@ -15,7 +15,7 @@ import WhatsNewBanner from '@/components/dashboard/whats-new-banner';
 import AgencyChecklist from '@/components/dashboard/agency-checklist';
 import TrialCountdownBanner from '@/components/dashboard/trial-countdown-banner';
 import { UltronSummaryCard } from '@/components/dashboard/ultron-summary-card';
-import SoloOverview from '@/components/dashboard/solo-overview';
+// SoloOverview removed — solo accounts now use the same agency dashboard
 import { LaunchProgress } from '@/components/onboarding/launch-progress';
 import { StartTourButton } from '@/components/onboarding/guided-tour';
 import MissionControlLive from '@/components/dashboard/mission-control-live';
@@ -44,85 +44,8 @@ export default async function AgencyOverviewPage() {
 
   const isAdmin = ['hello@conversionsystem.com', 'angel@conversionsystem.com'].includes(user.email ?? '');
   const agencySettings = (agency.settings as Record<string, unknown>) ?? {};
+  // ── Dashboard (same for solo and agency) ─────────────────────────────────────
   const isSolo = agencySettings.account_type === 'solo';
-
-  // ── Solo Dashboard ──────────────────────────────────────────────────────────
-  if (isSolo) {
-    let soloClient = clients[0] ?? null;
-    if (!soloClient && agencySettings.solo_client_id) {
-      const { data: fetchedClient } = await supabase
-        .from('agency_clients')
-        .select('*, template:agency_templates(*)')
-        .eq('id', agencySettings.solo_client_id as string)
-        .single();
-      if (fetchedClient) soloClient = fetchedClient as typeof clients[0];
-    }
-
-    const { data: agencyGw } = await supabase
-      .from('agencies')
-      .select('gateway_url, gateway_token, gateway_status, gateway_error')
-      .eq('id', agency.id)
-      .single();
-
-    const gwUrl    = agencyGw?.gateway_url    ?? soloClient?.gateway_url    ?? null;
-    const gwToken  = agencyGw?.gateway_token  ?? soloClient?.gateway_token  ?? null;
-    const gwStatus = agencyGw?.gateway_status ?? soloClient?.gateway_status ?? null;
-
-    let soloConversations: { id: string; channel: string; user_message: string; ai_response: string; created_at: string }[] = [];
-    let soloConvosToday = 0;
-    let soloConvosTotal = 0;
-    const soloPerClientToday: Record<string, number> = {};
-    const soloPerClientLastMsg: Record<string, string> = {};
-
-    try {
-      const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
-
-      const [todayRes, monthRes, recentRes, lastRes] = await Promise.all([
-        supabase.from('client_conversations').select('id, client_id').eq('agency_id', agency.id).gte('created_at', todayStart.toISOString()),
-        supabase.from('client_conversations').select('id').eq('agency_id', agency.id).gte('created_at', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()),
-        supabase.from('client_conversations').select('id, channel, user_message, ai_response, created_at').eq('agency_id', agency.id).order('created_at', { ascending: false }).limit(10),
-        supabase.from('client_conversations').select('client_id, created_at').eq('agency_id', agency.id).order('created_at', { ascending: false }).limit(50),
-      ]);
-
-      soloConvosToday = todayRes.data?.length ?? 0;
-      soloConvosTotal = monthRes.data?.length ?? 0;
-      soloConversations = (recentRes.data ?? []) as typeof soloConversations;
-      (todayRes.data ?? []).forEach(c => { if (c.client_id) soloPerClientToday[c.client_id] = (soloPerClientToday[c.client_id] || 0) + 1; });
-      (lastRes.data ?? []).forEach(m => { if (m.client_id && !soloPerClientLastMsg[m.client_id]) soloPerClientLastMsg[m.client_id] = m.created_at; });
-    } catch { /* conversations table may not exist yet */ }
-
-    const soloConfig = (soloClient?.container_config as Record<string, unknown>) ?? {};
-    const soloClients = clients.length > 0 ? clients : soloClient ? [soloClient] : [];
-
-    return (
-      <SoloOverview
-        businessName={agency.name}
-        gatewayUrl={gwUrl}
-        gatewayToken={gwToken}
-        gatewayStatus={gwStatus}
-        gatewayError={(agencyGw as Record<string, unknown> | null)?.gateway_error as string | null ?? null}
-        creditsBalance={agencyCredits.balance}
-        creditsUsed={agencyCredits.lifetimeUsed}
-        conversationsToday={soloConvosToday}
-        conversationsTotal={soloConvosTotal}
-        recentConversations={soloConversations}
-        clientId={soloClient?.id ?? null}
-        hasKnowledge={!!(soloConfig.knowledge_trained || soloConfig.website_url)}
-        hasPersonality={!!(soloConfig.persona || soloConfig.instructions)}
-        clients={soloClients.map(c => ({
-          id: c.id,
-          name: c.name,
-          gateway_status: c.gateway_status,
-          gateway_error: c.gateway_error ?? null,
-          usage_this_month: c.usage_this_month ?? 0,
-          todayCount: soloPerClientToday[c.id] || 0,
-          lastMessage: soloPerClientLastMsg[c.id] || null,
-        }))}
-      />
-    );
-  }
-
-  // ── Agency Dashboard ────────────────────────────────────────────────────────
 
   const totalCount  = clients.length;
   const totalUsage  = clients.reduce((sum, c) => sum + c.usage_this_month, 0);
@@ -164,12 +87,19 @@ export default async function AgencyOverviewPage() {
             <StartTourButton />
           </div>
         </div>
-        <Link href="/agency/clients/new">
-          <Button size="sm" className="gap-2 bg-indigo-600 hover:bg-indigo-700 shadow-sm">
-            <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">Add Client</span>
-          </Button>
-        </Link>
+        {/* Hide Add Client when at plan limit */}
+        {(() => {
+          const planLimits: Record<string, number> = { free: 1, starter: 3, lite: 3, pro: 10, scale: 30 };
+          const limit = planLimits[agency.plan || 'free'] ?? 1;
+          return totalCount < limit ? (
+            <Link href="/agency/clients/new">
+              <Button size="sm" className="gap-2 bg-indigo-600 hover:bg-indigo-700 shadow-sm">
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Add Client</span>
+              </Button>
+            </Link>
+          ) : null;
+        })()}
       </div>
 
       {/* ── Low Credit Banner (shows when agency credits ≤ 10) ── */}
