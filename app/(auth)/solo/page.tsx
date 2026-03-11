@@ -25,6 +25,9 @@ import {
   ChevronDown,
   Shield,
   Sparkles,
+  Share2,
+  Copy,
+  CheckCircle2,
 } from 'lucide-react';
 
 function FAQItem({ question, answer }: { question: string; answer: string }) {
@@ -60,18 +63,41 @@ function SoloSignupPageInner() {
     ? decodeURIComponent(document.cookie.split('; ').find(r => r.startsWith('kyra_ref_name='))?.split('=').slice(1).join('=') ?? '')
     : undefined) || undefined;
 
+  const INDUSTRIES = ['Dental', 'Cannabis', 'Plumbing', 'Restaurant', 'Real Estate', 'Legal', 'Other'];
+
   const [businessName, setBusinessName] = useState('');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [websiteUrl, setWebsiteUrl] = useState('');
+  const [industry, setIndustry] = useState('');
+  const [step, setStep] = useState(1);
+  const [signupComplete, setSignupComplete] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  const shareText = 'I just deployed my AI worker on Kyra in 60 seconds! 🤖 Try it free → kyra.conversionsystem.com/solo';
+  const shareUrl = 'https://kyra.conversationsystem.com/solo';
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    // Step 1 → Step 2 transition
+    if (step === 1) {
+      setStep(2);
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -98,8 +124,14 @@ function SoloSignupPageInner() {
         return;
       }
 
-      router.push(`/signup/success?agencyId=${data.agencyId || ''}&next=/agency`);
-      router.refresh();
+      setStep(3);
+      setSignupComplete(true);
+
+      // Auto-redirect after a short delay so user can see share buttons
+      setTimeout(() => {
+        router.push(`/signup/success?agencyId=${data.agencyId || ''}&next=/agency`);
+        router.refresh();
+      }, 5000);
     } catch {
       setError('An unexpected error occurred. Please try again.');
     } finally {
@@ -109,80 +141,180 @@ function SoloSignupPageInner() {
 
   const signupForm = (
     <div className="w-full max-w-md">
-      <div className="bg-white/5 border border-white/10 rounded-2xl p-7">
-        <h2 className="text-xl font-bold mb-1">Start free</h2>
-        <p className="text-slate-400 text-sm mb-6">
-          Your AI worker in 60 seconds. No credit card required.
-        </p>
-
-        {error && (
-          <div className="mb-4 rounded-xl bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-400">
-            {error}
-          </div>
-        )}
-
-        {/* Referral welcome banner */}
-        {referralFrom && (
-          <div className="mb-4 rounded-xl bg-gradient-to-r from-indigo-500/20 to-violet-500/20 border border-indigo-500/40 px-4 py-4 flex items-start gap-3">
-            <span className="text-2xl shrink-0">🎁</span>
-            <div>
-              <p className="text-sm font-bold text-white">{referralFrom} gave you 100 free AI credits</p>
-              <p className="text-xs text-indigo-300 mt-0.5">Credits are added to your account the moment you sign up — no card required, no trial expiry.</p>
-            </div>
-          </div>
-        )}
-        {!referralFrom && referralId && (
-          <div className="mb-4 rounded-xl bg-indigo-500/10 border border-indigo-500/30 px-4 py-3 flex items-center gap-3">
-            <span className="text-xl">🎁</span>
-            <div>
-              <p className="text-sm font-bold text-white">You were invited — 100 free AI credits waiting</p>
-              <p className="text-xs text-slate-400">Sign up free — credits added instantly, no card required.</p>
-            </div>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">Business name</label>
-            <input type="text" placeholder="e.g. Mike's Plumbing" value={businessName} onChange={(e) => setBusinessName(e.target.value)} required disabled={isLoading} className="w-full bg-slate-800 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-base focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 disabled:opacity-50" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">Your name</label>
-            <input type="text" placeholder="Mike Johnson" value={fullName} onChange={(e) => setFullName(e.target.value)} required disabled={isLoading} className="w-full bg-slate-800 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-base focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 disabled:opacity-50" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">Email</label>
-            <input type="email" placeholder="mike@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isLoading} className="w-full bg-slate-800 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-base focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 disabled:opacity-50" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
-            <input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} disabled={isLoading} className="w-full bg-slate-800 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-base focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 disabled:opacity-50" />
-            <p className="text-xs text-slate-500 mt-1.5">At least 8 characters</p>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">
-              Website URL <span className="text-slate-500 font-normal">(optional)</span>
-            </label>
-            <div className="flex items-center bg-slate-800 border border-white/20 rounded-xl overflow-hidden focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-400/20">
-              <span className="pl-4 pr-1 text-slate-500"><Globe className="h-4 w-4" /></span>
-              <input type="url" placeholder="https://your-business.com" value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)} disabled={isLoading} className="flex-1 bg-transparent py-3 pr-4 pl-2 text-white placeholder-slate-500 text-base focus:outline-none" />
-            </div>
-            <p className="text-xs text-slate-500 mt-1.5">We&apos;ll train your AI from your website content</p>
-          </div>
-          <button type="submit" disabled={isLoading || !businessName || !fullName || !email || !password} className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 transition text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 text-sm mt-2">
-            {isLoading ? (
-              <><Loader2 className="h-4 w-4 animate-spin" />Setting up your AI worker...</>
-            ) : (
-              <><Rocket className="h-4 w-4" />Launch My AI Worker — Free</>
-            )}
-          </button>
-        </form>
-
-        <div className="mt-5 flex items-center justify-center gap-4 text-xs text-slate-500">
-          <span className="flex items-center gap-1"><Check className="h-3 w-3 text-emerald-400" />No credit card</span>
-          <span className="flex items-center gap-1"><Check className="h-3 w-3 text-emerald-400" />Cancel anytime</span>
-        </div>
+      {/* Timer badge */}
+      <div className="flex justify-center mb-4">
+        <span className="inline-flex items-center gap-1.5 bg-amber-500/20 border border-amber-500/30 rounded-full px-4 py-1.5 text-sm font-medium text-amber-300">
+          <Zap className="h-3.5 w-3.5" />
+          Most users are live in under 60 seconds
+        </span>
       </div>
+
+      {/* Step progress */}
+      <div className="flex items-center justify-center gap-2 mb-5">
+        {[1, 2, 3].map((s) => (
+          <div key={s} className="flex items-center gap-2">
+            <div className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold transition ${
+              step >= s
+                ? step === s && s === 3 ? 'bg-emerald-500 text-white' : 'bg-emerald-500/80 text-white'
+                : 'bg-white/10 text-slate-500'
+            }`}>
+              {step > s ? <Check className="h-3.5 w-3.5" /> : s}
+            </div>
+            {s < 3 && <div className={`w-8 h-0.5 ${step > s ? 'bg-emerald-500/60' : 'bg-white/10'}`} />}
+          </div>
+        ))}
+      </div>
+      <p className="text-center text-xs text-slate-500 mb-4">
+        {step === 1 ? 'Step 1 of 3 — Your details' : step === 2 ? 'Step 2 of 3 — Almost there' : 'Step 3 — Live!'}
+      </p>
+
+      {/* Step 3: Success + Share */}
+      {signupComplete ? (
+        <div className="bg-white/5 border border-emerald-500/30 rounded-2xl p-7 text-center">
+          <CheckCircle2 className="h-12 w-12 text-emerald-400 mx-auto mb-4" />
+          <h2 className="text-xl font-bold mb-2">Your AI worker is live!</h2>
+          <p className="text-slate-400 text-sm mb-6">Share the news and help others discover AI workers.</p>
+
+          <div className="space-y-3">
+            <a
+              href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 transition text-white font-semibold py-3 rounded-xl text-sm"
+            >
+              <span className="font-bold">𝕏</span>
+              Share on X / Twitter
+            </a>
+            <a
+              href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 transition text-white font-semibold py-3 rounded-xl text-sm"
+            >
+              <Share2 className="h-4 w-4" />
+              Share on LinkedIn
+            </a>
+            <button
+              onClick={handleCopyLink}
+              className="w-full flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 transition text-white font-semibold py-3 rounded-xl text-sm"
+            >
+              {linkCopied ? <><Check className="h-4 w-4 text-emerald-400" />Copied!</> : <><Copy className="h-4 w-4" />Copy link</>}
+            </button>
+          </div>
+
+          <p className="text-xs text-slate-500 mt-5">Redirecting to your dashboard...</p>
+        </div>
+      ) : (
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-7">
+          <h2 className="text-xl font-bold mb-1">Start free</h2>
+          <p className="text-slate-400 text-sm mb-6">
+            Your AI worker in 60 seconds. No credit card required.
+          </p>
+
+          {error && (
+            <div className="mb-4 rounded-xl bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-400">
+              {error}
+            </div>
+          )}
+
+          {/* Referral welcome banner */}
+          {referralFrom && (
+            <div className="mb-4 rounded-xl bg-gradient-to-r from-indigo-500/20 to-violet-500/20 border border-indigo-500/40 px-4 py-4 flex items-start gap-3">
+              <span className="text-2xl shrink-0">🎁</span>
+              <div>
+                <p className="text-sm font-bold text-white">{referralFrom} gave you 100 free AI credits</p>
+                <p className="text-xs text-indigo-300 mt-0.5">Credits are added to your account the moment you sign up — no card required, no trial expiry.</p>
+              </div>
+            </div>
+          )}
+          {!referralFrom && referralId && (
+            <div className="mb-4 rounded-xl bg-indigo-500/10 border border-indigo-500/30 px-4 py-3 flex items-center gap-3">
+              <span className="text-xl">🎁</span>
+              <div>
+                <p className="text-sm font-bold text-white">You were invited — 100 free AI credits waiting</p>
+                <p className="text-xs text-slate-400">Sign up free — credits added instantly, no card required.</p>
+              </div>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {step === 1 ? (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1.5">Business name</label>
+                  <input type="text" placeholder="e.g. Mike's Plumbing" value={businessName} onChange={(e) => setBusinessName(e.target.value)} required disabled={isLoading} className="w-full bg-slate-800 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-base focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 disabled:opacity-50" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1.5">Your name</label>
+                  <input type="text" placeholder="Mike Johnson" value={fullName} onChange={(e) => setFullName(e.target.value)} required disabled={isLoading} className="w-full bg-slate-800 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-base focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 disabled:opacity-50" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1.5">Industry</label>
+                  <div className="flex flex-wrap gap-2">
+                    {INDUSTRIES.map((ind) => (
+                      <button
+                        key={ind}
+                        type="button"
+                        onClick={() => setIndustry(ind)}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+                          industry === ind
+                            ? 'bg-emerald-500/30 border border-emerald-500/50 text-emerald-300'
+                            : 'bg-white/5 border border-white/10 text-slate-400 hover:border-white/20'
+                        }`}
+                      >
+                        {ind}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <button type="submit" disabled={!businessName || !fullName} className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 transition text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 text-sm mt-2">
+                  <ArrowRight className="h-4 w-4" />
+                  Continue
+                </button>
+              </>
+            ) : (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1.5">Email</label>
+                  <input type="email" placeholder="mike@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isLoading} className="w-full bg-slate-800 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-base focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 disabled:opacity-50" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
+                  <input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} disabled={isLoading} className="w-full bg-slate-800 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-base focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 disabled:opacity-50" />
+                  <p className="text-xs text-slate-500 mt-1.5">At least 8 characters</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                    Website URL <span className="text-slate-500 font-normal">(optional)</span>
+                  </label>
+                  <div className="flex items-center bg-slate-800 border border-white/20 rounded-xl overflow-hidden focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-400/20">
+                    <span className="pl-4 pr-1 text-slate-500"><Globe className="h-4 w-4" /></span>
+                    <input type="url" placeholder="https://your-business.com" value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)} disabled={isLoading} className="flex-1 bg-transparent py-3 pr-4 pl-2 text-white placeholder-slate-500 text-base focus:outline-none" />
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1.5">We&apos;ll train your AI from your website content</p>
+                </div>
+                <div className="flex gap-3">
+                  <button type="button" onClick={() => setStep(1)} className="px-4 py-3.5 rounded-xl border border-white/10 text-slate-400 hover:text-white hover:border-white/20 transition text-sm font-medium">
+                    Back
+                  </button>
+                  <button type="submit" disabled={isLoading || !email || !password} className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 transition text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 text-sm">
+                    {isLoading ? (
+                      <><Loader2 className="h-4 w-4 animate-spin" />Setting up your AI worker...</>
+                    ) : (
+                      <><Rocket className="h-4 w-4" />Launch My AI Worker — Free</>
+                    )}
+                  </button>
+                </div>
+              </>
+            )}
+          </form>
+
+          <div className="mt-5 flex items-center justify-center gap-4 text-xs text-slate-500">
+            <span className="flex items-center gap-1"><Check className="h-3 w-3 text-emerald-400" />No credit card</span>
+            <span className="flex items-center gap-1"><Check className="h-3 w-3 text-emerald-400" />Cancel anytime</span>
+          </div>
+        </div>
+      )}
 
       <div className="mt-4 text-center space-y-2">
         <p className="text-sm text-slate-500">
