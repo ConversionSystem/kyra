@@ -485,7 +485,7 @@ function TerminalTab({ client }: { client: AgencyClient }) {
       </div>
       <div className={`rounded-xl border border-gray-200 overflow-hidden ${isFullscreen ? 'h-[calc(100vh-40px)]' : 'h-[600px]'}`}>
         <iframe
-          src={gatewayUrlWithToken}
+          src={`${gatewayUrlWithToken}&_t=${Date.now()}`}
           className="w-full h-full border-0"
           allow="clipboard-write"
           title={`${client.name} — OpenClaw Terminal`}
