@@ -127,7 +127,7 @@ interface ChatMessage {
   content: string;
 }
 
-type Tab = 'personality' | 'settings' | 'ghl' | 'usage' | 'conversations' | 'channels' | 'portal' | 'memory' | 'voice';
+type Tab = 'personality' | 'settings' | 'ghl' | 'usage' | 'conversations' | 'channels' | 'portal' | 'memory' | 'voice' | 'seo';
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'personality', label: 'AI Personality', icon: Brain },
@@ -139,6 +139,7 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'portal', label: 'Client Portal', icon: Users },
   { id: 'memory', label: 'AI Memory', icon: Database },
   { id: 'voice', label: 'Voice AI', icon: Phone },
+  { id: 'seo', label: 'SEO', icon: BarChart3 },
 ];
 
 // Grouped sidebar navigation — desktop only
@@ -157,7 +158,7 @@ const TAB_GROUPS: { label: string; tabs: typeof TABS }[] = [
   },
   {
     label: 'Analyze',
-    tabs: TABS.filter(t => ['usage', 'memory'].includes(t.id)),
+    tabs: TABS.filter(t => ['usage', 'memory', 'seo'].includes(t.id)),
   },
   {
     label: 'Portal',
@@ -404,6 +405,10 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
               voiceConfig={(initialClient.container_config as Record<string, unknown>)?.voice_config as Record<string, string> | null ?? null}
               isSolo={false}
             />
+          )}
+
+          {activeTab === 'seo' && (
+            <SEODashboard clientId={initialClient.id} clientName={initialClient.name || 'Client'} />
           )}
 
         </main>
