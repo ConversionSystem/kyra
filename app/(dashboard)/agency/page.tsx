@@ -275,7 +275,7 @@ export default async function AgencyOverviewPage() {
                   { icon: BarChart3,    label: 'View Insights',      subtitle: 'Performance, usage & revenue',        href: '/agency/performance',   color: 'text-blue-600  bg-blue-50'   },
                   { icon: DollarSign,   label: 'Credits & Billing',  subtitle: 'Manage your account',                 href: '/agency/credits',       color: 'text-green-600 bg-green-50'  },
                   { icon: Gift,         label: 'Earn Free Credits',  subtitle: 'Refer a friend — you both benefit',   href: '/agency/referrals',     color: 'text-amber-600 bg-amber-50'  },
-                  ...(isAdmin ? [{ icon: ClipboardList, label: 'GHL Marketplace', subtitle: 'Submit Kyra listing', href: '/agency/ghl-listing', color: 'text-orange-600 bg-orange-50' }] : []),
+                  ...(isAdmin ? [{ icon: ClipboardList, label: 'Master Control', subtitle: 'Platform admin dashboard', href: '/master', color: 'text-orange-600 bg-orange-50' }] : []),
                 ].map(action => (
                   <Link key={action.href} href={action.href} className="flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50/50 p-3 hover:border-indigo-200 hover:bg-indigo-50/30 hover:shadow-sm transition-all group">
                     <div className={`rounded-xl p-2 ${action.color}`}>
