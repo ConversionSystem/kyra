@@ -304,10 +304,9 @@ export async function POST(request: NextRequest) {
       <p style="color:#94a3b8;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 16px;">Useful links</p>
       <div style="display:flex;flex-direction:column;gap:10px;">
         ${[
-          { label: '📦 Business in a Box', url: 'https://kyra.conversionsystem.com/agency/biz-in-a-box', desc: 'Scripts + templates to sign your first 5 clients' },
           { label: '🎬 Live Demo Pages', url: 'https://kyra.conversionsystem.com/demo/dental', desc: 'Share with prospects — no login required' },
           { label: '💰 ROI Calculator', url: 'https://kyra.conversionsystem.com/roi', desc: 'Show prospects their specific return' },
-          { label: '📧 Cold Email Templates', url: 'https://kyra.conversionsystem.com/agency/sales-kit', desc: 'Ready-to-send outreach for every industry' },
+          { label: '📡 Channels Setup', url: 'https://kyra.conversionsystem.com/agency/channels', desc: 'Connect Telegram, WhatsApp, SMS & more' },
         ].map(r => `
           <a href="${r.url}" style="text-decoration:none;">
             <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:rgba(255,255,255,0.04);border-radius:8px;">

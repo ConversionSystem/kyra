@@ -98,19 +98,9 @@ ALTER TABLE kyra_waitlist ENABLE ROW LEVEL SECURITY;`,
     id: 'ghl_marketplace',
     title: 'Submit Kyra to GHL Marketplace',
     desc: 'Listing copy is ready. You have GHL agency status. This unlocks distribution to 60,000 agencies.',
-    link: '/agency/ghl-listing',
-    linkLabel: 'View listing copy →',
+    link: '/agency/settings',
+    linkLabel: 'Agency settings →',
     severity: 'warning',
-  });
-
-  // 5. Demo video
-  checks.push({
-    id: 'demo_video',
-    title: 'Record 60-second demo video',
-    desc: 'Needed for the GHL Marketplace listing, Launch Accelerator application, and pitch pages.',
-    link: '/agency/launch-pitch',
-    linkLabel: 'See checklist →',
-    severity: 'info',
   });
 
   return NextResponse.json({ checks, timestamp: new Date().toISOString() });

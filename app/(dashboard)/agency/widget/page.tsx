@@ -260,7 +260,7 @@ export default function WidgetBuilderPage() {
           </div>
         </div>
         <a
-          href={`/agency/conversations?channel=web_chat${selectedClient ? `&clientId=${selectedClient}` : ''}`}
+          href={`/agency?channel=web_chat${selectedClient ? `&clientId=${selectedClient}` : ''}`}
           className="flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
         >
           <BarChart3 className="h-4 w-4" />

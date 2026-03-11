@@ -31,7 +31,7 @@ const STAGES: LaunchStage[] = [
     label: 'Configure',
     description: 'Pick your industry, personality & services',
     icon: Settings,
-    href: '/agency/setup',
+    href: '/agency/ai-setup',
     checkFn: 'setup_complete',
   },
   {

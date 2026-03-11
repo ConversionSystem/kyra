@@ -20,7 +20,7 @@ export function OpenControlUIButton() {
       className="gap-1.5 bg-indigo-600 hover:bg-indigo-700"
       onClick={() => {
         if (dashboardUrl) window.open(dashboardUrl, '_blank');
-        else window.open('/agency/tools', '_self');
+        else window.open('/agency/settings', '_self');
       }}
       disabled={!dashboardUrl}
     >
