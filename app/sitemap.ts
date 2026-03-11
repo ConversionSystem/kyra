@@ -1,58 +1,48 @@
 import type { MetadataRoute } from 'next';
-import { POSTS } from '@/lib/blog/posts';
+import { INDUSTRY_TEMPLATES } from '@/lib/templates/industry-templates';
 
 const BASE = 'https://kyra.conversionsystem.com';
-
-const INDUSTRIES = ['dental', 'realestate', 'auto', 'cannabis', 'restaurant', 'medspa', 'law', 'fitness'];
-const BLOG_SLUGS = POSTS.map(p => p.slug);
-const FOR_INDUSTRIES = ['dental', 'cannabis', 'realestate', 'auto', 'restaurant', 'medspa'];
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date().toISOString();
 
-  const staticPages: MetadataRoute.Sitemap = [
-    { url: BASE,                        lastModified: now, changeFrequency: 'weekly',  priority: 1.0 },
-    { url: `${BASE}/pricing`,           lastModified: now, changeFrequency: 'monthly', priority: 0.9 },
-    { url: `${BASE}/pitch`,             lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
-    { url: `${BASE}/vs`,                lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
-    { url: `${BASE}/changelog`,         lastModified: now, changeFrequency: 'weekly',  priority: 0.6 },
-    { url: `${BASE}/help`,              lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${BASE}/get-demo`,          lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
-    { url: `${BASE}/blog`,              lastModified: now, changeFrequency: 'weekly',  priority: 0.8 },
-    { url: `${BASE}/roi`,               lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${BASE}/privacy`,           lastModified: now, changeFrequency: 'yearly',  priority: 0.3 },
-    { url: `${BASE}/terms`,             lastModified: now, changeFrequency: 'yearly',  priority: 0.3 },
-    { url: `${BASE}/signup/agency`,     lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
-    { url: `${BASE}/login`,             lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
+  // Core pages
+  const corePages: MetadataRoute.Sitemap = [
+    { url: BASE, lastModified: now, changeFrequency: 'weekly', priority: 1.0 },
+    { url: `${BASE}/solo`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
+    { url: `${BASE}/ai-for`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
+    { url: `${BASE}/workers`, lastModified: now, changeFrequency: 'daily', priority: 0.8 },
+    { url: `${BASE}/launch`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${BASE}/tools/ai-readiness`, lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
+    { url: `${BASE}/pricing`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${BASE}/privacy`, lastModified: now, changeFrequency: 'yearly', priority: 0.3 },
+    { url: `${BASE}/terms`, lastModified: now, changeFrequency: 'yearly', priority: 0.3 },
   ];
 
-  const demoPages: MetadataRoute.Sitemap = INDUSTRIES.map(slug => ({
+  // 50 industry pages — high SEO value
+  const industryPages: MetadataRoute.Sitemap = INDUSTRY_TEMPLATES.map((t) => ({
+    url: `${BASE}/ai-for/${t.id}`,
+    lastModified: now,
+    changeFrequency: 'weekly' as const,
+    priority: 0.8,
+  }));
+
+  // Demo pages
+  const demoSlugs = ['dental', 'cannabis', 'realestate', 'auto', 'restaurant', 'medspa'];
+  const demoPages: MetadataRoute.Sitemap = demoSlugs.map((slug) => ({
     url: `${BASE}/demo/${slug}`,
     lastModified: now,
     changeFrequency: 'monthly' as const,
-    priority: 0.8,
+    priority: 0.6,
   }));
 
-  const tryPages: MetadataRoute.Sitemap = INDUSTRIES.map(slug => ({
+  // Try pages
+  const tryPages: MetadataRoute.Sitemap = demoSlugs.map((slug) => ({
     url: `${BASE}/try/${slug}`,
-    lastModified: now,
-    changeFrequency: 'monthly' as const,
-    priority: 0.9,
-  }));
-
-  const forPages: MetadataRoute.Sitemap = FOR_INDUSTRIES.map(slug => ({
-    url: `${BASE}/for/${slug}`,
-    lastModified: now,
-    changeFrequency: 'monthly' as const,
-    priority: 0.8,
-  }));
-
-  const blogPages: MetadataRoute.Sitemap = BLOG_SLUGS.map(slug => ({
-    url: `${BASE}/blog/${slug}`,
     lastModified: now,
     changeFrequency: 'monthly' as const,
     priority: 0.7,
   }));
 
-  return [...staticPages, ...demoPages, ...tryPages, ...forPages, ...blogPages];
+  return [...corePages, ...industryPages, ...demoPages, ...tryPages];
 }
