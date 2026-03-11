@@ -397,7 +397,7 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
                   >
                     <item.icon className="h-4 w-4 shrink-0" />
                     {item.label}
-                    {item.href === '/agency/conversations' && escalationCount > 0 && (
+                    {item.href === '/agency' && escalationCount > 0 && (
                       <span className="ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 leading-none">
                         {escalationCount > 9 ? '9+' : escalationCount}
                       </span>

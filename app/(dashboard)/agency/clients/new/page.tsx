@@ -54,7 +54,7 @@ export default async function NewClientPage({
           </p>
           <div className="flex gap-3 justify-center">
             <Button asChild>
-              <Link href="/agency/plans">
+              <Link href="/agency/billing">
                 <ArrowRight className="h-4 w-4 mr-2" />
                 Upgrade Plan
               </Link>

@@ -209,7 +209,7 @@ export default async function AgencyOverviewPage() {
             {agencyCredits.balance === 0 ? 'Out of credits — AI responses may pause' : `Only ${agencyCredits.balance} credits remaining`}
           </p>
           <div className="flex items-center gap-2 shrink-0">
-            <Link href="/agency/upgrade"><Button size="sm" className={`text-xs h-8 ${agencyCredits.balance === 0 ? 'bg-red-600 hover:bg-red-700' : 'bg-amber-600 hover:bg-amber-700'}`}>Upgrade</Button></Link>
+            <Link href="/agency/billing"><Button size="sm" className={`text-xs h-8 ${agencyCredits.balance === 0 ? 'bg-red-600 hover:bg-red-700' : 'bg-amber-600 hover:bg-amber-700'}`}>Upgrade</Button></Link>
             <Link href="/agency/referrals"><Button size="sm" variant="outline" className="text-xs h-8 gap-1"><Gift className="h-3 w-3" />Free Credits</Button></Link>
           </div>
         </div>
@@ -353,7 +353,7 @@ export default async function AgencyOverviewPage() {
             {[
               { n: 1, title: 'Connect GoHighLevel', desc: 'Link your GHL account so Kyra can respond to SMS messages.', done: clients.some(c => c.ghl_private_token) || !!agency.ghl_agency_id, href: '/agency/ghl-setup', cta: 'Connect GHL' },
               { n: 2, title: 'Add your first client', desc: 'Pick an industry template. AI personality is pre-written.', done: clients.length > 0, href: '/agency/clients/new', cta: 'Add Client' },
-              { n: 3, title: 'Watch your AI go live', desc: 'AI responds to GHL SMS within 60 seconds automatically.', done: clients.some(c => c.gateway_status === 'running'), href: '/agency/conversations', cta: 'View Feed' },
+              { n: 3, title: 'Watch your AI go live', desc: 'AI responds to GHL SMS within 60 seconds automatically.', done: clients.some(c => c.gateway_status === 'running'), href: '/agency', cta: 'View Feed' },
             ].map(step => (
               <div key={step.n} className={`flex items-start gap-4 p-5 ${step.done ? 'opacity-60' : ''}`}>
                 <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0 mt-0.5 ${step.done ? 'bg-green-100 text-green-600' : 'bg-indigo-600 text-white'}`}>
