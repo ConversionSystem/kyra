@@ -162,7 +162,7 @@ export function PremiumTemplatesPage() {
         </h1>
         <p className="text-gray-500 mt-1 text-sm">
           Specialized AI workers with everything included — LLM costs, SEO tools, and infrastructure — at a flat monthly price per client.
-          For free AI personality configuration, see <a href="/agency/ai-setup" className="text-indigo-600 hover:underline">AI Templates →</a>
+          For free AI personality configuration, open any client and use the AI Personality tab.
         </p>
       </div>
 
