@@ -168,15 +168,45 @@ function CollapsibleSection({
   collapsible,
   defaultOpen,
   hasBranding,
+  storageKey,
   children,
 }: {
   label?: string;
   collapsible?: boolean;
   defaultOpen?: boolean;
   hasBranding: boolean;
+  storageKey?: string;
   children: React.ReactNode;
 }) {
-  const [open, setOpen] = useState(defaultOpen ?? !collapsible);
+  const initialOpen = defaultOpen ?? !collapsible;
+  const [open, setOpen] = useState(initialOpen);
+
+  // Restore persisted state for collapsible sections
+  useEffect(() => {
+    if (!collapsible || !storageKey) return;
+
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored === 'open') {
+        setOpen(true);
+      } else if (stored === 'closed') {
+        setOpen(false);
+      }
+    } catch {
+      // Ignore storage failures (private mode / blocked storage)
+    }
+  }, [collapsible, storageKey]);
+
+  // Persist toggled state across sessions
+  useEffect(() => {
+    if (!collapsible || !storageKey) return;
+
+    try {
+      localStorage.setItem(storageKey, open ? 'open' : 'closed');
+    } catch {
+      // Ignore storage failures (private mode / blocked storage)
+    }
+  }, [open, collapsible, storageKey]);
 
   // Auto-open when defaultOpen changes (e.g. navigating into a section)
   useEffect(() => {
@@ -372,6 +402,7 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
               collapsible={section.collapsible}
               defaultOpen={section.defaultOpen ?? isSectionActive}
               hasBranding={hasBranding}
+              storageKey={section.label ? `agency-sidebar:section:${section.label.toLowerCase().replace(/\s+/g, '-')}` : undefined}
             >
               {section.items.filter(item => !item.masterOnly || isMaster).map((item) => {
                 const isActive =
