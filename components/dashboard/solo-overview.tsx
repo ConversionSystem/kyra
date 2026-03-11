@@ -508,7 +508,7 @@ export default function SoloOverview({
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Live Activity</h2>
-          <Link href="/agency/conversations" className="text-xs text-indigo-500 hover:underline flex items-center gap-1">
+          <Link href="/agency/clients" className="text-xs text-indigo-500 hover:underline flex items-center gap-1">
             All conversations <ArrowRight className="h-3 w-3" />
           </Link>
         </div>
