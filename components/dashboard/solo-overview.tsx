@@ -165,7 +165,7 @@ export default function SoloOverview({
 
   // Compute setup completion
   const setupSteps = [
-    { done: hasKnowledge, label: 'Train from Website', href: '/agency/knowledge', icon: BookOpen, desc: 'Teach your AI about your business' },
+    { done: hasKnowledge, label: 'Train from Website', href: '/agency/ai-setup', icon: BookOpen, desc: 'Teach your AI about your business' },
     { done: hasPersonality, label: 'Set Personality', href: '/agency/agents', icon: Palette, desc: 'Define how your AI talks to customers' },
     { done: isOnline, label: 'AI Worker Online', href: '#', icon: Wifi, desc: 'Your AI worker is running' },
   ];
@@ -627,7 +627,7 @@ export default function SoloOverview({
               </p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <Link href="/agency/upgrade">
+              <Link href="/agency/billing">
                 <Button size="sm" className={`${liveBalance === 0 ? 'bg-red-600 hover:bg-red-700' : 'bg-amber-600 hover:bg-amber-700'} text-xs shrink-0`}>
                   Upgrade
                 </Button>

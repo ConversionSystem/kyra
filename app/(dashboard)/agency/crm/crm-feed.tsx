@@ -257,7 +257,7 @@ export function CrmCommandFeed() {
           <Building2 className="h-4 w-4 mr-2" /> View Companies
         </Button>
         <Button
-          onClick={() => router.push('/agency/pipeline')}
+          onClick={() => router.push('/agency/autopilot')}
           variant="outline"
           className="flex-1 py-4 sm:py-5 text-sm"
         >

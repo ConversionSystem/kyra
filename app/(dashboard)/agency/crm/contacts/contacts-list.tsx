@@ -198,9 +198,7 @@ export function ContactsList() {
           </span>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => router.push('/agency/crm/import')}>
-            <Upload className="h-4 w-4 mr-1.5" /> Import
-          </Button>
+          {/* Import removed — use GHL sync or add contacts manually */}
           <Button size="sm" onClick={() => topTab === 'contacts' ? setShowAddModal(true) : setShowAddCompany(true)}
             className="bg-indigo-600 hover:bg-indigo-700 text-white">
             <Plus className="h-4 w-4 mr-1.5" /> Add {topTab === 'contacts' ? 'Contact' : 'Company'}

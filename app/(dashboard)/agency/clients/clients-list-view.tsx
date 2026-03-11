@@ -221,7 +221,7 @@ export function ClientsListView({ clients, plan = 'free', clientLimit = 1 }: Cli
             </Button>
           )}
           {clients.length >= clientLimit ? (
-            <Link href="/agency/plans">
+            <Link href="/agency/billing">
               <Button size="sm" className="gap-2 bg-amber-500 hover:bg-amber-600 text-white">
                 <Plus className="h-4 w-4" />
                 <span className="hidden sm:inline">Upgrade to Add More</span>
@@ -261,7 +261,7 @@ export function ClientsListView({ clients, plan = 'free', clientLimit = 1 }: Cli
           </div>
         </div>
         {clients.length >= clientLimit && (
-          <Link href="/agency/plans" className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 whitespace-nowrap">
+          <Link href="/agency/billing" className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 whitespace-nowrap">
             View plans →
           </Link>
         )}

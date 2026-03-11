@@ -10,7 +10,7 @@ import { ArrowLeft, Loader2, Check, MessageSquare, Zap, X, CheckCircle2, ArrowRi
 import Link from 'next/link';
 // Client creation now uses /api/agency/clients (handles provisioning + plan limits)
 import type { AgencyTemplate, SampleResponse, SuggestedSkill } from '@/lib/agency/queries';
-import { agentRoles } from '@/app/(dashboard)/agency/roles/roles-data';
+import { agentRoles } from '@/lib/data/roles-data';
 
 // ============================================================================
 // Role Template Data

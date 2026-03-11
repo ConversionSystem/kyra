@@ -9,9 +9,10 @@ import Link from 'next/link';
 
 const PLAN_LIMITS = {
   free:    { clients: 1,  price: 0,   label: 'Free'    },
-  starter: { clients: 5,  price: 99,  label: 'Lite' },
-  pro:     { clients: 15, price: 247, label: 'Pro'     },
-  scale:   { clients: 50, price: 497, label: 'Scale'   },
+  lite:    { clients: 3,  price: 99,  label: 'Lite'    },
+  starter: { clients: 3,  price: 99,  label: 'Lite'    }, // legacy alias
+  pro:     { clients: 10, price: 249, label: 'Pro'     },
+  scale:   { clients: 30, price: 499, label: 'Scale'   },
 };
 
 function fmt(n: number) {
