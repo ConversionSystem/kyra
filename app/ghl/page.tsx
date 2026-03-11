@@ -275,7 +275,7 @@ export default function GHLPage() {
             <ArrowRight className="h-5 w-5" />
           </Link>
           <Link
-            href="/agency/plans"
+            href="/agency/billing"
             className="inline-flex items-center gap-2 border border-gray-200 text-gray-700 hover:bg-gray-50 font-semibold px-10 py-4 rounded-xl transition text-lg"
           >
             See pricing
