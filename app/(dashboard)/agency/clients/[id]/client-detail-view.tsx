@@ -425,8 +425,6 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
 // ── Terminal Tab ──────────────────────────────────────────────────────────────
 
 function TerminalTab({ client }: { client: AgencyClient }) {
-  const [copied, setCopied] = useState(false);
-
   const gatewayUrl = (client as any).gateway_url as string | undefined;
   const gatewayToken = (client as any).gateway_token as string | undefined;
   const gatewayUrlWithToken = gatewayUrl && gatewayToken
@@ -447,22 +445,15 @@ function TerminalTab({ client }: { client: AgencyClient }) {
 
   return (
     <div className="space-y-6">
-      {/* Status bar */}
-      <div className="flex items-center gap-2">
-        <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-        <span className="text-sm text-gray-600 font-medium">Gateway Online</span>
-      </div>
-
-      {/* Main CTA */}
       <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-8 text-white">
         <div className="flex items-start gap-4 mb-6">
           <div className="p-3 bg-white/10 rounded-xl">
             <Terminal className="h-8 w-8" />
           </div>
           <div>
-            <h3 className="text-xl font-bold mb-1">{client.name}&apos;s Terminal</h3>
+            <h3 className="text-xl font-bold mb-1">Test {client.name}&apos;s AI</h3>
             <p className="text-gray-300 text-sm">
-              Chat directly with this AI worker, configure settings, manage channels, and test conversations.
+              Open the terminal to chat with this AI worker and test how it responds to customers.
             </p>
           </div>
         </div>
@@ -475,44 +466,6 @@ function TerminalTab({ client }: { client: AgencyClient }) {
           <ExternalLink className="h-5 w-5" />
           Open Terminal
         </a>
-      </div>
-
-      {/* Quick actions */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <button
-          onClick={() => {
-            navigator.clipboard.writeText(gatewayUrlWithToken);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-          }}
-          className="flex items-center gap-3 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors text-left"
-        >
-          {copied ? <CheckCircle2 className="h-5 w-5 text-emerald-500" /> : <Copy className="h-5 w-5 text-gray-400" />}
-          <div>
-            <p className="text-sm font-medium text-gray-900">{copied ? 'Copied!' : 'Copy Terminal URL'}</p>
-            <p className="text-xs text-gray-500">Share with team members or bookmark</p>
-          </div>
-        </button>
-        <a
-          href={gatewayUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-3 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors text-left"
-        >
-          <ExternalLink className="h-5 w-5 text-gray-400" />
-          <div>
-            <p className="text-sm font-medium text-gray-900">Gateway Direct</p>
-            <p className="text-xs text-gray-500">Open without auth token (login required)</p>
-          </div>
-        </a>
-      </div>
-
-      {/* Info */}
-      <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
-        <p className="text-sm text-blue-800">
-          <strong>Tip:</strong> The terminal opens in a new tab for the best experience. You can chat with the AI,
-          configure channels, test responses, and manage settings — all from the terminal interface.
-        </p>
       </div>
     </div>
   );
