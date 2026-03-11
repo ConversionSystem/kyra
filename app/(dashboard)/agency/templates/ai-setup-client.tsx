@@ -200,7 +200,7 @@ export function AISetupClient({ agencyId, businessName, dbTemplates }: AISetupPr
                     </span>
                     <span>{t.variableCount} variables</span>
                   </div>
-                  <a href={`/agency/setup?template=${t.id}`}>
+                  <a href={`/agency/ai-setup?template=${t.id}`}>
                     <Button variant="outline" size="sm" className="w-full text-xs">
                       Use Template <ArrowRight className="h-3 w-3 ml-1" />
                     </Button>
