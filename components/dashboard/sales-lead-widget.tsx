@@ -73,7 +73,7 @@ export function SalesLeadWidget({ pipelineState }: Props) {
     return (
       <div className="border border-dashed border-gray-200 rounded-xl p-5 text-center text-sm text-gray-400">
         🎉 All hot leads contacted! Check the{' '}
-        <Link href="/agency/leads" className="text-indigo-600 underline">full pipeline</Link> for warm leads.
+        <Link href="/agency/clients" className="text-indigo-600 underline">full pipeline</Link> for warm leads.
       </div>
     );
   }
@@ -102,7 +102,7 @@ export function SalesLeadWidget({ pipelineState }: Props) {
             {uncontacted.length} remaining
           </span>
         </div>
-        <Link href="/agency/leads" className="text-xs text-indigo-600 hover:underline flex items-center gap-0.5">
+        <Link href="/agency/clients" className="text-xs text-indigo-600 hover:underline flex items-center gap-0.5">
           Full pipeline <ChevronRight className="h-3 w-3" />
         </Link>
       </div>
