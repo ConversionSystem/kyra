@@ -156,6 +156,222 @@ function GettingStartedGuide({ setup }: { setup: Record<string, unknown> }) {
   );
 }
 
+// ── Admin Controls ──────────────────────────────────────────────────────────
+
+type WorkerStatus = 'active' | 'paused' | 'deleted' | 'setup';
+
+interface AdminAction {
+  action: 'start' | 'pause' | 'delete' | 'edit';
+  field?: string;
+  value?: unknown;
+}
+
+function AdminControlPanel({
+  clientId,
+  workerStatus,
+  setup,
+  onStatusChange,
+}: {
+  clientId: string;
+  workerStatus: WorkerStatus;
+  setup: Record<string, unknown>;
+  onStatusChange: () => void;
+}) {
+  const [confirming, setConfirming] = useState<'pause' | 'delete' | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [editFields, setEditFields] = useState({
+    clinic_name: (setup.clinic_name || setup.clinicName || '') as string,
+    city: (setup.city || '') as string,
+    address: (setup.address || '') as string,
+    phone: (setup.phone || '') as string,
+    website: (setup.website || '') as string,
+    services: Array.isArray(setup.services) ? (setup.services as string[]).join(', ') : (setup.services || '') as string,
+  });
+
+  const performAction = async (action: string, payload?: Record<string, unknown>) => {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/agency/clients/${clientId}/seo`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          field: 'admin_action',
+          value: { action, ...payload },
+        }),
+      });
+      if (res.ok) {
+        onStatusChange();
+      }
+    } catch {
+      // silent
+    } finally {
+      setSaving(false);
+      setConfirming(null);
+      setEditing(false);
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    const updatedSetup = {
+      ...setup,
+      clinic_name: editFields.clinic_name,
+      clinicName: editFields.clinic_name,
+      city: editFields.city,
+      address: editFields.address,
+      phone: editFields.phone,
+      website: editFields.website,
+      services: editFields.services.split(',').map((s: string) => s.trim()).filter(Boolean),
+    };
+    await performAction('edit', { setup: updatedSetup });
+  };
+
+  const isPaused = workerStatus === 'paused';
+  const isActive = workerStatus === 'active';
+
+  return (
+    <Card className="border-gray-200 bg-gray-50/50">
+      <CardContent className="p-4">
+        <div className="flex flex-col gap-4">
+          {/* Status + Controls row */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Worker Status</span>
+              <Badge className={`text-xs ${
+                isActive ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
+                isPaused ? 'bg-amber-100 text-amber-700 border-amber-200' :
+                'bg-gray-100 text-gray-500 border-gray-200'
+              }`}>
+                {isActive ? '● Active' : isPaused ? '⏸ Paused' : workerStatus}
+              </Badge>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {/* Start / Resume */}
+              {!isActive && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={saving}
+                  onClick={() => performAction('start')}
+                  className="text-emerald-700 border-emerald-200 bg-emerald-50 hover:bg-emerald-100"
+                >
+                  {saving ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Play className="w-3.5 h-3.5 mr-1.5" />}
+                  {isPaused ? 'Resume' : 'Start'}
+                </Button>
+              )}
+
+              {/* Pause */}
+              {isActive && !confirming && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setConfirming('pause')}
+                  className="text-amber-700 border-amber-200 bg-amber-50 hover:bg-amber-100"
+                >
+                  ⏸ Pause
+                </Button>
+              )}
+
+              {/* Edit */}
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setEditing(!editing)}
+                className="text-blue-700 border-blue-200 bg-blue-50 hover:bg-blue-100"
+              >
+                ✏️ Edit Config
+              </Button>
+
+              {/* Delete */}
+              {!confirming && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setConfirming('delete')}
+                  className="text-red-700 border-red-200 bg-red-50 hover:bg-red-100"
+                >
+                  🗑 Remove Worker
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Confirmation dialog */}
+          {confirming && (
+            <div className={`rounded-lg p-3 flex items-center justify-between ${
+              confirming === 'delete'
+                ? 'bg-red-50 border border-red-200'
+                : 'bg-amber-50 border border-amber-200'
+            }`}>
+              <p className={`text-sm font-medium ${confirming === 'delete' ? 'text-red-700' : 'text-amber-700'}`}>
+                {confirming === 'delete'
+                  ? '⚠️ Remove the SEO worker? This stops all scheduled tasks and hides the dashboard. Data is preserved.'
+                  : '⏸ Pause the SEO worker? All cron jobs will be skipped until you resume.'}
+              </p>
+              <div className="flex gap-2 shrink-0 ml-4">
+                <Button size="sm" variant="outline" onClick={() => setConfirming(null)}>Cancel</Button>
+                <Button
+                  size="sm"
+                  disabled={saving}
+                  onClick={() => performAction(confirming)}
+                  className={confirming === 'delete' ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-amber-600 hover:bg-amber-700 text-white'}
+                >
+                  {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : confirming === 'delete' ? 'Remove' : 'Pause'}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Edit form */}
+          {editing && (
+            <div className="bg-white border border-blue-200 rounded-lg p-4 space-y-3">
+              <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Edit Worker Configuration</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {([
+                  { key: 'clinic_name', label: 'Clinic Name', placeholder: 'Aborn Pet Hospital' },
+                  { key: 'city', label: 'City', placeholder: 'Fremont, CA' },
+                  { key: 'address', label: 'Address', placeholder: '3286 Aborn Rd, San Jose, CA 95121' },
+                  { key: 'phone', label: 'Phone', placeholder: '(408) 270-4600' },
+                  { key: 'website', label: 'Website', placeholder: 'https://abornpethospital.com' },
+                ] as const).map((field) => (
+                  <div key={field.key}>
+                    <label className="text-xs text-gray-500 font-medium">{field.label}</label>
+                    <input
+                      type="text"
+                      value={editFields[field.key]}
+                      onChange={(e) => setEditFields(prev => ({ ...prev, [field.key]: e.target.value }))}
+                      placeholder={field.placeholder}
+                      className="mt-1 w-full text-sm border border-gray-200 rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                ))}
+                <div className="sm:col-span-2">
+                  <label className="text-xs text-gray-500 font-medium">Services (comma-separated)</label>
+                  <input
+                    type="text"
+                    value={editFields.services}
+                    onChange={(e) => setEditFields(prev => ({ ...prev, services: e.target.value }))}
+                    placeholder="wellness exams, dental care, surgery, vaccinations"
+                    className="mt-1 w-full text-sm border border-gray-200 rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-1">
+                <Button size="sm" variant="outline" onClick={() => setEditing(false)}>Cancel</Button>
+                <Button size="sm" disabled={saving} onClick={handleSaveEdit} className="bg-blue-600 hover:bg-blue-700 text-white">
+                  {saving ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
+                  Save Changes
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 interface SEODashboardProps {
   clientId: string;
   clientName: string;
@@ -320,6 +536,14 @@ export function SEODashboard({ clientId, clientName }: SEODashboardProps) {
           </Button>
         </div>
       </div>
+
+      {/* Admin Controls — start, pause, delete, edit */}
+      <AdminControlPanel
+        clientId={clientId}
+        workerStatus={(data.status as WorkerStatus) || 'active'}
+        setup={data.setup}
+        onStatusChange={fetchData}
+      />
 
       {/* Getting Started Guide — always visible, collapsible */}
       <GettingStartedGuide setup={data.setup} />

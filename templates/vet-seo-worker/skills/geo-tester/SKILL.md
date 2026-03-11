@@ -97,6 +97,52 @@ Body: { "dataType": "geo_score_trend", "data": "up" }
 - Total cost per weekly test: ~$0.26
 - Run weekly = ~$1.04/month per client
 
+## Competitor Tracking (NEW)
+
+After running GEO tests for the client, identify the top 3 most-cited competitor clinics:
+
+1. Run 3 competitor-specific queries from `config/geo-queries.json → competitor_queries`
+2. Parse AI responses to extract all mentioned veterinary clinics in the city
+3. Count citations per competitor across all standard query results
+4. Store top 3 competitors with their citation rates
+5. Track week-over-week trend for each competitor
+
+Output:
+```json
+{
+  "competitors": [
+    { "name": "VCA Animal Hospital", "geo_score": 55, "trend": "stable", "most_cited_for": ["emergency vet", "24 hour vet"] },
+    { "name": "Banfield Pet Hospital", "geo_score": 40, "trend": "down", "most_cited_for": ["affordable vet", "pet vaccination"] },
+    { "name": "BluePearl Specialty", "geo_score": 35, "trend": "up", "most_cited_for": ["veterinary surgery", "specialist"] }
+  ]
+}
+```
+
+Store via: `PUT /api/agency/clients/{id}/seo` with `dataType: "competitor_scores"`
+
+## Content Gap Analysis (NEW)
+
+After GEO tests complete, identify queries where the clinic was NOT cited at all (0% citation):
+
+1. Filter results where `cited === false` for BOTH ChatGPT and Perplexity
+2. Group by query theme (emergency, dental, wellness, exotic, etc.)
+3. Prioritize gaps by: query search volume estimate (higher = more urgent)
+4. Store as content targets for the content writer
+
+Output:
+```json
+{
+  "gaps": [
+    { "query": "Emergency vet near Fremont", "theme": "emergency", "priority": "high", "suggested_content": "Emergency veterinary services guide for Fremont pet owners" },
+    { "query": "Exotic pet vet Fremont", "theme": "exotic", "priority": "medium", "suggested_content": "Exotic pet care at [Clinic] — reptiles, birds, small mammals" }
+  ]
+}
+```
+
+Store via: `PUT /api/agency/clients/{id}/seo` with `dataType: "content_gaps"`
+
+The content writer skill should check for `content_gaps` data and prioritize content creation for high-priority gaps.
+
 ## Error Handling
 
 - If ChatGPT API fails: log error, skip that query, report partial results

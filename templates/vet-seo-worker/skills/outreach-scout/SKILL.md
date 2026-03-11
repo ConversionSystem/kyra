@@ -76,8 +76,19 @@ For qualified targets:
 }
 ```
 
+## Backlink Tracking Integration (NEW)
+
+After pitches are sent, the backlink-monitor skill (monthly cron) checks whether targeted blogs actually linked:
+1. Outreach Scout stores pitched targets in seo_data
+2. Backlink Monitor scans for new links and cross-references against pitched targets
+3. If a link is found from a pitched target → status updated to "link_secured"
+4. Conversion rate tracked in weekly SEO report
+
+This closes the loop: scout → pitch → track → report.
+
 ## Dependencies
 
 - `firecrawl-search` (ClawHub) — blog discovery + scraping
 - `gmail` (ClawHub) — sending approved pitches (optional — agency can send manually)
 - `web_search` (built-in) — target discovery
+- `backlink-monitor` — cross-references pitched targets with actual links (NEW)
