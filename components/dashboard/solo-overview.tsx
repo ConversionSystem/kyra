@@ -493,7 +493,7 @@ export default function SoloOverview({
             ) : (
               <div className="text-center py-4">
                 <p className="text-sm text-gray-400">No channel activity yet</p>
-                <Link href="/agency/channels" className="text-xs text-indigo-500 hover:underline mt-1 inline-block">
+                <Link href="/agency/clients" className="text-xs text-indigo-500 hover:underline mt-1 inline-block">
                   Connect a channel →
                 </Link>
               </div>
@@ -545,7 +545,7 @@ export default function SoloOverview({
                 Your AI worker is online and waiting for conversations. Connect a channel or embed the chat widget on your website.
               </p>
               <div className="flex justify-center gap-2">
-                <Link href="/agency/channels">
+                <Link href="/agency/clients">
                   <Button size="sm" variant="outline" className="text-xs gap-1">
                     <MessageSquare className="h-3 w-3" /> Connect Channel
                   </Button>
