@@ -105,6 +105,46 @@
       "priority": "low",
       "method": "scrape",
       "fields": ["name", "address", "phone"]
+    },
+    {
+      "name": "Nextdoor",
+      "url_pattern": "https://nextdoor.com/pages/{{CLINIC_NAME}}-{{CITY}}",
+      "priority": "high",
+      "method": "scrape",
+      "fields": ["name", "address", "phone"],
+      "note": "High local SEO value — neighborhood social network"
+    },
+    {
+      "name": "Foursquare",
+      "url_pattern": "https://foursquare.com/explore?q={{CLINIC_NAME}}&near={{CITY}}",
+      "priority": "medium",
+      "method": "scrape",
+      "fields": ["name", "address", "phone"],
+      "note": "Feeds Apple Maps data"
+    },
+    {
+      "name": "Apple Maps (Business Connect)",
+      "url_pattern": "https://businessconnect.apple.com",
+      "priority": "high",
+      "method": "manual",
+      "fields": ["name", "address", "phone", "website"],
+      "note": "Feeds Siri AI recommendations — must claim via Apple Business Connect"
+    },
+    {
+      "name": "Bing Places",
+      "url_pattern": "https://www.bing.com/maps?q={{CLINIC_NAME}}+{{CITY}}",
+      "priority": "high",
+      "method": "scrape",
+      "fields": ["name", "address", "phone", "website"],
+      "note": "Feeds Microsoft Copilot AI recommendations"
+    },
+    {
+      "name": "Waze",
+      "url_pattern": "https://www.waze.com/business",
+      "priority": "medium",
+      "method": "manual",
+      "fields": ["name", "address", "phone"],
+      "note": "Navigation app — drives physical visits"
     }
   ]
 }

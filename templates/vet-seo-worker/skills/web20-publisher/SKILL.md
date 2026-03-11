@@ -1,20 +1,23 @@
 # Web 2.0 Publisher Skill
 
-Publish approved content to Web 2.0 platforms via their APIs.
+Publish approved content to Web 2.0 platforms via their APIs. All platforms are auto-provisioned by Kyra — agencies never configure API keys.
 
 ## Supported Platforms
 
-| Platform | Method | Auth | ClawHub Skill |
-|----------|--------|------|---------------|
-| WordPress.com | REST API | OAuth2 | wordpress-pro ✅ |
-| Blogger | Blogger API v3 | Google Service Account | custom |
-| Telegraph | Telegraph API | None | custom |
-| Notion | Notion API | Token | notion ✅ |
+| Platform | Method | Auth | Status |
+|----------|--------|------|--------|
+| Telegraph | Telegraph API | None (auto-created) | ✅ Fully automated |
+| WordPress.com | REST API | Kyra-managed token | ✅ Auto-provisioned |
+| Blogger | Blogger API v3 | Kyra Google SA | ✅ Auto-provisioned |
+| Notion | Notion API | Kyra-managed token | ✅ Auto-provisioned |
+| GitHub Pages | Contents API | Kyra-managed token | ✅ Auto-provisioned (with schema markup) |
+| Google Docs | Docs API | Kyra Google SA | ✅ Auto-provisioned |
+| Google Sites | — | — | 🔜 Coming soon |
 
 ## When to Use
 
-- After content is approved in the review queue
-- Batch publishing on scheduled days (Tue-Thu)
+- **Automatically** — content approved in review queue triggers auto-publish to assigned platform
+- Batch publishing on scheduled days (Tue-Thu) if review queue has approved content
 
 ## How It Works
 
