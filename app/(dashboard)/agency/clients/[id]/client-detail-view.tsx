@@ -412,9 +412,11 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
   );
 }
 
-// ── Test Chat Tab ─────────────────────────────────────────────────────────────
+// ── Test Chat Tab (REMOVED — kept as stub for backward compat) ──────────────
+// Test Chat was removed in the dashboard audit cleanup (Mar 11, 2026).
+// The function is kept as a no-op stub in case any code path still references it.
 
-function TestChatTab({ client }: { client: AgencyClient }) {
+function _TestChatTabRemoved({ client }: { client: AgencyClient }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [isSending, setIsSending] = useState(false);
