@@ -168,6 +168,8 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
   const [copied, setCopied] = useState(false);
   const [testingCall, setTestingCall] = useState(false);
   const [provisioning, setProvisioning] = useState(false);
+  const [dailyMinutesEstimate, setDailyMinutesEstimate] = useState(30);
+  const [activeDaysPerMonthEstimate, setActiveDaysPerMonthEstimate] = useState(22);
 
   const loadCallLogs = useCallback(async () => {
     const id = clientId ?? agencyId;
@@ -280,6 +282,10 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
 
   const entityId = clientId ?? agencyId;
   const webhookUrl = `https://kyra.conversionsystem.com/api/voice/webhook?provider=${selectedProvider || config?.provider || 'vapi'}&clientId=${entityId}`;
+
+  const monthlyMinutesEstimate = dailyMinutesEstimate * activeDaysPerMonthEstimate;
+  const kyraCreditsEstimate = monthlyMinutesEstimate * 5;
+  const competitorEstimateUsd = monthlyMinutesEstimate * 0.25;
 
   const copyWebhook = () => {
     navigator.clipboard.writeText(webhookUrl);
@@ -417,6 +423,85 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
                   💳 ~5 credits/min (vs $0.25+ elsewhere)
                 </div>
               </div>
+
+              <div className="rounded-xl border border-indigo-200 bg-white/70 p-4 space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <label className="text-sm font-medium text-gray-700">Estimated call minutes / day</label>
+                  <Input
+                    type="number"
+                    min={5}
+                    max={300}
+                    value={dailyMinutesEstimate}
+                    onChange={(e) => {
+                      const value = Number(e.target.value || 0);
+                      setDailyMinutesEstimate(Math.min(300, Math.max(5, value || 5)));
+                    }}
+                    className="w-24 h-8 text-sm"
+                  />
+                </div>
+                <input
+                  type="range"
+                  min={5}
+                  max={300}
+                  step={5}
+                  value={dailyMinutesEstimate}
+                  onChange={(e) => setDailyMinutesEstimate(Number(e.target.value))}
+                  className="w-full accent-indigo-600"
+                />
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <label className="text-xs font-medium uppercase tracking-wide text-indigo-600">Active days / month</label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={31}
+                      value={activeDaysPerMonthEstimate}
+                      onChange={(e) => {
+                        const value = Number(e.target.value || 0);
+                        setActiveDaysPerMonthEstimate(Math.min(31, Math.max(1, value || 1)));
+                      }}
+                      className="w-20 h-8 text-sm"
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {[22, 26, 30].map((days) => (
+                      <button
+                        key={days}
+                        type="button"
+                        onClick={() => setActiveDaysPerMonthEstimate(days)}
+                        className={cn(
+                          'text-xs rounded-full border px-3 py-1.5 transition-colors',
+                          activeDaysPerMonthEstimate === days
+                            ? 'border-indigo-500 bg-indigo-100 text-indigo-700'
+                            : 'border-indigo-200 bg-white text-indigo-600 hover:border-indigo-300'
+                        )}
+                      >
+                        {days} days
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <div className="rounded-lg bg-indigo-50 p-2.5">
+                    <p className="text-[11px] uppercase tracking-wide text-indigo-500">Monthly usage</p>
+                    <p className="text-sm font-bold text-indigo-900 tabular-nums">{monthlyMinutesEstimate.toLocaleString()} min</p>
+                  </div>
+                  <div className="rounded-lg bg-emerald-50 p-2.5">
+                    <p className="text-[11px] uppercase tracking-wide text-emerald-500">Kyra credits</p>
+                    <p className="text-sm font-bold text-emerald-900 tabular-nums">{kyraCreditsEstimate.toLocaleString()}</p>
+                  </div>
+                  <div className="rounded-lg bg-amber-50 p-2.5">
+                    <p className="text-[11px] uppercase tracking-wide text-amber-600">Elsewhere (est.)</p>
+                    <p className="text-sm font-bold text-amber-900 tabular-nums">${competitorEstimateUsd.toFixed(0)}/mo</p>
+                  </div>
+                </div>
+                <p className="text-[11px] text-indigo-600/80">
+                  Based on {dailyMinutesEstimate} min/day × {activeDaysPerMonthEstimate} active days/month.
+                </p>
+              </div>
+
               <div>
                 <label className="text-sm text-gray-600 mb-1 block">Area Code <span className="text-gray-400">(optional — for your phone number)</span></label>
                 <Input
