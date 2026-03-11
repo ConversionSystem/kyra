@@ -17,9 +17,7 @@ export default async function ClientDetailPage({ params }: ClientDetailPageProps
   const result = await getAgencyForUser(user.id);
   if (!result) redirect('/signup/agency');
 
-  // Solo users don't manage clients
-  const settings = (result.agency.settings as Record<string, unknown>) ?? {};
-  if (settings.account_type === 'solo') redirect('/agency');
+  // Solo users now use the same client detail view
 
   const client = await getAgencyClient(id);
   if (!client || client.agency_id !== result.agency.id) notFound();
