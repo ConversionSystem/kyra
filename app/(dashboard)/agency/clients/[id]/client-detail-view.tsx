@@ -497,10 +497,7 @@ function AIPersonalityTab({ client }: { client: AgencyClient }) {
   const [persona, setPersona] = useState(cfg.persona as string || '');
   const [calendarUrl, setCalendarUrl] = useState((cfg.calendar_url as string) || '');
   const [responseLanguage, setResponseLanguage] = useState((cfg.response_language as string) || 'English');
-  // Widget appearance config
-  const [widgetTitle, setWidgetTitle] = useState((cfg.widget_title as string) || '');
-  const [widgetColor, setWidgetColor] = useState((cfg.widget_color as string) || '#6366f1');
-  const [widgetGreeting, setWidgetGreeting] = useState((cfg.widget_greeting as string) || '');
+  // Widget appearance moved to Channels tab
   const [bhEnabled, setBhEnabled] = useState(bhCfg.enabled ?? false);
   const [bhStart, setBhStart] = useState(bhCfg.start ?? '09:00');
   const [bhEnd, setBhEnd] = useState(bhCfg.end ?? '17:00');
@@ -606,9 +603,6 @@ function AIPersonalityTab({ client }: { client: AgencyClient }) {
             business_hours: { enabled: bhEnabled, start: bhStart, end: bhEnd, timezone: bhTimezone },
             calendar_url: calendarUrl.trim() || undefined,
             response_language: responseLanguage || 'English',
-            widget_title: widgetTitle.trim() || undefined,
-            widget_color: widgetColor || '#6366f1',
-            widget_greeting: widgetGreeting.trim() || undefined,
             proactive_enabled: proactiveEnabled,
             proactive_greeting: proactiveGreeting.trim() || undefined,
             wake_words: wakeWords.filter((w) => w.keyword.trim()),
@@ -759,115 +753,7 @@ function AIPersonalityTab({ client }: { client: AgencyClient }) {
         </CardContent>
       </Card>
 
-      {/* ── Web Chat Widget Appearance ──────────────────────────────────── */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <Globe className="h-4 w-4 text-indigo-500" /> Web Chat Widget Appearance
-          </CardTitle>
-          <CardDescription>
-            Customise the chat bubble on your client&apos;s website. Changes take effect within 5 minutes (CDN cache).
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-5">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {/* Left — fields */}
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-gray-600">Widget Title</label>
-                <Input
-                  value={widgetTitle}
-                  onChange={(e) => setWidgetTitle(e.target.value)}
-                  placeholder={`Chat with ${client.name}`}
-                  className="bg-gray-50 text-sm"
-                />
-                <p className="text-[11px] text-gray-400">Shown in the chat header. Defaults to &quot;Chat with [name]&quot;.</p>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-gray-600">Brand Colour</label>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="color"
-                    value={widgetColor}
-                    onChange={(e) => setWidgetColor(e.target.value)}
-                    className="h-9 w-12 rounded border border-gray-200 cursor-pointer bg-white p-0.5"
-                  />
-                  <Input
-                    value={widgetColor}
-                    onChange={(e) => setWidgetColor(e.target.value)}
-                    placeholder="#6366f1"
-                    className="bg-gray-50 font-mono text-sm flex-1"
-                    maxLength={7}
-                  />
-                </div>
-                <p className="text-[11px] text-gray-400">Chat bubble and header background. Hex code.</p>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-gray-600">Opening Greeting</label>
-                <Textarea
-                  value={widgetGreeting}
-                  onChange={(e) => setWidgetGreeting(e.target.value)}
-                  placeholder="Hi! 👋 How can I help you today?"
-                  rows={2}
-                  className="bg-gray-50 text-sm"
-                />
-                <p className="text-[11px] text-gray-400">First message shown when widget opens.</p>
-              </div>
-            </div>
-
-            {/* Right — live preview */}
-            <div className="flex flex-col items-center justify-center gap-3">
-              <p className="text-xs font-medium text-gray-500 self-start">Preview</p>
-
-              {/* Mini chat panel */}
-              <div className="w-full rounded-xl overflow-hidden border border-gray-200 shadow-lg text-[11px]">
-                {/* Header */}
-                <div className="flex items-center gap-2 px-3 py-2.5" style={{ background: widgetColor }}>
-                  <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-white text-xs">🤖</div>
-                  <div className="flex-1">
-                    <div className="text-white font-semibold">{widgetTitle || `Chat with ${client.name}`}</div>
-                    <div className="text-white/70" style={{ fontSize: '9px' }}>Typically replies instantly</div>
-                  </div>
-                  <div className="text-white/70 text-base leading-none">✕</div>
-                </div>
-
-                {/* Messages */}
-                <div className="bg-gray-50 px-3 py-3 space-y-2 min-h-[80px]">
-                  <div className="flex items-end gap-1.5">
-                    <div className="w-5 h-5 rounded-full flex items-center justify-center text-white text-[9px] shrink-0" style={{ background: widgetColor }}>🤖</div>
-                    <div className="bg-white rounded-xl rounded-bl-sm px-2.5 py-1.5 shadow-sm text-gray-800 max-w-[80%]">
-                      {widgetGreeting || 'Hi! 👋 How can I help you today?'}
-                    </div>
-                  </div>
-                  <div className="flex justify-end">
-                    <div className="rounded-xl rounded-br-sm px-2.5 py-1.5 text-white max-w-[70%]" style={{ background: widgetColor }}>
-                      Hi, I have a question!
-                    </div>
-                  </div>
-                </div>
-
-                {/* Input bar */}
-                <div className="bg-white border-t border-gray-100 px-3 py-2 flex items-center gap-2">
-                  <div className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-2 py-1.5 text-gray-400">Type a message...</div>
-                  <div className="w-6 h-6 rounded-full flex items-center justify-center text-white shrink-0" style={{ background: widgetColor }}>
-                    <svg viewBox="0 0 24 24" width="10" height="10" fill="white"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-                  </div>
-                </div>
-              </div>
-
-              {/* Floating bubble preview */}
-              <div className="flex items-center gap-2 self-end mt-1">
-                <span className="text-[11px] text-gray-400">Chat bubble:</span>
-                <div className="w-10 h-10 rounded-full flex items-center justify-center shadow-lg" style={{ background: widgetColor }}>
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
-                </div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Web Chat Widget Appearance moved to Channels tab */}
 
       <Card>
         <CardHeader>
@@ -1706,8 +1592,35 @@ function ZapierChannelCard({
 
 function ChannelsTab({ client, onTabChange }: { client: AgencyClient; onTabChange?: (tab: Tab) => void }) {
   const [copied, setCopied] = useState<string | null>(null);
+  const cfg = (client.container_config ?? {}) as Record<string, unknown>;
+  const [widgetTitle, setWidgetTitle] = useState((cfg.widget_title as string) || '');
+  const [widgetColor, setWidgetColor] = useState((cfg.widget_color as string) || '#6366f1');
+  const [widgetGreeting, setWidgetGreeting] = useState((cfg.widget_greeting as string) || '');
+  const [savingWidget, setSavingWidget] = useState(false);
+  const [widgetSaved, setWidgetSaved] = useState(false);
   const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://kyra.conversionsystem.com';
   const scriptTag = `<script src="${appUrl}/api/widget/${client.id}/script" defer></script>`;
+
+  const saveWidgetAppearance = async () => {
+    setSavingWidget(true);
+    try {
+      await fetch(`/api/agency/clients/${client.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          container_config: {
+            ...cfg,
+            widget_title: widgetTitle.trim() || undefined,
+            widget_color: widgetColor || '#6366f1',
+            widget_greeting: widgetGreeting.trim() || undefined,
+          },
+        }),
+      });
+      setWidgetSaved(true);
+      setTimeout(() => setWidgetSaved(false), 2000);
+    } catch { /* ignore */ }
+    setSavingWidget(false);
+  };
 
   const copy = (text: string, key: string) => {
     navigator.clipboard.writeText(text).then(() => {
@@ -1763,9 +1676,53 @@ function ChannelsTab({ client, onTabChange }: { client: AgencyClient; onTabChang
             </div>
           </div>
 
-          <div className="bg-indigo-50 rounded-lg p-3 text-xs text-indigo-700 space-y-1">
-            <p className="font-medium">Widget customization</p>
-            <p>To change the chat title, greeting, or brand color — update these in your client's <strong>Personality</strong> tab (coming soon to widget config). Current defaults use the client's name and indigo theme.</p>
+          {/* ── Widget Appearance ── */}
+          <div className="border-t border-gray-100 pt-4">
+            <p className="text-xs font-medium text-gray-700 mb-3">Customize appearance</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-gray-600">Widget Title</label>
+                  <Input value={widgetTitle} onChange={(e) => setWidgetTitle(e.target.value)} placeholder={`Chat with ${client.name}`} className="bg-gray-50 text-sm" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-gray-600">Brand Colour</label>
+                  <div className="flex items-center gap-2">
+                    <input type="color" value={widgetColor} onChange={(e) => setWidgetColor(e.target.value)} className="h-8 w-10 rounded border border-gray-200 cursor-pointer bg-white p-0.5" />
+                    <Input value={widgetColor} onChange={(e) => setWidgetColor(e.target.value)} placeholder="#6366f1" className="bg-gray-50 font-mono text-sm flex-1" maxLength={7} />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-gray-600">Opening Greeting</label>
+                  <Textarea value={widgetGreeting} onChange={(e) => setWidgetGreeting(e.target.value)} placeholder="Hi! 👋 How can I help you today?" rows={2} className="bg-gray-50 text-sm" />
+                </div>
+                <Button size="sm" onClick={saveWidgetAppearance} disabled={savingWidget} className="mt-1">
+                  {savingWidget ? 'Saving...' : widgetSaved ? '✅ Saved' : 'Save Appearance'}
+                </Button>
+              </div>
+              {/* Live preview */}
+              <div className="flex flex-col items-center gap-2">
+                <p className="text-xs font-medium text-gray-500 self-start">Preview</p>
+                <div className="w-full rounded-xl overflow-hidden border border-gray-200 shadow-lg text-[11px]">
+                  <div className="flex items-center gap-2 px-3 py-2" style={{ background: widgetColor }}>
+                    <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-white text-[9px]">🤖</div>
+                    <div className="text-white font-semibold text-xs">{widgetTitle || `Chat with ${client.name}`}</div>
+                  </div>
+                  <div className="bg-gray-50 px-3 py-2.5 space-y-1.5 min-h-[60px]">
+                    <div className="flex items-end gap-1">
+                      <div className="w-4 h-4 rounded-full flex items-center justify-center text-white text-[8px] shrink-0" style={{ background: widgetColor }}>🤖</div>
+                      <div className="bg-white rounded-lg rounded-bl-sm px-2 py-1 shadow-sm text-gray-800 max-w-[80%] text-[10px]">{widgetGreeting || 'Hi! 👋 How can I help you today?'}</div>
+                    </div>
+                  </div>
+                  <div className="bg-white border-t border-gray-100 px-2 py-1.5 flex items-center gap-1.5">
+                    <div className="flex-1 rounded border border-gray-200 bg-gray-50 px-2 py-1 text-gray-400 text-[10px]">Type a message...</div>
+                    <div className="w-5 h-5 rounded-full flex items-center justify-center text-white shrink-0" style={{ background: widgetColor }}>
+                      <svg viewBox="0 0 24 24" width="8" height="8" fill="white"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="flex gap-2">
