@@ -205,7 +205,7 @@ export default async function AgencyOverviewPage() {
               <div className="space-y-2">
                 {[
                   { icon: Plus,         label: 'Add New Client',     subtitle: 'Deploy a new AI worker',              href: '/agency/clients/new',   color: 'text-indigo-600 bg-indigo-50' },
-                  { icon: Target,       label: 'AI Workers',         subtitle: 'Configure your AI workers',           href: '/agency/clients',       color: 'text-purple-600 bg-purple-50' },
+                  { icon: Target,       label: 'AI Templates',       subtitle: 'Configure your AI personality',       href: '/agency/ai-setup',      color: 'text-purple-600 bg-purple-50' },
                   { icon: BarChart3,    label: 'View Insights',      subtitle: 'Performance, usage & revenue',        href: '/agency/performance',   color: 'text-blue-600  bg-blue-50'   },
                   { icon: DollarSign,   label: 'Credits & Billing',  subtitle: 'Manage your account',                 href: '/agency/credits',       color: 'text-green-600 bg-green-50'  },
                   { icon: Gift,         label: 'Earn Free Credits',  subtitle: 'Refer a friend — you both benefit',   href: '/agency/referrals',     color: 'text-amber-600 bg-amber-50'  },
