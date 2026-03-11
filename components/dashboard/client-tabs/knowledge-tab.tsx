@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import { Upload, Trash2, Globe, FileText, Plus, Loader2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { FileText, Globe, Loader2, Trash2, UploadCloud } from 'lucide-react';
+import type { AgencyClient } from '@/lib/agency/queries';
 
 interface KnowledgeSource {
   id: string;
@@ -12,217 +13,283 @@ interface KnowledgeSource {
   addedAt: string;
 }
 
-interface Props {
-  client: { id: string; settings?: Record<string, unknown> | null };
+interface KnowledgeTabProps {
+  client: AgencyClient;
 }
 
-function formatBytes(bytes: number) {
-  if (bytes < 1024) return bytes + ' B';
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+const ACCEPTED_EXTENSIONS = ['pdf', 'txt', 'md', 'docx', 'csv'];
+const ACCEPTED_FILE_INPUT = '.pdf,.txt,.md,.docx,.csv';
+
+function formatFileSize(size?: number) {
+  if (!size) return '—';
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function timeAgo(dateStr: string) {
-  const d = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - d.getTime();
-  const mins = Math.floor(diffMs / 60000);
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  return `${days}d ago`;
+function formatDate(iso: string) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return 'Unknown date';
+  return date.toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
 }
 
-const ACCEPTED = '.pdf,.txt,.md,.docx,.csv';
-const MAX_SIZE = 10 * 1024 * 1024; // 10MB
-
-export default function KnowledgeTab({ client }: Props) {
-  const initial = ((client.settings as Record<string, unknown>)?.knowledge_sources as KnowledgeSource[]) || [];
-  const [sources, setSources] = useState<KnowledgeSource[]>(initial);
+export default function KnowledgeTab({ client }: KnowledgeTabProps) {
+  const [sources, setSources] = useState<KnowledgeSource[]>([]);
   const [urlInput, setUrlInput] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [dragOver, setDragOver] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const save = async (updated: KnowledgeSource[]) => {
-    setIsSaving(true);
+  useEffect(() => {
+    const initial = (client.settings?.knowledge_sources as KnowledgeSource[] | undefined) ?? [];
+    setSources(initial);
     setError(null);
+    setLoading(false);
+  }, [client.id, client.settings]);
+
+  const persistSources = async (nextSources: KnowledgeSource[]) => {
+    setSaving(true);
+    setError(null);
+
     try {
-      const res = await fetch(`/api/agency/clients/${client.id}/knowledge`, {
+      const response = await fetch(`/api/agency/clients/${client.id}/knowledge`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ knowledge_sources: updated }),
+        body: JSON.stringify({ knowledge_sources: nextSources }),
       });
-      if (!res.ok) throw new Error('Failed to save');
-      setSources(updated);
-    } catch {
-      setError('Failed to save changes');
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => ({}))) as { error?: string };
+        throw new Error(payload.error ?? 'Failed to save knowledge sources');
+      }
+
+      setSources(nextSources);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save knowledge sources');
     } finally {
-      setIsSaving(false);
+      setSaving(false);
     }
   };
 
-  const handleFiles = (files: FileList | null) => {
-    if (!files) return;
-    const newSources: KnowledgeSource[] = [];
-    for (let i = 0; i < files.length; i++) {
-      const f = files[i];
-      if (f.size > MAX_SIZE) {
-        setError(`${f.name} exceeds 10MB limit`);
-        continue;
+  const handleFileSelection = (fileList: FileList | null) => {
+    if (!fileList || fileList.length === 0) return;
+
+    const newItems: KnowledgeSource[] = [];
+
+    Array.from(fileList).forEach((file) => {
+      const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
+
+      if (!ACCEPTED_EXTENSIONS.includes(extension)) {
+        setError(`Unsupported file type: ${file.name}`);
+        return;
       }
-      newSources.push({
+
+      if (file.size > MAX_FILE_SIZE_BYTES) {
+        setError(`File too large: ${file.name} (max 10MB)`);
+        return;
+      }
+
+      newItems.push({
         id: crypto.randomUUID(),
         type: 'file',
-        name: f.name,
-        size: f.size,
+        name: file.name,
+        size: file.size,
         addedAt: new Date().toISOString(),
       });
-    }
-    if (newSources.length > 0) {
-      save([...sources, ...newSources]);
+    });
+
+    if (!newItems.length) return;
+
+    void persistSources([...sources, ...newItems]);
+  };
+
+  const addUrl = async () => {
+    const raw = urlInput.trim();
+    if (!raw) return;
+
+    try {
+      const parsed = new URL(raw);
+      if (!['http:', 'https:'].includes(parsed.protocol)) {
+        setError('Only HTTP and HTTPS URLs are allowed.');
+        return;
+      }
+
+      const nextSources: KnowledgeSource[] = [
+        ...sources,
+        {
+          id: crypto.randomUUID(),
+          type: 'url',
+          name: parsed.hostname,
+          url: parsed.toString(),
+          addedAt: new Date().toISOString(),
+        },
+      ];
+
+      await persistSources(nextSources);
+      setUrlInput('');
+    } catch {
+      setError('Please enter a valid URL (e.g. https://example.com).');
     }
   };
 
-  const addUrl = () => {
-    const url = urlInput.trim();
-    if (!url) return;
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
-      setError('URL must start with http:// or https://');
-      return;
-    }
-    const newSource: KnowledgeSource = {
-      id: crypto.randomUUID(),
-      type: 'url',
-      name: new URL(url).hostname,
-      url,
-      addedAt: new Date().toISOString(),
-    };
-    save([...sources, newSource]);
-    setUrlInput('');
+  const deleteSource = async (id: string) => {
+    await persistSources(sources.filter((source) => source.id !== id));
   };
 
-  const remove = (id: string) => {
-    save(sources.filter(s => s.id !== id));
-  };
-
-  const files = sources.filter(s => s.type === 'file');
-  const urls = sources.filter(s => s.type === 'url');
+  const fileSources = sources.filter((source) => source.type === 'file');
+  const urlSources = sources.filter((source) => source.type === 'url');
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div>
+    <div className="space-y-6">
+      <div className="rounded-xl border border-gray-200 bg-white p-5">
         <h2 className="text-lg font-semibold text-gray-900">Knowledge Base</h2>
-        <p className="text-sm text-gray-500">Upload documents and add website URLs to expand your AI worker&apos;s knowledge</p>
+        <p className="mt-1 text-sm text-gray-500">
+          Upload documents and website links so your AI worker can learn from your business context.
+        </p>
       </div>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-2 rounded-xl">
-          {error}
+      {(loading || saving) && (
+        <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white p-4 text-sm text-gray-600">
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-indigo-600" />
+          {loading ? 'Loading knowledge sources...' : 'Saving changes...'}
         </div>
       )}
 
-      {/* Training Documents */}
-      <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-          <FileText className="h-4 w-4 text-gray-400" />
+      {error && <p className="text-sm text-red-600">{error}</p>}
+
+      <section className="space-y-3 rounded-xl border border-gray-200 bg-white p-5">
+        <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+          <FileText className="h-4 w-4 text-indigo-600" />
           Training Documents
         </h3>
 
-        {/* Upload zone */}
         <div
-          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files); }}
-          onClick={() => fileRef.current?.click()}
-          className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
-            dragOver ? 'border-indigo-400 bg-indigo-50' : 'border-gray-300 hover:border-gray-400 bg-gray-50'
+          role="button"
+          tabIndex={0}
+          onClick={() => fileInputRef.current?.click()}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              fileInputRef.current?.click();
+            }
+          }}
+          onDragOver={(event) => {
+            event.preventDefault();
+            setDragging(true);
+          }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={(event) => {
+            event.preventDefault();
+            setDragging(false);
+            handleFileSelection(event.dataTransfer.files);
+          }}
+          className={`cursor-pointer rounded-xl border-2 border-dashed p-8 text-center transition-colors ${
+            dragging ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300 bg-gray-50 hover:border-indigo-300'
           }`}
         >
-          <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-          <p className="text-sm font-medium text-gray-700">Drop files here or click to upload</p>
-          <p className="text-xs text-gray-500 mt-1">PDF, TXT, MD, DOCX, CSV — max 10MB each</p>
-          <input
-            ref={fileRef}
-            type="file"
-            accept={ACCEPTED}
-            multiple
-            className="hidden"
-            onChange={(e) => handleFiles(e.target.files)}
-          />
+          <UploadCloud className="mx-auto h-8 w-8 text-gray-400" />
+          <p className="mt-2 text-sm font-medium text-gray-700">Drag & drop files here or click to upload</p>
+          <p className="mt-1 text-xs text-gray-500">Accepted: PDF, TXT, MD, DOCX, CSV (max 10MB each)</p>
         </div>
 
-        {/* File list */}
-        {files.length > 0 && (
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={ACCEPTED_FILE_INPUT}
+          multiple
+          onChange={(event) => handleFileSelection(event.target.files)}
+          className="hidden"
+        />
+
+        {fileSources.length > 0 && (
           <div className="space-y-2">
-            {files.map(f => (
-              <div key={f.id} className="flex items-center gap-3 bg-white border border-gray-200 rounded-xl px-4 py-3">
-                <FileText className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">{f.name}</p>
-                  <p className="text-xs text-gray-500">{f.size ? formatBytes(f.size) : '—'} · {timeAgo(f.addedAt)}</p>
+            {fileSources.map((source) => (
+              <div key={source.id} className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 p-3">
+                <FileText className="h-4 w-4 shrink-0 text-gray-500" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-gray-900">{source.name}</p>
+                  <p className="text-xs text-gray-500">
+                    {formatFileSize(source.size)} • {formatDate(source.addedAt)}
+                  </p>
                 </div>
-                <button onClick={() => remove(f.id)} className="text-gray-400 hover:text-red-500 transition-colors">
+                <button
+                  type="button"
+                  onClick={() => deleteSource(source.id)}
+                  className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-white hover:text-red-600"
+                  aria-label={`Delete ${source.name}`}
+                >
                   <Trash2 className="h-4 w-4" />
                 </button>
               </div>
             ))}
           </div>
         )}
-      </div>
+      </section>
 
-      {/* Website Knowledge */}
-      <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-          <Globe className="h-4 w-4 text-gray-400" />
+      <section className="space-y-3 rounded-xl border border-gray-200 bg-white p-5">
+        <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+          <Globe className="h-4 w-4 text-indigo-600" />
           Website Knowledge
         </h3>
 
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row">
           <input
+            type="url"
             value={urlInput}
-            onChange={(e) => setUrlInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && addUrl()}
-            placeholder="https://example.com/about"
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            onChange={(event) => setUrlInput(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                void addUrl();
+              }
+            }}
+            placeholder="https://example.com"
+            className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
           />
           <button
-            onClick={addUrl}
-            disabled={!urlInput.trim() || isSaving}
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-500 text-white text-sm font-medium rounded-xl hover:bg-indigo-600 disabled:opacity-50 transition-colors"
+            type="button"
+            onClick={() => void addUrl()}
+            disabled={!urlInput.trim() || saving}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-            Add
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            Add URL
           </button>
         </div>
 
-        {urls.length > 0 && (
+        {urlSources.length > 0 && (
           <div className="space-y-2">
-            {urls.map(u => (
-              <div key={u.id} className="flex items-center gap-3 bg-white border border-gray-200 rounded-xl px-4 py-3">
-                <Globe className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">{u.url}</p>
-                  <p className="text-xs text-gray-500">{u.name} · {timeAgo(u.addedAt)}</p>
+            {urlSources.map((source) => (
+              <div key={source.id} className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 p-3">
+                <Globe className="h-4 w-4 shrink-0 text-gray-500" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-gray-900">{source.url}</p>
+                  <p className="text-xs text-gray-500">Added {formatDate(source.addedAt)}</p>
                 </div>
-                <button onClick={() => remove(u.id)} className="text-gray-400 hover:text-red-500 transition-colors">
+                <button
+                  type="button"
+                  onClick={() => deleteSource(source.id)}
+                  className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-white hover:text-red-600"
+                  aria-label={`Delete ${source.name}`}
+                >
                   <Trash2 className="h-4 w-4" />
                 </button>
               </div>
             ))}
           </div>
         )}
-      </div>
+      </section>
 
-      {/* Empty state */}
-      {sources.length === 0 && (
-        <div className="text-center py-8 text-gray-500">
-          <FileText className="h-10 w-10 text-gray-300 mx-auto mb-3" />
-          <p className="text-sm">No training documents yet.</p>
-          <p className="text-xs mt-1">Upload files or add website URLs to expand your AI worker&apos;s knowledge.</p>
+      {!loading && sources.length === 0 && (
+        <div className="rounded-xl border border-gray-200 bg-gray-50 p-8 text-center text-sm text-gray-600">
+          No training documents yet. Upload files or add website URLs to expand your AI worker&apos;s knowledge.
         </div>
       )}
     </div>
