@@ -1,18 +1,17 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import DemoChat from './demo/[industry]/demo-chat';
-import LeadCapture from '@/components/landing/lead-capture';
 import LiveStats from '@/components/landing/live-stats';
 import ActivityTicker from '@/components/landing/activity-ticker';
 import PublicNav from '@/components/layout/public-nav';
 import PublicFooter from '@/components/layout/public-footer';
 
 export const metadata: Metadata = {
-  title: 'Kyra — Autonomous AI Workers for GHL Agencies | Powered by OpenClaw',
-  description: 'Kyra is a white-label AI workforce platform built on OpenClaw for agencies. Deploy, manage, and monetize autonomous AI workers for your clients — without writing code, without managing infrastructure.',
+  title: 'Kyra — AI Workforce Platform for Agencies | 50+ Templates | Powered by OpenClaw',
+  description: 'Deploy, manage, and monetize autonomous AI workers for your clients. 50+ industry templates, ClawHub skills marketplace, white-label everything. No code, no infrastructure. Powered by OpenClaw.',
   openGraph: {
-    title: 'Kyra — The AI Workforce Platform for Agencies',
-    description: 'Kyra is a white-label AI workforce platform built on OpenClaw for agencies. Deploy, manage, and monetize autonomous AI workers for your clients — without writing code, without managing infrastructure.',
+    title: 'Kyra — Deploy AI Workers for Your Clients',
+    description: 'The AI workforce platform for agencies. 50+ industry templates, skills marketplace, white-label portals. Deploy your first AI worker in under 5 minutes.',
     url: 'https://kyra.conversionsystem.com',
   },
   alternates: { canonical: 'https://kyra.conversionsystem.com' },
@@ -40,6 +39,9 @@ const INDUSTRIES = [
   { emoji: '🌿', name: 'Cannabis', slug: 'cannabis', desc: 'Age verification, product education, order routing' },
   { emoji: '🍽️', name: 'Restaurant', slug: 'restaurant', desc: 'Reservations, menu questions, catering coordination' },
   { emoji: '✨', name: 'Med Spa', slug: 'medspa', desc: 'Consultation booking, treatment info, follow-up sequences' },
+  { emoji: '⚖️', name: 'Law Firm', slug: 'law-firm', desc: 'Intake screening, consultation scheduling, case type routing' },
+  { emoji: '🏠', name: 'HVAC', slug: 'hvac', desc: 'Emergency dispatch, seasonal maintenance booking, quote follow-up' },
+  { emoji: '💇', name: 'Salon', slug: 'salon', desc: 'Appointment booking, service recommendations, rebooking reminders' },
 ];
 
 const OPENCLAW_CAPABILITIES = [
@@ -72,22 +74,23 @@ export default function HomePage() {
           {/* Left: Headline + CTA */}
           <div>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-[1.05] mb-6 tracking-tight">
-              Your clients need{' '}
-              <span className="text-indigo-400">AI workers.</span>
+              Deploy{' '}
+              <span className="text-indigo-400">AI workers</span>
+              {' '}for your clients.
               <br />
-              Not chatbots. Workers.
+              No code. No infra.
             </h1>
             <p className="text-slate-300 text-lg sm:text-xl leading-relaxed mb-8 max-w-lg">
-              Kyra is a white-label AI workforce platform built on OpenClaw for agencies. Deploy, manage, and monetize autonomous AI workers for your clients — without writing code, without managing infrastructure.
+              Kyra is a white-label AI workforce platform for agencies. 50 industry templates, a skills marketplace, and one dashboard to manage every client&apos;s AI — all powered by OpenClaw.
             </p>
 
             {/* Stats row */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
               {[
-                { value: '24/7', label: 'Never stops working' },
+                { value: '50+', label: 'Industry templates' },
                 { value: '< 60s', label: 'First response time' },
-                { value: '30+', label: 'Client AI workers' },
-                { value: 'Free', label: 'No credit card' },
+                { value: '24/7', label: 'Autonomous operation' },
+                { value: 'Free', label: '7-day trial' },
               ].map((s) => (
                 <div key={s.label} className="bg-white/10 border border-white/10 rounded-xl p-3 text-center">
                   <p className="text-xl font-black text-white">{s.value}</p>
@@ -112,14 +115,8 @@ export default function HomePage() {
               </Link>
             </div>
             <p className="text-sm text-slate-500 mt-3">
-              Free to start · No credit card required · Works with GoHighLevel
+              Free 7-day trial · No credit card required · Works with GoHighLevel
             </p>
-
-            {/* Email capture for not-ready-to-signup visitors */}
-            <div className="mt-6 pt-6 border-t border-white/10">
-              <p className="text-xs text-slate-500 mb-2">Not ready yet? Get notified when we add new industry templates:</p>
-              <LeadCapture />
-            </div>
           </div>
 
           {/* Right: Animated chat demo */}
@@ -298,8 +295,8 @@ export default function HomePage() {
                 {[
                   { value: '< 5 min', label: 'Deploy per client', sub: 'Template → live' },
                   { value: '24/7', label: 'Coverage across channels', sub: 'Never misses a lead' },
-                  { value: '21', label: 'Industry templates', sub: 'Ready to deploy' },
-                  { value: '100%', label: 'Lead follow-up rate', sub: 'Designed for no missed leads' },
+                  { value: '50+', label: 'Industry templates', sub: 'Ready to deploy' },
+                  { value: '1000+', label: 'Skills on ClawHub', sub: 'Install in one click' },
                 ].map((s) => (
                   <div key={s.label} className="bg-white/5 border border-white/10 rounded-2xl p-5">
                     <p className="text-3xl font-black text-white">{s.value}</p>
@@ -357,7 +354,7 @@ export default function HomePage() {
               {
                 step: '02',
                 title: 'Pick an industry template',
-                desc: 'Choose from 21 pre-built AI worker templates. Each one is trained for the industry — dental, real estate, cannabis, and more. Customize the personality in minutes.',
+                desc: 'Choose from 50+ pre-built AI worker templates. Each one is trained for the industry — dental, real estate, cannabis, law, HVAC, and more. Customize the personality in minutes.',
               },
               {
                 step: '03',
@@ -380,13 +377,13 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto px-4">
           <div className="text-center mb-12">
             <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 text-sm font-medium mb-4">
-              21 industry templates
+              50+ industry templates
             </div>
             <h2 className="text-3xl sm:text-4xl font-black mb-4">
               AI workers for every vertical.
             </h2>
             <p className="text-slate-400 text-lg max-w-xl mx-auto">
-              Pre-built AI workers trained for the most common industries. Live demos below — no login required.
+              50 pre-built templates across every major industry. Plus a community marketplace where agencies share and earn from their own. Live demos below.
             </p>
           </div>
 
@@ -411,6 +408,122 @@ export default function HomePage() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Marketplace Section ─────────────────────────────────────────── */}
+      <section className="border-t border-white/10 py-20">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 text-sm font-medium mb-4">
+              Extend &amp; earn
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-black mb-4">
+              Two marketplaces.<br />
+              <span className="text-indigo-400">Infinite capabilities.</span>
+            </h2>
+            <p className="text-slate-400 text-lg max-w-2xl mx-auto">
+              Install skills from ClawHub to extend what your AI workers can do. Create templates and earn credits when other agencies use them.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* ClawHub */}
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-8">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="bg-indigo-600/20 rounded-xl p-3 text-2xl">⚡</div>
+                <div>
+                  <h3 className="text-xl font-bold">ClawHub Skills Marketplace</h3>
+                  <p className="text-slate-400 text-sm">Thousands of community-built skills</p>
+                </div>
+              </div>
+              <p className="text-slate-300 text-sm leading-relaxed mb-6">
+                Search and install skills directly from your dashboard. CRM integrations, email automation, calendar management, social media monitoring — if it exists on ClawHub, your AI worker can use it.
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                {['🔧 GitHub', '📧 Email Pro', '📅 Calendar', '🎨 Image Gen', '📊 Analytics', '🔍 SEO Tools'].map((s) => (
+                  <div key={s} className="bg-white/5 rounded-lg px-3 py-2 text-xs text-slate-300 text-center">{s}</div>
+                ))}
+              </div>
+            </div>
+
+            {/* Template Marketplace */}
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-8">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="bg-amber-600/20 rounded-xl p-3 text-2xl">🏪</div>
+                <div>
+                  <h3 className="text-xl font-bold">Community Template Marketplace</h3>
+                  <p className="text-slate-400 text-sm">Create, share, and earn</p>
+                </div>
+              </div>
+              <p className="text-slate-300 text-sm leading-relaxed mb-6">
+                Built a great AI worker template for your niche? Publish it to the marketplace. Other agencies install it, and you earn credits — a new revenue stream from your expertise.
+              </p>
+              <div className="space-y-2">
+                {[
+                  { icon: '📤', text: 'Publish your custom template in minutes' },
+                  { icon: '💰', text: 'Earn 5 credits every time it\'s installed' },
+                  { icon: '📥', text: 'Browse and install community templates' },
+                ].map((item) => (
+                  <div key={item.text} className="flex items-center gap-3 bg-white/5 rounded-lg px-4 py-2.5">
+                    <span className="text-lg">{item.icon}</span>
+                    <span className="text-sm text-slate-300">{item.text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Premium Workers ──────────────────────────────────────────────── */}
+      <section className="border-t border-white/10 py-20">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 bg-amber-900/50 border border-amber-500/30 rounded-full px-4 py-1.5 text-sm font-medium text-amber-300 mb-4">
+              Premium AI workers
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-black mb-4">
+              Specialized AI workers<br />
+              <span className="text-amber-400">that run entire departments.</span>
+            </h2>
+            <p className="text-slate-400 text-lg max-w-2xl mx-auto">
+              Beyond chat — AI workers that autonomously handle complex, ongoing work. Deploy once, let them run.
+            </p>
+          </div>
+
+          <div className="bg-gradient-to-br from-amber-950/40 to-slate-900 border border-amber-500/20 rounded-2xl p-8 max-w-3xl mx-auto">
+            <div className="flex items-start gap-4 mb-6">
+              <div className="bg-amber-600/20 rounded-xl p-3 text-3xl shrink-0">🔍</div>
+              <div>
+                <h3 className="text-xl font-bold text-amber-200">Veterinary SEO Worker</h3>
+                <p className="text-slate-400 text-sm">10 skills · 7 publishing platforms · Fully autonomous</p>
+              </div>
+              <div className="ml-auto shrink-0">
+                <span className="bg-amber-600/20 text-amber-300 text-sm font-bold px-3 py-1 rounded-lg">$79/mo</span>
+              </div>
+            </div>
+            <p className="text-slate-300 text-sm leading-relaxed mb-6">
+              An autonomous SEO specialist that runs 24/7 — publishing content across 7 platforms, auditing 20 directories for NAP consistency, tracking AI citation rates, monitoring Reddit for mentions, and delivering weekly reports. No manual work required.
+            </p>
+            <div className="grid sm:grid-cols-2 gap-3">
+              {[
+                '📊 Weekly GEO visibility testing',
+                '📍 20-directory NAP consistency audit',
+                '✍️ Auto-publish to 7 platforms',
+                '💬 Reddit/UGC monitoring',
+                '🔗 Backlink monitoring',
+                '📱 Google Business Profile posts',
+                '🏗️ JSON-LD schema markup',
+                '📋 Weekly performance reports',
+              ].map((item) => (
+                <div key={item} className="flex items-center gap-2 text-sm text-slate-300">
+                  <span className="text-amber-400 shrink-0">✓</span>
+                  {item}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -499,15 +612,94 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ── Pricing ────────────────────────────────────────────────────── */}
+      <section id="pricing" className="border-t border-white/10 py-20">
+        <div className="max-w-5xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl font-black mb-4">
+              Simple pricing. Scale as you grow.
+            </h2>
+            <p className="text-slate-400 text-lg">
+              7-day free trial on every plan. No credit card required.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              {
+                name: 'Lite',
+                price: '$99',
+                clients: '3 clients',
+                credits: '500 credits/mo',
+                highlight: false,
+                features: ['3 AI workers', '50+ templates', 'ClawHub skills', 'White-label portals', 'Web chat widget', 'Email support'],
+              },
+              {
+                name: 'Pro',
+                price: '$249',
+                clients: '10 clients',
+                credits: '1,500 credits/mo',
+                highlight: true,
+                features: ['10 AI workers', 'Everything in Lite', 'Community marketplace', 'Premium templates', 'Priority support', 'Custom branding'],
+              },
+              {
+                name: 'Scale',
+                price: '$499',
+                clients: '30 clients',
+                credits: '2,500 credits/mo',
+                highlight: false,
+                features: ['30 AI workers', 'Everything in Pro', 'Dedicated onboarding', 'API access', 'Custom integrations', 'Slack support'],
+              },
+            ].map((plan) => (
+              <div
+                key={plan.name}
+                className={`rounded-2xl p-6 ${
+                  plan.highlight
+                    ? 'bg-indigo-600/20 border-2 border-indigo-500/50'
+                    : 'bg-white/5 border border-white/10'
+                }`}
+              >
+                {plan.highlight && (
+                  <div className="text-xs font-bold text-indigo-300 uppercase tracking-widest mb-3">Most popular</div>
+                )}
+                <h3 className="text-2xl font-black">{plan.name}</h3>
+                <div className="mt-2 mb-1">
+                  <span className="text-4xl font-black">{plan.price}</span>
+                  <span className="text-slate-400 text-sm">/mo</span>
+                </div>
+                <p className="text-slate-400 text-sm mb-6">{plan.clients} · {plan.credits}</p>
+                <ul className="space-y-2 mb-6">
+                  {plan.features.map((f) => (
+                    <li key={f} className="flex items-center gap-2 text-sm text-slate-300">
+                      <span className="text-green-400 shrink-0">✓</span> {f}
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  href="/solo"
+                  className={`block text-center font-bold py-3 rounded-xl transition ${
+                    plan.highlight
+                      ? 'bg-indigo-600 hover:bg-indigo-500 text-white'
+                      : 'bg-white/10 hover:bg-white/15 text-white border border-white/10'
+                  }`}
+                >
+                  Start Free Trial →
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── Final CTA ───────────────────────────────────────────────────── */}
       <section className="border-t border-white/10 py-20">
         <div className="max-w-2xl mx-auto px-4 text-center">
           <div className="bg-indigo-600 rounded-2xl p-10 sm:p-14">
             <h2 className="text-3xl sm:text-4xl font-black mb-4">
-              Start deploying autonomous AI workers today.
+              Your first AI worker. Live in 5 minutes.
             </h2>
             <p className="text-indigo-200 text-lg mb-8 max-w-lg mx-auto">
-              Connect your GoHighLevel account. Pick a template. Your first AI worker is live in under 5 minutes.
+              Pick a template. Customize the personality. Deploy. 50+ industries ready to go — no code, no infrastructure, no waiting.
             </p>
             <Link
               href="/solo"
@@ -516,7 +708,7 @@ export default function HomePage() {
               Deploy Your First AI Worker →
             </Link>
             <p className="text-indigo-300 text-sm mt-4">
-              Free to start · No credit card required · OpenClaw-powered
+              Free 7-day trial · No credit card required · Powered by OpenClaw
             </p>
           </div>
         </div>
