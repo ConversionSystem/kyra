@@ -142,7 +142,7 @@ export default function RoiSummaryCard({
         </div>
         {showLink && (
           <Link
-            href="/agency/performance"
+            href="/agency/clients"
             className="shrink-0 flex items-center gap-1 text-xs text-indigo-500 hover:text-indigo-700 font-semibold whitespace-nowrap"
           >
             Full report <ChevronRight className="h-3 w-3" />
