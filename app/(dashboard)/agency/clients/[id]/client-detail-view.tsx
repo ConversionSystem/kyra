@@ -43,6 +43,8 @@ import {
   Plus,
   Users,
   Database,
+  Sparkles,
+  GitBranch,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { AgencyClient, AgencyMember } from '@/lib/agency/queries';
@@ -63,7 +65,9 @@ import { AICapabilities } from './ai-capabilities';
 import { SEODashboard } from './seo-dashboard';
 import SkillsTab from '@/components/dashboard/client-tabs/skills-tab';
 import KnowledgeTab from '@/components/dashboard/client-tabs/knowledge-tab';
-import ScheduledTasksTab from '@/components/dashboard/client-tabs/scheduled-tasks-tab';
+import { AISetupClient } from '@/app/(dashboard)/agency/ai-setup/ai-setup-client';
+import { AgentsClient } from '@/app/(dashboard)/agency/agents/agents-client';
+import { AutopilotClient } from '@/app/(dashboard)/agency/autopilot/autopilot-client';
 
 // ── Setup Nudge Banner ────────────────────────────────────────────────────────
 
@@ -130,15 +134,18 @@ interface ChatMessage {
   content: string;
 }
 
-type Tab = 'terminal' | 'personality' | 'skills' | 'knowledge' | 'settings' | 'ghl' | 'usage' | 'conversations' | 'channels' | 'portal' | 'memory' | 'voice' | 'seo' | 'scheduled-tasks';
+type Tab = 'terminal' | 'personality' | 'templates' | 'skills' | 'knowledge' | 'settings' | 'ghl' | 'usage' | 'conversations' | 'channels' | 'portal' | 'memory' | 'voice' | 'seo' | 'automation' | 'ai-teams';
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'terminal', label: 'Terminal', icon: Terminal },
   { id: 'personality', label: 'AI Personality', icon: Brain },
+  { id: 'templates', label: 'Templates', icon: Sparkles },
   { id: 'skills', label: 'Skills', icon: Zap },
   { id: 'knowledge', label: 'Knowledge Base', icon: Database },
+  { id: 'ai-teams', label: 'AI Teams', icon: Bot },
   { id: 'settings', label: 'Settings', icon: Settings },
   { id: 'ghl', label: 'GHL', icon: Link2 },
+  { id: 'automation', label: 'Automation', icon: GitBranch },
   { id: 'usage', label: 'Usage', icon: BarChart3 },
   { id: 'conversations', label: 'Conversations', icon: Inbox },
   { id: 'channels', label: 'Channels', icon: Radio },
@@ -146,7 +153,6 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'memory', label: 'AI Memory', icon: Database },
   { id: 'voice', label: 'Voice AI', icon: Phone },
   { id: 'seo', label: 'SEO', icon: BarChart3 },
-  { id: 'scheduled-tasks', label: 'Scheduled Tasks', icon: Clock },
 ];
 
 // Grouped sidebar navigation — desktop only
@@ -157,11 +163,11 @@ const TAB_GROUPS: { label: string; tabs: typeof TABS }[] = [
   },
   {
     label: 'Configure',
-    tabs: TABS.filter(t => ['personality', 'skills', 'knowledge', 'voice', 'settings'].includes(t.id)),
+    tabs: TABS.filter(t => ['personality', 'templates', 'skills', 'knowledge', 'ai-teams', 'voice', 'settings'].includes(t.id)),
   },
   {
     label: 'Integrate',
-    tabs: TABS.filter(t => ['ghl', 'scheduled-tasks'].includes(t.id)),
+    tabs: TABS.filter(t => ['ghl', 'automation'].includes(t.id)),
   },
   {
     label: 'Analyze',
@@ -426,8 +432,19 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
           {activeTab === 'seo' && (
             <SEODashboard clientId={initialClient.id} clientName={initialClient.name || 'Client'} />
           )}
-          {activeTab === 'scheduled-tasks' && (
-            <ScheduledTasksTab client={initialClient} />
+          {activeTab === 'templates' && (
+            <AISetupClient
+              agencyId={initialClient.agency_id}
+              businessName={initialClient.name ?? 'Client'}
+              clientId={initialClient.id}
+              isSolo={false}
+            />
+          )}
+          {activeTab === 'ai-teams' && (
+            <AgentsClient />
+          )}
+          {activeTab === 'automation' && (
+            <AutopilotClient />
           )}
 
         </main>
