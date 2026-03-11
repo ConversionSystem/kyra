@@ -188,13 +188,23 @@ export async function provisionClientGateway(
       cleanApiKeys = undefined; // provisioner injects platform key
     }
 
-    // Resolve KYRA_MAX_TIER based on client's selected AI model
+    // Resolve model + tier from DB — if user already set a model preference, use it
     const { data: clientData } = await supabase
       .from('agency_clients')
       .select('ai_model')
       .eq('id', clientId)
       .single();
     const routerMaxTier = getRouterTierForModel(clientData?.ai_model);
+
+    // Override agentModel if the client has a saved ai_model in the DB
+    if (clientData?.ai_model && typeof clientData.ai_model === 'string') {
+      const savedModel = clientData.ai_model;
+      // Only override if not already matching (prevents unnecessary changes)
+      if (savedModel !== agentModel.primary) {
+        console.log(`[ovh-provisioner] Using saved ai_model: ${savedModel} (was: ${agentModel.primary})`);
+        agentModel = { primary: savedModel, fallbacks: agentModel.fallbacks };
+      }
+    }
 
     // Call OVH provisioner
     const res = await provisionerFetch('/containers', {
