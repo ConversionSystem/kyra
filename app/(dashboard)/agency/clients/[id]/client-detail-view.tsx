@@ -426,7 +426,6 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
 
 function TerminalTab({ client }: { client: AgencyClient }) {
   const [copied, setCopied] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const gatewayUrl = (client as any).gateway_url as string | undefined;
   const gatewayToken = (client as any).gateway_token as string | undefined;
@@ -447,49 +446,73 @@ function TerminalTab({ client }: { client: AgencyClient }) {
   }
 
   return (
-    <div className={isFullscreen ? 'fixed inset-0 z-50 bg-white' : 'space-y-3'}>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-xs text-gray-500">Connected to OpenClaw Gateway</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => {
-              navigator.clipboard.writeText(gatewayUrlWithToken);
-              setCopied(true);
-              setTimeout(() => setCopied(false), 2000);
-            }}
-            className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            {copied ? <CheckCircle2 className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-            {copied ? 'Copied' : 'Copy URL'}
-          </button>
-          <a
-            href={gatewayUrlWithToken}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs text-indigo-500 hover:text-indigo-700"
-          >
-            <ExternalLink className="h-3 w-3" />
-            Open in new tab
-          </a>
-          <button
-            onClick={() => setIsFullscreen(!isFullscreen)}
-            className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600"
-          >
-            {isFullscreen ? <X className="h-3 w-3" /> : <ExternalLink className="h-3 w-3" />}
-            {isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
-          </button>
-        </div>
+    <div className="space-y-6">
+      {/* Status bar */}
+      <div className="flex items-center gap-2">
+        <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+        <span className="text-sm text-gray-600 font-medium">Gateway Online</span>
       </div>
-      <div className={`rounded-xl border border-gray-200 overflow-hidden ${isFullscreen ? 'h-[calc(100vh-40px)]' : 'h-[600px]'}`}>
-        <iframe
-          src={`${gatewayUrlWithToken}&_t=${Date.now()}`}
-          className="w-full h-full border-0"
-          allow="clipboard-write"
-          title={`${client.name} — OpenClaw Terminal`}
-        />
+
+      {/* Main CTA */}
+      <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-8 text-white">
+        <div className="flex items-start gap-4 mb-6">
+          <div className="p-3 bg-white/10 rounded-xl">
+            <Terminal className="h-8 w-8" />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold mb-1">{client.name}&apos;s Terminal</h3>
+            <p className="text-gray-300 text-sm">
+              Chat directly with this AI worker, configure settings, manage channels, and test conversations.
+            </p>
+          </div>
+        </div>
+        <a
+          href={gatewayUrlWithToken}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 bg-indigo-500 hover:bg-indigo-400 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
+        >
+          <ExternalLink className="h-5 w-5" />
+          Open Terminal
+        </a>
+      </div>
+
+      {/* Quick actions */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <button
+          onClick={() => {
+            navigator.clipboard.writeText(gatewayUrlWithToken);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+          }}
+          className="flex items-center gap-3 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors text-left"
+        >
+          {copied ? <CheckCircle2 className="h-5 w-5 text-emerald-500" /> : <Copy className="h-5 w-5 text-gray-400" />}
+          <div>
+            <p className="text-sm font-medium text-gray-900">{copied ? 'Copied!' : 'Copy Terminal URL'}</p>
+            <p className="text-xs text-gray-500">Share with team members or bookmark</p>
+          </div>
+        </button>
+        <a
+          href={gatewayUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors text-left"
+        >
+          <ExternalLink className="h-5 w-5 text-gray-400" />
+          <div>
+            <p className="text-sm font-medium text-gray-900">Gateway Direct</p>
+            <p className="text-xs text-gray-500">Open without auth token (login required)</p>
+          </div>
+        </a>
+      </div>
+
+      {/* Info */}
+      <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
+        <p className="text-sm text-blue-800">
+          <strong>Tip:</strong> The terminal opens in a new tab for the best experience. You can chat with the AI,
+          configure channels, test responses, and manage settings — all from the terminal interface.
+        </p>
       </div>
     </div>
   );
