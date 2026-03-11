@@ -19,9 +19,7 @@ export default async function NewClientPage({
   const result = await getAgencyForUser(user.id);
   if (!result) redirect('/signup/agency');
 
-  // Solo users don't manage clients
-  const settings = (result.agency.settings as Record<string, unknown>) ?? {};
-  if (settings.account_type === 'solo') redirect('/agency');
+  // Solo users now use the same dashboard — plan limit enforces client count
 
   const plan = result.agency.plan || 'free';
   const clientLimit = getPlanClientLimit(plan);

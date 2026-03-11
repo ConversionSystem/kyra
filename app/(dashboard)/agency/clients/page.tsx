@@ -12,11 +12,7 @@ export default async function AgencyClientsPage() {
   const result = await getAgencyForUser(user.id);
   if (!result) redirect('/signup/agency');
 
-  // Solo users don't manage clients — redirect to overview
-  const settings = (result.agency.settings as Record<string, unknown>) ?? {};
-  if (settings.account_type === 'solo') {
-    redirect('/agency');
-  }
+  // Solo users now use the same dashboard as agencies — no redirect needed
 
   const clients = await getAgencyClients(result.agency.id);
   const plan = result.agency.plan || 'free';
