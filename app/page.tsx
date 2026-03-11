@@ -7,8 +7,8 @@ import PublicNav from '@/components/layout/public-nav';
 import PublicFooter from '@/components/layout/public-footer';
 
 export const metadata: Metadata = {
-  title: 'Kyra — AI Workforce Platform for Agencies | 50+ Templates | Powered by OpenClaw',
-  description: 'Deploy, manage, and monetize autonomous AI workers for your clients. 50+ industry templates, ClawHub skills marketplace, white-label everything. No code, no infrastructure. Powered by OpenClaw.',
+  title: 'Kyra (Beta) — AI Workforce Platform for Agencies | 50+ Templates | Powered by OpenClaw',
+  description: 'Deploy autonomous AI workers for your clients — free during beta. 50+ industry templates, ClawHub skills marketplace, white-label everything. No code, no infrastructure. Powered by OpenClaw.',
   openGraph: {
     title: 'Kyra — Deploy AI Workers for Your Clients',
     description: 'The AI workforce platform for agencies. 50+ industry templates, skills marketplace, white-label portals. Deploy your first AI worker in under 5 minutes.',
@@ -65,7 +65,7 @@ export default function HomePage() {
         {/* Badge pill */}
         <div className="flex justify-center mb-8">
           <div className="inline-flex items-center gap-2 bg-white/10 border border-white/10 rounded-full px-4 py-1.5 text-sm font-medium">
-            <span className="h-2 w-2 rounded-full bg-green-400 animate-pulse inline-block" />
+            <span className="bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full">Beta</span>
             ⚡ OpenClaw-Powered · The AI Workforce Platform for Agencies
           </div>
         </div>
@@ -90,7 +90,7 @@ export default function HomePage() {
                 { value: '50+', label: 'Industry templates' },
                 { value: '< 60s', label: 'First response time' },
                 { value: '24/7', label: 'Autonomous operation' },
-                { value: 'Free', label: '7-day trial' },
+                { value: 'Free', label: 'While in beta' },
               ].map((s) => (
                 <div key={s.label} className="bg-white/10 border border-white/10 rounded-xl p-3 text-center">
                   <p className="text-xl font-black text-white">{s.value}</p>
@@ -115,7 +115,7 @@ export default function HomePage() {
               </Link>
             </div>
             <p className="text-sm text-slate-500 mt-3">
-              Free 7-day trial · No credit card required · Works with GoHighLevel
+              Free during beta · No credit card required · Works with GoHighLevel
             </p>
           </div>
 
@@ -612,85 +612,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── Pricing ────────────────────────────────────────────────────── */}
-      <section id="pricing" className="border-t border-white/10 py-20">
-        <div className="max-w-5xl mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-black mb-4">
-              Simple pricing. Scale as you grow.
-            </h2>
-            <p className="text-slate-400 text-lg">
-              7-day free trial on every plan. No credit card required.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            {[
-              {
-                name: 'Lite',
-                price: '$99',
-                clients: '3 clients',
-                credits: '500 credits/mo',
-                highlight: false,
-                features: ['3 AI workers', '50+ templates', 'ClawHub skills', 'White-label portals', 'Web chat widget', 'Email support'],
-              },
-              {
-                name: 'Pro',
-                price: '$249',
-                clients: '10 clients',
-                credits: '1,500 credits/mo',
-                highlight: true,
-                features: ['10 AI workers', 'Everything in Lite', 'Community marketplace', 'Premium templates', 'Priority support', 'Custom branding'],
-              },
-              {
-                name: 'Scale',
-                price: '$499',
-                clients: '30 clients',
-                credits: '2,500 credits/mo',
-                highlight: false,
-                features: ['30 AI workers', 'Everything in Pro', 'Dedicated onboarding', 'API access', 'Custom integrations', 'Slack support'],
-              },
-            ].map((plan) => (
-              <div
-                key={plan.name}
-                className={`rounded-2xl p-6 ${
-                  plan.highlight
-                    ? 'bg-indigo-600/20 border-2 border-indigo-500/50'
-                    : 'bg-white/5 border border-white/10'
-                }`}
-              >
-                {plan.highlight && (
-                  <div className="text-xs font-bold text-indigo-300 uppercase tracking-widest mb-3">Most popular</div>
-                )}
-                <h3 className="text-2xl font-black">{plan.name}</h3>
-                <div className="mt-2 mb-1">
-                  <span className="text-4xl font-black">{plan.price}</span>
-                  <span className="text-slate-400 text-sm">/mo</span>
-                </div>
-                <p className="text-slate-400 text-sm mb-6">{plan.clients} · {plan.credits}</p>
-                <ul className="space-y-2 mb-6">
-                  {plan.features.map((f) => (
-                    <li key={f} className="flex items-center gap-2 text-sm text-slate-300">
-                      <span className="text-green-400 shrink-0">✓</span> {f}
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  href="/solo"
-                  className={`block text-center font-bold py-3 rounded-xl transition ${
-                    plan.highlight
-                      ? 'bg-indigo-600 hover:bg-indigo-500 text-white'
-                      : 'bg-white/10 hover:bg-white/15 text-white border border-white/10'
-                  }`}
-                >
-                  Start Free Trial →
-                </Link>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* ── Final CTA ───────────────────────────────────────────────────── */}
       <section className="border-t border-white/10 py-20">
         <div className="max-w-2xl mx-auto px-4 text-center">
@@ -705,10 +626,10 @@ export default function HomePage() {
               href="/solo"
               className="inline-flex items-center gap-2 bg-white text-indigo-700 font-black text-lg px-10 py-4 rounded-xl hover:bg-indigo-50 transition"
             >
-              Deploy Your First AI Worker →
+              Try Kyra Free →
             </Link>
             <p className="text-indigo-300 text-sm mt-4">
-              Free 7-day trial · No credit card required · Powered by OpenClaw
+              Free during beta · No credit card required · Powered by OpenClaw
             </p>
           </div>
         </div>
