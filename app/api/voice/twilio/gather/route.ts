@@ -132,7 +132,10 @@ export async function POST(req: NextRequest) {
       // Fallback: agency-level voice
       const { data: agencyRow } = await supabase
         .from('agencies').select('id, name, settings, api_keys').eq('id', clientId).single();
-      if (!agencyRow) return twiml('<Say>Sorry, service not found.</Say><Hangup/>');
+      if (!agencyRow) {
+        console.error(`[voice/gather] No client or agency found for clientId=${clientId}`);
+        return twiml('<Say>Sorry, this service is not configured yet. Please contact support.</Say><Hangup/>');
+      }
       const agKeys = (agencyRow.api_keys as Record<string, string>) ?? {};
       const s = (agencyRow.settings as Record<string, unknown>) ?? {};
       voiceCfg = (s.voice_config as Record<string, unknown>) ?? {};
