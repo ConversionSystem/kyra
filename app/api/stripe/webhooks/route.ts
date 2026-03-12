@@ -6,6 +6,7 @@ import {
   handleSubscriptionUpdated,
   handleSubscriptionDeleted,
   handleConnectAccountUpdated,
+  handleCheckoutSessionCompleted,
 } from '@/lib/stripe/webhooks';
 
 /**
@@ -50,6 +51,12 @@ export async function POST(request: NextRequest) {
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription;
         await handleSubscriptionDeleted(subscription);
+        break;
+      }
+
+      case 'checkout.session.completed': {
+        const session = event.data.object as Stripe.Checkout.Session;
+        await handleCheckoutSessionCompleted(session);
         break;
       }
 

@@ -145,6 +145,49 @@ export async function handleSubscriptionDeleted(
 }
 
 /**
+ * Handle `checkout.session.completed` — activate voice addon if applicable.
+ */
+export async function handleCheckoutSessionCompleted(
+  session: Stripe.Checkout.Session
+): Promise<void> {
+  const addon = session.metadata?.addon;
+  if (addon !== 'voice') return; // only handle voice addon checkout
+
+  const agencyId = session.metadata?.agency_id;
+  if (!agencyId) return;
+
+  const supabase = createServiceClientWithoutCookies();
+
+  // Enable voice addon in agency settings
+  const { data: agency } = await supabase
+    .from('agencies')
+    .select('settings')
+    .eq('id', agencyId)
+    .single();
+
+  const settings = ((agency as { settings: Record<string, unknown> } | null)?.settings ?? {}) as Record<string, unknown>;
+  settings.voice_addon = true;
+
+  await supabase
+    .from('agencies')
+    .update({ settings, updated_at: new Date().toISOString() })
+    .eq('id', agencyId);
+
+  // Ensure voice_usage row exists with 300 min limit for current month
+  const now = new Date();
+  const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+  await supabase
+    .from('voice_usage')
+    .upsert(
+      { agency_id: agencyId, month, minute_limit: 300 },
+      { onConflict: 'agency_id,month' },
+    );
+
+  console.log(`[stripe webhook] Voice addon activated for agency ${agencyId}`);
+}
+
+/**
  * Handle `account.updated` (Connect) — update connect readiness on agency.
  * Delegates to syncConnectAccountStatus in connect.ts for DRY logic.
  */
