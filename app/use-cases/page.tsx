@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   keywords: [
     'AI receptionist', 'AI worker', 'AI phone answering', 'business AI chatbot',
     'AI appointment booking', 'AI lead qualification', 'AI for small business',
-    'GoHighLevel AI', 'voice AI for business', 'AI customer service',
+    'AI workforce platform', 'voice AI for business', 'AI customer service',
   ],
 };
 

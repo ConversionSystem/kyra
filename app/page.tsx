@@ -115,7 +115,7 @@ export default function HomePage() {
               </Link>
             </div>
             <p className="text-sm text-slate-500 mt-3">
-              Free during beta · No credit card required · Works with GoHighLevel
+              Free during beta · No credit card required · Powered by OpenClaw
             </p>
           </div>
 
@@ -171,7 +171,7 @@ export default function HomePage() {
             <div className="bg-white/5 border border-yellow-500/20 rounded-2xl p-6">
               <div className="text-2xl mb-3">🔄</div>
               <h3 className="text-lg font-bold mb-1 text-yellow-400">Basic Automation</h3>
-              <p className="text-xs text-slate-500 mb-4 uppercase tracking-widest">Zapier, GHL Workflows</p>
+              <p className="text-xs text-slate-500 mb-4 uppercase tracking-widest">Web Chat, Voice AI, SMS, Integrations</p>
               <ul className="space-y-2.5">
                 {[
                   'Fires on rigid triggers',
