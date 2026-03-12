@@ -233,7 +233,7 @@ export default async function DemoPage({ params }: { params: Promise<{ industry:
             <p className="font-bold text-lg">Deploy this AI worker to your clients.</p>
             <p className="text-indigo-200 text-sm">Template → live in 5 minutes. Connects to your existing GoHighLevel account.</p>
             <a
-              href="/signup/agency"
+              href="/solo"
               className="block bg-white text-indigo-700 font-bold py-3 px-6 rounded-lg hover:bg-indigo-50 transition"
             >
               Deploy Your First AI Worker →
