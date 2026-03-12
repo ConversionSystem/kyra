@@ -210,7 +210,7 @@ export default async function DemoPage({ params }: { params: Promise<{ industry:
             {[
               '💬 Responds to every inbound SMS within 60 seconds',
               '📅 Books appointments and sends confirmations',
-              '🏷️ Tags and updates contacts in GoHighLevel CRM',
+              '🏷️ Tags and updates contacts in your CRM',
               '🚨 Escalates to a human when needed',
               '👋 Greets new leads the moment they enter your CRM',
               '📝 Writes CRM notes after every conversation',
@@ -231,7 +231,7 @@ export default async function DemoPage({ params }: { params: Promise<{ industry:
               Powered by OpenClaw
             </div>
             <p className="font-bold text-lg">Deploy this AI worker to your clients.</p>
-            <p className="text-indigo-200 text-sm">Template → live in 5 minutes. Connects to your existing GoHighLevel account.</p>
+            <p className="text-indigo-200 text-sm">Template → live in 5 minutes. Connects to your existing CRM or works standalone.</p>
             <a
               href="/solo"
               className="block bg-white text-indigo-700 font-bold py-3 px-6 rounded-lg hover:bg-indigo-50 transition"

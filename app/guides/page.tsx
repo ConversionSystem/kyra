@@ -55,7 +55,7 @@ export default function GuidesPage() {
         <div className="text-center mt-16 py-12 bg-gray-50 rounded-2xl">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Don&apos;t see your setup?</h2>
           <p className="text-gray-500 mb-6">
-            If it connects to GoHighLevel, your AI worker can handle it. Contact us and we&apos;ll help you set it up.
+            If it connects to your CRM or website, your AI worker can handle it. Contact us and we&apos;ll help you set it up.
           </p>
           <Link href="/solo" className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition">
             Get Started Free

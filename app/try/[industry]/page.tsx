@@ -183,7 +183,7 @@ export default function TryPage({ params }: { params: Promise<{ industry: string
   const shareText = `I just tried this AI for ${config.businessName} — it answered like a real employee. Try it: ${demoUrl}`;
   const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(demoUrl)}`;
   const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
-  const emailHref = `mailto:?subject=${encodeURIComponent(`AI that actually works for ${config.businessName}`)}&body=${encodeURIComponent(`Hey,\n\nI just tried this live AI demo — it responds like a real employee (not a chatbot).\n\nTry it here: ${demoUrl}\n\nThis is built on Kyra — an AI platform for GHL agencies. Could be interesting for your clients.`)}`;
+  const emailHref = `mailto:?subject=${encodeURIComponent(`AI that actually works for ${config.businessName}`)}&body=${encodeURIComponent(`Hey,\n\nI just tried this live AI demo — it responds like a real employee (not a chatbot).\n\nTry it here: ${demoUrl}\n\nThis is built on Kyra — an AI workforce platform for agencies. Could be interesting for your clients.`)}`;
 
   const copyLink = async () => {
     await navigator.clipboard.writeText(demoUrl);

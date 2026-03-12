@@ -18,46 +18,46 @@ const SECTIONS = [
     faqs: [
       {
         q: 'How long does it take to get my first AI worker live?',
-        a: 'Under 10 minutes for most agencies. The steps are: (1) Create your free account, (2) Connect your GHL private integration token, (3) Add a client and pick an industry template, (4) Click "Generate with AI" to write the personality, (5) Done — the AI starts responding automatically.',
+        a: 'Under 10 minutes for most agencies. The steps are: (1) Create your free account, (2) Add a client and pick an industry template, (3) Click "Generate with AI" to write the personality, (4) Optionally connect your CRM, (5) Done — the AI starts responding automatically.',
       },
       {
-        q: 'Do I need GoHighLevel to use Kyra?',
-        a: 'GHL is required for the SMS and multi-channel features. However, the web chat widget works on any website without GHL — embed a single script tag on your client\'s site and the AI responds immediately.',
+        q: 'Do I need a specific CRM to use Kyra?',
+        a: 'No! Kyra works standalone with our web chat widget and voice AI. For SMS and multi-channel messaging, you can connect GoHighLevel or use our other integrations. The web chat widget works on any website — embed a single script tag and the AI responds immediately.',
       },
       {
         q: 'What channels does Kyra work on?',
-        a: 'When connected to GHL, Kyra handles: SMS, WhatsApp, Instagram DMs, Facebook Messenger, Live Chat, Google Business Messages, and GHL email. Plus our own web chat widget (no GHL needed) and voice webhook integration.',
+        a: 'Kyra handles: SMS, WhatsApp, Instagram DMs, Facebook Messenger, Live Chat, Google Business Messages, and email. Plus our own web chat widget and voice webhook integration. Channel availability depends on your CRM connection.',
       },
       {
         q: 'Can I try Kyra without signing up?',
-        a: 'Yes! Go to kyra.conversionsystem.com/try/dental (or any industry slug) for a live conversation with a real AI. No account, no credit card, no GHL required.',
+        a: 'Yes! Go to kyra.conversionsystem.com/try/dental (or any industry slug) for a live conversation with a real AI. No account, no credit card required.',
       },
     ],
   },
   {
     icon: MessageSquare,
-    title: 'GHL Integration',
+    title: 'CRM Integration',
     color: 'text-green-400',
     bg: 'bg-green-500/10',
     faqs: [
       {
-        q: 'How do I get my GHL Private Integration Token?',
-        a: 'In your GHL account: Settings → Integrations → Private Integrations → Create New. Name it "Kyra AI", select all message permissions, and copy the token. Paste it in Kyra\'s dashboard under Agency → GHL Setup.',
+        q: 'How do I connect my CRM?',
+        a: 'For GoHighLevel: Settings → Integrations → Private Integrations → Create New. Name it "Kyra AI", select all message permissions, and copy the token. Paste it in Kyra\'s dashboard under Agency → CRM Setup. More CRM integrations coming soon.',
       },
       {
-        q: 'Do I need GHL Marketplace approval to use Kyra?',
-        a: 'No! Kyra uses Private Integration Tokens, which bypass marketplace approval entirely. Any GHL agency can connect immediately — no waiting, no review process.',
+        q: 'Do I need marketplace approval to use Kyra?',
+        a: 'No! For GoHighLevel, Kyra uses Private Integration Tokens, which bypass marketplace approval entirely. Any agency can connect immediately — no waiting, no review process.',
       },
       {
-        q: 'The AI isn\'t responding to GHL messages. What\'s wrong?',
-        a: 'Check these in order: (1) Is your GHL token valid? (go to GHL → Settings → Integrations and verify it). (2) Is the client\'s container status "Running" in the Kyra dashboard? (3) Has the AI personality been configured? (4) Is the GHL number associated with the correct sub-account? Email angel@conversionsystem.com with your client ID if still stuck.',
+        q: 'The AI isn\'t responding to messages. What\'s wrong?',
+        a: 'Check these in order: (1) Is your CRM integration token valid? (2) Is the client\'s container status "Running" in the Kyra dashboard? (3) Has the AI personality been configured? (4) Is the phone number associated with the correct account? Email angel@conversionsystem.com with your client ID if still stuck.',
       },
       {
-        q: 'Can I connect multiple GHL sub-accounts?',
-        a: 'Yes — each Kyra client maps to one GHL sub-account. Each client has its own Private Integration Token. Add as many clients as your plan allows, each with their own GHL connection.',
+        q: 'Can I connect multiple client accounts?',
+        a: 'Yes — each Kyra client maps to one CRM account. Each client has its own integration token. Add as many clients as your plan allows, each with their own connection.',
       },
       {
-        q: 'Will the AI update my GHL CRM automatically?',
+        q: 'Will the AI update my CRM automatically?',
         a: 'Yes. After every conversation, the AI analyzes the exchange and: (1) Adds relevant tags to the contact (hot-lead, appointment-requested, price-inquiry, etc.), (2) Writes a note summarizing the conversation, and (3) Updates the pipeline stage if the context suggests it.',
       },
     ],
@@ -81,12 +81,12 @@ const SECTIONS = [
         a: 'The AI\'s personality (persona, greeting, instructions) is configured in the Personality tab. Be specific: include the business name, services offered with prices, staff names, booking policies, and any FAQs. The more detail you provide, the better the AI performs.',
       },
       {
-        q: 'Can the AI book appointments in my GHL calendar?',
-        a: 'The AI includes your GHL booking link when customers ask to schedule. Go to: Personality tab → Calendar Booking Link → paste your GHL calendar share link. The AI will naturally offer it during appointment conversations.',
+        q: 'Can the AI book appointments in my calendar?',
+        a: 'The AI includes your booking link when customers ask to schedule. Go to: Personality tab → Calendar Booking Link → paste your calendar share link. The AI will naturally offer it during appointment conversations.',
       },
       {
         q: 'What happens when the AI can\'t handle a message?',
-        a: 'When the AI detects a frustrated customer or a question it can\'t answer confidently, it escalates: (1) Tags the contact "needs-human" and "kyra-escalated" in GHL, (2) Sends an email alert to your agency\'s escalation email, (3) Fires your configured Slack/Discord webhook if set up. You can then jump into the GHL conversation directly.',
+        a: 'When the AI detects a frustrated customer or a question it can\'t answer confidently, it escalates: (1) Tags the contact "needs-human" and "kyra-escalated" in your CRM, (2) Sends an email alert to your agency\'s escalation email, (3) Fires your configured Slack/Discord webhook if set up. You can then jump into the conversation directly.',
       },
     ],
   },

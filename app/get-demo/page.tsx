@@ -17,7 +17,7 @@ const SIZES = [
 ];
 
 const HOW = [
-  'Google search', 'GoHighLevel community', 'LinkedIn', 'Referral from another agency',
+  'Google search', 'CRM community', 'LinkedIn', 'Referral from another agency',
   'Twitter / X', 'YouTube', 'Other',
 ];
 
@@ -95,13 +95,13 @@ export default function GetDemoPage() {
             <span className="text-indigo-400">Ask us anything.</span>
           </h1>
           <p className="text-slate-400 text-lg mb-8 leading-relaxed">
-            Schedule a live demo with Angel Castro (Founder). See your industry's AI worker respond to real leads, watch the GHL integration in action, and ask any technical questions.
+            Schedule a live demo with Angel Castro (Founder). See your industry's AI worker respond to real leads, watch the CRM integration in action, and ask any technical questions.
           </p>
 
           <div className="space-y-4 mb-8">
             {[
               { icon: '🎯', title: 'Live demo for your industry', desc: 'We\'ll demo dental, real estate, auto, cannabis, or whichever industry matters most to your clients.' },
-              { icon: '🔌', title: 'GHL integration walkthrough', desc: 'See how Kyra connects to an existing GHL account in under 5 minutes.' },
+              { icon: '🔌', title: 'CRM integration walkthrough', desc: 'See how Kyra connects to your existing CRM in under 5 minutes.' },
               { icon: '💬', title: 'Real AI conversation', desc: 'Watch the AI respond to a real SMS, update the CRM, and book an appointment — live.' },
               { icon: '💰', title: 'Pricing & margin walkthrough', desc: 'We\'ll show you exactly what to charge clients and what your margins look like.' },
             ].map(f => (
@@ -120,7 +120,7 @@ export default function GetDemoPage() {
             <p className="text-sm text-slate-300 italic">
               &ldquo;I had 3 objections walking in. By the end I was trying to figure out how to bill my first 5 clients.&rdquo;
             </p>
-            <p className="text-xs text-slate-500 mt-2">— GHL agency owner, after a 30-minute demo</p>
+            <p className="text-xs text-slate-500 mt-2">— Agency owner, after a 30-minute demo</p>
           </div>
         </div>
 
@@ -155,7 +155,7 @@ export default function GetDemoPage() {
                 </select>
               </div>
               <div>
-                <label className="text-xs text-slate-400 mb-1.5 block">Number of GHL clients</label>
+                <label className="text-xs text-slate-400 mb-1.5 block">Number of clients</label>
                 <select className={selectCls} value={form.size} onChange={set('size')}>
                   <option value="">Select...</option>
                   {SIZES.map(s => <option key={s} value={s}>{s}</option>)}

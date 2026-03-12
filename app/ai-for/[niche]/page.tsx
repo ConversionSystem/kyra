@@ -32,7 +32,7 @@ const NICHES: Record<string, NicheData> = {
     slug: 'dental',
     title: 'AI Worker for Dental Practices',
     metaTitle: 'AI Worker for Dental Practices | Automated SMS, Booking & Follow-Up',
-    metaDesc: 'Add an AI worker to your dental practice that responds to every patient inquiry in 60 seconds, books appointments automatically, and handles insurance questions 24/7. Works inside GoHighLevel.',
+    metaDesc: 'Add an AI worker to your dental practice that responds to every patient inquiry in 60 seconds, books appointments automatically, and handles insurance questions 24/7. Works with any CRM.',
     emoji: '🦷',
     hero: 'AI Worker for Dental Practices',
     subhero: 'Responds to every patient text in 60 seconds. Books appointments. Handles insurance questions. Works 24/7 — even when your front desk doesn\'t.',
@@ -57,12 +57,12 @@ const NICHES: Record<string, NicheData> = {
       'Appointment reminders — automated day-before confirmations',
     ],
     faq: [
-      { q: 'Does this integrate with my existing scheduling software?', a: 'Kyra works through GoHighLevel. If your practice uses GHL for SMS and CRM, setup takes under 20 minutes. If not, we can help you connect GHL alongside your existing tools.' },
+      { q: 'Does this integrate with my existing scheduling software?', a: 'Kyra integrates with popular CRMs including GoHighLevel, and also works standalone with our web chat widget. Setup takes under 20 minutes.' },
       { q: 'Can I customize what the AI says about my practice?', a: 'Yes — you set the AI name, personality, accepted insurances, pricing, hours, and special offers. The AI speaks with your practice\'s exact voice.' },
       { q: 'What if the AI doesn\'t know the answer?', a: 'You configure a fallback: "Let me have a team member follow up with you." The contact gets tagged as needing human follow-up, and your staff gets an alert.' },
-      { q: 'Is patient data handled securely?', a: 'Conversations happen via SMS — the same channel your practice already uses. No PHI is stored in Kyra beyond what\'s in your GHL CRM.' },
+      { q: 'Is patient data handled securely?', a: 'Conversations happen via SMS — the same channel your practice already uses. No PHI is stored in Kyra beyond what\'s in your CRM.' },
     ],
-    keywords: ['AI for dental practices', 'dental AI worker', 'dental SMS automation', 'GoHighLevel dental', 'AI receptionist dental'],
+    keywords: ['AI for dental practices', 'dental AI worker', 'dental SMS automation', 'AI receptionist dental', 'AI appointment booking dental'],
     demoSlug: 'dental',
   },
 
@@ -107,7 +107,7 @@ const NICHES: Record<string, NicheData> = {
       },
       { q: 'What if a customer asks about delivery?', a: 'You configure the AI\'s knowledge of your delivery zones, minimums, and ETA. It handles delivery questions accurately or routes to your delivery team.' },
     ],
-    keywords: ['cannabis dispensary AI', 'dispensary SMS automation', 'cannabis AI worker', 'dispensary chatbot', 'cannabis marketing automation GHL'],
+    keywords: ['cannabis dispensary AI', 'dispensary SMS automation', 'cannabis AI worker', 'dispensary chatbot', 'cannabis marketing automation'],
     demoSlug: 'cannabis',
   },
 
@@ -115,21 +115,21 @@ const NICHES: Record<string, NicheData> = {
     slug: 'real-estate',
     title: 'AI Worker for Real Estate Agencies',
     metaTitle: 'AI Worker for Real Estate Agencies | Instant Lead Response, Showing Booking',
-    metaDesc: 'Real estate AI that responds to every GHL lead in under 60 seconds. Qualifies buyers, books showings, follows up with cold leads automatically. Works inside GoHighLevel.',
+    metaDesc: 'Real estate AI that responds to every lead in under 60 seconds. Qualifies buyers, books showings, follows up with cold leads automatically. Works with any CRM.',
     emoji: '🏡',
     hero: 'AI Worker for Real Estate',
-    subhero: 'Real estate leads go cold in 5 minutes. Our AI responds to every inbound GHL inquiry in under 60 seconds — qualifies buyers, books showings, and keeps leads warm until an agent is ready.',
+    subhero: 'Real estate leads go cold in 5 minutes. Our AI responds to every inbound inquiry in under 60 seconds — qualifies buyers, books showings, and keeps leads warm until an agent is ready.',
     pain: '78% of buyers go with whoever responds first. Most agents respond in hours.',
     painDetail: 'Leads come in from Zillow, Facebook, your website — at all hours. Agents are showing properties, on calls, or asleep. By the time someone responds, the lead has already booked with a competitor.',
     result: 'Real estate teams using AI lead response close 30% more deals from the same lead volume.',
     resultStat: '100% of leads contacted in <5 min',
     features: [
-      { icon: '⚡', title: 'Instant lead response', desc: 'Every new GHL contact triggers an immediate AI text — within 60 seconds, day or night.' },
+      { icon: '⚡', title: 'Instant lead response', desc: 'Every new contact triggers an immediate AI text — within 60 seconds, day or night.' },
       { icon: '🏠', title: 'Property Q&A', desc: 'Answers questions about listings, neighborhoods, pricing, and availability using your configured property knowledge.' },
-      { icon: '📅', title: 'Showing scheduling', desc: 'Qualifies the buyer, checks agent availability, and books showings directly into the GHL calendar.' },
+      { icon: '📅', title: 'Showing scheduling', desc: 'Qualifies the buyer, checks agent availability, and books showings directly into your calendar.' },
       { icon: '🔁', title: 'Cold lead reactivation', desc: 'Leads from 30, 60, 90 days ago who went silent get personalized re-engagement. Most agents never follow up past attempt 3.' },
       { icon: '🎯', title: 'Buyer qualification', desc: 'Pre-qualifies leads before the agent spends time: budget, timeline, pre-approved?, current situation.' },
-      { icon: '🏷️', title: 'Automatic pipeline updates', desc: 'Moves contacts through your GHL pipeline based on conversation outcome. No manual CRM updates.' },
+      { icon: '🏷️', title: 'Automatic pipeline updates', desc: 'Moves contacts through your pipeline based on conversation outcome. No manual CRM updates.' },
     ],
     useCases: [
       'New Zillow/Facebook lead — immediate 60-second follow-up text',
@@ -140,12 +140,12 @@ const NICHES: Record<string, NicheData> = {
       'Old leads gone cold — reactivation sequence',
     ],
     faq: [
-      { q: 'Does this work with Zillow, Realtor.com, and Facebook leads?', a: 'Yes — as long as those leads flow into GoHighLevel (most setups already do this via Zapier or native GHL integrations), the AI picks them up and responds immediately.' },
+      { q: 'Does this work with Zillow, Realtor.com, and Facebook leads?', a: 'Yes — as long as those leads flow into your CRM (via Zapier, native integrations, or our API), the AI picks them up and responds immediately.' },
       { q: 'Can multiple agents use the same AI?', a: 'Yes. The AI handles initial qualification and booking, then assigns leads to the right agent based on rules you configure.' },
       { q: 'What if a lead asks about a specific property?', a: 'You can add property details to the AI\'s knowledge base, or the AI can ask for a callback when questions require specific listing expertise.' },
       { q: 'Do buyers know they\'re talking to AI?', a: 'You decide. Many agencies configure the AI with a human name (e.g., "Hi, I\'m Jamie from [Agency]"). Full transparency mode is also available.' },
     ],
-    keywords: ['AI for real estate agents', 'real estate lead response automation', 'GHL real estate AI', 'AI worker real estate', 'automated showing booking'],
+    keywords: ['AI for real estate agents', 'real estate lead response automation', 'AI worker real estate', 'automated showing booking', 'real estate AI receptionist'],
     demoSlug: 'realestate',
   },
 
@@ -153,7 +153,7 @@ const NICHES: Record<string, NicheData> = {
     slug: 'fitness',
     title: 'AI Worker for Gyms & Fitness Studios',
     metaTitle: 'AI Worker for Gyms & Fitness Studios | Lead Response & Trial Booking',
-    metaDesc: 'Gym AI that responds to every membership inquiry in 60 seconds, books trial sessions automatically, and reduces no-shows with automated reminders. Works inside GoHighLevel.',
+    metaDesc: 'Gym AI that responds to every membership inquiry in 60 seconds, books trial sessions automatically, and reduces no-shows with automated reminders. Works with any CRM.',
     emoji: '💪',
     hero: 'AI Worker for Gyms & Fitness Studios',
     subhero: 'Gym leads who don\'t hear back in 10 minutes cancel 80% of the time. Our AI responds to every inquiry in under 60 seconds and books free trial sessions automatically — 24/7.',
@@ -182,7 +182,7 @@ const NICHES: Record<string, NicheData> = {
       { q: 'Does this work for boutique studios (yoga, pilates, CrossFit)?', a: 'Yes. The AI personality is fully customizable for your brand voice. Works for everything from big box gyms to intimate boutique studios.' },
       { q: 'Can it handle membership cancellation requests?', a: 'You configure the response — options include collecting cancellation reasons, offering a freeze option, or routing to a human retention specialist.' },
     ],
-    keywords: ['AI for gyms', 'fitness studio AI', 'gym lead automation', 'CrossFit AI worker', 'gym membership automation GHL'],
+    keywords: ['AI for gyms', 'fitness studio AI', 'gym lead automation', 'CrossFit AI worker', 'gym membership automation'],
     demoSlug: 'dental',
   },
 
@@ -204,7 +204,7 @@ const NICHES: Record<string, NicheData> = {
       { icon: '💬', title: '24/7 coverage', desc: 'Every inbound text gets a response within 60 seconds — evenings, weekends, holidays, storm season.' },
       { icon: '💰', title: 'Quote follow-up', desc: 'Sent a quote but haven\'t heard back? AI follows up automatically at 24h, 48h, and 7 days.' },
       { icon: '⭐', title: 'Review requests', desc: 'After job completion, AI sends a review request and makes it one-tap easy to leave a 5-star review.' },
-      { icon: '🏷️', title: 'Job type tagging', desc: 'Automatically categorizes jobs (HVAC repair, roof inspection, drain cleaning) and assigns to the right tech in GHL.' },
+      { icon: '🏷️', title: 'Job type tagging', desc: 'Automatically categorizes jobs (HVAC repair, roof inspection, drain cleaning) and assigns to the right tech in your CRM.' },
     ],
     useCases: [
       'Emergency: "My AC stopped working, it\'s 95 degrees outside"',
@@ -215,11 +215,11 @@ const NICHES: Record<string, NicheData> = {
       'Storm season: handling 50+ simultaneous inquiries',
     ],
     faq: [
-      { q: 'Can the AI actually dispatch a tech?', a: 'The AI can notify your on-call tech via text/email for emergencies. For standard jobs, it books into your GHL calendar which your team monitors.' },
+      { q: 'Can the AI actually dispatch a tech?', a: 'The AI can notify your on-call tech via text/email for emergencies. For standard jobs, it books into your calendar which your team monitors.' },
       { q: 'What if the AI gives wrong pricing?', a: 'You configure the AI to give ranges ("typically $150–$350") or send a quote request form rather than specific prices. Prevents commitment issues.' },
       { q: 'Does this work for franchises with multiple territories?', a: 'Yes — you can configure service area questions so the AI qualifies location before booking and routes to the right local tech.' },
     ],
-    keywords: ['AI for HVAC companies', 'roofing AI worker', 'plumbing SMS automation', 'home services AI', 'contractor AI GoHighLevel'],
+    keywords: ['AI for HVAC companies', 'roofing AI worker', 'plumbing SMS automation', 'home services AI', 'contractor AI worker'],
     demoSlug: 'dental',
   },
 };
@@ -282,7 +282,7 @@ export default async function AiForNichePage({ params }: Props) {
                 {data.emoji} See live demo →
               </Link>
             </div>
-            <p className="text-gray-400 text-sm mt-4">No credit card · Setup in under 10 minutes · Works with GoHighLevel</p>
+            <p className="text-gray-400 text-sm mt-4">No credit card · Setup in under 10 minutes · Works with any CRM</p>
           </div>
           <div className="space-y-4">
             <div className="bg-indigo-900 text-white rounded-2xl p-8 text-center">
@@ -337,10 +337,10 @@ export default async function AiForNichePage({ params }: Props) {
       <section className="bg-indigo-50 py-20 px-4">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl font-black mb-3">Set up in under 10 minutes</h2>
-          <p className="text-gray-500 mb-12">Works inside GoHighLevel. No new software your clients need to learn.</p>
+          <p className="text-gray-500 mb-12">Connects to your existing tools. No new software your clients need to learn.</p>
           <div className="grid sm:grid-cols-3 gap-8">
             {[
-              { step: '01', title: 'Connect GHL', desc: 'Paste your GHL Private Integration token. 2 minutes.' },
+              { step: '01', title: 'Add a client', desc: 'Enter the business name and pick an industry template. 2 minutes.' },
               { step: '02', title: `${data.emoji} Pick template`, desc: `Choose the ${data.slug} industry template. Pre-built AI personality included.` },
               { step: '03', title: 'Go live', desc: 'AI starts responding to every inbound message immediately.' },
             ].map(s => (
@@ -396,7 +396,7 @@ export default async function AiForNichePage({ params }: Props) {
           <Link href="/solo" className="inline-block bg-white text-indigo-900 font-black text-xl px-10 py-5 rounded-xl hover:bg-indigo-50 transition">
             Get Started Free →
           </Link>
-          <p className="text-indigo-400 text-sm mt-4">No credit card · Works with GoHighLevel · Cancel anytime</p>
+          <p className="text-indigo-400 text-sm mt-4">No credit card · Works with any CRM · Cancel anytime</p>
         </div>
       </section>
       <PublicFooter />

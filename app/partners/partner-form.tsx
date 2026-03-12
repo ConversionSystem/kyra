@@ -90,22 +90,23 @@ export function PartnerApplicationForm() {
           required value={form.audience}
           onChange={e => update('audience', e.target.value)}
           rows={3}
-          placeholder="e.g. I run a GHL consulting business, have a YouTube channel with 5K subs, or coach agency owners in my mastermind..."
+          placeholder="e.g. I run an agency consulting business, have a YouTube channel with 5K subs, or coach agency owners in my mastermind..."
           className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 resize-none"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Your GHL tier (if applicable)</label>
+        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Your CRM platform (if applicable)</label>
         <select
           value={form.ghlTier}
           onChange={e => update('ghlTier', e.target.value)}
           className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 bg-white"
         >
-          <option value="">Not using GHL / not sure</option>
-          <option value="Starter">Agency Starter</option>
-          <option value="Pro">Agency Pro</option>
-          <option value="Not using">I don't use GHL</option>
+          <option value="">Select...</option>
+          <option value="GoHighLevel">GoHighLevel</option>
+          <option value="HubSpot">HubSpot</option>
+          <option value="Other">Other CRM</option>
+          <option value="None">No CRM yet</option>
         </select>
       </div>
 
