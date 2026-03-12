@@ -65,7 +65,7 @@ export default function DemoChat({ conversation, contactName, businessName, acce
           </div>
           <div>
             <p className="font-semibold text-white text-sm">{contactName}</p>
-            <p className="text-xs text-slate-400">{businessName} • GHL SMS</p>
+            <p className="text-xs text-slate-400">{businessName} • SMS</p>
           </div>
         </div>
 

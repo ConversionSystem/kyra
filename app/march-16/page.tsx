@@ -5,7 +5,7 @@ import PublicNav from '@/components/layout/public-nav';
 import PublicFooter from '@/components/layout/public-footer';
 export const metadata: Metadata = {
   title: 'Kyra @ Launch — OpenClaw Agency Platform | March 16 Demo',
-  description: 'Kyra turns OpenClaw into agency revenue. 60,000+ GHL agencies. One command center. Deploy in 5 minutes.',
+  description: 'Kyra turns OpenClaw into agency revenue. Thousands of agencies. One command center. Deploy in 5 minutes.',
 };
 
 const PLANS = [
@@ -14,7 +14,7 @@ const PLANS = [
     price: '$99',
     period: '/mo',
     clients: 'Up to 3 clients',
-    features: ['3 AI worker deployments', '500 credits/mo included', 'Agency command center', 'GHL + SMS + web chat', 'BYOK (any AI model)'],
+    features: ['3 AI worker deployments', '500 credits/mo included', 'Agency command center', 'SMS + web chat + CRM', 'BYOK (any AI model)'],
   },
   {
     name: 'Pro',
@@ -42,7 +42,7 @@ const PRODUCT_CARDS = [
   {
     icon: '⚡',
     title: '5-Min Deployment',
-    desc: 'Connect a GHL sub-account. Pick an industry template. Done. 21 pre-built AI workers — dental, real estate, auto, cannabis, and more.',
+    desc: 'Add a client account. Pick an industry template. Done. 21 pre-built AI workers — dental, real estate, auto, cannabis, and more.',
   },
   {
     icon: '💳',
@@ -87,13 +87,13 @@ export default function March16Page() {
         </h1>
 
         <p className="text-slate-500 text-xl leading-relaxed mb-12 max-w-2xl mx-auto">
-          60,000 GHL agencies need this. None of them can build it themselves. We did.
+          Thousands of agencies need this. None of them can build it themselves. We did.
         </p>
 
         {/* 3 Big Stat Cards */}
         <div className="grid sm:grid-cols-3 gap-6">
           {[
-            { value: '60,000+', label: 'GHL agencies needing this', sub: 'The exact audience at Launch' },
+            { value: '60,000+', label: 'Agencies needing this', sub: 'The exact audience at Launch' },
             { value: 'Real-world', label: 'Deployments powering revenue', sub: 'Based on prior client work (pre-Kyra)' },
             { value: '5 min', label: 'To deploy a new AI worker', sub: 'Template → live, instantly' },
           ].map((s) => (
@@ -111,7 +111,7 @@ export default function March16Page() {
         <div className="max-w-4xl mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-black mb-4">
-              60,000 agencies discovered OpenClaw.<br />
+              Thousands of agencies discovered OpenClaw.<br />
               None can run it at scale.
             </h2>
             <p className="text-slate-500 text-lg max-w-2xl mx-auto">
@@ -212,7 +212,7 @@ export default function March16Page() {
             Why we want 5 minutes on March 16
           </h2>
           <p className="text-slate-500 text-lg leading-relaxed mb-6">
-            Jason's audience is our customer. The TWIST community, Clawhub, the OpenClaw Discord — these are GHL agency owners who understand the underlying technology and are actively looking for the platform layer to scale it.
+            Jason's audience is our customer. The TWIST community, Clawhub, the OpenClaw Discord — these are agency owners who understand the underlying technology and are actively looking for the platform layer to scale it.
           </p>
           <p className="text-slate-500 text-lg leading-relaxed">
             One demo at Launch reaches exactly the right people. We don't need a broad audience — we need a concentrated one. This is that moment.

@@ -31,7 +31,7 @@ export default function PrivacyPage() {
             title: '1. Information We Collect',
             content: [
               'Account information: email address, name, and password when you create an account.',
-              'Agency and client data: business names, industry types, AI personality configurations, and GHL integration tokens you provide.',
+              'Agency and client data: business names, industry types, AI personality configurations, and CRM integration tokens you provide.',
               'Conversation data: AI-generated responses and incoming messages processed through connected channels (GHL SMS, web chat, etc.) are stored to power analytics and conversation history.',
               'Usage data: page views, feature usage, and session information collected automatically.',
               'Payment information: billing is handled by Stripe; we do not store credit card numbers.',
@@ -54,7 +54,7 @@ export default function PrivacyPage() {
             content: [
               'We do not sell your personal data.',
               'OpenAI: AI responses are generated via the OpenAI API. Messages processed by Kyra may be sent to OpenAI subject to their privacy policy.',
-              'GoHighLevel: Integration with GHL requires sharing your private integration token; GHL processes messages on their infrastructure.',
+              'CRM providers (e.g. GoHighLevel): Integration requires sharing your private integration token; the CRM provider processes messages on their infrastructure.',
               'Stripe: Payment processing and subscription management.',
               'Supabase: Database hosting for account and conversation data.',
               'Vercel: Application hosting and infrastructure.',

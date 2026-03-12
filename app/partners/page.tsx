@@ -6,7 +6,7 @@ import PublicFooter from '@/components/layout/public-footer';
 
 export const metadata: Metadata = {
   title: 'Kyra Partner Program — Resell Autonomous AI Workers',
-  description: 'Join the Kyra Partner Program. Refer GHL agencies and earn 20% monthly recurring revenue for the lifetime of each account. No cap, no expiry.',
+  description: 'Join the Kyra Partner Program. Refer agencies and earn 20% monthly recurring revenue for the lifetime of each account. No cap, no expiry.',
 };
 
 const TIERS = [
@@ -50,7 +50,7 @@ const HOW_IT_WORKS = [
   {
     step: '03',
     title: 'Refer agencies',
-    desc: 'Send your link to GHL agency owners. When they sign up and pay, you earn 20% every month they stay.',
+    desc: 'Send your link to agency owners. When they sign up and pay, you earn 20% every month they stay.',
   },
   {
     step: '04',
@@ -83,7 +83,7 @@ export default function PartnersPage() {
             <span className="text-indigo-300">for every agency you refer.</span>
           </h1>
           <p className="text-xl text-indigo-200 max-w-2xl mx-auto mb-10 leading-relaxed">
-            Kyra Partner Program. Refer GHL agency owners. Earn recurring monthly commission as long as they stay — forever.
+            Kyra Partner Program. Refer agency owners. Earn recurring monthly commission as long as they stay — forever.
           </p>
           <a href="#apply" className="inline-block bg-white text-indigo-900 font-black text-lg px-8 py-4 rounded-xl hover:bg-indigo-50 transition">
             Apply Now — Free
@@ -169,11 +169,11 @@ export default function PartnersPage() {
           <h2 className="text-2xl font-black text-center mb-10">Who this is for</h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {[
-              { icon: '🤝', title: 'GHL Consultants', desc: 'Help agencies get the most out of GoHighLevel. Kyra is a natural upsell.' },
+              { icon: '🤝', title: 'Agency Consultants', desc: 'Help agencies grow their revenue. Kyra is a natural upsell.' },
               { icon: '🎓', title: 'Course Creators', desc: 'Running an agency program? Kyra is a tool your students will need and thank you for.' },
               { icon: '🏢', title: 'Agency Owners', desc: 'Already using Kyra? Refer peers in your network and earn from the platform you know works.' },
-              { icon: '📣', title: 'Influencers & Creators', desc: 'GHL audience on YouTube, LinkedIn, or TikTok? Recurring commissions add up fast.' },
-              { icon: '🔗', title: 'Integration Partners', desc: 'Building on GHL or adjacent tools? Add Kyra to your ecosystem and earn on every referral.' },
+              { icon: '📣', title: 'Influencers & Creators', desc: 'Agency audience on YouTube, LinkedIn, or TikTok? Recurring commissions add up fast.' },
+              { icon: '🔗', title: 'Integration Partners', desc: 'Building agency tools or integrations? Add Kyra to your ecosystem and earn on every referral.' },
               { icon: '🧠', title: 'AI Coaches', desc: 'Teaching businesses to use AI? Kyra is a concrete tool with proven results to point clients toward.' },
             ].map(w => (
               <div key={w.title} className="bg-white rounded-xl p-5 border border-gray-200">

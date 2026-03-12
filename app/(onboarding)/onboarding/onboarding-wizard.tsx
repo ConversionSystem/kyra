@@ -410,9 +410,9 @@ function StepGHL({
           <Link2 className="h-5 w-5 text-orange-600" />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-gray-900">Connect GoHighLevel</h2>
+          <h2 className="text-xl font-bold text-gray-900">Connect your CRM</h2>
           <p className="text-sm text-gray-500">
-            Plug <span className="font-semibold text-gray-700">{clientName}</span> into GHL so the AI handles inbound SMS automatically.
+            Plug <span className="font-semibold text-gray-700">{clientName}</span> into your CRM so the AI handles inbound SMS automatically.
           </p>
         </div>
       </div>
@@ -511,7 +511,7 @@ function StepGHL({
           ) : phase === 'success' ? (
             <><CheckCircle2 className="h-4 w-4 mr-2" /> Connected!</>
           ) : (
-            <>Connect GHL <ArrowRight className="h-4 w-4 ml-2" /></>
+            <>Connect CRM <ArrowRight className="h-4 w-4 ml-2" /></>
           )}
         </Button>
         <button
@@ -519,7 +519,7 @@ function StepGHL({
           disabled={phase === 'connecting'}
           className="w-full flex items-center justify-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 py-2 transition-colors"
         >
-          <SkipForward className="h-3.5 w-3.5" /> Skip — I&apos;ll connect GHL from the client settings
+          <SkipForward className="h-3.5 w-3.5" /> Skip — I&apos;ll connect my CRM from the client settings
         </button>
       </div>
     </div>
@@ -541,7 +541,7 @@ function StepDone({
   const [going, setGoing] = useState(false);
   const [sharedCredits, setSharedCredits] = useState(false);
 
-  const shareText = `Just deployed my first AI worker with Kyra 🤖\n\nIt handles every inbound lead automatically — SMS, booking, GHL follow-up. All in under 60 seconds.\n\nFree to start → kyra.conversionsystem.com\n\n#GoHighLevel #AIWorker #AgencyLife`;
+  const shareText = `Just deployed my first AI worker with Kyra 🤖\n\nIt handles every inbound lead automatically — SMS, booking, CRM follow-up. All in under 60 seconds.\n\nFree to start → kyra.conversionsystem.com\n\n#AIWorker #AgencyLife #AIWorkforce`;
   const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
   const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent('https://kyra.conversionsystem.com')}&summary=${encodeURIComponent(shareText)}`;
 

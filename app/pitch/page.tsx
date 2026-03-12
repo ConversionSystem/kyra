@@ -27,7 +27,7 @@ const SLIDES = [
     subtitle: 'And hiring staff for 24/7 coverage costs $40K+/year per client.',
     bullets: [
       '❌ Chatbots: match keywords, fail on unexpected questions, feel robotic',
-      '❌ GHL automations: follow scripts, break when customers go off-path',
+      '❌ CRM automations: follow scripts, break when customers go off-path',
       '❌ Answering services: expensive, slow, and they don\'t know the business',
       '❌ More staff: not scalable, can\'t work 24/7 at scale',
     ],
@@ -40,7 +40,7 @@ const SLIDES = [
     title: 'An AI worker that works 24/7.',
     subtitle: 'Not a bot. Not a script. A real AI agent with a personality.',
     bullets: [
-      '✅ Responds to every GHL SMS within 60 seconds — day or night',
+      '✅ Responds to every SMS within 60 seconds — day or night',
       '✅ Books appointments, answers questions, updates the CRM',
       '✅ Escalates frustrated customers to your human team instantly',
       '✅ Works on SMS, WhatsApp, Instagram, Facebook, Live Chat, and your website',
@@ -69,10 +69,10 @@ const SLIDES = [
     id: 5,
     tag: 'How It Works',
     title: 'Live in under 10 minutes.',
-    subtitle: 'Works with your existing GoHighLevel account.',
+    subtitle: 'Works with your existing CRM — or standalone.',
     steps: [
       { n: '01', title: 'Create free account', desc: 'Sign up at kyra.conversionsystem.com — no credit card' },
-      { n: '02', title: 'Connect GHL', desc: 'Paste your Private Integration Token (2 min, no approval needed)' },
+      { n: '02', title: 'Connect CRM', desc: 'Paste your integration token or use standalone (2 min)' },
       { n: '03', title: 'Add a client', desc: 'Pick industry template + click ✨ Generate with AI' },
       { n: '04', title: 'Go live', desc: 'AI starts responding to every inbound message within 60 seconds' },
     ],
@@ -112,13 +112,13 @@ const SLIDES = [
   {
     id: 8,
     tag: 'Why Now',
-    title: 'GoHighLevel just opened the door.',
-    subtitle: '60,000 agencies. All about to need an AI strategy.',
+    title: 'AI workers are going mainstream.',
+    subtitle: 'Thousands of agencies. All about to need an AI strategy.',
     bullets: [
-      '🚀 GHL integrated OpenClaw (the AI runtime Kyra runs on) — every GHL agency is now AI-curious',
+      '🚀 OpenClaw powers Kyra\'s AI runtime — agencies are discovering autonomous AI workers',
       '📈 AI worker demand is peaking — agencies who move now capture the market',
-      '🏆 Kyra is purpose-built for GHL agencies — the competition is generic chatbots',
-      '⏱️ First-mover advantage: most GHL agencies have no AI worker offer yet',
+      '🏆 Kyra is purpose-built for agencies — the competition is generic chatbots',
+      '⏱️ First-mover advantage: most agencies have no AI worker offer yet',
     ],
     cta: null,
     accent: 'text-amber-400',
@@ -126,7 +126,7 @@ const SLIDES = [
   {
     id: 9,
     tag: 'Why Kyra',
-    title: 'The only platform built specifically for GHL agencies.',
+    title: 'The only platform built specifically for agencies.',
     subtitle: "Not a chatbot. Not a hosted terminal. An AI worker business.",
     bullets: [
       '✅ One dashboard to manage ALL client AI workers',
@@ -134,7 +134,7 @@ const SLIDES = [
       '✅ 21 industry templates — dental, real estate, cannabis, auto, restaurant, and more',
       '✅ White-label — your agency name, your clients\'s AI worker',
       '✅ Pitch pages, referral program, Business-in-a-Box playbook included',
-      '✅ GHL Private Integration (no marketplace approval needed)',
+      '✅ CRM integrations (GoHighLevel, and more coming)',
     ],
     cta: null,
     accent: 'text-indigo-400',

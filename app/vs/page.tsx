@@ -5,9 +5,9 @@ import PublicNav from '@/components/layout/public-nav';
 import PublicFooter from '@/components/layout/public-footer';
 
 export const metadata: Metadata = {
-  title: 'Kyra vs. Chatbots — AI Workers Are a Different Category | OpenClaw-Powered',
-  description: 'Why AI workers are different from chatbots, canned response bots, and basic GHL automation workflows. Side-by-side comparison.',
-  keywords: ['GHL AI worker vs chatbot', 'stammer.ai alternative', 'AI worker for GHL', 'GoHighLevel chatbot vs AI'],
+  title: 'Kyra vs. Chatbots vs. CRM Automation — AI Workers Are a Different Category',
+  description: 'Why AI workers are different from chatbots, canned response bots, and basic CRM automation workflows. Side-by-side comparison.',
+  keywords: ['AI worker vs chatbot', 'stammer.ai alternative', 'AI workforce platform', 'voice AI vs chatbot', 'AI receptionist'],
 };
 
 const rows = [
@@ -32,7 +32,7 @@ const rows = [
     kyra: true, chatbot: false, ghlAutomation: false,
   },
   {
-    feature: 'Telegram, Discord, Slack support (non-GHL channels)',
+    feature: 'Telegram, Discord, Slack + more channels',
     kyra: true, chatbot: false, ghlAutomation: false,
   },
   {
@@ -40,7 +40,7 @@ const rows = [
     kyra: true, chatbot: false, ghlAutomation: false,
   },
   {
-    feature: 'Reads GHL CRM context before replying (tags, stage, notes)',
+    feature: 'Reads CRM context before replying (tags, stage, notes)',
     kyra: true, chatbot: false, ghlAutomation: false,
   },
   {
@@ -52,7 +52,7 @@ const rows = [
     kyra: true, chatbot: false, ghlAutomation: false,
   },
   {
-    feature: 'Auto-tags GHL contacts from conversation outcomes',
+    feature: 'Auto-tags contacts from conversation outcomes',
     kyra: true, chatbot: false, ghlAutomation: 'partial',
   },
   {
@@ -68,7 +68,7 @@ const rows = [
     kyra: true, chatbot: false, ghlAutomation: false,
   },
   {
-    feature: 'Works across GHL SMS, WhatsApp, Instagram, Facebook, Live Chat, Email',
+    feature: 'Works across SMS, WhatsApp, Instagram, Facebook, Live Chat, Email',
     kyra: true, chatbot: false, ghlAutomation: 'partial',
   },
   {
@@ -76,7 +76,7 @@ const rows = [
     kyra: true, chatbot: false, ghlAutomation: false,
   },
   {
-    feature: 'Web chat widget (no GHL required for website chat)',
+    feature: 'Web chat widget (works on any website)',
     kyra: true, chatbot: 'partial', ghlAutomation: false,
   },
   {
@@ -123,7 +123,7 @@ export default function VsPage() {
             <span className="text-indigo-400">Not the same category.</span>
           </h1>
           <p className="text-slate-400 text-lg max-w-2xl mx-auto">
-            Chatbots respond to keywords. GHL automations follow scripts. An AI worker understands context, adapts to each conversation, and operates like a real team member — without the salary.
+            Chatbots respond to keywords. CRM automations follow scripts. An AI worker understands context, adapts to each conversation, and operates like a real team member — without the salary.
           </p>
         </div>
 
@@ -154,7 +154,7 @@ export default function VsPage() {
                 </th>
                 <th className="p-4 text-center">
                   <div className="flex flex-col items-center gap-1">
-                    <div className="bg-white/10 border border-white/10 rounded-lg px-3 py-1 text-sm font-semibold">GHL Workflows</div>
+                    <div className="bg-white/10 border border-white/10 rounded-lg px-3 py-1 text-sm font-semibold">CRM Automation</div>
                     <span className="text-xs text-slate-500">Automation sequences</span>
                   </div>
                 </th>
@@ -186,7 +186,7 @@ export default function VsPage() {
             {
               title: 'Automations run scripts.',
               subtitle: 'AI workers think.',
-              desc: 'GHL workflows are powerful, but they follow fixed paths. If a contact takes an unexpected action, they fall off the map. The AI adapts to what the customer actually says — not just what you anticipated.',
+              desc: 'CRM workflows are powerful, but they follow fixed paths. If a contact takes an unexpected action, they fall off the map. The AI adapts to what the customer actually says — not what you anticipated.',
               bad: 'Automation: "Reply YES to confirm." → Customer: "sounds good" → Automation: breaks.',
               good: 'Same message → Kyra AI: "✅ Confirmed! See you Tuesday at 2pm. Let me know if anything changes."',
             },

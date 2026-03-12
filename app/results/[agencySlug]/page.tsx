@@ -196,7 +196,7 @@ export default async function AgencyResultsPage({ params }: Props) {
           <Link href="/solo" className="inline-block bg-white text-indigo-900 font-black text-lg px-8 py-4 rounded-xl hover:bg-indigo-50 transition">
             Start Free — $2 in Credits Included →
           </Link>
-          <p className="text-indigo-400 text-sm mt-3">No credit card · Works with GoHighLevel · Cancel anytime</p>
+          <p className="text-indigo-400 text-sm mt-3">No credit card · Works with any CRM · Cancel anytime</p>
         </div>
 
         {/* Member since */}
