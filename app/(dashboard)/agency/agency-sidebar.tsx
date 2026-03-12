@@ -69,15 +69,7 @@ const navSections: NavSection[] = [
       { label: 'Clients', href: '/agency/clients', icon: Users },
     ],
   },
-  {
-    // CRM = single link; Contacts/Deals/Tasks/Analytics navigate from within CRM
-    items: [
-      { label: 'CRM', href: '/agency/crm/contacts', icon: ContactIcon },
-    ],
-  },
-  // All AI Worker features (Templates, Teams, Channels, Voice, Automation, Insights)
-  // live inside each client's dashboard — no agency-level OpenClaw container exists.
-  // Agencies & solo users must create a client first, then configure everything there.
+  // CRM now lives inside each client's dashboard (CRM tab)
   {
     label: 'Account',
     collapsible: true,
@@ -104,12 +96,6 @@ const soloNavSections: NavSection[] = [
   {
     items: [
       { label: 'Mission Control', href: '/agency', icon: Activity },
-    ],
-  },
-  {
-    // CRM = single link
-    items: [
-      { label: 'CRM', href: '/agency/crm/contacts', icon: ContactIcon },
     ],
   },
   {
