@@ -181,9 +181,14 @@ const TAB_GROUPS: { label: string; tabs: typeof TABS }[] = [
   },
 ];
 
+// Tabs locked behind Lite+ plans (hidden for free & solo_pro)
+const PREMIUM_TABS: Tab[] = ['ai-teams', 'voice', 'delivery-sms', 'ghl', 'automation', 'seo'];
+
 interface ClientDetailViewProps {
   client: AgencyClient;
   role: AgencyMember['role'];
+  plan?: string;
+  accountType?: string;
 }
 
 // ── Reprovision Button ────────────────────────────────────────────────────────
@@ -249,7 +254,13 @@ function ReprovisionButton({ clientId }: { clientId: string }) {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
-export function ClientDetailView({ client: initialClient, role }: ClientDetailViewProps) {
+export function ClientDetailView({ client: initialClient, role, plan, accountType }: ClientDetailViewProps) {
+  // Free & Solo Pro accounts get a reduced tab set — premium features are Lite+ only
+  const isFreeOrSolo = !plan || plan === 'free' || plan === 'solo_pro' || (plan === 'free' && accountType === 'solo');
+  const visibleTabs = isFreeOrSolo ? TABS.filter(t => !PREMIUM_TABS.includes(t.id)) : TABS;
+  const visibleTabGroups = TAB_GROUPS
+    .map(g => ({ ...g, tabs: g.tabs.filter(t => !isFreeOrSolo || !PREMIUM_TABS.includes(t.id)) }))
+    .filter(g => g.tabs.length > 0);
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialTab = (searchParams.get('tab') as Tab) || 'terminal';
@@ -316,7 +327,7 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
 
         {/* Left sidebar nav — desktop only */}
         <aside className="hidden md:flex flex-col w-52 shrink-0 border-r border-gray-100 bg-white pt-4 pb-8 px-3 sticky top-0 self-start max-h-screen overflow-y-auto">
-          {TAB_GROUPS.map((group, gi) => (
+          {visibleTabGroups.map((group, gi) => (
             <div key={group.label} className={gi > 0 ? 'mt-5' : ''}>
               <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest px-3 mb-1">
                 {group.label}
@@ -347,7 +358,7 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
         <div className="md:hidden w-full">
           <div className="border-b border-gray-200 overflow-x-auto scrollbar-hide bg-white">
             <nav className="flex gap-0.5 px-4 -mb-px">
-              {TABS.map((tab) => {
+              {visibleTabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
                 return (

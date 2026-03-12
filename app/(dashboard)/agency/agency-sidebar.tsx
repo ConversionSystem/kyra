@@ -104,7 +104,6 @@ const soloNavSections: NavSection[] = [
   {
     items: [
       { label: 'Mission Control', href: '/agency', icon: Activity },
-      // Conversations removed — accessible from Mission Control
     ],
   },
   {
@@ -120,14 +119,7 @@ const soloNavSections: NavSection[] = [
       { label: 'AI Model', href: '/agency/ai-model', icon: Cpu },
       { label: 'AI Templates', href: '/agency/ai-setup', icon: Sparkles },
       { label: 'Channels', href: '/agency/channels', icon: Radio },
-      { label: 'Voice AI', href: '/agency/voice', icon: Phone },
-      // Chat Widget removed — accessible via Channels → Web Chat
-    ],
-  },
-  {
-    // Automation = single link
-    items: [
-      { label: 'Automation', href: '/agency/automations', icon: ZapIcon },
+      // Voice AI, Automation, GHL, Delivery SMS, SEO — Lite+ only
     ],
   },
   {
