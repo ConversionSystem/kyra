@@ -7,6 +7,20 @@ export async function GET(req: NextRequest) {
   const clientId = req.nextUrl.searchParams.get('clientId') ?? '';
   const supabase = createServiceClientWithoutCookies();
 
+  if (clientId === 'list') {
+    // List first 5 agencies
+    const { data: agencies } = await supabase
+      .from('agencies')
+      .select('id, name')
+      .limit(5);
+    // List first 5 clients  
+    const { data: clients } = await supabase
+      .from('agency_clients')
+      .select('id, name, agency_id')
+      .limit(5);
+    return NextResponse.json({ agencies, clients });
+  }
+
   const { data: clientRow, error: clientErr } = await supabase
     .from('agency_clients')
     .select('id, name, agency_id')
