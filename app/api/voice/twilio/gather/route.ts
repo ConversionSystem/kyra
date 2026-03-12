@@ -9,16 +9,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { deductCredits, requireCredits } from '@/lib/billing/credit-engine';
+import { getKnowledgeContext } from '@/lib/knowledge/rag';
 
 // Cache client config per clientId — avoids repeated Supabase queries mid-call
 // TTL 5 min — fast enough to pick up config changes without DB hit every turn
 const clientConfigCache = new Map<string, { ts: number; data: ClientVoiceConfig }>();
 const CONFIG_TTL_MS = 5 * 60 * 1000;
 
+// Cache knowledge per clientId — fetched once per call, not every turn
+const knowledgeCache = new Map<string, { ts: number; text: string }>();
+const KNOWLEDGE_TTL_MS = 10 * 60 * 1000; // 10 min
+
 interface ClientVoiceConfig {
   name: string;
+  clientId: string;
   agency_id: string;
   persona: string;
+  businessHours: string;
+  businessPhone: string;
+  businessAddress: string;
+  calendarUrl: string;
+  services: string;
+  industry: string;
   voiceCfg: Record<string, unknown>;
   llmKey: string;
   llmUrl: string;
@@ -115,7 +127,7 @@ export async function POST(req: NextRequest) {
       .select('id, name, container_config, agency_id')
       .eq('id', clientId).maybeSingle();
 
-    console.log(`[voice/gather] clientId=${clientId} clientRow=${JSON.stringify(clientRow)} clientErr=${clientErr?.message ?? clientErr?.code ?? 'none'}`);
+
 
     if (clientRow) {
       cfg = (clientRow.container_config as Record<string, unknown>) ?? {};
@@ -130,13 +142,21 @@ export async function POST(req: NextRequest) {
       const llmUrl = (process.env.OPENROUTER_API_KEY || agKeys.openrouter) ? OPENROUTER_URL : 'https://api.openai.com/v1/chat/completions';
       const llmModel = llmUrl.includes('openrouter') ? 'openai/gpt-4o-mini' : 'gpt-4o-mini';
       persona = (cfg.persona as string) ?? '';
-      vcfg = { ts: Date.now(), data: { name, agency_id, persona, voiceCfg, llmKey, llmUrl, llmModel } };
+      vcfg = { ts: Date.now(), data: {
+        name, clientId, agency_id, persona, voiceCfg, llmKey, llmUrl, llmModel,
+        businessHours: (cfg.business_hours as string) ?? '',
+        businessPhone: (cfg.business_phone as string) ?? '',
+        businessAddress: (cfg.business_address as string) ?? '',
+        calendarUrl: (cfg.calendar_url as string) ?? '',
+        services: (cfg.services as string) ?? '',
+        industry: (cfg.industry as string) ?? '',
+      }};
       clientConfigCache.set(clientId, vcfg);
     } else {
       // Fallback: agency-level voice
       const { data: agencyRow, error: agencyErr } = await supabase
         .from('agencies').select('id, name, settings, api_keys').eq('id', clientId).maybeSingle();
-      console.log(`[voice/gather] agency fallback clientId=${clientId} agencyRow=${JSON.stringify(agencyRow)} agencyErr=${agencyErr?.message ?? agencyErr?.code ?? 'none'}`);
+
       if (!agencyRow) {
         console.error(`[voice/gather] No client or agency found for clientId=${clientId}`);
         return twiml('<Say>Sorry, this service is not configured yet. Please contact support.</Say><Hangup/>');
@@ -147,12 +167,24 @@ export async function POST(req: NextRequest) {
       const llmKey = process.env.OPENROUTER_API_KEY || agKeys.openrouter || agKeys.openai || '';
       const llmUrl = (process.env.OPENROUTER_API_KEY || agKeys.openrouter) ? OPENROUTER_URL : 'https://api.openai.com/v1/chat/completions';
       const llmModel = llmUrl.includes('openrouter') ? 'openai/gpt-4o-mini' : 'gpt-4o-mini';
-      vcfg = { ts: Date.now(), data: { name: agencyRow.name, agency_id: agencyRow.id, persona: '', voiceCfg, llmKey, llmUrl, llmModel } };
+      const agSettings = (agencyRow.settings as Record<string, unknown>) ?? {};
+      vcfg = { ts: Date.now(), data: {
+        name: agencyRow.name, clientId, agency_id: agencyRow.id, persona: '', voiceCfg, llmKey, llmUrl, llmModel,
+        businessHours: (agSettings.business_hours as string) ?? '',
+        businessPhone: (agSettings.business_phone as string) ?? '',
+        businessAddress: (agSettings.business_address as string) ?? '',
+        calendarUrl: (agSettings.calendar_url as string) ?? '',
+        services: (agSettings.services as string) ?? '',
+        industry: (agSettings.industry as string) ?? '',
+      }};
       clientConfigCache.set(clientId, vcfg);
     }
   }
 
-  const { name: clientName, agency_id, voiceCfg, persona, llmKey, llmUrl, llmModel } = vcfg.data;
+  const {
+    name: clientName, clientId: resolvedClientId, agency_id, voiceCfg, persona, llmKey, llmUrl, llmModel,
+    businessHours, businessPhone, businessAddress, calendarUrl, services, industry,
+  } = vcfg.data;
   const ttsVoice = getVoice(voiceCfg.voiceId as string | undefined);
   const aiName = (voiceCfg.aiName as string) ?? 'Alex';
   const language = (voiceCfg.language as string) ?? 'en-US';
@@ -191,14 +223,47 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const systemPrompt = `${persona || `You are ${aiName}, a friendly AI assistant for ${clientName}.`}
+  // ── Fetch knowledge base (cached per client) ─────────────────────────────
+  let knowledgeSection = '';
+  const knowledgeCacheKey = resolvedClientId || clientId;
+  const cachedKnowledge = knowledgeCache.get(knowledgeCacheKey);
+  if (cachedKnowledge && Date.now() - cachedKnowledge.ts < KNOWLEDGE_TTL_MS) {
+    knowledgeSection = cachedKnowledge.text;
+  } else {
+    try {
+      const knowledge = await getKnowledgeContext(agency_id, resolvedClientId || clientId, speechResult);
+      if (knowledge.text) {
+        knowledgeSection = knowledge.text;
+        knowledgeCache.set(knowledgeCacheKey, { ts: Date.now(), text: knowledge.text });
+      }
+    } catch (err) {
+      console.error('[voice/gather] Knowledge RAG error:', err);
+    }
+  }
 
-CRITICAL VOICE RULES:
-- You are on a LIVE PHONE CALL. Keep responses to 1-2 SHORT sentences.
-- Sound natural and warm — like a real person, not a robot.
-- Never use bullet points, lists, markdown, or technical language.
-- If you don't know something, say "Let me have someone follow up on that."
-- Caller's phone: ${callerNumber}`.trim();
+  // ── Build system prompt — same brain as text/widget chat ────────────────
+  const systemPrompt = [
+    persona || `You are ${aiName}, a friendly AI assistant for ${clientName}.`,
+    '',
+    'CRITICAL VOICE RULES:',
+    '- You are on a LIVE PHONE CALL. Keep responses to 1-2 SHORT sentences.',
+    '- Sound natural and warm — like a real person, not a robot.',
+    '- Never use bullet points, lists, markdown, or technical language.',
+    '- If you don\'t know something, say "Let me have someone follow up on that."',
+    '',
+    // Business context — same fields as widget chat
+    industry ? `Industry: ${industry}` : '',
+    services ? `Services offered: ${services}` : '',
+    businessHours ? `Business hours: ${businessHours}` : '',
+    businessPhone ? `Business phone: ${businessPhone}` : '',
+    businessAddress ? `Location: ${businessAddress}` : '',
+    calendarUrl ? `When someone wants to book an appointment, tell them to visit: ${calendarUrl}` : '',
+    '',
+    // Knowledge base — docs, website content, FAQs
+    knowledgeSection ? `\nKNOWLEDGE BASE — Use this to answer questions accurately:\n${knowledgeSection}` : '',
+    '',
+    `Caller's phone: ${callerNumber}`,
+  ].filter(Boolean).join('\n').trim();
 
   const history: Array<{ role: string; content: string }> = (historyRows ?? []).map(r => ({
     role: r.role,
@@ -232,7 +297,7 @@ CRITICAL VOICE RULES:
           ...history.slice(-6),
         ],
         temperature: 0.7,
-        max_tokens: 60,  // very short = faster response + more natural on phone
+        max_tokens: 80,  // short = faster response + more natural on phone
       }),
       signal: AbortSignal.timeout(6000),  // 6s max — caller shouldn't wait longer
     });
