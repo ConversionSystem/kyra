@@ -13,22 +13,22 @@ const PLANS = [
     monthly: 39, annual: 29,
     annualSave: 120,
     period: '/month',
-    desc: 'Your personal AI worker. Handles leads, books appointments, answers calls 24/7.',
+    desc: 'Your personal AI worker. Handles leads, books appointments, chats with customers 24/7.',
     cta: 'Start Solo Pro',
     href: '/solo?plan=solo_pro',
     featured: false,
     badge: 'FOR SOLO BUSINESSES',
     features: [
-      '1 AI worker (no expiry)',
-      '200 platform credits / month',
-      'Voice AI (inbound & outbound calls)',
-      'SMS, Telegram & web chat',
-      'Full CRM — contacts, deals, pipeline',
-      'Proactive AI automations',
-      'GHL integration',
-      'Advanced analytics',
-      'Priority support',
-      'Referral program',
+      '1 AI Worker powered by OpenClaw',
+      '2,000 credits / month',
+      'Messaging across SMS, Telegram & web chat',
+      'Built-in CRM with contacts, deals & pipeline',
+      'AI Templates — pick one, deploy instantly',
+      'Skills — add capabilities to your AI worker',
+      'Knowledge Base — teach your AI with docs & links',
+      'Customer Intelligence — insights from conversations',
+      'Email support',
+      'Referral program — earn credits for every referral',
     ],
     limits: [],
   },
@@ -284,7 +284,7 @@ export default function PricingPage() {
         {/* OpenClaw math callout */}
         <div className="mt-6 rounded-2xl border border-indigo-500/30 bg-indigo-950/40 p-5 text-center">
           <p className="text-indigo-200 text-sm font-semibold">
-            💡 Platform credits are included — no API keys needed to start. Solo Pro: 200 credits/mo · Lite: 500 · Pro: 1,500 · Scale: 2,500. Bring your own key (BYOK) for Lite+.
+            💡 Platform credits are included — no API keys needed to start. Solo Pro: 2,000 credits/mo · Lite: 500 · Pro: 1,500 · Scale: 2,500. Bring your own key (BYOK) for Lite+.
           </p>
         </div>
 
@@ -371,10 +371,10 @@ export default function PricingPage() {
         <h2 className="text-3xl sm:text-4xl font-black mb-4">Ready to deploy your first AI worker?</h2>
         <p className="text-slate-400 mb-8">Start on Lite at $99/mo. 7-day free trial — no charge today.</p>
         <Link
-          href="/signup/agency?plan=starter"
+          href="/solo"
           className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-lg px-8 py-4 rounded-xl transition"
         >
-          Start 7-day free trial →
+          Start free →
         </Link>
         <p className="text-slate-600 text-sm mt-4">Cancel anytime · Upgrade as you grow · 500 credits included</p>
       </section>
