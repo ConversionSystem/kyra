@@ -325,8 +325,8 @@ function BuildPageInner() {
     </div>
   );
 
-  // ── Step 1: About Your Business ───────────────────────────────────────────
-  const Step1 = () => (
+  // ── Step renderers (inline JSX, NOT component functions — avoids unmount/remount on keystroke)
+  const step1Content = (
     <div className="space-y-6">
       <div className="text-center mb-2">
         <h2 className="text-2xl font-bold text-white">Tell us about your business</h2>
@@ -392,7 +392,7 @@ function BuildPageInner() {
   );
 
   // ── Step 2: What Should the AI Do? ────────────────────────────────────────
-  const Step2 = () => (
+  const step2Content = (
     <div className="space-y-6">
       <div className="text-center mb-2">
         <h2 className="text-2xl font-bold text-white">What should your AI do?</h2>
@@ -455,7 +455,7 @@ function BuildPageInner() {
   );
 
   // ── Step 3: Business Details ──────────────────────────────────────────────
-  const Step3 = () => (
+  const step3Content = (
     <div className="space-y-6">
       <div className="text-center mb-2">
         <h2 className="text-2xl font-bold text-white">Business details</h2>
@@ -533,7 +533,7 @@ function BuildPageInner() {
   );
 
   // ── Step 4: AI Personality ────────────────────────────────────────────────
-  const Step4 = () => (
+  const step4Content = (
     <div className="space-y-6">
       <div className="text-center mb-2">
         <h2 className="text-2xl font-bold text-white">Give your AI a personality</h2>
@@ -593,7 +593,7 @@ function BuildPageInner() {
   );
 
   // ── Step 5: Create Account ────────────────────────────────────────────────
-  const Step5 = () => (
+  const step5Content = (
     <div className="space-y-6">
       <div className="text-center mb-2">
         <h2 className="text-2xl font-bold text-white">Last step — create your account</h2>
@@ -665,7 +665,7 @@ function BuildPageInner() {
   );
 
   // ── Step 6: Success ───────────────────────────────────────────────────────
-  const Step6 = () => (
+  const step6Content = (
     <div className="text-center space-y-6">
       <div className="w-16 h-16 bg-green-500/20 rounded-2xl flex items-center justify-center mx-auto">
         <CheckCircle2 className="h-8 w-8 text-green-400" />
@@ -753,11 +753,11 @@ function BuildPageInner() {
 
               {/* Steps */}
               <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-6 sm:p-8">
-                {step === 1 && <Step1 />}
-                {step === 2 && <Step2 />}
-                {step === 3 && <Step3 />}
-                {step === 4 && <Step4 />}
-                {step === 5 && <Step5 />}
+                {step === 1 && step1Content}
+                {step === 2 && step2Content}
+                {step === 3 && step3Content}
+                {step === 4 && step4Content}
+                {step === 5 && step5Content}
 
                 {/* Navigation */}
                 <div className="flex items-center justify-between mt-8 pt-6 border-t border-white/10">
@@ -809,7 +809,7 @@ function BuildPageInner() {
             </>
           )}
 
-          {step === 6 && <Step6 />}
+          {step === 6 && step6Content}
         </div>
       </main>
 
