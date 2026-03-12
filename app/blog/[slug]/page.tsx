@@ -103,7 +103,7 @@ export default async function BlogPostPage({
         {/* CTA */}
         <div className="mt-12 rounded-2xl bg-indigo-950/50 border border-indigo-500/20 p-8 text-center">
           <p className="text-xl font-bold mb-2">Try it yourself — free</p>
-          <p className="text-slate-400 mb-6 text-sm">No credit card. Works with GoHighLevel. First AI worker live in 10 minutes.</p>
+          <p className="text-slate-400 mb-6 text-sm">No credit card. Powered by OpenClaw. First AI worker live in 2 minutes.</p>
           <div className="flex items-center justify-center gap-3 flex-wrap">
             <Link href="/solo" className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-3 rounded-xl transition">
               Start Free →
