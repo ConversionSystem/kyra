@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
   }
 
   const { data: clientRow, error: clientErr } = await supabase
-    .from('agency_clients').select('id, name, agency_id').eq('id', clientId).maybeSingle();
+    .from('agency_clients').select('id, name, agency_id, container_config').eq('id', clientId).maybeSingle();
   const { data: agencyRow, error: agencyErr } = await supabase
     .from('agencies').select('id, name').eq('id', clientId).maybeSingle();
 
