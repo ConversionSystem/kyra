@@ -14,17 +14,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 
 // Shared voice map — must match gather/route.ts
-const POLLY_VOICE_MAP: Record<string, string> = {
-  default: 'Polly.Matthew-Neural',
-  alex:    'Polly.Matthew-Neural',
-  sarah:   'Polly.Joanna-Neural',
-  james:   'Polly.Brian-Neural',
-  emma:    'Polly.Emma-Neural',
-  liam:    'Polly.Russell-Neural',
-  sofia:   'Polly.Lupe-Neural',
+const VOICE_MAP: Record<string, string> = {
+  default: 'Google.en-US-Neural2-D',
+  alex:    'Google.en-US-Neural2-D',
+  sarah:   'Google.en-US-Neural2-F',
+  james:   'Google.en-GB-Neural2-B',
+  emma:    'Google.en-GB-Neural2-A',
+  liam:    'Google.en-AU-Neural2-B',
+  sofia:   'Google.es-US-Neural2-A',
 };
-function getPollyVoice(voiceId?: string): string {
-  return POLLY_VOICE_MAP[voiceId?.toLowerCase() ?? 'default'] ?? 'Polly.Matthew-Neural';
+function getVoice(voiceId?: string): string {
+  return VOICE_MAP[voiceId?.toLowerCase() ?? 'default'] ?? 'Google.en-US-Neural2-D';
 }
 
 export const dynamic = 'force-dynamic';
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
   const voiceCfg = (cfg.voice_config as Record<string, unknown>) ?? {};
   const aiName = (voiceCfg.aiName as string) ?? 'Alex';
   const businessName = clientName ?? 'us';
-  const pollyVoice = getPollyVoice(voiceCfg.voiceId as string | undefined);
+  const ttsVoice = getVoice(voiceCfg.voiceId as string | undefined);
   const language = (voiceCfg.language as string) ?? 'en-US';
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, '') ?? '';
@@ -76,10 +76,10 @@ export async function POST(req: NextRequest) {
   // Greet + start gathering speech + record the full call
   return twiml(`
     <Gather input="speech" timeout="4" speechTimeout="auto" action="${gatherUrl}" method="POST" language="${language}">
-      <Say voice="${pollyVoice}">Hi, thanks for calling ${businessName}! This is ${aiName}, your AI assistant. How can I help you today?</Say>
+      <Say voice="${ttsVoice}">Hi, thanks for calling ${businessName}! This is ${aiName}, your AI assistant. How can I help you today?</Say>
     </Gather>
     <Record maxLength="600" recordingStatusCallback="${recordingCallback}" recordingStatusCallbackMethod="POST" />
-    <Say voice="${pollyVoice}">I didn't catch that. Please call back if you need assistance. Goodbye!</Say>
+    <Say voice="${ttsVoice}">I didn't catch that. Please call back if you need assistance. Goodbye!</Say>
     <Hangup/>
   `);
 }

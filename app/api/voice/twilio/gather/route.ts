@@ -30,19 +30,21 @@ const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 
-// Map voiceId to AWS Polly Neural voice name for Twilio
-const POLLY_VOICE_MAP: Record<string, string> = {
-  default: 'Polly.Matthew-Neural',    // Male, American
-  alex:    'Polly.Matthew-Neural',    // Male, American (warm, professional)
-  sarah:   'Polly.Joanna-Neural',     // Female, American (friendly)
-  james:   'Polly.Brian-Neural',      // Male, British (polished)
-  emma:    'Polly.Emma-Neural',       // Female, British (elegant)
-  liam:    'Polly.Russell-Neural',    // Male, Australian (casual)
-  sofia:   'Polly.Lupe-Neural',       // Female, Spanish-bilingual (energetic)
+// Google Neural2 voices — much more natural than Polly
+const VOICE_MAP: Record<string, string> = {
+  default: 'Google.en-US-Neural2-D',    // Male, American (warm, natural)
+  alex:    'Google.en-US-Neural2-D',    // Male, American
+  sarah:   'Google.en-US-Neural2-F',    // Female, American
+  james:   'Google.en-GB-Neural2-B',    // Male, British
+  emma:    'Google.en-GB-Neural2-A',    // Female, British
+  liam:    'Google.en-AU-Neural2-B',    // Male, Australian
+  sofia:   'Google.es-US-Neural2-A',    // Female, Spanish
 };
 
-function getPollyVoice(voiceId?: string): string {
-  return POLLY_VOICE_MAP[voiceId?.toLowerCase() ?? 'default'] ?? 'Polly.Matthew-Neural';
+const MAX_TURNS = 20; // 20 turns = ~10 exchanges = ~5-8 min conversation
+
+function getVoice(voiceId?: string): string {
+  return VOICE_MAP[voiceId?.toLowerCase() ?? 'default'] ?? 'Google.en-US-Neural2-D';
 }
 
 function twiml(xml: string) {
@@ -151,7 +153,7 @@ export async function POST(req: NextRequest) {
   }
 
   const { name: clientName, agency_id, voiceCfg, persona, llmKey, llmUrl, llmModel } = vcfg.data;
-  const pollyVoice = getPollyVoice(voiceCfg.voiceId as string | undefined);
+  const ttsVoice = getVoice(voiceCfg.voiceId as string | undefined);
   const aiName = (voiceCfg.aiName as string) ?? 'Alex';
   const language = (voiceCfg.language as string) ?? 'en-US';
 
@@ -168,16 +170,9 @@ export async function POST(req: NextRequest) {
 
   if (minutesUsed >= minuteLimit) {
     return twiml(
-      `<Say voice="${pollyVoice}">Your voice minutes have been used for this month. Please upgrade your plan or wait until next month. Goodbye!</Say><Hangup/>`
+      `<Say voice="${ttsVoice}">Your voice minutes have been used for this month. Please upgrade your plan or wait until next month. Goodbye!</Say><Hangup/>`
     );
   }
-
-  const systemPrompt = `${persona || `You are ${aiName}, an AI assistant for ${clientName}.`}
-
-IMPORTANT VOICE RULES:
-- You are on a PHONE CALL. Keep responses SHORT — 1-2 sentences max.
-- No bullet points, no markdown. Speak naturally and conversationally.
-- Caller's phone: ${callerNumber}`.trim();
 
   // ── Load conversation history from Supabase ─────────────────────────────
   const { data: historyRows } = await supabase
@@ -186,6 +181,24 @@ IMPORTANT VOICE RULES:
     .eq('call_sid', callSid)
     .order('created_at', { ascending: true })
     .limit(6);
+
+  const turnCount = historyRows?.length ?? 0;
+
+  // ── Turn limit — prevent infinite loops ─────────────────────────────────
+  if (turnCount >= MAX_TURNS) {
+    return twiml(
+      `<Say voice="${ttsVoice}">Thank you for the conversation! I need to wrap up now. Feel free to call back anytime. Goodbye!</Say><Hangup/>`
+    );
+  }
+
+  const systemPrompt = `${persona || `You are ${aiName}, a friendly AI assistant for ${clientName}.`}
+
+CRITICAL VOICE RULES:
+- You are on a LIVE PHONE CALL. Keep responses to 1-2 SHORT sentences.
+- Sound natural and warm — like a real person, not a robot.
+- Never use bullet points, lists, markdown, or technical language.
+- If you don't know something, say "Let me have someone follow up on that."
+- Caller's phone: ${callerNumber}`.trim();
 
   const history: Array<{ role: string; content: string }> = (historyRows ?? []).map(r => ({
     role: r.role,
@@ -198,7 +211,7 @@ IMPORTANT VOICE RULES:
   // Credit check
   const creditCheck = await requireCredits(agency_id, 'channel.voice_call');
   if (!creditCheck.allowed) {
-    return twiml(`<Say voice="${pollyVoice}">I'm sorry, service is temporarily unavailable. Please call back later. Goodbye!</Say><Hangup/>`);
+    return twiml(`<Say voice="${ttsVoice}">I'm sorry, service is temporarily unavailable. Please call back later. Goodbye!</Say><Hangup/>`);
   }
 
   // Call LLM directly — skip VPS gateway hop for lower latency
@@ -218,10 +231,10 @@ IMPORTANT VOICE RULES:
           { role: 'system', content: systemPrompt },
           ...history.slice(-6),
         ],
-        temperature: 0.6,
-        max_tokens: 80,  // shorter = faster TTS + lower latency
+        temperature: 0.7,
+        max_tokens: 60,  // very short = faster response + more natural on phone
       }),
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(6000),  // 6s max — caller shouldn't wait longer
     });
 
     if (aiRes.ok) {
@@ -266,7 +279,7 @@ IMPORTANT VOICE RULES:
 
   // Detect goodbye to hang up gracefully
   if (isGoodbyeIntent(aiResponse) || isGoodbyeIntent(speechResult)) {
-    return twiml(`<Say voice="${pollyVoice}">${safeResponse}</Say><Hangup/>`);
+    return twiml(`<Say voice="${ttsVoice}">${safeResponse}</Say><Hangup/>`);
   }
 
   const gatherUrl = `${process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, '')}/api/voice/twilio/gather?clientId=${clientId}`;
@@ -274,7 +287,7 @@ IMPORTANT VOICE RULES:
 
   // Respond and listen for next turn
   return twiml(`
-    <Say voice="${pollyVoice}">${safeResponse}</Say>
+    <Say voice="${ttsVoice}">${safeResponse}</Say>
     <Gather input="speech" timeout="4" speechTimeout="auto" action="${gatherUrl}" method="POST" language="${lang}">
     </Gather>
     <Hangup/>
