@@ -6,20 +6,24 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  Brain,
-  BookOpen,
+  Rocket,
+  Bot,
   Building2,
-  Calendar,
+  FileText,
   Zap,
+  Globe,
   Loader2,
   Save,
   Plus,
   X,
-  FileText,
-  Globe,
-  Trash2,
-  UploadCloud,
+  Clock,
+  Phone,
+  MapPin,
+  Calendar,
   Sparkles,
+  BookOpen,
+  UploadCloud,
+  Trash2,
 } from 'lucide-react';
 import type { AgencyClient } from '@/lib/agency/queries';
 import AISuggestionsCard from '@/components/dashboard/ai-suggestions-card';
@@ -72,23 +76,7 @@ export default function AIPersonalityTab({ client }: { client: AgencyClient }) {
   const cfg = (client.container_config as Record<string, unknown>) || {};
   const bhCfg = (cfg.business_hours as { enabled?: boolean; start?: string; end?: string; timezone?: string }) || {};
 
-  // Section 1 — Persona & Instructions
-  const [persona, setPersona] = useState(cfg.persona as string || '');
-  const [greeting, setGreeting] = useState(cfg.greeting as string || '');
-  const [instructions, setInstructions] = useState(cfg.instructions as string || '');
-  const [responseLanguage, setResponseLanguage] = useState((cfg.response_language as string) || 'English');
-  const [isGenerating, setIsGenerating] = useState(false);
-
-  // Section 2 — Knowledge Base
-  const [sources, setSources] = useState<KnowledgeSource[]>([]);
-  const [urlInput, setUrlInput] = useState('');
-  const [kbLoading, setKbLoading] = useState(true);
-  const [kbSaving, setKbSaving] = useState(false);
-  const [kbError, setKbError] = useState<string | null>(null);
-  const [dragging, setDragging] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Auto-train
+  // Quick Setup
   const [websiteUrl, setWebsiteUrl] = useState((cfg.website_url as string) || '');
   const [isAutoTraining, setIsAutoTraining] = useState(false);
   const [autoTrainResult, setAutoTrainResult] = useState<{
@@ -99,20 +87,33 @@ export default function AIPersonalityTab({ client }: { client: AgencyClient }) {
     personaUpdated?: boolean;
   } | null>(null);
 
-  // Section 3 — Business Details
+  // AI Identity
+  const [persona, setPersona] = useState(cfg.persona as string || '');
+  const [greeting, setGreeting] = useState(cfg.greeting as string || '');
+  const [responseLanguage, setResponseLanguage] = useState((cfg.response_language as string) || 'English');
+
+  // Business Info
+  const [industry, setIndustry] = useState((cfg.industry as string) || client.industry || '');
+  const [services, setServices] = useState((cfg.services as string) || '');
   const [businessPhone, setBusinessPhone] = useState((cfg.business_phone as string) || '');
   const [businessAddress, setBusinessAddress] = useState((cfg.business_address as string) || '');
-  const [services, setServices] = useState((cfg.services as string) || '');
-  const [industry, setIndustry] = useState((cfg.industry as string) || client.industry || '');
   const [bhEnabled, setBhEnabled] = useState(bhCfg.enabled ?? false);
   const [bhStart, setBhStart] = useState(bhCfg.start ?? '09:00');
   const [bhEnd, setBhEnd] = useState(bhCfg.end ?? '17:00');
   const [bhTimezone, setBhTimezone] = useState(bhCfg.timezone ?? 'America/New_York');
-
-  // Section 4 — Booking & Calendar
   const [calendarUrl, setCalendarUrl] = useState((cfg.calendar_url as string) || '');
+  const [instructions, setInstructions] = useState(cfg.instructions as string || '');
 
-  // Section 5 — Advanced
+  // Training Documents
+  const [sources, setSources] = useState<KnowledgeSource[]>([]);
+  const [urlInput, setUrlInput] = useState('');
+  const [kbLoading, setKbLoading] = useState(true);
+  const [kbSaving, setKbSaving] = useState(false);
+  const [kbError, setKbError] = useState<string | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Automation
   const [proactiveEnabled, setProactiveEnabled] = useState((cfg.proactive_enabled as boolean) ?? false);
   const [proactiveGreeting, setProactiveGreeting] = useState((cfg.proactive_greeting as string) ?? '');
   const [wakeWords, setWakeWords] = useState<WakeWord[]>((cfg.wake_words as WakeWord[]) ?? []);
@@ -200,7 +201,7 @@ export default function AIPersonalityTab({ client }: { client: AgencyClient }) {
     await persistSources(sources.filter((s) => s.id !== id));
   };
 
-  // ── Auto-train ───────────────────────────────────────────────────────────
+  // ── Auto-train (scrape + generate persona) ────────────────────────────────
 
   const handleAutoTrain = async () => {
     if (!websiteUrl.trim()) return;
@@ -225,30 +226,6 @@ export default function AIPersonalityTab({ client }: { client: AgencyClient }) {
     }
   };
 
-  // ── Generate personality ─────────────────────────────────────────────────
-
-  const handleGenerate = async () => {
-    setIsGenerating(true);
-    setMessage(null);
-    try {
-      const res = await fetch(`/api/agency/clients/${client.id}/generate-personality`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: client.name, industry: client.industry }),
-      });
-      const d = await res.json();
-      if (!res.ok) throw new Error(d.error || 'Generation failed');
-      if (d.persona) setPersona(d.persona);
-      if (d.greeting) setGreeting(d.greeting);
-      if (d.instructions) setInstructions(d.instructions);
-      setMessage({ type: 'success', text: 'Personality generated! Review the fields below, then click Save.' });
-    } catch (err: unknown) {
-      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Generation failed' });
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
   // ── Wake words ───────────────────────────────────────────────────────────
 
   const addWakeWord = () => setWakeWords((prev) => [...prev, { keyword: '', action: 'escalate', response: '' }]);
@@ -256,7 +233,7 @@ export default function AIPersonalityTab({ client }: { client: AgencyClient }) {
   const updateWakeWord = (i: number, patch: Partial<WakeWord>) =>
     setWakeWords((prev) => prev.map((w, idx) => (idx === i ? { ...w, ...patch } : w)));
 
-  // ── Save all (personality + business details) ────────────────────────────
+  // ── Save all ─────────────────────────────────────────────────────────────
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -278,7 +255,6 @@ export default function AIPersonalityTab({ client }: { client: AgencyClient }) {
             proactive_greeting: proactiveGreeting.trim() || undefined,
             wake_words: wakeWords.filter((w) => w.keyword.trim()),
             website_url: websiteUrl.trim() || undefined,
-            // Business details
             business_phone: businessPhone.trim() || undefined,
             business_address: businessAddress.trim() || undefined,
             services: services.trim() || undefined,
@@ -304,6 +280,9 @@ export default function AIPersonalityTab({ client }: { client: AgencyClient }) {
 
   return (
     <div className="space-y-8">
+      {/* AI Suggestions */}
+      <AISuggestionsCard clientId={client.id} />
+
       {/* Status message */}
       {message && (
         <div className={`rounded-xl px-4 py-3 text-sm ${
@@ -314,38 +293,59 @@ export default function AIPersonalityTab({ client }: { client: AgencyClient }) {
       )}
 
       {/* ================================================================== */}
-      {/* Section 1: Persona & Instructions                                  */}
+      {/* Section 1: Quick Setup                                             */}
       {/* ================================================================== */}
-      <Card>
+      <Card className="border-indigo-200 bg-indigo-50/50">
         <CardHeader>
-          <div className="flex items-start justify-between gap-4">
-            <div className="space-y-1.5">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Brain className="h-5 w-5 text-indigo-600" />
-                Persona &amp; Instructions
-              </CardTitle>
-              <CardDescription>
-                Define who the AI is and how it should behave — its personality, greeting, and business rules.
-              </CardDescription>
-            </div>
+          <CardTitle className="flex items-center gap-2 text-base text-gray-900">
+            <Rocket className="h-5 w-5 text-indigo-600" />
+            Quick Setup
+          </CardTitle>
+          <CardDescription className="text-gray-500">
+            Enter your website URL and we&apos;ll automatically train your AI worker — building its knowledge base and generating a personality from your content.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Input
+              type="url"
+              value={websiteUrl}
+              onChange={(e) => setWebsiteUrl(e.target.value)}
+              placeholder="https://yourbusiness.com"
+              className="bg-white flex-1"
+            />
             <Button
-              onClick={handleGenerate}
-              disabled={isGenerating}
-              variant="outline"
-              size="sm"
-              className="shrink-0 gap-1.5 border-indigo-200 text-indigo-600 hover:bg-indigo-50"
+              onClick={handleAutoTrain}
+              disabled={!websiteUrl.trim() || isAutoTraining}
+              className="gap-1.5 bg-indigo-600 hover:bg-indigo-700"
             >
-              {isGenerating ? (
-                <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Generating...</>
-              ) : (
-                <><Sparkles className="h-3.5 w-3.5" /> Generate with AI</>
-              )}
+              {isAutoTraining ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              {isAutoTraining ? 'Training...' : 'Auto-Train'}
             </Button>
           </div>
+          {autoTrainResult && (
+            <div className="rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-700">
+              Scraped {autoTrainResult.pagesScraped} pages, created {autoTrainResult.documentsCreated} documents.
+              {autoTrainResult.personaUpdated && ' Persona was also updated.'}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ================================================================== */}
+      {/* Section 2: AI Identity                                             */}
+      {/* ================================================================== */}
+      <Card className="border-gray-200 bg-white rounded-xl">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base text-gray-900">
+            <Bot className="h-5 w-5 text-indigo-600" />
+            AI Identity
+          </CardTitle>
+          <CardDescription className="text-gray-500">
+            Define who the AI is — its name, personality, and how it greets customers.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <AISuggestionsCard clientId={client.id} />
-
           {/* Persona */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-900">Persona</label>
@@ -371,19 +371,6 @@ export default function AIPersonalityTab({ client }: { client: AgencyClient }) {
             />
           </div>
 
-          {/* Detailed Instructions */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-900">Detailed Instructions</label>
-            <p className="text-xs text-gray-400">Business rules, FAQs, pricing, hours — the more detail, the better.</p>
-            <Textarea
-              value={instructions}
-              onChange={(e) => setInstructions(e.target.value)}
-              placeholder={`e.g.,\n\nBusiness: Smile Dental Clinic\nHours: Mon-Fri 9am-5pm, Sat 9am-1pm\nAddress: 123 Main St, Springfield\n\nServices & Pricing:\n- Cleaning: $150\n- Whitening: $300\n\nRules:\n- Always offer to schedule an appointment\n- For emergencies, direct to call (555) 123-4567`}
-              rows={10}
-              className="bg-gray-50 font-mono text-sm"
-            />
-          </div>
-
           {/* Response Language */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-900">Response Language</label>
@@ -402,16 +389,161 @@ export default function AIPersonalityTab({ client }: { client: AgencyClient }) {
       </Card>
 
       {/* ================================================================== */}
-      {/* Section 2: Knowledge Base                                          */}
+      {/* Section 3: Business Info                                           */}
       {/* ================================================================== */}
-      <Card>
+      <Card className="border-gray-200 bg-white rounded-xl">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <BookOpen className="h-5 w-5 text-indigo-600" />
-            Knowledge Base
+          <CardTitle className="flex items-center gap-2 text-base text-gray-900">
+            <Building2 className="h-5 w-5 text-indigo-600" />
+            Business Info
           </CardTitle>
-          <CardDescription>
-            Upload documents and add website URLs so the AI can learn from your business content. Changes save immediately.
+          <CardDescription className="text-gray-500">
+            Give the AI context about the business so it can answer customer questions accurately.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          {/* Industry */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-900">Industry</label>
+            <Input
+              value={industry}
+              onChange={(e) => setIndustry(e.target.value)}
+              placeholder="e.g., Dental, Real Estate, Home Services"
+              className="bg-gray-50"
+            />
+          </div>
+
+          {/* Services & Pricing */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-900">Services &amp; Pricing</label>
+            <p className="text-xs text-gray-400">List services with prices, one per line.</p>
+            <Textarea
+              value={services}
+              onChange={(e) => setServices(e.target.value)}
+              placeholder={`e.g.,\nTeeth Cleaning - $150\nWhitening - $300\nCrowns - $800-1200\nEmergency Visits - Call for pricing`}
+              rows={5}
+              className="bg-gray-50"
+            />
+          </div>
+
+          {/* Phone & Address */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="flex items-center gap-1.5 text-sm font-medium text-gray-900">
+                <Phone className="h-3.5 w-3.5 text-gray-400" />
+                Business Phone
+              </label>
+              <Input
+                value={businessPhone}
+                onChange={(e) => setBusinessPhone(e.target.value)}
+                placeholder="(555) 123-4567"
+                className="bg-gray-50"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="flex items-center gap-1.5 text-sm font-medium text-gray-900">
+                <MapPin className="h-3.5 w-3.5 text-gray-400" />
+                Business Address
+              </label>
+              <Input
+                value={businessAddress}
+                onChange={(e) => setBusinessAddress(e.target.value)}
+                placeholder="123 Main St, Springfield, IL 62701"
+                className="bg-gray-50"
+              />
+            </div>
+          </div>
+
+          {/* Business Hours */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                id="bh-enabled"
+                checked={bhEnabled}
+                onChange={(e) => setBhEnabled(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-indigo-600"
+              />
+              <label htmlFor="bh-enabled" className="flex items-center gap-1.5 text-sm text-gray-700 font-medium">
+                <Clock className="h-3.5 w-3.5 text-gray-400" />
+                Enable business hours restriction
+              </label>
+            </div>
+            <p className="text-xs text-gray-400">AI only replies during these hours. Outside hours, messages are queued.</p>
+            {bhEnabled && (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-gray-500">Open</label>
+                  <Input type="time" value={bhStart} onChange={(e) => setBhStart(e.target.value)} className="bg-gray-50" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-gray-500">Close</label>
+                  <Input type="time" value={bhEnd} onChange={(e) => setBhEnd(e.target.value)} className="bg-gray-50" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-gray-500">Timezone</label>
+                  <select
+                    value={bhTimezone}
+                    onChange={(e) => setBhTimezone(e.target.value)}
+                    className="w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm"
+                  >
+                    <option value="America/New_York">Eastern (ET)</option>
+                    <option value="America/Chicago">Central (CT)</option>
+                    <option value="America/Denver">Mountain (MT)</option>
+                    <option value="America/Los_Angeles">Pacific (PT)</option>
+                    <option value="America/Phoenix">Arizona (AZ)</option>
+                    <option value="Europe/London">London (GMT/BST)</option>
+                    <option value="Europe/Bratislava">Bratislava (CET)</option>
+                    <option value="UTC">UTC</option>
+                  </select>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Calendar URL */}
+          <div className="space-y-2">
+            <label className="flex items-center gap-1.5 text-sm font-medium text-gray-900">
+              <Calendar className="h-3.5 w-3.5 text-gray-400" />
+              Booking / Calendar URL
+            </label>
+            <Input
+              value={calendarUrl}
+              onChange={(e) => setCalendarUrl(e.target.value)}
+              placeholder="https://booking.leadconnectorhq.com/your-calendar-id"
+              className="bg-gray-50 font-mono text-sm"
+            />
+            <p className="text-xs text-gray-400">
+              Get this from GHL &rarr; Calendars &rarr; your calendar &rarr; Share Link.
+            </p>
+          </div>
+
+          {/* Additional Rules & FAQs */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-900">Additional Rules &amp; FAQs</label>
+            <p className="text-xs text-gray-400">Anything else the AI should know: policies, rules, competitor handling, etc.</p>
+            <Textarea
+              value={instructions}
+              onChange={(e) => setInstructions(e.target.value)}
+              placeholder="e.g., Never discuss competitor pricing. For emergencies, direct to call (555) 123-4567. We offer 10% discount for new patients."
+              rows={5}
+              className="bg-gray-50"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ================================================================== */}
+      {/* Section 4: Training Documents                                      */}
+      {/* ================================================================== */}
+      <Card className="border-gray-200 bg-white rounded-xl">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base text-gray-900">
+            <BookOpen className="h-5 w-5 text-indigo-600" />
+            Training Documents
+          </CardTitle>
+          <CardDescription className="text-gray-500">
+            Upload documents or add URLs for your AI to learn from.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -426,10 +558,6 @@ export default function AIPersonalityTab({ client }: { client: AgencyClient }) {
 
           {/* File upload */}
           <div className="space-y-3">
-            <h4 className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-              <FileText className="h-4 w-4 text-indigo-600" />
-              Training Documents
-            </h4>
             <div
               role="button"
               tabIndex={0}
@@ -481,7 +609,7 @@ export default function AIPersonalityTab({ client }: { client: AgencyClient }) {
           <div className="space-y-3">
             <h4 className="flex items-center gap-2 text-sm font-semibold text-gray-900">
               <Globe className="h-4 w-4 text-indigo-600" />
-              Website Knowledge
+              Add URL
             </h4>
             <div className="flex flex-col gap-2 sm:flex-row">
               <Input
@@ -497,7 +625,7 @@ export default function AIPersonalityTab({ client }: { client: AgencyClient }) {
                 disabled={!urlInput.trim() || kbSaving}
                 className="gap-1.5"
               >
-                {kbSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {kbSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                 Add URL
               </Button>
             </div>
@@ -524,187 +652,24 @@ export default function AIPersonalityTab({ client }: { client: AgencyClient }) {
             )}
           </div>
 
-          {/* Auto-train from website */}
-          <div className="space-y-3 rounded-xl border border-indigo-100 bg-indigo-50/50 p-4">
-            <h4 className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-              <Sparkles className="h-4 w-4 text-indigo-600" />
-              Auto-Train from Website
-            </h4>
-            <p className="text-xs text-gray-500">Enter a website URL and we&apos;ll scrape it to create knowledge documents automatically.</p>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <Input
-                type="url"
-                value={websiteUrl}
-                onChange={(e) => setWebsiteUrl(e.target.value)}
-                placeholder="https://yourbusiness.com"
-                className="bg-white flex-1"
-              />
-              <Button
-                onClick={handleAutoTrain}
-                disabled={!websiteUrl.trim() || isAutoTraining}
-                className="gap-1.5"
-              >
-                {isAutoTraining ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                {isAutoTraining ? 'Training...' : 'Auto-Train'}
-              </Button>
-            </div>
-            {autoTrainResult && (
-              <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-700">
-                Scraped {autoTrainResult.pagesScraped} pages, created {autoTrainResult.documentsCreated} documents.
-                {autoTrainResult.personaUpdated && ' Persona was also updated.'}
-              </div>
-            )}
-          </div>
-
           {!kbLoading && sources.length === 0 && (
             <div className="rounded-xl border border-gray-200 bg-gray-50 p-6 text-center text-sm text-gray-500">
-              No training documents yet. Upload files or add website URLs above.
+              No training documents yet. Upload files or add URLs above.
             </div>
           )}
         </CardContent>
       </Card>
 
       {/* ================================================================== */}
-      {/* Section 3: Business Details                                        */}
+      {/* Section 5: Automation                                              */}
       {/* ================================================================== */}
-      <Card>
+      <Card className="border-gray-200 bg-white rounded-xl">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Building2 className="h-5 w-5 text-indigo-600" />
-            Business Details
-          </CardTitle>
-          <CardDescription>
-            Give the AI context about the business so it can answer customer questions accurately.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-900">Business Phone</label>
-              <Input
-                value={businessPhone}
-                onChange={(e) => setBusinessPhone(e.target.value)}
-                placeholder="(555) 123-4567"
-                className="bg-gray-50"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-900">Industry</label>
-              <Input
-                value={industry}
-                onChange={(e) => setIndustry(e.target.value)}
-                placeholder="e.g., Dental, Real Estate, Home Services"
-                className="bg-gray-50"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-900">Business Address</label>
-            <Input
-              value={businessAddress}
-              onChange={(e) => setBusinessAddress(e.target.value)}
-              placeholder="123 Main St, Springfield, IL 62701"
-              className="bg-gray-50"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-900">Services Offered</label>
-            <p className="text-xs text-gray-400">List the services the business provides, one per line or comma-separated.</p>
-            <Textarea
-              value={services}
-              onChange={(e) => setServices(e.target.value)}
-              placeholder={`e.g.,\nTeeth Cleaning - $150\nWhitening - $300\nCrowns - $800-1200\nEmergency Visits - Call for pricing`}
-              rows={5}
-              className="bg-gray-50"
-            />
-          </div>
-
-          {/* Business Hours */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                id="bh-enabled"
-                checked={bhEnabled}
-                onChange={(e) => setBhEnabled(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-indigo-600"
-              />
-              <label htmlFor="bh-enabled" className="text-sm text-gray-700 font-medium">
-                Enable business hours restriction
-              </label>
-            </div>
-            <p className="text-xs text-gray-400">AI only replies during these hours. Outside hours, messages are queued.</p>
-            {bhEnabled && (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-gray-500">Open</label>
-                  <Input type="time" value={bhStart} onChange={(e) => setBhStart(e.target.value)} className="bg-gray-50" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-gray-500">Close</label>
-                  <Input type="time" value={bhEnd} onChange={(e) => setBhEnd(e.target.value)} className="bg-gray-50" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-gray-500">Timezone</label>
-                  <select
-                    value={bhTimezone}
-                    onChange={(e) => setBhTimezone(e.target.value)}
-                    className="w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm"
-                  >
-                    <option value="America/New_York">Eastern (ET)</option>
-                    <option value="America/Chicago">Central (CT)</option>
-                    <option value="America/Denver">Mountain (MT)</option>
-                    <option value="America/Los_Angeles">Pacific (PT)</option>
-                    <option value="America/Phoenix">Arizona (AZ)</option>
-                    <option value="Europe/London">London (GMT/BST)</option>
-                    <option value="Europe/Bratislava">Bratislava (CET)</option>
-                    <option value="UTC">UTC</option>
-                  </select>
-                </div>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* ================================================================== */}
-      {/* Section 4: Booking & Calendar                                      */}
-      {/* ================================================================== */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Calendar className="h-5 w-5 text-indigo-600" />
-            Booking &amp; Calendar
-          </CardTitle>
-          <CardDescription>
-            When customers ask to book or schedule, the AI will include this link automatically.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <Input
-            value={calendarUrl}
-            onChange={(e) => setCalendarUrl(e.target.value)}
-            placeholder="https://booking.leadconnectorhq.com/your-calendar-id"
-            className="bg-gray-50 font-mono text-sm"
-          />
-          <p className="text-xs text-gray-400">
-            Get this from GHL &rarr; Calendars &rarr; your calendar &rarr; Share Link.
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* ================================================================== */}
-      {/* Section 5: Advanced                                                */}
-      {/* ================================================================== */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
+          <CardTitle className="flex items-center gap-2 text-base text-gray-900">
             <Zap className="h-5 w-5 text-indigo-600" />
-            Advanced
+            Automation
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-gray-500">
             Proactive messaging and keyword-triggered actions.
           </CardDescription>
         </CardHeader>
@@ -801,7 +766,7 @@ export default function AIPersonalityTab({ client }: { client: AgencyClient }) {
       {/* ================================================================== */}
       {/* Save All Button                                                    */}
       {/* ================================================================== */}
-      <Button onClick={handleSave} disabled={isSaving} className="gap-2" size="lg">
+      <Button onClick={handleSave} disabled={isSaving} className="gap-2 bg-indigo-600 hover:bg-indigo-700" size="lg">
         {isSaving ? (
           <><Loader2 className="h-4 w-4 animate-spin" /> Saving...</>
         ) : (
