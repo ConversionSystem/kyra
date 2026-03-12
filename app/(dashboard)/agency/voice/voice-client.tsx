@@ -170,6 +170,7 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
   const [provisioning, setProvisioning] = useState(false);
   const [dailyMinutesEstimate, setDailyMinutesEstimate] = useState(30);
   const [activeDaysPerMonthEstimate, setActiveDaysPerMonthEstimate] = useState(22);
+  const [voiceUsage, setVoiceUsage] = useState<{ minutesUsed: number; minuteLimit: number; percentUsed: number } | null>(null);
 
   const loadCallLogs = useCallback(async () => {
     const id = clientId ?? agencyId;
@@ -185,9 +186,22 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
     setLoadingLogs(false);
   }, [clientId]);
 
+  const loadVoiceUsage = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/voice/usage?agencyId=${agencyId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setVoiceUsage(data);
+      }
+    } catch { /* ignore */ }
+  }, [agencyId]);
+
   useEffect(() => {
-    if (step === 'active') loadCallLogs();
-  }, [step, loadCallLogs]);
+    if (step === 'active') {
+      loadCallLogs();
+      loadVoiceUsage();
+    }
+  }, [step, loadCallLogs, loadVoiceUsage]);
 
   const handleSetup = async () => {
     if (!clientId) {
@@ -704,6 +718,51 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
         <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm flex items-center gap-2">
           <AlertTriangle className="w-4 h-4 shrink-0" /> {error}
         </div>
+      )}
+
+      {/* Usage Card */}
+      {voiceUsage && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-gray-400" />
+                <span className="text-sm font-medium text-gray-900">Voice Minutes</span>
+              </div>
+              <span className="text-sm text-gray-500">
+                {voiceUsage.minutesUsed.toFixed(1)} / {voiceUsage.minuteLimit} min
+              </span>
+            </div>
+            <div className="w-full bg-gray-100 rounded-full h-2.5">
+              <div
+                className={cn(
+                  'h-2.5 rounded-full transition-all',
+                  voiceUsage.percentUsed < 70 ? 'bg-emerald-500' :
+                  voiceUsage.percentUsed < 90 ? 'bg-yellow-500' : 'bg-red-500'
+                )}
+                style={{ width: `${Math.min(voiceUsage.percentUsed, 100)}%` }}
+              />
+            </div>
+            <div className="flex items-center justify-between mt-2">
+              <span className={cn(
+                'text-xs font-medium',
+                voiceUsage.percentUsed < 70 ? 'text-emerald-600' :
+                voiceUsage.percentUsed < 90 ? 'text-yellow-600' : 'text-red-600'
+              )}>
+                {voiceUsage.percentUsed}% used
+              </span>
+              {voiceUsage.percentUsed > 80 && (
+                <Button
+                  size="sm"
+                  className="h-7 text-xs bg-indigo-600 hover:bg-indigo-700 text-white"
+                  onClick={() => window.location.href = '/agency/billing?upgrade=voice'}
+                >
+                  Upgrade
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Status Cards */}
