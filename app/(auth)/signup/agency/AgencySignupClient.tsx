@@ -31,11 +31,12 @@ function AgencySignupPage() {
   const promoCode = searchParams.get('promo') || '';
   const referralSource = searchParams.get('src') || '';
 
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [checkingAuth, setCheckingAuth] = useState(true);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [selectedPlan, setSelectedPlan] = useState<'starter' | 'pro' | 'scale'>('starter');
   const [agencyName, setAgencyName] = useState('');
   const [slug, setSlug] = useState('');
   const [slugEdited, setSlugEdited] = useState(false);
@@ -44,10 +45,16 @@ function AgencySignupPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
 
+  const PLANS = [
+    { id: 'starter' as const, name: 'Lite', price: '$99', clients: '3 clients', credits: '500 credits/mo' },
+    { id: 'pro' as const, name: 'Pro', price: '$249', clients: '10 clients', credits: '1,500 credits/mo', popular: true },
+    { id: 'scale' as const, name: 'Scale', price: '$499', clients: '30 clients', credits: '2,500 credits/mo' },
+  ];
+
   useEffect(() => {
     async function checkAuth() {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) setStep(2);
+      if (user) setStep(2);  // Skip to plan selection
       setCheckingAuth(false);
     }
     checkAuth();
@@ -86,7 +93,7 @@ function AgencySignupPage() {
         body: JSON.stringify({ email }),
       }).catch(() => {});
       pixel.lead({ content_name: 'Agency Signup Step 1', referral_source: referralSource || undefined });
-      setStep(2);
+      setStep(2);  // Go to plan selection
     } catch {
       setError('An unexpected error occurred');
     } finally {
@@ -121,9 +128,25 @@ function AgencySignupPage() {
         promo_code: promoCode || undefined,
         referral_source: referralSource || undefined,
       });
-      // Send to referral success screen (shows link + early bird countdown)
-      // then onboarding handles the rest
-      // Redirect to billing — new agency accounts must pick a paid plan
+
+      // Immediately redirect to Stripe Checkout for the selected plan
+      const checkoutRes = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plan: selectedPlan,
+          billing: 'monthly',
+          successRedirect: '/agency?checkout=success',
+        }),
+      });
+      const checkoutData = await checkoutRes.json();
+
+      if (checkoutData.url) {
+        window.location.href = checkoutData.url;
+        return;
+      }
+
+      // Fallback: if Stripe checkout creation fails, go to billing page
       router.push(`/agency/billing?required=true`);
       router.refresh();
     } catch {
@@ -200,12 +223,14 @@ function AgencySignupPage() {
             {fromAgency ? `Invited by ${fromAgency} — set up your agency in 2 minutes` : 'Plans from $99/mo — deploy your first AI worker today'}
           </div>
           <h1 className="text-3xl sm:text-4xl font-black mb-3">
-            {step === 1 ? 'Deploy your first autonomous AI worker.' : 'Name your agency'}
+            {step === 1 ? 'Deploy your first autonomous AI worker.' : step === 2 ? 'Pick your plan' : 'Name your agency'}
           </h1>
           <p className="text-slate-400 text-lg">
             {step === 1
               ? 'Powered by OpenClaw — enterprise AI infrastructure built for autonomous agents.'
-              : 'Almost there. One more step.'}
+              : step === 2
+                ? 'Choose the plan that fits your agency. Cancel anytime.'
+                : 'Almost there. One more step.'}
           </p>
         </div>
 
@@ -213,7 +238,8 @@ function AgencySignupPage() {
         <div className="flex items-center gap-3 mb-8">
           {[
             { n: 1, label: 'Account' },
-            { n: 2, label: 'Agency' },
+            { n: 2, label: 'Plan' },
+            { n: 3, label: 'Agency' },
           ].map(({ n, label }, i) => (
             <div key={n} className="flex items-center gap-3">
               {i > 0 && <div className="h-px w-10 bg-white/20" />}
@@ -283,8 +309,63 @@ function AgencySignupPage() {
             </div>
           )}
 
-          {/* Step 2 */}
+          {/* Step 2: Plan Selection */}
           {step === 2 && (
+            <div>
+              <div className="space-y-3 mb-6">
+                {PLANS.map((plan) => (
+                  <button
+                    key={plan.id}
+                    type="button"
+                    onClick={() => setSelectedPlan(plan.id)}
+                    className={`w-full text-left rounded-2xl p-5 transition border-2 ${
+                      selectedPlan === plan.id
+                        ? 'bg-indigo-600/10 border-indigo-500/50'
+                        : 'bg-white/5 border-white/10 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-bold text-white">{plan.name}</h3>
+                          {plan.popular && (
+                            <span className="bg-indigo-500/30 text-indigo-300 text-xs font-bold px-2 py-0.5 rounded-full">Popular</span>
+                          )}
+                        </div>
+                        <p className="text-sm text-slate-400 mt-0.5">{plan.clients} · {plan.credits}</p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-2xl font-black text-white">{plan.price}</span>
+                        <span className="text-slate-400 text-sm">/mo</span>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => { setStep(1); setError(null); }}
+                  className="flex items-center gap-2 px-4 py-3 rounded-xl border border-white/20 text-slate-300 hover:text-white hover:border-white/40 transition text-sm font-medium"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Back
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStep(3)}
+                  className="flex-1 bg-indigo-600 hover:bg-indigo-500 transition text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 text-sm"
+                >
+                  <ArrowRight className="h-4 w-4" />
+                  Continue with {PLANS.find(p => p.id === selectedPlan)?.name}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Agency Name */}
+          {step === 3 && (
             <form onSubmit={handleCreateAgency}>
               <div className="bg-white/5 border border-white/10 rounded-2xl p-7 mb-4">
                 {error && (
@@ -358,7 +439,7 @@ function AgencySignupPage() {
               <div className="flex gap-3">
                 <button
                   type="button"
-                  onClick={() => { setStep(1); setError(null); }}
+                  onClick={() => { setStep(2); setError(null); }}
                   disabled={isLoading}
                   className="flex items-center gap-2 px-4 py-3 rounded-xl border border-white/20 text-slate-300 hover:text-white hover:border-white/40 transition text-sm font-medium disabled:opacity-50"
                 >
@@ -371,7 +452,7 @@ function AgencySignupPage() {
                   className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 transition text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 text-sm"
                 >
                   {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Rocket className="h-4 w-4" />}
-                  {isLoading ? 'Launching...' : 'Launch My Agency'}
+                  {isLoading ? 'Setting up payment...' : 'Continue to Payment'}
                 </button>
               </div>
             </form>
