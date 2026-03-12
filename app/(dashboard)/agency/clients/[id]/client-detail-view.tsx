@@ -65,6 +65,7 @@ import { AICapabilities } from './ai-capabilities';
 import { SEODashboard } from './seo-dashboard';
 import SkillsTab from '@/components/dashboard/client-tabs/skills-tab';
 import KnowledgeTab from '@/components/dashboard/client-tabs/knowledge-tab';
+import DeliverySmsTab from '@/components/dashboard/client-tabs/delivery-sms-tab';
 import { AISetupClient } from '@/app/(dashboard)/agency/ai-setup/ai-setup-client';
 import { AgentsClient } from '@/app/(dashboard)/agency/agents/agents-client';
 import { AutopilotClient } from '@/app/(dashboard)/agency/autopilot/autopilot-client';
@@ -134,7 +135,7 @@ interface ChatMessage {
   content: string;
 }
 
-type Tab = 'terminal' | 'personality' | 'templates' | 'skills' | 'knowledge' | 'settings' | 'ghl' | 'usage' | 'conversations' | 'channels' | 'portal' | 'memory' | 'voice' | 'seo' | 'automation' | 'ai-teams';
+type Tab = 'terminal' | 'personality' | 'templates' | 'skills' | 'knowledge' | 'settings' | 'ghl' | 'usage' | 'conversations' | 'channels' | 'portal' | 'memory' | 'voice' | 'seo' | 'automation' | 'ai-teams' | 'delivery-sms';
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'terminal', label: 'Terminal', icon: Terminal },
@@ -143,6 +144,7 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'skills', label: 'Skills', icon: Zap },
   { id: 'knowledge', label: 'Knowledge Base', icon: Database },
   { id: 'ai-teams', label: 'AI Teams', icon: Bot },
+  { id: 'delivery-sms', label: 'Delivery SMS', icon: MessageSquare },
   { id: 'settings', label: 'Settings', icon: Settings },
   { id: 'ghl', label: 'GHL', icon: Link2 },
   { id: 'automation', label: 'Automation', icon: GitBranch },
@@ -445,6 +447,9 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
           )}
           {activeTab === 'automation' && (
             <AutopilotClient />
+          )}
+          {activeTab === 'delivery-sms' && (
+            <DeliverySmsTab clientId={initialClient.id} />
           )}
 
         </main>
