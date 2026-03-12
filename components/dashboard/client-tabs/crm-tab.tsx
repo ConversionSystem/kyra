@@ -37,14 +37,24 @@ interface Campaign {
 
 interface Contact {
   id: string;
-  email: string;
+  email: string | null;
   first_name: string | null;
   last_name: string | null;
   phone: string | null;
+  title: string | null;
   tags: string[];
   source: string;
-  status: string;
+  stage: string;
+  score: number;
+  score_label: string;
+  status?: string;
+  ai_summary: string | null;
+  ai_next_action: string | null;
+  last_contacted_at: string | null;
+  last_activity_at: string | null;
+  crm_companies?: { id: string; name: string; website: string | null; industry: string | null } | null;
   created_at: string;
+  updated_at: string;
 }
 
 interface Template {
@@ -102,6 +112,34 @@ function StatusBadge({ status }: { status: string }) {
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${colors[status] || 'bg-gray-50 text-gray-600 border-gray-200'}`}>
       {status}
+    </span>
+  );
+}
+
+function StageBadge({ stage }: { stage: string }) {
+  const colors: Record<string, string> = {
+    lead: 'bg-blue-50 text-blue-700 border-blue-200',
+    contact: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    customer: 'bg-green-50 text-green-700 border-green-200',
+    churned: 'bg-red-50 text-red-700 border-red-200',
+  };
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${colors[stage] || 'bg-gray-50 text-gray-600 border-gray-200'}`}>
+      {stage}
+    </span>
+  );
+}
+
+function ScoreBadge({ label }: { label: string }) {
+  const colors: Record<string, string> = {
+    hot: 'bg-red-50 text-red-700 border-red-200',
+    warm: 'bg-amber-50 text-amber-700 border-amber-200',
+    cold: 'bg-blue-50 text-blue-700 border-blue-200',
+    new: 'bg-gray-50 text-gray-600 border-gray-200',
+  };
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${colors[label] || 'bg-gray-50 text-gray-600 border-gray-200'}`}>
+      {label}
     </span>
   );
 }
@@ -204,35 +242,38 @@ export default function CrmTab({ client }: { client: AgencyClient }) {
 // CONTACTS SECTION
 // ══════════════════════════════════════════════════════════════════════════════
 
-function ContactsSection({ clientId }: { clientId: string }) {
+function ContactsSection({ clientId: _clientId }: { clientId: string }) {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [stageFilter, setStageFilter] = useState('');
+  const [scoreFilter, setScoreFilter] = useState('');
   const [page, setPage] = useState(1);
   const [showAdd, setShowAdd] = useState(false);
   const [addForm, setAddForm] = useState({ email: '', first_name: '', last_name: '', phone: '', tags: '' });
   const [importing, setImporting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // Use agency-level CRM contacts API (crm_contacts table)
   const load = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams({ page: String(page), limit: '50' });
     if (search) params.set('search', search);
-    if (statusFilter) params.set('status', statusFilter);
-    const res = await fetch(`/api/agency/clients/${clientId}/email/contacts?${params}`);
+    if (stageFilter) params.set('stage', stageFilter);
+    if (scoreFilter) params.set('score_label', scoreFilter);
+    const res = await fetch(`/api/agency/crm/contacts?${params}`);
     const data = await res.json();
     setContacts(data.contacts || []);
     setTotal(data.total || 0);
     setLoading(false);
-  }, [clientId, search, statusFilter, page]);
+  }, [search, stageFilter, scoreFilter, page]);
 
   useEffect(() => { load(); }, [load]);
 
   const handleAdd = async () => {
     const tags = addForm.tags ? addForm.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
-    await fetch(`/api/agency/clients/${clientId}/email/contacts`, {
+    await fetch('/api/agency/crm/contacts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...addForm, tags }),
@@ -270,18 +311,22 @@ function ContactsSection({ clientId }: { clientId: string }) {
       };
     }).filter(r => r.email);
 
-    await fetch(`/api/agency/clients/${clientId}/email/contacts`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(rows),
-    });
+    // Bulk import via CRM contacts API
+    for (const row of rows) {
+      await fetch('/api/agency/crm/contacts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(row),
+      });
+    }
     setImporting(false);
     if (fileRef.current) fileRef.current.value = '';
     load();
   };
 
   const handleDelete = async (ids: string[]) => {
-    await fetch(`/api/agency/clients/${clientId}/email/contacts`, {
+    // Delete via bulk endpoint
+    await fetch('/api/agency/crm/contacts/bulk', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ids }),
@@ -305,13 +350,25 @@ function ContactsSection({ clientId }: { clientId: string }) {
           </div>
           <select
             className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white"
-            value={statusFilter}
-            onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
+            value={stageFilter}
+            onChange={e => { setStageFilter(e.target.value); setPage(1); }}
           >
-            <option value="">All statuses</option>
-            <option value="active">Active</option>
-            <option value="unsubscribed">Unsubscribed</option>
-            <option value="bounced">Bounced</option>
+            <option value="">All stages</option>
+            <option value="lead">Lead</option>
+            <option value="contact">Contact</option>
+            <option value="customer">Customer</option>
+            <option value="churned">Churned</option>
+          </select>
+          <select
+            className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white"
+            value={scoreFilter}
+            onChange={e => { setScoreFilter(e.target.value); setPage(1); }}
+          >
+            <option value="">All scores</option>
+            <option value="hot">🔥 Hot</option>
+            <option value="warm">Warm</option>
+            <option value="cold">Cold</option>
+            <option value="new">New</option>
           </select>
           <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={handleCSV} />
           <button onClick={() => fileRef.current?.click()} disabled={importing} className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50">
@@ -359,30 +416,33 @@ function ContactsSection({ clientId }: { clientId: string }) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs text-gray-500 uppercase border-b border-gray-100">
-                  <th className="px-4 py-2">Email</th>
                   <th className="px-4 py-2">Name</th>
+                  <th className="px-4 py-2">Email</th>
                   <th className="px-4 py-2">Phone</th>
+                  <th className="px-4 py-2">Company</th>
+                  <th className="px-4 py-2">Stage</th>
+                  <th className="px-4 py-2">Score</th>
                   <th className="px-4 py-2">Tags</th>
-                  <th className="px-4 py-2">Status</th>
-                  <th className="px-4 py-2">Source</th>
-                  <th className="px-4 py-2">Date</th>
+                  <th className="px-4 py-2">Last Activity</th>
                   <th className="px-4 py-2"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {contacts.map(c => (
                   <tr key={c.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-2.5 text-gray-900">{c.email}</td>
-                    <td className="px-4 py-2.5 text-gray-700">{[c.first_name, c.last_name].filter(Boolean).join(' ') || '—'}</td>
+                    <td className="px-4 py-2.5 text-gray-900 font-medium">{[c.first_name, c.last_name].filter(Boolean).join(' ') || '—'}</td>
+                    <td className="px-4 py-2.5 text-gray-700">{c.email || '—'}</td>
                     <td className="px-4 py-2.5 text-gray-500">{c.phone || '—'}</td>
+                    <td className="px-4 py-2.5 text-gray-500">{c.crm_companies?.name || '—'}</td>
+                    <td className="px-4 py-2.5"><StageBadge stage={c.stage} /></td>
+                    <td className="px-4 py-2.5"><ScoreBadge label={c.score_label} /></td>
                     <td className="px-4 py-2.5">
-                      {c.tags?.map(t => (
+                      {c.tags?.slice(0, 3).map(t => (
                         <span key={t} className="inline-block bg-indigo-50 text-indigo-700 text-xs px-1.5 py-0.5 rounded mr-1">{t}</span>
                       ))}
+                      {c.tags?.length > 3 && <span className="text-xs text-gray-400">+{c.tags.length - 3}</span>}
                     </td>
-                    <td className="px-4 py-2.5"><StatusBadge status={c.status} /></td>
-                    <td className="px-4 py-2.5 text-gray-500">{c.source}</td>
-                    <td className="px-4 py-2.5 text-gray-400">{fmtDate(c.created_at)}</td>
+                    <td className="px-4 py-2.5 text-gray-400">{fmtDate(c.last_activity_at || c.created_at)}</td>
                     <td className="px-4 py-2.5">
                       <button onClick={() => handleDelete([c.id])} className="text-gray-300 hover:text-red-500">
                         <Trash2 className="w-3.5 h-3.5" />
@@ -440,7 +500,7 @@ function CampaignsSection({ clientId }: { clientId: string }) {
   useEffect(() => { load(); }, [load]);
 
   const loadAudience = useCallback(async () => {
-    const res = await fetch(`/api/agency/clients/${clientId}/email/contacts?status=active&limit=1`);
+    const res = await fetch('/api/agency/crm/contacts?limit=1');
     const data = await res.json();
     setAudienceCount(data.total || 0);
   }, [clientId]);
@@ -829,7 +889,7 @@ function AnalyticsSection({ clientId }: { clientId: string }) {
     setLoading(true);
     const [campRes, contactRes, dealRes] = await Promise.all([
       fetch(`/api/agency/clients/${clientId}/email/campaigns`),
-      fetch(`/api/agency/clients/${clientId}/email/contacts?limit=1`),
+      fetch('/api/agency/crm/contacts?limit=1'),
       fetch('/api/agency/crm/deals?stats=true'),
     ]);
     const campData = await campRes.json();
@@ -838,7 +898,7 @@ function AnalyticsSection({ clientId }: { clientId: string }) {
 
     setCampaigns((campData.campaigns || []).filter((c: Campaign) => c.status === 'sent'));
     setContactTotal(contactData.total || 0);
-    setActiveContacts(contactData.total || 0); // API already returns active count when no filter
+    setActiveContacts(contactData.total || 0);
     setDealStats(dealData);
     setLoading(false);
   }, [clientId]);
