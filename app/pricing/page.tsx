@@ -270,7 +270,7 @@ export default function PricingPage() {
               <p className="text-2xl font-black text-white">$79<span className="text-slate-400 text-base font-normal">/mo</span>
                 <span className="text-sm text-slate-400 font-normal ml-2">or $63/mo billed annually</span>
               </p>
-              <p className="text-slate-400 text-sm mt-1">500 AI calling minutes · inbound + outbound · transcripts · auto-escalation to human</p>
+              <p className="text-slate-400 text-sm mt-1">300 AI calling minutes · inbound + outbound · transcripts · auto-escalation to human</p>
             </div>
             <a
               href="/solo?addon=voice"
