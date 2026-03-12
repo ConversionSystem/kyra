@@ -169,7 +169,7 @@ const TAB_GROUPS: { label: string; tabs: typeof TABS }[] = [
   },
   {
     label: 'Integrate',
-    tabs: TABS.filter(t => ['ghl', 'automation'].includes(t.id)),
+    tabs: TABS.filter(t => ['ghl', 'automation', 'delivery-sms'].includes(t.id)),
   },
   {
     label: 'Analyze',
