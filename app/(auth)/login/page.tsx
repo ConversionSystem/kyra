@@ -177,7 +177,7 @@ function LoginContent() {
 
           <p className="text-center text-sm text-gray-500">
             Don't have an account?{' '}
-            <Link href="/signup/agency" className="text-gray-900 hover:underline">
+            <Link href="/solo" className="text-gray-900 hover:underline">
               Sign up
             </Link>
           </p>

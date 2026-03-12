@@ -105,7 +105,7 @@ export default async function BlogPostPage({
           <p className="text-xl font-bold mb-2">Try it yourself — free</p>
           <p className="text-slate-400 mb-6 text-sm">No credit card. Works with GoHighLevel. First AI worker live in 10 minutes.</p>
           <div className="flex items-center justify-center gap-3 flex-wrap">
-            <Link href="/signup/agency" className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-3 rounded-xl transition">
+            <Link href="/solo" className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-3 rounded-xl transition">
               Start Free →
             </Link>
             <Link href="/try/dental" className="bg-white/10 hover:bg-white/15 border border-white/10 text-white font-medium px-6 py-3 rounded-xl transition text-sm">
