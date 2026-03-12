@@ -153,20 +153,19 @@ function BuildPageInner() {
 
   const nextStep = () => {
     if (step < TOTAL_STEPS && canAdvance()) {
-      // Auto-generate AI name if not set
-      if (step === 3 && !data.aiName) {
-        const industry = INDUSTRIES.find(i => i.value === data.industry);
+      // Auto-generate AI name and greeting together if not set
+      if (step === 3) {
         const names: Record<string, string> = {
           dental: 'Sarah', cannabis: 'Sage', restaurant: 'Chef', 'real-estate': 'Alex',
           legal: 'Jordan', plumbing: 'Mike', medspa: 'Luna', fitness: 'Coach',
           auto: 'Max', veterinary: 'Dr. Paws', ecommerce: 'Kai', consulting: 'Sam',
         };
-        update({ aiName: names[data.industry] || 'Kyra' });
-      }
-      // Auto-generate greeting if not set
-      if (step === 3 && !data.greeting) {
-        const name = data.aiName || 'Kyra';
-        update({ greeting: `Hi! I'm ${name} from ${data.businessName}. How can I help you today?` });
+        const resolvedName = data.aiName || names[data.industry] || 'Kyra';
+        const resolvedGreeting = data.greeting || `Hi! I'm ${resolvedName} from ${data.businessName}. How can I help you today?`;
+        update({
+          ...(!data.aiName ? { aiName: resolvedName } : {}),
+          ...(!data.greeting ? { greeting: resolvedGreeting } : {}),
+        });
       }
       setStep(step + 1);
     }
