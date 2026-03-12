@@ -47,7 +47,7 @@ const PLANS = [
       '500 platform credits / month',
       '21 industry templates',
       'Telegram, SMS, web chat',
-      'GHL integration',
+      'CRM integration',
       'AI Sales Pipeline',
       'Smart escalation alerts',
       'Weekly performance reports',
@@ -103,7 +103,7 @@ const PLANS = [
 
 const FAQ = [
   {
-    q: 'Do I need GoHighLevel to use Kyra?',
+    q: 'Do I need any specific CRM to use Kyra?',
     a: 'GHL is required for SMS and multi-channel features. Kyra\'s web chat widget works on any website without GHL. Most agency use cases need GHL for the full feature set.',
   },
   {

@@ -6,7 +6,7 @@ import PublicFooter from '@/components/layout/public-footer';
 
 export const metadata: Metadata = {
   title: 'Help & FAQ — Kyra AI',
-  description: 'Answers to common questions about Kyra — OpenClaw-powered autonomous AI workers for agencies. Setup, GHL integration, billing, and troubleshooting.',
+  description: 'Answers to common questions about Kyra — AI workforce platform for agencies. Setup, integrations, billing, and troubleshooting.',
 };
 
 const SECTIONS = [
@@ -156,7 +156,7 @@ export default function HelpPage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="mb-12">
           <h1 className="text-3xl sm:text-4xl font-black mb-3">Help & FAQ</h1>
-          <p className="text-slate-400 text-lg">Common questions about Kyra AI workers, GHL integration, and billing.</p>
+          <p className="text-slate-400 text-lg">Common questions about Kyra AI workers, integrations, and billing.</p>
           <p className="text-sm text-slate-500 mt-2">
             Can&apos;t find your answer?{' '}
             <Link href="mailto:angel@conversionsystem.com" className="text-indigo-400 hover:underline">
