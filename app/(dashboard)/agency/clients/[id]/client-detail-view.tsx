@@ -186,7 +186,7 @@ const TAB_GROUPS: { label: string; tabs: typeof TABS }[] = [
 ];
 
 // Tabs locked behind Lite+ plans (hidden for free & solo_pro)
-const PREMIUM_TABS: Tab[] = ['ai-teams', 'voice', 'delivery-sms', 'crm', 'ghl', 'automation', 'seo'];
+const PREMIUM_TABS: Tab[] = ['ai-teams', 'voice', 'delivery-sms', 'ghl', 'automation', 'seo'];
 
 interface ClientDetailViewProps {
   client: AgencyClient;
