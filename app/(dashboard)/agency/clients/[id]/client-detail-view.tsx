@@ -52,7 +52,6 @@ import GHLConnection from './ghl-connection';
 import { UsageAnalytics } from './usage-analytics';
 import PermissionsCard from './permissions-card';
 import HealthScoreBadge from '@/components/dashboard/health-score-badge';
-import AISuggestionsCard from '@/components/dashboard/ai-suggestions-card';
 import ClientStatusBanner from '@/components/dashboard/client-status-banner';
 import ClientActivityHeatmap from '@/components/dashboard/client-activity-heatmap';
 import { VoiceClient } from '@/app/(dashboard)/agency/voice/voice-client';
@@ -64,7 +63,7 @@ import { CustomerIntelligence } from './customer-intelligence';
 import { AICapabilities } from './ai-capabilities';
 import { SEODashboard } from './seo-dashboard';
 import SkillsTab from '@/components/dashboard/client-tabs/skills-tab';
-import KnowledgeTab from '@/components/dashboard/client-tabs/knowledge-tab';
+import AIPersonalityTab from '@/components/dashboard/client-tabs/ai-personality-tab';
 import DeliverySmsTab from '@/components/dashboard/client-tabs/delivery-sms-tab';
 import { AISetupClient } from '@/app/(dashboard)/agency/ai-setup/ai-setup-client';
 import { AgentsClient } from '@/app/(dashboard)/agency/agents/agents-client';
@@ -135,14 +134,13 @@ interface ChatMessage {
   content: string;
 }
 
-type Tab = 'terminal' | 'personality' | 'templates' | 'skills' | 'knowledge' | 'settings' | 'ghl' | 'usage' | 'conversations' | 'channels' | 'portal' | 'memory' | 'voice' | 'seo' | 'automation' | 'ai-teams' | 'delivery-sms';
+type Tab = 'terminal' | 'personality' | 'templates' | 'skills' | 'settings' | 'ghl' | 'usage' | 'conversations' | 'channels' | 'portal' | 'memory' | 'voice' | 'seo' | 'automation' | 'ai-teams' | 'delivery-sms';
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'terminal', label: 'Terminal', icon: Terminal },
   { id: 'personality', label: 'AI Personality', icon: Brain },
   { id: 'templates', label: 'Templates', icon: Sparkles },
   { id: 'skills', label: 'Skills', icon: Zap },
-  { id: 'knowledge', label: 'Knowledge Base', icon: Database },
   { id: 'ai-teams', label: 'AI Teams', icon: Bot },
   { id: 'delivery-sms', label: 'Delivery SMS', icon: MessageSquare },
   { id: 'settings', label: 'Settings', icon: Settings },
@@ -165,7 +163,7 @@ const TAB_GROUPS: { label: string; tabs: typeof TABS }[] = [
   },
   {
     label: 'Configure',
-    tabs: TABS.filter(t => ['personality', 'templates', 'skills', 'knowledge', 'ai-teams', 'voice', 'settings'].includes(t.id)),
+    tabs: TABS.filter(t => ['personality', 'templates', 'skills', 'ai-teams', 'voice', 'settings'].includes(t.id)),
   },
   {
     label: 'Integrate',
@@ -398,9 +396,6 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
           {activeTab === 'skills' && (
             <SkillsTab client={initialClient} />
           )}
-          {activeTab === 'knowledge' && (
-            <KnowledgeTab client={initialClient} />
-          )}
           {activeTab === 'settings' && (
             <SettingsTab client={initialClient} role={role} onRefresh={() => router.refresh()} />
           )}
@@ -515,446 +510,6 @@ function TerminalTab({ client }: { client: AgencyClient }) {
           Open Terminal
         </a>
       </div>
-    </div>
-  );
-}
-
-// ── AI Personality Tab ────────────────────────────────────────────────────────
-
-function AIPersonalityTab({ client }: { client: AgencyClient }) {
-  const cfg = (client.container_config as Record<string, unknown>) || {};
-  const bhCfg = (cfg.business_hours as { enabled?: boolean; start?: string; end?: string; timezone?: string }) || {};
-
-  const [greeting, setGreeting] = useState(cfg.greeting as string || '');
-  const [instructions, setInstructions] = useState(cfg.instructions as string || '');
-  const [persona, setPersona] = useState(cfg.persona as string || '');
-  const [calendarUrl, setCalendarUrl] = useState((cfg.calendar_url as string) || '');
-  const [responseLanguage, setResponseLanguage] = useState((cfg.response_language as string) || 'English');
-  // Widget appearance moved to Channels tab
-  const [bhEnabled, setBhEnabled] = useState(bhCfg.enabled ?? false);
-  const [bhStart, setBhStart] = useState(bhCfg.start ?? '09:00');
-  const [bhEnd, setBhEnd] = useState(bhCfg.end ?? '17:00');
-  const [bhTimezone, setBhTimezone] = useState(bhCfg.timezone ?? 'America/New_York');
-  const [isSaving, setIsSaving] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-
-  // Proactive greeting
-  const [proactiveEnabled, setProactiveEnabled] = useState((cfg.proactive_enabled as boolean) ?? false);
-  const [proactiveGreeting, setProactiveGreeting] = useState((cfg.proactive_greeting as string) ?? '');
-
-  // Wake words — keyword → action pairs
-  type WakeWordAction = 'pause' | 'escalate' | 'custom';
-  interface WakeWord { keyword: string; action: WakeWordAction; response: string }
-  const [wakeWords, setWakeWords] = useState<WakeWord[]>(
-    (cfg.wake_words as WakeWord[]) ?? []
-  );
-
-  const addWakeWord = () =>
-    setWakeWords((prev) => [...prev, { keyword: '', action: 'escalate', response: '' }]);
-
-  const removeWakeWord = (i: number) =>
-    setWakeWords((prev) => prev.filter((_, idx) => idx !== i));
-
-  const updateWakeWord = (i: number, patch: Partial<WakeWord>) =>
-    setWakeWords((prev) => prev.map((w, idx) => idx === i ? { ...w, ...patch } : w));
-
-  // Auto-train from website
-  const [websiteUrl, setWebsiteUrl] = useState((cfg.website_url as string) || '');
-  const [isAutoTraining, setIsAutoTraining] = useState(false);
-  const [autoTrainResult, setAutoTrainResult] = useState<{
-    documentsCreated: number;
-    documents: string[];
-    pagesScraped: number;
-    persona?: string | null;
-    personaUpdated?: boolean;
-  } | null>(null);
-
-  const handleAutoTrain = async () => {
-    if (!websiteUrl.trim()) return;
-    setIsAutoTraining(true);
-    setMessage(null);
-    setAutoTrainResult(null);
-    try {
-      const res = await fetch('/api/agency/knowledge/auto-train', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clientId: client.id, websiteUrl: websiteUrl.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Auto-training failed');
-      setAutoTrainResult(data);
-      if (data.personaUpdated && data.persona) {
-        setPersona(data.persona);
-      }
-      setMessage({
-        type: 'success',
-        text: `🧠 Trained from ${data.pagesScraped} pages — created ${data.documentsCreated} knowledge documents!`,
-      });
-    } catch (err: any) {
-      setMessage({ type: 'error', text: err.message });
-    } finally {
-      setIsAutoTraining(false);
-    }
-  };
-
-  const handleGenerate = async () => {
-    setIsGenerating(true);
-    setMessage(null);
-    try {
-      const res = await fetch(`/api/agency/clients/${client.id}/generate-personality`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: client.name, industry: client.industry }),
-      });
-      const d = await res.json();
-      if (!res.ok) throw new Error(d.error || 'Generation failed');
-      if (d.persona) setPersona(d.persona);
-      if (d.greeting) setGreeting(d.greeting);
-      if (d.instructions) setInstructions(d.instructions);
-      setMessage({ type: 'success', text: '✨ Personality generated! Review the fields below, then click Save.' });
-    } catch (err: any) {
-      setMessage({ type: 'error', text: err.message });
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const handleSave = async () => {
-    setIsSaving(true);
-    setMessage(null);
-    try {
-      const res = await fetch(`/api/agency/clients/${client.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          container_config: {
-            ...cfg,
-            greeting,
-            instructions,
-            persona,
-            business_hours: { enabled: bhEnabled, start: bhStart, end: bhEnd, timezone: bhTimezone },
-            calendar_url: calendarUrl.trim() || undefined,
-            response_language: responseLanguage || 'English',
-            proactive_enabled: proactiveEnabled,
-            proactive_greeting: proactiveGreeting.trim() || undefined,
-            wake_words: wakeWords.filter((w) => w.keyword.trim()),
-          },
-        }),
-      });
-      if (!res.ok) throw new Error('Failed to save');
-      setMessage({ type: 'success', text: 'AI personality saved.' });
-    } catch {
-      setMessage({ type: 'error', text: 'Failed to save. Try again.' });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <p className="text-sm text-gray-500">
-          Define how this client&apos;s AI assistant behaves — its personality, greeting message, and detailed instructions.
-        </p>
-        <Button
-          onClick={handleGenerate}
-          disabled={isGenerating}
-          variant="outline"
-          size="sm"
-          className="shrink-0 gap-1.5 border-indigo-200 text-indigo-600 hover:bg-indigo-50"
-        >
-          {isGenerating ? (
-            <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Generating...</>
-          ) : (
-            <>✨ Generate with AI</>
-          )}
-        </Button>
-      </div>
-
-      <AISuggestionsCard clientId={client.id} />
-
-      {message && (
-        <div className={`rounded-md px-4 py-3 text-sm ${
-          message.type === 'success' ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-red-50 border border-red-200 text-red-700'
-        }`}>
-          {message.text}
-        </div>
-      )}
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Persona</CardTitle>
-          <CardDescription>
-            A short description of who the AI is. Example: &quot;Friendly dental receptionist named Sarah&quot;
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Input
-            value={persona}
-            onChange={(e) => setPersona(e.target.value)}
-            placeholder="e.g., Professional dental receptionist named Sarah who is warm and helpful"
-            className="bg-gray-50"
-          />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Greeting Message</CardTitle>
-          <CardDescription>
-            The first message sent to new contacts. Leave empty for a contextual auto-greeting.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Textarea
-            value={greeting}
-            onChange={(e) => setGreeting(e.target.value)}
-            placeholder="e.g., Hi! Thanks for reaching out to Smile Dental. How can I help you today?"
-            rows={3}
-            className="bg-gray-50"
-          />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Detailed Instructions</CardTitle>
-          <CardDescription>
-            Business-specific rules, FAQs, pricing, hours, and anything the AI needs to know.
-            The more detail, the better the responses.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Textarea
-            value={instructions}
-            onChange={(e) => setInstructions(e.target.value)}
-            placeholder={`e.g.,\n\nBusiness: Smile Dental Clinic\nHours: Mon-Fri 9am-5pm, Sat 9am-1pm\nAddress: 123 Main St, Springfield\n\nServices & Pricing:\n- Cleaning: $150\n- Whitening: $300\n- Crown: $800-1200\n\nRules:\n- Always offer to schedule an appointment\n- Never discuss competitor pricing\n- For emergencies, direct to call (555) 123-4567`}
-            rows={12}
-            className="bg-gray-50 font-mono text-sm"
-          />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            📅 Calendar Booking Link
-          </CardTitle>
-          <CardDescription>
-            When customers mention booking or scheduling, the AI automatically includes this link. Get it from GHL → Calendars → your calendar → share link.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Input
-            value={calendarUrl}
-            onChange={(e) => setCalendarUrl(e.target.value)}
-            placeholder="https://booking.leadconnectorhq.com/your-calendar-id"
-            className="bg-gray-50 font-mono text-sm"
-          />
-        </CardContent>
-      </Card>
-
-      {/* ── Response Language ──────────────────────────────────────────── */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            🌐 Response Language
-          </CardTitle>
-          <CardDescription>
-            The AI will always respond in this language, regardless of what language the customer uses.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <select
-            value={responseLanguage}
-            onChange={(e) => setResponseLanguage(e.target.value)}
-            className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm"
-          >
-            {[
-              'English', 'Spanish (Español)', 'Portuguese (Português)', 'French (Français)',
-              'German (Deutsch)', 'Italian (Italiano)', 'Chinese (中文)', 'Japanese (日本語)',
-              'Korean (한국어)', 'Arabic (العربية)', 'Hindi (हिन्दी)', 'Russian (Русский)',
-              'Dutch (Nederlands)', 'Polish (Polski)', 'Turkish (Türkçe)',
-            ].map(lang => (
-              <option key={lang} value={lang}>{lang}</option>
-            ))}
-          </select>
-          <p className="text-xs text-gray-400 mt-2">
-            💡 Spanish is the most common choice for US GHL agencies — dental, cannabis, restaurants, and home services all serve large Spanish-speaking customer bases.
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* Web Chat Widget Appearance moved to Channels tab */}
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            ⏰ Business Hours
-          </CardTitle>
-          <CardDescription>
-            AI only replies during these hours. Outside hours, messages are ignored until the next business day.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              id="bh-enabled"
-              checked={bhEnabled}
-              onChange={(e) => setBhEnabled(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-indigo-600"
-            />
-            <label htmlFor="bh-enabled" className="text-sm text-gray-700 font-medium">
-              Enable business hours restriction
-            </label>
-          </div>
-          {bhEnabled && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-500">Open</label>
-                <Input type="time" value={bhStart} onChange={(e) => setBhStart(e.target.value)} className="bg-gray-50" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-500">Close</label>
-                <Input type="time" value={bhEnd} onChange={(e) => setBhEnd(e.target.value)} className="bg-gray-50" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-500">Timezone</label>
-                <select
-                  value={bhTimezone}
-                  onChange={(e) => setBhTimezone(e.target.value)}
-                  className="w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm"
-                >
-                  <option value="America/New_York">Eastern (ET)</option>
-                  <option value="America/Chicago">Central (CT)</option>
-                  <option value="America/Denver">Mountain (MT)</option>
-                  <option value="America/Los_Angeles">Pacific (PT)</option>
-                  <option value="America/Phoenix">Arizona (AZ)</option>
-                  <option value="Europe/London">London (GMT/BST)</option>
-                  <option value="Europe/Bratislava">Bratislava (CET)</option>
-                  <option value="UTC">UTC</option>
-                </select>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Proactive first message + Wake words */}
-      <Card>
-        <CardHeader>
-          <CardTitle>🚀 Proactive Greeting</CardTitle>
-          <CardDescription>
-            When a new GHL contact is added, should the AI reach out first? Enable this and set the opening message.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setProactiveEnabled(!proactiveEnabled)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${proactiveEnabled ? 'bg-indigo-600' : 'bg-gray-200'}`}
-            >
-              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${proactiveEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
-            </button>
-            <label className="text-sm font-medium text-gray-700">
-              {proactiveEnabled ? 'AI reaches out to new contacts' : 'Proactive greeting disabled'}
-            </label>
-          </div>
-          {proactiveEnabled && (
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-gray-700">Opening message</label>
-              <Textarea
-                value={proactiveGreeting}
-                onChange={(e) => setProactiveGreeting(e.target.value)}
-                placeholder={`Hi {{firstName}}, this is ${client.name}'s AI assistant! How can I help you today?`}
-                className="bg-gray-50 min-h-[80px] text-sm"
-              />
-              <p className="text-xs text-gray-400">Use {'{{firstName}}'} and {'{{lastName}}'} to personalize with GHL contact data.</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>⚡ Wake Words</CardTitle>
-          <CardDescription>
-            Keywords that trigger a specific AI behavior. When a customer says one of these words, the AI takes the configured action.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {wakeWords.length === 0 && (
-            <p className="text-sm text-gray-400 italic">No wake words configured. Add one below.</p>
-          )}
-          {wakeWords.map((w, i) => (
-            <div key={i} className="flex items-start gap-2 p-3 rounded-lg border border-gray-100 bg-gray-50">
-              <div className="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <input
-                  type="text"
-                  placeholder="Keyword (e.g. STOP)"
-                  value={w.keyword}
-                  onChange={(e) => updateWakeWord(i, { keyword: e.target.value })}
-                  className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-400 uppercase"
-                />
-                <select
-                  value={w.action}
-                  onChange={(e) => updateWakeWord(i, { action: e.target.value as WakeWordAction })}
-                  className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-400"
-                >
-                  <option value="pause">Pause AI responses</option>
-                  <option value="escalate">Escalate to human</option>
-                  <option value="custom">Reply with custom text</option>
-                </select>
-                {w.action === 'custom' && (
-                  <input
-                    type="text"
-                    placeholder="Custom reply text…"
-                    value={w.response}
-                    onChange={(e) => updateWakeWord(i, { response: e.target.value })}
-                    className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-400"
-                  />
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={() => removeWakeWord(i)}
-                className="shrink-0 mt-1 text-gray-400 hover:text-red-500 transition-colors"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          ))}
-          <button
-            type="button"
-            onClick={addWakeWord}
-            className="flex items-center gap-1.5 text-sm text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
-          >
-            <Plus className="h-4 w-4" /> Add wake word
-          </button>
-          <p className="text-xs text-gray-400">
-            Common wake words: STOP (pause), UNSUBSCRIBE (pause), HUMAN / AGENT (escalate), PRICE (custom reply).
-          </p>
-        </CardContent>
-      </Card>
-
-      <Button onClick={handleSave} disabled={isSaving} className="gap-2">
-        {isSaving ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Saving...
-          </>
-        ) : (
-          <>
-            <Save className="h-4 w-4" />
-            Save Personality
-          </>
-        )}
-      </Button>
-
-      {/* AI Capabilities removed — replaced by dedicated Skills tab */}
     </div>
   );
 }
