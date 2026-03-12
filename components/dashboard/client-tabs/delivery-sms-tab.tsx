@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { MessageSquare, Send, Clock, AlertTriangle, CheckCircle2, XCircle, Zap, Copy } from 'lucide-react';
 
 interface SmsConfig {
   enabled: boolean;
@@ -41,6 +42,15 @@ interface Stats {
   byEvent: Record<string, number>;
 }
 
+const EVENT_LABELS: Record<string, { label: string; icon: string }> = {
+  taskAssigned: { label: 'Order Packed', icon: '📦' },
+  taskStarted: { label: 'Driver Departed', icon: '🚗' },
+  taskArrival: { label: 'Arriving Soon', icon: '📍' },
+  taskCompleted: { label: 'Delivered', icon: '✅' },
+  taskDelayed: { label: 'Delayed', icon: '⏰' },
+  taskFailed: { label: 'Failed', icon: '❌' },
+};
+
 export default function DeliverySmsTab({ clientId }: { clientId: string }) {
   const [config, setConfig] = useState<SmsConfig | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -50,7 +60,8 @@ export default function DeliverySmsTab({ clientId }: { clientId: string }) {
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<'overview' | 'templates' | 'log'>('overview');
-  const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
+  const [editingTemplate, setEditingTemplate] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
@@ -92,58 +103,88 @@ export default function DeliverySmsTab({ clientId }: { clientId: string }) {
         body: JSON.stringify({ action: 'test' }),
       });
       const data = await res.json();
-      setTestResult(data.testResult?.status === 'sent' ? '✅ Test SMS sent successfully!' : `❌ Test failed: ${data.testResult?.error || 'Unknown error'}`);
+      setTestResult(
+        data.testResult?.status === 'sent'
+          ? 'success'
+          : `error:${data.testResult?.error || 'Unknown error'}`,
+      );
     } catch {
-      setTestResult('❌ Test failed — network error');
+      setTestResult('error:Network error');
     } finally {
       setTesting(false);
     }
   };
 
+  const copyWebhookUrl = () => {
+    if (config?.webhookUrl) {
+      navigator.clipboard.writeText(config.webhookUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
   if (loading) {
-    return <div className="p-6 text-gray-400">Loading SMS configuration...</div>;
+    return (
+      <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white p-6 text-sm text-gray-500">
+        <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-indigo-600" />
+        Loading SMS configuration...
+      </div>
+    );
   }
 
   if (!config) {
-    return <div className="p-6 text-gray-400">SMS not configured for this client.</div>;
+    return (
+      <div className="rounded-xl border border-gray-200 bg-white p-6 text-sm text-gray-500">
+        SMS not configured for this client.
+      </div>
+    );
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            📱 Delivery SMS
-            {config.enabled ? (
-              <span className="bg-green-500/20 text-green-400 text-xs px-2 py-0.5 rounded-full">Active</span>
-            ) : (
-              <span className="bg-gray-500/20 text-gray-400 text-xs px-2 py-0.5 rounded-full">Disabled</span>
-            )}
-          </h2>
-          <p className="text-sm text-gray-400 mt-1">Automated delivery notifications via {config.provider}</p>
+      <div className="flex items-center justify-between rounded-xl border border-gray-200 bg-white p-5">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50">
+            <MessageSquare className="h-5 w-5 text-indigo-600" />
+          </div>
+          <div>
+            <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900">
+              Delivery SMS
+              {config.enabled ? (
+                <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">Active</span>
+              ) : (
+                <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">Disabled</span>
+              )}
+            </h2>
+            <p className="text-sm text-gray-500">
+              Automated delivery notifications via {config.provider === 'mock' ? 'Mock (testing)' : config.provider}
+            </p>
+          </div>
         </div>
         <button
           onClick={() => updateConfig({ enabled: !config.enabled })}
           disabled={saving}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+          className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
             config.enabled
-              ? 'bg-red-600/20 text-red-400 hover:bg-red-600/30'
-              : 'bg-green-600/20 text-green-400 hover:bg-green-600/30'
+              ? 'border border-red-200 bg-red-50 text-red-700 hover:bg-red-100'
+              : 'bg-indigo-600 text-white hover:bg-indigo-700'
           }`}
         >
-          {config.enabled ? 'Disable' : 'Enable'}
+          {saving ? 'Saving...' : config.enabled ? 'Disable' : 'Enable'}
         </button>
       </div>
 
       {/* Nav tabs */}
-      <div className="flex gap-1 bg-white/5 rounded-lg p-1">
+      <div className="flex gap-1 rounded-lg border border-gray-200 bg-gray-50 p-1">
         {(['overview', 'templates', 'log'] as const).map((view) => (
           <button
             key={view}
             onClick={() => setActiveView(view)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition capitalize ${
-              activeView === view ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-white'
+            className={`rounded-md px-4 py-2 text-sm font-medium capitalize transition ${
+              activeView === view
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
           >
             {view}
@@ -151,137 +192,211 @@ export default function DeliverySmsTab({ clientId }: { clientId: string }) {
         ))}
       </div>
 
-      {/* Overview */}
+      {/* ── Overview ─────────────────────────────────────────── */}
       {activeView === 'overview' && (
         <div className="space-y-4">
           {/* Stats */}
           {stats && (
             <div className="grid grid-cols-3 gap-4">
-              <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-                <div className="text-2xl font-bold text-white">{stats.total}</div>
-                <div className="text-xs text-gray-400">Messages sent (30d)</div>
+              <div className="rounded-xl border border-gray-200 bg-white p-5">
+                <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <Send className="h-4 w-4" /> Messages sent (30d)
+                </div>
+                <div className="mt-1 text-2xl font-bold text-gray-900">{stats.total}</div>
               </div>
-              <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-                <div className="text-2xl font-bold text-green-400">{stats.sent}</div>
-                <div className="text-xs text-gray-400">Delivered</div>
+              <div className="rounded-xl border border-gray-200 bg-white p-5">
+                <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <CheckCircle2 className="h-4 w-4 text-green-500" /> Delivered
+                </div>
+                <div className="mt-1 text-2xl font-bold text-green-600">{stats.sent}</div>
               </div>
-              <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-                <div className="text-2xl font-bold text-red-400">{stats.failed}</div>
-                <div className="text-xs text-gray-400">Failed</div>
+              <div className="rounded-xl border border-gray-200 bg-white p-5">
+                <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <XCircle className="h-4 w-4 text-red-500" /> Failed
+                </div>
+                <div className="mt-1 text-2xl font-bold text-red-600">{stats.failed}</div>
               </div>
             </div>
           )}
 
           {/* Webhook URL */}
-          <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-            <h3 className="text-sm font-medium text-gray-300 mb-2">Onfleet Webhook URL</h3>
-            <code className="text-xs text-indigo-300 bg-black/30 px-3 py-2 rounded-lg block break-all">
-              {config.webhookUrl}
-            </code>
-            <p className="text-xs text-gray-500 mt-2">
+          <div className="rounded-xl border border-gray-200 bg-white p-5">
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+              <Zap className="h-4 w-4 text-indigo-600" />
+              Onfleet Webhook URL
+            </h3>
+            <div className="mt-3 flex items-center gap-2">
+              <code className="flex-1 truncate rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-700">
+                {config.webhookUrl}
+              </code>
+              <button
+                onClick={copyWebhookUrl}
+                className="flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 transition"
+              >
+                <Copy className="h-3 w-3" />
+                {copied ? 'Copied!' : 'Copy'}
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-gray-400">
               Add this URL in Onfleet → Settings → Webhooks. Select all task events.
             </p>
           </div>
 
-          {/* Provider info */}
-          <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-            <h3 className="text-sm font-medium text-gray-300 mb-2">SMS Provider</h3>
-            <div className="flex items-center gap-2">
-              <span className={`h-2 w-2 rounded-full ${config.providerConfigured ? 'bg-green-400' : 'bg-yellow-400'}`} />
-              <span className="text-sm text-gray-300 capitalize">{config.provider}</span>
+          {/* Provider */}
+          <div className="rounded-xl border border-gray-200 bg-white p-5">
+            <h3 className="text-sm font-semibold text-gray-900">SMS Provider</h3>
+            <div className="mt-2 flex items-center gap-2">
+              <span className={`h-2 w-2 rounded-full ${config.providerConfigured ? 'bg-green-500' : 'bg-amber-400'}`} />
+              <span className="text-sm text-gray-700 capitalize">{config.provider}</span>
               {!config.providerConfigured && (
-                <span className="text-xs text-yellow-400">— API credentials needed</span>
+                <span className="text-xs text-amber-600">— API credentials needed</span>
               )}
             </div>
           </div>
 
-          {/* Test button */}
-          <button
-            onClick={runTest}
-            disabled={testing || !config.enabled}
-            className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-medium px-4 py-2 rounded-lg text-sm transition"
-          >
-            {testing ? 'Sending test...' : '🧪 Send Test Message'}
-          </button>
-          {testResult && (
-            <p className="text-sm mt-2">{testResult}</p>
-          )}
+          {/* Sending hours */}
+          <div className="rounded-xl border border-gray-200 bg-white p-5">
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+              <Clock className="h-4 w-4 text-indigo-600" />
+              Sending Hours (TCPA Compliance)
+            </h3>
+            <p className="mt-2 text-sm text-gray-600">
+              {config.sendingHoursStart}:00 AM – {config.sendingHoursEnd}:00 PM ({config.timezone})
+            </p>
+            <p className="mt-1 text-xs text-gray-400">
+              Messages outside these hours are queued automatically.
+            </p>
+          </div>
+
+          {/* Test */}
+          <div className="rounded-xl border border-gray-200 bg-white p-5">
+            <h3 className="text-sm font-semibold text-gray-900">Test Message</h3>
+            <p className="mt-1 text-sm text-gray-500">Send a mock &quot;Delivered&quot; notification through the full pipeline.</p>
+            <button
+              onClick={runTest}
+              disabled={testing || !config.enabled}
+              className="mt-3 inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-40 transition"
+            >
+              <Send className="h-4 w-4" />
+              {testing ? 'Sending...' : 'Send Test Message'}
+            </button>
+            {testResult === 'success' && (
+              <div className="mt-3 flex items-center gap-2 rounded-lg bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-700">
+                <CheckCircle2 className="h-4 w-4" /> Test SMS sent successfully!
+              </div>
+            )}
+            {testResult?.startsWith('error:') && (
+              <div className="mt-3 flex items-center gap-2 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
+                <AlertTriangle className="h-4 w-4" /> {testResult.replace('error:', '')}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
-      {/* Templates */}
+      {/* ── Templates ────────────────────────────────────────── */}
       {activeView === 'templates' && (
         <div className="space-y-3">
-          {config.templates.map((t) => (
-            <div key={t.id} className="bg-white/5 border border-white/10 rounded-xl p-4">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <span className={`h-2 w-2 rounded-full ${t.enabled ? 'bg-green-400' : 'bg-gray-500'}`} />
-                  <h4 className="text-sm font-bold text-white">{t.name}</h4>
-                  <span className="text-xs text-gray-500 bg-white/5 px-2 py-0.5 rounded">{t.event}</span>
+          <p className="text-sm text-gray-500">
+            Customize the message your customers receive at each delivery stage.
+          </p>
+          {config.templates.map((t) => {
+            const eventInfo = EVENT_LABELS[t.event] || { label: t.event, icon: '📨' };
+            const isEditing = editingTemplate === t.id;
+
+            return (
+              <div key={t.id} className="rounded-xl border border-gray-200 bg-white p-5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xl">{eventInfo.icon}</span>
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-900">{t.name}</h4>
+                      <span className="text-xs text-gray-400">{eventInfo.label} · {t.event}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`h-2 w-2 rounded-full ${t.enabled ? 'bg-green-500' : 'bg-gray-300'}`} />
+                    <button
+                      onClick={() => setEditingTemplate(isEditing ? null : t.id)}
+                      className="text-xs font-medium text-indigo-600 hover:text-indigo-700"
+                    >
+                      {isEditing ? 'Close' : 'Edit'}
+                    </button>
+                  </div>
                 </div>
-                <button
-                  onClick={() => setEditingTemplate(editingTemplate?.id === t.id ? null : t)}
-                  className="text-xs text-indigo-400 hover:text-indigo-300"
-                >
-                  {editingTemplate?.id === t.id ? 'Close' : 'Edit'}
-                </button>
+
+                {isEditing ? (
+                  <div className="mt-3 space-y-3">
+                    <textarea
+                      defaultValue={t.body}
+                      rows={3}
+                      className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      onBlur={(e) => {
+                        const updated = config.templates.map((tmpl) =>
+                          tmpl.id === t.id ? { ...tmpl, body: e.target.value } : tmpl,
+                        );
+                        updateConfig({ templates: updated });
+                      }}
+                    />
+                    <div className="flex flex-wrap gap-1.5">
+                      {['{customer_name}', '{driver_name}', '{eta_time}', '{eta_minutes}', '{tracking_link}', '{delivery_duration}'].map((v) => (
+                        <span key={v} className="rounded bg-indigo-50 px-2 py-0.5 text-xs font-mono text-indigo-600">{v}</span>
+                      ))}
+                    </div>
+                    <p className="text-xs text-gray-400">Click outside the text area to save changes.</p>
+                  </div>
+                ) : (
+                  <div className="mt-2">
+                    <p className="text-sm text-gray-600">{t.body}</p>
+                    <p className="mt-1 text-xs text-gray-400">{t.compliance_footer}</p>
+                  </div>
+                )}
               </div>
-
-              {editingTemplate?.id === t.id ? (
-                <div className="space-y-2">
-                  <textarea
-                    defaultValue={t.body}
-                    rows={3}
-                    className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
-                    onBlur={(e) => {
-                      const updated = config.templates.map((tmpl) =>
-                        tmpl.id === t.id ? { ...tmpl, body: e.target.value } : tmpl,
-                      );
-                      updateConfig({ templates: updated });
-                    }}
-                  />
-                  <p className="text-xs text-gray-500">
-                    Variables: {'{customer_name}'} {'{driver_name}'} {'{eta_time}'} {'{eta_minutes}'} {'{tracking_link}'} {'{delivery_duration}'}
-                  </p>
-                </div>
-              ) : (
-                <p className="text-sm text-gray-300">{t.body}</p>
-              )}
-
-              <p className="text-xs text-gray-500 mt-1">{t.compliance_footer}</p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
-      {/* Log */}
+      {/* ── Log ──────────────────────────────────────────────── */}
       {activeView === 'log' && (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {log.length === 0 ? (
-            <p className="text-sm text-gray-400">No SMS messages sent yet.</p>
+            <div className="rounded-xl border border-gray-200 bg-white p-8 text-center">
+              <MessageSquare className="mx-auto h-8 w-8 text-gray-300" />
+              <p className="mt-2 text-sm text-gray-500">No SMS messages sent yet.</p>
+              <p className="text-xs text-gray-400">Messages will appear here once delivery notifications start.</p>
+            </div>
           ) : (
-            log.map((entry) => (
-              <div key={entry.id} className="bg-white/5 border border-white/10 rounded-xl p-4">
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-2">
-                    <span className={`text-xs px-2 py-0.5 rounded ${
-                      entry.status === 'sent' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
-                    }`}>
-                      {entry.status}
+            log.map((entry) => {
+              const eventInfo = EVENT_LABELS[entry.event] || { label: entry.event, icon: '📨' };
+              return (
+                <div key={entry.id} className="rounded-xl border border-gray-200 bg-white p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span>{eventInfo.icon}</span>
+                      <span className="text-sm font-medium text-gray-900">{eventInfo.label}</span>
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                        entry.status === 'sent'
+                          ? 'bg-green-100 text-green-700'
+                          : entry.status === 'queued'
+                            ? 'bg-amber-100 text-amber-700'
+                            : 'bg-red-100 text-red-700'
+                      }`}>
+                        {entry.status}
+                      </span>
+                    </div>
+                    <span className="text-xs text-gray-400">
+                      {new Date(entry.sentAt).toLocaleString()}
                     </span>
-                    <span className="text-xs text-gray-500">{entry.event}</span>
                   </div>
-                  <span className="text-xs text-gray-500">
-                    {new Date(entry.sentAt).toLocaleString()}
-                  </span>
+                  <p className="mt-2 text-sm text-gray-600">{entry.messageBody}</p>
+                  <p className="mt-1 text-xs text-gray-400">
+                    → {entry.customerPhone}
+                    {entry.driverName && ` · Driver: ${entry.driverName}`}
+                  </p>
                 </div>
-                <p className="text-sm text-gray-300 mt-1">{entry.messageBody}</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  → {entry.customerPhone} {entry.driverName && `| Driver: ${entry.driverName}`}
-                </p>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       )}
