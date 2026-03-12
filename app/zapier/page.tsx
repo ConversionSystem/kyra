@@ -46,7 +46,7 @@ export default function ZapierPage() {
             Kyra responds to every one — in 60 seconds — through Zapier, Make, or any webhook.
             No GoHighLevel required.
           </p>
-          <Link href="/signup/agency" className="inline-block bg-white text-indigo-700 font-black text-lg px-8 py-4 rounded-xl hover:bg-indigo-50 transition">
+          <Link href="/solo" className="inline-block bg-white text-indigo-700 font-black text-lg px-8 py-4 rounded-xl hover:bg-indigo-50 transition">
             Start Free — No Code Required →
           </Link>
         </div>
@@ -125,7 +125,7 @@ export default function ZapierPage() {
         <div className="max-w-2xl mx-auto">
           <h2 className="text-3xl font-black mb-4">Start free. First response in 10 minutes.</h2>
           <p className="text-indigo-200 mb-8">Get your webhook URL, paste it in Zapier, and your AI starts responding to leads immediately.</p>
-          <Link href="/signup/agency" className="inline-block bg-white text-indigo-700 font-black text-lg px-10 py-4 rounded-xl hover:bg-indigo-50 transition">
+          <Link href="/solo" className="inline-block bg-white text-indigo-700 font-black text-lg px-10 py-4 rounded-xl hover:bg-indigo-50 transition">
             Get Started Free →
           </Link>
           <p className="text-indigo-300 text-sm mt-4">No credit card · No GoHighLevel required · Works with any app</p>

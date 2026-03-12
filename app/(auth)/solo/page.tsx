@@ -165,7 +165,7 @@ function SoloSignupPageInner() {
         ))}
       </div>
       <p className="text-center text-xs text-slate-500 mb-4">
-        {step === 1 ? 'Step 1 of 3 — Your details' : step === 2 ? 'Step 2 of 3 — Almost there' : 'Step 3 — Live!'}
+        {step === 1 ? 'Step 1 of 3 — Your email' : step === 2 ? 'Step 2 of 3 — Your details' : 'Step 3 — Live!'}
       </p>
 
       {/* Step 3: Success + Share */}
@@ -241,12 +241,28 @@ function SoloSignupPageInner() {
             {step === 1 ? (
               <>
                 <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1.5">Email</label>
+                  <input type="email" placeholder="mike@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isLoading} className="w-full bg-slate-800 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-base focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 disabled:opacity-50" />
+                </div>
+                <button type="submit" disabled={!email} className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 transition text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 text-sm mt-2">
+                  <ArrowRight className="h-4 w-4" />
+                  Continue
+                </button>
+              </>
+            ) : (
+              <>
+                <div>
                   <label className="block text-sm font-medium text-slate-300 mb-1.5">Business name</label>
                   <input type="text" placeholder="e.g. Mike's Plumbing" value={businessName} onChange={(e) => setBusinessName(e.target.value)} required disabled={isLoading} className="w-full bg-slate-800 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-base focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 disabled:opacity-50" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-1.5">Your name</label>
                   <input type="text" placeholder="Mike Johnson" value={fullName} onChange={(e) => setFullName(e.target.value)} required disabled={isLoading} className="w-full bg-slate-800 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-base focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 disabled:opacity-50" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
+                  <input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} disabled={isLoading} className="w-full bg-slate-800 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-base focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 disabled:opacity-50" />
+                  <p className="text-xs text-slate-500 mt-1.5">At least 8 characters</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-1.5">Industry</label>
@@ -267,22 +283,6 @@ function SoloSignupPageInner() {
                     ))}
                   </div>
                 </div>
-                <button type="submit" disabled={!businessName || !fullName} className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 transition text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 text-sm mt-2">
-                  <ArrowRight className="h-4 w-4" />
-                  Continue
-                </button>
-              </>
-            ) : (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1.5">Email</label>
-                  <input type="email" placeholder="mike@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isLoading} className="w-full bg-slate-800 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-base focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 disabled:opacity-50" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
-                  <input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} disabled={isLoading} className="w-full bg-slate-800 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-base focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 disabled:opacity-50" />
-                  <p className="text-xs text-slate-500 mt-1.5">At least 8 characters</p>
-                </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-1.5">
                     Website URL <span className="text-slate-500 font-normal">(optional)</span>
@@ -297,7 +297,7 @@ function SoloSignupPageInner() {
                   <button type="button" onClick={() => setStep(1)} className="px-4 py-3.5 rounded-xl border border-white/10 text-slate-400 hover:text-white hover:border-white/20 transition text-sm font-medium">
                     Back
                   </button>
-                  <button type="submit" disabled={isLoading || !email || !password} className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 transition text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 text-sm">
+                  <button type="submit" disabled={isLoading || !email || !password || !businessName || !fullName} className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 transition text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 text-sm">
                     {isLoading ? (
                       <><Loader2 className="h-4 w-4 animate-spin" />Setting up your AI worker...</>
                     ) : (
@@ -743,7 +743,7 @@ function SoloSignupPageInner() {
           </div>
           <div className="flex items-center gap-6 text-sm text-slate-500">
             <Link href="/login" className="hover:text-white transition">Sign in</Link>
-            <Link href="/signup/agency" className="hover:text-white transition">Agencies</Link>
+            <Link href="/solo" className="hover:text-white transition">Agencies</Link>
             <Link href="/" className="hover:text-white transition">Home</Link>
           </div>
         </div>

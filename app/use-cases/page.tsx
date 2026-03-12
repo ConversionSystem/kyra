@@ -446,7 +446,7 @@ export default function UseCasesPage() {
               Start Free →
             </Link>
             <Link
-              href="/signup/agency"
+              href="/solo"
               className="border-2 border-white/30 text-white font-bold text-lg px-8 py-4 rounded-xl hover:bg-white/10 transition-colors"
             >
               Agency? Start Here
