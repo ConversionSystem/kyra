@@ -30,9 +30,6 @@ const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 
-// In-memory call history (keyed by CallSid). Resets on cold start — acceptable for voice.
-const callHistory = new Map<string, Array<{ role: 'user' | 'assistant'; content: string }>>();
-
 // Map voiceId to AWS Polly Neural voice name for Twilio
 const POLLY_VOICE_MAP: Record<string, string> = {
   default: 'Polly.Matthew-Neural',    // Male, American
@@ -72,6 +69,12 @@ function sanitizeForTwiml(text: string): string {
 function isGoodbyeIntent(text: string): boolean {
   const lower = text.toLowerCase();
   return /\b(goodbye|bye|that'?s all|no more|hang up|nothing else|i'?m done|thank you goodbye)\b/.test(lower);
+}
+
+/** Get current month string in YYYY-MM format */
+function currentMonth(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 }
 
 export async function POST(req: NextRequest) {
@@ -146,6 +149,23 @@ export async function POST(req: NextRequest) {
   const aiName = (voiceCfg.aiName as string) ?? 'Alex';
   const language = (voiceCfg.language as string) ?? 'en-US';
 
+  // ── Minute Cap Enforcement ──────────────────────────────────────────────
+  const { data: usageRow } = await supabase
+    .from('voice_usage')
+    .select('minutes_used, minute_limit')
+    .eq('agency_id', agency_id)
+    .eq('month', currentMonth())
+    .single();
+
+  const minutesUsed = Number(usageRow?.minutes_used ?? 0);
+  const minuteLimit = Number(usageRow?.minute_limit ?? 300);
+
+  if (minutesUsed >= minuteLimit) {
+    return twiml(
+      `<Say voice="${pollyVoice}">Your voice minutes have been used for this month. Please upgrade your plan or wait until next month. Goodbye!</Say><Hangup/>`
+    );
+  }
+
   const systemPrompt = `${persona || `You are ${aiName}, an AI assistant for ${clientName}.`}
 
 IMPORTANT VOICE RULES:
@@ -153,8 +173,20 @@ IMPORTANT VOICE RULES:
 - No bullet points, no markdown. Speak naturally and conversationally.
 - Caller's phone: ${callerNumber}`.trim();
 
-  // Retrieve or initialize call history
-  const history = callHistory.get(callSid) ?? [];
+  // ── Load conversation history from Supabase ─────────────────────────────
+  const { data: historyRows } = await supabase
+    .from('voice_call_history')
+    .select('role, content')
+    .eq('call_sid', callSid)
+    .order('created_at', { ascending: true })
+    .limit(6);
+
+  const history: Array<{ role: string; content: string }> = (historyRows ?? []).map(r => ({
+    role: r.role,
+    content: r.content,
+  }));
+
+  // Add current user message
   history.push({ role: 'user', content: speechResult });
 
   // Credit check
@@ -200,20 +232,25 @@ IMPORTANT VOICE RULES:
     aiResponse = `I'm sorry, I'm having trouble right now. Please try again or call back shortly.`;
   }
 
-  // Update history
-  history.push({ role: 'assistant', content: aiResponse });
-  callHistory.set(callSid, history.slice(-20)); // keep last 20 turns in memory
+  // ── Persist conversation history to Supabase ────────────────────────────
+  void supabase.from('voice_call_history').insert([
+    { call_sid: callSid, role: 'user', content: speechResult },
+    { call_sid: callSid, role: 'assistant', content: aiResponse },
+  ]);
 
   // Deduct credits
   void deductCredits(agency_id, 'channel.voice_call');
 
+  // Increment voice minutes (~0.5 min per turn approximation)
+  void supabase.rpc('increment_voice_minutes', { p_agency_id: agency_id, p_minutes: 0.5 });
+
   // Log conversation to Supabase (store both client_id and agency_id for flexible querying)
-  supabase.from('voice_call_logs').upsert({
+  void supabase.from('voice_call_logs').upsert({
     client_id: clientId,
     agency_id: agency_id,
     call_sid: callSid,
     caller_number: callerNumber,
-    turns: history.length / 2,
+    turns: Math.ceil(history.length / 2),
     last_user_message: speechResult,
     last_ai_response: aiResponse,
     updated_at: new Date().toISOString(),
@@ -223,7 +260,6 @@ IMPORTANT VOICE RULES:
 
   // Detect goodbye to hang up gracefully
   if (isGoodbyeIntent(aiResponse) || isGoodbyeIntent(speechResult)) {
-    callHistory.delete(callSid);
     return twiml(`<Say voice="${pollyVoice}">${safeResponse}</Say><Hangup/>`);
   }
 

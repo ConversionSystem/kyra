@@ -69,13 +69,16 @@ export async function POST(req: NextRequest) {
   const pollyVoice = getPollyVoice(voiceCfg.voiceId as string | undefined);
   const language = (voiceCfg.language as string) ?? 'en-US';
 
-  const gatherUrl = `${process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, '')}/api/voice/twilio/gather?clientId=${clientId}`;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, '') ?? '';
+  const gatherUrl = `${appUrl}/api/voice/twilio/gather?clientId=${clientId}`;
+  const recordingCallback = `${appUrl}/api/voice/recording-status?clientId=${clientId}`;
 
-  // Greet + start gathering speech
+  // Greet + start gathering speech + record the full call
   return twiml(`
     <Gather input="speech" timeout="4" speechTimeout="auto" action="${gatherUrl}" method="POST" language="${language}">
       <Say voice="${pollyVoice}">Hi, thanks for calling ${businessName}! This is ${aiName}, your AI assistant. How can I help you today?</Say>
     </Gather>
+    <Record maxLength="600" recordingStatusCallback="${recordingCallback}" recordingStatusCallbackMethod="POST" />
     <Say voice="${pollyVoice}">I didn't catch that. Please call back if you need assistance. Goodbye!</Say>
     <Hangup/>
   `);
