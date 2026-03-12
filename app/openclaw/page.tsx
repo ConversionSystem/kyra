@@ -32,7 +32,7 @@ const OPENCLAW_FEATURES = [
   {
     icon: '📡',
     title: 'Every channel',
-    desc: 'GHL SMS, WhatsApp, Instagram + Telegram, Discord, web chat. One AI worker, every touchpoint.',
+    desc: 'SMS, WhatsApp, Instagram + Telegram, Discord, web chat. One AI worker, every touchpoint.',
   },
 ];
 
@@ -47,7 +47,7 @@ export default function OpenClawPage() {
         <div className="flex justify-center mb-8">
           <div className="inline-flex items-center gap-2 bg-white/10 border border-white/10 rounded-full px-4 py-1.5 text-sm font-medium">
             <span className="h-2 w-2 rounded-full bg-green-400 animate-pulse inline-block" />
-            ⚡ Built on OpenClaw · For GHL Agencies
+            ⚡ Built on OpenClaw · For Agencies
           </div>
         </div>
 
@@ -139,7 +139,7 @@ export default function OpenClawPage() {
               {
                 icon: '✅',
                 title: '5-min onboarding — template → live instantly',
-                desc: "21 pre-built AI worker templates. Pick the industry, connect GHL, and your client's AI worker is operating in under 5 minutes.",
+                desc: "21 pre-built AI worker templates. Pick the industry, connect your CRM, and your client's AI worker is operating in under 5 minutes.",
               },
               {
                 icon: '✅',
@@ -165,7 +165,7 @@ export default function OpenClawPage() {
               What agencies are charging for this
             </h2>
             <p className="text-slate-500 text-lg max-w-xl mx-auto">
-              Agencies are bundling Kyra AI workers into their GHL retainers at $197–$497/mo per client. The math is straightforward.
+              Agencies are bundling Kyra AI workers into their client retainers at $197–$497/mo per client. The math is straightforward.
             </p>
           </div>
 
@@ -249,7 +249,7 @@ export default function OpenClawPage() {
               Deploy Your First AI Worker →
             </Link>
             <p className="text-indigo-300 text-sm mt-4">
-              Free to start · OpenClaw-powered · Built for GHL agencies
+              Free to start · OpenClaw-powered · Built for agencies
             </p>
           </div>
         </div>

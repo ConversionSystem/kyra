@@ -236,7 +236,7 @@ export default function PitchContent({ demo, industry, agencyId, agencyName, age
         {/* CTA */}
         <div className="rounded-2xl p-8 text-center space-y-5 border border-white/10" style={{ background: `linear-gradient(135deg, ${demo.accentColor}22, ${demo.accentColor}11)` }}>
           <p className="text-3xl font-black">Ready to deploy your AI worker?</p>
-          <p className="text-white/60 max-w-lg mx-auto">Works with GoHighLevel. Set up in under 10 minutes. Your AI starts handling leads immediately.</p>
+          <p className="text-white/60 max-w-lg mx-auto">Works with your existing CRM. Set up in under 10 minutes. Your AI starts handling leads immediately.</p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <a
               href={bookUrl}
@@ -256,7 +256,7 @@ export default function PitchContent({ demo, industry, agencyId, agencyName, age
               <ChevronRight className="h-3.5 w-3.5" />
             </a>
           </div>
-          <p className="text-white/30 text-xs">No credit card required · Free plan available · Powered by GoHighLevel</p>
+          <p className="text-white/30 text-xs">No credit card required · Free plan available · Powered by OpenClaw</p>
         </div>
 
         <footer className="text-center text-white/20 text-xs pb-4">

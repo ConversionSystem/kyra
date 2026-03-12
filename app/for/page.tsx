@@ -1,6 +1,6 @@
 // Personalized outreach landing page
 // URL: /for?name=Marcus&agency=Apex+Digital&niche=dental
-// Used for cold outreach to GHL agency owners — personalized by name+niche
+// Used for cold outreach to agency owners — personalized by name+niche
 
 import Link from 'next/link';
 import type { Metadata } from 'next';
@@ -8,9 +8,9 @@ import type { Metadata } from 'next';
 import PublicNav from '@/components/layout/public-nav';
 import PublicFooter from '@/components/layout/public-footer';
 export const metadata: Metadata = {
-  title: 'Kyra — AI Workforce for Your GHL Clients',
+  title: 'Kyra — AI Workforce Platform for Agency Clients',
   description:
-    'Kyra adds an autonomous AI worker to any GHL sub-account. Responds in 60 seconds, books appointments, updates CRM. Free to start.',
+    'Kyra adds an autonomous AI worker to any client account. Responds in 60 seconds, books appointments, updates CRM. Free to start.',
 };
 
 const NICHE_DATA: Record<string, {
@@ -33,7 +33,7 @@ const NICHE_DATA: Record<string, {
   realestate: {
     emoji: '🏡', label: 'real estate',
     pain: 'Real estate leads go cold in under 5 minutes. Agents can\'t respond fast enough — especially nights and weekends.',
-    result: 'Every new GHL lead gets an immediate AI follow-up. No more lost deals because no one picked up the phone.',
+    result: 'Every new lead gets an immediate AI follow-up. No more lost deals because no one picked up the phone.',
     demoStat: '100% of leads contacted in <5 min',
     demoSlug: 'realestate',
     callout: 'The real estate AI qualifies every lead, books showings, and keeps warm leads engaged until an agent is ready.',
@@ -200,7 +200,7 @@ export default async function ForPage({ searchParams }: Props) {
           </h2>
           <div className="grid sm:grid-cols-3 gap-8">
             {[
-              { step: '01', title: 'Connect GHL', desc: 'Paste the client\'s GHL Private Integration token. Takes 2 minutes.' },
+              { step: '01', title: 'Add a client', desc: 'Enter the client\'s business name and pick an industry template. Takes 2 minutes.' },
               { step: '02', title: `Pick ${niche.emoji} template`, desc: `Choose the ${niche.label} template. Customize the AI name, services, and tone.` },
               { step: '03', title: 'Go live', desc: 'The AI starts responding to every inbound message immediately. You\'re done.' },
             ].map(s => (
@@ -255,7 +255,7 @@ export default async function ForPage({ searchParams }: Props) {
       {/* Testimonials */}
       <section className="bg-gray-50 py-16 px-4">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-2xl font-black text-center mb-10">GHL agencies using Kyra</h2>
+          <h2 className="text-2xl font-black text-center mb-10">Agencies using Kyra</h2>
           <div className="grid md:grid-cols-2 gap-5">
             {[
               {
@@ -268,7 +268,7 @@ export default async function ForPage({ searchParams }: Props) {
               },
               {
                 quote: "White-labeled it as our own AI product. Now it's our highest-margin offering. Clients pay $997/mo, we pay $249 total for 15 of them.",
-                ctx: '💰 GHL Pro agency',
+                ctx: '💰 Agency owner',
               },
               {
                 quote: "Cannabis clients get dozens of 'what's your menu?' texts every day. The AI handles every single one, 24/7. Our client can't imagine not having it.",

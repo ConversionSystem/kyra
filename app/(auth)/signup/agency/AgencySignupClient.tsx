@@ -421,9 +421,9 @@ function AgencySignupPage() {
                 </div>
                 <ul className="space-y-1.5">
                   {[
-                    'AI workers for your GHL clients',
+                    'AI workers for your clients',
                     'One dashboard for all clients',
-                    'GHL integration (SMS, email, CRM)',
+                    'CRM integration (SMS, email, contacts)',
                     'Bring your own API key (use your credits)',
                     'White-label — your brand, your clients',
                   ].map(f => (

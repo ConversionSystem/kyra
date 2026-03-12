@@ -29,7 +29,7 @@ export default function TermsPage() {
           {
             title: '1. Service Description',
             items: [
-              'Kyra is an AI workforce platform that deploys automated AI agents inside GoHighLevel agency accounts and other channels.',
+              'Kyra is an AI workforce platform that deploys automated AI agents across CRM accounts, web chat, voice, and other channels.',
               'The platform enables agencies to configure and manage AI workers for their business clients.',
               'AI-generated responses are automated. {COMPANY} does not review individual AI responses in real time.',
             ],
@@ -39,7 +39,7 @@ export default function TermsPage() {
             items: [
               'You must be at least 18 years old to use Kyra.',
               'You must have legal authority to represent the agency and clients you manage through the platform.',
-              'You must comply with GoHighLevel\'s terms of service when using the GHL integration.',
+              'You must comply with the terms of service of any third-party CRM you connect to Kyra.',
             ],
           },
           {

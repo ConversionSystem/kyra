@@ -14,7 +14,7 @@ const COMPARISON = [
   { feature: 'AI worker templates', kyra: '15 industry templates pre-built', mc: 'Build from scratch', winner: 'kyra' },
   { feature: 'Multi-agent routing', kyra: '6 specialized agents + smart routing', mc: 'Manual agent setup', winner: 'kyra' },
   { feature: 'CRM', kyra: 'Full CRM built in — contacts, deals, tasks, tags', mc: 'No CRM — use external tools', winner: 'kyra' },
-  { feature: 'GHL integration', kyra: 'Native — SMS, webhooks, contacts sync', mc: 'Manual webhook setup', winner: 'kyra' },
+  { feature: 'CRM integration', kyra: 'Native — SMS, webhooks, contacts sync', mc: 'Manual webhook setup', winner: 'kyra' },
   { feature: 'SMS / WhatsApp', kyra: 'Built-in channels, one-click connect', mc: 'Configure yourself', winner: 'kyra' },
   { feature: 'Review gates', kyra: 'Built-in human approval before sending', mc: 'Built-in review panel', winner: 'tie' },
   { feature: 'Token dashboard', kyra: 'Per-client cost tracking + margin view', mc: 'Token usage panel', winner: 'tie' },
