@@ -113,7 +113,7 @@ export default async function AgencyResultsPage({ params }: Props) {
             <p className="text-sm text-gray-500">AI Worker Performance</p>
             <p className="font-black text-xl text-gray-900">{stats.name}</p>
           </div>
-          <Link href="/signup/agency" className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold px-4 py-2 rounded-lg transition">
+          <Link href="/solo" className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold px-4 py-2 rounded-lg transition">
             Get This for Your Business →
           </Link>
         </div>
@@ -193,7 +193,7 @@ export default async function AgencyResultsPage({ params }: Props) {
           <p className="text-indigo-200 mb-6">
             {stats.name} uses Kyra to power their AI workers. Set up your own in under 10 minutes — free to start.
           </p>
-          <Link href="/signup/agency" className="inline-block bg-white text-indigo-900 font-black text-lg px-8 py-4 rounded-xl hover:bg-indigo-50 transition">
+          <Link href="/solo" className="inline-block bg-white text-indigo-900 font-black text-lg px-8 py-4 rounded-xl hover:bg-indigo-50 transition">
             Start Free — $2 in Credits Included →
           </Link>
           <p className="text-indigo-400 text-sm mt-3">No credit card · Works with GoHighLevel · Cancel anytime</p>

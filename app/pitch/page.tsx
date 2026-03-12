@@ -182,7 +182,7 @@ export default function PitchPage() {
         </Link>
         <div className="flex items-center gap-4">
           <span className="text-xs text-slate-500">{slide + 1} / {total}</span>
-          <Link href="/signup/agency" className="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg font-semibold transition">
+          <Link href="/solo" className="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg font-semibold transition">
             Get Started Free
           </Link>
         </div>
