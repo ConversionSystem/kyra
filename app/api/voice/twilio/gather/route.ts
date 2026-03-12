@@ -111,9 +111,9 @@ export async function POST(req: NextRequest) {
     const { data: clientRow, error: clientErr } = await supabase
       .from('agency_clients')
       .select('id, name, container_config, agency_id')
-      .eq('id', clientId).single();
+      .eq('id', clientId).maybeSingle();
 
-    console.log(`[voice/gather] clientId=${clientId} clientRow=${!!clientRow} clientErr=${clientErr?.message ?? 'none'}`);
+    console.log(`[voice/gather] clientId=${clientId} clientRow=${JSON.stringify(clientRow)} clientErr=${clientErr?.message ?? clientErr?.code ?? 'none'}`);
 
     if (clientRow) {
       cfg = (clientRow.container_config as Record<string, unknown>) ?? {};
@@ -133,8 +133,8 @@ export async function POST(req: NextRequest) {
     } else {
       // Fallback: agency-level voice
       const { data: agencyRow, error: agencyErr } = await supabase
-        .from('agencies').select('id, name, settings, api_keys').eq('id', clientId).single();
-      console.log(`[voice/gather] agency fallback clientId=${clientId} agencyRow=${!!agencyRow} agencyErr=${agencyErr?.message ?? 'none'}`);
+        .from('agencies').select('id, name, settings, api_keys').eq('id', clientId).maybeSingle();
+      console.log(`[voice/gather] agency fallback clientId=${clientId} agencyRow=${JSON.stringify(agencyRow)} agencyErr=${agencyErr?.message ?? agencyErr?.code ?? 'none'}`);
       if (!agencyRow) {
         console.error(`[voice/gather] No client or agency found for clientId=${clientId}`);
         return twiml('<Say>Sorry, this service is not configured yet. Please contact support.</Say><Hangup/>');
