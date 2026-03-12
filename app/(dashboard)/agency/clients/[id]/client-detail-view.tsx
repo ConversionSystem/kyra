@@ -65,6 +65,7 @@ import { SEODashboard } from './seo-dashboard';
 import SkillsTab from '@/components/dashboard/client-tabs/skills-tab';
 import AIPersonalityTab from '@/components/dashboard/client-tabs/ai-personality-tab';
 import DeliverySmsTab from '@/components/dashboard/client-tabs/delivery-sms-tab';
+import EmailMarketingTab from '@/components/dashboard/client-tabs/email-marketing-tab';
 import { AISetupClient } from '@/app/(dashboard)/agency/ai-setup/ai-setup-client';
 import { AgentsClient } from '@/app/(dashboard)/agency/agents/agents-client';
 import { AutopilotClient } from '@/app/(dashboard)/agency/autopilot/autopilot-client';
@@ -134,7 +135,7 @@ interface ChatMessage {
   content: string;
 }
 
-type Tab = 'terminal' | 'personality' | 'templates' | 'skills' | 'settings' | 'ghl' | 'usage' | 'conversations' | 'channels' | 'portal' | 'memory' | 'voice' | 'seo' | 'automation' | 'ai-teams' | 'delivery-sms';
+type Tab = 'terminal' | 'personality' | 'templates' | 'skills' | 'settings' | 'ghl' | 'usage' | 'conversations' | 'channels' | 'portal' | 'memory' | 'voice' | 'seo' | 'automation' | 'ai-teams' | 'delivery-sms' | 'email';
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'terminal', label: 'Terminal', icon: Terminal },
@@ -143,6 +144,7 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'skills', label: 'Skills', icon: Zap },
   { id: 'ai-teams', label: 'AI Teams', icon: Bot },
   { id: 'delivery-sms', label: 'Delivery SMS', icon: MessageSquare },
+  { id: 'email', label: 'Email Marketing', icon: Mail },
   { id: 'settings', label: 'Settings', icon: Settings },
   { id: 'ghl', label: 'GHL', icon: Link2 },
   { id: 'automation', label: 'Automation', icon: GitBranch },
@@ -167,7 +169,7 @@ const TAB_GROUPS: { label: string; tabs: typeof TABS }[] = [
   },
   {
     label: 'Integrate',
-    tabs: TABS.filter(t => ['ghl', 'automation', 'delivery-sms'].includes(t.id)),
+    tabs: TABS.filter(t => ['ghl', 'automation', 'delivery-sms', 'email'].includes(t.id)),
   },
   {
     label: 'Analyze',
@@ -180,7 +182,7 @@ const TAB_GROUPS: { label: string; tabs: typeof TABS }[] = [
 ];
 
 // Tabs locked behind Lite+ plans (hidden for free & solo_pro)
-const PREMIUM_TABS: Tab[] = ['ai-teams', 'voice', 'delivery-sms', 'ghl', 'automation', 'seo'];
+const PREMIUM_TABS: Tab[] = ['ai-teams', 'voice', 'delivery-sms', 'email', 'ghl', 'automation', 'seo'];
 
 interface ClientDetailViewProps {
   client: AgencyClient;
@@ -456,6 +458,9 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
           )}
           {activeTab === 'delivery-sms' && (
             <DeliverySmsTab clientId={initialClient.id} />
+          )}
+          {activeTab === 'email' && (
+            <EmailMarketingTab client={initialClient} />
           )}
 
         </main>
