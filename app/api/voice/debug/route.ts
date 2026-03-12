@@ -5,39 +5,24 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   const clientId = req.nextUrl.searchParams.get('clientId') ?? '';
+  const search = req.nextUrl.searchParams.get('search') ?? '';
   const supabase = createServiceClientWithoutCookies();
 
-  if (clientId === 'list') {
-    // List first 5 agencies
-    const { data: agencies } = await supabase
-      .from('agencies')
-      .select('id, name')
-      .limit(5);
-    // List first 5 clients  
-    const { data: clients } = await supabase
-      .from('agency_clients')
-      .select('id, name, agency_id')
-      .limit(5);
+  if (clientId === 'list' || search) {
+    const q = search || '';
+    const { data: agencies } = q
+      ? await supabase.from('agencies').select('id, name').ilike('name', `%${q}%`).limit(10)
+      : await supabase.from('agencies').select('id, name').limit(10);
+    const { data: clients } = q
+      ? await supabase.from('agency_clients').select('id, name, agency_id').ilike('name', `%${q}%`).limit(10)
+      : await supabase.from('agency_clients').select('id, name, agency_id').limit(10);
     return NextResponse.json({ agencies, clients });
   }
 
   const { data: clientRow, error: clientErr } = await supabase
-    .from('agency_clients')
-    .select('id, name, agency_id')
-    .eq('id', clientId)
-    .maybeSingle();
-
+    .from('agency_clients').select('id, name, agency_id').eq('id', clientId).maybeSingle();
   const { data: agencyRow, error: agencyErr } = await supabase
-    .from('agencies')
-    .select('id, name')
-    .eq('id', clientId)
-    .maybeSingle();
+    .from('agencies').select('id, name').eq('id', clientId).maybeSingle();
 
-  return NextResponse.json({
-    clientId,
-    clientRow,
-    clientErr: clientErr?.message ?? null,
-    agencyRow,
-    agencyErr: agencyErr?.message ?? null,
-  });
+  return NextResponse.json({ clientId, clientRow, clientErr: clientErr?.message ?? null, agencyRow, agencyErr: agencyErr?.message ?? null });
 }
