@@ -15,9 +15,16 @@ export const metadata: Metadata = {
 };
 
 export default function AboutPage() {
-  const heroH1 = page?.heroH1 || `About ${BUSINESS.name}`;
-  const heroSubtitle = page?.heroSubtitle || BUSINESS.tagline;
-  const sections = page?.sections || [];
+  const cleanText = (s: string) => s.replace(/\*\*/g, '').replace(/\*/g, '').replace(/^#+\s*/gm, '').replace(/^:\s*/, '').trim();
+
+  const heroH1 = cleanText(page?.heroH1 || `About ${BUSINESS.name}`);
+  const heroSubtitle = cleanText(page?.heroSubtitle || BUSINESS.tagline);
+  const sections = (page?.sections || []).map(s => ({
+    ...s,
+    heading: cleanText(s.heading || ''),
+    body: cleanText(s.body || ''),
+    bullets: s.bullets?.map((b: string) => cleanText(b)) || [],
+  }));
 
   return (
     <main className="bg-black text-white">
@@ -54,7 +61,11 @@ export default function AboutPage() {
             {sections.map((section, idx) => (
               <div key={idx} className="bg-white/5 border border-white/10 rounded-2xl p-8">
                 <h2 className="text-2xl font-bold mb-4">{section.heading}</h2>
-                <p className="text-gray-300 leading-relaxed mb-4">{section.body}</p>
+                <div className="space-y-3 mb-4">
+                  {section.body.split('\n').filter(Boolean).map((para: string, pIdx: number) => (
+                    <p key={pIdx} className="text-gray-300 leading-relaxed">{para}</p>
+                  ))}
+                </div>
                 {section.bullets && section.bullets.length > 0 && (
                   <ul className="space-y-2">
                     {section.bullets.map((bullet) => (
@@ -71,8 +82,8 @@ export default function AboutPage() {
         </section>
       )}
 
-      {/* Service Areas */}
-      <section className="py-20 sm:py-28 bg-gray-900/50 border-y border-white/10">
+      {/* Service Areas — only show if areas exist */}
+      {SERVICE_AREAS.length > 0 && <section className="py-20 sm:py-28 bg-gray-900/50 border-y border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl sm:text-4xl font-bold mb-4">Areas We Serve</h2>
           <p className="text-gray-300 mb-8 max-w-2xl">
@@ -91,7 +102,7 @@ export default function AboutPage() {
             ))}
           </div>
         </div>
-      </section>
+      </section>}
 
       <CTASection />
 
