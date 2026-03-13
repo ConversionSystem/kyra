@@ -310,7 +310,7 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
       {/* My AI Worker button removed — access AI via client terminal */}
 
       {/* Navigation */}
-      <nav className="flex-1 px-2 py-2 space-y-0 overflow-y-auto">
+      <nav className="flex-1 px-2 py-2 space-y-0 overflow-y-auto scrollbar-hide">
         {navSections.map((section, si) => {
           const sectionHrefPrefixes = section.items.map(i => i.href);
           const isSectionActive = section.collapsible && sectionHrefPrefixes.some(
@@ -448,7 +448,7 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
 
       {/* Desktop sidebar — collapsed (icons only), expands on hover */}
       <aside
-        className="hidden lg:flex border-r border-gray-800 bg-gray-900 flex-col shrink-0 w-14 hover:w-52 transition-all duration-200 ease-in-out group/sidebar overflow-hidden"
+        className="hidden lg:flex border-r border-gray-800 bg-gray-900 flex-col shrink-0 w-14 hover:w-52 transition-all duration-200 ease-in-out group/sidebar overflow-hidden scrollbar-hide"
       >
         {sidebarContent}
       </aside>
