@@ -259,12 +259,11 @@ function ReprovisionButton({ clientId }: { clientId: string }) {
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export function ClientDetailView({ client: initialClient, role, plan, accountType }: ClientDetailViewProps) {
-  // Free & Solo Pro accounts get a reduced tab set — premium features are Lite+ only
+  // All tabs visible for all plans — premium tabs show 🔒 for free/solo
   const isFreeOrSolo = !plan || plan === 'free' || plan === 'solo_pro' || (plan === 'free' && accountType === 'solo');
-  const visibleTabs = isFreeOrSolo ? TABS.filter(t => !PREMIUM_TABS.includes(t.id)) : TABS;
-  const visibleTabGroups = TAB_GROUPS
-    .map(g => ({ ...g, tabs: g.tabs.filter(t => !isFreeOrSolo || !PREMIUM_TABS.includes(t.id)) }))
-    .filter(g => g.tabs.length > 0);
+  const visibleTabs = TABS;
+  const visibleTabGroups = TAB_GROUPS.filter(g => g.tabs.length > 0);
+  const isPremiumLocked = (tabId: Tab) => isFreeOrSolo && PREMIUM_TABS.includes(tabId);
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialTab = (searchParams.get('tab') as Tab) || 'terminal';
@@ -337,6 +336,7 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
               {group.tabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
+                const locked = isPremiumLocked(tab.id);
                 return (
                   <button
                     key={tab.id}
@@ -344,11 +344,14 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
                     className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors mb-0.5 ${
                       isActive
                         ? 'bg-indigo-50 text-indigo-700'
-                        : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
+                        : locked
+                          ? 'text-gray-400 hover:bg-gray-50'
+                          : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
                     }`}
                   >
-                    <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-indigo-600' : 'text-gray-400'}`} />
-                    {tab.label}
+                    <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-indigo-600' : locked ? 'text-gray-300' : 'text-gray-400'}`} />
+                    <span className={locked ? 'text-gray-400' : ''}>{tab.label}</span>
+                    {locked && <span className="ml-auto text-xs">🔒</span>}
                   </button>
                 );
               })}
@@ -363,6 +366,7 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
               {visibleTabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
+                const locked = isPremiumLocked(tab.id);
                 return (
                   <button
                     key={tab.id}
@@ -370,11 +374,14 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
                     className={`flex items-center gap-1.5 px-3 py-3 text-xs font-medium border-b-2 transition-colors whitespace-nowrap shrink-0 ${
                       isActive
                         ? 'border-indigo-600 text-indigo-600'
-                        : 'border-transparent text-gray-500'
+                        : locked
+                          ? 'border-transparent text-gray-300'
+                          : 'border-transparent text-gray-500'
                     }`}
                   >
                     <Icon className="h-3.5 w-3.5" />
                     {tab.label}
+                    {locked && <span className="text-[10px]">🔒</span>}
                   </button>
                 );
               })}
@@ -390,8 +397,27 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
           {/* Setup nudge — shown when AI has no personality or GHL configured */}
           <SetupNudgeBanner client={initialClient} onTabChange={handleTabChange} />
 
+          {/* Premium upgrade prompt for locked tabs */}
+          {isPremiumLocked(activeTab) && (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <div className="h-16 w-16 rounded-2xl bg-indigo-50 flex items-center justify-center mb-4">
+                <span className="text-3xl">🔒</span>
+              </div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Premium Feature</h2>
+              <p className="text-gray-500 mb-6 max-w-md">
+                <span className="font-medium">{TABS.find(t => t.id === activeTab)?.label}</span> is available on Agency plans. Upgrade to unlock all features.
+              </p>
+              <a
+                href="/agency/billing"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+              >
+                Upgrade Plan
+              </a>
+            </div>
+          )}
+
           {/* Tab content */}
-          {activeTab === 'terminal' && (
+          {!isPremiumLocked(activeTab) && activeTab === 'terminal' && (
             <TerminalTab client={initialClient} />
           )}
           {activeTab === 'personality' && (
@@ -403,7 +429,7 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
           {activeTab === 'settings' && (
             <SettingsTab client={initialClient} role={role} onRefresh={() => router.refresh()} />
           )}
-          {activeTab === 'ghl' && (
+          {!isPremiumLocked(activeTab) && activeTab === 'ghl' && (
             <GHLTab client={initialClient} onRefresh={() => router.refresh()} />
           )}
           {activeTab === 'usage' && (
@@ -431,7 +457,7 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
             </div>
           )}
 
-          {activeTab === 'voice' && (
+          {!isPremiumLocked(activeTab) && activeTab === 'voice' && (
             <VoiceClient
               agencyId={initialClient.agency_id}
               clientId={initialClient.id}
@@ -441,7 +467,7 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
             />
           )}
 
-          {activeTab === 'seo' && (
+          {!isPremiumLocked(activeTab) && activeTab === 'seo' && (
             <SEODashboard clientId={initialClient.id} clientName={initialClient.name || 'Client'} />
           )}
           {activeTab === 'templates' && (
@@ -452,13 +478,13 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
               isSolo={false}
             />
           )}
-          {activeTab === 'ai-teams' && (
+          {!isPremiumLocked(activeTab) && activeTab === 'ai-teams' && (
             <AgentsClient />
           )}
-          {activeTab === 'automation' && (
+          {!isPremiumLocked(activeTab) && activeTab === 'automation' && (
             <AutopilotClient />
           )}
-          {activeTab === 'delivery-sms' && (
+          {!isPremiumLocked(activeTab) && activeTab === 'delivery-sms' && (
             <DeliverySmsTab clientId={initialClient.id} />
           )}
           {activeTab === 'crm' && (
