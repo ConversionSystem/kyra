@@ -261,7 +261,7 @@ const PLAN_LABELS: Record<string, { label: string; color: string }> = {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
-export function ChannelsClient({ clientId }: { clientId?: string }) {
+export function ChannelsClient({ clientId, embedded }: { clientId?: string; embedded?: boolean }) {
   const [channelStatus, setChannelStatus] = useState<Record<string, { configured: boolean; hasToken: boolean }>>({});
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<ChannelDef | null>(null);
@@ -435,9 +435,17 @@ export function ChannelsClient({ clientId }: { clientId?: string }) {
     );
   }
 
+  // When embedded in a client tab, hide webchat (has its own widget section)
+  const filteredConnected = embedded
+    ? connectedChannels.filter(ch => ch.id !== 'webchat')
+    : connectedChannels;
+  const filteredAvailable = embedded
+    ? availableChannels.filter(ch => ch.id !== 'webchat')
+    : availableChannels;
+
   return (
     <div className="space-y-0">
-    <SectionNav currentHref="/agency/channels" />
+    {!embedded && <SectionNav currentHref="/agency/channels" />}
     <div className="p-4 sm:p-6 md:p-8 space-y-8 max-w-5xl">
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
@@ -448,20 +456,20 @@ export function ChannelsClient({ clientId }: { clientId?: string }) {
             Connect your AI worker to the platforms your customers already use.
           </p>
         </div>
-        {connectedChannels.length > 0 && (
+        {filteredConnected.length > 0 && (
           <div className="flex items-center gap-1.5 text-sm text-emerald-600 font-medium">
             <Wifi className="h-4 w-4" />
-            {connectedChannels.length} channel{connectedChannels.length !== 1 ? 's' : ''} live
+            {filteredConnected.length} channel{filteredConnected.length !== 1 ? 's' : ''} live
           </div>
         )}
       </div>
 
       {/* ── Connected channels ───────────────────────────────────────────── */}
-      {connectedChannels.length > 0 && (
+      {filteredConnected.length > 0 && (
         <div className="space-y-3">
           <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Live Channels</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {connectedChannels.map(ch => (
+            {filteredConnected.map(ch => (
               <button
                 key={ch.id}
                 onClick={() => openChannel(ch)}
@@ -487,10 +495,10 @@ export function ChannelsClient({ clientId }: { clientId?: string }) {
       {/* ── Available channels ───────────────────────────────────────────── */}
       <div className="space-y-3">
         <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-          {connectedChannels.length > 0 ? 'Add More Channels' : 'Available Channels'}
+          {filteredConnected.length > 0 ? 'Add More Channels' : 'Available Channels'}
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {availableChannels.map(ch => {
+          {filteredAvailable.map(ch => {
             const planBadge = PLAN_LABELS[ch.plan];
             const isComingSoon = ch.status === 'coming-soon';
 

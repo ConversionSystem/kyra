@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Globe, Copy, CheckCircle2, ExternalLink, Phone } from 'lucide-react';
+import { Globe, Copy, CheckCircle2, ExternalLink } from 'lucide-react';
 
 interface AgencyClient {
   id: string;
@@ -67,7 +67,7 @@ export default function ChannelsLiveTab({
   return (
     <div className="space-y-8 pb-8">
       {/* ── Live Channels (from ChannelsClient — actually connects to the container) ── */}
-      <ChannelsClient clientId={clientId} />
+      <ChannelsClient clientId={clientId} embedded />
 
       {/* ── Web Chat Widget Customization ── */}
       <div className="max-w-5xl px-4 sm:px-6 md:px-8">
@@ -156,28 +156,7 @@ export default function ChannelsLiveTab({
           </CardContent>
         </Card>
 
-        {/* ── Voice AI link ── */}
-        <Card className="rounded-2xl border border-gray-200 shadow-sm mt-6">
-          <CardContent className="pt-6">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shrink-0">
-                  <Phone className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900 text-sm">Voice AI</h3>
-                  <p className="text-xs text-gray-500 mt-0.5">Inbound & outbound phone calls powered by Kyra Native</p>
-                </div>
-              </div>
-              <button
-                onClick={() => onTabChange?.('voice')}
-                className="shrink-0 text-xs font-medium text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors"
-              >
-                Configure →
-              </button>
-            </div>
-          </CardContent>
-        </Card>
+
       </div>
     </div>
   );
