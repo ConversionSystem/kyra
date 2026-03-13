@@ -65,6 +65,7 @@ import SkillsTab from '@/components/dashboard/client-tabs/skills-tab';
 import AIPersonalityTab from '@/components/dashboard/client-tabs/ai-personality-tab';
 import DeliverySmsTab from '@/components/dashboard/client-tabs/delivery-sms-tab';
 import CrmTab from '@/components/dashboard/client-tabs/crm-tab';
+import SecretsTab from '@/components/dashboard/client-tabs/secrets-tab';
 import { AISetupClient } from '@/app/(dashboard)/agency/ai-setup/ai-setup-client';
 import { AgentsClient } from '@/app/(dashboard)/agency/agents/agents-client';
 import { AutopilotClient } from '@/app/(dashboard)/agency/autopilot/autopilot-client';
@@ -134,7 +135,11 @@ interface ChatMessage {
   content: string;
 }
 
-type Tab = 'terminal' | 'personality' | 'templates' | 'skills' | 'crm' | 'settings' | 'ghl' | 'usage' | 'conversations' | 'channels' | 'portal' | 'memory' | 'voice' | 'seo' | 'automation' | 'ai-teams' | 'delivery-sms';
+type Tab = 'terminal' | 'personality' | 'templates' | 'skills' | 'crm' | 'secrets' | 'settings' | 'ghl' | 'usage' | 'conversations' | 'channels' | 'portal' | 'memory' | 'voice' | 'seo' | 'automation' | 'ai-teams' | 'delivery-sms';
+
+function LockTabIcon({ className }: { className?: string }) {
+  return <span className={`inline-flex items-center justify-center ${className || ''}`}>🔒</span>;
+}
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'terminal', label: 'Terminal', icon: Terminal },
@@ -144,6 +149,7 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'ai-teams', label: 'AI Teams', icon: Bot },
   { id: 'delivery-sms', label: 'Delivery SMS', icon: MessageSquare },
   { id: 'crm', label: 'CRM', icon: Users },
+  { id: 'secrets', label: 'Secrets', icon: LockTabIcon },
   { id: 'settings', label: 'Settings', icon: Settings },
   { id: 'ghl', label: 'GHL', icon: Link2 },
   { id: 'automation', label: 'Automation', icon: GitBranch },
@@ -160,7 +166,7 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
 const TAB_GROUPS: { label: string; tabs: typeof TABS }[] = [
   {
     label: 'Core',
-    tabs: TABS.filter(t => ['terminal', 'personality', 'crm', 'templates', 'skills'].includes(t.id)),
+    tabs: TABS.filter(t => ['terminal', 'personality', 'crm', 'secrets', 'templates', 'skills'].includes(t.id)),
   },
   {
     label: 'Communicate',
@@ -488,6 +494,9 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
           )}
           {activeTab === 'crm' && (
             <CrmTab client={initialClient} clientId={initialClient.id} />
+          )}
+          {activeTab === 'secrets' && (
+            <SecretsTab clientId={initialClient.id} />
           )}
 
         </main>
