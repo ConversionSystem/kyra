@@ -66,6 +66,7 @@ import AIPersonalityTab from '@/components/dashboard/client-tabs/ai-personality-
 import DeliverySmsTab from '@/components/dashboard/client-tabs/delivery-sms-tab';
 import CrmTab from '@/components/dashboard/client-tabs/crm-tab';
 import SecretsTab from '@/components/dashboard/client-tabs/secrets-tab';
+import ChannelsLiveTab from '@/components/dashboard/client-tabs/channels-live-tab';
 import { AISetupClient } from '@/app/(dashboard)/agency/ai-setup/ai-setup-client';
 import { AgentsClient } from '@/app/(dashboard)/agency/agents/agents-client';
 import { AutopilotClient } from '@/app/(dashboard)/agency/autopilot/autopilot-client';
@@ -444,7 +445,7 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
             <ConversationsTab client={initialClient} />
           )}
           {activeTab === 'channels' && (
-            <ChannelsTab client={initialClient} onTabChange={handleTabChange} />
+            <ChannelsLiveTab clientId={initialClient.id} client={initialClient} onTabChange={handleTabChange} />
           )}
           {activeTab === 'portal' && (
             <PortalTab client={initialClient} />
