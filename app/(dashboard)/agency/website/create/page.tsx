@@ -9,7 +9,6 @@ import {
   Check,
   Plus,
   X,
-  Upload,
   Camera,
   Loader2,
   Globe,
@@ -17,7 +16,6 @@ import {
   Rocket,
   ExternalLink,
   AlertTriangle,
-  Trash2,
   Image as ImageIcon,
   Clock,
   Link2,
@@ -1007,15 +1005,20 @@ function StepAIPersonality({
 
 // ── Step 6: Generating ────────────────────────────────────────────────────────
 
-const GENERATION_STEPS = [
-  { label: 'Generating homepage...', duration: 3000 },
-  { label: 'Writing service pages...', duration: 5000 },
-  { label: 'Creating city pages...', duration: 4000 },
-  { label: 'Building FAQ section...', duration: 2000 },
-  { label: 'Generating meta tags & schema...', duration: 2000 },
-  { label: 'Training AI worker...', duration: 3000 },
-  { label: 'Assembling your website...', duration: 2000 },
-];
+const STATUS_LABELS: Record<string, string> = {
+  draft: 'Preparing...',
+  generating: 'Generating content...',
+  building: 'Building your website...',
+  deploying: 'Deploying to the web...',
+};
+
+const STATUS_PROGRESS: Record<string, number> = {
+  draft: 5,
+  generating: 30,
+  building: 65,
+  deploying: 90,
+  live: 100,
+};
 
 function StepGenerating({
   siteId,
@@ -1024,66 +1027,83 @@ function StepGenerating({
   siteId: string | null;
   onComplete: () => void;
 }) {
-  const [currentStepIndex, setCurrentStepIndex] = useState(0);
-  const [progress, setProgress] = useState(0);
+  const [status, setStatus] = useState<string>('generating');
+  const [pageCount, setPageCount] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const startTimeRef = useRef(Date.now());
+  const completedRef = useRef(false);
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
 
-  // Simulate progress for now — in production, this polls the API
+  const TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes
+
   useEffect(() => {
-    const totalDuration = GENERATION_STEPS.reduce((sum, s) => sum + s.duration, 0);
-    let elapsed = 0;
+    if (!siteId) {
+      setError('No site ID found. Please go back and try again.');
+      return;
+    }
 
-    const timer = setInterval(() => {
-      elapsed += 100;
-      const pct = Math.min((elapsed / totalDuration) * 100, 100);
-      setProgress(pct);
+    startTimeRef.current = Date.now();
+    completedRef.current = false;
 
-      // Figure out which step we're on
-      let accumulated = 0;
-      for (let i = 0; i < GENERATION_STEPS.length; i++) {
-        accumulated += GENERATION_STEPS[i].duration;
-        if (elapsed < accumulated) {
-          setCurrentStepIndex(i);
-          break;
-        }
-        if (i === GENERATION_STEPS.length - 1) {
-          setCurrentStepIndex(GENERATION_STEPS.length - 1);
-        }
+    const poll = async () => {
+      // Timeout check
+      if (Date.now() - startTimeRef.current > TIMEOUT_MS) {
+        if (pollRef.current) clearInterval(pollRef.current);
+        setError('Generation is taking longer than expected. Please check back later or try again.');
+        return;
       }
 
-      if (elapsed >= totalDuration) {
-        clearInterval(timer);
-        setTimeout(onComplete, 500);
-      }
-    }, 100);
-
-    return () => clearInterval(timer);
-  }, [onComplete]);
-
-  // Poll API for real status when siteId exists
-  useEffect(() => {
-    if (!siteId) return;
-
-    pollRef.current = setInterval(async () => {
       try {
         const res = await fetch(`/api/agency/sites/${siteId}`);
-        if (res.ok) {
-          const result = await res.json();
-          const site = result.data || result;
-          if (site.status === 'live' || site.status === 'ready') {
-            if (pollRef.current) clearInterval(pollRef.current);
-            onComplete();
-          }
+        if (!res.ok) return;
+        const result = await res.json();
+        const site = result.data;
+        if (!site) return;
+
+        setStatus(site.status);
+        if (typeof site.page_count === 'number') {
+          setPageCount(site.page_count);
+        }
+
+        if (site.status === 'live' && !completedRef.current) {
+          completedRef.current = true;
+          if (pollRef.current) clearInterval(pollRef.current);
+          setTimeout(() => onCompleteRef.current(), 600);
+        } else if (site.status === 'error') {
+          if (pollRef.current) clearInterval(pollRef.current);
+          setError('Something went wrong during generation. Please try again.');
         }
       } catch {
-        // Silently ignore poll errors
+        // Silently ignore transient poll errors
       }
-    }, 3000);
+    };
+
+    poll();
+    pollRef.current = setInterval(poll, 2000);
 
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
-  }, [siteId, onComplete]);
+  }, [siteId, retrying]);
+
+  const handleRetry = async () => {
+    if (!siteId) return;
+    setError(null);
+    setStatus('generating');
+    setPageCount(0);
+    setRetrying((r) => !r);
+    try {
+      await fetch(`/api/agency/sites/${siteId}/generate`, { method: 'POST' });
+    } catch {
+      setError('Failed to restart generation. Please try again.');
+    }
+  };
+
+  const progress = STATUS_PROGRESS[status] ?? 15;
+  const statusLabel = STATUS_LABELS[status] ?? 'Working...';
 
   return (
     <div className="max-w-lg mx-auto text-center py-12">
@@ -1092,86 +1112,207 @@ function StepGenerating({
           <Sparkles className="h-10 w-10 text-indigo-600 animate-pulse" />
         </div>
         <h2 className="text-2xl font-bold text-gray-900">Building Your Website</h2>
-        <p className="text-gray-500 mt-2">This usually takes about 60 seconds...</p>
+        <p className="text-gray-500 mt-2">Sit tight, this usually takes 1 to 2 minutes...</p>
       </div>
 
-      {/* Progress bar */}
-      <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden mb-6">
-        <div
-          className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-indigo-600 transition-all duration-300 ease-out"
-          style={{ width: `${progress}%` }}
-        />
-      </div>
-
-      {/* Status messages */}
-      <div className="space-y-2">
-        {GENERATION_STEPS.map((step, i) => (
-          <div
-            key={i}
-            className={`flex items-center justify-center gap-2 text-sm transition-all duration-300 ${
-              i < currentStepIndex
-                ? 'text-green-600'
-                : i === currentStepIndex
-                  ? 'text-indigo-600 font-medium'
-                  : 'text-gray-300'
-            }`}
-          >
-            {i < currentStepIndex ? (
-              <Check className="h-4 w-4" />
-            ) : i === currentStepIndex ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <div className="h-4 w-4" />
-            )}
-            <span>{step.label}</span>
+      {error ? (
+        <div className="space-y-4">
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+            <p className="text-sm text-red-700 text-left">{error}</p>
           </div>
-        ))}
-      </div>
+          <button
+            onClick={handleRetry}
+            className="px-6 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      ) : (
+        <>
+          {/* Progress bar */}
+          <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden mb-6">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-indigo-600 transition-all duration-700 ease-out"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+
+          {/* Current status */}
+          <div className="flex items-center justify-center gap-2 text-sm text-indigo-600 font-medium mb-4">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>{statusLabel}</span>
+          </div>
+
+          {/* Page count */}
+          {pageCount > 0 && (
+            <p className="text-sm text-gray-500">
+              {pageCount} {pageCount === 1 ? 'page' : 'pages'} generated
+            </p>
+          )}
+        </>
+      )}
     </div>
   );
 }
 
 // ── Step 7: Review & Launch ───────────────────────────────────────────────────
 
-function StepReviewLaunch({
-  data,
-  onLaunch,
-}: {
-  data: WizardData;
-  onLaunch: () => void;
-}) {
-  const [launching, setLaunching] = useState(false);
-  const [launched, setLaunched] = useState(false);
-  const confettiRef = useRef<HTMLDivElement>(null);
+interface SitePage {
+  id: string;
+  title: string;
+  slug: string;
+  page_type: string;
+}
 
-  const industryDefaults = INDUSTRY_DEFAULTS[data.industry];
-
-  const pageCount =
-    (data.services.length + 5) +
-    data.selectedCities.length +
-    data.selectedCities.length * Math.min(data.services.length, 3);
-
-  const handleLaunch = async () => {
-    setLaunching(true);
-    try {
-      if (data.siteId) {
-        await fetch(`/api/agency/sites/${data.siteId}/deploy`, { method: 'POST' });
-      }
-      setLaunched(true);
-      onLaunch();
-    } catch {
-      // Allow launch even if deploy fails — show success state
-      setLaunched(true);
-    } finally {
-      setLaunching(false);
-    }
+function ReviewStatusBadge({ status }: { status: string }) {
+  const styles: Record<string, string> = {
+    live: 'bg-green-100 text-green-700 border-green-200',
+    draft: 'bg-gray-100 text-gray-600 border-gray-200',
+    generating: 'bg-indigo-100 text-indigo-700 border-indigo-200',
+    building: 'bg-amber-100 text-amber-700 border-amber-200',
+    deploying: 'bg-blue-100 text-blue-700 border-blue-200',
+    error: 'bg-red-100 text-red-700 border-red-200',
   };
 
-  if (launched) {
+  const icons: Record<string, React.ReactNode> = {
+    live: <span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-1.5 animate-pulse" />,
+    generating: <Loader2 className="h-3 w-3 mr-1 animate-spin" />,
+    building: <Loader2 className="h-3 w-3 mr-1 animate-spin" />,
+    deploying: <Loader2 className="h-3 w-3 mr-1 animate-spin" />,
+    error: <AlertTriangle className="h-3 w-3 mr-1" />,
+  };
+
+  return (
+    <span className={`inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-full border ${styles[status] || styles.draft}`}>
+      {icons[status]}
+      {status.charAt(0).toUpperCase() + status.slice(1)}
+    </span>
+  );
+}
+
+const PAGE_TYPE_LABELS: Record<string, string> = {
+  homepage: 'Homepage',
+  services: 'Service Pages',
+  city: 'City Pages',
+  utility: 'Utility Pages',
+};
+
+const PAGE_TYPE_ICONS: Record<string, React.ReactNode> = {
+  homepage: <Globe className="h-4 w-4 text-indigo-500" />,
+  services: <Sparkles className="h-4 w-4 text-amber-500" />,
+  city: <Clock className="h-4 w-4 text-blue-500" />,
+  utility: <Link2 className="h-4 w-4 text-gray-400" />,
+};
+
+function StepReviewLaunch({
+  data,
+  clientId,
+}: {
+  data: WizardData;
+  clientId: string | null;
+}) {
+  const reviewRouter = useRouter();
+  const [siteStatus, setSiteStatus] = useState<string>('building');
+  const [siteUrl, setSiteUrl] = useState<string | null>(null);
+  const [pages, setPages] = useState<SitePage[]>([]);
+  const [pageCount, setPageCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isLiveRef = useRef(false);
+
+  // Fetch site data and pages
+  const fetchSiteData = useCallback(async () => {
+    if (!data.siteId) return;
+    try {
+      const [siteRes, pagesRes] = await Promise.all([
+        fetch(`/api/agency/sites/${data.siteId}`),
+        fetch(`/api/agency/sites/${data.siteId}/pages`),
+      ]);
+
+      if (siteRes.ok) {
+        const siteResult = await siteRes.json();
+        const site = siteResult.data;
+        if (site) {
+          setSiteStatus(site.status);
+          setPageCount(site.page_count || 0);
+          const url = site.site_subdomain
+            ? `https://${site.site_subdomain}`
+            : site.site_domain
+              ? `https://${site.site_domain}`
+              : null;
+          setSiteUrl(url);
+          if (site.status === 'live') {
+            isLiveRef.current = true;
+          }
+        }
+      }
+
+      if (pagesRes.ok) {
+        const pagesResult = await pagesRes.json();
+        if (Array.isArray(pagesResult.data)) {
+          setPages(pagesResult.data);
+        }
+      }
+    } catch {
+      // Silently handle fetch errors
+    } finally {
+      setLoading(false);
+    }
+  }, [data.siteId]);
+
+  useEffect(() => {
+    fetchSiteData();
+
+    pollRef.current = setInterval(() => {
+      if (!isLiveRef.current) {
+        fetchSiteData();
+      }
+    }, 3000);
+
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, [fetchSiteData]);
+
+  // Stop polling once live
+  useEffect(() => {
+    if (siteStatus === 'live' && pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+  }, [siteStatus]);
+
+  // Group pages by type
+  const groupedPages = pages.reduce<Record<string, SitePage[]>>((groups, page) => {
+    const type = page.page_type || 'utility';
+    if (!groups[type]) groups[type] = [];
+    groups[type].push(page);
+    return groups;
+  }, {});
+
+  const backUrl = clientId ? `/agency/clients/${clientId}` : '/agency/clients';
+
+  const industryDefaults = INDUSTRY_DEFAULTS[data.industry];
+  const industryLabel = industryDefaults?.label || data.industry;
+
+  const isLive = siteStatus === 'live';
+  const isDeploying = siteStatus === 'building' || siteStatus === 'deploying';
+
+  if (loading) {
     return (
-      <div className="max-w-lg mx-auto text-center py-12" ref={confettiRef}>
-        {/* Simple confetti effect */}
-        <div className="relative">
+      <div className="max-w-lg mx-auto text-center py-16">
+        <Loader2 className="h-8 w-8 text-indigo-600 animate-spin mx-auto mb-4" />
+        <p className="text-sm text-gray-500">Loading site details...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-3xl mx-auto">
+      {/* Celebration banner when live */}
+      {isLive && (
+        <div className="relative mb-8">
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             {Array.from({ length: 20 }).map((_, i) => (
               <div
@@ -1179,7 +1320,7 @@ function StepReviewLaunch({
                 className="absolute w-2 h-2 rounded-full animate-ping"
                 style={{
                   backgroundColor: ['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#3b82f6'][i % 5],
-                  left: `${20 + Math.random() * 60}%`,
+                  left: `${15 + Math.random() * 70}%`,
                   top: `${10 + Math.random() * 80}%`,
                   animationDelay: `${Math.random() * 2}s`,
                   animationDuration: `${1 + Math.random() * 2}s`,
@@ -1187,69 +1328,72 @@ function StepReviewLaunch({
               />
             ))}
           </div>
-          <div className="relative z-10">
-            <div className="w-24 h-24 rounded-3xl bg-green-100 flex items-center justify-center mx-auto mb-6">
-              <Rocket className="h-12 w-12 text-green-600" />
+          <div className="relative z-10 text-center py-8">
+            <div className="w-20 h-20 rounded-2xl bg-green-100 flex items-center justify-center mx-auto mb-4">
+              <Rocket className="h-10 w-10 text-green-600" />
             </div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">🎉 Your Site is Live!</h2>
-            <p className="text-gray-500 mb-8">
-              {data.businessName}&apos;s website is deployed and ready for customers.
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">Your website is live!</h2>
+            <p className="text-gray-500">
+              {data.businessName} is now online and ready for customers.
             </p>
-            <div className="flex flex-col gap-3">
-              <Link
-                href="/agency/clients"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors"
-              >
-                Go to Dashboard
-              </Link>
-            </div>
           </div>
         </div>
-      </div>
-    );
-  }
+      )}
 
-  return (
-    <div className="max-w-3xl mx-auto">
-      <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold text-gray-900">Review & Launch</h2>
-        <p className="text-gray-500 mt-2">Everything looks great. Review your site and hit launch.</p>
-      </div>
+      {/* Still deploying banner */}
+      {isDeploying && (
+        <div className="text-center mb-8 py-6">
+          <div className="w-16 h-16 rounded-2xl bg-blue-100 flex items-center justify-center mx-auto mb-4">
+            <Loader2 className="h-8 w-8 text-blue-600 animate-spin" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Your site is being deployed...</h2>
+          <p className="text-gray-500">Almost there. This page will update automatically.</p>
+        </div>
+      )}
+
+      {/* Default header for other states */}
+      {!isLive && !isDeploying && (
+        <div className="text-center mb-8">
+          <h2 className="text-2xl font-bold text-gray-900">Review Your Website</h2>
+          <p className="text-gray-500 mt-2">Here is a summary of your generated site.</p>
+        </div>
+      )}
 
       <div className="space-y-6">
-        {/* Preview placeholder */}
-        <div className="bg-gray-100 rounded-xl border border-gray-200 overflow-hidden">
-          <div className="bg-gray-800 px-4 py-2 flex items-center gap-2">
-            <div className="flex gap-1.5">
-              <div className="w-3 h-3 rounded-full bg-red-400" />
-              <div className="w-3 h-3 rounded-full bg-yellow-400" />
-              <div className="w-3 h-3 rounded-full bg-green-400" />
+        {/* Site info card */}
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">{data.businessName}</h3>
+              <p className="text-sm text-gray-500">{industryLabel}</p>
             </div>
-            <div className="flex-1 text-center">
-              <span className="text-xs text-gray-400 font-mono">
-                {data.businessName
-                  ? `${data.businessName.toLowerCase().replace(/[^a-z0-9]+/g, '')}.sites.kyra.com`
-                  : 'yoursite.sites.kyra.com'}
-              </span>
-            </div>
+            <ReviewStatusBadge status={siteStatus} />
           </div>
-          <div className="p-8 min-h-[200px] flex flex-col items-center justify-center text-center" style={{ backgroundColor: data.colorSecondary }}>
-            <h3 className="text-xl font-bold mb-2" style={{ color: data.colorPrimary }}>
-              {data.businessName || 'Your Business'}
-            </h3>
-            <p className="text-sm" style={{ color: `${data.colorPrimary}88` }}>
-              {data.tagline || `Trusted ${industryDefaults?.label || 'professionals'} in ${data.city || 'your area'}`}
-            </p>
-            <div className="mt-4 px-4 py-2 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: data.colorPrimary }}>
-              Get a Free Quote
+
+          {/* Site URL */}
+          {isLive && siteUrl && (
+            <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center justify-between">
+              <div className="flex items-center gap-2 min-w-0">
+                <Globe className="h-4 w-4 text-green-600 shrink-0" />
+                <span className="text-sm font-mono text-green-700 truncate">{siteUrl}</span>
+              </div>
+              <a
+                href={siteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="shrink-0 ml-3 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors flex items-center gap-1.5"
+              >
+                Visit Site
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
             </div>
-          </div>
+          )}
         </div>
 
-        {/* Summary cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {/* Summary stats */}
+        <div className="grid grid-cols-3 gap-3">
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 text-center">
-            <p className="text-2xl font-bold text-gray-900">{pageCount}</p>
+            <p className="text-2xl font-bold text-gray-900">{pageCount || pages.length}</p>
             <p className="text-xs text-gray-500">Pages</p>
           </div>
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 text-center">
@@ -1260,59 +1404,63 @@ function StepReviewLaunch({
             <p className="text-2xl font-bold text-gray-900">{data.selectedCities.length}</p>
             <p className="text-xs text-gray-500">Cities</p>
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 text-center">
-            <p className="text-2xl font-bold text-gray-900">{data.aiName || '—'}</p>
-            <p className="text-xs text-gray-500">AI Worker</p>
-          </div>
         </div>
 
-        {/* AI Worker preview */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-          <h4 className="text-sm font-semibold text-gray-900 mb-3">AI Worker Preview</h4>
-          <div className="bg-gray-50 rounded-xl p-4 space-y-2">
-            <div className="flex items-end gap-2">
-              <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs shrink-0" style={{ backgroundColor: data.colorPrimary }}>
-                🤖
-              </div>
-              <div className="bg-white rounded-xl rounded-bl-sm px-3 py-2 shadow-sm text-sm text-gray-800 max-w-[80%]">
-                Hi! I&apos;m {data.aiName || 'your AI assistant'} from {data.businessName || 'your business'}.
-                How can I help you today?
-              </div>
+        {/* Page list grouped by type */}
+        {pages.length > 0 && (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+            <h4 className="text-sm font-semibold text-gray-900 mb-4">Generated Pages</h4>
+            <div className="space-y-4">
+              {Object.entries(groupedPages).map(([type, typePages]) => (
+                <div key={type}>
+                  <div className="flex items-center gap-2 mb-2">
+                    {PAGE_TYPE_ICONS[type] || <Globe className="h-4 w-4 text-gray-400" />}
+                    <span className="text-sm font-medium text-gray-700">
+                      {PAGE_TYPE_LABELS[type] || type.charAt(0).toUpperCase() + type.slice(1)}
+                    </span>
+                    <span className="text-xs text-gray-400">({typePages.length})</span>
+                  </div>
+                  <div className="pl-6 space-y-1">
+                    {typePages.slice(0, 8).map((page) => (
+                      <p key={page.id} className="text-sm text-gray-600 truncate">
+                        {page.title || page.slug}
+                      </p>
+                    ))}
+                    {typePages.length > 8 && (
+                      <p className="text-xs text-gray-400">
+                        +{typePages.length - 8} more
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Connect Domain */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-          <h4 className="text-sm font-semibold text-gray-900 mb-2">Connect Custom Domain</h4>
-          <p className="text-xs text-gray-500 mb-3">
-            Your site will be live at a free subdomain immediately. Add a custom domain later from the dashboard.
-          </p>
-          <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-600 space-y-1">
-            <p>1. Purchase a domain (Namecheap, GoDaddy, etc.)</p>
-            <p>2. Point DNS to our servers via Cloudflare</p>
-            <p>3. We handle SSL automatically</p>
-          </div>
-        </div>
-
-        {/* Launch button */}
-        <div className="text-center pt-4">
+        {/* Actions */}
+        <div className="flex flex-col sm:flex-row gap-3 pt-4">
+          {isLive && siteUrl && (
+            <a
+              href={siteUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors"
+            >
+              <ExternalLink className="h-4 w-4" />
+              Visit Your Website
+            </a>
+          )}
           <button
-            onClick={handleLaunch}
-            disabled={launching}
-            className="px-12 py-4 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white text-lg font-bold rounded-2xl shadow-lg shadow-indigo-200 hover:from-indigo-700 hover:to-indigo-800 disabled:opacity-50 transition-all transform hover:scale-105 active:scale-95"
+            onClick={() => reviewRouter.push(backUrl)}
+            className={`flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-medium transition-colors ${
+              isLive && siteUrl
+                ? 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                : 'bg-indigo-600 text-white hover:bg-indigo-700'
+            }`}
           >
-            {launching ? (
-              <span className="flex items-center gap-2">
-                <Loader2 className="h-5 w-5 animate-spin" />
-                Deploying...
-              </span>
-            ) : (
-              <span className="flex items-center gap-2">
-                <Rocket className="h-5 w-5" />
-                Launch Website
-              </span>
-            )}
+            <ArrowLeft className="h-4 w-4" />
+            Back to Dashboard
           </button>
         </div>
       </div>
@@ -1462,11 +1610,23 @@ export default function WebsiteBuilderWizard() {
   const goNext = async () => {
     await saveToApi(step);
     const next = getNextStep(step);
-    if (next === 6) {
-      // Trigger generation
-      if (data.siteId) {
-        fetch(`/api/agency/sites/${data.siteId}/generate`, { method: 'POST' }).catch(() => {});
-      }
+    if (next === 6 && data.siteId) {
+      // Generate auto-subdomain from business name
+      const slug = data.businessName
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .slice(0, 30);
+      const subdomain = `${slug}.sites.kyra.conversionsystem.com`;
+
+      // Trigger generation and set subdomain in parallel
+      fetch(`/api/agency/sites/${data.siteId}/generate`, { method: 'POST' }).catch(() => {});
+      fetch(`/api/agency/sites/${data.siteId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ site_subdomain: subdomain }),
+      }).catch(() => {});
     }
     setStep(next);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1540,7 +1700,7 @@ export default function WebsiteBuilderWizard() {
         {step === 7 && (
           <StepReviewLaunch
             data={data}
-            onLaunch={() => {}}
+            clientId={clientIdParam}
           />
         )}
 

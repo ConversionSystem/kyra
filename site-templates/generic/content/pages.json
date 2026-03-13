@@ -1,0 +1,395 @@
+[
+  {
+    "slug": "/",
+    "type": "homepage",
+    "title": "Carter & Associates Law Firm - San Francisco, CA",
+    "metaTitle": "Carter & Associates | Trusted Attorneys in San Francisco, CA",
+    "metaDescription": "San Francisco's trusted law firm with 15+ years of experience. Personal injury, family law, criminal defense, estate planning, and business law. Free consultations. Call (555) 987-6543.",
+    "heroH1": "Trusted Legal Representation in San Francisco",
+    "heroSubtitle": "15+ years of aggressive advocacy for individuals and families across the Bay Area. Free initial consultations on all cases.",
+    "sections": [
+      {
+        "heading": "Why Choose Carter & Associates?",
+        "body": "With over 15 years of experience serving San Francisco and the greater Bay Area, our team of dedicated attorneys combines deep legal expertise with a genuine commitment to our clients. We take the time to understand your situation, explain your options clearly, and fight tirelessly for the best possible outcome.",
+        "bullets": [
+          "Free initial consultations on all cases",
+          "No fee unless we win your personal injury case",
+          "Over $50 million recovered for our clients",
+          "Available evenings and weekends by appointment",
+          "Bilingual staff (English and Spanish)",
+          "Personalized attention from experienced attorneys"
+        ]
+      },
+      {
+        "heading": "Our Commitment to You",
+        "body": "At Carter & Associates, every case matters. We believe in transparent communication, honest assessments, and relentless advocacy. Our attorneys are accessible, responsive, and dedicated to achieving the results you need.",
+        "bullets": [
+          "Direct access to your attorney",
+          "Regular case updates and clear communication",
+          "Thorough preparation for every case",
+          "Proven track record of results"
+        ]
+      }
+    ],
+    "testimonials": [
+      {
+        "name": "Maria G.",
+        "text": "After my car accident, I didn't know where to turn. Carter & Associates took my case and fought for every dollar I deserved. They kept me informed every step of the way and secured a settlement that covered all my medical bills and more.",
+        "rating": 5
+      },
+      {
+        "name": "James T.",
+        "text": "Professional, responsive, and genuinely caring. The team at Carter & Associates helped me through a difficult divorce with compassion and expertise. I couldn't have asked for better representation.",
+        "rating": 5
+      },
+      {
+        "name": "Robert K.",
+        "text": "When I was facing criminal charges, I was terrified. My attorney at Carter & Associates built an incredible defense and got the charges reduced. They truly saved my future.",
+        "rating": 5
+      },
+      {
+        "name": "Linda S.",
+        "text": "They helped us set up our family trust and estate plan. Everything was explained in plain language, and the process was smooth. Highly recommend for estate planning.",
+        "rating": 5
+      }
+    ],
+    "faq": [
+      {
+        "question": "Do you offer free consultations?",
+        "answer": "Yes, we offer free initial consultations for all practice areas. During your consultation, we will review your case, explain your legal options, and outline a clear path forward."
+      },
+      {
+        "question": "How much does it cost to hire an attorney?",
+        "answer": "Personal injury cases are handled on a contingency fee basis, meaning you pay nothing unless we win. For other practice areas, we offer competitive rates and flexible payment plans."
+      },
+      {
+        "question": "How long will my case take?",
+        "answer": "Every case is unique. During your consultation, we will give you a realistic timeline based on the specifics of your situation. We prioritize efficiency while never compromising on quality."
+      }
+    ],
+    "schema": {
+      "@type": "LegalService",
+      "name": "Carter & Associates Law Firm",
+      "description": "Full-service law firm in San Francisco specializing in personal injury, family law, criminal defense, estate planning, and business law."
+    }
+  },
+  {
+    "slug": "/about",
+    "type": "about",
+    "title": "About Carter & Associates Law Firm",
+    "metaTitle": "About Us | Carter & Associates Law Firm",
+    "metaDescription": "Learn about Carter & Associates, a client-focused law firm serving San Francisco and the Bay Area for over 15 years. Meet our experienced team of attorneys.",
+    "heroH1": "About Carter & Associates",
+    "heroSubtitle": "A client-focused law firm built on trust, results, and a genuine commitment to justice.",
+    "sections": [
+      {
+        "heading": "Our Story",
+        "body": "Founded in 2011, Carter & Associates has grown from a small practice into one of San Francisco's respected law firms. Our founder, Sarah Carter, started the firm with a simple belief: every person deserves access to exceptional legal representation, regardless of their circumstances. Today, our team of experienced attorneys carries that mission forward every day.",
+        "bullets": []
+      },
+      {
+        "heading": "Our Values",
+        "body": "We believe in integrity, excellence, and putting our clients first. Every decision we make is guided by what is best for the people we serve.",
+        "bullets": [
+          "Integrity in every interaction",
+          "Excellence in legal advocacy",
+          "Client-first approach to every case",
+          "Community involvement and pro bono work"
+        ]
+      }
+    ],
+    "faq": [],
+    "schema": {
+      "@type": "LegalService",
+      "name": "Carter & Associates Law Firm"
+    }
+  },
+  {
+    "slug": "/contact",
+    "type": "contact",
+    "title": "Contact Carter & Associates",
+    "metaTitle": "Contact Us | Carter & Associates Law Firm",
+    "metaDescription": "Contact Carter & Associates for a free consultation. Call (555) 987-6543 or visit our San Francisco office at 450 Market Street, Suite 200.",
+    "heroH1": "Contact Our Legal Team",
+    "heroSubtitle": "Reach out for a free consultation. We are here to help with your legal needs.",
+    "sections": [],
+    "faq": [],
+    "schema": {
+      "@type": "LegalService",
+      "name": "Carter & Associates Law Firm"
+    }
+  },
+  {
+    "slug": "/faq",
+    "type": "faq",
+    "title": "Frequently Asked Questions",
+    "metaTitle": "FAQ | Carter & Associates Law Firm",
+    "metaDescription": "Find answers to common legal questions about personal injury, family law, criminal defense, estate planning, and working with an attorney.",
+    "heroH1": "Frequently Asked Questions",
+    "heroSubtitle": "Answers to common questions about our services and working with an attorney.",
+    "sections": [],
+    "faq": [
+      {
+        "question": "Do you offer free consultations?",
+        "answer": "Yes, we offer free initial consultations for all practice areas. This gives us a chance to understand your situation and explain your legal options without any obligation."
+      },
+      {
+        "question": "What areas of law do you practice?",
+        "answer": "We handle personal injury, family law, criminal defense, estate planning, and business law matters. Our diverse team allows us to provide comprehensive legal support."
+      },
+      {
+        "question": "How much does it cost to hire an attorney?",
+        "answer": "Personal injury cases are handled on a contingency basis - you pay nothing unless we recover compensation for you. Other practice areas have competitive hourly rates or flat fees, with flexible payment plans available."
+      },
+      {
+        "question": "What should I bring to my first consultation?",
+        "answer": "Bring any relevant documents such as police reports, medical records, contracts, court papers, or correspondence related to your case. The more information we have, the better we can advise you."
+      },
+      {
+        "question": "How long will my case take?",
+        "answer": "Timelines vary depending on the type and complexity of your case. Simple matters may resolve in weeks, while litigation can take months or longer. We will provide a realistic estimate during your consultation."
+      },
+      {
+        "question": "Do you handle cases outside of San Francisco?",
+        "answer": "Yes, we represent clients throughout the Bay Area including Oakland, San Jose, Berkeley, Palo Alto, Fremont, and surrounding communities."
+      },
+      {
+        "question": "Can I reach my attorney directly?",
+        "answer": "Absolutely. We believe in direct communication between clients and their attorneys. You will have your attorney's direct contact information and can expect timely responses to your inquiries."
+      },
+      {
+        "question": "What if I cannot afford an attorney?",
+        "answer": "We offer contingency fee arrangements for personal injury cases and flexible payment plans for other matters. We also do pro bono work for qualifying clients. Contact us to discuss your options."
+      }
+    ],
+    "schema": {
+      "@type": "FAQPage"
+    }
+  },
+  {
+    "slug": "/reviews",
+    "type": "reviews",
+    "title": "Client Reviews and Testimonials",
+    "metaTitle": "Client Reviews | Carter & Associates Law Firm",
+    "metaDescription": "Read what our clients say about Carter & Associates. 4.9 star rating with 47 reviews. Trusted legal representation in San Francisco.",
+    "heroH1": "What Our Clients Say",
+    "heroSubtitle": "Real reviews from real clients across the Bay Area.",
+    "sections": [],
+    "testimonials": [
+      {
+        "name": "Maria G.",
+        "text": "After my car accident, I didn't know where to turn. Carter & Associates took my case and fought for every dollar I deserved. They kept me informed every step of the way and secured a settlement that covered all my medical bills and more.",
+        "rating": 5
+      },
+      {
+        "name": "James T.",
+        "text": "Professional, responsive, and genuinely caring. The team at Carter & Associates helped me through a difficult divorce with compassion and expertise. I couldn't have asked for better representation.",
+        "rating": 5
+      },
+      {
+        "name": "Robert K.",
+        "text": "When I was facing criminal charges, I was terrified. My attorney at Carter & Associates built an incredible defense and got the charges reduced. They truly saved my future.",
+        "rating": 5
+      },
+      {
+        "name": "Linda S.",
+        "text": "They helped us set up our family trust and estate plan. Everything was explained in plain language, and the process was smooth. Highly recommend for estate planning.",
+        "rating": 5
+      },
+      {
+        "name": "David M.",
+        "text": "Carter & Associates handled our business litigation with incredible skill. They were thorough, strategic, and always kept us in the loop. Outstanding legal team.",
+        "rating": 5
+      },
+      {
+        "name": "Patricia W.",
+        "text": "I had a slip and fall at a grocery store. The team fought hard for my case and I received a fair settlement. They were professional and empathetic throughout the process.",
+        "rating": 5
+      }
+    ],
+    "faq": [],
+    "schema": {
+      "@type": "LegalService",
+      "name": "Carter & Associates Law Firm"
+    }
+  },
+  {
+    "slug": "/services/personal-injury",
+    "type": "service",
+    "title": "Personal Injury Attorney in San Francisco",
+    "metaTitle": "Personal Injury Lawyer | Carter & Associates",
+    "metaDescription": "Injured in an accident? Our personal injury attorneys fight for maximum compensation. No fee unless we win. Free consultation. Call (555) 987-6543.",
+    "heroH1": "Personal Injury Attorney",
+    "heroSubtitle": "Aggressive representation for accident victims. No fee unless we win your case.",
+    "sections": [
+      {
+        "heading": "Types of Personal Injury Cases We Handle",
+        "body": "Our experienced personal injury team handles a wide range of accident and injury claims throughout the Bay Area.",
+        "bullets": [
+          "Car and truck accidents",
+          "Motorcycle accidents",
+          "Slip and fall injuries",
+          "Workplace injuries",
+          "Medical malpractice",
+          "Product liability"
+        ]
+      },
+      {
+        "heading": "Our Approach to Your Case",
+        "body": "We investigate thoroughly, build strong cases, and negotiate aggressively. If the insurance company won't offer fair compensation, we are fully prepared to take your case to trial.",
+        "bullets": [
+          "Thorough accident investigation",
+          "Expert witness coordination",
+          "Aggressive negotiation with insurance companies",
+          "Trial-ready preparation for every case"
+        ]
+      }
+    ],
+    "faq": [
+      {
+        "question": "How much is my personal injury case worth?",
+        "answer": "The value of your case depends on many factors including the severity of your injuries, medical expenses, lost wages, and impact on your quality of life. During your free consultation, we can provide an initial assessment."
+      },
+      {
+        "question": "What is a contingency fee?",
+        "answer": "A contingency fee means you pay no attorney fees upfront. We only get paid if we successfully recover compensation for you. This ensures access to quality legal representation regardless of your financial situation."
+      }
+    ],
+    "schema": {
+      "@type": "LegalService",
+      "name": "Personal Injury Attorney - Carter & Associates"
+    }
+  },
+  {
+    "slug": "/services/family-law",
+    "type": "service",
+    "title": "Family Law Attorney in San Francisco",
+    "metaTitle": "Family Law Attorney | Carter & Associates",
+    "metaDescription": "Compassionate family law representation in San Francisco. Divorce, custody, child support, and more. Free consultation. Call (555) 987-6543.",
+    "heroH1": "Family Law Attorney",
+    "heroSubtitle": "Compassionate guidance through life's most challenging legal matters.",
+    "sections": [
+      {
+        "heading": "Family Law Services",
+        "body": "Our family law team provides compassionate, skilled representation for all family-related legal matters.",
+        "bullets": [
+          "Divorce and legal separation",
+          "Child custody and visitation",
+          "Child support modifications",
+          "Spousal support and alimony",
+          "Prenuptial and postnuptial agreements",
+          "Domestic violence restraining orders"
+        ]
+      }
+    ],
+    "faq": [
+      {
+        "question": "How long does a divorce take in California?",
+        "answer": "California has a mandatory 6-month waiting period from the date the respondent is served. The total timeline depends on whether the divorce is contested and the complexity of asset division."
+      }
+    ],
+    "schema": {
+      "@type": "LegalService",
+      "name": "Family Law Attorney - Carter & Associates"
+    }
+  },
+  {
+    "slug": "/services/criminal-defense",
+    "type": "service",
+    "title": "Criminal Defense Attorney in San Francisco",
+    "metaTitle": "Criminal Defense Lawyer | Carter & Associates",
+    "metaDescription": "Experienced criminal defense attorneys protecting your rights and freedom. From misdemeanors to felonies. Free consultation. Call (555) 987-6543.",
+    "heroH1": "Criminal Defense Attorney",
+    "heroSubtitle": "Protecting your rights, your freedom, and your future.",
+    "sections": [
+      {
+        "heading": "Criminal Cases We Defend",
+        "body": "Our criminal defense team has extensive experience defending clients against a wide range of charges.",
+        "bullets": [
+          "DUI and DWI defense",
+          "Drug offenses",
+          "Theft and property crimes",
+          "Assault and violent crimes",
+          "White collar crimes",
+          "Federal criminal charges"
+        ]
+      }
+    ],
+    "faq": [
+      {
+        "question": "Should I talk to the police without a lawyer?",
+        "answer": "No. You have the right to remain silent and the right to an attorney. Exercise those rights and contact us immediately. Anything you say can be used against you."
+      }
+    ],
+    "schema": {
+      "@type": "LegalService",
+      "name": "Criminal Defense Attorney - Carter & Associates"
+    }
+  },
+  {
+    "slug": "/services/estate-planning",
+    "type": "service",
+    "title": "Estate Planning Attorney in San Francisco",
+    "metaTitle": "Estate Planning Lawyer | Carter & Associates",
+    "metaDescription": "Protect your legacy with comprehensive estate planning. Wills, trusts, powers of attorney, and probate. Free consultation. Call (555) 987-6543.",
+    "heroH1": "Estate Planning Attorney",
+    "heroSubtitle": "Protect your family and your legacy with a comprehensive estate plan.",
+    "sections": [
+      {
+        "heading": "Estate Planning Services",
+        "body": "Our estate planning attorneys help you plan for the future and protect what matters most.",
+        "bullets": [
+          "Wills and living wills",
+          "Revocable and irrevocable trusts",
+          "Powers of attorney",
+          "Healthcare directives",
+          "Probate administration",
+          "Trust administration"
+        ]
+      }
+    ],
+    "faq": [
+      {
+        "question": "Do I really need an estate plan?",
+        "answer": "Yes. Without an estate plan, California law determines how your assets are distributed, who cares for your children, and who makes medical decisions for you. An estate plan puts you in control."
+      }
+    ],
+    "schema": {
+      "@type": "LegalService",
+      "name": "Estate Planning Attorney - Carter & Associates"
+    }
+  },
+  {
+    "slug": "/services/business-law",
+    "type": "service",
+    "title": "Business Law Attorney in San Francisco",
+    "metaTitle": "Business Law Attorney | Carter & Associates",
+    "metaDescription": "Strategic legal counsel for businesses of all sizes. Contracts, formation, disputes, and compliance. Free consultation. Call (555) 987-6543.",
+    "heroH1": "Business Law Attorney",
+    "heroSubtitle": "Strategic legal counsel to help your business thrive.",
+    "sections": [
+      {
+        "heading": "Business Legal Services",
+        "body": "From startups to established enterprises, we provide the legal foundation your business needs to succeed.",
+        "bullets": [
+          "Business formation and structuring",
+          "Contract drafting and review",
+          "Commercial litigation",
+          "Employment law compliance",
+          "Mergers and acquisitions",
+          "Intellectual property protection"
+        ]
+      }
+    ],
+    "faq": [
+      {
+        "question": "What business structure is right for me?",
+        "answer": "The best structure depends on your goals, liability concerns, tax situation, and growth plans. During a consultation, we can analyze your needs and recommend the optimal structure."
+      }
+    ],
+    "schema": {
+      "@type": "LegalService",
+      "name": "Business Law Attorney - Carter & Associates"
+    }
+  }
+]

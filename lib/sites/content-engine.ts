@@ -165,22 +165,52 @@ export async function generateSiteContent(
       );
     }
 
-    // 7. Update site status
+    // 7. Update site status + auto-assign subdomain
     const totalCost = results.reduce((sum, r) => sum + r.cost, 0);
-    const finalStatus = succeeded > 0 ? 'building' : 'error';
 
-    await supabase
-      .from('client_sites')
-      .update({
-        status: finalStatus,
-        page_count: succeeded,
-        content_generated_at: new Date().toISOString(),
-      })
-      .eq('id', siteId);
+    if (succeeded > 0) {
+      // Auto-assign subdomain if not already set
+      const needsSubdomain = !clientSite.site_domain && !clientSite.site_subdomain;
+      const slug = clientSite.business_name
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .slice(0, 30);
+      const subdomain = needsSubdomain
+        ? `${slug}.sites.kyra.conversionsystem.com`
+        : undefined;
 
-    console.log(
-      `[content-engine] Site ${siteId}: ${succeeded}/${tasks.length} pages generated, cost: $${totalCost.toFixed(4)}`,
-    );
+      await supabase
+        .from('client_sites')
+        .update({
+          status: 'building',
+          page_count: succeeded,
+          content_generated_at: new Date().toISOString(),
+          ...(subdomain ? { site_subdomain: subdomain } : {}),
+        })
+        .eq('id', siteId);
+
+      console.log(
+        `[content-engine] Site ${siteId}: ${succeeded}/${tasks.length} pages generated, cost: $${totalCost.toFixed(4)}`,
+      );
+
+      // 8. Auto-trigger build + deploy (fire-and-forget)
+      triggerBuildAndDeploy(siteId, supabase).catch((err) => {
+        console.error(`[content-engine] Auto-build failed for site ${siteId}:`, err);
+      });
+    } else {
+      await supabase
+        .from('client_sites')
+        .update({
+          status: 'error',
+          page_count: 0,
+          content_generated_at: new Date().toISOString(),
+        })
+        .eq('id', siteId);
+
+      console.log(`[content-engine] Site ${siteId}: all ${tasks.length} pages failed`);
+    }
 
     return {
       success: succeeded > 0,
@@ -790,4 +820,123 @@ function cleanLine(line: string): string {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// ---------- Auto Build + Deploy ----------
+
+const PROVISIONER_URL = process.env.OVH_PROVISIONER_URL || 'http://15.204.91.157:9090';
+const PROVISIONER_SECRET = process.env.OVH_PROVISIONER_SECRET || '';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function triggerBuildAndDeploy(siteId: string, supabase: any): Promise<void> {
+  console.log(`[content-engine] Auto-triggering build for site ${siteId}`);
+
+  // 1. Fetch full site data
+  const { data: site } = await supabase
+    .from('client_sites')
+    .select('*')
+    .eq('id', siteId)
+    .single();
+
+  if (!site) throw new Error('Site not found');
+
+  const domain = site.site_domain || site.site_subdomain;
+  if (!domain) throw new Error('No domain configured');
+
+  // 2. Fetch generated pages
+  const { data: pages } = await supabase
+    .from('site_pages')
+    .select('*')
+    .eq('site_id', siteId)
+    .order('page_type');
+
+  if (!pages?.length) throw new Error('No pages generated');
+
+  // 3. Build constants data for the template
+  const services = (site.services || []) as Array<{ name: string; slug: string; description?: string }>;
+  const cities = (site.cities || []) as Array<{ name: string; slug: string; state?: string }>;
+  const address = site.address || {};
+
+  const constants = {
+    name: site.business_name || '',
+    phone: site.phone || '',
+    email: `info@${domain}`,
+    address: `${address.street || ''}, ${address.city || ''}, ${address.state || ''} ${address.zip || ''}`,
+    license: site.license || '',
+    rating: site.rating || 5.0,
+    reviewCount: site.review_count || 0,
+    yearsInBusiness: site.years_in_business || 1,
+    hours: site.hours || {},
+    coordinates: { lat: address.lat || 0, lng: address.lng || 0 },
+    tagline: site.tagline || '',
+    services,
+    serviceAreas: cities,
+  };
+
+  const theme = {
+    colorPrimary: site.color_primary || '#dc2626',
+    colorSecondary: site.color_secondary || '#111827',
+    designStyle: site.design_style || 'modern-dark',
+  };
+
+  // 4. Format page content for template
+  const pagesData = pages.map((p: { slug: string; page_type: string; title: string; meta_title: string; meta_description: string; hero_h1: string; hero_subtitle: string; content_sections: unknown; faq: unknown; schema_markup: unknown }) => ({
+    slug: p.slug,
+    type: p.page_type,
+    title: p.title,
+    metaTitle: p.meta_title,
+    metaDescription: p.meta_description,
+    heroH1: p.hero_h1,
+    heroSubtitle: p.hero_subtitle,
+    sections: p.content_sections,
+    faq: p.faq,
+    schema: p.schema_markup,
+  }));
+
+  // 5. Update status to deploying
+  await supabase
+    .from('client_sites')
+    .update({ status: 'deploying' })
+    .eq('id', siteId);
+
+  // 6. Call VPS provisioner build-and-deploy
+  const res = await fetch(`${PROVISIONER_URL}/sites/${siteId}/build-and-deploy`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${PROVISIONER_SECRET}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      domain,
+      template: site.template_id || 'generic',
+      constants,
+      theme,
+      pages: pagesData,
+      widgetClientId: site.client_id,
+    }),
+    signal: AbortSignal.timeout(180_000), // 3 min timeout for build
+  });
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => 'Unknown error');
+    console.error(`[content-engine] Build failed for ${siteId}:`, errText);
+    await supabase
+      .from('client_sites')
+      .update({ status: 'error' })
+      .eq('id', siteId);
+    throw new Error(`Build failed: ${errText}`);
+  }
+
+  // 7. Update status to live
+  await supabase
+    .from('client_sites')
+    .update({
+      status: 'live',
+      last_deployed_at: new Date().toISOString(),
+      nginx_configured: true,
+      ssl_active: true,
+    })
+    .eq('id', siteId);
+
+  console.log(`[content-engine] Site ${siteId} deployed to https://${domain}`);
 }
