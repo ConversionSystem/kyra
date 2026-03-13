@@ -333,7 +333,7 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
       <div className="flex flex-col md:flex-row flex-1 min-h-0">
 
         {/* Left sidebar nav — desktop only */}
-        <aside className="hidden md:flex flex-col w-48 shrink-0 border-r border-gray-100 bg-white pt-2 pb-6 px-2 sticky top-0 self-start max-h-screen overflow-y-auto">
+        <aside className="hidden md:flex flex-col w-48 shrink-0 bg-white pt-2 pb-6 px-2 sticky top-0 self-start max-h-screen overflow-y-auto">
           {visibleTabGroups.map((group, gi) => (
             <div key={group.label} className={gi > 0 ? 'mt-5' : ''}>
               <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest px-3 mb-1">
