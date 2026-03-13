@@ -49,11 +49,13 @@ export function localBusinessSchema() {
       '@type': 'PostalAddress',
       streetAddress: BUSINESS.address,
     },
-    geo: {
-      '@type': 'GeoCoordinates',
-      latitude: BUSINESS.coordinates.lat,
-      longitude: BUSINESS.coordinates.lng,
-    },
+    ...((BUSINESS.coordinates.lat as number) !== 0 && (BUSINESS.coordinates.lng as number) !== 0 && {
+      geo: {
+        '@type': 'GeoCoordinates',
+        latitude: BUSINESS.coordinates.lat,
+        longitude: BUSINESS.coordinates.lng,
+      },
+    }),
     areaServed: SERVICE_AREAS.map((area) => ({
       '@type': 'City',
       name: area.name,
@@ -73,7 +75,7 @@ export function localBusinessSchema() {
         itemOffered: {
           '@type': 'Service',
           name: svc.name,
-          description: svc.description,
+          ...(svc.description && { description: svc.description }),
         },
       })),
     },
