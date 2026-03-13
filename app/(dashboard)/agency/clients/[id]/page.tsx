@@ -24,7 +24,7 @@ export default async function ClientDetailPage({ params }: ClientDetailPageProps
 
   return (
     <Suspense fallback={<div className="p-4 sm:p-6 lg:p-8 text-gray-400">Loading...</div>}>
-      <ClientDetailView client={client} role={result.role} />
+      <ClientDetailView client={client} role={result.role} agencyPlan={result.agency.plan} />
     </Suspense>
   );
 }

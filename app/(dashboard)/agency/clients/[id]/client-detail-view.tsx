@@ -182,6 +182,7 @@ const TAB_GROUPS: { label: string; tabs: typeof TABS }[] = [
 interface ClientDetailViewProps {
   client: AgencyClient;
   role: AgencyMember['role'];
+  agencyPlan: 'free' | 'solo_pro' | 'starter' | 'pro' | 'scale';
 }
 
 // ── Reprovision Button ────────────────────────────────────────────────────────
@@ -247,7 +248,7 @@ function ReprovisionButton({ clientId }: { clientId: string }) {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
-export function ClientDetailView({ client: initialClient, role }: ClientDetailViewProps) {
+export function ClientDetailView({ client: initialClient, role, agencyPlan }: ClientDetailViewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialTab = (searchParams.get('tab') as Tab) || 'terminal';
@@ -398,7 +399,7 @@ export function ClientDetailView({ client: initialClient, role }: ClientDetailVi
             <UsageTab client={initialClient} />
           )}
           {activeTab === 'conversations' && (
-            <ConversationsTab client={initialClient} />
+            <ConversationsTab client={initialClient} agencyPlan={agencyPlan} />
           )}
           {activeTab === 'channels' && (
             <ChannelsTab client={initialClient} onTabChange={handleTabChange} />
@@ -1359,7 +1360,13 @@ interface Conversation {
   created_at: string;
 }
 
-function ConversationsTab({ client }: { client: AgencyClient }) {
+function ConversationsTab({
+  client,
+  agencyPlan,
+}: {
+  client: AgencyClient;
+  agencyPlan: 'free' | 'solo_pro' | 'starter' | 'pro' | 'scale';
+}) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [migrationRequired, setMigrationRequired] = useState(false);
@@ -1391,6 +1398,8 @@ function ConversationsTab({ client }: { client: AgencyClient }) {
     test_chat: 'Test Chat', web_chat: 'Chat Widget', portal: 'Portal', telegram: 'Telegram',
     sms: 'SMS', ghl_sms: 'GHL SMS', ghl_email: 'GHL Email', whatsapp: 'WhatsApp',
   };
+
+  const showUpgradeNudge = agencyPlan === 'free' && conversations.length >= 3;
 
   if (loading) {
     return (
@@ -1447,6 +1456,22 @@ CREATE POLICY "Service insert" ON client_conversations FOR INSERT WITH CHECK (tr
 
   return (
     <div className="space-y-3">
+      {showUpgradeNudge && (
+        <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-indigo-900">Your AI is getting real traction</p>
+            <p className="text-xs text-indigo-700 mt-1">
+              {conversations.length} conversations already logged. Upgrade to Lite to add more client AI workers and scale what&apos;s working.
+            </p>
+          </div>
+          <Link href="/agency/billing?upgrade=starter&required=conversations_growth">
+            <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white w-full sm:w-auto">
+              Upgrade to Lite
+            </Button>
+          </Link>
+        </div>
+      )}
+
       <p className="text-sm text-gray-500">{conversations.length} conversation{conversations.length !== 1 ? 's' : ''} logged</p>
       {conversations.map(conv => {
         const isEscalated = conv.ai_response?.includes("I'll flag this for our team");
