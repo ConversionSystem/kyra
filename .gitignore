@@ -51,3 +51,6 @@ next-env.d.ts
 .wrangler/
 .env*.local
 .env.vercel
+site-templates/generic/node_modules/
+site-templates/generic/.next/
+site-templates/generic/out/
