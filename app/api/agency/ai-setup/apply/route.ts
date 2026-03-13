@@ -566,6 +566,7 @@ export async function POST(request: NextRequest) {
       role_type: templateId,
       business_name: businessName,
       suggested_tools: role.suggestedTools,
+      soul_template: soulMd,
     };
 
     // Save all role-specific variables that were provided
@@ -602,11 +603,29 @@ export async function POST(request: NextRequest) {
     soulMd = applySoulTemplate(template.soulTemplate, variables);
     appliedName = template.name;
 
+    // Append suggested tools section to SOUL.md for industry templates
+    if (template.suggestedTools && template.suggestedTools.length > 0) {
+      soulMd += `\n\n## Tools You Can Use\n`;
+      for (const tool of template.suggestedTools) {
+        soulMd += `- ${tool}\n`;
+      }
+    }
+
+    // Append automation hints if present
+    if (template.automations && template.automations.length > 0) {
+      soulMd += `\n## Automations\n`;
+      for (const auto of template.automations) {
+        soulMd += `- **${auto.name}**: ${auto.description}\n`;
+      }
+    }
+
     const cfgPatch: Record<string, unknown> = {
       persona: `AI assistant for ${variables.business_name || client.name} — ${template.industry} specialist`,
       business_name: variables.business_name || client.name,
       industry: template.industry,
       template_id: templateId,
+      suggested_tools: template.suggestedTools,
+      soul_template: soulMd,
     };
     if (variables.ai_name) cfgPatch.ai_name = variables.ai_name;
     if (variables.business_hours) cfgPatch.business_hours = variables.business_hours;

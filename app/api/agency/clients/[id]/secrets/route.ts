@@ -5,6 +5,7 @@ import {
   listSecrets,
   SECRET_KEY_NAME_REGEX,
 } from '@/lib/secrets';
+import { syncAllSecretsForClient } from '@/lib/secrets/sync';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -99,6 +100,9 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       value,
       body.description
     );
+
+    // Fire-and-forget: sync all secrets to the client's container
+    syncAllSecretsForClient(clientId).catch(() => {});
 
     return NextResponse.json(
       {

@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { decodeOAuthState, exchangeCodeForTokens } from '@/lib/ghl/oauth';
+import { syncIntegrationsToContainer } from '@/lib/integrations/sync';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -137,6 +138,11 @@ export async function GET(request: NextRequest) {
   console.log(
     `[ghl/callback] Successfully connected GHL for client ${targetClientId} (location: ${tokens.locationId})`,
   );
+
+  // Sync integrations to container (fire-and-forget — don't block the redirect)
+  syncIntegrationsToContainer(targetClientId).catch((err) => {
+    console.error('[ghl/callback] Integration sync failed:', err);
+  });
 
   // ── Redirect back to client page with success ────────────────────────
   return NextResponse.redirect(

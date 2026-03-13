@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { requireAgencyMember } from '@/lib/agency/middleware';
 import { v4 as uuid } from 'uuid';
+import { syncAutomationsToAllClients } from '@/lib/automations/sync';
 
 export const dynamic = 'force-dynamic';
 
@@ -87,6 +88,12 @@ export async function POST(request: NextRequest) {
   jobs.push(newJob);
   const ok = await saveAutomations(agency.id, jobs);
   if (!ok) return NextResponse.json({ error: 'Failed to save' }, { status: 500 });
+
+  // Sync to all client containers (fire-and-forget)
+  syncAutomationsToAllClients(agency.id).catch((err) => {
+    console.error('[automations] Sync to containers failed:', err);
+  });
+
   return NextResponse.json({ success: true, job: newJob });
 }
 
@@ -113,6 +120,12 @@ export async function PATCH(request: NextRequest) {
 
   const ok = await saveAutomations(agency.id, jobs);
   if (!ok) return NextResponse.json({ error: 'Failed to save' }, { status: 500 });
+
+  // Sync to all client containers (fire-and-forget)
+  syncAutomationsToAllClients(agency.id).catch((err) => {
+    console.error('[automations] Sync to containers failed:', err);
+  });
+
   return NextResponse.json({ success: true, job: jobs[idx] });
 }
 
@@ -130,6 +143,12 @@ export async function DELETE(request: NextRequest) {
   jobs = jobs.filter(j => j.id !== jobId);
   const ok = await saveAutomations(agency.id, jobs);
   if (!ok) return NextResponse.json({ error: 'Failed to save' }, { status: 500 });
+
+  // Sync to all client containers (fire-and-forget)
+  syncAutomationsToAllClients(agency.id).catch((err) => {
+    console.error('[automations] Sync to containers failed:', err);
+  });
+
   return NextResponse.json({ success: true });
 }
 

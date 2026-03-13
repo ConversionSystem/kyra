@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { syncIntegrationsToContainer } from '@/lib/integrations/sync';
 
 const GHL_API_BASE = 'https://services.leadconnectorhq.com';
 const GHL_API_VERSION = '2021-04-15';
@@ -270,6 +271,11 @@ export async function POST(
       { status: 500 },
     );
   }
+
+  // Sync integrations to container (fire-and-forget)
+  syncIntegrationsToContainer(clientId).catch((err) => {
+    console.error('[ghl/connect-token] Integration sync failed:', err);
+  });
 
   return NextResponse.json({
     success: true,

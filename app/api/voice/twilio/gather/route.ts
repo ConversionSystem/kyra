@@ -22,6 +22,7 @@ const KNOWLEDGE_TTL_MS = 10 * 60 * 1000; // 10 min
 
 interface ClientVoiceConfig {
   name: string;
+  businessName: string;   // cfg.business_name || clientRow.name — matches widget chat pattern
   clientId: string;
   agency_id: string;
   persona: string;
@@ -144,10 +145,11 @@ export async function POST(req: NextRequest) {
       persona = (cfg.persona as string) ?? '';
       vcfg = { ts: Date.now(), data: {
         name, clientId, agency_id, persona, voiceCfg, llmKey, llmUrl, llmModel,
+        businessName: (cfg.business_name as string) || name,  // prefer config, fallback to DB name
         businessHours: (cfg.business_hours as string) ?? '',
         businessPhone: (cfg.business_phone as string) ?? '',
         businessAddress: (cfg.business_address as string) ?? '',
-        calendarUrl: (cfg.calendar_url as string) ?? '',
+        calendarUrl: (cfg.calendar_url as string) || ((cfg.booking_url as string) ?? ''),  // templates use booking_url → stored as calendar_url, check both
         services: (cfg.services as string) ?? '',
         industry: (cfg.industry as string) ?? '',
       }};
@@ -170,10 +172,11 @@ export async function POST(req: NextRequest) {
       const agSettings = (agencyRow.settings as Record<string, unknown>) ?? {};
       vcfg = { ts: Date.now(), data: {
         name: agencyRow.name, clientId, agency_id: agencyRow.id, persona: '', voiceCfg, llmKey, llmUrl, llmModel,
+        businessName: (agSettings.business_name as string) || agencyRow.name,
         businessHours: (agSettings.business_hours as string) ?? '',
         businessPhone: (agSettings.business_phone as string) ?? '',
         businessAddress: (agSettings.business_address as string) ?? '',
-        calendarUrl: (agSettings.calendar_url as string) ?? '',
+        calendarUrl: (agSettings.calendar_url as string) || ((agSettings.booking_url as string) ?? ''),
         services: (agSettings.services as string) ?? '',
         industry: (agSettings.industry as string) ?? '',
       }};
@@ -182,7 +185,7 @@ export async function POST(req: NextRequest) {
   }
 
   const {
-    name: clientName, clientId: resolvedClientId, agency_id, voiceCfg, persona, llmKey, llmUrl, llmModel,
+    name: clientName, businessName, clientId: resolvedClientId, agency_id, voiceCfg, persona, llmKey, llmUrl, llmModel,
     businessHours, businessPhone, businessAddress, calendarUrl, services, industry,
   } = vcfg.data;
   const ttsVoice = getVoice(voiceCfg.voiceId as string | undefined);
