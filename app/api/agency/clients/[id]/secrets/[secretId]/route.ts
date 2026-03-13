@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAgencyMember } from '@/lib/agency/middleware';
 import { deleteSecret, updateSecret } from '@/lib/secrets';
+import { syncAllSecretsForClient } from '@/lib/secrets/sync';
 
 interface RouteContext {
   params: Promise<{ id: string; secretId: string }>;
@@ -63,6 +64,9 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
       body.description
     );
 
+    // Fire-and-forget: sync all secrets to the client's container
+    syncAllSecretsForClient(clientId).catch(() => {});
+
     return NextResponse.json({
       secret: toMetadataResponse(updated),
     });
@@ -107,6 +111,9 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
     if (!deleted) {
       return NextResponse.json({ error: 'Secret not found' }, { status: 404 });
     }
+
+    // Fire-and-forget: sync all secrets to the client's container
+    syncAllSecretsForClient(clientId).catch(() => {});
 
     return NextResponse.json({ ok: true });
   } catch (error) {

@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { syncIntegrationsToContainer } from '@/lib/integrations/sync';
 
 export async function POST(
   request: NextRequest,
@@ -67,6 +68,11 @@ export async function POST(
       { status: 500 },
     );
   }
+
+  // Sync integrations to container (GHL now disconnected — fire-and-forget)
+  syncIntegrationsToContainer(clientId).catch((err) => {
+    console.error('[ghl/disconnect] Integration sync failed:', err);
+  });
 
   return NextResponse.json({ success: true });
 }

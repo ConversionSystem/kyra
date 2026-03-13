@@ -70,6 +70,7 @@ import ChannelsLiveTab from '@/components/dashboard/client-tabs/channels-live-ta
 import { AISetupClient } from '@/app/(dashboard)/agency/ai-setup/ai-setup-client';
 import { AgentsClient } from '@/app/(dashboard)/agency/agents/agents-client';
 import { AutopilotClient } from '@/app/(dashboard)/agency/autopilot/autopilot-client';
+import WebsiteTab from '@/components/dashboard/client-tabs/website-tab';
 
 // ── Setup Nudge Banner ────────────────────────────────────────────────────────
 
@@ -136,7 +137,7 @@ interface ChatMessage {
   content: string;
 }
 
-type Tab = 'terminal' | 'personality' | 'templates' | 'skills' | 'crm' | 'secrets' | 'settings' | 'ghl' | 'usage' | 'conversations' | 'channels' | 'portal' | 'memory' | 'voice' | 'seo' | 'automation' | 'ai-teams' | 'delivery-sms';
+type Tab = 'terminal' | 'personality' | 'templates' | 'skills' | 'crm' | 'secrets' | 'settings' | 'ghl' | 'usage' | 'conversations' | 'channels' | 'portal' | 'memory' | 'voice' | 'seo' | 'automation' | 'ai-teams' | 'delivery-sms' | 'website';
 
 function LockTabIcon({ className }: { className?: string }) {
   return <span className={`inline-flex items-center justify-center ${className || ''}`}>🔒</span>;
@@ -147,6 +148,7 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'personality', label: 'AI Personality', icon: Brain },
   { id: 'templates', label: 'Templates', icon: Sparkles },
   { id: 'skills', label: 'Skills', icon: Zap },
+  { id: 'website', label: 'Website', icon: Globe },
   { id: 'ai-teams', label: 'AI Teams', icon: Bot },
   { id: 'delivery-sms', label: 'Delivery SMS', icon: MessageSquare },
   { id: 'crm', label: 'CRM', icon: Users },
@@ -167,7 +169,7 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
 const TAB_GROUPS: { label: string; tabs: typeof TABS }[] = [
   {
     label: 'Core',
-    tabs: TABS.filter(t => ['terminal', 'personality', 'crm', 'secrets', 'templates', 'skills'].includes(t.id)),
+    tabs: TABS.filter(t => ['terminal', 'personality', 'crm', 'secrets', 'templates', 'skills', 'website'].includes(t.id)),
   },
   {
     label: 'Communicate',
@@ -498,6 +500,10 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
           )}
           {activeTab === 'secrets' && (
             <SecretsTab clientId={initialClient.id} />
+          )}
+
+          {activeTab === 'website' && (
+            <WebsiteTab clientId={initialClient.id} clientName={initialClient.name} />
           )}
 
         </main>
