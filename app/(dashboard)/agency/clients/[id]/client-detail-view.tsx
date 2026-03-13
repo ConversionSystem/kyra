@@ -284,40 +284,38 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
   return (
     <div className="flex flex-col min-h-full">
 
-      {/* ── Top Header (full-width) ─────────────────────────────────────── */}
-      <div className="px-4 sm:px-6 md:px-8 pt-4 sm:pt-6 pb-4 border-b border-gray-100 bg-white">
-        {/* Back link */}
-        <Link
-          href="/agency/clients"
-          className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-700 transition-colors mb-4"
-        >
-          <ArrowLeft className="h-3 w-3" />
-          Back to Clients
-        </Link>
+      {/* ── Top Header (compact) ─────────────────────────────────────── */}
+      <div className="px-4 sm:px-6 md:px-8 py-2.5 border-b border-gray-100 bg-white">
+        <div className="flex items-center gap-3">
+          {/* Back arrow */}
+          <Link
+            href="/agency/clients"
+            className="text-gray-400 hover:text-gray-700 transition-colors shrink-0"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
 
-
-
-        {/* Client Header */}
-        <div className="flex items-start gap-3 sm:gap-4">
-          <div className="h-11 w-11 sm:h-14 sm:w-14 rounded-2xl bg-gradient-to-br from-indigo-100 to-indigo-200 border border-indigo-200 flex items-center justify-center text-lg sm:text-xl font-bold text-indigo-700 shrink-0">
+          {/* Client avatar */}
+          <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-indigo-100 to-indigo-200 border border-indigo-200 flex items-center justify-center text-sm font-bold text-indigo-700 shrink-0">
             {initialClient.name.charAt(0).toUpperCase()}
           </div>
-          <div className="min-w-0 flex-1">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">{initialClient.name}</h1>
-            <div className="flex flex-wrap items-center gap-2 mt-1">
-              <Badge className={statusColors[initialClient.status]}>
-                {initialClient.status}
-              </Badge>
-              {initialClient.industry && initialClient.industry !== 'General' && (
-                <span className="text-sm text-gray-400">{initialClient.industry}</span>
-              )}
-              {initialClient.template && (
-                <span className="text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full hidden sm:inline">
-                  {initialClient.template.name}
-                </span>
-              )}
-            </div>
+
+          {/* Client name + badges */}
+          <div className="min-w-0 flex items-center gap-2.5 flex-1">
+            <h1 className="text-lg font-semibold text-gray-900 truncate">{initialClient.name}</h1>
+            <Badge className={statusColors[initialClient.status]}>
+              {initialClient.status}
+            </Badge>
+            {initialClient.industry && initialClient.industry !== 'General' && (
+              <span className="text-xs text-gray-400 hidden sm:inline">{initialClient.industry}</span>
+            )}
+            {initialClient.template && (
+              <span className="text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full hidden md:inline">
+                {initialClient.template.name}
+              </span>
+            )}
           </div>
+
           {(!initialClient.gateway_status || initialClient.gateway_status === 'error') && (
             <div className="shrink-0">
               <ReprovisionButton clientId={initialClient.id} />
@@ -330,7 +328,7 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
       <div className="flex flex-col md:flex-row flex-1 min-h-0">
 
         {/* Left sidebar nav — desktop only */}
-        <aside className="hidden md:flex flex-col w-52 shrink-0 border-r border-gray-100 bg-white pt-4 pb-8 px-3 sticky top-0 self-start max-h-screen overflow-y-auto">
+        <aside className="hidden md:flex flex-col w-48 shrink-0 border-r border-gray-100 bg-white pt-2 pb-6 px-2 sticky top-0 self-start max-h-screen overflow-y-auto">
           {visibleTabGroups.map((group, gi) => (
             <div key={group.label} className={gi > 0 ? 'mt-5' : ''}>
               <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest px-3 mb-1">
