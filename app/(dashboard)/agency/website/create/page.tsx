@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft,
@@ -1324,8 +1324,14 @@ function StepReviewLaunch({
 
 export default function WebsiteBuilderWizard() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const clientIdParam = searchParams.get('cid');
+  const clientNameParam = searchParams.get('clientId');
   const [step, setStep] = useState(1);
-  const [data, setData] = useState<WizardData>(initialWizardData);
+  const [data, setData] = useState<WizardData>(() => ({
+    ...initialWizardData,
+    ...(clientNameParam ? { businessName: clientNameParam } : {}),
+  }));
   const [saving, setSaving] = useState(false);
 
   const industryDefaults = INDUSTRY_DEFAULTS[data.industry];
@@ -1373,6 +1379,7 @@ export default function WebsiteBuilderWizard() {
             years_in_business: data.yearsInBusiness ? parseInt(data.yearsInBusiness) : null,
             license: data.licenseNumber,
             existing_website: data.existingWebsite,
+            ...(clientIdParam ? { client_id: clientIdParam } : {}),
           }),
         });
         if (res.ok) {
