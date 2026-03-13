@@ -177,7 +177,7 @@ function CollapsibleSection({
     return (
       <div>
         <div className={cn(
-          'text-[10px] uppercase tracking-widest font-medium px-2.5 pt-4 pb-1',
+          'text-[10px] uppercase tracking-widest font-medium px-2.5 pt-4 pb-1 opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200 whitespace-nowrap',
           hasBranding ? 'text-white/40' : 'text-gray-500'
         )}>
           {label}
@@ -192,7 +192,7 @@ function CollapsibleSection({
       <button
         onClick={() => setOpen(!open)}
         className={cn(
-          'flex items-center justify-between w-full text-[10px] uppercase tracking-widest font-medium px-2.5 pt-4 pb-1 transition-colors',
+          'flex items-center justify-between w-full text-[10px] uppercase tracking-widest font-medium px-2.5 pt-4 pb-1 transition-colors opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200 whitespace-nowrap',
           hasBranding ? 'text-white/40 hover:text-white/60' : 'text-gray-500 hover:text-gray-300'
         )}
       >
@@ -283,7 +283,7 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
                 />
               </div>
             ) : null}
-            <h2 className={cn('text-base font-semibold truncate', 'text-white')}>
+            <h2 className={cn('text-base font-semibold truncate opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200 w-0 group-hover/sidebar:w-auto', 'text-white')}>
               {companyName}
             </h2>
           </div>
@@ -297,7 +297,7 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
           </button>
         </div>
 
-        <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+        <div className="flex items-center gap-1.5 mt-1.5 flex-wrap opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200 h-0 group-hover/sidebar:h-auto overflow-hidden">
           <Badge className={cn('capitalize text-[10px] px-1.5 py-0', planColors[plan] ?? planColors.starter)}>
             {plan}
           </Badge>
@@ -312,8 +312,8 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
             href="/agency/billing"
             className="block w-full rounded-xl border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 px-3 py-2.5 transition"
           >
-            <p className="text-xs font-bold text-indigo-300 mb-0.5">Ready for more?</p>
-            <p className="text-[10px] text-indigo-400/80 leading-snug">Upgrade to add more clients & unlock premium features</p>
+            <p className="text-xs font-bold text-indigo-300 mb-0.5 opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200">Ready for more?</p>
+            <p className="text-[10px] text-indigo-400/80 leading-snug opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200">Upgrade to add more clients & unlock premium features</p>
           </a>
         </div>
       )}
@@ -360,9 +360,9 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
                     )}
                   >
                     <item.icon className="h-4 w-4 shrink-0" />
-                    {item.label}
+                    <span className="opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200 truncate">{item.label}</span>
                     {item.href === '/agency' && escalationCount > 0 && (
-                      <span className="ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 leading-none">
+                      <span className="ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 leading-none opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200">
                         {escalationCount > 9 ? '9+' : escalationCount}
                       </span>
                     )}
@@ -385,7 +385,7 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
         {/* Master Control link — only for ConversionSystem */}
         {isMaster && (
           <div className="pt-2">
-            <div className={cn('text-[9px] uppercase tracking-widest font-medium px-2.5 pb-1', hasBranding ? 'text-white/40' : 'text-gray-500')}>
+            <div className={cn('text-[9px] uppercase tracking-widest font-medium px-2.5 pb-1 opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200', hasBranding ? 'text-white/40' : 'text-gray-500')}>
               Platform
             </div>
             <Link
@@ -401,7 +401,7 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
               )}
             >
               <Crown className="h-4 w-4 shrink-0 text-yellow-400" />
-              Master Control
+              <span className="opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200 truncate">Master Control</span>
             </Link>
           </div>
         )}
@@ -414,8 +414,8 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
             type="submit"
             className="flex items-center gap-2 w-full px-2.5 py-2 text-sm text-gray-500 hover:text-red-400 hover:bg-gray-800/50 rounded-lg transition"
           >
-            <LogOut className="h-4 w-4" />
-            Log Out
+            <LogOut className="h-4 w-4 shrink-0" />
+            <span className="opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200">Log Out</span>
           </button>
         </form>
       </div>
@@ -457,9 +457,9 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
         {sidebarContent}
       </aside>
 
-      {/* Desktop sidebar (always visible) */}
+      {/* Desktop sidebar — collapsed (icons only), expands on hover */}
       <aside
-        className="hidden lg:flex w-52 border-r border-gray-800 bg-gray-900 flex-col shrink-0"
+        className="hidden lg:flex border-r border-gray-800 bg-gray-900 flex-col shrink-0 w-14 hover:w-52 transition-all duration-200 ease-in-out group/sidebar overflow-hidden"
       >
         {sidebarContent}
       </aside>
