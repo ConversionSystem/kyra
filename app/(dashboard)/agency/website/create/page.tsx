@@ -1068,7 +1068,8 @@ function StepGenerating({
       try {
         const res = await fetch(`/api/agency/sites/${siteId}`);
         if (res.ok) {
-          const site = await res.json();
+          const result = await res.json();
+          const site = result.data || result;
           if (site.status === 'live' || site.status === 'ready') {
             if (pollRef.current) clearInterval(pollRef.current);
             onComplete();
@@ -1375,8 +1376,16 @@ export default function WebsiteBuilderWizard() {
           }),
         });
         if (res.ok) {
-          const site = await res.json();
-          setData((prev) => ({ ...prev, siteId: site.id }));
+          const result = await res.json();
+          const newId = result.data?.id || result.id;
+          if (newId) {
+            setData((prev) => ({ ...prev, siteId: newId }));
+          } else {
+            console.error('[wizard] No site ID in response:', result);
+          }
+        } else {
+          const errBody = await res.text().catch(() => '');
+          console.error('[wizard] Failed to create draft:', res.status, errBody);
         }
       } else if (data.siteId) {
         // Update existing draft
@@ -1423,7 +1432,8 @@ export default function WebsiteBuilderWizard() {
           body: JSON.stringify(body),
         });
       }
-    } catch {
+    } catch (err) {
+      console.error('[wizard] Save failed:', err);
       // Allow proceeding even if save fails — data is in local state
     } finally {
       setSaving(false);
