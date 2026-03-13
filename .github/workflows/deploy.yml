@@ -1,19 +1,16 @@
-name: CI → Deploy to Vercel
+name: CI Check
 
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
-  workflow_dispatch:  # Manual trigger
-
-env:
-  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+  workflow_dispatch:
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Job 1: CI — TypeScript + lint checks
-# Must pass before any deployment is attempted.
+# CI only — TypeScript + lint checks.
+# Deployments are done via CLI (npx vercel --prod --yes) to avoid double builds.
+# Previous workflow deployed on every push → doubled build minutes → $150/mo.
 # ─────────────────────────────────────────────────────────────────────────────
 jobs:
   ci:
@@ -36,47 +33,4 @@ jobs:
         run: npx tsc --noEmit
 
       - name: Lint
-        # Use ESLint CLI directly — `next lint` is deprecated and exits 1 for warnings
         run: npx eslint . --ext .ts,.tsx --max-warnings 9999
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Job 2: Deploy — only runs on push to main AFTER CI passes
-# Pull requests only run CI, never deploy.
-# ─────────────────────────────────────────────────────────────────────────────
-  deploy:
-    name: Deploy to Vercel (Production)
-    runs-on: ubuntu-latest
-    needs: ci                         # ← CI must pass first
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Install Vercel CLI
-        run: npm i -g vercel@latest
-
-      - name: Pull Vercel Environment
-        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: Build
-        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: Deploy Pre-built (with retry)
-        run: |
-          for i in 1 2 3; do
-            echo "Deploy attempt $i..."
-            if vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}; then
-              echo "✅ Deploy succeeded on attempt $i"
-              exit 0
-            fi
-            echo "❌ Attempt $i failed, waiting 30s..."
-            sleep 30
-          done
-          echo "❌ All 3 deploy attempts failed"
-          exit 1
