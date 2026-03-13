@@ -209,7 +209,7 @@ function PageBreakdown({ pageCount }: { pageCount: number }) {
 
 // ── No Site State ─────────────────────────────────────────────────────────────
 
-function NoSiteState({ clientName }: { clientName: string }) {
+function NoSiteState({ clientId, clientName }: { clientId: string; clientName: string }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
       <div className="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center mb-4">
@@ -220,7 +220,7 @@ function NoSiteState({ clientName }: { clientName: string }) {
         Create an AI-powered website for {clientName} in under 5 minutes. SEO-optimized pages + trained AI worker — deployed instantly.
       </p>
       <Link
-        href="/agency/website/create"
+        href={`/agency/website/create?clientId=${encodeURIComponent(clientName || '')}&cid=${clientId}`}
         className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 transition-colors shadow-sm"
       >
         <Sparkles className="h-4 w-4" />
@@ -242,9 +242,10 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
       try {
         const res = await fetch(`/api/agency/sites?clientId=${clientId}`);
         if (res.ok) {
-          const data = await res.json();
-          // API might return a single site or an array
-          const siteData = Array.isArray(data) ? data[0] : data.site || data;
+          const result = await res.json();
+          // API returns { ok: true, data: [...] }
+          const sites = result.data || result;
+          const siteData = Array.isArray(sites) ? sites[0] : sites;
           if (siteData && siteData.id) {
             setSite(siteData);
           }
@@ -276,8 +277,9 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
         // Refresh site data
         const res = await fetch(`/api/agency/sites?clientId=${clientId}`);
         if (res.ok) {
-          const data = await res.json();
-          const siteData = Array.isArray(data) ? data[0] : data.site || data;
+          const result = await res.json();
+          const sites = result.data || result;
+          const siteData = Array.isArray(sites) ? sites[0] : sites;
           if (siteData?.id) setSite(siteData);
         }
       }
@@ -297,7 +299,7 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
   }
 
   if (!site) {
-    return <NoSiteState clientName={clientName || 'this client'} />;
+    return <NoSiteState clientId={clientId} clientName={clientName || 'this client'} />;
   }
 
   const siteUrl = site.site_domain

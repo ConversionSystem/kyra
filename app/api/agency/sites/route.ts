@@ -7,19 +7,26 @@ import type { WizardData } from '@/lib/sites/types';
  * GET /api/agency/sites
  * List all sites for the current agency.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   const auth = await requireAgencyMember();
   if (auth.error) {
     return NextResponse.json({ error: auth.error.message }, { status: auth.error.status });
   }
 
   const supabase = createServiceClientWithoutCookies();
+  const clientId = request.nextUrl.searchParams.get('clientId');
 
-  const { data: sites, error } = await supabase
+  let query = supabase
     .from('client_sites')
     .select('*')
     .eq('agency_id', auth.data.agency.id)
     .order('created_at', { ascending: false });
+
+  if (clientId) {
+    query = query.eq('client_id', clientId);
+  }
+
+  const { data: sites, error } = await query;
 
   if (error) {
     console.error('[sites] Failed to list sites:', error);
