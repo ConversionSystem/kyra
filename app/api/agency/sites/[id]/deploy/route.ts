@@ -8,10 +8,10 @@ interface RouteContext {
 
 /**
  * POST /api/agency/sites/[id]/deploy
- * Stub: triggers site deployment to VPS/nginx.
- * Sets status='deploying'. Full implementation coming in Sprint 2.
+ * Redeploys a site that's already been built.
+ * Triggers a rebuild with the latest content from site_pages.
  */
-export async function POST(_request: NextRequest, { params }: RouteContext) {
+export async function POST(request: NextRequest, { params }: RouteContext) {
   const { id: siteId } = await params;
 
   const auth = await requireAgencyMember();
@@ -21,10 +21,9 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
 
   const supabase = createServiceClientWithoutCookies();
 
-  // Verify site belongs to this agency
   const { data: site } = await supabase
     .from('client_sites')
-    .select('id, status')
+    .select('id, status, site_domain, site_subdomain, agency_id')
     .eq('id', siteId)
     .eq('agency_id', auth.data.agency.id)
     .single();
@@ -33,22 +32,17 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ error: 'Site not found' }, { status: 404 });
   }
 
-  // Update status
-  const { error } = await supabase
-    .from('client_sites')
-    .update({ status: 'deploying', updated_at: new Date().toISOString() })
-    .eq('id', siteId);
-
-  if (error) {
-    console.error('[sites/deploy] Failed to update status:', error);
-    return NextResponse.json({ error: 'Failed to start deploy' }, { status: 500 });
+  if (!site.site_domain && !site.site_subdomain) {
+    return NextResponse.json({ error: 'No domain configured' }, { status: 400 });
   }
 
-  // TODO: Trigger actual deploy pipeline (Sprint 2)
-  // - Upload static files to VPS
-  // - Configure nginx server block
-  // - Set up Cloudflare DNS
-  // - Update status to 'live' or 'error'
+  // Forward to build endpoint (build = deploy for static sites)
+  const buildUrl = new URL(`/api/agency/sites/${siteId}/build`, request.url);
+  const buildRes = await fetch(buildUrl, {
+    method: 'POST',
+    headers: Object.fromEntries(request.headers),
+  });
 
-  return NextResponse.json({ ok: true, data: { status: 'deploying' } });
+  const data = await buildRes.json();
+  return NextResponse.json(data, { status: buildRes.status });
 }
