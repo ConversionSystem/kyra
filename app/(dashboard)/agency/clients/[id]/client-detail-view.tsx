@@ -35,7 +35,6 @@ import {
   User,
   Bot,
   Globe,
-  Mail,
   Phone,
   Radio,
   MessageCircle,
@@ -488,7 +487,7 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
             <DeliverySmsTab clientId={initialClient.id} />
           )}
           {activeTab === 'crm' && (
-            <CrmTab client={initialClient} />
+            <CrmTab client={initialClient} clientId={initialClient.id} />
           )}
 
         </main>
@@ -1209,7 +1208,7 @@ function ZapierChannelCard({
 }
 
 // ── Channels Tab ──────────────────────────────────────────────────────────────
-// Shows all available channels: web chat embed, email outreach, WhatsApp, voice.
+// Shows client-facing channels: web chat embed, GHL, WhatsApp, Telegram, voice.
 
 function ChannelsTab({ client, onTabChange }: { client: AgencyClient; onTabChange?: (tab: Tab) => void }) {
   const [copied, setCopied] = useState<string | null>(null);
@@ -1396,59 +1395,6 @@ function ChannelsTab({ client, onTabChange }: { client: AgencyClient; onTabChang
 
       {/* ── Zapier / Make / n8n ─────────────────────────────────────────── */}
       <ZapierChannelCard client={client} appUrl={appUrl} copy={copy} copied={copied} />
-
-      {/* ── Email Outreach ──────────────────────────────────────────────── */}
-      <Card className="border-blue-100">
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center">
-              <Mail className="h-5 w-5 text-blue-600" />
-            </div>
-            <div>
-              <CardTitle className="text-base">Email Outreach</CardTitle>
-              <CardDescription className="text-xs">AI-personalized emails via Resend — follow-ups, welcome emails, nurture sequences</CardDescription>
-            </div>
-            <span className="ml-auto text-[10px] bg-amber-100 text-amber-700 font-medium px-2 py-0.5 rounded-full">⚙️ Needs API Key</span>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5 text-xs text-amber-800">
-            <span className="shrink-0 mt-0.5">⚠️</span>
-            <span>Add <code className="bg-amber-100 px-1 rounded font-mono">RESEND_API_KEY</code> to your <a href="https://vercel.com/dashboard" target="_blank" rel="noopener noreferrer" className="underline font-medium">Vercel env vars</a> to enable email sending. Get a free key at <a href="https://resend.com" target="_blank" rel="noopener noreferrer" className="underline font-medium">resend.com</a>.</span>
-          </div>
-          <p className="text-sm text-gray-600">
-            Trigger AI-written, personalized emails from your GHL workflows or cron jobs. Uses the client AI&apos;s personality to craft each email.
-          </p>
-
-          <div>
-            <p className="text-xs font-medium text-gray-700 mb-1.5">API call (from GHL workflow or cron)</p>
-            <div className="flex items-start gap-2">
-              <pre className="flex-1 bg-gray-900 rounded-lg p-3 font-mono text-xs text-green-400 overflow-x-auto whitespace-pre">{`POST ${appUrl}/api/channels/email
-Authorization: Bearer YOUR_KYRA_API_SECRET
-
-{
-  "clientId": "${client.id}",
-  "to": "customer@email.com",
-  "toName": "John",
-  "templateId": "follow_up",
-  "context": "they just booked a demo call"
-}`}</pre>
-              <Button
-                size="sm"
-                variant="outline"
-                className="shrink-0"
-                onClick={() => copy(`POST ${appUrl}/api/channels/email\nAuthorization: Bearer YOUR_KYRA_API_SECRET\n\n{\n  "clientId": "${client.id}",\n  "to": "customer@email.com",\n  "templateId": "follow_up"\n}`, 'email')}
-              >
-                {copied === 'email' ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
-              </Button>
-            </div>
-          </div>
-
-          <div className="text-xs text-gray-500">
-            <span className="font-medium">Templates:</span> <code className="bg-gray-100 px-1 rounded">follow_up</code> · <code className="bg-gray-100 px-1 rounded">welcome</code> · <code className="bg-gray-100 px-1 rounded">nurture</code> · <code className="bg-gray-100 px-1 rounded">custom</code>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* ── WhatsApp Direct ─────────────────────────────────────────────── */}
       <Card className="border-gray-200">
