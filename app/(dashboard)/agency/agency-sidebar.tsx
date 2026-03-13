@@ -305,18 +305,7 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
         </div>
       </div>
 
-      {/* Upgrade banner — free users only */}
-      {plan === 'free' && (
-        <div className="px-3 pt-3">
-          <a
-            href="/agency/billing"
-            className="block w-full rounded-xl border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 px-3 py-2.5 transition"
-          >
-            <p className="text-xs font-bold text-indigo-300 mb-0.5 opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200">Ready for more?</p>
-            <p className="text-[10px] text-indigo-400/80 leading-snug opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200">Upgrade to add more clients & unlock premium features</p>
-          </a>
-        </div>
-      )}
+      {/* Upgrade banner removed — clutters collapsed sidebar */}
 
       {/* My AI Worker button removed — access AI via client terminal */}
 
@@ -408,7 +397,7 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
       </nav>
 
       {/* Log Out */}
-      <div className="px-2 pb-2 mt-auto border-t border-gray-800 pt-2">
+      <div className="px-2 pb-2 mt-auto border-t border-gray-800/0 group-hover/sidebar:border-gray-800 transition-colors duration-200 pt-2">
         <form action="/api/auth/signout" method="POST">
           <button
             type="submit"
