@@ -40,23 +40,25 @@ export function Footer() {
             </div>
           </div>
 
-          {/* Service Areas */}
-          <div>
-            <h4 className="text-sm font-semibold text-white uppercase tracking-wider mb-3">
-              Service Areas
-            </h4>
-            <div className="space-y-2">
-              {SERVICE_AREAS.slice(0, 6).map((area) => (
-                <Link
-                  key={area.slug}
-                  href={`/${area.slug}`}
-                  className="block text-sm text-gray-400 hover:text-white transition"
-                >
-                  {area.name}
-                </Link>
-              ))}
+          {/* Service Areas — only show if areas exist */}
+          {SERVICE_AREAS.length > 0 && (
+            <div>
+              <h4 className="text-sm font-semibold text-white uppercase tracking-wider mb-3">
+                Service Areas
+              </h4>
+              <div className="space-y-2">
+                {SERVICE_AREAS.slice(0, 6).map((area) => (
+                  <Link
+                    key={area.slug}
+                    href={`/${area.slug}`}
+                    className="block text-sm text-gray-400 hover:text-white transition"
+                  >
+                    {area.name}
+                  </Link>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Contact */}
           <div>

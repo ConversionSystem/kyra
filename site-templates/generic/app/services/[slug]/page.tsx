@@ -42,9 +42,17 @@ export default async function ServicePage({ params }: PageProps) {
   if (!service) notFound();
 
   const page = getPageContent(`/services/${slug}`);
-  const heroH1 = page?.heroH1 || service.name;
-  const heroSubtitle = page?.heroSubtitle || service.description;
-  const sections = page?.sections || [];
+  // Strip markdown artifacts from AI content
+  const cleanText = (s: string) => s.replace(/\*\*/g, '').replace(/\*/g, '').replace(/^#+\s*/gm, '').replace(/^:\s*/, '').trim();
+
+  const heroH1 = cleanText(page?.heroH1 || service.name);
+  const heroSubtitle = cleanText(page?.heroSubtitle || service.description);
+  const sections = (page?.sections || []).map(s => ({
+    ...s,
+    heading: cleanText(s.heading || ''),
+    body: cleanText(s.body || ''),
+    bullets: s.bullets?.map(b => cleanText(b)) || [],
+  }));
   const faqs = page?.faq || [];
 
   return (
@@ -91,7 +99,11 @@ export default async function ServicePage({ params }: PageProps) {
             {sections.map((section, idx) => (
               <div key={idx}>
                 <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">{section.heading}</h2>
-                <p className="text-gray-400 max-w-3xl mb-6">{section.body}</p>
+                <div className="max-w-3xl space-y-3 mb-6">
+                  {section.body.split('\n').filter(Boolean).map((para, pIdx) => (
+                    <p key={pIdx} className="text-gray-400 leading-relaxed">{para}</p>
+                  ))}
+                </div>
                 {section.bullets && section.bullets.length > 0 && (
                   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {section.bullets.map((bullet) => (
@@ -110,8 +122,8 @@ export default async function ServicePage({ params }: PageProps) {
         </section>
       )}
 
-      {/* Service Areas for this service */}
-      <section className="py-20 sm:py-28 bg-gray-900/50 border-y border-white/10">
+      {/* Service Areas for this service — only show if areas exist */}
+      {SERVICE_AREAS.length > 0 && <section className="py-20 sm:py-28 bg-gray-900/50 border-y border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
             {service.name} in Your Area
@@ -133,7 +145,7 @@ export default async function ServicePage({ params }: PageProps) {
             ))}
           </div>
         </div>
-      </section>
+      </section>}
 
       {/* FAQ */}
       {faqs.length > 0 && (

@@ -70,3 +70,10 @@ export function getPagesByType(type: string): PageContent[] {
 export function getAllPages(): PageContent[] {
   return pages;
 }
+
+/**
+ * Strip markdown artifacts (**bold**, *italic*, # headings) from AI-generated text.
+ */
+export function cleanText(s: string): string {
+  return s.replace(/\*\*/g, '').replace(/\*/g, '').replace(/^#+\s*/gm, '').replace(/^:\s*/, '').trim();
+}
