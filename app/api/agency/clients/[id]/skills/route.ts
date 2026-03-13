@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { syncSkillsToContainer } from '@/lib/skills/sync';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,5 +52,15 @@ export async function PATCH(
     return NextResponse.json({ error: updateError.message }, { status: 500 });
   }
 
-  return NextResponse.json({ enabled_skills: updated });
+  // Sync SKILLS.md to the container so the AI knows what's enabled
+  const syncResult = await syncSkillsToContainer(clientId);
+  if (!syncResult.ok) {
+    console.warn(`[skills] Container sync failed for ${clientId}:`, syncResult.error);
+  }
+
+  return NextResponse.json({
+    enabled_skills: updated,
+    container_synced: syncResult.ok,
+    ...(syncResult.error ? { sync_warning: syncResult.error } : {}),
+  });
 }
