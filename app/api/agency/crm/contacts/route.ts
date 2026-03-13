@@ -21,6 +21,8 @@ export async function GET(req: NextRequest) {
   if (!agencyId) return NextResponse.json({ error: 'No agency' }, { status: 404 });
 
   const url = req.nextUrl;
+  const clientId = url.searchParams.get('clientId') || undefined;
+
   const filters: ContactFilters = {
     search: url.searchParams.get('search') || undefined,
     stage: url.searchParams.get('stage') || undefined,
@@ -32,7 +34,7 @@ export async function GET(req: NextRequest) {
     limit: Number(url.searchParams.get('limit')) || 50,
   };
 
-  const result = await getContacts(agencyId, filters);
+  const result = await getContacts(agencyId, filters, clientId);
   return NextResponse.json(result);
 }
 
@@ -47,7 +49,8 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
 
-  const result = await createContact(agencyId, body);
+  const clientId = typeof body?.clientId === 'string' ? body.clientId : undefined;
+  const result = await createContact(agencyId, body, clientId);
 
   if (result.existing) {
     return NextResponse.json({ contact: result.contact, existing: true, message: 'Contact already exists' });

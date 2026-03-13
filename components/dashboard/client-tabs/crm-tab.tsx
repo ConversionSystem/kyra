@@ -266,7 +266,7 @@ const btnSecondary = 'border border-gray-200 text-gray-700 hover:bg-gray-50 roun
 // 1. CONTACTS SECTION
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function ContactsSection({ client }: { client: AgencyClient }) {
+function ContactsSection({ client, clientId }: { client: AgencyClient; clientId: string }) {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -291,13 +291,14 @@ function ContactsSection({ client }: { client: AgencyClient }) {
       const params = new URLSearchParams({ search, sort: sortBy, order: sortOrder, page: String(page), limit: String(limit) });
       if (stageFilter !== 'all') params.set('stage', stageFilter);
       if (scoreFilter !== 'all') params.set('score_label', scoreFilter);
+      params.set('clientId', clientId);
       const res = await fetch(`/api/agency/crm/contacts?${params}`);
       if (!res.ok) throw new Error('Failed to load contacts');
       const data = await res.json();
       setContacts(Array.isArray(data) ? data : data.contacts || []);
       setTotalCount(data.total ?? (Array.isArray(data) ? data.length : 0));
     } catch { setContacts([]); } finally { setLoading(false); }
-  }, [search, stageFilter, scoreFilter, sortBy, sortOrder, page]);
+  }, [clientId, search, stageFilter, scoreFilter, sortBy, sortOrder, page]);
 
   useEffect(() => { loadContacts(); }, [loadContacts]);
   useEffect(() => { setPage(1); }, [search, stageFilter, scoreFilter, sortBy, sortOrder]);
@@ -493,14 +494,14 @@ function ContactsSection({ client }: { client: AgencyClient }) {
       )}
 
       {/* Add Contact Modal */}
-      {showAdd && <AddContactModal onClose={() => setShowAdd(false)} onSaved={() => { setShowAdd(false); loadContacts(); }} />}
+      {showAdd && <AddContactModal clientId={clientId} onClose={() => setShowAdd(false)} onSaved={() => { setShowAdd(false); loadContacts(); }} />}
     </div>
   );
 }
 
 // ── Add Contact Modal ──────────────────────────────────────────────────────────
 
-function AddContactModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+function AddContactModal({ clientId, onClose, onSaved }: { clientId: string; onClose: () => void; onSaved: () => void }) {
   const [form, setForm] = useState({ first_name: '', last_name: '', email: '', phone: '', title: '', company_name: '', stage: 'lead', tags: '' });
   const [saving, setSaving] = useState(false);
 
@@ -508,7 +509,7 @@ function AddContactModal({ onClose, onSaved }: { onClose: () => void; onSaved: (
     if (!form.first_name && !form.email) return;
     setSaving(true);
     try {
-      const body = { ...form, tags: form.tags ? form.tags.split(',').map(t => t.trim()).filter(Boolean) : [] };
+      const body = { ...form, clientId, tags: form.tags ? form.tags.split(',').map(t => t.trim()).filter(Boolean) : [] };
       const res = await fetch('/api/agency/crm/contacts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       if (res.ok) onSaved();
     } finally { setSaving(false); }
@@ -1851,8 +1852,9 @@ const SECTIONS: { key: Section; label: string; icon: React.ComponentType<{ class
   { key: 'activity', label: 'Activity', icon: Activity },
 ];
 
-export default function CrmTab({ client }: { client: AgencyClient }) {
+export default function CrmTab({ client, clientId }: { client: AgencyClient; clientId?: string }) {
   const [section, setSection] = useState<Section>('contacts');
+  const scopedClientId = clientId ?? client.id;
 
   return (
     <div className="space-y-6">
@@ -1870,7 +1872,7 @@ export default function CrmTab({ client }: { client: AgencyClient }) {
       </div>
 
       {/* Section content */}
-      {section === 'contacts' && <ContactsSection client={client} />}
+      {section === 'contacts' && <ContactsSection client={client} clientId={scopedClientId} />}
       {section === 'deals' && <DealsSection />}
       {section === 'campaigns' && <CampaignsSection client={client} />}
       {section === 'tasks' && <TasksSection />}

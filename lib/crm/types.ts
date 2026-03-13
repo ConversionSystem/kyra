@@ -6,6 +6,7 @@
 export interface CrmContact {
   id: string;
   agency_id: string;
+  client_id: string | null;
   company_id: string | null;
   first_name: string | null;
   last_name: string | null;
@@ -141,6 +142,7 @@ export interface CreateContactData {
   title?: string;
   company_name?: string;
   company_id?: string;
+  client_id?: string;
   source?: string;
   source_id?: string;
   stage?: CrmContact['stage'];

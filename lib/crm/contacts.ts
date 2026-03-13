@@ -11,6 +11,7 @@ const PAGE_SIZE = 50;
 export async function getContacts(
   agencyId: string,
   filters: ContactFilters = {},
+  clientId?: string,
 ): Promise<{ contacts: ContactWithCompany[]; total: number }> {
   const svc = createServiceClientWithoutCookies();
   const page = filters.page || 1;
@@ -21,6 +22,8 @@ export async function getContacts(
     .from('crm_contacts')
     .select('*, crm_companies!crm_contacts_company_id_fkey(id, name, website, industry)', { count: 'exact' })
     .eq('agency_id', agencyId);
+
+  if (clientId) query = query.eq('client_id', clientId);
 
   if (filters.search) {
     const s = `%${filters.search}%`;
@@ -81,12 +84,15 @@ export async function getContactById(agencyId: string, contactId: string): Promi
 export async function createContact(
   agencyId: string,
   input: CreateContactData,
+  clientId?: string,
 ): Promise<{ contact: CrmContact | null; existing: boolean; error?: string }> {
   const svc = createServiceClientWithoutCookies();
+  const scopedClientId = input.client_id || clientId || null;
 
   // Dedup check by email or phone
   if (input.email || input.phone) {
     let dupQuery = svc.from('crm_contacts').select('id').eq('agency_id', agencyId);
+    if (scopedClientId) dupQuery = dupQuery.eq('client_id', scopedClientId);
     if (input.email && input.phone) {
       dupQuery = dupQuery.or(`email.eq.${input.email},phone.eq.${input.phone}`);
     } else if (input.email) {
@@ -114,6 +120,7 @@ export async function createContact(
     .from('crm_contacts')
     .insert({
       agency_id: agencyId,
+      client_id: scopedClientId,
       company_id: companyId,
       first_name: input.first_name || null,
       last_name: input.last_name || null,
@@ -176,7 +183,7 @@ export async function deleteContact(agencyId: string, contactId: string): Promis
   return !error;
 }
 
-export async function searchContacts(agencyId: string, query: string, limit = 10): Promise<ContactWithCompany[]> {
-  const { contacts } = await getContacts(agencyId, { search: query, limit });
+export async function searchContacts(agencyId: string, query: string, limit = 10, clientId?: string): Promise<ContactWithCompany[]> {
+  const { contacts } = await getContacts(agencyId, { search: query, limit }, clientId);
   return contacts;
 }

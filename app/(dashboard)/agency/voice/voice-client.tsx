@@ -172,19 +172,20 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
   const [activeDaysPerMonthEstimate, setActiveDaysPerMonthEstimate] = useState(22);
   const [voiceUsage, setVoiceUsage] = useState<{ minutesUsed: number; minuteLimit: number; percentUsed: number } | null>(null);
 
+  const entityId = clientId ?? agencyId;
+
   const loadCallLogs = useCallback(async () => {
-    const id = clientId ?? agencyId;
-    if (!id) return;
+    if (!entityId) return;
     setLoadingLogs(true);
     try {
-      const res = await fetch(`/api/voice/call-logs?entityId=${id}&limit=20`);
+      const res = await fetch(`/api/voice/call-logs?entityId=${entityId}&limit=20`);
       if (res.ok) {
         const data = await res.json();
         setCallLogs(data.calls ?? []);
       }
     } catch { /* ignore */ }
     setLoadingLogs(false);
-  }, [clientId]);
+  }, [entityId]);
 
   const loadVoiceUsage = useCallback(async () => {
     try {
@@ -294,7 +295,6 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
     setProvisioning(false);
   };
 
-  const entityId = clientId ?? agencyId;
   const webhookUrl = `https://kyra.conversionsystem.com/api/voice/webhook?provider=${selectedProvider || config?.provider || 'vapi'}&clientId=${entityId}`;
 
   const monthlyMinutesEstimate = dailyMinutesEstimate * activeDaysPerMonthEstimate;
