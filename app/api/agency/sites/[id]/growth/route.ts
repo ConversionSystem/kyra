@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { waitUntil } from '@vercel/functions';
 import { requireAgencyMember } from '@/lib/agency/middleware';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import OpenAI from 'openai';
+
+export const maxDuration = 120; // Growth analysis takes up to 2 min
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -83,10 +86,12 @@ Return JSON array of suggestions. Each suggestion:
 Priority guide: high = >500 searches/mo or missing core page; medium = 100-500; low = <100 but still valuable.
 Return ONLY the JSON array, no other text.`;
 
-  // Fire-and-forget: run analysis in background to avoid Vercel 10s timeout
-  runGrowthAnalysis(siteId, site, prompt, services, cities, existingSlugs, supabase).catch((err) => {
-    console.error('[growth] Background analysis failed:', err);
-  });
+    // waitUntil: keeps function alive after response sent (same fix as generate/build routes)
+  waitUntil(
+    runGrowthAnalysis(siteId, site, prompt, services, cities, existingSlugs, supabase).catch((err: unknown) => {
+      console.error('[growth] Background analysis failed:', err);
+    })
+  );
 
   return NextResponse.json({ ok: true, data: { status: 'analyzing' } });
 }

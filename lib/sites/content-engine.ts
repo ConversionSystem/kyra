@@ -962,8 +962,18 @@ async function triggerBuildAndDeploy(siteId: string, supabase: any): Promise<voi
 
   // 3. Build constants data for the template
   const services = (site.services || []) as Array<{ name: string; slug: string; description?: string }>;
-  const cities = (site.cities || []) as Array<{ name: string; slug: string; state?: string }>;
   const address = site.address || {};
+  // Always include primary city — if user skipped Step 3, cities array is empty
+  // but the primary city from their address should still generate city pages
+  let cities = (site.cities || []) as Array<{ name: string; slug: string; state?: string }>;
+  const primaryCity = address.city || '';
+  if (cities.length === 0 && primaryCity) {
+    cities = [{
+      name: primaryCity,
+      slug: primaryCity.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+      state: address.state || '',
+    }];
+  }
 
   const constants = {
     name: site.business_name || '',
