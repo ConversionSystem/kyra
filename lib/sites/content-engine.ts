@@ -23,6 +23,8 @@ import {
   cityPrompt,
   cityServicePrompt,
   faqPrompt,
+  blogPrompt,
+  getBlogTopics,
   metaPrompt,
   contactPageData,
   reviewsPageData,
@@ -49,6 +51,7 @@ const MODELS = {
   city: 'openai/gpt-4o',
   cityService: 'openai/gpt-4o-mini',
   faq: 'anthropic/claude-3-5-haiku',
+  blog: 'openai/gpt-4o-mini',
   meta: 'anthropic/claude-3-5-haiku',
 } as const;
 
@@ -58,6 +61,7 @@ const MAX_TOKENS = {
   city: 1200,
   cityService: 1000,
   faq: 2000,
+  blog: 1500,
   meta: 500,
 } as const;
 
@@ -94,7 +98,7 @@ const SERVICE_AREA_INDUSTRIES = new Set([
 
 interface PageTask {
   slug: string;
-  pageType: 'homepage' | 'service' | 'city' | 'city_service' | 'utility';
+  pageType: 'homepage' | 'service' | 'city' | 'city_service' | 'utility' | 'blog';
   title: string;
   model: string;
   maxTokens: number;
@@ -350,6 +354,19 @@ function buildTaskList(site: ClientSite): PageTask[] {
     maxTokens: MAX_TOKENS.faq,
     prompt: faqPrompt(site),
   });
+
+  // ── TIER 5: Blog posts (2 evergreen posts, GPT-4o-mini) ──
+  const blogTopics = getBlogTopics(site);
+  for (const topic of blogTopics) {
+    tasks.push({
+      slug: `/blog/${topic.slug}`,
+      pageType: 'blog',
+      title: topic.title,
+      model: MODELS.blog,
+      maxTokens: MAX_TOKENS.blog,
+      prompt: blogPrompt(site, topic),
+    });
+  }
 
   // ── Template pages (no LLM) ──
   const contact = contactPageData(site);

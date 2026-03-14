@@ -1438,18 +1438,63 @@ function StepReviewLaunch({
           </div>
         )}
 
+        {/* Live Preview iframe */}
+        {isLive && siteUrl && (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 bg-gray-50">
+              <div className="flex items-center gap-2">
+                <div className="flex gap-1.5">
+                  <div className="w-3 h-3 rounded-full bg-red-400" />
+                  <div className="w-3 h-3 rounded-full bg-yellow-400" />
+                  <div className="w-3 h-3 rounded-full bg-green-400" />
+                </div>
+                <span className="text-xs font-mono text-gray-500 ml-2 truncate">{siteUrl}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <a
+                  href={siteUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1"
+                >
+                  Open Full Site
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              </div>
+            </div>
+            <iframe
+              src={siteUrl}
+              className="w-full border-0"
+              style={{ height: '600px' }}
+              title={`${data.businessName} preview`}
+              sandbox="allow-scripts allow-same-origin allow-popups"
+            />
+          </div>
+        )}
+
         {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-3 pt-4">
           {isLive && siteUrl && (
-            <a
-              href={siteUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors"
-            >
-              <ExternalLink className="h-4 w-4" />
-              Visit Your Website
-            </a>
+            <>
+              <a
+                href={siteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors"
+              >
+                <ExternalLink className="h-4 w-4" />
+                Visit Your Website
+              </a>
+              {data.siteId && (
+                <button
+                  onClick={() => reviewRouter.push(`/agency/website/${data.siteId}/editor`)}
+                  className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-white border border-indigo-200 text-indigo-700 rounded-xl font-medium hover:bg-indigo-50 transition-colors"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Edit Pages
+                </button>
+              )}
+            </>
           )}
           <button
             onClick={() => reviewRouter.push(backUrl)}

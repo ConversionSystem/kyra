@@ -74,6 +74,8 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     'logo_url', 'photos', 'color_primary', 'color_secondary', 'design_style', 'tagline',
     'ai_name', 'ai_tone', 'ai_capabilities', 'booking_url',
     'template_id', 'site_domain', 'site_subdomain',
+    // Settings page fields
+    'ga4_id', 'white_label',
   ];
 
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
