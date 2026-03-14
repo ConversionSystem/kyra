@@ -268,7 +268,7 @@ export async function saveWebChatLead(
             source: 'web_chat',
             stage: lead.urgency === 'hot' ? 'opportunity' : 'lead',
             tags: ['web-chat', `urgency-${lead.urgency}`],
-            notes: `Auto-captured from web chat. ${lead.interest ? `Interest: ${lead.interest}` : ''}`,
+            custom_fields: { interest: lead.interest || null, captured_by: 'web_chat' },
           })
           .select('id')
           .single();
@@ -281,8 +281,12 @@ export async function saveWebChatLead(
             agency_id: agencyId,
             contact_id: crmContactId,
             type: 'web_chat',
-            title: 'Web Chat Lead Captured',
-            description: lead.conversationSummary,
+            subject: 'Web Chat Lead Captured',
+            body: lead.conversationSummary,
+            direction: 'inbound',
+            channel: 'web_chat',
+            actor: 'system',
+            actor_name: 'AI Chat Widget',
             metadata: {
               urgency: lead.urgency,
               interest: lead.interest,
