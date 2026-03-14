@@ -1064,6 +1064,50 @@ async function triggerBuildAndDeploy(siteId: string, supabase: any): Promise<voi
     console.warn('[content-engine] Knowledge sync failed:', err),
   );
 
+  // Sync business info into client container_config so the chat widget AI knows about the business.
+  // Without this, the bot has zero context — it doesn't know phone, hours, address, or what the business does.
+  if (site.client_id) {
+    const { data: existingClient } = await supabase
+      .from('agency_clients')
+      .select('container_config')
+      .eq('id', site.client_id)
+      .single();
+
+    const existingCfg = (existingClient?.container_config as Record<string, unknown>) ?? {};
+    const addrObj = (site.address as Record<string, string>) ?? {};
+    const addrStr = [addrObj.street, addrObj.city, addrObj.state, addrObj.zip].filter(Boolean).join(', ');
+    const hoursObj = (site.hours as Record<string, string>) ?? {};
+    const hoursStr = Object.entries(hoursObj)
+      .map(([day, hrs]) => `${day}: ${hrs}`)
+      .join(', ');
+
+    // Build a rich persona describing the business
+    const servicesArr = (site.services as Array<{name: string}>) ?? [];
+    const serviceList = servicesArr.map((s) => s.name).join(', ');
+    const persona = `${site.ai_name || site.business_name} — the AI assistant for ${site.business_name}. ${
+      site.tagline ? site.tagline + '.' : ''
+    } You help customers with: ${serviceList || 'our services'}. Always be helpful, accurate, and guide customers toward booking or contacting us.`;
+
+    await supabase
+      .from('agency_clients')
+      .update({
+        container_config: {
+          ...existingCfg,
+          persona,
+          business_name: site.business_name,
+          business_phone: site.phone || '',
+          business_address: addrStr,
+          business_hours: hoursStr,
+          widget_title: `Chat with ${site.business_name}`,
+          widget_color: site.color_primary || '#6366f1',
+          widget_greeting: `Hi! 👋 I'm ${site.ai_name || 'your AI assistant'} for ${site.business_name}. How can I help you today?`,
+        },
+      })
+      .eq('id', site.client_id);
+
+    console.log(`[content-engine] Synced business context to client container_config for ${site.business_name}`);
+  }
+
   // Send Telegram notification if agency has telegram connected
   sendSiteLiveNotification(site.business_name, domain, site.agency_id, supabase).catch((err) =>
     console.warn('[content-engine] Site-live notification failed:', err),
