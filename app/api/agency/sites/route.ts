@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAgencyMember } from '@/lib/agency/middleware';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { generateSiteContent } from '@/lib/sites/content-engine';
 import type { WizardData } from '@/lib/sites/types';
 
 /**
@@ -111,6 +112,14 @@ export async function POST(request: NextRequest) {
   if (error || !site) {
     console.error('[sites] Failed to create site:', error);
     return NextResponse.json({ error: 'Failed to create site' }, { status: 500 });
+  }
+
+  // Optional: auto-trigger content generation (used by bulk generation)
+  const autoGenerate = (body as Record<string, unknown>).auto_generate === true;
+  if (autoGenerate) {
+    generateSiteContent(site.id).catch((err) => {
+      console.error(`[sites] Auto-generate failed for ${site.id}:`, err);
+    });
   }
 
   return NextResponse.json({ ok: true, data: site }, { status: 201 });
