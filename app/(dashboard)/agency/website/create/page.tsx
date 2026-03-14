@@ -1608,12 +1608,49 @@ export default function WebsiteBuilderWizard() {
           }));
           body.emergency_247 = data.emergency247;
         } else if (currentStep === 3) {
-          body.cities = data.selectedCities.map((c) => ({ name: c, slug: c.toLowerCase().replace(/\s+/g, '-') }));
+          body.cities = data.selectedCities.map((c) => ({ name: c, slug: c.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '-'), state: data.state }));
         } else if (currentStep === 4) {
           body.color_primary = data.colorPrimary;
           body.color_secondary = data.colorSecondary;
           body.design_style = data.designStyle;
           body.tagline = data.tagline;
+
+          // Upload photos via FormData
+          if (data.photos.length > 0) {
+            for (let i = 0; i < data.photos.length; i++) {
+              const formData = new FormData();
+              formData.append('file', data.photos[i]);
+              formData.append('alt', `${data.businessName} photo ${i + 1}`);
+              formData.append('placement', String(i));
+              await fetch(`/api/agency/sites/${data.siteId}/photos`, {
+                method: 'POST',
+                body: formData,
+              }).catch((err) => console.error('[wizard] Photo upload failed:', err));
+            }
+          }
+
+          // Upload logo separately
+          if (data.logo) {
+            const logoFormData = new FormData();
+            logoFormData.append('file', data.logo);
+            logoFormData.append('alt', `${data.businessName} logo`);
+            logoFormData.append('placement', 'logo');
+            try {
+              const logoRes = await fetch(`/api/agency/sites/${data.siteId}/photos`, {
+                method: 'POST',
+                body: logoFormData,
+              });
+              if (logoRes.ok) {
+                const logoResult = await logoRes.json();
+                const logoUrl = logoResult.data?.url || logoResult.url;
+                if (logoUrl) {
+                  body.logo_url = logoUrl;
+                }
+              }
+            } catch (err) {
+              console.error('[wizard] Logo upload failed:', err);
+            }
+          }
         } else if (currentStep === 5) {
           body.ai_name = data.aiName;
           body.ai_tone = data.aiTone;
