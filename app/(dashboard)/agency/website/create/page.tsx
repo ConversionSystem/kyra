@@ -1663,6 +1663,8 @@ export default function WebsiteBuilderWizard() {
   }));
   const [saving, setSaving] = useState(false);
   const [buildResult, setBuildResult] = useState<{ url: string; domain: string } | null>(null);
+  const [copiedUrl, setCopiedUrl] = useState(false);
+  const [copiedMsg, setCopiedMsg] = useState(false);
 
   const industryDefaults = INDUSTRY_DEFAULTS[data.industry];
   const needsGeoPages = industryDefaults?.needsGeoPages ?? false;
@@ -1902,10 +1904,10 @@ export default function WebsiteBuilderWizard() {
             <p className="text-indigo-400 font-mono text-sm break-all mb-4">{buildResult.url}</p>
             <div className="flex gap-2">
               <button
-                onClick={() => navigator.clipboard.writeText(buildResult.url)}
+                onClick={() => { navigator.clipboard.writeText(buildResult.url); setCopiedUrl(true); setTimeout(() => setCopiedUrl(false), 2500); }}
                 className="flex-1 border border-white/20 text-gray-300 rounded-xl py-2.5 text-sm hover:bg-white/5 transition"
               >
-                Copy URL
+                {copiedUrl ? '✓ Copied!' : 'Copy URL'}
               </button>
               <a
                 href={buildResult.url}
@@ -1920,14 +1922,24 @@ export default function WebsiteBuilderWizard() {
 
           {/* Share with client */}
           <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-6">
-            <p className="text-xs text-gray-500 uppercase tracking-wider mb-3">Share with client</p>
+            <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Share with client</p>
+            <p className="text-xs text-gray-600 mb-3">Ready-to-send message for your client</p>
+            <div className="bg-black/20 rounded-xl p-3 mb-3 text-left">
+              <p className="text-xs text-gray-400 leading-relaxed">
+                {`Hi! Great news — your new website is live! 🎉\n\n🌐 ${buildResult.url}\n\nYour site includes your services, contact info, and an AI chat widget so visitors can reach you instantly.`}
+              </p>
+            </div>
             <button
-              onClick={() => navigator.clipboard.writeText(
-                `Hi! Your new website is live!\n\nVisit it here: ${buildResult.url}\n\nBuilt with Kyra`
-              )}
-              className="w-full border border-white/20 text-gray-300 rounded-xl py-3 text-sm hover:bg-white/5 transition"
+              onClick={() => {
+                navigator.clipboard.writeText(
+                  `Hi! Great news — your new website is live! 🎉\n\n🌐 ${buildResult.url}\n\nYour site includes your services, contact info, and an AI chat widget so visitors can reach you instantly. Let me know if you'd like any changes!`
+                );
+                setCopiedMsg(true);
+                setTimeout(() => setCopiedMsg(false), 2500);
+              }}
+              className="w-full border border-white/20 text-gray-300 rounded-xl py-3 text-sm hover:bg-white/5 transition font-medium"
             >
-              Copy message for client
+              {copiedMsg ? '✓ Message copied!' : '📋 Copy message for client'}
             </button>
           </div>
 

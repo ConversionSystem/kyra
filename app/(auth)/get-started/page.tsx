@@ -146,7 +146,7 @@ function BuildPageInner() {
       case 2: return data.useCases.length > 0;
       case 3: return true; // all optional
       case 4: return true; // defaults work
-      case 5: return data.email.trim().length > 0 && data.password.length >= 6;
+      case 5: return data.email.trim().length > 0 && data.password.length >= 8;
       default: return false;
     }
   };
@@ -230,6 +230,10 @@ function BuildPageInner() {
       }
 
       // Step 3: Apply the wizard configuration to the client
+      // Small delay ensures the Supabase session cookie is set in the browser before
+      // making authenticated requests — without this the PATCH returns 401
+      await new Promise(resolve => setTimeout(resolve, 300));
+
       if (result.clientId) {
         try {
           await fetch(`/api/agency/clients/${result.clientId}`, {
@@ -238,7 +242,11 @@ function BuildPageInner() {
             body: JSON.stringify({
               container_config: {
                 persona,
-                greeting: data.greeting || `Hi! I'm ${data.aiName || 'Kyra'} from ${data.businessName}. How can I help you today?`,
+                // widget_greeting = first message visitors see in the chat widget
+                widget_greeting: data.greeting || `Hi! I'm ${data.aiName || 'Kyra'} from ${data.businessName}. How can I help you today?`,
+                // widget_title = header text in the chat panel
+                widget_title: `Chat with ${data.businessName}`,
+                // widget_color uses indigo default — can be customised later
                 business_name: data.businessName,
                 business_phone: data.businessPhone || undefined,
                 business_address: data.businessAddress || undefined,
@@ -640,7 +648,7 @@ function BuildPageInner() {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-1.5">Password * <span className="text-slate-500">(min 6 characters)</span></label>
+          <label className="block text-sm font-medium text-slate-300 mb-1.5">Password * <span className="text-slate-500">(min 8 characters)</span></label>
           <input
             type="password"
             value={data.password}
