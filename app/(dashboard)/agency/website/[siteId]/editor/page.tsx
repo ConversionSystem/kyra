@@ -322,6 +322,8 @@ export default function PageEditor() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
+  const [showRegenerateInput, setShowRegenerateInput] = useState(false);
+  const [regenerateFeedback, setRegenerateFeedback] = useState('');
   const [rebuilding, setRebuilding] = useState(false);
   const [editingSection, setEditingSection] = useState<number | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -668,14 +670,55 @@ export default function PageEditor() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => regeneratePage()}
-                    disabled={regenerating}
-                    className="px-3 py-1.5 text-xs font-medium border border-amber-200 text-amber-700 bg-amber-50 rounded-lg hover:bg-amber-100 disabled:opacity-50 flex items-center gap-1.5"
-                  >
-                    {regenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                    Regenerate with AI
-                  </button>
+                  {showRegenerateInput ? (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={regenerateFeedback}
+                        onChange={(e) => setRegenerateFeedback(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            regeneratePage(regenerateFeedback || undefined);
+                            setShowRegenerateInput(false);
+                            setRegenerateFeedback('');
+                          } else if (e.key === 'Escape') {
+                            setShowRegenerateInput(false);
+                            setRegenerateFeedback('');
+                          }
+                        }}
+                        placeholder="e.g. more friendly, focus on emergency services"
+                        className="w-64 px-2.5 py-1.5 text-xs border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 bg-amber-50"
+                        autoFocus
+                      />
+                      <button
+                        onClick={() => {
+                          regeneratePage(regenerateFeedback || undefined);
+                          setShowRegenerateInput(false);
+                          setRegenerateFeedback('');
+                        }}
+                        disabled={regenerating}
+                        className="px-3 py-1.5 text-xs font-medium bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50 flex items-center gap-1.5"
+                      >
+                        {regenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                        Go
+                      </button>
+                      <button
+                        onClick={() => { setShowRegenerateInput(false); setRegenerateFeedback(''); }}
+                        className="px-2 py-1.5 text-xs text-gray-500 hover:text-gray-700"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setShowRegenerateInput(true)}
+                      disabled={regenerating}
+                      className="px-3 py-1.5 text-xs font-medium border border-amber-200 text-amber-700 bg-amber-50 rounded-lg hover:bg-amber-100 disabled:opacity-50 flex items-center gap-1.5"
+                    >
+                      {regenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                      Regenerate with AI
+                    </button>
+                  )}
                   {siteUrl && (
                     <a
                       href={`${siteUrl}${selectedPage.slug}`}
