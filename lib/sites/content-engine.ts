@@ -1017,7 +1017,7 @@ async function triggerBuildAndDeploy(siteId: string, supabase: any): Promise<voi
     },
     body: JSON.stringify({
       domain,
-      template: site.template_id || 'generic',
+      template: 'generic' // only template supported,
       constants,
       theme,
       pages: pagesData,

@@ -134,7 +134,7 @@ async function runBuild(siteId: string, supabase: ReturnType<typeof createServic
     },
     body: JSON.stringify({
       domain,
-      template: site.template_id || 'generic',
+      template: 'generic' // only template supported,
       constants,
       theme,
       pages: pagesData,
