@@ -187,10 +187,38 @@ function StepBusinessInfo({
   data: WizardData;
   onChange: (updates: Partial<WizardData>) => void;
 }) {
+  const [suggestingDiff, setSuggestingDiff] = useState(false);
+  const [diffSuggestions, setDiffSuggestions] = useState<string[]>([]);
+
   const industries = Object.entries(INDUSTRY_DEFAULTS).map(([key, val]) => ({
     value: key,
     label: val.label,
   }));
+
+  const handleSuggestDifferentiator = async () => {
+    if (!data.businessName || !data.industry) return;
+    setSuggestingDiff(true);
+    setDiffSuggestions([]);
+    try {
+      const res = await fetch('/api/agency/sites/suggest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'differentiator',
+          industry: INDUSTRY_DEFAULTS[data.industry]?.label || data.industry,
+          city: data.city || 'your area',
+          yearsInBusiness: data.yearsInBusiness,
+          businessName: data.businessName,
+        }),
+      });
+      const result = await res.json();
+      if (result.suggestions?.length) setDiffSuggestions(result.suggestions);
+    } catch {
+      // Silently fail
+    } finally {
+      setSuggestingDiff(false);
+    }
+  };
 
   const handleIndustryChange = (industry: string) => {
     const defaults = INDUSTRY_DEFAULTS[industry];
@@ -363,16 +391,42 @@ function StepBusinessInfo({
 
           <div className="sm:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              What makes you different? *
+              What makes you different?
             </label>
             <p className="text-xs text-gray-400 mb-1.5">2-3 sentences about what sets your business apart. This seeds all your website copy.</p>
-            <textarea
-              value={data.differentiator}
-              onChange={(e) => onChange({ differentiator: e.target.value })}
-              placeholder="We're a family-owned HVAC company that's been serving San Mateo County since 1988. Our technicians are NATE-certified and we offer same-day emergency service with upfront pricing — no surprise fees."
-              rows={3}
-              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-y"
-            />
+            <div className="flex items-start gap-2">
+              <textarea
+                value={data.differentiator}
+                onChange={(e) => onChange({ differentiator: e.target.value })}
+                placeholder="We're a family-owned HVAC company that's been serving San Mateo County since 1988. Our technicians are NATE-certified and we offer same-day emergency service with upfront pricing — no surprise fees."
+                rows={3}
+                className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-y"
+              />
+              <button
+                onClick={handleSuggestDifferentiator}
+                disabled={suggestingDiff || !data.businessName || !data.industry}
+                className="shrink-0 px-3 py-3 rounded-xl border border-gray-200 text-gray-400 hover:text-indigo-600 hover:border-indigo-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                title="AI suggest"
+              >
+                {suggestingDiff ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              </button>
+            </div>
+            {diffSuggestions.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {diffSuggestions.map((s, i) => (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      onChange({ differentiator: data.differentiator ? `${data.differentiator} ${s}` : s });
+                      setDiffSuggestions([]);
+                    }}
+                    className="text-xs px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors border border-indigo-200"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="sm:col-span-2">
@@ -648,6 +702,33 @@ function StepPhotosBrand({
 }) {
   const photoInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const [suggestingTagline, setSuggestingTagline] = useState(false);
+  const [taglineSuggestions, setTaglineSuggestions] = useState<string[]>([]);
+
+  const handleSuggestTagline = async () => {
+    if (!data.businessName || !data.industry) return;
+    setSuggestingTagline(true);
+    setTaglineSuggestions([]);
+    try {
+      const res = await fetch('/api/agency/sites/suggest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'tagline',
+          industry: INDUSTRY_DEFAULTS[data.industry]?.label || data.industry,
+          city: data.city || 'your area',
+          yearsInBusiness: data.yearsInBusiness,
+          businessName: data.businessName,
+        }),
+      });
+      const result = await res.json();
+      if (result.suggestions?.length) setTaglineSuggestions(result.suggestions);
+    } catch {
+      // Silently fail
+    } finally {
+      setSuggestingTagline(false);
+    }
+  };
 
   const handlePhotoUpload = (files: FileList | null) => {
     if (!files) return;
@@ -873,13 +954,27 @@ function StepPhotosBrand({
               className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
             <button
-              className="shrink-0 px-3 py-3 rounded-xl border border-gray-200 text-gray-400 hover:text-indigo-600 hover:border-indigo-300 transition-colors"
-              title="AI suggest (coming soon)"
-              disabled
+              onClick={handleSuggestTagline}
+              disabled={suggestingTagline || !data.businessName || !data.industry}
+              className="shrink-0 px-3 py-3 rounded-xl border border-gray-200 text-gray-400 hover:text-indigo-600 hover:border-indigo-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              title="AI suggest"
             >
-              <Sparkles className="h-4 w-4" />
+              {suggestingTagline ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
             </button>
           </div>
+          {taglineSuggestions.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {taglineSuggestions.map((s, i) => (
+                <button
+                  key={i}
+                  onClick={() => { onChange({ tagline: s }); setTaglineSuggestions([]); }}
+                  className="text-xs px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors border border-indigo-200"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -1055,7 +1150,7 @@ function StepGenerating({
   onComplete,
 }: {
   siteId: string | null;
-  onComplete: () => void;
+  onComplete: (info: { url: string; domain: string }) => void;
 }) {
   const [status, setStatus] = useState<string>('generating');
   const [pageCount, setPageCount] = useState(0);
@@ -1101,7 +1196,9 @@ function StepGenerating({
         if (site.status === 'live' && !completedRef.current) {
           completedRef.current = true;
           if (pollRef.current) clearInterval(pollRef.current);
-          setTimeout(() => onCompleteRef.current(), 600);
+          const domain = site.site_domain || site.site_subdomain || '';
+          const url = domain ? `https://${domain}` : '';
+          setTimeout(() => onCompleteRef.current({ url, domain }), 600);
         } else if (site.status === 'error') {
           if (pollRef.current) clearInterval(pollRef.current);
           setError('Something went wrong during generation. Please try again.');
@@ -1556,6 +1653,7 @@ export default function WebsiteBuilderWizard() {
     ...(clientNameParam ? { businessName: clientNameParam } : {}),
   }));
   const [saving, setSaving] = useState(false);
+  const [buildResult, setBuildResult] = useState<{ url: string; domain: string } | null>(null);
 
   const industryDefaults = INDUSTRY_DEFAULTS[data.industry];
   const needsGeoPages = industryDefaults?.needsGeoPages ?? false;
@@ -1642,7 +1740,7 @@ export default function WebsiteBuilderWizard() {
           }));
           body.emergency_247 = data.emergency247;
         } else if (currentStep === 3) {
-          body.cities = data.selectedCities.map((c) => ({ name: c, slug: c.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '-'), state: data.state }));
+          body.cities = data.selectedCities.map((c) => ({ name: c, slug: c.toLowerCase().trim().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '-'), state: data.state || '' }));
         } else if (currentStep === 4) {
           body.color_primary = data.colorPrimary;
           body.color_secondary = data.colorSecondary;
@@ -1756,7 +1854,7 @@ export default function WebsiteBuilderWizard() {
   const canAdvance = (): boolean => {
     switch (step) {
       case 1:
-        return !!(data.businessName.trim() && data.industry && data.differentiator.trim());
+        return !!(data.businessName.trim() && data.industry);
       case 2:
         return data.services.length > 0;
       case 3:
@@ -1769,6 +1867,70 @@ export default function WebsiteBuilderWizard() {
         return true;
     }
   };
+
+  if (buildResult && buildResult.url) {
+    return (
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center p-6">
+        <div className="max-w-lg w-full text-center">
+          <div className="text-6xl mb-4">{'\uD83C\uDF89'}</div>
+          <h1 className="text-3xl font-bold text-white mb-2">Your site is live!</h1>
+          <p className="text-gray-400 mb-8">
+            {data.businessName || 'The site'} is now live and ready for visitors.
+          </p>
+
+          {/* URL card */}
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-4">
+            <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Live URL</p>
+            <p className="text-indigo-400 font-mono text-sm break-all mb-4">{buildResult.url}</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => navigator.clipboard.writeText(buildResult.url)}
+                className="flex-1 border border-white/20 text-gray-300 rounded-xl py-2.5 text-sm hover:bg-white/5 transition"
+              >
+                Copy URL
+              </button>
+              <a
+                href={buildResult.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 bg-indigo-600 text-white rounded-xl py-2.5 text-sm font-semibold hover:opacity-90 transition text-center"
+              >
+                Visit Site
+              </a>
+            </div>
+          </div>
+
+          {/* Share with client */}
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-6">
+            <p className="text-xs text-gray-500 uppercase tracking-wider mb-3">Share with client</p>
+            <button
+              onClick={() => navigator.clipboard.writeText(
+                `Hi! Your new website is live!\n\nVisit it here: ${buildResult.url}\n\nBuilt with Kyra`
+              )}
+              className="w-full border border-white/20 text-gray-300 rounded-xl py-3 text-sm hover:bg-white/5 transition"
+            >
+              Copy message for client
+            </button>
+          </div>
+
+          <div className="flex gap-4 justify-center">
+            <button
+              onClick={() => setBuildResult(null)}
+              className="text-gray-500 hover:text-gray-300 transition text-sm"
+            >
+              Review Pages
+            </button>
+            <button
+              onClick={() => router.push('/agency/clients')}
+              className="text-gray-500 hover:text-gray-300 transition text-sm"
+            >
+              Go to Dashboard
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -1810,7 +1972,7 @@ export default function WebsiteBuilderWizard() {
         {step === 6 && (
           <StepGenerating
             siteId={data.siteId}
-            onComplete={() => setStep(7)}
+            onComplete={(info) => { setBuildResult(info); setStep(7); }}
           />
         )}
         {step === 7 && (
