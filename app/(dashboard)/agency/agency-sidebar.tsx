@@ -68,7 +68,7 @@ const navSections: NavSection[] = [
     items: [
       { label: 'Mission Control', href: '/agency', icon: Activity },
       { label: 'Clients', href: '/agency/clients', icon: Users },
-      { label: 'Websites', href: '/agency/website', icon: Globe },
+      { label: 'All Sites', href: '/agency/website', icon: Globe },
     ],
   },
   // CRM now lives inside each client's dashboard (CRM tab)
