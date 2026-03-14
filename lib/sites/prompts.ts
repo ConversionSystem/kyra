@@ -476,3 +476,96 @@ export function reviewsPageData(site: ClientSite): {
     ],
   };
 }
+
+// ============================================================================
+// BLOG TOPICS (Industry-based evergreen posts)
+// ============================================================================
+
+const BLOG_TOPICS_BY_INDUSTRY: Record<string, Array<{ slug: string; title: string; keywords: string }>> = {
+  hvac: [
+    { slug: 'how-often-replace-ac-filter', title: 'How Often Should You Replace Your AC Filter?', keywords: 'AC filter replacement, HVAC maintenance' },
+    { slug: 'signs-air-conditioner-needs-repair', title: '7 Signs Your Air Conditioner Needs Repair', keywords: 'AC repair signs, HVAC problems' },
+  ],
+  plumbing: [
+    { slug: 'how-to-prevent-clogged-drains', title: 'How to Prevent Clogged Drains in Your Home', keywords: 'prevent clogged drains, plumbing tips' },
+    { slug: 'signs-you-need-water-heater-replacement', title: '5 Signs You Need a Water Heater Replacement', keywords: 'water heater replacement, water heater signs' },
+  ],
+  electrical: [
+    { slug: 'signs-outdated-electrical-panel', title: 'Signs Your Electrical Panel is Outdated', keywords: 'electrical panel upgrade, outdated wiring' },
+    { slug: 'home-electrical-safety-tips', title: '10 Home Electrical Safety Tips Every Homeowner Should Know', keywords: 'electrical safety, home safety tips' },
+  ],
+  roofing: [
+    { slug: 'how-long-does-a-roof-last', title: 'How Long Does a Roof Last? What Homeowners Need to Know', keywords: 'roof lifespan, when to replace roof' },
+    { slug: 'signs-roof-needs-replacement', title: '6 Warning Signs Your Roof Needs Replacement', keywords: 'roof replacement signs, roof damage' },
+  ],
+  landscaping: [
+    { slug: 'lawn-care-tips-by-season', title: 'Lawn Care Tips for Every Season', keywords: 'seasonal lawn care, lawn maintenance tips' },
+    { slug: 'best-plants-for-curb-appeal', title: 'Best Plants to Boost Your Curb Appeal', keywords: 'curb appeal plants, landscaping ideas' },
+  ],
+  cleaning: [
+    { slug: 'how-often-professionally-clean-home', title: 'How Often Should You Professionally Clean Your Home?', keywords: 'professional cleaning frequency, house cleaning schedule' },
+    { slug: 'deep-cleaning-checklist', title: 'The Ultimate Home Deep Cleaning Checklist', keywords: 'deep cleaning checklist, home cleaning tips' },
+  ],
+  dental: [
+    { slug: 'how-often-should-you-visit-dentist', title: 'How Often Should You Visit the Dentist?', keywords: 'dentist visit frequency, dental checkup' },
+    { slug: 'tips-for-whiter-teeth', title: '7 Dentist-Approved Tips for Whiter Teeth', keywords: 'teeth whitening tips, whiter teeth' },
+  ],
+  legal: [
+    { slug: 'when-do-you-need-a-lawyer', title: 'When Do You Really Need a Lawyer?', keywords: 'when to hire a lawyer, do I need an attorney' },
+    { slug: 'questions-to-ask-your-attorney', title: '10 Questions to Ask Before Hiring an Attorney', keywords: 'questions for attorney, hiring a lawyer' },
+  ],
+  default: [
+    { slug: 'how-to-choose-right-contractor', title: `How to Choose the Right Professional for the Job`, keywords: 'how to hire a contractor, find a professional' },
+    { slug: 'questions-to-ask-before-hiring', title: '5 Questions to Ask Before Hiring a Local Professional', keywords: 'questions before hiring, local services' },
+  ],
+};
+
+export interface BlogTopic {
+  slug: string;
+  title: string;
+  keywords: string;
+}
+
+export function getBlogTopics(site: ClientSite): BlogTopic[] {
+  const industry = site.industry?.toLowerCase() || '';
+  return BLOG_TOPICS_BY_INDUSTRY[industry] || BLOG_TOPICS_BY_INDUSTRY.default;
+}
+
+// ============================================================================
+// BLOG POST PROMPT
+// ============================================================================
+
+export function blogPrompt(site: ClientSite, topic: BlogTopic): string {
+  const businessCity = city(site);
+  const businessState = state(site);
+
+  return `You are an expert content writer for a local ${site.industry} business. Write a helpful, SEO-optimized blog post.
+
+Business: ${site.business_name}
+Location: ${businessCity}, ${businessState}
+Topic: ${topic.title}
+Target Keywords: ${topic.keywords}
+
+Write a complete blog post with practical advice. Naturally mention ${site.business_name} and ${businessCity} 2-3 times.
+
+Return JSON:
+{
+  "title": "${topic.title}",
+  "meta_title": "SEO meta title (60 chars max)",
+  "meta_description": "Meta description with keyword (160 chars max)",
+  "hero_h1": "Blog post H1 (same as title or slight variation)",
+  "hero_subtitle": "1-sentence intro that hooks the reader",
+  "content_sections": [
+    {
+      "heading": "Section heading",
+      "body": "2-3 paragraphs of helpful, factual content",
+      "bullets": ["optional bullet points if applicable"]
+    }
+  ],
+  "faq": [
+    { "question": "Related FAQ question?", "answer": "Concise answer." }
+  ]
+}
+
+Write 4-6 sections. Be genuinely helpful — not sales-y. Include specific tips, numbers, and actionable advice.`;
+}
