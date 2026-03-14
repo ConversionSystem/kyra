@@ -231,9 +231,19 @@ export async function generateSiteContent(
         console.error("[CONTENT-ENGINE] Knowledge sync failed (non-fatal):", err);
       }
 
-      // 9. Auto-trigger build + deploy (fire-and-forget)
-      triggerBuildAndDeploy(siteId, supabase).catch((err) => {
-        console.error(`[content-engine] Auto-build failed for site ${siteId}:`, err);
+      // 9. Kick off VPS build via internal API call (separate Vercel function, own maxDuration+waitUntil)
+      //    This avoids the 5-min cap: content gen runs in the generate route's waitUntil,
+      //    VPS build runs in the build route's waitUntil. Status is 'building' when we get here.
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://kyra.conversionsystem.com';
+      fetch(`${appUrl}/api/agency/sites/${siteId}/build-internal`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.KYRA_API_SECRET || ''}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ internal: true }),
+      }).catch((err) => {
+        console.error(`[content-engine] Build trigger failed for site ${siteId}:`, err);
       });
     } else {
       await supabase
