@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { waitUntil } from '@vercel/functions';
 import { requireAgencyMember } from '@/lib/agency/middleware';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { resolvePhotos } from '@/lib/sites/unsplash';
+
+// Build calls VPS provisioner which can take 3-5 min to compile Next.js
+export const maxDuration = 300;
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -46,15 +50,19 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
     .update({ status: 'building', updated_at: new Date().toISOString() })
     .eq('id', siteId);
 
-  // Fire-and-forget
-  buildAndDeploy(site, supabase).catch((err) => {
-    console.error(`[sites/build] Build failed for site ${siteId}:`, err);
-    supabase
-      .from('client_sites')
-      .update({ status: 'error', updated_at: new Date().toISOString() })
-      .eq('id', siteId)
-      .then();
-  });
+  // waitUntil keeps the Vercel function alive after response is sent.
+  // Without this, Vercel terminates the build process immediately — site stays stuck on 'building'.
+  waitUntil(
+    buildAndDeploy(site, supabase).catch((err: unknown) => {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`[sites/build] Build failed for site ${siteId}:`, message);
+      supabase
+        .from('client_sites')
+        .update({ status: 'error', updated_at: new Date().toISOString() })
+        .eq('id', siteId)
+        .then(() => {}, () => {});
+    })
+  );
 
   return NextResponse.json({ ok: true, data: { status: 'building' } });
 }
