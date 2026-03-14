@@ -1693,6 +1693,28 @@ export default function WebsiteBuilderWizard() {
     setData((prev) => ({ ...prev, ...updates }));
   };
 
+  // On mount: if we have a clientId, check for existing site to avoid duplicate drafts
+  useEffect(() => {
+    if (!clientIdParam) return;
+    fetch(`/api/agency/sites?clientId=${encodeURIComponent(clientIdParam)}`)
+      .then(r => r.json())
+      .then(result => {
+        const sites: Array<{ id: string; status: string; business_name?: string }> = result.data || [];
+        if (!sites.length) return;
+        // Sort newest first
+        const latest = sites[0];
+        if (latest.status === 'live') {
+          // Already live — redirect back to client page
+          router.replace(`/agency/clients/${clientIdParam}?tab=website`);
+        } else if (latest.status === 'draft' || latest.status === 'generating' || latest.status === 'building') {
+          // In-progress draft — resume it instead of creating a new one
+          setData(prev => ({ ...prev, siteId: latest.id, businessName: prev.businessName || latest.business_name || '' }));
+        }
+      })
+      .catch(() => {/* non-fatal — wizard proceeds normally */});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clientIdParam]);
+
   const saveToApi = useCallback(async (currentStep: number) => {
     setSaving(true);
     try {
