@@ -176,6 +176,9 @@ export interface WizardData {
   years_in_business?: number;
   license?: string;
   existing_website_url?: string;
+  rating?: number;
+  review_count?: number;
+  google_rating?: number;
 
   // Step 2: Services
   services: SiteService[];

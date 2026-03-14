@@ -103,6 +103,8 @@ export async function POST(request: NextRequest) {
       ai_tone: body.ai_tone || 'professional',
       ai_capabilities: body.ai_capabilities || null,
       booking_url: body.booking_url || null,
+      rating: body.google_rating != null ? Number(body.google_rating) : null,
+      review_count: body.review_count != null ? Number(body.review_count) : null,
       template_id: body.industry, // default template = industry name
       status: 'draft',
     })

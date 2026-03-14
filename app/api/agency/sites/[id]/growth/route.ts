@@ -243,7 +243,7 @@ Return JSON:
     // Determine page type from slug
     let pageType = 'utility';
     if (suggestion.type === 'new_city') pageType = 'city';
-    else if (suggestion.type === 'new_service') pageType = 'services';
+    else if (suggestion.type === 'new_service') pageType = 'service';
 
     await supabase.from('site_pages').upsert({
       site_id: siteId,
