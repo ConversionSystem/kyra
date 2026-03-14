@@ -14,9 +14,13 @@ const inter = Inter({ subsets: ['latin'] });
 const homepage = getPageContent('/');
 
 export const metadata: Metadata = {
+  metadataBase: new URL(BUSINESS.url || 'https://example.com'),
   title: cleanText(homepage?.metaTitle || `${BUSINESS.name} | ${BUSINESS.tagline}`),
   description: cleanText(homepage?.metaDescription || `${BUSINESS.name} - ${BUSINESS.tagline}. Call ${BUSINESS.phone}.`),
   keywords: BUSINESS.name,
+  alternates: {
+    canonical: '/',
+  },
   openGraph: {
     title: cleanText(homepage?.metaTitle || BUSINESS.name),
     description: cleanText(homepage?.metaDescription || BUSINESS.tagline),
