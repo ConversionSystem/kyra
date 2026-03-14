@@ -97,8 +97,10 @@ function StatusBadge({ status }: { status: SiteData['status'] }) {
     error: <AlertTriangle className="h-3 w-3 mr-1" />,
   };
 
+  const isPolling = ['generating', 'building', 'deploying'].includes(status);
+
   return (
-    <span className={`inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-full border ${styles[status] || styles.draft}`}>
+    <span className={`inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-full border ${styles[status] || styles.draft} ${isPolling ? 'animate-pulse' : ''}`}>
       {icons[status]}
       {status.charAt(0).toUpperCase() + status.slice(1)}
     </span>
@@ -975,6 +977,27 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
     }
   }, [clientId]);
 
+  // Poll for status updates while site is generating/building/deploying
+  useEffect(() => {
+    if (!site || !['generating', 'building', 'deploying'].includes(site.status)) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/agency/sites?clientId=${clientId}`);
+        if (res.ok) {
+          const data = await res.json();
+          const sites = data.data || data;
+          const updated = Array.isArray(sites) ? sites[0] : sites;
+          if (updated?.id) setSite(updated);
+          if (['live', 'error'].includes(updated?.status)) clearInterval(interval);
+        }
+      } catch {
+        // Silently fail
+      }
+    }, 4000);
+    const timeout = setTimeout(() => clearInterval(interval), 5 * 60 * 1000);
+    return () => { clearInterval(interval); clearTimeout(timeout); };
+  }, [site?.status, clientId]);
+
   const handleAction = async (action: string) => {
     if (!site) return;
     if (action === 'regenerate' && !window.confirm('Regenerate all content? This will overwrite any manual edits.')) return;
@@ -985,7 +1008,7 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
         action === 'regenerate'
           ? `/api/agency/sites/${site.id}/generate`
           : action === 'redeploy'
-            ? `/api/agency/sites/${site.id}/deploy`
+            ? `/api/agency/sites/${site.id}/build`
             : null;
 
       if (endpoint) {

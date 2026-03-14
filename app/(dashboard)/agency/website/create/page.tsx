@@ -49,6 +49,8 @@ interface WizardData {
   differentiator: string;
   existingWebsite: string;
   licenseNumber: string;
+  googleRating: string;
+  reviewCount: string;
 
   // Step 2: Services
   services: ServiceItem[];
@@ -94,6 +96,8 @@ const initialWizardData: WizardData = {
   differentiator: '',
   existingWebsite: '',
   licenseNumber: '',
+  googleRating: '',
+  reviewCount: '',
   services: [],
   emergency247: false,
   selectedCities: [],
@@ -280,6 +284,32 @@ function StepBusinessInfo({
               value={data.licenseNumber}
               onChange={(e) => onChange({ licenseNumber: e.target.value })}
               placeholder="CSLB #12345"
+              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Google Rating (optional)</label>
+            <input
+              type="number"
+              min="0"
+              max="5"
+              step="0.1"
+              value={data.googleRating}
+              onChange={(e) => onChange({ googleRating: e.target.value })}
+              placeholder="4.8"
+              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Number of Reviews (optional)</label>
+            <input
+              type="number"
+              min="0"
+              value={data.reviewCount}
+              onChange={(e) => onChange({ reviewCount: e.target.value })}
+              placeholder="127"
               className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             />
           </div>
@@ -1572,6 +1602,8 @@ export default function WebsiteBuilderWizard() {
             years_in_business: data.yearsInBusiness ? parseInt(data.yearsInBusiness) : null,
             license: data.licenseNumber,
             existing_website: data.existingWebsite,
+            rating: data.googleRating ? parseFloat(data.googleRating) : null,
+            review_count: data.reviewCount ? parseInt(data.reviewCount) : null,
             ...(clientIdParam ? { client_id: clientIdParam } : {}),
           }),
         });
@@ -1600,6 +1632,8 @@ export default function WebsiteBuilderWizard() {
           body.owner_story = data.differentiator;
           body.years_in_business = data.yearsInBusiness ? parseInt(data.yearsInBusiness) : null;
           body.license = data.licenseNumber;
+          body.rating = data.googleRating ? parseFloat(data.googleRating) : null;
+          body.review_count = data.reviewCount ? parseInt(data.reviewCount) : null;
         } else if (currentStep === 2) {
           body.services = data.services.map((s) => ({
             name: s.name,

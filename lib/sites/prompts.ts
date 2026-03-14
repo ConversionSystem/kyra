@@ -42,7 +42,13 @@ function formatServices(services: SiteService[] | null): string {
 
 function formatHours(site: ClientSite): string {
   if (!site.hours) return 'Not specified';
-  const h = site.hours;
+  const h = site.hours as Record<string, unknown>;
+  if (typeof h === 'string') return h;
+  // Wizard format: { days: "Mon-Fri", start: "8:00 AM", end: "6:00 PM" }
+  if (h.days && h.start && h.end) {
+    return `${h.days}: ${h.start} - ${h.end}`;
+  }
+  // Day-keyed format: { mon: "8am-6pm", tue: "8am-6pm" }
   const entries = Object.entries(h).filter(([, v]) => v);
   if (!entries.length) return 'Not specified';
   return entries.map(([day, val]) => `${day}: ${val}`).join(', ');
