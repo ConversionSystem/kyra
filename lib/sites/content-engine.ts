@@ -209,7 +209,14 @@ export async function generateSiteContent(
         `[content-engine] Site ${siteId}: ${succeeded}/${tasks.length} pages generated, cost: $${totalCost.toFixed(4)}`,
       );
 
-      // 8. Auto-trigger build + deploy (fire-and-forget)
+      // 8. Sync to AI knowledge base so the chat widget knows the website content
+      try {
+        await syncSiteToKnowledgeBase(siteId);
+      } catch (err) {
+        console.error("[CONTENT-ENGINE] Knowledge sync failed (non-fatal):", err);
+      }
+
+      // 9. Auto-trigger build + deploy (fire-and-forget)
       triggerBuildAndDeploy(siteId, supabase).catch((err) => {
         console.error(`[content-engine] Auto-build failed for site ${siteId}:`, err);
       });
