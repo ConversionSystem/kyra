@@ -104,6 +104,7 @@ async function buildAndDeploy(site: any, supabase: any) {
     colorPrimary: site.color_primary || '#dc2626',
     colorSecondary: site.color_secondary || '#111827',
     designStyle: site.design_style || 'modern-dark',
+    bookingUrl: site.booking_url || null,
   };
 
   // Pages array — matches what provisioner expects
