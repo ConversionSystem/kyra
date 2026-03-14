@@ -97,7 +97,7 @@ export async function POST(
           updated_at: new Date().toISOString(),
         }).eq('id', crmContactId);
       } else {
-        // Create new CRM contact
+        // Create new CRM contact — only use columns that exist in schema
         const nameParts = name.trim().split(' ');
         const { data: newContact } = await supabase
           .from('crm_contacts')
@@ -110,20 +110,25 @@ export async function POST(
             source: 'website_form',
             stage: 'lead',
             tags: ['website-lead', ...(serviceType ? [`service:${serviceType}`] : [])],
-            notes: message ? `Website inquiry: ${message}` : `Website lead via ${source || 'contact form'}`,
+            // Store message in custom_fields since there's no notes column
+            custom_fields: message ? { inquiry: message, source: source || 'contact-form' } : { source: source || 'contact-form' },
           })
           .select('id')
           .single();
 
         if (newContact) {
           crmContactId = newContact.id;
-          // Log CRM activity
+          // Log CRM activity — use correct schema columns
           await supabase.from('crm_activities').insert({
             agency_id: agencyId,
             contact_id: crmContactId,
             type: 'website_form',
-            title: 'Website Lead Captured',
-            description: summary,
+            subject: 'Website Lead Captured',
+            body: summary,
+            direction: 'inbound',
+            channel: 'website',
+            actor: 'system',
+            actor_name: 'Website Form',
             metadata: { source: source || 'website-form', clientId, serviceType: serviceType || null },
           });
         }
@@ -133,27 +138,8 @@ export async function POST(
       // Non-fatal — conversation was already saved
     }
 
-    // 3. Save to web_chat_leads table (shows in Leads dashboard)
-    try {
-      await supabase.from('web_chat_leads').insert({
-        agency_id: agencyId,
-        client_id: clientId,
-        session_id: `form:${clientId}:${Date.now()}`,
-        first_name: name.split(' ')[0] || name,
-        last_name: name.split(' ').slice(1).join(' ') || '',
-        email: email || null,
-        phone: phone || null,
-        interest: serviceType || message || null,
-        urgency: 'warm',
-        source_url: source || 'website-form',
-        conversation_summary: summary,
-        crm_contact_id: crmContactId,
-        status: 'new',
-      });
-    } catch (leadErr) {
-      // web_chat_leads might not exist — non-fatal
-      console.warn('[LEAD] web_chat_leads save skipped:', (leadErr as Error).message?.slice(0, 100));
-    }
+    // 3. No separate leads table needed — crm_contacts + crm_activities covers it
+    // (web_chat_leads doesn't exist; pipeline_leads is for outbound campaigns)
 
     console.log(`[LEAD] Saved: ${name} (${phone}) → client ${clientId}, CRM: ${crmContactId}`);
     return NextResponse.json({ ok: true, crmContactId }, { headers: CORS });
