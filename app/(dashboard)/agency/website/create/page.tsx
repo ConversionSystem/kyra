@@ -1162,7 +1162,7 @@ function StepGenerating({
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
 
-  const TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes
+  const TIMEOUT_MS = 8 * 60 * 1000; // 8 minutes — content gen can take 3-5 min for large sites
 
   useEffect(() => {
     if (!siteId) {
@@ -1177,7 +1177,7 @@ function StepGenerating({
       // Timeout check
       if (Date.now() - startTimeRef.current > TIMEOUT_MS) {
         if (pollRef.current) clearInterval(pollRef.current);
-        setError('Generation is taking longer than expected. Please check back later or try again.');
+        setError('Generation is taking longer than expected (8+ min). This usually means an AI API issue. Please try again — it typically completes in 2–4 minutes.');
         return;
       }
 
@@ -1239,7 +1239,7 @@ function StepGenerating({
           <Sparkles className="h-10 w-10 text-indigo-600 animate-pulse" />
         </div>
         <h2 className="text-2xl font-bold text-gray-900">Building Your Website</h2>
-        <p className="text-gray-500 mt-2">Sit tight, this usually takes 1 to 2 minutes...</p>
+        <p className="text-gray-500 mt-2">AI is writing all your pages — usually takes 2 to 4 minutes...</p>
       </div>
 
       {error ? (
