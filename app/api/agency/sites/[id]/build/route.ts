@@ -143,7 +143,7 @@ async function buildAndDeploy(site: any, supabase: any) {
     },
     body: JSON.stringify({
       domain,
-      template: 'generic' // only template supported,
+      template: 'generic',
       constants,
       theme,
       pages: pagesData,
