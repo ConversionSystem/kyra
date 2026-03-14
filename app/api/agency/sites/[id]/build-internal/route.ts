@@ -13,6 +13,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { waitUntil } from '@vercel/functions';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { resolvePhotos } from '@/lib/sites/unsplash';
 
 export const maxDuration = 300;
 
@@ -76,18 +77,26 @@ async function runBuild(siteId: string, supabase: ReturnType<typeof createServic
   const cities = (site.cities || []) as Array<{ name: string; slug: string; state?: string }>;
   const address = site.address || {};
 
+  const phone = site.phone || '';
+  const phoneDigits = phone.replace(/[^0-9]/g, '');
+
   const constants = {
     name: site.business_name || '',
-    phone: site.phone || '',
+    phone,
+    phoneHref: phoneDigits ? `tel:+${phoneDigits.length === 10 ? '1' : ''}${phoneDigits}` : '',
     email: `info@${domain}`,
-    address: `${address.street || ''}, ${address.city || ''}, ${address.state || ''} ${address.zip || ''}`.trim().replace(/^,\s*/, ''),
+    address: [address.street, address.city, address.state, address.zip].filter(Boolean).join(', '),
     license: site.license || '',
-    rating: site.google_rating || site.rating || 5.0,
+    rating: site.rating || 5.0,
     reviewCount: site.review_count || 0,
     yearsInBusiness: site.years_in_business || 1,
     hours: site.hours || {},
     coordinates: { lat: address.lat || 0, lng: address.lng || 0 },
     tagline: site.tagline || '',
+    url: `https://${domain}`,
+    bookingUrl: site.booking_url || '',
+    industry: site.industry || '',
+    emergencyText: site.emergency_247 ? '24/7 Emergency Service Available' : '',
     services,
     serviceAreas: cities,
   };
@@ -139,21 +148,43 @@ async function runBuild(siteId: string, supabase: ReturnType<typeof createServic
       theme,
       pages: pagesData,
       widgetClientId: site.client_id,
+      ga4Id: site.ga4_id || null,
+      whiteLabel: site.white_label ?? false,
+      logoUrl: site.logo_url || null,
+      photos: resolvePhotos(site.photos, site.industry),
     }),
     signal: AbortSignal.timeout(240_000), // 4 min max for VPS build
   });
 
   if (!res.ok) {
     const errText = await res.text().catch(() => 'Build error');
+    await supabase.from('site_deploys').insert({
+      site_id: siteId,
+      triggered_by: 'auto-build',
+      status: 'failed',
+      pages_deployed: 0,
+      notes: errText.slice(0, 200),
+    });
     throw new Error(`VPS build failed: ${errText.slice(0, 200)}`);
   }
+
+  const now = new Date().toISOString();
+
+  // Record deploy
+  await supabase.from('site_deploys').insert({
+    site_id: siteId,
+    triggered_by: 'auto-build',
+    status: 'success',
+    pages_deployed: pages.length,
+    deployed_at: now,
+  });
 
   // Mark live
   await supabase
     .from('client_sites')
     .update({
       status: 'live',
-      last_deployed_at: new Date().toISOString(),
+      last_deployed_at: now,
       nginx_configured: true,
       ssl_active: true,
     })

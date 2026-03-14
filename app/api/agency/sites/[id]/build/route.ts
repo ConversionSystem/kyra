@@ -102,7 +102,10 @@ async function buildAndDeploy(site: any, supabase: any) {
     hours: site.hours || {},
     coordinates: { lat: address.lat || 0, lng: address.lng || 0 },
     tagline: site.tagline || '',
+    url: `https://${domain}`,
+    bookingUrl: site.booking_url || '',
     industry: site.industry || '',
+    emergencyText: site.emergency_247 ? '24/7 Emergency Service Available' : '',
     services,
     serviceAreas: cities,
   };
