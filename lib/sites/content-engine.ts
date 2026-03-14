@@ -483,9 +483,13 @@ async function executeTask(
       cost = (totalTokens / 1000) * (COST_PER_1K[task.model] || 0.001);
 
       // Parse the response
-      content = task.slug === '/faq'
-        ? parseFaqContent(rawContent, task.title)
-        : parseContent(rawContent, task.title);
+      if (task.slug === '/faq') {
+        content = parseFaqContent(rawContent, task.title);
+      } else if (task.pageType === 'blog') {
+        content = parseBlogContent(rawContent, task.title);
+      } else {
+        content = parseContent(rawContent, task.title);
+      }
     }
 
     // Generate schema markup
@@ -833,6 +837,51 @@ function parseFaqContent(raw: string, fallbackTitle: string): ParsedContent {
   };
 }
 
+function parseBlogContent(raw: string, fallbackTitle: string): ParsedContent {
+  const cleaned = raw.replace(/\u2014/g, ' - ').replace(/\u2013/g, '-').trim();
+
+  // Blog prompts return JSON — try parsing it first
+  if (cleaned.startsWith('{') || cleaned.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(cleaned.startsWith('[') ? cleaned : cleaned);
+      if (parsed.hero_h1) {
+        return {
+          hero_h1: parsed.hero_h1 || fallbackTitle,
+          hero_subtitle: parsed.hero_subtitle || null,
+          content_sections: parsed.content_sections || [],
+          faq: parsed.faq || null,
+          meta_title: parsed.meta_title || null,
+          meta_description: parsed.meta_description || null,
+        };
+      }
+    } catch {
+      // Fall through to markdown parsing
+    }
+  }
+
+  // Also try extracting JSON from markdown-wrapped response
+  const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    try {
+      const parsed = JSON.parse(jsonMatch[0]);
+      if (parsed.hero_h1) {
+        return {
+          hero_h1: parsed.hero_h1 || fallbackTitle,
+          hero_subtitle: parsed.hero_subtitle || null,
+          content_sections: parsed.content_sections || [],
+          faq: parsed.faq || null,
+          meta_title: parsed.meta_title || null,
+          meta_description: parsed.meta_description || null,
+        };
+      }
+    } catch {
+      // Fall through to markdown parsing
+    }
+  }
+
+  return parseContent(raw, fallbackTitle);
+}
+
 // ---------- Utilities ----------
 
 function cleanLine(line: string): string {
@@ -904,6 +953,7 @@ async function triggerBuildAndDeploy(siteId: string, supabase: any): Promise<voi
     colorPrimary: site.color_primary || '#dc2626',
     colorSecondary: site.color_secondary || '#111827',
     designStyle: site.design_style || 'modern-dark',
+    bookingUrl: site.booking_url || null,
   };
 
   // 4. Format page content for template

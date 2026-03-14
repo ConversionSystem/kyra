@@ -1,6 +1,6 @@
 /**
- * Unsplash fallback photo fetcher for sites with no uploaded photos.
- * Uses Unsplash Source API (no API key needed, ~10 req/min per IP).
+ * Fallback photo fetcher for sites with no uploaded photos.
+ * Uses picsum.photos (stable, no API key needed, deterministic by seed).
  */
 
 // Industry → search query mapping
@@ -46,9 +46,9 @@ export function getStockPhotosForIndustry(industry: string, count = 6): StockPho
 
   for (let i = 0; i < count; i++) {
     const query = queries[i % queries.length];
-    const seed = `${industry}-${i}-${query.replace(/\s+/g, '-')}`;
-    // Unsplash Source API: deterministic by seed, no key needed
-    const url = `https://source.unsplash.com/800x600/?${encodeURIComponent(query)}&sig=${encodeURIComponent(seed)}`;
+    const seed = `${query.replace(/\s+/g, '-')}-${i}`;
+    // picsum.photos: deterministic by seed, no key needed
+    const url = `https://picsum.photos/seed/${encodeURIComponent(seed)}/800/600`;
     photos.push({
       url,
       alt: `${query} professional`,
