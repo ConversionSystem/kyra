@@ -38,6 +38,7 @@ interface SiteData {
   color_primary: string;
   design_style: string;
   ai_name: string | null;
+  booking_url: string | null;
 }
 
 interface GrowthSuggestion {
@@ -82,12 +83,14 @@ function StatusBadge({ status }: { status: SiteData['status'] }) {
 // ── SEO Health Checklist ──────────────────────────────────────────────────────
 
 function SEOHealthChecklist({ site }: { site: SiteData }) {
+  // A deployed site (live OR error from a failed re-attempt) has all these in place
+  const isDeployed = site.status === 'live' || (site.status === 'error' && !!site.last_deployed_at);
   const checks = [
-    { label: `Sitemap (${site.page_count} URLs)`, ok: site.status === 'live' },
-    { label: 'Schema markup', ok: site.status === 'live' },
-    { label: 'Meta tags (title + description)', ok: site.status === 'live' },
+    { label: `Sitemap (${site.page_count} URLs)`, ok: isDeployed },
+    { label: 'Schema markup (LocalBusiness + FAQ)', ok: isDeployed },
+    { label: 'Meta tags (title + description)', ok: isDeployed },
     { label: 'Mobile responsive', ok: true },
-    { label: 'SSL certificate', ok: site.status === 'live' },
+    { label: 'SSL certificate (HTTPS)', ok: isDeployed },
     { label: 'Google Search Console', ok: site.search_console_connected },
   ];
 
@@ -259,6 +262,16 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
     fetchSite();
   }, [clientId]);
 
+  const refreshSite = async () => {
+    const res = await fetch(`/api/agency/sites?clientId=${clientId}`);
+    if (res.ok) {
+      const result = await res.json();
+      const sites = result.data || result;
+      const siteData = Array.isArray(sites) ? sites[0] : sites;
+      if (siteData?.id) setSite(siteData);
+    }
+  };
+
   const handleAction = async (action: string) => {
     if (!site) return;
     if (action === 'regenerate' && !window.confirm('Regenerate all content? This will overwrite any manual edits.')) return;
@@ -273,14 +286,11 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
             : null;
 
       if (endpoint) {
-        await fetch(endpoint, { method: 'POST' });
-        // Refresh site data
-        const res = await fetch(`/api/agency/sites?clientId=${clientId}`);
+        const res = await fetch(endpoint, { method: 'POST' });
         if (res.ok) {
-          const result = await res.json();
-          const sites = result.data || result;
-          const siteData = Array.isArray(sites) ? sites[0] : sites;
-          if (siteData?.id) setSite(siteData);
+          // Poll for status update (build takes 60-120s)
+          await new Promise(r => setTimeout(r, 3000));
+          await refreshSite();
         }
       }
     } catch {
@@ -310,6 +320,26 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
 
   return (
     <div className="space-y-6">
+      {/* Error banner — shown when last action failed but site was previously live */}
+      {site.status === 'error' && site.last_deployed_at && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-amber-800">Last action failed</p>
+            <p className="text-xs text-amber-700 mt-0.5">
+              The site is still live from its last successful deploy. Click <strong>Redeploy</strong> to retry.
+            </p>
+          </div>
+          <button
+            onClick={() => handleAction('redeploy')}
+            disabled={!!actionLoading}
+            className="shrink-0 text-xs font-medium bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg transition"
+          >
+            {actionLoading === 'redeploy' ? 'Deploying…' : 'Redeploy Now'}
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
         <div className="flex items-start justify-between gap-4">
@@ -321,7 +351,7 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
               <Globe className="h-5 w-5 text-white" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-base font-semibold text-gray-900">{site.business_name}</h3>
                 <StatusBadge status={site.status} />
               </div>
@@ -338,11 +368,24 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2 text-xs text-gray-400">
-            <Clock className="h-3.5 w-3.5" />
-            {site.last_deployed_at
-              ? `Deployed ${new Date(site.last_deployed_at).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
-              : 'Not deployed'}
+          <div className="flex items-center gap-3">
+            {siteUrl && (
+              <a
+                href={siteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition"
+              >
+                <ArrowUpRight className="h-3.5 w-3.5" />
+                Visit Site
+              </a>
+            )}
+            <div className="flex items-center gap-1.5 text-xs text-gray-400">
+              <Clock className="h-3.5 w-3.5" />
+              {site.last_deployed_at
+                ? `Deployed ${new Date(site.last_deployed_at).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+                : 'Not deployed'}
+            </div>
           </div>
         </div>
 
@@ -398,22 +441,20 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
           )}
           <span className="text-xs font-medium text-gray-700">Redeploy</span>
         </button>
-        <button
+        <Link
+          href={`/agency/website/${site.id}/editor`}
           className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-gray-200 shadow-sm hover:border-purple-300 hover:bg-purple-50/50 transition-colors text-center"
-          title="Coming soon"
-          disabled
         >
-          <PenLine className="h-5 w-5 text-purple-400" />
-          <span className="text-xs font-medium text-gray-400">Edit Pages</span>
-        </button>
-        <button
+          <PenLine className="h-5 w-5 text-purple-500" />
+          <span className="text-xs font-medium text-gray-700">Edit Pages</span>
+        </Link>
+        <Link
+          href={`/agency/website/${site.id}/settings`}
           className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-gray-200 shadow-sm hover:border-amber-300 hover:bg-amber-50/50 transition-colors text-center"
-          title="Coming soon"
-          disabled
         >
-          <Link2 className="h-5 w-5 text-amber-400" />
-          <span className="text-xs font-medium text-gray-400">Domain</span>
-        </button>
+          <Link2 className="h-5 w-5 text-amber-500" />
+          <span className="text-xs font-medium text-gray-700">Domain</span>
+        </Link>
       </div>
 
       {/* Growth Engine */}
