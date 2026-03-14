@@ -83,43 +83,12 @@ Return JSON array of suggestions. Each suggestion:
 Priority guide: high = >500 searches/mo or missing core page; medium = 100-500; low = <100 but still valuable.
 Return ONLY the JSON array, no other text.`;
 
-  let suggestions: GrowthSuggestion[] = [];
+  // Fire-and-forget: run analysis in background to avoid Vercel 10s timeout
+  runGrowthAnalysis(siteId, site, prompt, services, cities, existingSlugs, supabase).catch((err) => {
+    console.error('[growth] Background analysis failed:', err);
+  });
 
-  try {
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0.4,
-      max_tokens: 2000,
-      response_format: { type: 'json_object' },
-    });
-
-    const raw = completion.choices[0]?.message?.content || '{}';
-    const parsed = JSON.parse(raw);
-    // Handle both { suggestions: [...] } and [...] formats
-    suggestions = Array.isArray(parsed) ? parsed : (parsed.suggestions || []);
-
-    // Filter out already-existing pages
-    suggestions = suggestions.filter(
-      (s) => !s.slug || !existingSlugs.includes(s.slug)
-    );
-  } catch (err) {
-    console.error('[growth] AI analysis failed:', err);
-    // Return fallback suggestions based on industry
-    suggestions = generateFallbackSuggestions(site.industry, services, cities, existingSlugs);
-  }
-
-  // Persist to DB
-  await supabase
-    .from('client_sites')
-    .update({
-      growth_suggestions: suggestions,
-      growth_last_analyzed: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', siteId);
-
-  return NextResponse.json({ ok: true, data: { suggestions } });
+  return NextResponse.json({ ok: true, data: { status: 'analyzing' } });
 }
 
 /**
@@ -177,6 +146,51 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   }
 
   return NextResponse.json({ ok: true, data: { implemented: true } });
+}
+
+// ── Background Analysis ──────────────────────────────────────────────────────
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function runGrowthAnalysis(
+  siteId: string,
+  site: any,
+  prompt: string,
+  services: Array<{ name: string; slug: string }>,
+  cities: Array<{ name: string; slug: string }>,
+  existingSlugs: string[],
+  supabase: any,
+): Promise<void> {
+  let suggestions: GrowthSuggestion[] = [];
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.4,
+      max_tokens: 2000,
+      response_format: { type: 'json_object' },
+    });
+
+    const raw = completion.choices[0]?.message?.content || '{}';
+    const parsed = JSON.parse(raw);
+    suggestions = Array.isArray(parsed) ? parsed : (parsed.suggestions || []);
+
+    suggestions = suggestions.filter(
+      (s) => !s.slug || !existingSlugs.includes(s.slug),
+    );
+  } catch (err) {
+    console.error('[growth] AI analysis failed:', err);
+    suggestions = generateFallbackSuggestions(site.industry, services, cities, existingSlugs);
+  }
+
+  await supabase
+    .from('client_sites')
+    .update({
+      growth_suggestions: suggestions,
+      growth_last_analyzed: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', siteId);
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

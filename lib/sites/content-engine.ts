@@ -34,6 +34,8 @@ import {
   generateServiceSchema,
   generateFAQSchema,
 } from './schema-generator';
+import { syncSiteToKnowledgeBase } from './knowledge-sync';
+import { checkContentSimilarity } from './content-checker';
 
 // ---------- Constants ----------
 
@@ -157,6 +159,14 @@ export async function generateSiteContent(
 
     // 5. Generate meta titles/descriptions for pages missing them
     await generateMeta(clientSite, siteId);
+
+    // 5b. Content similarity check (non-blocking, just log)
+    try {
+      const { warning } = await checkContentSimilarity(siteId, clientSite.industry, clientSite.address?.state || '');
+      if (warning) console.warn('[content-engine] Similarity warning:', warning);
+    } catch (err) {
+      console.warn('[content-engine] Similarity check failed:', err);
+    }
 
     // 6. Count successes
     const succeeded = results.filter((r) => r.success).length;
@@ -956,4 +966,51 @@ async function triggerBuildAndDeploy(siteId: string, supabase: any): Promise<voi
     .eq('id', siteId);
 
   console.log(`[content-engine] Site ${siteId} deployed to https://${domain}`);
+
+  // Sync site content to knowledge base (fire-and-forget)
+  syncSiteToKnowledgeBase(siteId).catch((err) =>
+    console.warn('[content-engine] Knowledge sync failed:', err),
+  );
+
+  // Send Telegram notification if agency has telegram connected
+  sendSiteLiveNotification(site.business_name, domain, site.agency_id, supabase).catch((err) =>
+    console.warn('[content-engine] Site-live notification failed:', err),
+  );
+}
+
+// ---------- Site Live Notification ----------
+
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function sendSiteLiveNotification(businessName: string, domain: string, agencyId: string, supabase: any): Promise<void> {
+  if (!TELEGRAM_BOT_TOKEN) return;
+
+  // Find the agency owner's telegram channel
+  const { data: agency } = await supabase
+    .from('agencies')
+    .select('owner_id')
+    .eq('id', agencyId)
+    .single();
+
+  if (!agency?.owner_id) return;
+
+  const { data: channel } = await supabase
+    .from('user_channels')
+    .select('metadata')
+    .eq('user_id', agency.owner_id)
+    .eq('channel_type', 'telegram')
+    .eq('status', 'connected')
+    .single();
+
+  const chatId = channel?.metadata?.chatId;
+  if (!chatId) return;
+
+  const message = `\u{1F680} Site live: ${businessName} \u2014 https://${domain}`;
+
+  await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: chatId, text: message }),
+  });
 }

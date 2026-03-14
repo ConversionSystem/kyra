@@ -19,7 +19,8 @@ import {
 
 interface Client {
   id: string;
-  business_name: string;
+  name: string;
+  business_name?: string;
   industry?: string;
 }
 
@@ -83,7 +84,7 @@ export default function BulkSiteGeneration() {
 
     const initialJobs: BulkJob[] = selected.map((c) => ({
       clientId: c.id,
-      clientName: c.business_name,
+      clientName: c.name || c.business_name || '',
       industry: c.industry || defaultIndustry,
       status: 'pending',
     }));
@@ -338,7 +339,7 @@ export default function BulkSiteGeneration() {
                       {isSelected && <Check className="h-3 w-3 text-white" />}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-900">{client.business_name}</p>
+                      <p className="text-sm font-medium text-gray-900">{client.name || client.business_name}</p>
                       {client.industry && (
                         <p className="text-xs text-gray-400 capitalize">{client.industry.replace(/-/g, ' ')}</p>
                       )}
