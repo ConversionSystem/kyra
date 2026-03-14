@@ -80,9 +80,7 @@ export async function GET(
     '#kyra-widget-btn:hover { transform:scale(1.08); }',
     '#kyra-widget-btn svg { width:28px; height:28px; fill:white; }',
     '#kyra-widget-badge { position:absolute; top:-2px; right:-2px; width:16px; height:16px; background:#ef4444; border-radius:50%; display:none; }',
-    '#kyra-widget-panel { position:fixed; bottom:96px; ' + (POSITION === 'bottom-left' ? 'left:24px; transform-origin:bottom left;' : 'right:24px; transform-origin:bottom right;') + ' width:360px; max-width:calc(100vw - 48px); height:520px; max-height:min(520px, calc(100vh - 120px)); background:#fff; color:#111; border-radius:16px; box-shadow:0 8px 40px rgba(0,0,0,0.18); z-index:99998; display:flex; flex-direction:column; overflow:hidden; transition:opacity 0.2s,transform 0.2s; }',
-    /* Mobile: full-width sheet anchored to bottom, max 65% of screen height */
-    '@media (max-width:480px) { #kyra-widget-panel { left:0 !important; right:0 !important; bottom:0 !important; width:100vw !important; max-width:100vw !important; height:min(420px, 65vh) !important; max-height:65vh !important; border-radius:16px 16px 0 0 !important; transform-origin:bottom center !important; } #kyra-widget-btn { bottom:16px; ' + (POSITION === 'bottom-left' ? 'left:16px;' : 'right:16px;') + ' } }',
+    '#kyra-widget-panel { position:fixed; bottom:96px; ' + (POSITION === 'bottom-left' ? 'left:24px; transform-origin:bottom left;' : 'right:24px; transform-origin:bottom right;') + ' width:360px; max-width:calc(100vw - 48px); height:520px; max-height:calc(100vh - 120px); background:#fff; color:#111; border-radius:16px; box-shadow:0 8px 40px rgba(0,0,0,0.18); z-index:99998; display:flex; flex-direction:column; overflow:hidden; transition:opacity 0.2s,transform 0.2s; }',
     '#kyra-widget-panel.hidden { opacity:0; transform:scale(0.92); pointer-events:none; }',
     '#kyra-widget-header { background:' + COLOR + '; padding:16px; display:flex; align-items:center; gap:10px; }',
     '#kyra-widget-header .avatar { width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }',
@@ -211,6 +209,44 @@ export async function GET(
 
   btn.addEventListener('click', function() { isOpen ? closePanel() : openPanel(); });
   closeBtn.addEventListener('click', closePanel);
+
+  // ── Mobile sizing (JS-driven — more reliable than CSS media queries on iOS) ─
+  function applyMobileLayout() {
+    var isMobile = window.innerWidth <= 520;
+    if (isMobile) {
+      // Bottom sheet: full width, anchored to bottom, max 60% of visible height
+      var vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      var maxH = Math.min(460, Math.round(vh * 0.62));
+      panel.style.left = '0';
+      panel.style.right = '0';
+      panel.style.bottom = '0';
+      panel.style.width = '100vw';
+      panel.style.maxWidth = '100vw';
+      panel.style.height = maxH + 'px';
+      panel.style.maxHeight = maxH + 'px';
+      panel.style.borderRadius = '16px 16px 0 0';
+      // Move button up from bottom edge + safe area
+      btn.style.bottom = '80px';
+    } else {
+      // Desktop: restore defaults
+      panel.style.left = '';
+      panel.style.right = '24px';
+      panel.style.bottom = '96px';
+      panel.style.width = '360px';
+      panel.style.maxWidth = 'calc(100vw - 48px)';
+      panel.style.height = '520px';
+      panel.style.maxHeight = 'calc(100vh - 120px)';
+      panel.style.borderRadius = '16px';
+      btn.style.bottom = '24px';
+    }
+  }
+
+  applyMobileLayout();
+  window.addEventListener('resize', applyMobileLayout);
+  // Re-apply when keyboard opens/closes on iOS (visualViewport resize)
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', applyMobileLayout);
+  }
 
   // ── Send ─────────────────────────────────────────────────────────────────────
   async function sendMessage() {
