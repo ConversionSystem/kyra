@@ -1159,10 +1159,11 @@ function StepGenerating({
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef(Date.now());
   const completedRef = useRef(false);
+  const buildTriggeredRef = useRef(false); // prevent duplicate build triggers
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
 
-  const TIMEOUT_MS = 8 * 60 * 1000; // 8 minutes — content gen can take 3-5 min for large sites
+  const TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes total (gen 3min + build 4min + buffer)
 
   useEffect(() => {
     if (!siteId) {
@@ -1199,6 +1200,14 @@ function StepGenerating({
           const domain = site.site_domain || site.site_subdomain || '';
           const url = domain ? `https://${domain}` : '';
           setTimeout(() => onCompleteRef.current({ url, domain }), 600);
+
+        } else if (site.status === 'building' && !buildTriggeredRef.current) {
+          // Fallback: content gen finished but build hasn't started yet.
+          // Trigger the build route from the frontend as a safety net.
+          buildTriggeredRef.current = true;
+          console.log('[wizard] Status=building — triggering VPS build via /build API');
+          fetch(`/api/agency/sites/${siteId}/build`, { method: 'POST' }).catch(() => {});
+
         } else if (site.status === 'error') {
           if (pollRef.current) clearInterval(pollRef.current);
           setError('Something went wrong during generation. Please try again.');
