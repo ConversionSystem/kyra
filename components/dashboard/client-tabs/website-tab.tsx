@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
   Globe,
@@ -17,12 +17,19 @@ import {
   TrendingUp,
   Search,
   Link2,
-  Plus,
   Rocket,
   Sparkles,
+  Trash2,
+  Save,
+  ChevronDown,
+  ChevronRight,
+  Settings,
 } from 'lucide-react';
+import type { SitePage, ContentSection, DesignStyle } from '@/lib/sites/types';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
+
+type SubView = 'overview' | 'pages' | 'growth' | 'settings';
 
 interface SiteData {
   id: string;
@@ -39,12 +46,30 @@ interface SiteData {
   design_style: string;
   ai_name: string | null;
   booking_url: string | null;
+  ga4_id?: string | null;
+  white_label?: boolean;
 }
 
 interface GrowthSuggestion {
-  keyword: string;
-  volume: number;
-  action: string;
+  type: 'new_page' | 'improve_page' | 'new_city' | 'new_service';
+  title: string;
+  description: string;
+  estimatedVolume?: number;
+  slug?: string;
+  priority: 'high' | 'medium' | 'low';
+  implemented?: boolean;
+  // Legacy fields (overview card compat)
+  keyword?: string;
+  volume?: number;
+  action?: string;
+}
+
+interface DeployRecord {
+  id: string;
+  site_id: string;
+  status: string;
+  deployed_at: string;
+  deploy_url?: string;
 }
 
 interface WebsiteTabProps {
@@ -83,7 +108,6 @@ function StatusBadge({ status }: { status: SiteData['status'] }) {
 // ── SEO Health Checklist ──────────────────────────────────────────────────────
 
 function SEOHealthChecklist({ site }: { site: SiteData }) {
-  // A deployed site (live OR error from a failed re-attempt) has all these in place
   const isDeployed = site.status === 'live' || (site.status === 'error' && !!site.last_deployed_at);
   const checks = [
     { label: `Sitemap (${site.page_count} URLs)`, ok: isDeployed },
@@ -116,66 +140,9 @@ function SEOHealthChecklist({ site }: { site: SiteData }) {
       </div>
       {!site.search_console_connected && (
         <p className="text-xs text-amber-600 mt-3 bg-amber-50 rounded-lg p-2">
-          ⚠️ Connect Google Search Console to unlock Growth Engine data and track real search performance.
+          Connect Google Search Console to unlock Growth Engine data and track real search performance.
         </p>
       )}
-    </div>
-  );
-}
-
-// ── Growth Engine Suggestions ─────────────────────────────────────────────────
-
-function GrowthEngineCard({ suggestions }: { suggestions: GrowthSuggestion[] | null }) {
-  if (!suggestions || suggestions.length === 0) {
-    return (
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-        <h4 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
-          <TrendingUp className="h-4 w-4 text-indigo-500" />
-          Growth Engine
-        </h4>
-        <p className="text-xs text-gray-500">
-          Growth suggestions will appear here after your site has been live for a few weeks and Google
-          Search Console is connected.
-        </p>
-        <div className="mt-3 bg-indigo-50 border border-indigo-100 rounded-lg p-3">
-          <p className="text-xs text-indigo-700">
-            💡 The Growth Engine analyzes your search data and suggests new pages, FAQs, and blog
-            posts to drive more organic traffic.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-      <div className="flex items-center justify-between mb-3">
-        <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-          <TrendingUp className="h-4 w-4 text-indigo-500" />
-          Growth Engine
-        </h4>
-        <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium">
-          {suggestions.length} suggestions
-        </span>
-      </div>
-      <div className="space-y-2">
-        {suggestions.map((suggestion, i) => (
-          <div
-            key={i}
-            className="flex items-center justify-between gap-3 p-3 rounded-lg border border-gray-100 hover:border-indigo-200 hover:bg-indigo-50/50 transition-colors"
-          >
-            <div className="min-w-0 flex-1">
-              <p className="text-sm text-gray-900 font-medium truncate">
-                &ldquo;{suggestion.keyword}&rdquo;
-              </p>
-              <p className="text-xs text-gray-500">{suggestion.volume} searches/mo</p>
-            </div>
-            <button className="shrink-0 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors">
-              {suggestion.action}
-            </button>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
@@ -183,7 +150,6 @@ function GrowthEngineCard({ suggestions }: { suggestions: GrowthSuggestion[] | n
 // ── Page Breakdown ────────────────────────────────────────────────────────────
 
 function PageBreakdown({ pageCount }: { pageCount: number }) {
-  // Estimate breakdown (in production, fetch real data)
   const core = Math.min(pageCount, 10);
   const local = Math.max(0, Math.min(pageCount - core, 20));
   const blog = Math.max(0, pageCount - core - local);
@@ -233,12 +199,749 @@ function NoSiteState({ clientId, clientName }: { clientId: string; clientName: s
   );
 }
 
+// ── Sub-Nav ───────────────────────────────────────────────────────────────────
+
+const SUB_VIEWS: { key: SubView; label: string }[] = [
+  { key: 'overview', label: 'Overview' },
+  { key: 'pages', label: 'Pages' },
+  { key: 'growth', label: 'Growth' },
+  { key: 'settings', label: 'Settings' },
+];
+
+function SubNav({ view, setView }: { view: SubView; setView: (v: SubView) => void }) {
+  return (
+    <div className="flex border-b border-gray-200 mb-6">
+      {SUB_VIEWS.map(({ key, label }) => (
+        <button
+          key={key}
+          onClick={() => setView(key)}
+          className={`px-4 py-2.5 text-sm font-medium border-b-2 transition ${
+            view === key
+              ? 'border-indigo-600 text-indigo-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ── Pages View ────────────────────────────────────────────────────────────────
+
+function PagesView({ siteId }: { siteId: string }) {
+  const [pages, setPages] = useState<SitePage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [expandedSlug, setExpandedSlug] = useState<string | null>(null);
+  const [editValues, setEditValues] = useState<{ hero_h1: string; content_sections: ContentSection[] }>({
+    hero_h1: '',
+    content_sections: [],
+  });
+  const [saving, setSaving] = useState(false);
+  const [regenerating, setRegenerating] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState('');
+
+  useEffect(() => {
+    async function fetchPages() {
+      try {
+        const res = await fetch(`/api/agency/sites/${siteId}/pages`);
+        if (res.ok) {
+          const result = await res.json();
+          setPages(result.data || []);
+        }
+      } catch {
+        // silent
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchPages();
+  }, [siteId]);
+
+  const expandPage = (page: SitePage) => {
+    if (expandedSlug === page.slug) {
+      setExpandedSlug(null);
+      return;
+    }
+    setExpandedSlug(page.slug);
+    setEditValues({
+      hero_h1: page.hero_h1 || '',
+      content_sections: page.content_sections || [],
+    });
+    setFeedback('');
+  };
+
+  const savePage = async (slug: string) => {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/agency/sites/${siteId}/pages/${encodeURIComponent(slug)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          hero_h1: editValues.hero_h1,
+          content_sections: editValues.content_sections,
+        }),
+      });
+      if (res.ok) {
+        const result = await res.json();
+        setPages((prev) => prev.map((p) => (p.slug === slug ? { ...p, ...result.data } : p)));
+      }
+    } catch {
+      // silent
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const regeneratePage = async (slug: string) => {
+    setRegenerating(slug);
+    try {
+      await fetch(`/api/agency/sites/${siteId}/pages/${encodeURIComponent(slug)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'regenerate', feedback: feedback || undefined }),
+      });
+      // Refetch after a short delay to show new content
+      setTimeout(async () => {
+        const res = await fetch(`/api/agency/sites/${siteId}/pages`);
+        if (res.ok) {
+          const result = await res.json();
+          setPages(result.data || []);
+        }
+        setRegenerating(null);
+      }, 3000);
+    } catch {
+      setRegenerating(null);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+      </div>
+    );
+  }
+
+  if (pages.length === 0) {
+    return (
+      <div className="text-center py-12 text-sm text-gray-500">
+        No pages generated yet. Use the <strong>Regenerate</strong> action on the Overview tab to generate content.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between mb-4">
+        <h4 className="text-sm font-semibold text-gray-900">{pages.length} Pages</h4>
+      </div>
+      {pages.map((page) => (
+        <div key={page.slug} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <button
+            onClick={() => expandPage(page)}
+            className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+          >
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-900 truncate">{page.title}</span>
+                <span className="text-[10px] font-medium uppercase px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 shrink-0">
+                  {page.page_type}
+                </span>
+                {page.edited && (
+                  <span className="text-[10px] font-medium uppercase px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 shrink-0">
+                    edited
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-gray-400 mt-0.5 truncate">/{page.slug}</p>
+            </div>
+            {expandedSlug === page.slug ? (
+              <ChevronDown className="h-4 w-4 text-gray-400 shrink-0" />
+            ) : (
+              <ChevronRight className="h-4 w-4 text-gray-400 shrink-0" />
+            )}
+          </button>
+
+          {expandedSlug === page.slug && (
+            <div className="px-4 pb-4 border-t border-gray-100 space-y-3 pt-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Hero H1</label>
+                <input
+                  type="text"
+                  value={editValues.hero_h1}
+                  onChange={(e) => setEditValues((prev) => ({ ...prev, hero_h1: e.target.value }))}
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                />
+              </div>
+
+              {editValues.content_sections.map((section, i) => (
+                <div key={i} className="bg-gray-50 rounded-lg p-3 space-y-2">
+                  <input
+                    type="text"
+                    value={section.heading}
+                    onChange={(e) => {
+                      const updated = [...editValues.content_sections];
+                      updated[i] = { ...updated[i], heading: e.target.value };
+                      setEditValues((prev) => ({ ...prev, content_sections: updated }));
+                    }}
+                    className="w-full px-2 py-1.5 text-sm font-medium border border-gray-200 rounded bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                    placeholder="Section heading"
+                  />
+                  <textarea
+                    value={section.body}
+                    onChange={(e) => {
+                      const updated = [...editValues.content_sections];
+                      updated[i] = { ...updated[i], body: e.target.value };
+                      setEditValues((prev) => ({ ...prev, content_sections: updated }));
+                    }}
+                    rows={4}
+                    className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded bg-white focus:ring-2 focus:ring-indigo-500 outline-none resize-y"
+                    placeholder="Section body"
+                  />
+                </div>
+              ))}
+
+              <div className="flex items-center gap-2 pt-2">
+                <button
+                  onClick={() => savePage(page.slug)}
+                  disabled={saving}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition"
+                >
+                  {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
+                  Save
+                </button>
+
+                <div className="flex-1 flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={feedback}
+                    onChange={(e) => setFeedback(e.target.value)}
+                    placeholder="Optional feedback for AI..."
+                    className="flex-1 px-2 py-1.5 text-xs border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                  />
+                  <button
+                    onClick={() => regeneratePage(page.slug)}
+                    disabled={regenerating === page.slug}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 disabled:opacity-50 transition"
+                  >
+                    {regenerating === page.slug ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-3 w-3" />
+                    )}
+                    AI Regenerate
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Growth View ───────────────────────────────────────────────────────────────
+
+function GrowthView({ site, onRefreshSite }: { site: SiteData; onRefreshSite: () => Promise<void> }) {
+  const [analyzing, setAnalyzing] = useState(false);
+  const [implementing, setImplementing] = useState<string | null>(null);
+  const [deploys, setDeploys] = useState<DeployRecord[]>([]);
+  const [deploysLoading, setDeploysLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchDeploys() {
+      try {
+        const res = await fetch(`/api/agency/sites/${site.id}/deploys`);
+        if (res.ok) {
+          const result = await res.json();
+          setDeploys(result.data || []);
+        }
+      } catch {
+        // silent
+      } finally {
+        setDeploysLoading(false);
+      }
+    }
+    fetchDeploys();
+  }, [site.id]);
+
+  const runAnalysis = async () => {
+    setAnalyzing(true);
+    try {
+      await fetch(`/api/agency/sites/${site.id}/growth`, { method: 'POST' });
+      // Poll for results after background job completes
+      setTimeout(async () => {
+        await onRefreshSite();
+        setAnalyzing(false);
+      }, 5000);
+    } catch {
+      setAnalyzing(false);
+    }
+  };
+
+  const implementSuggestion = async (suggestion: GrowthSuggestion) => {
+    const key = suggestion.slug || suggestion.title;
+    setImplementing(key);
+    try {
+      await fetch(`/api/agency/sites/${site.id}/growth`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ suggestion }),
+      });
+      await onRefreshSite();
+    } catch {
+      // silent
+    } finally {
+      setImplementing(null);
+    }
+  };
+
+  const suggestions = site.growth_suggestions || [];
+  const priorityColors: Record<string, string> = {
+    high: 'bg-red-50 text-red-700 border-red-200',
+    medium: 'bg-amber-50 text-amber-700 border-amber-200',
+    low: 'bg-gray-50 text-gray-600 border-gray-200',
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Analyze button */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-indigo-500" />
+              Growth Engine
+            </h4>
+            <p className="text-xs text-gray-500 mt-1">
+              AI analyzes your site and suggests new pages to drive organic traffic.
+            </p>
+          </div>
+          <button
+            onClick={runAnalysis}
+            disabled={analyzing}
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition"
+          >
+            {analyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            Analyze with AI
+          </button>
+        </div>
+      </div>
+
+      {/* Suggestions */}
+      {suggestions.length > 0 && (
+        <div className="space-y-2">
+          <h4 className="text-sm font-semibold text-gray-900">
+            {suggestions.length} Suggestions
+          </h4>
+          {suggestions.map((s, i) => {
+            const key = s.slug || s.title;
+            return (
+              <div
+                key={i}
+                className={`bg-white rounded-xl border shadow-sm p-4 ${s.implemented ? 'opacity-60' : ''}`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-medium text-gray-900">{s.title}</p>
+                      <span className={`text-[10px] font-medium uppercase px-1.5 py-0.5 rounded border ${priorityColors[s.priority] || priorityColors.low}`}>
+                        {s.priority}
+                      </span>
+                      <span className="text-[10px] font-medium uppercase px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">
+                        {s.type.replace('_', ' ')}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">{s.description}</p>
+                    {s.estimatedVolume && (
+                      <p className="text-xs text-indigo-600 mt-1">~{s.estimatedVolume} searches/mo</p>
+                    )}
+                    {s.slug && <p className="text-xs text-gray-400 mt-0.5">{s.slug}</p>}
+                  </div>
+                  {s.implemented ? (
+                    <span className="shrink-0 text-xs font-medium text-green-600 bg-green-50 px-3 py-1.5 rounded-lg">
+                      Implemented
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => implementSuggestion(s)}
+                      disabled={implementing === key}
+                      className="shrink-0 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition disabled:opacity-50"
+                    >
+                      {implementing === key ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        'Implement'
+                      )}
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Deploy history */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+        <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+          <Rocket className="h-4 w-4 text-gray-400" />
+          Deploy History
+        </h4>
+        {deploysLoading ? (
+          <div className="flex items-center justify-center py-4">
+            <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+          </div>
+        ) : deploys.length === 0 ? (
+          <p className="text-xs text-gray-500">No deploys yet.</p>
+        ) : (
+          <div className="space-y-2">
+            {deploys.map((d) => (
+              <div key={d.id} className="flex items-center justify-between text-sm py-1.5 border-b border-gray-50 last:border-0">
+                <div className="flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${d.status === 'success' ? 'bg-green-500' : d.status === 'failed' ? 'bg-red-500' : 'bg-gray-400'}`} />
+                  <span className="text-gray-700 capitalize">{d.status}</span>
+                </div>
+                <span className="text-xs text-gray-400">
+                  {new Date(d.deployed_at).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Settings View ─────────────────────────────────────────────────────────────
+
+function SettingsView({ site, onRefreshSite, onDeleteSite }: {
+  site: SiteData;
+  onRefreshSite: () => Promise<void>;
+  onDeleteSite: () => void;
+}) {
+  const [form, setForm] = useState({
+    site_domain: site.site_domain || '',
+    ga4_id: site.ga4_id || '',
+    booking_url: site.booking_url || '',
+    white_label: site.white_label || false,
+    color_primary: site.color_primary || '#6366f1',
+    design_style: site.design_style || 'modern-dark',
+  });
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaved(false);
+    try {
+      const res = await fetch(`/api/agency/sites/${site.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      if (res.ok) {
+        await onRefreshSite();
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      }
+    } catch {
+      // silent
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm('Are you sure you want to delete this website? This cannot be undone.')) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/agency/sites/${site.id}`, { method: 'DELETE' });
+      if (res.ok) {
+        onDeleteSite();
+      }
+    } catch {
+      // silent
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const inputClass = 'w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none';
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 space-y-4">
+        <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+          <Settings className="h-4 w-4 text-gray-400" />
+          Site Settings
+        </h4>
+
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Custom Domain</label>
+          <input
+            type="text"
+            value={form.site_domain}
+            onChange={(e) => setForm((f) => ({ ...f, site_domain: e.target.value }))}
+            placeholder="example.com"
+            className={inputClass}
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">GA4 Measurement ID</label>
+          <input
+            type="text"
+            value={form.ga4_id}
+            onChange={(e) => setForm((f) => ({ ...f, ga4_id: e.target.value }))}
+            placeholder="G-XXXXXXXXXX"
+            className={inputClass}
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Booking URL</label>
+          <input
+            type="text"
+            value={form.booking_url}
+            onChange={(e) => setForm((f) => ({ ...f, booking_url: e.target.value }))}
+            placeholder="https://calendly.com/..."
+            className={inputClass}
+          />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="white-label"
+            checked={form.white_label}
+            onChange={(e) => setForm((f) => ({ ...f, white_label: e.target.checked }))}
+            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+          />
+          <label htmlFor="white-label" className="text-sm text-gray-700">White-label (remove branding)</label>
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Brand Color</label>
+          <div className="flex items-center gap-3">
+            <input
+              type="color"
+              value={form.color_primary}
+              onChange={(e) => setForm((f) => ({ ...f, color_primary: e.target.value }))}
+              className="h-9 w-14 rounded border border-gray-200 cursor-pointer"
+            />
+            <input
+              type="text"
+              value={form.color_primary}
+              onChange={(e) => setForm((f) => ({ ...f, color_primary: e.target.value }))}
+              className="w-28 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none font-mono"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Design Style</label>
+          <select
+            value={form.design_style}
+            onChange={(e) => setForm((f) => ({ ...f, design_style: e.target.value as DesignStyle }))}
+            className={inputClass}
+          >
+            <option value="modern-dark">Modern Dark</option>
+            <option value="clean-light">Clean Light</option>
+            <option value="bold">Bold</option>
+            <option value="minimal">Minimal</option>
+          </select>
+        </div>
+
+        <div className="flex items-center gap-3 pt-2">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition"
+          >
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            Save Settings
+          </button>
+          {saved && (
+            <span className="text-sm text-green-600 flex items-center gap-1">
+              <CheckCircle2 className="h-4 w-4" /> Saved
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Danger zone */}
+      <div className="bg-white rounded-xl border border-red-200 shadow-sm p-5">
+        <h4 className="text-sm font-semibold text-red-700 mb-2">Danger Zone</h4>
+        <p className="text-xs text-gray-500 mb-3">
+          Permanently delete this website and all its pages. This action cannot be undone.
+        </p>
+        <button
+          onClick={handleDelete}
+          disabled={deleting}
+          className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition"
+        >
+          {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+          Delete Website
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Overview View (original content) ──────────────────────────────────────────
+
+function OverviewView({
+  site,
+  siteUrl,
+  actionLoading,
+  handleAction,
+  setView,
+}: {
+  site: SiteData;
+  siteUrl: string | null;
+  actionLoading: string | null;
+  handleAction: (action: string) => void;
+  setView: (v: SubView) => void;
+}) {
+  // Growth card compat: support both new (title/description) and legacy (keyword/volume/action)
+  const suggestions = site.growth_suggestions;
+  const hasLegacy = suggestions && suggestions.length > 0 && !!suggestions[0].keyword;
+
+  return (
+    <div className="space-y-6">
+      {/* Page breakdown */}
+      <PageBreakdown pageCount={site.page_count} />
+
+      {/* Quick actions */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <button
+          onClick={() => handleAction('regenerate')}
+          disabled={!!actionLoading}
+          className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-gray-200 shadow-sm hover:border-indigo-300 hover:bg-indigo-50/50 transition-colors text-center disabled:opacity-50"
+        >
+          {actionLoading === 'regenerate' ? (
+            <Loader2 className="h-5 w-5 text-indigo-500 animate-spin" />
+          ) : (
+            <RefreshCw className="h-5 w-5 text-indigo-500" />
+          )}
+          <span className="text-xs font-medium text-gray-700">Regenerate</span>
+        </button>
+        <button
+          onClick={() => handleAction('redeploy')}
+          disabled={!!actionLoading}
+          className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-gray-200 shadow-sm hover:border-green-300 hover:bg-green-50/50 transition-colors text-center disabled:opacity-50"
+        >
+          {actionLoading === 'redeploy' ? (
+            <Loader2 className="h-5 w-5 text-green-500 animate-spin" />
+          ) : (
+            <Rocket className="h-5 w-5 text-green-500" />
+          )}
+          <span className="text-xs font-medium text-gray-700">Redeploy</span>
+        </button>
+        <button
+          onClick={() => setView('pages')}
+          className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-gray-200 shadow-sm hover:border-purple-300 hover:bg-purple-50/50 transition-colors text-center"
+        >
+          <PenLine className="h-5 w-5 text-purple-500" />
+          <span className="text-xs font-medium text-gray-700">Edit Pages</span>
+        </button>
+        <button
+          onClick={() => setView('settings')}
+          className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-gray-200 shadow-sm hover:border-amber-300 hover:bg-amber-50/50 transition-colors text-center"
+        >
+          <Link2 className="h-5 w-5 text-amber-500" />
+          <span className="text-xs font-medium text-gray-700">Domain</span>
+        </button>
+      </div>
+
+      {/* Growth Engine — supports both legacy and new format */}
+      {hasLegacy ? (
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-indigo-500" />
+              Growth Engine
+            </h4>
+            <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium">
+              {suggestions!.length} suggestions
+            </span>
+          </div>
+          <div className="space-y-2">
+            {suggestions!.map((suggestion, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between gap-3 p-3 rounded-lg border border-gray-100 hover:border-indigo-200 hover:bg-indigo-50/50 transition-colors"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm text-gray-900 font-medium truncate">
+                    &ldquo;{suggestion.keyword}&rdquo;
+                  </p>
+                  <p className="text-xs text-gray-500">{suggestion.volume} searches/mo</p>
+                </div>
+                <button
+                  onClick={() => setView('growth')}
+                  className="shrink-0 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  {suggestion.action}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+          <h4 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-indigo-500" />
+            Growth Engine
+          </h4>
+          {suggestions && suggestions.length > 0 ? (
+            <>
+              <p className="text-xs text-gray-500 mb-3">
+                {suggestions.length} growth suggestions available.
+              </p>
+              <button
+                onClick={() => setView('growth')}
+                className="text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors"
+              >
+                View Suggestions
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="text-xs text-gray-500">
+                Growth suggestions will appear here after your site has been live for a few weeks and Google
+                Search Console is connected.
+              </p>
+              <div className="mt-3 bg-indigo-50 border border-indigo-100 rounded-lg p-3">
+                <p className="text-xs text-indigo-700">
+                  The Growth Engine analyzes your search data and suggests new pages, FAQs, and blog
+                  posts to drive more organic traffic.
+                </p>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* SEO Health */}
+      <SEOHealthChecklist site={site} />
+    </div>
+  );
+}
+
 // ── Main WebsiteTab ───────────────────────────────────────────────────────────
 
 export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
   const [site, setSite] = useState<SiteData | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [view, setView] = useState<SubView>('overview');
 
   useEffect(() => {
     async function fetchSite() {
@@ -246,7 +949,6 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
         const res = await fetch(`/api/agency/sites?clientId=${clientId}`);
         if (res.ok) {
           const result = await res.json();
-          // API returns { ok: true, data: [...] }
           const sites = result.data || result;
           const siteData = Array.isArray(sites) ? sites[0] : sites;
           if (siteData && siteData.id) {
@@ -262,7 +964,7 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
     fetchSite();
   }, [clientId]);
 
-  const refreshSite = async () => {
+  const refreshSite = useCallback(async () => {
     const res = await fetch(`/api/agency/sites?clientId=${clientId}`);
     if (res.ok) {
       const result = await res.json();
@@ -270,7 +972,7 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
       const siteData = Array.isArray(sites) ? sites[0] : sites;
       if (siteData?.id) setSite(siteData);
     }
-  };
+  }, [clientId]);
 
   const handleAction = async (action: string) => {
     if (!site) return;
@@ -288,7 +990,6 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
       if (endpoint) {
         const res = await fetch(endpoint, { method: 'POST' });
         if (res.ok) {
-          // Poll for status update (build takes 60-120s)
           await new Promise(r => setTimeout(r, 3000));
           await refreshSite();
         }
@@ -320,7 +1021,7 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
 
   return (
     <div className="space-y-6">
-      {/* Error banner — shown when last action failed but site was previously live */}
+      {/* Error banner */}
       {site.status === 'error' && site.last_deployed_at && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
           <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
@@ -335,7 +1036,7 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
             disabled={!!actionLoading}
             className="shrink-0 text-xs font-medium bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg transition"
           >
-            {actionLoading === 'redeploy' ? 'Deploying…' : 'Redeploy Now'}
+            {actionLoading === 'redeploy' ? 'Deploying\u2026' : 'Redeploy Now'}
           </button>
         </div>
       )}
@@ -400,7 +1101,7 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
             <p className="text-xs text-gray-500">Industry</p>
           </div>
           <div>
-            <p className="text-sm font-medium text-gray-900">{site.design_style || '—'}</p>
+            <p className="text-sm font-medium text-gray-900">{site.design_style || '\u2014'}</p>
             <p className="text-xs text-gray-500">Design</p>
           </div>
           {site.ai_name && (
@@ -412,56 +1113,28 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
         </div>
       </div>
 
-      {/* Page breakdown */}
-      <PageBreakdown pageCount={site.page_count} />
+      {/* Sub-nav */}
+      <SubNav view={view} setView={setView} />
 
-      {/* Quick actions */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <button
-          onClick={() => handleAction('regenerate')}
-          disabled={!!actionLoading}
-          className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-gray-200 shadow-sm hover:border-indigo-300 hover:bg-indigo-50/50 transition-colors text-center disabled:opacity-50"
-        >
-          {actionLoading === 'regenerate' ? (
-            <Loader2 className="h-5 w-5 text-indigo-500 animate-spin" />
-          ) : (
-            <RefreshCw className="h-5 w-5 text-indigo-500" />
-          )}
-          <span className="text-xs font-medium text-gray-700">Regenerate</span>
-        </button>
-        <button
-          onClick={() => handleAction('redeploy')}
-          disabled={!!actionLoading}
-          className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-gray-200 shadow-sm hover:border-green-300 hover:bg-green-50/50 transition-colors text-center disabled:opacity-50"
-        >
-          {actionLoading === 'redeploy' ? (
-            <Loader2 className="h-5 w-5 text-green-500 animate-spin" />
-          ) : (
-            <Rocket className="h-5 w-5 text-green-500" />
-          )}
-          <span className="text-xs font-medium text-gray-700">Redeploy</span>
-        </button>
-        <Link
-          href={`/agency/website/${site.id}/editor`}
-          className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-gray-200 shadow-sm hover:border-purple-300 hover:bg-purple-50/50 transition-colors text-center"
-        >
-          <PenLine className="h-5 w-5 text-purple-500" />
-          <span className="text-xs font-medium text-gray-700">Edit Pages</span>
-        </Link>
-        <Link
-          href={`/agency/website/${site.id}/settings`}
-          className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-gray-200 shadow-sm hover:border-amber-300 hover:bg-amber-50/50 transition-colors text-center"
-        >
-          <Link2 className="h-5 w-5 text-amber-500" />
-          <span className="text-xs font-medium text-gray-700">Domain</span>
-        </Link>
-      </div>
-
-      {/* Growth Engine */}
-      <GrowthEngineCard suggestions={site.growth_suggestions} />
-
-      {/* SEO Health */}
-      <SEOHealthChecklist site={site} />
+      {/* View content */}
+      {view === 'overview' && (
+        <OverviewView
+          site={site}
+          siteUrl={siteUrl}
+          actionLoading={actionLoading}
+          handleAction={handleAction}
+          setView={setView}
+        />
+      )}
+      {view === 'pages' && <PagesView siteId={site.id} />}
+      {view === 'growth' && <GrowthView site={site} onRefreshSite={refreshSite} />}
+      {view === 'settings' && (
+        <SettingsView
+          site={site}
+          onRefreshSite={refreshSite}
+          onDeleteSite={() => setSite(null)}
+        />
+      )}
     </div>
   );
 }
