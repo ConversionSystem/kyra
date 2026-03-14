@@ -39,23 +39,38 @@ import { checkContentSimilarity } from './content-checker';
 
 // ---------- Constants ----------
 
-const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
+// Use OpenRouter if key is set; fall back to OpenAI directly
+const HAS_OPENROUTER = !!process.env.OPENROUTER_API_KEY;
+const API_URL = HAS_OPENROUTER
+  ? 'https://openrouter.ai/api/v1/chat/completions'
+  : 'https://api.openai.com/v1/chat/completions';
 const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY;
 
 const BATCH_SIZE = 8;
 const MAX_RETRIES = 3;
 const BASE_RETRY_DELAY_MS = 2000;
 
-// Model routing
-const MODELS = {
-  hero: 'anthropic/claude-sonnet-4-5',
-  service: 'openai/gpt-4o',
-  city: 'openai/gpt-4o',
-  cityService: 'openai/gpt-4o-mini',
-  faq: 'anthropic/claude-3-5-haiku',
-  blog: 'openai/gpt-4o-mini',
-  meta: 'anthropic/claude-3-5-haiku',
-} as const;
+// Model routing — OpenRouter uses "provider/model", OpenAI uses just "model"
+const MODELS = HAS_OPENROUTER
+  ? {
+      hero:        'anthropic/claude-sonnet-4-5',
+      service:     'openai/gpt-4o',
+      city:        'openai/gpt-4o',
+      cityService: 'openai/gpt-4o-mini',
+      faq:         'anthropic/claude-3-5-haiku',
+      blog:        'openai/gpt-4o-mini',
+      meta:        'anthropic/claude-3-5-haiku',
+    }
+  : {
+      // OpenAI fallback — all models via OpenAI directly
+      hero:        'gpt-4o',
+      service:     'gpt-4o',
+      city:        'gpt-4o',
+      cityService: 'gpt-4o-mini',
+      faq:         'gpt-4o-mini',
+      blog:        'gpt-4o-mini',
+      meta:        'gpt-4o-mini',
+    };
 
 const MAX_TOKENS = {
   hero: 2000,
@@ -624,7 +639,7 @@ async function callLLM(
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const res = await fetch(OPENROUTER_URL, {
+      const res = await fetch(API_URL, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${OPENROUTER_KEY}`,
