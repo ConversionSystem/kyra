@@ -3,33 +3,35 @@ import type { Metadata } from 'next';
 
 import PublicNav from '@/components/layout/public-nav';
 import PublicFooter from '@/components/layout/public-footer';
+import LaunchEventCapture from '@/components/landing/launch-event-capture';
+
 export const metadata: Metadata = {
-  title: 'Kyra @ Launch — OpenClaw Agency Platform | March 16 Demo',
-  description: 'Kyra turns OpenClaw into agency revenue. 60,000+ GHL agencies. One command center. Deploy in 5 minutes.',
+  title: 'Kyra @ Launch — The Agency Platform for OpenClaw | March 16',
+  description: 'Kyra turns OpenClaw into agency revenue. 60,000+ GHL agencies. One command center. Deploy in 5 minutes. See the demo March 16.',
 };
 
 const PLANS = [
   {
-    name: 'Lite',
+    name: 'Starter',
     price: '$99',
     period: '/mo',
-    clients: 'Up to 3 clients',
-    features: ['3 AI worker deployments', '500 credits/mo included', 'Agency command center', 'GHL + SMS + web chat', 'BYOK (any AI model)'],
+    clients: 'Up to 5 clients',
+    features: ['5 AI worker deployments', 'Agency command center', 'GHL + SMS + web chat', 'BYOK (any AI model)', '500 credits/mo included'],
   },
   {
     name: 'Pro',
     price: '$249',
     period: '/mo',
-    clients: 'Up to 10 clients',
+    clients: 'Up to 15 clients',
     highlight: true,
-    features: ['10 AI worker deployments', '1,500 credits/mo included', 'White-label dashboard', 'Priority support', 'All channels'],
+    features: ['15 AI worker deployments', 'White-label billing (Stripe)', 'Priority support', 'All channels', '1,500 credits/mo included'],
   },
   {
     name: 'Scale',
     price: '$499',
     period: '/mo',
     clients: 'Up to 30 clients',
-    features: ['30 AI worker deployments', '2,500 credits/mo included', 'Custom onboarding', 'Dedicated success manager', 'SLA guarantee'],
+    features: ['30 AI worker deployments', 'Custom onboarding', 'Dedicated success manager', 'SLA guarantee', '2,500 credits/mo included'],
   },
 ];
 
@@ -42,12 +44,12 @@ const PRODUCT_CARDS = [
   {
     icon: '⚡',
     title: '5-Min Deployment',
-    desc: 'Connect a GHL sub-account. Pick an industry template. Done. 21 pre-built AI workers — dental, real estate, auto, cannabis, and more.',
+    desc: 'Connect a GHL sub-account. Pick an industry template. Done. 50+ pre-built AI workers — dental, real estate, auto, legal, HVAC, and more.',
   },
   {
     icon: '💳',
     title: 'White-Label Revenue',
-    desc: 'Set your price. Stripe collects it. Agencies are charging $500–$2,000/mo per client. 10 clients on Pro = $9,970/mo in new recurring revenue.',
+    desc: 'Set your price. Stripe collects it. Agencies charge $500–$2,000/mo per client. 10 clients on Pro = nearly $10k/mo in new recurring revenue.',
   },
   {
     icon: '🔑',
@@ -61,41 +63,44 @@ export default function March16Page() {
     <div className="min-h-screen bg-white text-slate-900">
       <PublicNav />
 
-      {/* ── Header ───────────────────────────────────────────────────────── */}
-      <div className="border-b border-slate-200 py-4">
-        <div className="max-w-4xl mx-auto px-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center font-black text-sm text-white">
-              K
-            </div>
-            <span className="font-bold text-lg text-indigo-600 tracking-tight">Kyra</span>
-          </div>
-          <span className="text-sm text-slate-500 font-medium">
-            Kyra × Launch · March 16–17, San Francisco
+      {/* ── Event header bar ─────────────────────────────────────────────── */}
+      <div className="bg-indigo-600 text-white py-2.5">
+        <div className="max-w-4xl mx-auto px-4 flex items-center justify-center gap-3 text-sm font-medium">
+          <span className="inline-flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse inline-block" />
+            Live demo · March 16–17, San Francisco
           </span>
+          <span className="hidden sm:block text-indigo-300">·</span>
+          <span className="hidden sm:block text-indigo-200">Jason Calacanis Launch Event</span>
         </div>
       </div>
 
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
-      <section className="max-w-4xl mx-auto px-4 pt-20 pb-16 text-center">
+      <section className="max-w-4xl mx-auto px-4 pt-16 pb-20 text-center">
         <div className="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-200 rounded-full px-4 py-1.5 text-sm font-medium text-indigo-700 mb-8">
-          OpenClaw Agency Platform · Launch Event Demo
+          OpenClaw Agency Platform · Built for GHL Agencies
         </div>
 
         <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-[1.05] mb-6 tracking-tight">
-          The platform that turns OpenClaw into agency revenue.
+          The platform that turns OpenClaw<br className="hidden sm:block" /> into agency revenue.
         </h1>
 
-        <p className="text-slate-500 text-xl leading-relaxed mb-12 max-w-2xl mx-auto">
-          60,000 GHL agencies need this. None of them can build it themselves. We did.
+        <p className="text-slate-500 text-xl leading-relaxed mb-10 max-w-2xl mx-auto">
+          60,000 GHL agencies need this. None of them can build it themselves. We did — and it deploys in 5 minutes.
         </p>
 
+        {/* Email capture */}
+        <div className="mb-12">
+          <p className="text-slate-600 font-semibold mb-4">Get early access after the demo 👇</p>
+          <LaunchEventCapture source="march16_launch" />
+        </div>
+
         {/* 3 Big Stat Cards */}
-        <div className="grid sm:grid-cols-3 gap-6">
+        <div className="grid sm:grid-cols-3 gap-4">
           {[
-            { value: '60,000+', label: 'GHL agencies needing this', sub: 'The exact audience at Launch' },
-            { value: 'Real-world', label: 'Deployments powering revenue', sub: 'Based on prior client work (pre-Kyra)' },
-            { value: '5 min', label: 'To deploy a new AI worker', sub: 'Template → live, instantly' },
+            { value: '60,000+', label: 'GHL agencies in the market', sub: 'The exact audience at Launch' },
+            { value: '50+', label: 'Industry AI templates', sub: 'Dental, legal, auto, HVAC & more' },
+            { value: '< 5 min', label: 'To deploy a new AI worker', sub: 'Template → live, instantly' },
           ].map((s) => (
             <div key={s.label} className="border border-slate-200 rounded-2xl p-6 text-center">
               <p className="text-4xl font-black text-indigo-600 mb-1">{s.value}</p>
@@ -202,6 +207,10 @@ export default function March16Page() {
               </div>
             ))}
           </div>
+
+          <p className="text-center text-slate-500 text-sm mt-8">
+            All plans: 14-day free trial · No credit card required · Cancel anytime
+          </p>
         </div>
       </section>
 
@@ -209,14 +218,29 @@ export default function March16Page() {
       <section className="py-20">
         <div className="max-w-3xl mx-auto px-4 text-center">
           <h2 className="text-3xl sm:text-4xl font-black mb-6">
-            Why we want 5 minutes on March 16
+            Why we&apos;re at Launch on March 16
           </h2>
           <p className="text-slate-500 text-lg leading-relaxed mb-6">
-            Jason's audience is our customer. The TWIST community, Clawhub, the OpenClaw Discord — these are GHL agency owners who understand the underlying technology and are actively looking for the platform layer to scale it.
+            Jason&apos;s audience is our customer. The TWIST community, Clawhub, the OpenClaw Discord — these are GHL agency owners who understand the underlying technology and are actively looking for the platform layer to scale it.
           </p>
           <p className="text-slate-500 text-lg leading-relaxed">
-            One demo at Launch reaches exactly the right people. We don't need a broad audience — we need a concentrated one. This is that moment.
+            One demo at Launch reaches exactly the right people. We don&apos;t need a broad audience — we need a concentrated one. This is that moment.
           </p>
+        </div>
+      </section>
+
+      {/* ── Bottom CTA ───────────────────────────────────────────────────── */}
+      <section className="bg-indigo-600 py-20">
+        <div className="max-w-2xl mx-auto px-4 text-center">
+          <h2 className="text-3xl sm:text-4xl font-black text-white mb-4">
+            Get early access.
+          </h2>
+          <p className="text-indigo-200 text-lg mb-8">
+            Drop your email and we&apos;ll reach out right after the demo.
+          </p>
+          <div className="bg-white rounded-2xl p-8 shadow-xl">
+            <LaunchEventCapture source="march16_launch_bottom" />
+          </div>
         </div>
       </section>
 
@@ -237,23 +261,23 @@ export default function March16Page() {
         </div>
       </section>
 
-      {/* ── CTAs ─────────────────────────────────────────────────────────── */}
+      {/* ── Live demo CTA ────────────────────────────────────────────────── */}
       <section className="py-20">
         <div className="max-w-2xl mx-auto px-4 text-center">
           <h2 className="text-3xl font-black mb-4">See it for yourself.</h2>
-          <p className="text-slate-500 mb-8">Watch a live 5-minute demo or reach out directly.</p>
+          <p className="text-slate-500 mb-8">Try a live interactive demo — no signup required.</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/demo/dental"
               className="inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 transition text-white font-bold text-lg px-8 py-4 rounded-xl"
             >
-              Watch live demo →
+              Try live demo →
             </Link>
             <a
-              href="mailto:angel@conversionsystem.com"
+              href="https://kyra.conversionsystem.com/signup/agency"
               className="inline-flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 transition text-slate-900 font-semibold text-lg px-8 py-4 rounded-xl"
             >
-              angel@conversionsystem.com
+              Start free trial
             </a>
           </div>
         </div>
@@ -262,7 +286,10 @@ export default function March16Page() {
       {/* ── Footer ───────────────────────────────────────────────────────── */}
       <div className="border-t border-slate-200 py-6 text-center">
         <p className="text-slate-400 text-sm">
-          Kyra by Conversion System · Powered by OpenClaw · <a href="mailto:angel@conversionsystem.com" className="hover:text-slate-600 transition">angel@conversionsystem.com</a>
+          Kyra by Conversion System · Powered by OpenClaw ·{' '}
+          <a href="mailto:angel@conversionsystem.com" className="hover:text-slate-600 transition">
+            angel@conversionsystem.com
+          </a>
         </p>
       </div>
       <PublicFooter />
