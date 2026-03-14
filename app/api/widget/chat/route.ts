@@ -25,7 +25,22 @@ import {
   getLeadCapturePrompt,
 } from '@/lib/chat/lead-capture';
 import { deductCredits, requireCredits } from '@/lib/billing/credit-engine';
-import { resolveClientGateway } from '@/lib/ovh/provisioner';
+import OpenAI from 'openai';
+
+// Direct LLM client for widget chat — bypasses OpenClaw gateway which has agency persona/SOUL.md
+// Widget visitors should NEVER interact with the agency owner's AI persona
+function getDirectLLMClient() {
+  const openrouterKey = process.env.OPENROUTER_API_KEY;
+  if (openrouterKey) {
+    return new OpenAI({
+      baseURL: 'https://openrouter.ai/api/v1',
+      apiKey: openrouterKey,
+    });
+  }
+  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+}
+
+const WIDGET_MODEL = 'openai/gpt-4o-mini'; // Fast, cheap, good enough for customer service
 
 // CORS headers required on EVERY response — the widget is embedded on external sites
 const CORS = {
@@ -104,16 +119,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Client AI not active' }, { status: 403, headers: CORS });
   }
 
-  // Use resolveClientGateway to get a fresh read of the gateway URL/token/status.
-  // Falls back gracefully if the DB check shows the container isn't ready.
-  const gateway = await resolveClientGateway(clientId);
-  if (!gateway) {
-    return NextResponse.json({ error: 'AI not available' }, { status: 503, headers: CORS });
-  }
-
-  const liveGatewayUrl = gateway.url;
-  const liveGatewayToken = gateway.token;
-
   // ── Credit check ──────────────────────────────────────────────────────────
   const creditCheck = await requireCredits(client.agency_id, 'chat.message');
   if (!creditCheck.allowed) {
@@ -163,39 +168,25 @@ export async function POST(request: NextRequest) {
     leadCapturePrompt,
   ].filter(Boolean).join('\n');
 
-  // ── Call AI Gateway ────────────────────────────────────────────────────────
+  // ── Call LLM directly (bypasses OpenClaw gateway + agency persona) ─────────
+  // Widget visitors are CUSTOMERS — they should talk to a business-specific assistant,
+  // NOT the agency's OpenClaw container which has SOUL.md / CEO persona.
   let aiResponse = '';
   try {
-    const chatRes = await fetch(`${liveGatewayUrl}/v1/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${liveGatewayToken}`,
-      },
-      body: JSON.stringify({
-        model: 'openai/gpt-4o-mini',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          // Inject conversation history so AI has context (last 10 turns)
-          ...(Array.isArray(history) ? history.slice(-10) : []),
-          { role: 'user', content: message.trim() },
-        ],
-        stream: false,
-      }),
-      signal: AbortSignal.timeout(25_000),
+    const llm = getDirectLLMClient();
+    const chatRes = await llm.chat.completions.create({
+      model: WIDGET_MODEL,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        // Inject conversation history so AI has context (last 10 turns)
+        ...(Array.isArray(history) ? (history as Array<{role: 'user'|'assistant', content: string}>).slice(-10) : []),
+        { role: 'user', content: message.trim() },
+      ],
     });
-
-    if (!chatRes.ok) {
-      const errText = await chatRes.text().catch(() => '');
-      console.error(`[widget/chat] Gateway error ${chatRes.status}: ${errText.slice(0, 200)}`);
-      return NextResponse.json({ error: 'AI unavailable' }, { status: 503, headers: CORS });
-    }
-
-    const data = await chatRes.json();
-    aiResponse = data?.choices?.[0]?.message?.content || '';
+    aiResponse = chatRes.choices[0]?.message?.content || '';
   } catch (err: unknown) {
     const errMsg = err instanceof Error ? err.message : String(err);
-    console.error(`[widget/chat] Gateway timeout/error: ${errMsg}`);
+    console.error(`[widget/chat] LLM error: ${errMsg}`);
     return NextResponse.json({ error: 'AI unavailable' }, { status: 503, headers: CORS });
   }
 
