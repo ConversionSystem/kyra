@@ -625,7 +625,7 @@ function StepServiceArea({
       <div className="space-y-4">
         <div>
           <p className="text-sm font-medium text-gray-700 mb-2">
-            Nearby cities <span className="text-gray-400 font-normal">(max 6 recommended)</span>
+            Nearby cities <span className="text-gray-400 font-normal">(suggestions — add your actual service cities below)</span>
           </p>
           <div className="flex flex-wrap gap-2">
             {nearbyCities.map((city) => {
@@ -1710,6 +1710,7 @@ export default function WebsiteBuilderWizard() {
             license: data.licenseNumber,
             existing_website: data.existingWebsite,
             rating: data.googleRating ? parseFloat(data.googleRating) : null,
+            google_rating: data.googleRating ? parseFloat(data.googleRating) : null,
             review_count: data.reviewCount ? parseInt(data.reviewCount) : null,
             ...(clientIdParam ? { client_id: clientIdParam } : {}),
           }),
@@ -1740,6 +1741,7 @@ export default function WebsiteBuilderWizard() {
           body.years_in_business = data.yearsInBusiness ? parseInt(data.yearsInBusiness) : null;
           body.license = data.licenseNumber;
           body.rating = data.googleRating ? parseFloat(data.googleRating) : null;
+          body.google_rating = data.googleRating ? parseFloat(data.googleRating) : null;
           body.review_count = data.reviewCount ? parseInt(data.reviewCount) : null;
         } else if (currentStep === 2) {
           body.services = data.services.map((s) => ({
@@ -1793,7 +1795,7 @@ export default function WebsiteBuilderWizard() {
             }
           }
         } else if (currentStep === 5) {
-          body.ai_name = data.aiName;
+          body.ai_name = data.aiName.trim() || data.businessName || 'Your AI Assistant';
           body.ai_tone = data.aiTone;
           body.ai_capabilities = data.aiCapabilities;
           body.hours = {
@@ -1843,13 +1845,20 @@ export default function WebsiteBuilderWizard() {
         .slice(0, 30);
       const subdomain = `${slug}.sites.kyra.conversionsystem.com`;
 
-      // Trigger generation and set subdomain in parallel
-      fetch(`/api/agency/sites/${data.siteId}/generate`, { method: 'POST' }).catch(() => {});
-      fetch(`/api/agency/sites/${data.siteId}`, {
+      // IMPORTANT: PATCH subdomain FIRST, then generate.
+      // The content engine reads site_subdomain from DB to determine the domain.
+      // If generate starts before PATCH completes, site_subdomain is null → build fails.
+      await fetch(`/api/agency/sites/${data.siteId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ site_subdomain: subdomain }),
-      }).catch(() => {});
+      });
+      // Now trigger generation — domain is guaranteed to be in DB
+      fetch(`/api/agency/sites/${data.siteId}/generate`, { method: 'POST' }).catch(() => {});
+    }
+    // Auto-add primary city to selectedCities when reaching step 3
+    if (next === 3 && data.city && !data.selectedCities.includes(data.city)) {
+      setData(prev => ({ ...prev, selectedCities: [prev.city, ...prev.selectedCities].filter(Boolean) }));
     }
     setStep(next);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1871,7 +1880,7 @@ export default function WebsiteBuilderWizard() {
       case 4:
         return true; // All brand settings have defaults
       case 5:
-        return !!data.aiName.trim();
+        return true; // aiName optional
       default:
         return true;
     }
