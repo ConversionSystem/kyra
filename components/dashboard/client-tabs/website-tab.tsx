@@ -108,7 +108,8 @@ function StatusBadge({ status }: { status: SiteData['status'] }) {
 // ── SEO Health Checklist ──────────────────────────────────────────────────────
 
 function SEOHealthChecklist({ site }: { site: SiteData }) {
-  const isDeployed = site.status === 'live' || (site.status === 'error' && !!site.last_deployed_at);
+  // Site has been deployed before — SEO infrastructure is in place
+  const isDeployed = !!site.last_deployed_at || site.status === 'live';
   const checks = [
     { label: `Sitemap (${site.page_count} URLs)`, ok: isDeployed },
     { label: 'Schema markup (LocalBusiness + FAQ)', ok: isDeployed },

@@ -40,7 +40,6 @@ import {
   Star,
   Gift,
   Cpu,
-  Globe,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AgencySettings } from '@/lib/agency/types';
@@ -68,7 +67,6 @@ const navSections: NavSection[] = [
     items: [
       { label: 'Mission Control', href: '/agency', icon: Activity },
       { label: 'Clients', href: '/agency/clients', icon: Users },
-      { label: 'All Sites', href: '/agency/website', icon: Globe },
     ],
   },
   // CRM now lives inside each client's dashboard (CRM tab)
