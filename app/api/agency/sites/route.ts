@@ -77,6 +77,29 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // Clean up old ghost drafts for this client before creating a new one
+  if (body.client_id) {
+    await supabase
+      .from('client_sites')
+      .delete()
+      .eq('agency_id', auth.data.agency.id)
+      .eq('client_id', body.client_id)
+      .eq('status', 'draft');
+    // If a live site already exists, return it instead of creating a duplicate
+    const { data: liveSite } = await supabase
+      .from('client_sites')
+      .select('*')
+      .eq('agency_id', auth.data.agency.id)
+      .eq('client_id', body.client_id)
+      .eq('status', 'live')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (liveSite) {
+      return NextResponse.json({ ok: true, data: liveSite });
+    }
+  }
+
   const { data: site, error } = await supabase
     .from('client_sites')
     .insert({
