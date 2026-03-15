@@ -63,18 +63,11 @@ export async function POST(
     await supabase.from('client_conversations').insert({
       client_id: clientId,
       agency_id: agencyId,
-      role: 'user',
-      content: summary,
       channel: 'website',
-      contact_name: name,
-      contact_phone: phone,
-      contact_email: email || null,
-      metadata: {
-        lead: true,
-        serviceType: serviceType || null,
-        source: source || 'website-form',
-        businessName: businessName || client.name,
-      },
+      user_message: summary,
+      ai_response: '',   // NOT NULL constraint — use empty string for form leads (no AI reply)
+      session_id: `form:${clientId}:${Date.now()}`,
+      source_url: source || 'website-form',
     });
 
     // 2. Upsert CRM contact (creates or updates by phone/email)
