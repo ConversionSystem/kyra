@@ -43,7 +43,7 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
 
   const { data: contacts, count } = await supabase
     .from('crm_contacts')
-    .select('id, first_name, last_name, email, phone, status, created_at, source_url, custom_fields', { count: 'exact' })
+    .select('id, first_name, last_name, email, phone, stage, source, created_at, custom_fields', { count: 'exact' })
     .eq('client_id', site.client_id)
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);

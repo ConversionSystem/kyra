@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { waitUntil } from '@vercel/functions';
 import { requireAgencyMember } from '@/lib/agency/middleware';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { generateSiteContent } from '@/lib/sites/content-engine';
 import type { WizardData } from '@/lib/sites/types';
+
+// Allow up to 5 min for auto-generate (used by bulk generation)
+export const maxDuration = 300;
 
 /**
  * GET /api/agency/sites
@@ -140,11 +144,14 @@ export async function POST(request: NextRequest) {
   }
 
   // Optional: auto-trigger content generation (used by bulk generation)
+  // Uses waitUntil so Vercel keeps the function alive after response is sent
   const autoGenerate = (body as Record<string, unknown>).auto_generate === true;
   if (autoGenerate) {
-    generateSiteContent(site.id).catch((err) => {
-      console.error(`[sites] Auto-generate failed for ${site.id}:`, err);
-    });
+    waitUntil(
+      generateSiteContent(site.id).catch((err) => {
+        console.error(`[sites] Auto-generate failed for ${site.id}:`, err);
+      })
+    );
   }
 
   return NextResponse.json({ ok: true, data: site }, { status: 201 });
