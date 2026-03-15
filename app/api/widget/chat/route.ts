@@ -112,11 +112,19 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (dbErr || !client) {
-    return NextResponse.json({ error: 'Client not found' }, { status: 404, headers: CORS });
+    // Return a graceful fallback response instead of a hard error
+    // (Visitor still gets a reply even if the client config is missing)
+    return NextResponse.json({
+      response: "Hi! Thanks for reaching out. Our team will get back to you shortly. You can also call us directly for immediate assistance.",
+      sessionId: null,
+    }, { headers: CORS });
   }
 
   if (client.status !== 'active' && client.status !== 'setup') {
-    return NextResponse.json({ error: 'Client AI not active' }, { status: 403, headers: CORS });
+    return NextResponse.json({
+      response: "Hi! Thanks for your message. We'll be in touch soon. Feel free to call us if you need immediate help!",
+      sessionId: null,
+    }, { headers: CORS });
   }
 
   // ── Credit check ──────────────────────────────────────────────────────────
