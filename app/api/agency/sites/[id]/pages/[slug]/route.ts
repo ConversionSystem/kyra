@@ -113,15 +113,9 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ error: 'Failed to update page' }, { status: 500 });
   }
 
-  // Trigger a rebuild in the background if site is live (so edits go live)
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://kyra.conversionsystem.com';
-  const apiSecret = process.env.KYRA_API_SECRET || '';
-  if (apiSecret && result.site?.status === 'live') {
-    fetch(`${appUrl}/api/agency/sites/${siteId}/build-internal`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${apiSecret}`, 'Content-Type': 'application/json' },
-    }).catch(() => {}); // fire and forget
-  }
+  // NOTE: Rebuild is triggered explicitly by the user via the "Publish to Live Site" button
+  // which calls POST /api/agency/sites/[id]/build — do NOT auto-trigger here.
+  // Auto-triggering a full 5-min VPS build on every keystroke/save is too expensive.
 
   return NextResponse.json({ ok: true, data: page });
 }
