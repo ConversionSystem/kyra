@@ -26,12 +26,16 @@ import {
   ChevronDown,
   ChevronRight,
   Settings,
+  Phone,
+  Mail,
+  User,
+  MessageSquare,
 } from 'lucide-react';
 import type { SitePage, ContentSection, DesignStyle } from '@/lib/sites/types';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type SubView = 'overview' | 'pages' | 'growth' | 'settings';
+type SubView = 'overview' | 'pages' | 'leads' | 'growth' | 'settings';
 
 interface SiteData {
   id: string;
@@ -219,6 +223,7 @@ function NoSiteState({ clientId, clientName }: { clientId: string; clientName: s
 const SUB_VIEWS: { key: SubView; label: string }[] = [
   { key: 'overview', label: 'Overview' },
   { key: 'pages', label: 'Pages' },
+  { key: 'leads', label: 'Leads' },
   { key: 'growth', label: 'Growth' },
   { key: 'settings', label: 'Settings' },
 ];
@@ -454,6 +459,133 @@ function PagesView({ siteId }: { siteId: string }) {
           )}
         </div>
       ))}
+    </div>
+  );
+}
+
+// ── Leads View ────────────────────────────────────────────────────────────────
+
+interface LeadContact {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+  phone: string | null;
+  status: string | null;
+  created_at: string;
+  source_url: string | null;
+  custom_fields: Record<string, string> | null;
+}
+
+function LeadsView({ siteId }: { siteId: string }) {
+  const [leads, setLeads] = useState<LeadContact[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchLeads() {
+      try {
+        const res = await fetch(`/api/agency/sites/${siteId}/leads?limit=50`);
+        if (res.ok) {
+          const result = await res.json();
+          setLeads(result.data || []);
+          setTotal(result.total || 0);
+        }
+      } catch {
+        // silent
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchLeads();
+  }, [siteId]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <Loader2 className="h-6 w-6 text-indigo-500 animate-spin" />
+      </div>
+    );
+  }
+
+  if (leads.length === 0) {
+    return (
+      <div className="text-center py-16 bg-white border border-gray-200 rounded-2xl">
+        <div className="h-14 w-14 rounded-2xl bg-indigo-50 flex items-center justify-center mx-auto mb-4">
+          <User className="h-6 w-6 text-indigo-500" />
+        </div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">No leads yet</h3>
+        <p className="text-sm text-gray-500 max-w-xs mx-auto">
+          Leads from your contact form, hero form, and chat widget will appear here automatically.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-gray-900">{total} leads from this site</h3>
+        <span className="text-xs text-gray-400">Sorted by most recent</span>
+      </div>
+
+      <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+        <div className="divide-y divide-gray-100">
+          {leads.map((lead) => {
+            const name = [lead.first_name, lead.last_name].filter(Boolean).join(' ') || 'Anonymous';
+            const inquiry = lead.custom_fields?.inquiry || null;
+            const date = new Date(lead.created_at).toLocaleDateString('en-US', {
+              month: 'short', day: 'numeric', year: 'numeric'
+            });
+            return (
+              <div key={lead.id} className="flex items-start gap-4 p-4 hover:bg-gray-50 transition-colors">
+                <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
+                  <span className="text-sm font-semibold text-indigo-600">
+                    {name.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-semibold text-gray-900 truncate">{name}</p>
+                    <span className="text-xs text-gray-400 shrink-0">{date}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-3 mt-1">
+                    {lead.phone && (
+                      <a href={`tel:${lead.phone}`}
+                        className="flex items-center gap-1 text-xs text-gray-600 hover:text-indigo-600 transition-colors">
+                        <Phone className="h-3 w-3" />
+                        {lead.phone}
+                      </a>
+                    )}
+                    {lead.email && (
+                      <a href={`mailto:${lead.email}`}
+                        className="flex items-center gap-1 text-xs text-gray-600 hover:text-indigo-600 transition-colors">
+                        <Mail className="h-3 w-3" />
+                        {lead.email}
+                      </a>
+                    )}
+                  </div>
+                  {inquiry && (
+                    <p className="text-xs text-gray-500 mt-1 flex items-start gap-1">
+                      <MessageSquare className="h-3 w-3 mt-0.5 shrink-0" />
+                      <span className="truncate">{inquiry}</span>
+                    </p>
+                  )}
+                </div>
+                {lead.status && (
+                  <span className={`text-xs px-2 py-1 rounded-full shrink-0 font-medium ${
+                    lead.status === 'new' ? 'bg-green-100 text-green-700' :
+                    lead.status === 'contacted' ? 'bg-blue-100 text-blue-700' :
+                    'bg-gray-100 text-gray-600'
+                  }`}>
+                    {lead.status}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
@@ -1235,6 +1367,7 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
         />
       )}
       {view === 'pages' && <PagesView siteId={site.id} />}
+      {view === 'leads' && <LeadsView siteId={site.id} />}
       {view === 'growth' && <GrowthView site={site} onRefreshSite={refreshSite} />}
       {view === 'settings' && (
         <SettingsView
