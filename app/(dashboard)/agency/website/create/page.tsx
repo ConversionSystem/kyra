@@ -1178,6 +1178,89 @@ function StepAIPersonality({
           </div>
           <p className="text-xs text-gray-400 mt-1">Calendly, GHL, or any scheduling link</p>
         </div>
+
+        {/* Live chat widget preview */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            Live Preview — How it looks on your site
+          </label>
+          <div className="relative rounded-2xl overflow-hidden border border-gray-200 bg-gray-900"
+            style={{ minHeight: 280 }}>
+            {/* Mock site background */}
+            <div className="p-6 opacity-30">
+              <div className="h-4 bg-white/20 rounded w-1/2 mb-3" />
+              <div className="h-3 bg-white/10 rounded w-3/4 mb-2" />
+              <div className="h-3 bg-white/10 rounded w-2/3" />
+            </div>
+            {/* Chat widget */}
+            <div className="absolute bottom-4 right-4 flex flex-col items-end gap-3">
+              {/* Chat bubble */}
+              <div className="bg-white rounded-2xl shadow-2xl w-64 overflow-hidden border border-gray-100">
+                {/* Header */}
+                <div className="px-4 py-3 text-white text-sm font-semibold flex items-center gap-2"
+                  style={{ background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)' }}>
+                  <div className="h-7 w-7 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold">
+                    {(data.aiName || 'A').charAt(0)}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold leading-none">{data.aiName || 'Alex'}</p>
+                    <p className="text-[10px] text-white/70 leading-none mt-0.5">
+                      {data.businessName || 'Your Business'} • Online
+                    </p>
+                  </div>
+                  <div className="ml-auto h-2 w-2 rounded-full bg-green-400 animate-pulse" />
+                </div>
+                {/* Messages */}
+                <div className="p-3 space-y-2 bg-gray-50">
+                  <div className="flex gap-2 items-start">
+                    <div className="h-6 w-6 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-bold text-indigo-600 shrink-0">
+                      {(data.aiName || 'A').charAt(0)}
+                    </div>
+                    <div className="bg-white rounded-xl rounded-tl-sm px-3 py-2 text-xs text-gray-700 shadow-sm max-w-[160px]">
+                      {data.aiTone === 'casual'
+                        ? `Hey! 👋 How can I help?`
+                        : data.aiTone === 'friendly'
+                        ? `Hi there! How can I assist you today?`
+                        : `Hello! How may I assist you?`}
+                    </div>
+                  </div>
+                  {data.aiCapabilities.includes('book_appointments') && (
+                    <div className="flex gap-2 items-start">
+                      <div className="h-6 w-6 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-bold text-indigo-600 shrink-0">
+                        {(data.aiName || 'A').charAt(0)}
+                      </div>
+                      <div className="bg-white rounded-xl rounded-tl-sm px-3 py-2 text-xs text-gray-700 shadow-sm max-w-[160px]">
+                        I can book appointments — just let me know your availability!
+                      </div>
+                    </div>
+                  )}
+                </div>
+                {/* Input */}
+                <div className="px-3 pb-3 bg-gray-50">
+                  <div className="flex items-center gap-2 bg-white rounded-xl border border-gray-200 px-3 py-2">
+                    <span className="text-xs text-gray-400 flex-1">Type a message...</span>
+                    <div className="h-5 w-5 rounded-full bg-indigo-500 flex items-center justify-center">
+                      <svg className="h-2.5 w-2.5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M2 21l21-9L2 3v7l15 2-15 2v7z" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {/* Chat button */}
+              <div className="h-12 w-12 rounded-full flex items-center justify-center shadow-lg cursor-pointer"
+                style={{ background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)' }}>
+                <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+          <p className="text-xs text-gray-400 mt-2 text-center">
+            This widget is embedded on every page of your site — available 24/7
+          </p>
+        </div>
       </div>
     </div>
   );
