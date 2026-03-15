@@ -777,6 +777,61 @@ function StepPhotosBrand({
         </p>
       </div>
 
+      {/* Live brand preview mockup */}
+      <div className="mb-8 rounded-2xl overflow-hidden border border-gray-200 shadow-sm">
+        {/* Browser chrome */}
+        <div className="bg-gray-100 border-b border-gray-200 px-4 py-2.5 flex items-center gap-3">
+          <div className="flex gap-1.5">
+            <div className="w-3 h-3 rounded-full bg-red-400" />
+            <div className="w-3 h-3 rounded-full bg-yellow-400" />
+            <div className="w-3 h-3 rounded-full bg-green-400" />
+          </div>
+          <div className="flex-1 bg-white rounded-md px-3 py-1 text-xs text-gray-400 font-mono">
+            {data.businessName ? data.businessName.toLowerCase().replace(/\s+/g, '-') + '.kyra.com' : 'your-business.kyra.com'}
+          </div>
+        </div>
+        {/* Mock hero section */}
+        <div className="relative p-8" style={{ background: `linear-gradient(135deg, #111827 0%, #000 100%)` }}>
+          {/* Brand color accent */}
+          <div className="absolute top-0 right-0 w-48 h-48 rounded-full opacity-20 blur-3xl"
+            style={{ background: data.colorPrimary }} />
+          <div className="relative">
+            <div className="inline-flex items-center gap-2 rounded-full px-3 py-1 mb-4 text-xs font-medium"
+              style={{ background: `${data.colorPrimary}20`, color: data.colorPrimary, border: `1px solid ${data.colorPrimary}30` }}>
+              ⚡ {INDUSTRY_DEFAULTS[data.industry]?.label || 'Professional Services'}
+            </div>
+            <h3 className="text-2xl font-bold text-white mb-2">
+              {data.businessName || 'Your Business Name'}
+            </h3>
+            {data.tagline && (
+              <p className="text-gray-400 text-sm mb-4">{data.tagline}</p>
+            )}
+            <div className="flex gap-2 mt-4">
+              <div className="px-4 py-2 rounded-lg text-sm font-semibold text-white"
+                style={{ background: data.colorPrimary }}>
+                Call Now
+              </div>
+              <div className="px-4 py-2 rounded-lg text-sm font-medium text-white border border-white/20">
+                Get Quote
+              </div>
+            </div>
+          </div>
+        </div>
+        {/* Mock nav */}
+        <div className="bg-gray-900 px-6 py-3 flex items-center justify-between border-t border-white/10">
+          <span className="text-white text-sm font-bold"
+            style={{ color: data.colorPrimary }}>{data.businessName || 'Your Business'}</span>
+          <div className="flex gap-4">
+            {['Home', 'Services', 'Contact'].map(item => (
+              <span key={item} className="text-xs text-gray-500">{item}</span>
+            ))}
+          </div>
+        </div>
+        <div className="bg-gray-50 px-4 py-2 text-center text-xs text-gray-400">
+          Live preview — updates as you customize
+        </div>
+      </div>
+
       <div className="space-y-8">
         {/* Photo upload */}
         <div>
