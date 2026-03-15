@@ -81,16 +81,18 @@ export default function QuickStartPage() {
       // 4. Poll for live status
       setStatusMsg('Building your website…');
       const pollStart = Date.now();
-      const maxWait = 8 * 60 * 1000; // 8 min
+      const maxWait = 12 * 60 * 1000; // 12 min (generation ~3min + VPS build ~4min)
+      const resolvedId = id; // capture for use in catch
       await new Promise<void>((resolve, reject) => {
         const poll = setInterval(async () => {
           if (Date.now() - pollStart > maxWait) {
             clearInterval(poll);
-            reject(new Error('Build timed out — check dashboard for status'));
+            // Don't reset to form — redirect to dashboard so they can see status
+            reject(new Error('__TIMEOUT__'));
             return;
           }
           try {
-            const r = await fetch(`/api/agency/sites/${id}`);
+            const r = await fetch(`/api/agency/sites/${resolvedId}`);
             if (!r.ok) return;
             const { data: s } = await r.json();
             if (s.status === 'live') {
@@ -98,19 +100,33 @@ export default function QuickStartPage() {
               setSiteUrl(domain ? `https://${domain}` : '');
               clearInterval(poll);
               resolve();
+            } else if (s.status === 'error') {
+              clearInterval(poll);
+              reject(new Error('Build failed — check dashboard for details'));
             } else if (s.status === 'generating') {
-              setStatusMsg('AI is writing your content…');
+              setStatusMsg('AI is writing your content… (this takes 2–3 min)');
             } else if (s.status === 'building') {
-              setStatusMsg('Compiling and deploying…');
+              setStatusMsg('Compiling your site… (almost there!)');
+            } else if (s.status === 'deploying') {
+              setStatusMsg('Deploying to the web…');
             }
           } catch { /* retry */ }
-        }, 4000);
+        }, 5000);
       });
 
       setStage('live');
     } catch (err) {
+      const msg = (err as Error).message || '';
+      if (msg === '__TIMEOUT__') {
+        // Site is probably still building — redirect to dashboard instead of error
+        const dest = siteId
+          ? `/agency/clients/${clientIdParam || ''}?tab=website`
+          : '/agency/websites';
+        router.push(dest);
+        return;
+      }
       setStage('form');
-      setError((err as Error).message || 'Something went wrong. Please try again.');
+      setError(msg || 'Something went wrong. Please try again.');
     }
   }
 
@@ -194,20 +210,44 @@ export default function QuickStartPage() {
 
           <div className="bg-white/5 border border-white/10 rounded-2xl p-5 text-left">
             {[
-              { label: 'AI content generation', done: elapsedSec > 15 },
-              { label: 'Service & city pages', done: elapsedSec > 30 },
-              { label: 'SEO optimization', done: elapsedSec > 45 },
-              { label: 'Deploying to the web', done: elapsedSec > 90 },
-            ].map(({ label, done }) => (
+              {
+                label: 'AI content generation',
+                // Done when we move past generating stage (statusMsg changes to building)
+                done: statusMsg.includes('Compiling') || statusMsg.includes('Deploying') || statusMsg.includes('almost'),
+                active: statusMsg.includes('writing') || statusMsg.includes('content'),
+              },
+              {
+                label: 'Service & city pages',
+                done: statusMsg.includes('Compiling') || statusMsg.includes('Deploying') || statusMsg.includes('almost'),
+                active: statusMsg.includes('writing') || statusMsg.includes('content'),
+              },
+              {
+                label: 'Compiling & building',
+                done: statusMsg.includes('Deploying'),
+                active: statusMsg.includes('Compiling') || statusMsg.includes('almost'),
+              },
+              {
+                label: 'Deploying to the web',
+                done: false,
+                active: statusMsg.includes('Deploying'),
+              },
+            ].map(({ label, done, active }) => (
               <div key={label} className="flex items-center gap-3 py-2.5 border-b border-white/5 last:border-0">
                 {done
                   ? <CheckCircle className="h-4 w-4 text-green-400 shrink-0" />
-                  : <Loader2 className="h-4 w-4 text-gray-600 animate-spin shrink-0" />
+                  : active
+                  ? <Loader2 className="h-4 w-4 text-indigo-400 animate-spin shrink-0" />
+                  : <div className="h-4 w-4 rounded-full border border-white/20 shrink-0" />
                 }
-                <span className={`text-sm ${done ? 'text-gray-300' : 'text-gray-600'}`}>{label}</span>
+                <span className={`text-sm ${done ? 'text-green-300' : active ? 'text-white' : 'text-gray-600'}`}>
+                  {label}
+                </span>
               </div>
             ))}
           </div>
+          <p className="text-xs text-gray-600 mt-4 text-center">
+            This takes 4–8 minutes total. You can close this tab — we&apos;ll keep building.
+          </p>
         </div>
       </div>
     );
