@@ -3,6 +3,9 @@ import type { Metadata } from 'next';
 
 import PublicNav from '@/components/layout/public-nav';
 import PublicFooter from '@/components/layout/public-footer';
+import LaunchEventCapture from '@/components/landing/launch-event-capture';
+import LaunchCountdown from '@/components/landing/launch-countdown';
+
 export const metadata: Metadata = {
   title: 'Kyra @ Launch — OpenClaw Agency Platform | March 16 Demo',
   description: 'Kyra turns OpenClaw into agency revenue. Thousands of agencies. One command center. Deploy in 5 minutes.',
@@ -61,6 +64,20 @@ export default function March16Page() {
     <div className="min-h-screen bg-white text-slate-900">
       <PublicNav />
 
+      {/* ── Countdown bar ────────────────────────────────────────────────── */}
+      <div className="bg-indigo-600 text-white py-2.5">
+        <div className="max-w-4xl mx-auto px-4 flex items-center justify-center gap-3 text-sm font-medium">
+          <span className="inline-flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse inline-block" />
+            Live demo · March 16–17, San Francisco
+          </span>
+          <span className="hidden sm:block text-indigo-300">·</span>
+          <span className="hidden sm:inline-flex items-center gap-1 text-indigo-100">
+            Starts in&nbsp;<LaunchCountdown compact />
+          </span>
+        </div>
+      </div>
+
       {/* ── Header ───────────────────────────────────────────────────────── */}
       <div className="border-b border-slate-200 py-4">
         <div className="max-w-4xl mx-auto px-4 flex items-center justify-between">
@@ -86,9 +103,21 @@ export default function March16Page() {
           The platform that turns OpenClaw into agency revenue.
         </h1>
 
-        <p className="text-slate-500 text-xl leading-relaxed mb-12 max-w-2xl mx-auto">
+        <p className="text-slate-500 text-xl leading-relaxed mb-8 max-w-2xl mx-auto">
           Thousands of agencies need this. None of them can build it themselves. We did.
         </p>
+
+        {/* ── Countdown + email capture ──────────────────────────────────── */}
+        <div className="mb-12 flex flex-col items-center gap-5">
+          <div className="flex flex-col items-center gap-2">
+            <p className="text-xs text-slate-400 uppercase tracking-widest font-semibold">Demo starts in</p>
+            <LaunchCountdown />
+          </div>
+          <div className="w-full max-w-md">
+            <p className="text-slate-600 font-semibold mb-3 text-sm">Get early access — drop your email 👇</p>
+            <LaunchEventCapture source="march16_hero_countdown" />
+          </div>
+        </div>
 
         {/* 3 Big Stat Cards */}
         <div className="grid sm:grid-cols-3 gap-6">
@@ -234,6 +263,21 @@ export default function March16Page() {
           >
             angel@conversionsystem.com
           </a>
+        </div>
+      </section>
+
+      {/* ── Bottom email CTA ─────────────────────────────────────────────── */}
+      <section className="bg-indigo-600 py-20">
+        <div className="max-w-2xl mx-auto px-4 text-center">
+          <h2 className="text-3xl sm:text-4xl font-black text-white mb-4">
+            Get early access.
+          </h2>
+          <p className="text-indigo-200 text-lg mb-8">
+            Drop your email and we&apos;ll reach out right after the demo.
+          </p>
+          <div className="bg-white rounded-2xl p-8 shadow-xl">
+            <LaunchEventCapture source="march16_bottom_cta" />
+          </div>
         </div>
       </section>
 
