@@ -511,9 +511,9 @@ interface LeadContact {
   last_name: string | null;
   email: string | null;
   phone: string | null;
-  status: string | null;
+  stage: string | null;
+  source: string | null;
   created_at: string;
-  source_url: string | null;
   custom_fields: Record<string, string> | null;
 }
 
@@ -612,13 +612,14 @@ function LeadsView({ siteId }: { siteId: string }) {
                     </p>
                   )}
                 </div>
-                {lead.status && (
+                {lead.stage && (
                   <span className={`text-xs px-2 py-1 rounded-full shrink-0 font-medium ${
-                    lead.status === 'new' ? 'bg-green-100 text-green-700' :
-                    lead.status === 'contacted' ? 'bg-blue-100 text-blue-700' :
+                    lead.stage === 'lead' ? 'bg-green-100 text-green-700' :
+                    lead.stage === 'contact' ? 'bg-blue-100 text-blue-700' :
+                    lead.stage === 'customer' ? 'bg-purple-100 text-purple-700' :
                     'bg-gray-100 text-gray-600'
                   }`}>
-                    {lead.status}
+                    {lead.stage}
                   </span>
                 )}
               </div>
