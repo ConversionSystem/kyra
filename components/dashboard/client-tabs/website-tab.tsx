@@ -643,6 +643,28 @@ function GrowthView({ site, onRefreshSite }: { site: SiteData; onRefreshSite: ()
 
 // ── Settings View ─────────────────────────────────────────────────────────────
 
+function EmbedCodeCard({ clientId, siteName }: { clientId: string; siteName: string }) {
+  const [copied, setCopied] = useState(false);
+  const embedCode = `<script src="https://kyra.conversionsystem.com/api/widget/${clientId}/script" async></script>`;
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+      <h4 className="text-sm font-semibold text-gray-900 mb-1">Chat Widget Embed Code</h4>
+      <p className="text-xs text-gray-500 mb-3">
+        Add this to any website to embed {siteName}&apos;s AI chat widget.
+      </p>
+      <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 mb-3 font-mono text-xs text-gray-700 break-all">
+        {embedCode}
+      </div>
+      <button
+        onClick={() => { navigator.clipboard.writeText(embedCode); setCopied(true); setTimeout(() => setCopied(false), 2500); }}
+        className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+      >
+        {copied ? <><CheckCircle2 className="h-4 w-4" /> Copied!</> : <><Link2 className="h-4 w-4" /> Copy Embed Code</>}
+      </button>
+    </div>
+  );
+}
+
 function SettingsView({ site, onRefreshSite, onDeleteSite }: {
   site: SiteData;
   onRefreshSite: () => Promise<void>;
@@ -798,6 +820,11 @@ function SettingsView({ site, onRefreshSite, onDeleteSite }: {
           )}
         </div>
       </div>
+
+      {/* Widget embed code */}
+      {site.client_id && (
+        <EmbedCodeCard clientId={site.client_id} siteName={site.business_name} />
+      )}
 
       {/* Danger zone */}
       <div className="bg-white rounded-xl border border-red-200 shadow-sm p-5">
