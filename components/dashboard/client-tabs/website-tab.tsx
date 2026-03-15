@@ -615,14 +615,7 @@ function GrowthView({ site, onRefreshSite }: { site: SiteData; onRefreshSite: ()
     fetchDeploys();
   }, [site.id]);
 
-  // Auto-trigger analysis if site is live but has no suggestions yet
-  useEffect(() => {
-    const noSuggestions = !site.growth_suggestions || site.growth_suggestions.length === 0;
-    if (site.status === 'live' && noSuggestions && !analyzing) {
-      runAnalysis();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [site.id]);
+  // NOTE: Growth analysis is NOT auto-triggered — user clicks "Analyze" manually
 
   const runAnalysis = async () => {
     setAnalyzing(true);
@@ -809,6 +802,7 @@ function SettingsView({ site, onRefreshSite, onDeleteSite }: {
     white_label: site.white_label || false,
     color_primary: site.color_primary || '#6366f1',
     design_style: site.design_style || 'modern-dark',
+    ai_name: site.ai_name || '',
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -824,9 +818,13 @@ function SettingsView({ site, onRefreshSite, onDeleteSite }: {
         body: JSON.stringify(form),
       });
       if (res.ok) {
+        // If site is live, auto-redeploy so changes take effect
+        if (site.status === 'live') {
+          await fetch(`/api/agency/sites/${site.id}/build`, { method: 'POST' });
+        }
         await onRefreshSite();
         setSaved(true);
-        setTimeout(() => setSaved(false), 2000);
+        setTimeout(() => setSaved(false), 3000);
       }
     } catch {
       // silent
@@ -893,6 +891,18 @@ function SettingsView({ site, onRefreshSite, onDeleteSite }: {
           />
         </div>
 
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">AI Worker Name</label>
+          <input
+            type="text"
+            value={form.ai_name}
+            onChange={(e) => setForm((f) => ({ ...f, ai_name: e.target.value }))}
+            placeholder="Alex"
+            className={inputClass}
+          />
+          <p className="text-xs text-gray-400 mt-1">Name shown in the chat widget</p>
+        </div>
+
         <div className="flex items-center gap-2">
           <input
             type="checkbox"
@@ -943,11 +953,11 @@ function SettingsView({ site, onRefreshSite, onDeleteSite }: {
             className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition"
           >
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            Save Settings
+            {saving ? (site.status === 'live' ? 'Saving & Redeploying…' : 'Saving…') : 'Save & Redeploy'}
           </button>
           {saved && (
             <span className="text-sm text-green-600 flex items-center gap-1">
-              <CheckCircle2 className="h-4 w-4" /> Saved
+              <CheckCircle2 className="h-4 w-4" /> Saved — redeploying now
             </span>
           )}
         </div>
