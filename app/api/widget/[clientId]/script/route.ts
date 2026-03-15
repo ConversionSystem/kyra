@@ -41,12 +41,12 @@ export async function GET(
     .eq('id', clientId)
     .single();
 
-  if (!client || !['active', 'setup'].includes(client.status || '')) {
-    return new NextResponse('// Widget not available', { status: 404, headers: { 'Content-Type': 'application/javascript' } });
-  }
+  // Allow the widget to load even for inactive/missing clients
+  // Chat will return a graceful fallback message in that case
+  // This ensures the widget always renders on client sites
 
-  const cfg = (client.container_config as Record<string, unknown>) ?? {};
-  const widgetTitle = (cfg.widget_title as string) || `Chat with ${client.name}`;
+  const cfg = client ? ((client.container_config as Record<string, unknown>) ?? {}) : {};
+  const widgetTitle = (cfg.widget_title as string) || (client ? `Chat with ${client.name}` : 'Chat with us');
   const widgetColor = (cfg.widget_color as string) || '#6366f1'; // indigo default
   const widgetGreeting = (cfg.widget_greeting as string) || `Hi! 👋 How can I help you today?`;
   const widgetPoweredBy = cfg.widget_powered_by !== false; // default true
