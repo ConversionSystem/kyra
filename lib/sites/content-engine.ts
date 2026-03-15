@@ -16,6 +16,7 @@
 
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import type { ClientSite, SiteService, SiteCity, ContentSection, FaqItem } from './types';
+import { INDUSTRY_DEFAULTS } from './industry-defaults';
 import {
   homepagePrompt,
   aboutPrompt,
@@ -157,6 +158,27 @@ export async function generateSiteContent(
   }
 
   const clientSite = site as unknown as ClientSite;
+
+  // 1b. Auto-fill services + cities from industry defaults if missing (e.g. Quick Start)
+  const industryKey = (clientSite.industry || '').toLowerCase().replace(/\s+/g, '-');
+  const industryDefaults = INDUSTRY_DEFAULTS[industryKey];
+  if (!clientSite.services?.length && industryDefaults?.services?.length) {
+    clientSite.services = industryDefaults.services as SiteService[];
+    console.log(`[content-engine] Auto-filled ${clientSite.services.length} services from industry defaults (${industryKey})`);
+    // Persist to DB so build step has the services
+    await supabase.from('client_sites').update({ services: clientSite.services }).eq('id', siteId);
+  }
+  if (!clientSite.cities?.length && industryDefaults?.needsGeoPages && industryDefaults?.nearbyCities?.length && clientSite.address?.city) {
+    // Use primary city as the starting city
+    const primarySlug = clientSite.address.city.toLowerCase().replace(/[^a-z0-9]/g, '-');
+    clientSite.cities = [{ name: clientSite.address.city, slug: primarySlug, state: clientSite.address.state || '' }] as SiteCity[];
+    console.log(`[content-engine] Auto-filled primary city: ${clientSite.address.city}`);
+    await supabase.from('client_sites').update({ cities: clientSite.cities }).eq('id', siteId);
+  }
+  if (!clientSite.color_primary && industryDefaults?.colors?.primary) {
+    clientSite.color_primary = industryDefaults.colors.primary;
+    await supabase.from('client_sites').update({ color_primary: clientSite.color_primary }).eq('id', siteId);
+  }
 
   // 2. Update status to 'generating'
   await supabase
