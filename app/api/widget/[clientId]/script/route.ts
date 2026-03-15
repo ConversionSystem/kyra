@@ -198,7 +198,15 @@ export async function GET(
       greeted = true;
       addMessage('bot', GREETING);
     }
-    setTimeout(function() { if (inputEl) inputEl.focus(); }, 100);
+    setTimeout(function() {
+      if (inputEl) {
+        inputEl.focus();
+        // On mobile, re-apply layout after keyboard opens (slight delay for iOS)
+        if (window.innerWidth <= 600) {
+          setTimeout(applyMobileLayout, 350);
+        }
+      }
+    }, 100);
   }
 
   function closePanel() {
@@ -212,26 +220,35 @@ export async function GET(
 
   // ── Mobile sizing (JS-driven — more reliable than CSS media queries on iOS) ─
   function applyMobileLayout() {
-    var isMobile = window.innerWidth <= 520;
+    var isMobile = window.innerWidth <= 600;
     if (isMobile) {
-      // Bottom sheet: full width, anchored to bottom, max 60% of visible height
-      var vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-      var maxH = Math.min(460, Math.round(vh * 0.62));
+      // Use visualViewport to account for iOS keyboard shrinking the viewport
+      var vvp = window.visualViewport;
+      var vvpHeight = vvp ? vvp.height : window.innerHeight;
+      var vvpOffsetTop = vvp ? vvp.offsetTop : 0;
+      // Panel height: 62% of visible viewport, max 480px
+      var maxH = Math.min(480, Math.round(vvpHeight * 0.62));
+      // When keyboard is open, offsetTop > 0 — use fixed positioning relative to vvp
+      var bottomOffset = vvp ? (window.innerHeight - vvpOffsetTop - vvpHeight) : 0;
+      panel.style.position = 'fixed';
       panel.style.left = '0';
       panel.style.right = '0';
-      panel.style.bottom = '0';
-      panel.style.width = '100vw';
-      panel.style.maxWidth = '100vw';
+      panel.style.bottom = bottomOffset + 'px';
+      panel.style.top = 'auto';
+      panel.style.width = '100%';
+      panel.style.maxWidth = '100%';
       panel.style.height = maxH + 'px';
       panel.style.maxHeight = maxH + 'px';
       panel.style.borderRadius = '16px 16px 0 0';
-      // Move button up from bottom edge + safe area
-      btn.style.bottom = '80px';
+      // Keep button above panel
+      btn.style.bottom = (bottomOffset + maxH + 16) + 'px';
     } else {
       // Desktop: restore defaults
+      panel.style.position = 'fixed';
       panel.style.left = '';
-      panel.style.right = '24px';
+      panel.style.right = POSITION === 'bottom-left' ? '' : '24px';
       panel.style.bottom = '96px';
+      panel.style.top = 'auto';
       panel.style.width = '360px';
       panel.style.maxWidth = 'calc(100vw - 48px)';
       panel.style.height = '520px';
@@ -243,9 +260,10 @@ export async function GET(
 
   applyMobileLayout();
   window.addEventListener('resize', applyMobileLayout);
-  // Re-apply when keyboard opens/closes on iOS (visualViewport resize)
+  // Critical: re-apply when iOS keyboard opens/closes (changes visualViewport height)
   if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', applyMobileLayout);
+    window.visualViewport.addEventListener('resize', function() { applyMobileLayout(); });
+    window.visualViewport.addEventListener('scroll', function() { applyMobileLayout(); });
   }
 
   // ── Send ─────────────────────────────────────────────────────────────────────
