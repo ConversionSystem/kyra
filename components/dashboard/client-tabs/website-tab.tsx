@@ -1187,8 +1187,26 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
   }, [clientId]);
 
   // Poll for status updates while site is generating/building/deploying
+  // Auto-calls sync-status to self-heal if build finished on VPS but DB is stuck
   useEffect(() => {
     if (!site || !['generating', 'building', 'deploying'].includes(site.status)) return;
+
+    const siteId = site.id;
+
+    const syncStatus = async () => {
+      try {
+        const res = await fetch(`/api/agency/sites/${siteId}/sync-status`, { method: 'POST' });
+        if (res.ok) {
+          const result = await res.json();
+          if (result.healed) {
+            await refreshSite();
+            return true;
+          }
+        }
+      } catch { /* silent */ }
+      return false;
+    };
+
     const interval = setInterval(async () => {
       try {
         const res = await fetch(`/api/agency/sites?clientId=${clientId}`);
@@ -1202,10 +1220,22 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
       } catch {
         // Silently fail
       }
-    }, 4000);
-    const timeout = setTimeout(() => clearInterval(interval), 5 * 60 * 1000);
-    return () => { clearInterval(interval); clearTimeout(timeout); };
-  }, [site?.status, clientId]);
+    }, 5000);
+
+    // After 6 min, try sync-status to self-heal a stuck build
+    const healTimeout = setTimeout(async () => {
+      const healed = await syncStatus();
+      if (!healed) {
+        // Try once more after another 2 min
+        setTimeout(syncStatus, 2 * 60 * 1000);
+      }
+    }, 6 * 60 * 1000);
+
+    // Hard stop polling at 12 min
+    const stopTimeout = setTimeout(() => clearInterval(interval), 12 * 60 * 1000);
+
+    return () => { clearInterval(interval); clearTimeout(healTimeout); clearTimeout(stopTimeout); };
+  }, [site?.status, site?.id, clientId, refreshSite]);
 
   const handleAction = async (action: string) => {
     if (!site) return;
@@ -1254,6 +1284,39 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
 
   return (
     <div className="space-y-6">
+      {/* Deploying/building banner with self-heal button */}
+      {['deploying', 'building', 'generating'].includes(site.status) && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center gap-3">
+          <Loader2 className="h-5 w-5 text-blue-500 shrink-0 animate-spin" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-blue-800">
+              {site.status === 'generating' ? 'AI is generating content…' :
+               site.status === 'building' ? 'Compiling your site…' :
+               'Deploying to the web…'}
+            </p>
+            <p className="text-xs text-blue-600 mt-0.5">
+              This takes 4–8 minutes. If it&apos;s been longer, click &ldquo;Check if Live&rdquo;.
+            </p>
+          </div>
+          <button
+            onClick={async () => {
+              try {
+                const res = await fetch(`/api/agency/sites/${site.id}/sync-status`, { method: 'POST' });
+                const result = await res.json();
+                if (result.healed) {
+                  await refreshSite();
+                } else {
+                  await refreshSite();
+                }
+              } catch { /* silent */ }
+            }}
+            className="shrink-0 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg transition whitespace-nowrap"
+          >
+            Check if Live
+          </button>
+        </div>
+      )}
+
       {/* Error banner */}
       {site.status === 'error' && site.last_deployed_at && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
