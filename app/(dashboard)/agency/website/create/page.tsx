@@ -1911,72 +1911,122 @@ export default function WebsiteBuilderWizard() {
   };
 
   if (buildResult && buildResult.url) {
+    const totalPages =
+      1 + // home
+      1 + // about
+      1 + // contact
+      1 + // faq
+      1 + // reviews
+      data.services.length +
+      data.selectedCities.length +
+      data.selectedCities.length * Math.min(data.services.length, 3);
+
+    const clientMsg = `Hi! 🎉 Great news — your new AI-powered website is live!\n\n🌐 ${buildResult.url}\n\nWhat's included:\n✅ ${data.services.length} service pages (SEO-optimized)\n✅ ${data.selectedCities.length > 0 ? `${data.selectedCities.length} city pages` : 'Local area pages'}\n✅ AI chat widget — visitors can reach you 24/7\n✅ Lead capture forms\n✅ Google Maps + contact info\n\nLet me know if you'd like any changes!`;
+
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center p-6">
-        <div className="max-w-lg w-full text-center">
-          <div className="text-6xl mb-4">{'\uD83C\uDF89'}</div>
-          <h1 className="text-3xl font-bold text-white mb-2">Your site is live!</h1>
-          <p className="text-gray-400 mb-8">
-            {data.businessName || 'The site'} is now live and ready for visitors.
-          </p>
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
+        <div className="max-w-xl w-full">
+          {/* Hero celebration */}
+          <div className="text-center mb-8">
+            <div className="text-7xl mb-5 animate-bounce">🎉</div>
+            <h1 className="text-4xl font-bold text-white mb-3">
+              {data.businessName || 'Your site'} is live!
+            </h1>
+            <p className="text-gray-400 text-lg">
+              AI-powered website deployed and ready for customers.
+            </p>
+          </div>
+
+          {/* Stats row */}
+          <div className="grid grid-cols-4 gap-3 mb-6">
+            {[
+              { value: totalPages, label: 'Pages' },
+              { value: data.services.length, label: 'Services' },
+              { value: data.selectedCities.length || 1, label: 'Cities' },
+              { value: '24/7', label: 'AI Chat' },
+            ].map(({ value, label }) => (
+              <div key={label} className="bg-white/5 border border-white/10 rounded-2xl p-4 text-center">
+                <p className="text-2xl font-bold text-white mb-1">{value}</p>
+                <p className="text-xs text-gray-500">{label}</p>
+              </div>
+            ))}
+          </div>
 
           {/* URL card */}
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-4">
-            <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Live URL</p>
-            <p className="text-indigo-400 font-mono text-sm break-all mb-4">{buildResult.url}</p>
+          <div className="bg-indigo-950/60 border border-indigo-500/30 rounded-2xl p-5 mb-4">
+            <p className="text-xs text-indigo-400 uppercase tracking-wider mb-2 font-medium">🌐 Live URL</p>
+            <p className="text-indigo-300 font-mono text-sm break-all mb-4">{buildResult.url}</p>
             <div className="flex gap-2">
               <button
                 onClick={() => { navigator.clipboard.writeText(buildResult.url); setCopiedUrl(true); setTimeout(() => setCopiedUrl(false), 2500); }}
                 className="flex-1 border border-white/20 text-gray-300 rounded-xl py-2.5 text-sm hover:bg-white/5 transition"
               >
-                {copiedUrl ? '✓ Copied!' : 'Copy URL'}
+                {copiedUrl ? '✓ Copied!' : '📋 Copy URL'}
               </button>
               <a
                 href={buildResult.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 bg-indigo-600 text-white rounded-xl py-2.5 text-sm font-semibold hover:opacity-90 transition text-center"
+                className="flex-1 bg-indigo-600 text-white rounded-xl py-2.5 text-sm font-semibold hover:bg-indigo-500 transition text-center"
               >
-                Visit Site
+                Visit Site →
               </a>
             </div>
           </div>
 
+          {/* What's included checklist */}
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-5 mb-4">
+            <p className="text-xs text-gray-500 uppercase tracking-wider mb-3 font-medium">✅ What&apos;s included</p>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                `${data.services.length} service pages`,
+                'SEO-optimized content',
+                'AI chat widget (24/7)',
+                'Lead capture forms',
+                'Google Maps embed',
+                'Blog posts (2 articles)',
+                'FAQ schema markup',
+                'Mobile responsive',
+              ].map(item => (
+                <div key={item} className="flex items-center gap-2 text-sm text-gray-300">
+                  <span className="text-green-400 text-xs">✓</span>
+                  {item}
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* Share with client */}
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-6">
-            <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Share with client</p>
-            <p className="text-xs text-gray-600 mb-3">Ready-to-send message for your client</p>
-            <div className="bg-black/20 rounded-xl p-3 mb-3 text-left">
-              <p className="text-xs text-gray-400 leading-relaxed">
-                {`Hi! Great news — your new website is live! 🎉\n\n🌐 ${buildResult.url}\n\nYour site includes your services, contact info, and an AI chat widget so visitors can reach you instantly.`}
-              </p>
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-5 mb-6">
+            <p className="text-xs text-gray-500 uppercase tracking-wider mb-3 font-medium">📲 Send to your client</p>
+            <div className="bg-black/30 rounded-xl p-3 mb-3 text-left max-h-32 overflow-y-auto">
+              <p className="text-xs text-gray-400 leading-relaxed whitespace-pre-line">{clientMsg}</p>
             </div>
             <button
               onClick={() => {
-                navigator.clipboard.writeText(
-                  `Hi! Great news — your new website is live! 🎉\n\n🌐 ${buildResult.url}\n\nYour site includes your services, contact info, and an AI chat widget so visitors can reach you instantly. Let me know if you'd like any changes!`
-                );
+                navigator.clipboard.writeText(clientMsg);
                 setCopiedMsg(true);
                 setTimeout(() => setCopiedMsg(false), 2500);
               }}
-              className="w-full border border-white/20 text-gray-300 rounded-xl py-3 text-sm hover:bg-white/5 transition font-medium"
+              className="w-full bg-white/10 border border-white/20 text-gray-200 rounded-xl py-3 text-sm hover:bg-white/15 transition font-medium"
             >
-              {copiedMsg ? '✓ Message copied!' : '📋 Copy message for client'}
+              {copiedMsg ? '✓ Copied to clipboard!' : '📋 Copy client message'}
             </button>
           </div>
 
-          <div className="flex gap-4 justify-center">
+          {/* Actions */}
+          <div className="flex gap-3">
             <button
-              onClick={() => setBuildResult(null)}
-              className="text-gray-500 hover:text-gray-300 transition text-sm"
-            >
-              Review Pages
-            </button>
-            <button
-              onClick={() => router.push('/agency/clients')}
-              className="text-gray-500 hover:text-gray-300 transition text-sm"
+              onClick={() => router.push(clientIdParam ? `/agency/clients/${clientIdParam}?tab=website` : '/agency/clients')}
+              className="flex-1 bg-indigo-600 text-white rounded-xl py-3 text-sm font-semibold hover:bg-indigo-500 transition"
             >
               Go to Dashboard
+            </button>
+            <button
+              onClick={() => setBuildResult(null)}
+              className="px-4 border border-white/20 text-gray-400 rounded-xl py-3 text-sm hover:bg-white/5 transition"
+            >
+              Review
             </button>
           </div>
         </div>
