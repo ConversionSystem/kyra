@@ -483,6 +483,15 @@ function GrowthView({ site, onRefreshSite }: { site: SiteData; onRefreshSite: ()
     fetchDeploys();
   }, [site.id]);
 
+  // Auto-trigger analysis if site is live but has no suggestions yet
+  useEffect(() => {
+    const noSuggestions = !site.growth_suggestions || site.growth_suggestions.length === 0;
+    if (site.status === 'live' && noSuggestions && !analyzing) {
+      runAnalysis();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [site.id]);
+
   const runAnalysis = async () => {
     setAnalyzing(true);
     try {
@@ -830,6 +839,35 @@ function OverviewView({
 
   return (
     <div className="space-y-6">
+      {/* Live site preview card */}
+      {siteUrl && site.status === 'live' && (
+        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50">
+            <div className="flex items-center gap-2">
+              <div className="flex gap-1.5">
+                <div className="w-3 h-3 rounded-full bg-red-400" />
+                <div className="w-3 h-3 rounded-full bg-yellow-400" />
+                <div className="w-3 h-3 rounded-full bg-green-400" />
+              </div>
+              <span className="text-xs text-gray-500 font-mono ml-2">{siteUrl.replace('https://','')}</span>
+            </div>
+            <a href={siteUrl} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-1 text-xs text-indigo-600 hover:underline font-medium">
+              Open <ExternalLink className="h-3 w-3" />
+            </a>
+          </div>
+          <div className="relative" style={{ paddingTop: '56.25%' }}>
+            <iframe
+              src={siteUrl}
+              title={`${site.business_name} preview`}
+              className="absolute inset-0 w-full h-full border-0"
+              style={{ transform: 'scale(0.5)', transformOrigin: '0 0', width: '200%', height: '200%' }}
+              loading="lazy"
+            />
+          </div>
+        </div>
+      )}
+
       {/* Page breakdown */}
       <PageBreakdown pageCount={site.page_count} />
 
