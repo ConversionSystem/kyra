@@ -143,11 +143,26 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     })
     .eq('id', siteId);
 
-  // Fire-and-forget: generate the new page if it has a slug
+    // Generate the new page using waitUntil so Vercel keeps the function alive
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://kyra.conversionsystem.com';
+  const apiSecret = process.env.KYRA_API_SECRET || '';
+
   if (body.suggestion.slug && body.suggestion.type !== 'improve_page') {
-    generateGrowthPage(siteId, body.suggestion, supabase).catch((err) => {
-      console.error('[growth] Page generation failed:', err);
-    });
+    waitUntil(
+      generateGrowthPage(siteId, body.suggestion, supabase)
+        .then(async () => {
+          // After generating the page, trigger a rebuild so it goes live
+          if (apiSecret) {
+            await fetch(`${appUrl}/api/agency/sites/${siteId}/build-internal`, {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${apiSecret}`, 'Content-Type': 'application/json' },
+            }).catch(() => {});
+          }
+        })
+        .catch((err) => {
+          console.error('[growth] Page generation failed:', err);
+        })
+    );
   }
 
   return NextResponse.json({ ok: true, data: { implemented: true } });
