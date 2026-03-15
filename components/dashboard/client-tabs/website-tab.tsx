@@ -14,11 +14,13 @@ import {
   AlertTriangle,
   ArrowUpRight,
   Clock,
+  Users,
   TrendingUp,
   Search,
   Link2,
   Rocket,
   Sparkles,
+  Zap,
   Trash2,
   Save,
   ChevronDown,
@@ -33,6 +35,7 @@ type SubView = 'overview' | 'pages' | 'growth' | 'settings';
 
 interface SiteData {
   id: string;
+  client_id?: string | null;
   status: 'draft' | 'generating' | 'building' | 'deploying' | 'live' | 'error';
   business_name: string;
   industry: string;
@@ -189,15 +192,24 @@ function NoSiteState({ clientId, clientName }: { clientId: string; clientName: s
       </div>
       <h3 className="text-lg font-semibold text-gray-900 mb-2">No Website Yet</h3>
       <p className="text-sm text-gray-500 max-w-md mb-6">
-        Create an AI-powered website for {clientName} in under 5 minutes. SEO-optimized pages + trained AI worker — deployed instantly.
+        Create an AI-powered website for {clientName}. SEO-optimized, live HTTPS domain, AI chat widget — deployed in minutes.
       </p>
-      <Link
-        href={`/agency/website/create?clientId=${encodeURIComponent(clientName || '')}&cid=${clientId}`}
-        className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 transition-colors shadow-sm"
-      >
-        <Sparkles className="h-4 w-4" />
-        Build Website
-      </Link>
+      <div className="flex flex-col sm:flex-row gap-3">
+        <Link
+          href={`/agency/website/quick-start?clientId=${encodeURIComponent(clientName || '')}&cid=${clientId}`}
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition-colors shadow-sm"
+        >
+          <Zap className="h-4 w-4" />
+          Quick Start (3 fields)
+        </Link>
+        <Link
+          href={`/agency/website/create?clientId=${encodeURIComponent(clientName || '')}&cid=${clientId}`}
+          className="inline-flex items-center gap-2 px-5 py-2.5 border border-gray-200 bg-white text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors"
+        >
+          <Sparkles className="h-4 w-4" />
+          Full Wizard
+        </Link>
+      </div>
     </div>
   );
 }
@@ -1105,6 +1117,13 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
                 Visit Site
               </a>
             )}
+            <Link
+              href={`/agency/clients/${site.client_id || ''}/site-portal`}
+              className="flex items-center gap-1.5 text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 px-3 py-1.5 rounded-lg transition"
+            >
+              <Users className="h-3.5 w-3.5" />
+              Client View
+            </Link>
             <div className="flex items-center gap-1.5 text-xs text-gray-400">
               <Clock className="h-3.5 w-3.5" />
               {site.last_deployed_at
