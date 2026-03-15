@@ -96,6 +96,7 @@ export async function POST(
           .from('crm_contacts')
           .insert({
             agency_id: agencyId,
+            client_id: clientId,  // links to the Leads tab in the website dashboard
             first_name: nameParts[0] || name,
             last_name: nameParts.slice(1).join(' ') || '',
             email: email || null,
