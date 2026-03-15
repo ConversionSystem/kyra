@@ -259,6 +259,9 @@ function PagesView({ siteId }: { siteId: string }) {
     content_sections: [],
   });
   const [saving, setSaving] = useState(false);
+  const [savedSlug, setSavedSlug] = useState<string | null>(null);
+  const [publishing, setPublishing] = useState(false);
+  const [published, setPublished] = useState(false);
   const [regenerating, setRegenerating] = useState<string | null>(null);
   const [feedback, setFeedback] = useState('');
 
@@ -294,6 +297,8 @@ function PagesView({ siteId }: { siteId: string }) {
 
   const savePage = async (slug: string) => {
     setSaving(true);
+    setSavedSlug(null);
+    setPublished(false);
     try {
       const res = await fetch(`/api/agency/sites/${siteId}/pages/${encodeURIComponent(slug)}`, {
         method: 'PATCH',
@@ -306,11 +311,29 @@ function PagesView({ siteId }: { siteId: string }) {
       if (res.ok) {
         const result = await res.json();
         setPages((prev) => prev.map((p) => (p.slug === slug ? { ...p, ...result.data } : p)));
+        setSavedSlug(slug); // Show "Publish" button
       }
     } catch {
       // silent
     } finally {
       setSaving(false);
+    }
+  };
+
+  const publishSite = async () => {
+    setPublishing(true);
+    setPublished(false);
+    try {
+      const res = await fetch(`/api/agency/sites/${siteId}/build`, { method: 'POST' });
+      if (res.ok) {
+        setPublished(true);
+        setSavedSlug(null);
+        setTimeout(() => setPublished(false), 5000);
+      }
+    } catch {
+      // silent
+    } finally {
+      setPublishing(false);
     }
   };
 
@@ -423,7 +446,7 @@ function PagesView({ siteId }: { siteId: string }) {
                 </div>
               ))}
 
-              <div className="flex items-center gap-2 pt-2">
+              <div className="flex items-center gap-2 pt-2 flex-wrap">
                 <button
                   onClick={() => savePage(page.slug)}
                   disabled={saving}
@@ -432,6 +455,23 @@ function PagesView({ siteId }: { siteId: string }) {
                   {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
                   Save
                 </button>
+
+                {savedSlug === page.slug && !published && (
+                  <button
+                    onClick={publishSite}
+                    disabled={publishing}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition animate-pulse"
+                  >
+                    {publishing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Rocket className="h-3 w-3" />}
+                    {publishing ? 'Publishing…' : 'Publish to Live Site'}
+                  </button>
+                )}
+
+                {published && (
+                  <span className="text-xs text-green-600 flex items-center gap-1 font-medium">
+                    <CheckCircle2 className="h-3 w-3" /> Publishing — live in ~5 min
+                  </span>
+                )}
 
                 <div className="flex-1 flex items-center gap-2">
                   <input
