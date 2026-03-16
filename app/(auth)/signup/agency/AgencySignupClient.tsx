@@ -36,7 +36,7 @@ function AgencySignupPage() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [selectedPlan, setSelectedPlan] = useState<'starter' | 'pro' | 'scale'>('starter');
+  const [selectedPlan, setSelectedPlan] = useState<'free' | 'starter' | 'pro' | 'scale'>('free');
   const [agencyName, setAgencyName] = useState('');
   const [slug, setSlug] = useState('');
   const [slugEdited, setSlugEdited] = useState(false);
@@ -46,6 +46,7 @@ function AgencySignupPage() {
   const [emailSent, setEmailSent] = useState(false);
 
   const PLANS = [
+    { id: 'free' as const, name: 'Free', price: '$0', clients: '1 client', credits: 'Try Kyra free', free: true, badge: 'START HERE' },
     { id: 'starter' as const, name: 'Lite', price: '$99', clients: '3 clients', credits: '500 credits/mo' },
     { id: 'pro' as const, name: 'Pro', price: '$249', clients: '10 clients', credits: '1,500 credits/mo', popular: true },
     { id: 'scale' as const, name: 'Scale', price: '$499', clients: '30 clients', credits: '2,500 credits/mo' },
@@ -129,7 +130,14 @@ function AgencySignupPage() {
         referral_source: referralSource || undefined,
       });
 
-      // Immediately redirect to Stripe Checkout for the selected plan
+      // Free plan — skip Stripe, go straight to dashboard
+      if (selectedPlan === 'free') {
+        router.push('/agency?welcome=true');
+        router.refresh();
+        return;
+      }
+
+      // Paid plan — redirect to Stripe Checkout
       const checkoutRes = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -220,10 +228,10 @@ function AgencySignupPage() {
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2 bg-white/10 border border-white/10 rounded-full px-4 py-1.5 text-sm font-medium mb-6">
             <span className="h-2 w-2 rounded-full bg-green-400 animate-pulse inline-block" />
-            {fromAgency ? `Invited by ${fromAgency} — set up your agency in 2 minutes` : 'Plans from $99/mo — deploy your first AI worker today'}
+            {fromAgency ? `Invited by ${fromAgency} — set up your agency in 2 minutes` : 'Start free — no credit card needed'}
           </div>
           <h1 className="text-3xl sm:text-4xl font-black mb-3">
-            {step === 1 ? 'Deploy your first autonomous AI worker.' : step === 2 ? 'Pick your plan' : 'Name your agency'}
+            {step === 1 ? 'Deploy your first autonomous AI worker.' : step === 2 ? 'Pick your plan — or start free' : 'Name your agency'}
           </h1>
           <p className="text-slate-400 text-lg">
             {step === 1
@@ -319,15 +327,22 @@ function AgencySignupPage() {
                     type="button"
                     onClick={() => setSelectedPlan(plan.id)}
                     className={`w-full text-left rounded-2xl p-5 transition border-2 ${
-                      selectedPlan === plan.id
-                        ? 'bg-indigo-600/10 border-indigo-500/50'
-                        : 'bg-white/5 border-white/10 hover:border-white/20'
+                      plan.free
+                        ? selectedPlan === plan.id
+                          ? 'bg-green-600/15 border-green-500/60'
+                          : 'bg-green-600/5 border-green-500/30 hover:border-green-500/50'
+                        : selectedPlan === plan.id
+                          ? 'bg-indigo-600/10 border-indigo-500/50'
+                          : 'bg-white/5 border-white/10 hover:border-white/20'
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="flex items-center gap-2">
                           <h3 className="font-bold text-white">{plan.name}</h3>
+                          {plan.free && (
+                            <span className="bg-green-500/30 text-green-300 text-xs font-bold px-2 py-0.5 rounded-full">NO CARD NEEDED</span>
+                          )}
                           {plan.popular && (
                             <span className="bg-indigo-500/30 text-indigo-300 text-xs font-bold px-2 py-0.5 rounded-full">Popular</span>
                           )}
@@ -335,7 +350,7 @@ function AgencySignupPage() {
                         <p className="text-sm text-slate-400 mt-0.5">{plan.clients} · {plan.credits}</p>
                       </div>
                       <div className="text-right">
-                        <span className="text-2xl font-black text-white">{plan.price}</span>
+                        <span className={`text-2xl font-black ${plan.free ? 'text-green-400' : 'text-white'}`}>{plan.price}</span>
                         <span className="text-slate-400 text-sm">/mo</span>
                       </div>
                     </div>
@@ -358,7 +373,7 @@ function AgencySignupPage() {
                   className="flex-1 bg-indigo-600 hover:bg-indigo-500 transition text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 text-sm"
                 >
                   <ArrowRight className="h-4 w-4" />
-                  Continue with {PLANS.find(p => p.id === selectedPlan)?.name}
+                  {selectedPlan === 'free' ? 'Start Free — No Card Needed' : `Continue with ${PLANS.find(p => p.id === selectedPlan)?.name}`}
                 </button>
               </div>
             </div>
@@ -433,7 +448,7 @@ function AgencySignupPage() {
                     </li>
                   ))}
                 </ul>
-                <p className="text-xs text-slate-500 mt-3">Plans from $99/mo · Cancel anytime</p>
+                <p className="text-xs text-slate-500 mt-3">1 free account included · Upgrade anytime</p>
               </div>
 
               <div className="flex gap-3">
