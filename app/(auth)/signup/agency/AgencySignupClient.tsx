@@ -130,9 +130,9 @@ function AgencySignupPage() {
         referral_source: referralSource || undefined,
       });
 
-      // Free plan — skip Stripe, go straight to dashboard
+      // Free plan — skip Stripe, go straight to website builder
       if (selectedPlan === 'free') {
-        router.push('/agency?welcome=true');
+        router.push('/agency/website/create?welcome=true');
         router.refresh();
         return;
       }
