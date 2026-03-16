@@ -5,14 +5,14 @@
  * This calls the container's gateway API to install the skill.
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAgencyAdmin } from '@/lib/agency/middleware';
+import { requireAgencyMember } from '@/lib/agency/middleware';
 import { createClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 
 export async function POST(request: NextRequest) {
-  const authResult = await requireAgencyAdmin();
+  const authResult = await requireAgencyMember();
   if (authResult.error) {
     return NextResponse.json({ error: authResult.error.message }, { status: authResult.error.status });
   }
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const authResult = await requireAgencyAdmin();
+  const authResult = await requireAgencyMember();
   if (authResult.error) {
     return NextResponse.json({ error: authResult.error.message }, { status: authResult.error.status });
   }
