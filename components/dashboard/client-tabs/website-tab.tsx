@@ -117,14 +117,28 @@ function StatusBadge({ status }: { status: SiteData['status'] }) {
 // ── SEO Health Checklist ──────────────────────────────────────────────────────
 
 function SEOHealthChecklist({ site }: { site: SiteData }) {
-  // Site has been deployed before — SEO infrastructure is in place
   const isDeployed = !!site.last_deployed_at || site.status === 'live';
+  const hasSubdomain = !!site.site_subdomain;
+
+  // Not deployed at all — show a simple message
+  if (!isDeployed) {
+    return (
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+        <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+          <Search className="h-4 w-4 text-gray-400" />
+          SEO Health
+        </h4>
+        <p className="text-sm text-gray-500">Deploy your site first to see SEO health checks.</p>
+      </div>
+    );
+  }
+
   const checks = [
-    { label: `Sitemap (${site.page_count} URLs)`, ok: isDeployed },
-    { label: 'Schema markup (LocalBusiness + FAQ)', ok: isDeployed },
-    { label: 'Meta tags (title + description)', ok: isDeployed },
+    { label: site.page_count > 0 ? `Sitemap (${site.page_count} URLs)` : 'Sitemap', ok: site.page_count > 0 },
+    { label: 'Schema markup (LocalBusiness + FAQ)', ok: true },
+    { label: 'Meta tags (title + description)', ok: true },
     { label: 'Mobile responsive', ok: true },
-    { label: 'SSL certificate (HTTPS)', ok: isDeployed },
+    { label: 'SSL certificate (HTTPS)', ok: hasSubdomain || !!site.site_domain },
     { label: 'Google Search Console', ok: site.search_console_connected },
   ];
 
@@ -241,7 +255,7 @@ function SubNav({ view, setView }: { view: SubView; setView: (v: SubView) => voi
 
 // ── Pages View ────────────────────────────────────────────────────────────────
 
-function PagesView({ siteId }: { siteId: string }) {
+function PagesView({ siteId, onGenerate }: { siteId: string; onGenerate?: () => void }) {
   const [pages, setPages] = useState<SitePage[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedSlug, setExpandedSlug] = useState<string | null>(null);
@@ -360,8 +374,20 @@ function PagesView({ siteId }: { siteId: string }) {
 
   if (pages.length === 0) {
     return (
-      <div className="text-center py-12 text-sm text-gray-500">
-        No pages generated yet. Use the <strong>Regenerate</strong> action on the Overview tab to generate content.
+      <div className="text-center py-12">
+        <div className="h-12 w-12 rounded-2xl bg-indigo-50 flex items-center justify-center mx-auto mb-3">
+          <FileText className="h-5 w-5 text-indigo-400" />
+        </div>
+        <p className="text-sm text-gray-500 mb-4">No pages generated yet.</p>
+        {onGenerate && (
+          <button
+            onClick={onGenerate}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+          >
+            <Sparkles className="h-4 w-4" />
+            Generate Content
+          </button>
+        )}
       </div>
     );
   }
@@ -698,7 +724,7 @@ function GrowthView({ site, onRefreshSite }: { site: SiteData; onRefreshSite: ()
               Growth Engine
             </h4>
             <p className="text-xs text-gray-500 mt-1">
-              AI analyzes your site and suggests new pages to drive organic traffic.
+              AI analyzes your site&apos;s search performance and competitors to suggest new pages, service areas, and blog posts that drive organic traffic.
             </p>
           </div>
           <button
@@ -777,7 +803,10 @@ function GrowthView({ site, onRefreshSite }: { site: SiteData; onRefreshSite: ()
             <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
           </div>
         ) : deploys.length === 0 ? (
-          <p className="text-xs text-gray-500">No deploys yet.</p>
+          <div className="text-center py-4">
+            <Rocket className="h-5 w-5 text-gray-300 mx-auto mb-2" />
+            <p className="text-xs text-gray-500">Deploy history will appear here once you launch your site.</p>
+          </div>
         ) : (
           <div className="space-y-2">
             {deploys.map((d) => (
@@ -799,28 +828,6 @@ function GrowthView({ site, onRefreshSite }: { site: SiteData; onRefreshSite: ()
 }
 
 // ── Settings View ─────────────────────────────────────────────────────────────
-
-function EmbedCodeCard({ clientId, siteName }: { clientId: string; siteName: string }) {
-  const [copied, setCopied] = useState(false);
-  const embedCode = `<script src="https://kyra.conversionsystem.com/api/widget/${clientId}/script" async></script>`;
-  return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-      <h4 className="text-sm font-semibold text-gray-900 mb-1">Chat Widget Embed Code</h4>
-      <p className="text-xs text-gray-500 mb-3">
-        Add this to any website to embed {siteName}&apos;s AI chat widget.
-      </p>
-      <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 mb-3 font-mono text-xs text-gray-700 break-all">
-        {embedCode}
-      </div>
-      <button
-        onClick={() => { navigator.clipboard.writeText(embedCode); setCopied(true); setTimeout(() => setCopied(false), 2500); }}
-        className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
-      >
-        {copied ? <><CheckCircle2 className="h-4 w-4" /> Copied!</> : <><Link2 className="h-4 w-4" /> Copy Embed Code</>}
-      </button>
-    </div>
-  );
-}
 
 function SettingsView({ site, onRefreshSite, onDeleteSite }: {
   site: SiteData;
@@ -991,6 +998,28 @@ function SettingsView({ site, onRefreshSite, onDeleteSite }: {
           </select>
         </div>
 
+        {/* Chat widget embed code — inline in settings */}
+        {site.client_id && (
+          <div className="pt-2 border-t border-gray-100">
+            <label className="block text-xs font-medium text-gray-600 mb-1">Chat Widget Embed Code</label>
+            <p className="text-xs text-gray-400 mb-2">
+              Add this to any website to embed {site.business_name}&apos;s AI chat widget.
+            </p>
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-2 font-mono text-xs text-gray-700 break-all">
+              {`<script src="https://kyra.conversionsystem.com/api/widget/${site.client_id}/script" async></script>`}
+            </div>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(`<script src="https://kyra.conversionsystem.com/api/widget/${site.client_id}/script" async></script>`);
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition"
+            >
+              <Link2 className="h-3.5 w-3.5" />
+              Copy Embed Code
+            </button>
+          </div>
+        )}
+
         <div className="flex items-center gap-3 pt-2">
           <button
             onClick={handleSave}
@@ -1007,11 +1036,6 @@ function SettingsView({ site, onRefreshSite, onDeleteSite }: {
           )}
         </div>
       </div>
-
-      {/* Widget embed code */}
-      {site.client_id && (
-        <EmbedCodeCard clientId={site.client_id} siteName={site.business_name} />
-      )}
 
       {/* Danger zone */}
       <div className="bg-white rounded-xl border border-red-200 shadow-sm p-5">
@@ -1113,7 +1137,8 @@ function OverviewView({
         </button>
         <button
           onClick={() => setView('pages')}
-          className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-gray-200 shadow-sm hover:border-purple-300 hover:bg-purple-50/50 transition-colors text-center"
+          disabled={site.page_count === 0}
+          className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-gray-200 shadow-sm hover:border-purple-300 hover:bg-purple-50/50 transition-colors text-center disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-gray-200 disabled:hover:bg-white"
         >
           <PenLine className="h-5 w-5 text-purple-500" />
           <span className="text-xs font-medium text-gray-700">Edit Pages</span>
@@ -1123,9 +1148,23 @@ function OverviewView({
           className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-gray-200 shadow-sm hover:border-amber-300 hover:bg-amber-50/50 transition-colors text-center"
         >
           <Link2 className="h-5 w-5 text-amber-500" />
-          <span className="text-xs font-medium text-gray-700">Domain</span>
+          <span className="text-xs font-medium text-gray-700">Custom Domain</span>
         </button>
       </div>
+
+      {/* Live URL */}
+      {siteUrl && site.status === 'live' && (
+        <a
+          href={siteUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 px-4 py-3 bg-green-50 border border-green-200 rounded-xl text-sm font-medium text-green-700 hover:bg-green-100 transition-colors"
+        >
+          <Globe className="h-4 w-4" />
+          {siteUrl.replace('https://', '')}
+          <ExternalLink className="h-3.5 w-3.5 ml-auto" />
+        </a>
+      )}
 
       {/* Growth Engine — supports both legacy and new format */}
       {hasLegacy ? (
@@ -1196,8 +1235,36 @@ function OverviewView({
         </div>
       )}
 
-      {/* SEO Health */}
-      <SEOHealthChecklist site={site} />
+      {/* SEO Health or Launch Checklist */}
+      {(!!site.last_deployed_at || site.status === 'live') ? (
+        <SEOHealthChecklist site={site} />
+      ) : (
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+          <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            <Rocket className="h-4 w-4 text-indigo-500" />
+            Launch Checklist
+          </h4>
+          <div className="space-y-2">
+            {[
+              { label: 'Generate content', done: site.page_count > 0 },
+              { label: 'Review and edit pages', done: false },
+              { label: 'Deploy your site', done: false },
+              { label: 'Connect Google Search Console', done: site.search_console_connected },
+            ].map((step, i) => (
+              <div key={i} className="flex items-center gap-2 text-sm">
+                {step.done ? (
+                  <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                ) : (
+                  <div className="h-4 w-4 rounded-full border-2 border-gray-300 shrink-0" />
+                )}
+                <span className={step.done ? 'text-gray-500 line-through' : 'text-gray-700'}>
+                  {step.label}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1451,8 +1518,17 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
         {/* Quick stats */}
         <div className="flex items-center gap-6 mt-4 pt-4 border-t border-gray-100">
           <div>
-            <p className="text-xl font-bold text-gray-900">{site.page_count}</p>
-            <p className="text-xs text-gray-500">Pages</p>
+            {site.page_count === 0 && ['draft', 'error'].includes(site.status) ? (
+              <>
+                <p className="text-sm font-medium text-gray-400">Not built yet</p>
+                <p className="text-xs text-gray-500">Pages</p>
+              </>
+            ) : (
+              <>
+                <p className="text-xl font-bold text-gray-900">{site.page_count}</p>
+                <p className="text-xs text-gray-500">Pages</p>
+              </>
+            )}
           </div>
           <div>
             <p className="text-sm font-medium text-gray-900">{site.industry}</p>
@@ -1484,7 +1560,7 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
           setView={setView}
         />
       )}
-      {view === 'pages' && <PagesView siteId={site.id} />}
+      {view === 'pages' && <PagesView siteId={site.id} onGenerate={() => handleAction('regenerate')} />}
       {view === 'leads' && <LeadsView siteId={site.id} />}
       {view === 'growth' && <GrowthView site={site} onRefreshSite={refreshSite} />}
       {view === 'settings' && (
