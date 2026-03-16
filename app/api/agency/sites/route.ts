@@ -104,11 +104,42 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // If no client_id provided, auto-create an agency_clients row so the
+  // widget lead form and knowledge sync always have a valid client reference.
+  let clientId = body.client_id || null;
+  if (!clientId) {
+    const slug = body.business_name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+      .slice(0, 60);
+
+    const { data: newClient, error: clientErr } = await supabase
+      .from('agency_clients')
+      .insert({
+        agency_id: auth.data.agency.id,
+        name: body.business_name,
+        slug: `${slug}-${Date.now().toString(36)}`,
+        industry: body.industry || '',
+        status: 'setup',
+      })
+      .select('id')
+      .single();
+
+    if (clientErr || !newClient) {
+      console.error('[sites] Failed to auto-create client:', clientErr);
+      return NextResponse.json({ error: 'Failed to create client for site' }, { status: 500 });
+    }
+
+    clientId = newClient.id;
+    console.log(`[sites] Auto-created agency_clients row ${clientId} for "${body.business_name}"`);
+  }
+
   const { data: site, error } = await supabase
     .from('client_sites')
     .insert({
       agency_id: auth.data.agency.id,
-      client_id: body.client_id || null,
+      client_id: clientId,
       business_name: body.business_name,
       industry: body.industry,
       phone: body.phone || null,

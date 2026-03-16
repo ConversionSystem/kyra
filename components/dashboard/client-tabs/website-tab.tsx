@@ -592,6 +592,11 @@ function LeadsView({ siteId }: { siteId: string }) {
 
   return (
     <div className="space-y-4">
+      <div className="rounded-xl bg-indigo-50 border border-indigo-100 px-4 py-3 text-xs text-indigo-700">
+        These leads came from your website&apos;s contact forms and AI chat. They are also synced to your{' '}
+        <Link href="/agency/crm" className="font-semibold underline hover:text-indigo-900">CRM</Link>.
+      </div>
+
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-gray-900">{total} leads from this site</h3>
         <span className="text-xs text-gray-400">Sorted by most recent</span>
@@ -640,16 +645,24 @@ function LeadsView({ siteId }: { siteId: string }) {
                     </p>
                   )}
                 </div>
-                {lead.stage && (
-                  <span className={`text-xs px-2 py-1 rounded-full shrink-0 font-medium ${
-                    lead.stage === 'lead' ? 'bg-green-100 text-green-700' :
-                    lead.stage === 'contact' ? 'bg-blue-100 text-blue-700' :
-                    lead.stage === 'customer' ? 'bg-purple-100 text-purple-700' :
-                    'bg-gray-100 text-gray-600'
-                  }`}>
-                    {lead.stage}
-                  </span>
-                )}
+                <div className="flex items-center gap-2 shrink-0">
+                  {lead.stage && (
+                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                      lead.stage === 'lead' ? 'bg-green-100 text-green-700' :
+                      lead.stage === 'contact' ? 'bg-blue-100 text-blue-700' :
+                      lead.stage === 'customer' ? 'bg-purple-100 text-purple-700' :
+                      'bg-gray-100 text-gray-600'
+                    }`}>
+                      {lead.stage}
+                    </span>
+                  )}
+                  <Link
+                    href={`/agency/crm?contact=${lead.id}`}
+                    className="text-xs text-indigo-500 hover:text-indigo-700 flex items-center gap-0.5"
+                  >
+                    CRM <ArrowUpRight className="h-3 w-3" />
+                  </Link>
+                </div>
               </div>
             );
           })}
