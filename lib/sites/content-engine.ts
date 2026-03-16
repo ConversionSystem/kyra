@@ -595,11 +595,17 @@ async function executeTask(
 async function generateMeta(site: ClientSite, siteId: string): Promise<void> {
   try {
     const raw = await callLLM(MODELS.meta, metaPrompt(site), MAX_TOKENS.meta);
-    if (!raw) return;
+    if (!raw) {
+      console.warn('[content-engine] generateMeta: empty LLM response');
+      return;
+    }
 
     // Parse JSON array from response
     const jsonMatch = raw.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) return;
+    if (!jsonMatch) {
+      console.warn('[content-engine] generateMeta: no JSON array found in response. Raw:', raw.slice(0, 200));
+      return;
+    }
 
     const metaItems = JSON.parse(jsonMatch[0]) as Array<{
       page: string;
@@ -609,20 +615,25 @@ async function generateMeta(site: ClientSite, siteId: string): Promise<void> {
 
     const supabase = createServiceClientWithoutCookies();
 
-    // Update pages that don't already have custom meta
+    // Strip markdown artifacts and update ALL pages with AI-generated meta
+    const cleanMeta = (s: string) => s
+      .replace(/\*\*/g, '').replace(/\*/g, '').replace(/^#+\s*/gm, '').trim();
+
     for (const item of metaItems) {
+      const title = cleanMeta(item.meta_title || '');
+      const desc = cleanMeta(item.meta_description || '');
+      if (!title || !desc) continue;
       const slug = pageToSlug(item.page, site);
       if (!slug) continue;
 
       await supabase
         .from('site_pages')
         .update({
-          meta_title: item.meta_title?.slice(0, 60) || undefined,
-          meta_description: item.meta_description?.slice(0, 155) || undefined,
+          meta_title: title.slice(0, 60),
+          meta_description: desc.slice(0, 155),
         })
         .eq('site_id', siteId)
-        .eq('slug', slug)
-        .is('meta_description', null);
+        .eq('slug', slug);
     }
   } catch (err) {
     console.warn('[content-engine] Meta generation failed (non-fatal):', err);
@@ -795,8 +806,9 @@ function parseContent(raw: string, fallbackTitle: string): ParsedContent {
       const descMatch = body.match(
         /meta[_ ]?description[:\s]*["']?(.+?)["']?\s*$/im,
       );
-      if (titleMatch) metaTitle = titleMatch[1].trim().slice(0, 60);
-      if (descMatch) metaDescription = descMatch[1].trim().slice(0, 155);
+      const stripMd = (s: string) => s.replace(/\*\*/g, '').replace(/\*/g, '').replace(/^#+\s*/gm, '').trim();
+      if (titleMatch) metaTitle = stripMd(titleMatch[1]).slice(0, 60);
+      if (descMatch) metaDescription = stripMd(descMatch[1]).slice(0, 155);
       continue;
     }
 
