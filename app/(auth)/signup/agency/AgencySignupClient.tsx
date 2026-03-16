@@ -47,9 +47,9 @@ function AgencySignupPage() {
 
   const PLANS = [
     { id: 'free' as const, name: 'Free', price: '$0', clients: '1 client', credits: 'Website + AI worker + CRM included', free: true, badge: 'START HERE' },
-    { id: 'starter' as const, name: 'Lite', price: '$99', clients: '3 clients', credits: '500 credits/mo · website + AI worker per client' },
-    { id: 'pro' as const, name: 'Pro', price: '$249', clients: '10 clients', credits: '1,500 credits/mo · website + AI worker per client', popular: true },
-    { id: 'scale' as const, name: 'Scale', price: '$499', clients: '30 clients', credits: '2,500 credits/mo · website + AI worker per client' },
+    { id: 'starter' as const, name: 'Lite', price: '$99', clients: '3 clients', credits: '10,000 credits/mo · website + AI worker per client' },
+    { id: 'pro' as const, name: 'Pro', price: '$249', clients: '10 clients', credits: '25,000 credits/mo · website + AI worker per client', popular: true },
+    { id: 'scale' as const, name: 'Scale', price: '$499', clients: '30 clients', credits: '50,000 credits/mo · website + AI worker per client' },
   ];
 
   useEffect(() => {
