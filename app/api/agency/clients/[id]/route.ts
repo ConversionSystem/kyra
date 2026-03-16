@@ -186,21 +186,20 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     const instructions = (cfg.instructions as string) || '';
     const responseLanguage = (cfg.response_language as string) || 'English';
 
-    if (persona || instructions || greeting) {
-      void (async () => {
-        try {
-          const soulMd = buildSoulMd(client.name, persona, greeting, instructions, responseLanguage);
-          const result = await updateClientConfig(client.id, { soulMd });
-          if (result.success) {
-            console.log(`[personality] SOUL.md pushed to container for client ${client.id}`);
-          } else {
-            console.warn(`[personality] Failed to push SOUL.md for ${client.id}:`, result.error);
-          }
-        } catch (err) {
-          console.error(`[personality] Error pushing SOUL.md for ${client.id}:`, err);
+    // Always push SOUL.md when container_config changes (even if fields cleared)
+    void (async () => {
+      try {
+        const soulMd = buildSoulMd(client.name, persona, greeting, instructions, responseLanguage);
+        const result = await updateClientConfig(client.id, { soulMd });
+        if (result.success) {
+          console.log(`[personality] SOUL.md pushed to container for client ${client.id}`);
+        } else {
+          console.warn(`[personality] Failed to push SOUL.md for ${client.id}:`, result.error);
         }
-      })();
-    }
+      } catch (err) {
+        console.error(`[personality] Error pushing SOUL.md for ${client.id}:`, err);
+      }
+    })();
   }
 
   return NextResponse.json(client);

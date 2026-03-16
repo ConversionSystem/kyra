@@ -262,8 +262,11 @@ export default function AIPersonalityTab({ client }: { client: AgencyClient }) {
           },
         }),
       });
-      if (!res.ok) throw new Error('Failed to save');
-      setMessage({ type: 'success', text: 'All changes saved.' });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({})) as { error?: string };
+        throw new Error(payload.error || 'Failed to save');
+      }
+      setMessage({ type: 'success', text: 'AI personality saved and pushed to container.' });
     } catch {
       setMessage({ type: 'error', text: 'Failed to save. Try again.' });
     } finally {
