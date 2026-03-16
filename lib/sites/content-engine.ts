@@ -382,7 +382,7 @@ function buildTaskList(site: ClientSite): PageTask[] {
   }
 
   // ── TIER 3: City + City x Service pages ──
-  if (isServiceArea && site.cities?.length) {
+  if (site.cities?.length) {
     for (const city of site.cities) {
       // City overview page
       tasks.push({
@@ -813,11 +813,16 @@ function parseContent(raw: string, fallbackTitle: string): ParsedContent {
       }
     }
 
-    sections.push({
-      heading: heading.title.replace(/^#+\s*/, ''),
-      body: bodyLines.join('\n'),
-      ...(bullets.length > 0 ? { bullets } : {}),
-    });
+    const bodyText = bodyLines.join('\n').trim();
+    const bulletList = bullets.filter(b => b.trim().length > 0);
+    // Only push sections that have actual content
+    if (bodyText || bulletList.length > 0 || heading.title) {
+      sections.push({
+        heading: heading.title.replace(/^#+\s*/, ''),
+        body: bodyText,
+        ...(bulletList.length > 0 ? { bullets: bulletList } : {}),
+      });
+    }
   }
 
   // If no sections were parsed, treat the whole response as a single section
