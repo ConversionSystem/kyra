@@ -340,10 +340,10 @@ export default function UseCasesPage() {
           </p>
           <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/signup/agency"
+              href="/website-builder"
               className="bg-white text-indigo-600 font-bold text-lg px-8 py-4 rounded-xl hover:bg-indigo-50 transition-colors"
             >
-              Start Free — Build Your First Site
+              Try It Free — Build Your First Site →
             </Link>
             <Link
               href="/pricing"
@@ -353,7 +353,7 @@ export default function UseCasesPage() {
             </Link>
           </div>
           <p className="text-indigo-200 text-sm mt-4">
-            No credit card required · 7-day free trial · Cancel anytime
+            1 free account included — no credit card needed
           </p>
         </div>
       </section>

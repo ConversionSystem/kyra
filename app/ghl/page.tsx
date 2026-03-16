@@ -85,10 +85,10 @@ export default function GHLPage() {
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
-            href="/signup/agency"
+            href="/website-builder"
             className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-8 py-4 rounded-xl transition text-lg"
           >
-            Start free — first site in 10 minutes
+            Try It Free — Build Your First Site
             <ArrowRight className="h-5 w-5" />
           </Link>
           <Link
@@ -100,7 +100,7 @@ export default function GHLPage() {
         </div>
 
         <p className="mt-4 text-sm text-gray-400">
-          No credit card · 7-day free trial · White-label from day one
+          1 free account included — no credit card needed
         </p>
       </section>
 
@@ -240,10 +240,10 @@ export default function GHLPage() {
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
-            href="/signup/agency"
+            href="/website-builder"
             className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-10 py-4 rounded-xl transition text-lg"
           >
-            Start free
+            Try It Free — Build Your First Site
             <ArrowRight className="h-5 w-5" />
           </Link>
           <Link
@@ -253,7 +253,7 @@ export default function GHLPage() {
             See pricing
           </Link>
         </div>
-        <p className="mt-4 text-sm text-gray-400">No credit card required · 7-day free trial · Website + AI worker + CRM included</p>
+        <p className="mt-4 text-sm text-gray-400">1 free account included — no credit card needed</p>
       </section>
 
       <PublicFooter />

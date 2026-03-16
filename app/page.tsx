@@ -86,7 +86,7 @@ export default function HomePage() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
               {[
                 { value: '15–25', label: 'SEO pages per client site' },
-                { value: '7-day', label: 'Free trial — no card needed' },
+                { value: 'Free', label: '1 account free — no card needed' },
                 { value: '3x–10x', label: 'Agency resale markup' },
                 { value: '$99/mo', label: 'Lite plan — 3 clients' },
               ].map((s) => (
@@ -100,10 +100,10 @@ export default function HomePage() {
             {/* CTAs */}
             <div className="flex flex-col sm:flex-row gap-3 items-center">
               <Link
-                href="/signup/agency"
+                href="/website-builder"
                 className="inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 transition text-white font-bold text-lg px-8 py-4 rounded-xl"
               >
-                Start Free — First Site Live in Minutes
+                Try It Free — Build Your First Site →
               </Link>
               <Link
                 href="/try/dental"
@@ -113,7 +113,7 @@ export default function HomePage() {
               </Link>
             </div>
             <p className="text-sm text-slate-500 mt-3">
-              No credit card required · Cancel anytime · 7-day free trial
+              1 free account included · No credit card needed
             </p>
           </div>
 
@@ -449,13 +449,13 @@ export default function HomePage() {
               15-25 page SEO-optimized website. AI worker. CRM. Lead capture. All deployed from one dashboard — no code, no infrastructure, no waiting.
             </p>
             <Link
-              href="/signup/agency"
+              href="/website-builder"
               className="inline-flex items-center gap-2 bg-white text-indigo-700 font-black text-lg px-10 py-4 rounded-xl hover:bg-indigo-50 transition"
             >
-              Start Free — Build Your First Site
+              Try It Free — Build Your First Site →
             </Link>
             <p className="text-indigo-300 text-sm mt-4">
-              No credit card required · 7-day free trial · Cancel anytime
+              1 free account included · No credit card needed
             </p>
           </div>
         </div>

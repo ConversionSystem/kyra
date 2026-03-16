@@ -50,11 +50,12 @@ const COMPARISON_FEATURES = [
   { label: 'SEO optimization', diy: 'Manual', wix: 'Basic', dev: 'Depends', kyra: 'Automatic' },
   { label: 'AI chat trained on your site', diy: false, wix: false, dev: false, kyra: true },
   { label: 'Local SEO pages', diy: false, wix: 'Manual', dev: '$$$$', kyra: 'Automatic' },
-  { label: 'Monthly cost', diy: 'Free + hours', wix: '$16-45', dev: '$3,000+', kyra: '$49' },
+  { label: 'Monthly cost', diy: 'Free + hours', wix: '$16-45', dev: '$3,000+', kyra: 'Free to start' },
   { label: 'Updates & growth', diy: 'You', wix: 'You', dev: 'Pay more', kyra: 'AI-powered' },
 ];
 
 const FAQS = [
+  { q: 'Is it really free?', a: 'Yes. You get 1 free account — no credit card required. Build your first site, connect the AI worker, and see results before you decide to upgrade.' },
   { q: 'How long does it take?', a: 'Under 5 minutes. Answer a few questions, and your full website is generated, optimized, and live.' },
   { q: 'Can I edit the content?', a: 'Yes. Every page is fully editable from your dashboard. Change text, images, or structure anytime.' },
   { q: 'Do I need a domain?', a: 'Not to start. We provide a free subdomain immediately. You can connect your own custom domain at any time.' },
@@ -167,14 +168,14 @@ export default function WebsiteBuilderPage() {
                 <span className="text-indigo-400">Themselves</span>
               </h1>
               <p className="mt-5 text-lg text-gray-400 max-w-xl mx-auto lg:mx-0">
-                Go from zero to a fully SEO-optimized, AI-trained website in under 5 minutes. No coding. No designers. Just results.
+                Go from zero to a fully SEO-optimized, AI-trained website in minutes. No coding. No designers. Start free — no credit card needed.
               </p>
               <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
                 <Link
-                  href="/get-started"
+                  href="/signup/agency"
                   className="inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3.5 rounded-xl transition text-sm"
                 >
-                  Build Your Website <ArrowRight className="h-4 w-4" />
+                  Try It Free <ArrowRight className="h-4 w-4" />
                 </Link>
                 <a
                   href="#how-it-works"
@@ -187,6 +188,7 @@ export default function WebsiteBuilderPage() {
                 <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> Under 5 min</span>
                 <span className="flex items-center gap-1"><Shield className="h-3.5 w-3.5" /> Free SSL</span>
                 <span className="flex items-center gap-1"><Search className="h-3.5 w-3.5" /> SEO built-in</span>
+                <span className="flex items-center gap-1"><Zap className="h-3.5 w-3.5" /> 1 free account</span>
               </div>
             </div>
             <div className="hidden lg:block">
@@ -238,44 +240,6 @@ export default function WebsiteBuilderPage() {
                 <p className="text-sm text-gray-400 leading-relaxed">{f.desc}</p>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── Pricing ────────────────────────────────────────────────────── */}
-      <section className="py-20 sm:py-28 bg-gray-950">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold mb-4">Simple, Transparent Pricing</h2>
-          <p className="text-gray-400 mb-10">One plan. Everything included. No surprises.</p>
-          <div className="bg-gray-900/50 border border-white/10 rounded-2xl p-8 sm:p-10 max-w-md mx-auto">
-            <div className="flex items-baseline justify-center gap-1 mb-2">
-              <span className="text-5xl font-bold text-white">$49</span>
-              <span className="text-gray-400 text-lg">/month</span>
-            </div>
-            <p className="text-gray-500 text-sm mb-8">No setup fees. No hidden costs. Cancel anytime.</p>
-            <ul className="space-y-3 text-left mb-8">
-              {[
-                '15-25 SEO-optimized pages',
-                'Custom domain + free SSL',
-                'AI chat widget trained on your site',
-                'Automatic schema markup',
-                'Mobile-responsive design',
-                'AI-powered content updates',
-                'Growth suggestions based on search data',
-                'Hosting included',
-              ].map((item, i) => (
-                <li key={i} className="flex items-start gap-2.5 text-sm text-gray-300">
-                  <Check className="h-4 w-4 text-indigo-400 shrink-0 mt-0.5" />
-                  {item}
-                </li>
-              ))}
-            </ul>
-            <Link
-              href="/get-started"
-              className="block w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3.5 rounded-xl transition text-sm text-center"
-            >
-              Start Building
-            </Link>
           </div>
         </div>
       </section>
@@ -372,10 +336,10 @@ export default function WebsiteBuilderPage() {
           </p>
           <div className="mt-8">
             <Link
-              href="/get-started"
+              href="/signup/agency"
               className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-8 py-4 rounded-xl transition text-base"
             >
-              Build Your Website Now <ArrowRight className="h-5 w-5" />
+              Build Your First Site — Free <ArrowRight className="h-5 w-5" />
             </Link>
           </div>
         </div>
