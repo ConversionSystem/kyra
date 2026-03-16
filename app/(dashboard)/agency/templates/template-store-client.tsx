@@ -54,6 +54,7 @@ export function TemplateStoreClient({ agencyId, businessName }: Props) {
   const [search, setSearch] = useState('');
   const [applying, setApplying] = useState(false);
   const [applied, setApplied] = useState(false);
+  const [applyError, setApplyError] = useState<string | null>(null);
   const [generatedSoul, setGeneratedSoul] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -119,6 +120,7 @@ export function TemplateStoreClient({ agencyId, businessName }: Props) {
   const handleApply = async () => {
     if (!detail) return;
     setApplying(true);
+    setApplyError(null);
     try {
       const res = await fetch('/api/templates', {
         method: 'POST',
@@ -126,11 +128,13 @@ export function TemplateStoreClient({ agencyId, businessName }: Props) {
         body: JSON.stringify({ templateId: detail.id, variables }),
       });
       const data = await res.json();
-      if (data.success) {
+      if (!res.ok) {
+        setApplyError((data as { error?: string }).error || 'Failed to apply template.');
+      } else if (data.success) {
         setApplied(true);
         setGeneratedSoul(data.soul);
       }
-    } catch { /* ignore */ }
+    } catch { setApplyError('Network error. Please try again.'); }
     setApplying(false);
   };
 
@@ -266,6 +270,12 @@ export function TemplateStoreClient({ agencyId, businessName }: Props) {
               </pre>
             </CardContent>
           </Card>
+        )}
+
+        {applyError && (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {applyError}
+          </div>
         )}
 
         <Button
