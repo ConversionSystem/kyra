@@ -195,6 +195,17 @@ function StepBusinessInfo({
     label: val.label,
   }));
 
+  const diffPlaceholder: Record<string, string> = {
+    hvac: "We are a family-owned HVAC company serving San Mateo County since 1988. NATE-certified technicians, same-day emergency service, upfront pricing.",
+    legal: "We are a boutique firm focused on personal injury and family law. 20+ years experience, free consultations, no win no fee.",
+    consulting: "We have helped 50+ tech startups scale their revenue through data-driven growth systems. 17 years experience, Silicon Valley based.",
+    plumbing: "Family-owned plumbing company with 15 years serving the local area. Licensed, insured, 24/7 emergency service.",
+    roofing: "Local roofing contractor with 20+ years experience. Licensed, insured, free inspections, 10-year workmanship warranty.",
+    dental: "Modern dental practice focused on painless, compassionate care. Same-day appointments, all insurance accepted, evening hours.",
+    medical: "Patient-first medical practice with same-day appointments. Board-certified physicians, modern facilities, accepting new patients.",
+    'real-estate': "Top-producing local realtor with 15+ years experience. Sold 200+ homes, expert market knowledge, dedicated negotiator.",
+  };
+
   const handleSuggestDifferentiator = async () => {
     if (!data.businessName || !data.industry) return;
     setSuggestingDiff(true);
@@ -209,6 +220,9 @@ function StepBusinessInfo({
           city: data.city || 'your area',
           yearsInBusiness: data.yearsInBusiness,
           businessName: data.businessName,
+          license: data.licenseNumber,
+          rating: data.googleRating,
+          reviewCount: data.reviewCount,
         }),
       });
       const result = await res.json();
@@ -398,7 +412,7 @@ function StepBusinessInfo({
               <textarea
                 value={data.differentiator}
                 onChange={(e) => onChange({ differentiator: e.target.value })}
-                placeholder="We're a family-owned HVAC company that's been serving San Mateo County since 1988. Our technicians are NATE-certified and we offer same-day emergency service with upfront pricing — no surprise fees."
+                placeholder={diffPlaceholder[data.industry] || "Describe what makes your business unique — your experience, specialties, and what customers love about you."}
                 rows={3}
                 className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-y"
               />
@@ -719,6 +733,9 @@ function StepPhotosBrand({
           city: data.city || 'your area',
           yearsInBusiness: data.yearsInBusiness,
           businessName: data.businessName,
+          license: data.licenseNumber,
+          rating: data.googleRating,
+          reviewCount: data.reviewCount,
         }),
       });
       const result = await res.json();
@@ -1283,6 +1300,43 @@ const STATUS_PROGRESS: Record<string, number> = {
   live: 100,
 };
 
+const BUILDING_FACTS = [
+  '✍️ Writing your homepage copy...',
+  '🏙️ Creating local city landing pages...',
+  '📝 Generating service page content...',
+  '🔍 Optimizing meta titles for Google...',
+  '❓ Building your FAQ with real questions customers ask...',
+  '⭐ Adding schema markup for rich search results...',
+  '📍 Setting up Google Maps integration...',
+  '💬 Training your AI chat widget...',
+  '📱 Ensuring mobile-responsive design...',
+  '🚀 Almost there — final touches...',
+];
+
+const DID_YOU_KNOW = [
+  'Sites with FAQ pages rank 2x higher for voice search.',
+  'Local landing pages get 3x more conversions than generic pages.',
+  'Businesses with chat widgets see 40% more leads.',
+  'Your AI worker can handle 80% of customer questions automatically.',
+  'Schema markup helps Google understand your business — it is built in.',
+];
+
+const BUILD_STEPS = [
+  { key: 'info', label: 'Business info processed' },
+  { key: 'services', label: 'Service pages started' },
+  { key: 'content', label: 'Generating content' },
+  { key: 'build', label: 'Building static site' },
+  { key: 'live', label: 'Going live' },
+];
+
+function getCompletedSteps(status: string): number {
+  if (status === 'live') return 5;
+  if (status === 'deploying') return 4;
+  if (status === 'building') return 3;
+  if (status === 'generating') return 2;
+  return 1;
+}
+
 function StepGenerating({
   siteId,
   onComplete,
@@ -1294,14 +1348,25 @@ function StepGenerating({
   const [pageCount, setPageCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [retrying, setRetrying] = useState(false);
+  const [factIndex, setFactIndex] = useState(0);
+  const [tipIndex, setTipIndex] = useState(0);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef(Date.now());
   const completedRef = useRef(false);
-  const buildTriggeredRef = useRef(false); // prevent duplicate build triggers
+  const buildTriggeredRef = useRef(false);
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
 
-  const TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes total (gen 3min + build 4min + buffer)
+  const TIMEOUT_MS = 10 * 60 * 1000;
+
+  // Rotate facts and tips every 5 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setFactIndex((i) => (i + 1) % BUILDING_FACTS.length);
+      setTipIndex((i) => (i + 1) % DID_YOU_KNOW.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     if (!siteId) {
@@ -1313,7 +1378,6 @@ function StepGenerating({
     completedRef.current = false;
 
     const poll = async () => {
-      // Timeout check
       if (Date.now() - startTimeRef.current > TIMEOUT_MS) {
         if (pollRef.current) clearInterval(pollRef.current);
         setError('Generation is taking longer than expected (8+ min). This usually means an AI API issue. Please try again — it typically completes in 2–4 minutes.');
@@ -1340,8 +1404,6 @@ function StepGenerating({
           setTimeout(() => onCompleteRef.current({ url, domain }), 600);
 
         } else if (site.status === 'building' && !buildTriggeredRef.current) {
-          // Fallback: content gen finished but build hasn't started yet.
-          // Trigger the build route from the frontend as a safety net.
           buildTriggeredRef.current = true;
           console.log('[wizard] Status=building — triggering VPS build via /build API');
           fetch(`/api/agency/sites/${siteId}/build`, { method: 'POST' }).catch(() => {});
@@ -1377,7 +1439,7 @@ function StepGenerating({
   };
 
   const progress = STATUS_PROGRESS[status] ?? 15;
-  const statusLabel = STATUS_LABELS[status] ?? 'Working...';
+  const completedSteps = getCompletedSteps(status);
 
   return (
     <div className="max-w-lg mx-auto text-center py-12">
@@ -1386,7 +1448,9 @@ function StepGenerating({
           <Sparkles className="h-10 w-10 text-indigo-600 animate-pulse" />
         </div>
         <h2 className="text-2xl font-bold text-gray-900">Building Your Website</h2>
-        <p className="text-gray-500 mt-2">AI is writing all your pages — usually takes 2 to 4 minutes...</p>
+        <p className="text-indigo-600 mt-2 font-medium text-sm transition-all duration-500">
+          {BUILDING_FACTS[factIndex]}
+        </p>
       </div>
 
       {error ? (
@@ -1412,18 +1476,40 @@ function StepGenerating({
             />
           </div>
 
-          {/* Current status */}
-          <div className="flex items-center justify-center gap-2 text-sm text-indigo-600 font-medium mb-4">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span>{statusLabel}</span>
-          </div>
-
           {/* Page count */}
           {pageCount > 0 && (
-            <p className="text-sm text-gray-500">
-              {pageCount} {pageCount === 1 ? 'page' : 'pages'} generated
+            <p className="text-lg font-bold text-gray-900 mb-4">
+              {pageCount} {pageCount === 1 ? 'page' : 'pages'} written so far...
             </p>
           )}
+
+          {/* Steps tracker */}
+          <div className="text-left bg-gray-50 rounded-xl border border-gray-200 p-4 mb-6 space-y-2">
+            {BUILD_STEPS.map((step, i) => {
+              const done = i < completedSteps;
+              const active = i === completedSteps;
+              return (
+                <div key={step.key} className="flex items-center gap-2.5 text-sm">
+                  {done ? (
+                    <span className="text-green-500">✅</span>
+                  ) : active ? (
+                    <Loader2 className="h-4 w-4 text-indigo-500 animate-spin" />
+                  ) : (
+                    <span className="text-gray-300">○</span>
+                  )}
+                  <span className={done ? 'text-gray-700' : active ? 'text-indigo-600 font-medium' : 'text-gray-400'}>
+                    {step.label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Did you know tip */}
+          <div className="bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-3 transition-all duration-500">
+            <p className="text-xs text-indigo-500 font-medium mb-0.5">Did you know?</p>
+            <p className="text-sm text-indigo-700">{DID_YOU_KNOW[tipIndex]}</p>
+          </div>
         </>
       )}
     </div>

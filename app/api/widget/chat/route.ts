@@ -143,6 +143,35 @@ export async function POST(request: NextRequest) {
   const persona = (cfg.persona as string) || `AI assistant for ${client.name}`;
   const businessName = (cfg.business_name as string) || client.name;
 
+  // ── Fetch site config for tone + capabilities ─────────────────────────────
+  const { data: siteData } = await supabase
+    .from('client_sites')
+    .select('ai_tone, ai_capabilities, ai_name, hours, booking_url, phone, business_name')
+    .eq('client_id', clientId)
+    .single();
+
+  const aiTone = (siteData?.ai_tone as string) || 'professional';
+  const aiCapabilities = (siteData?.ai_capabilities as string[]) || [];
+  const aiName = (siteData?.ai_name as string) || (cfg.persona as string)?.split(' ')[0] || 'Alex';
+
+  const toneInstruction: Record<string, string> = {
+    professional: 'Maintain a professional, knowledgeable tone. Be helpful and precise.',
+    friendly: 'Be warm, friendly and approachable. Use conversational language like talking to a friend.',
+    casual: 'Be casual, relaxed and conversational. Keep it light and easy-going.',
+  };
+
+  const capabilityMap: Record<string, string> = {
+    answer_questions: 'Answer customer questions accurately using your knowledge base.',
+    book_appointments: `Help customers book appointments. ${siteData?.booking_url ? 'Share this booking link: ' + siteData.booking_url : 'Ask them to call to schedule.'}`,
+    capture_leads: 'Collect customer name, email and phone number when they show interest.',
+    provide_quotes: 'Provide rough price estimates when asked, based on typical industry rates.',
+    qualify_leads: 'Ask qualifying questions to understand their needs before connecting them to the team.',
+  };
+
+  const capabilityInstructions = aiCapabilities
+    .map((cap: string) => capabilityMap[cap])
+    .filter(Boolean);
+
   // ── Knowledge RAG ──────────────────────────────────────────────────────────
   // Fetch relevant knowledge base documents and inject into system prompt.
   // This makes the AI actually USE the trained knowledge from auto-train.
@@ -163,13 +192,17 @@ export async function POST(request: NextRequest) {
 
   // ── Build System Prompt ────────────────────────────────────────────────────
   const systemPrompt = [
-    `You are ${persona}. You are a helpful AI assistant for ${businessName}, responding via a web chat widget on their website.`,
-    `Be warm, helpful, and concise. Keep replies to 2-4 sentences unless more detail is needed.`,
-    `Answer questions accurately using your knowledge base. If you know the answer from your training, share it confidently.`,
+    `You are ${aiName}, a helpful AI assistant for ${businessName}, responding via a web chat widget on their website.`,
+    toneInstruction[aiTone] || toneInstruction.professional,
+    `Keep replies to 2-4 sentences unless more detail is needed.`,
+    ...capabilityInstructions,
     `Do not mention you are an AI unless directly asked.`,
     cfg.calendar_url ? `When scheduling is mentioned, share this booking link: ${cfg.calendar_url}` : '',
+    siteData?.booking_url ? `Booking link: ${siteData.booking_url}` : '',
     cfg.business_hours ? `Business hours: ${cfg.business_hours}` : '',
+    siteData?.hours ? `Hours: ${siteData.hours}` : '',
     cfg.business_phone ? `Business phone: ${cfg.business_phone}` : '',
+    siteData?.phone ? `Phone: ${siteData.phone}` : '',
     cfg.business_address ? `Business address: ${cfg.business_address}` : '',
     `If you can't resolve something, say: "Let me connect you with our team — they'll follow up shortly."`,
     knowledgeSection,

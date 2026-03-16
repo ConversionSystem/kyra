@@ -754,12 +754,13 @@ function parseContent(raw: string, fallbackTitle: string): ParsedContent {
 
   // Split by markdown headings (## or ###)
   const headingRegex = /^#{1,3}\s+(.+)$/gm;
-  const headings: Array<{ title: string; start: number; end: number }> = [];
+  const headings: Array<{ title: string; matchStart: number; start: number; end: number }> = [];
   let match: RegExpExecArray | null;
 
   while ((match = headingRegex.exec(cleaned)) !== null) {
     headings.push({
       title: match[1].trim(),
+      matchStart: match.index,
       start: match.index + match[0].length,
       end: cleaned.length,
     });
@@ -767,7 +768,7 @@ function parseContent(raw: string, fallbackTitle: string): ParsedContent {
 
   // Set end positions
   for (let i = 0; i < headings.length - 1; i++) {
-    headings[i].end = headings[i + 1].start - headings[i + 1].title.length - 4;
+    headings[i].end = headings[i + 1].matchStart;
   }
 
   for (const heading of headings) {
