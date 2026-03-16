@@ -131,7 +131,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     maxClients: 20,
     monthlyCredits: 50000,
     trialDays: 0,
-    description: 'Built for high-volume agencies — up to 20 clients, full Business in a Box.'
+    description: 'Built for high-volume agencies — up to 20 clients, full Business in a Box.',
     features: [
       '20 client AI workers',
       '50,000 platform credits / month',
