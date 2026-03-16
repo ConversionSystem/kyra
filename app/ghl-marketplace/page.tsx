@@ -7,24 +7,24 @@ import { PixelEvent } from '@/components/analytics/PixelEvent';
 export const metadata: Metadata = {
   title: 'Kyra for GHL — Website + AI Worker + CRM for Every Sub-Account',
   description:
-    'Give every GHL client a live 30+ page SEO website, an AI worker that books appointments 24/7, and a CRM — all deployed in under 10 minutes from one agency dashboard.',
+    'Give every GHL client a live 15-25 page SEO-optimized website, an AI worker that books appointments 24/7, and a CRM — all deployed in under 10 minutes from one agency dashboard.',
 };
 
 const FEATURES = [
   {
     icon: '🌐',
     title: 'AI Website Builder',
-    desc: '30+ page SEO site generated automatically from business info. Service pages, city pages, blog, FAQ — all indexed by Google.',
+    desc: '15-25 SEO-optimized pages generated automatically from business info. Service pages, city pages, blog, FAQ — built for search engines.',
   },
   {
     icon: '⚡',
-    title: 'Replies in < 60 seconds',
-    desc: 'Every inbound SMS, email, or DM gets an intelligent, context-aware reply — 24/7, including nights and weekends.',
+    title: 'Replies automatically — 24/7',
+    desc: 'Every inbound SMS, email, or DM gets an intelligent, context-aware reply — day and night, including weekends.',
   },
   {
     icon: '📅',
-    title: 'Books into GHL Calendar',
-    desc: 'Checks real-time availability, offers slots, confirms bookings, and sends reminder texts. No human needed.',
+    title: 'AI booking, connected to your GHL Calendar',
+    desc: 'When GHL Calendar is connected, checks availability, offers slots, and confirms bookings. No human needed.',
   },
   {
     icon: '📊',
@@ -34,7 +34,7 @@ const FEATURES = [
   {
     icon: '📈',
     title: 'Growth Engine',
-    desc: 'AI analyzes search trends and suggests new SEO pages monthly. One click to generate and publish. Sites that grow themselves.',
+    desc: 'AI suggests new pages to grow your search presence. One click to generate and publish. Sites that keep growing with AI-generated content.',
   },
   {
     icon: '🏷️',
@@ -54,13 +54,13 @@ const FEATURES = [
 ];
 
 const VERTICALS = [
-  { emoji: '🦷', name: 'Dental Clinics', result: '35-page site + appointment booking AI' },
+  { emoji: '🦷', name: 'Dental Clinics', result: '20-page site + appointment booking AI' },
   { emoji: '🏡', name: 'Real Estate', result: 'Neighborhood pages + lead qualification AI' },
   { emoji: '🌿', name: 'Cannabis', result: 'Menu pages + high-volume SMS handling' },
   { emoji: '🚗', name: 'Auto Dealerships', result: 'Inventory pages + test drive booking AI' },
   { emoji: '💆', name: 'Med Spa', result: 'Treatment pages + consultation booking 24/7' },
   { emoji: '🏋️', name: 'Fitness / Gyms', result: 'Class pages + trial sign-up AI' },
-  { emoji: '⚖️', name: 'Law Firms', result: '40-page site + instant intake qualification' },
+  { emoji: '⚖️', name: 'Law Firms', result: 'Up to 25-page site + instant intake qualification' },
   { emoji: '🔧', name: 'Home Services', result: 'Service area pages + emergency dispatch AI' },
   { emoji: '🏥', name: 'Chiropractic', result: 'Treatment pages + re-activation campaigns' },
   { emoji: '💰', name: 'Mortgage', result: 'Rate pages + lead pre-qualification AI' },
@@ -77,7 +77,7 @@ const HOW_IT_WORKS = [
   {
     step: '2',
     title: 'Add your first client',
-    desc: 'Enter the business name, industry, and location. Kyra generates a 30+ page website, deploys an AI worker, and sets up lead capture — automatically.',
+    desc: 'Enter the business name, industry, and location. Kyra generates a 15-25 page SEO-optimized website, deploys an AI worker, and sets up lead capture — automatically.',
   },
   {
     step: '3',
@@ -110,7 +110,7 @@ export default function GhlMarketplacePage() {
             <br />in 10 minutes
           </h1>
           <p className="text-xl text-indigo-200 max-w-2xl mx-auto mb-10 leading-relaxed">
-            Kyra generates a 30+ page SEO website, deploys an AI worker, and syncs every lead to GHL —
+            Kyra generates a 15-25 page SEO-optimized website, deploys an AI worker, and syncs every lead to GHL —
             all from one agency dashboard. Your clients get a complete online business. You get recurring revenue.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -136,9 +136,9 @@ export default function GhlMarketplacePage() {
         <div className="max-w-5xl mx-auto px-4">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
             {[
-              { value: '30+', label: 'Pages per client site', sub: 'Auto-generated SEO content' },
+              { value: '15–25', label: 'Pages per client site', sub: 'Auto-generated SEO content' },
               { value: '< 10 min', label: 'From signup to live site', sub: 'Website + AI worker + CRM' },
-              { value: '5x', label: 'Average agency markup', sub: '$99 cost → $500+ revenue' },
+              { value: '3x–10x', label: 'Average agency markup', sub: '$99 cost → $500+ revenue' },
               { value: '24/7', label: 'AI worker coverage', sub: 'Never misses a lead' },
             ].map((s) => (
               <div key={s.label}>
@@ -258,7 +258,7 @@ export default function GhlMarketplacePage() {
               },
               {
                 q: 'Do my clients get a real website?',
-                a: 'Yes. Kyra generates a live, hosted 30+ page SEO website for each client — service pages, city/location pages, blog posts, FAQ, contact page. All indexed by Google. All with lead capture forms that sync to the CRM.',
+                a: 'Yes. Kyra generates a live, hosted 15-25 page SEO-optimized website for each client — service pages, city/location pages, blog posts, FAQ, contact page. Built for search engines. All with lead capture forms that sync to the CRM.',
               },
               {
                 q: "What happens if the AI doesn't know the answer?",
@@ -270,7 +270,7 @@ export default function GhlMarketplacePage() {
               },
               {
                 q: 'How does the Growth Engine work?',
-                a: 'AI analyzes search trends for your client\'s industry and location, then suggests new pages to target those keywords. One click to generate and publish. Sites grow their SEO footprint automatically over time.',
+                a: 'AI suggests new pages based on your client\'s industry and existing content, helping grow their search presence. One click to generate and publish. Sites grow their SEO footprint over time with AI-generated content.',
               },
               {
                 q: 'What GHL plan do I need?',
@@ -291,7 +291,7 @@ export default function GhlMarketplacePage() {
         <div className="max-w-2xl mx-auto">
           <h2 className="text-3xl sm:text-4xl font-black mb-4">First client site live in 10 minutes.</h2>
           <p className="text-indigo-200 text-lg mb-8">
-            30+ page website. AI worker. CRM. All synced to GHL. Free to start.
+            15-25 page SEO-optimized website. AI worker. CRM. All synced to GHL. Free to start.
           </p>
           <Link
             href="/signup/agency"

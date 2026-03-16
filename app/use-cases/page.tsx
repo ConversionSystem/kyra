@@ -6,7 +6,7 @@ import PublicFooter from '@/components/layout/public-footer';
 export const metadata: Metadata = {
   title: 'Use Cases — Business in a Box for Every Industry | Kyra',
   description:
-    'See how agencies use Kyra to deploy a complete AI-powered business for their clients: 30+ page SEO website, AI worker, CRM, and lead capture — in under 10 minutes. HVAC, law, dental, real estate, and more.',
+    'See how agencies use Kyra to deploy a complete AI-powered business for their clients: 15-25 page SEO-optimized website, AI worker, CRM, and lead capture — in under 10 minutes. HVAC, law, dental, real estate, and more.',
   keywords: [
     'AI website builder', 'AI worker', 'business in a box', 'agency platform',
     'AI for small business', 'SEO website generator', 'AI appointment booking',
@@ -35,10 +35,10 @@ const USE_CASES: UseCase[] = [
     emoji: '🏠',
     industry: 'HVAC Agency',
     clientType: 'CoolBreeze Heating & Air',
-    sitePages: '32 pages',
+    sitePages: '22 pages',
     monthlyCharge: '$800/mo',
     whatTheyGet: [
-      '32-page SEO website (service pages, city pages, blog, FAQ)',
+      '22-page SEO website (service pages, city pages, blog, FAQ)',
       'AI worker handles emergency calls + appointment booking 24/7',
       'CRM captures every lead from website forms and chat',
       'Growth Engine adds new service area pages monthly',
@@ -50,17 +50,17 @@ const USE_CASES: UseCase[] = [
       { from: 'ai', text: "I've dispatched this as urgent. A technician will be at 789 Pine Road within the hour. You'll get a text when they're on the way." },
     ],
     result: 'Emergency call handled at 2am. Tech dispatched. Lead captured in CRM. Site ranks for "AC repair [city]".',
-    agencyMargin: '$800/mo revenue — ~$25 Kyra cost per client = $775/mo margin',
+    agencyMargin: '$800/mo revenue — starting from $99/mo for up to 3 clients (Lite plan)',
   },
   {
     slug: 'law-firm',
     emoji: '⚖️',
     industry: 'Law Firm Agency',
     clientType: 'Martinez & Associates',
-    sitePages: '40 pages',
+    sitePages: '24 pages',
     monthlyCharge: '$1,500/mo',
     whatTheyGet: [
-      '40-page SEO website (practice area pages, city pages, attorney bios, blog)',
+      '24-page SEO website (practice area pages, city pages, attorney bios, blog)',
       'AI intake worker qualifies leads and books consultations 24/7',
       'CRM captures every inquiry from website, chat, and phone',
       'Growth Engine adds new practice area + location pages',
@@ -74,17 +74,17 @@ const USE_CASES: UseCase[] = [
       { from: 'ai', text: "Scheduled for tomorrow at 2pm with Attorney Martinez. He'll review everything and advise on your options — no cost, no obligation.\n\nImportant: don't give any recorded statements to the other driver's insurance before speaking with us." },
     ],
     result: 'PI lead qualified and booked in 90 seconds. Site ranks for "personal injury lawyer [city]". Lead in CRM with full context.',
-    agencyMargin: '$1,500/mo revenue — ~$25 Kyra cost per client = $1,475/mo margin',
+    agencyMargin: '$1,500/mo revenue — ~$25 Kyra cost per client (Pro plan)',
   },
   {
     slug: 'real-estate',
     emoji: '🏡',
     industry: 'Real Estate Agency',
     clientType: 'Lisa Chen Realty',
-    sitePages: '45 pages',
+    sitePages: '25 pages',
     monthlyCharge: '$1,200/mo',
     whatTheyGet: [
-      '45-page SEO website (neighborhood pages, buyer/seller guides, market reports, blog)',
+      '25-page SEO website (neighborhood pages, buyer/seller guides, market reports, blog)',
       'AI worker qualifies leads, schedules tours, nurtures prospects 24/7',
       'CRM captures every inquiry with property interest and timeline',
       'Growth Engine adds new neighborhood + market update pages',
@@ -97,18 +97,18 @@ const USE_CASES: UseCase[] = [
       { from: 'customer', text: "I'm David Chen, 555-0199. 10am is perfect." },
       { from: 'ai', text: "You're all set, David! Lisa will meet you at 456 Maple Drive Saturday at 10am. I'll send the full listing details and directions." },
     ],
-    result: 'Lead responded to in under 60 seconds (even during showings). Tour booked. Site ranks for "[neighborhood] homes for sale".',
-    agencyMargin: '$1,200/mo revenue — ~$25 Kyra cost per client = $1,175/mo margin',
+    result: 'Lead responded to automatically (even during showings). Tour booked. Site ranks for "[neighborhood] homes for sale".',
+    agencyMargin: '$1,200/mo revenue — ~$25 Kyra cost per client (Pro plan)',
   },
   {
     slug: 'dental',
     emoji: '🦷',
     industry: 'Dental Agency',
     clientType: 'Bright Smile Dental',
-    sitePages: '35 pages',
+    sitePages: '20 pages',
     monthlyCharge: '$600/mo',
     whatTheyGet: [
-      '35-page SEO website (service pages, insurance pages, blog, FAQ, team bios)',
+      '20-page SEO website (service pages, insurance pages, blog, FAQ, team bios)',
       'AI worker books appointments + handles insurance Q&A 24/7',
       'CRM captures every patient inquiry with service interest',
       'Growth Engine adds new service + location pages to rank for more searches',
@@ -122,17 +122,17 @@ const USE_CASES: UseCase[] = [
       { from: 'ai', text: "Thursday at 10am it is! You'll get a confirmation text with our address and what to bring. Just need your insurance card and photo ID." },
     ],
     result: 'After-hours call converts instead of going to voicemail. Site ranks for "dentist near me" + insurance-specific terms.',
-    agencyMargin: '$600/mo revenue — ~$25 Kyra cost per client = $575/mo margin',
+    agencyMargin: '$600/mo revenue — ~$33 Kyra cost per client (Lite plan)',
   },
   {
     slug: 'medspa',
     emoji: '✨',
     industry: 'Med Spa Agency',
     clientType: 'Glow Aesthetics',
-    sitePages: '30 pages',
+    sitePages: '18 pages',
     monthlyCharge: '$900/mo',
     whatTheyGet: [
-      '30-page SEO website (treatment pages, pricing pages, before/after, blog)',
+      '18-page SEO website (treatment pages, pricing pages, before/after, blog)',
       'AI worker handles consultations, bookings, and treatment Q&A 24/7',
       'CRM captures every inquiry with treatment interest and budget',
       'Growth Engine adds new treatment + seasonal promotion pages',
@@ -146,17 +146,17 @@ const USE_CASES: UseCase[] = [
       { from: 'ai', text: "Booked! Friday at 3pm with Dr. Kim. We'll text a reminder the day before. Come 10 minutes early for a quick form." },
     ],
     result: 'Instant response on Instagram DM. Consultation booked. Site ranks for "Botox [city]" and treatment-specific terms.',
-    agencyMargin: '$900/mo revenue — ~$25 Kyra cost per client = $875/mo margin',
+    agencyMargin: '$900/mo revenue — ~$25 Kyra cost per client (Pro plan)',
   },
   {
     slug: 'plumbing',
     emoji: '🔧',
     industry: 'Plumbing Agency',
     clientType: "Mike's Plumbing",
-    sitePages: '28 pages',
+    sitePages: '18 pages',
     monthlyCharge: '$700/mo',
     whatTheyGet: [
-      '28-page SEO website (service pages, service area pages, blog, emergency info)',
+      '18-page SEO website (service pages, service area pages, blog, emergency info)',
       'AI worker dispatches emergency calls + books routine appointments 24/7',
       'CRM captures every lead with job type and urgency level',
       'Growth Engine adds new service area pages to expand coverage',
@@ -168,7 +168,7 @@ const USE_CASES: UseCase[] = [
       { from: 'ai', text: "Got you booked! A technician will be at 142 Oak Street, Apt 3B today between 2:00–3:00 PM. You'll get a confirmation text shortly." },
     ],
     result: 'Mike gets the job instead of losing it to a competitor. Site ranks for "plumber [city]" + "emergency plumber near me".',
-    agencyMargin: '$700/mo revenue — ~$25 Kyra cost per client = $675/mo margin',
+    agencyMargin: '$700/mo revenue — ~$33 Kyra cost per client (Lite plan)',
   },
 ];
 
@@ -215,10 +215,10 @@ export default function UseCasesPage() {
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
             {[
-              { icon: '🌐', title: '30+ Page SEO Website', desc: 'Service pages, city pages, blog, FAQ — generated by AI in minutes' },
+              { icon: '🌐', title: '15-25 Page SEO Website', desc: 'Service pages, city pages, blog, FAQ — generated by AI in minutes' },
               { icon: '🤖', title: 'AI Worker', desc: 'Chat widget that books appointments, captures leads, answers questions 24/7' },
               { icon: '📊', title: 'Built-In CRM', desc: 'Every lead from website, chat, and GHL in one inbox' },
-              { icon: '📈', title: 'Growth Engine', desc: 'AI suggests new SEO pages. One click to publish. Sites grow themselves.' },
+              { icon: '📈', title: 'Growth Engine', desc: 'AI suggests new pages to grow your search presence. One click to publish.' },
             ].map((f, i) => (
               <div key={i}>
                 <div className="text-3xl mb-2">{f.icon}</div>
@@ -335,7 +335,7 @@ export default function UseCasesPage() {
             Build your first client site in 10 minutes.
           </h2>
           <p className="text-indigo-100 text-lg mt-4">
-            30+ page website. AI worker. CRM. Lead capture. Growth Engine.
+            15-25 page SEO-optimized website. AI worker. CRM. Lead capture. Growth Engine.
             All from one dashboard — deployed in minutes, billed at $500–2,000/mo.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
