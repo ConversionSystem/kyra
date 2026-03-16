@@ -20,7 +20,6 @@ import {
   Link2,
   Rocket,
   Sparkles,
-  Zap,
   Trash2,
   Save,
   ChevronDown,
@@ -199,22 +198,13 @@ function NoSiteState({ clientId, clientName }: { clientId: string; clientName: s
       <p className="text-sm text-gray-500 max-w-md mb-6">
         Create an AI-powered website for {clientName}. SEO-optimized, live HTTPS domain, AI chat widget — deployed in minutes.
       </p>
-      <div className="flex flex-col sm:flex-row gap-3">
-        <Link
-          href={`/agency/website/quick-start?clientId=${encodeURIComponent(clientName || '')}&cid=${clientId}`}
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition-colors shadow-sm"
-        >
-          <Zap className="h-4 w-4" />
-          Quick Start (3 fields)
-        </Link>
-        <Link
-          href={`/agency/website/create?clientId=${encodeURIComponent(clientName || '')}&cid=${clientId}`}
-          className="inline-flex items-center gap-2 px-5 py-2.5 border border-gray-200 bg-white text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors"
-        >
-          <Sparkles className="h-4 w-4" />
-          Full Wizard
-        </Link>
-      </div>
+      <Link
+        href={`/agency/website/create?clientId=${encodeURIComponent(clientName || '')}&cid=${clientId}`}
+        className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition-colors shadow-sm"
+      >
+        <Sparkles className="h-4 w-4" />
+        Create Website
+      </Link>
     </div>
   );
 }
