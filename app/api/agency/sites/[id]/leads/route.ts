@@ -45,6 +45,7 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
     .from('crm_contacts')
     .select('id, first_name, last_name, email, phone, stage, source, created_at, custom_fields', { count: 'exact' })
     .eq('client_id', site.client_id)
+    .or('source.eq.website_form,source.eq.website,tags.cs.{"website-lead"}')
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
 
