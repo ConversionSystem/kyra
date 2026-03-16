@@ -75,7 +75,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     'ai_name', 'ai_tone', 'ai_capabilities', 'booking_url',
     'template_id', 'site_domain', 'site_subdomain',
     // Settings page fields
-    'ga4_id', 'white_label', 'google_rating', 'rating',
+    'ga4_id', 'white_label', 'google_rating', 'rating', 'google_review_url',
   ];
 
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };

@@ -1009,6 +1009,7 @@ async function triggerBuildAndDeploy(siteId: string, supabase: any): Promise<voi
     hours: site.hours || {},
     coordinates: { lat: address.lat || 0, lng: address.lng || 0 },
     tagline: site.tagline || '',
+    googleReviewUrl: (site as Record<string, unknown>).google_review_url || '',
     services,
     serviceAreas: cities,
   };
