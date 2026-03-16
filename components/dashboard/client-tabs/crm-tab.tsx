@@ -304,12 +304,14 @@ function ContactsSection({ client, clientId }: { client: AgencyClient; clientId:
   useEffect(() => { setPage(1); }, [search, stageFilter, scoreFilter, sortBy, sortOrder]);
 
   const handleExport = async () => {
-    const res = await fetch('/api/agency/crm/export');
-    if (!res.ok) return;
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = 'crm-contacts.csv'; a.click();
-    URL.revokeObjectURL(url);
+    try {
+      const res = await fetch('/api/agency/crm/export');
+      if (!res.ok) { alert('Export failed. Please try again.'); return; }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'crm-contacts.csv'; a.click();
+      URL.revokeObjectURL(url);
+    } catch { alert('Export failed. Please try again.'); }
   };
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -317,21 +319,44 @@ function ContactsSection({ client, clientId }: { client: AgencyClient; clientId:
     if (!file) return;
     setImporting(true);
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      await fetch('/api/agency/crm/import', { method: 'POST', body: formData });
+      // Parse CSV client-side then send as JSON (server expects { source: 'csv', rows: [...] })
+      const text = await file.text();
+      const lines = text.trim().split('\n');
+      if (lines.length < 2) { alert('CSV must have a header row and at least one data row.'); return; }
+      const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+      const rows = lines.slice(1).map(line => {
+        const values = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+        return Object.fromEntries(headers.map((h, i) => [h, values[i] || '']));
+      });
+      const res = await fetch('/api/agency/crm/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source: 'csv', rows }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { alert((data as { error?: string }).error || 'Import failed.'); return; }
       loadContacts();
+    } catch (err) {
+      alert('Import failed. Please check your CSV format.');
     } finally { setImporting(false); if (fileInputRef.current) fileInputRef.current.value = ''; }
   };
 
   const handleBulk = async () => {
     if (selected.size === 0 || !bulkAction) return;
-    if (bulkAction === 'delete' && !window.confirm(`Delete ${selected.size} contacts?`)) return;
-    await fetch('/api/agency/crm/contacts/bulk', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: bulkAction, ids: Array.from(selected), value: bulkValue || undefined }),
-    });
+    if (bulkAction === 'delete' && !window.confirm(`Delete ${selected.size} contacts? This cannot be undone.`)) return;
+    try {
+      const res = await fetch('/api/agency/crm/contacts/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        // Server expects 'contact_ids' not 'ids'
+        body: JSON.stringify({ action: bulkAction, contact_ids: Array.from(selected), payload: bulkValue ? { tag: bulkValue, stage: bulkValue } : undefined }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert((data as { error?: string }).error || 'Bulk action failed.');
+        return;
+      }
+    } catch { alert('Bulk action failed. Please try again.'); }
     setSelected(new Set());
     setBulkAction('');
     setBulkValue('');
@@ -643,7 +668,8 @@ function ContactDetailPanel({ contact: initial, onBack, client }: { contact: Con
 
   const handleDelete = async () => {
     if (!window.confirm(`Delete ${contactName(contact)}? This cannot be undone.`)) return;
-    await fetch(`/api/agency/crm/contacts/${contact.id}`, { method: 'DELETE' });
+    const res = await fetch(`/api/agency/crm/contacts/${contact.id}`, { method: 'DELETE' });
+    if (!res.ok) { alert('Failed to delete contact. Please try again.'); return; }
     onBack();
   };
 
@@ -885,17 +911,25 @@ function SendMessageModal({ channel, contactId, contactName: cName, onClose, onS
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
 
   const handleSend = async () => {
     if (!message.trim()) return;
     setSending(true);
+    setSendError(null);
     try {
       const body: Record<string, string> = { channel, message };
       if (channel === 'email' && subject) body.subject = subject;
-      await fetch(`/api/agency/crm/contacts/${contactId}/send`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const res = await fetch(`/api/agency/crm/contacts/${contactId}/send`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setSendError((data as { error?: string }).error || 'Send failed. Check GHL integration.');
+        return;
+      }
       onSent();
       onClose();
-    } finally { setSending(false); }
+    } catch { setSendError('Network error. Please try again.'); }
+    finally { setSending(false); }
   };
 
   return (
@@ -906,6 +940,7 @@ function SendMessageModal({ channel, contactId, contactName: cName, onClose, onS
           <FormField label="Subject"><input className={inputClass} value={subject} onChange={e => setSubject(e.target.value)} /></FormField>
         )}
         <FormField label="Message"><textarea className={inputClass + ' h-32 resize-none'} value={message} onChange={e => setMessage(e.target.value)} /></FormField>
+        {sendError && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{sendError}</p>}
       </div>
       <div className="flex justify-end gap-2 p-5 border-t border-gray-100">
         <button onClick={onClose} className={btnSecondary}>Cancel</button>
