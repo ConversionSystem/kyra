@@ -3,6 +3,7 @@ import { waitUntil } from '@vercel/functions';
 import { requireAgencyMember } from '@/lib/agency/middleware';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { generateSiteContent } from '@/lib/sites/content-engine';
+import { provisionClientGateway } from '@/lib/ovh/provisioner';
 import type { WizardData } from '@/lib/sites/types';
 
 // Allow up to 5 min for auto-generate (used by bulk generation)
@@ -133,6 +134,28 @@ export async function POST(request: NextRequest) {
 
     clientId = newClient.id;
     console.log(`[sites] Auto-created agency_clients row ${clientId} for "${body.business_name}"`);
+
+    // Auto-provision OpenClaw container for this client (non-blocking)
+    const agencyId = auth.data.agency.id;
+    const clientName = body.business_name;
+    const provisionWithRetry = async () => {
+      const result = await provisionClientGateway(clientId!, agencyId, {}, {}, clientName);
+      if (result.success) {
+        console.log(`[sites] ✅ Container provisioned for ${clientId}: ${result.gatewayUrl}`);
+        return;
+      }
+      console.warn(`[sites] First provision attempt failed for ${clientId}: ${result.error}. Retrying in 5s...`);
+      await new Promise(r => setTimeout(r, 5000));
+      const retry = await provisionClientGateway(clientId!, agencyId, {}, {}, clientName);
+      if (retry.success) {
+        console.log(`[sites] ✅ Container provisioned on retry for ${clientId}: ${retry.gatewayUrl}`);
+      } else {
+        console.error(`[sites] ❌ Gateway provisioning failed after retry for ${clientId}: ${retry.error}`);
+      }
+    };
+    provisionWithRetry().catch(err => {
+      console.error(`[sites] Gateway provisioning error for ${clientId}:`, err);
+    });
   }
 
   const { data: site, error } = await supabase
