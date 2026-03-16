@@ -355,7 +355,18 @@ function PagesView({ siteId, onGenerate }: { siteId: string; onGenerate?: () => 
         const res = await fetch(`/api/agency/sites/${siteId}/pages`);
         if (res.ok) {
           const result = await res.json();
-          setPages(result.data || []);
+          const newPages: SitePage[] = result.data || [];
+          setPages(newPages);
+          // Sync edit form if the regenerated page is currently expanded
+          if (expandedSlug) {
+            const updated = newPages.find((p) => p.slug === expandedSlug);
+            if (updated) {
+              setEditValues({
+                hero_h1: updated.hero_h1 || '',
+                content_sections: updated.content_sections || [],
+              });
+            }
+          }
         }
         setRegenerating(null);
       }, 3000);
