@@ -5,7 +5,7 @@
  * grants 5 credits to the creator per install.
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAgencyAdmin } from '@/lib/agency/middleware';
+import { requireAgencyMember } from '@/lib/agency/middleware';
 import { createClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic';
 const CREDITS_PER_INSTALL = 5;
 
 export async function POST(request: NextRequest) {
-  const result = await requireAgencyAdmin();
+  const result = await requireAgencyMember();
   if (result.error) {
     return NextResponse.json({ error: result.error.message }, { status: result.error.status });
   }
