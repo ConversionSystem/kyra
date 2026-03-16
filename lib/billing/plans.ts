@@ -20,6 +20,7 @@ export interface PlanConfig {
   badgeColor?: string;
   cta: string;
   stripePriceKey: string;   // key in STRIPE_PRICE_IDS
+  hidden?: boolean;         // hidden from new signups (legacy plan)
 }
 
 export const PLANS: Record<Plan, PlanConfig> = {
@@ -54,6 +55,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     maxClients: 1,
     monthlyCredits: 2000,
     trialDays: 0,
+    hidden: true,
     description: 'Your personal AI worker — run it for your own business with no limits.',
     features: [
       '1 AI Worker powered by OpenClaw',
@@ -152,6 +154,9 @@ export const PLANS: Record<Plan, PlanConfig> = {
 
 /** All valid plan IDs */
 export const PLAN_IDS = Object.keys(PLANS) as Plan[];
+
+/** Plans available for new signups (excludes hidden/legacy plans) */
+export const AVAILABLE_PLANS = PLAN_IDS.filter(id => !PLANS[id]?.hidden);
 
 /** Get the max clients allowed for a plan */
 export function getPlanClientLimit(plan: Plan | string): number {
