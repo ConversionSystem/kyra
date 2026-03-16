@@ -115,10 +115,10 @@ export default function GhlMarketplacePage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/signup/agency"
+              href="/website-builder"
               className="inline-block bg-white text-indigo-900 font-bold text-lg px-8 py-4 rounded-xl hover:bg-indigo-50 transition-colors"
             >
-              Start Free — First Site in 10 Minutes
+              Try It Free — Build Your First Site →
             </Link>
             <Link
               href="/try/dental"
@@ -127,7 +127,7 @@ export default function GhlMarketplacePage() {
               See Live Demo
             </Link>
           </div>
-          <p className="text-indigo-400 text-sm mt-4">No credit card · Setup in under 10 minutes · Cancel anytime</p>
+          <p className="text-indigo-400 text-sm mt-4">1 free account included — no credit card needed</p>
         </div>
       </section>
 
@@ -294,10 +294,10 @@ export default function GhlMarketplacePage() {
             15-25 page SEO-optimized website. AI worker. CRM. All synced to GHL. Free to start.
           </p>
           <Link
-            href="/signup/agency"
+            href="/website-builder"
             className="inline-block bg-white text-indigo-900 font-black text-lg px-10 py-4 rounded-xl hover:bg-indigo-50 transition-colors"
           >
-            Start Free — Build Your First Site
+            Try It Free — Build Your First Site →
           </Link>
           <p className="text-indigo-400 text-sm mt-4">
             Already a GHL Agency partner? Use your existing login — no new account needed.
