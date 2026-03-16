@@ -5,12 +5,17 @@ import PublicFooter from '@/components/layout/public-footer';
 import { PixelEvent } from '@/components/analytics/PixelEvent';
 
 export const metadata: Metadata = {
-  title: 'Kyra — AI Workforce Platform for GHL Agencies',
+  title: 'Kyra for GHL — Website + AI Worker + CRM for Every Sub-Account',
   description:
-    'Kyra adds an OpenClaw-powered AI workforce to your GHL sub-accounts. AI workers reply in under 60 seconds, book appointments, update the CRM, and escalate hot leads — all from one agency dashboard.',
+    'Give every GHL client a live 30+ page SEO website, an AI worker that books appointments 24/7, and a CRM — all deployed in under 10 minutes from one agency dashboard.',
 };
 
 const FEATURES = [
+  {
+    icon: '🌐',
+    title: 'AI Website Builder',
+    desc: '30+ page SEO site generated automatically from business info. Service pages, city pages, blog, FAQ — all indexed by Google.',
+  },
   {
     icon: '⚡',
     title: 'Replies in < 60 seconds',
@@ -20,6 +25,16 @@ const FEATURES = [
     icon: '📅',
     title: 'Books into GHL Calendar',
     desc: 'Checks real-time availability, offers slots, confirms bookings, and sends reminder texts. No human needed.',
+  },
+  {
+    icon: '📊',
+    title: 'Lead forms sync to GHL CRM',
+    desc: 'Every lead from the website, chat widget, and forms flows directly into your client\'s GHL CRM. Nothing falls through.',
+  },
+  {
+    icon: '📈',
+    title: 'Growth Engine',
+    desc: 'AI analyzes search trends and suggests new SEO pages monthly. One click to generate and publish. Sites that grow themselves.',
   },
   {
     icon: '🏷️',
@@ -32,40 +47,25 @@ const FEATURES = [
     desc: 'Detects keywords like "frustrated," "angry," "speak to a person" and immediately pings your team via email.',
   },
   {
-    icon: '🧠',
-    title: "Knows your client's business",
-    desc: 'You set the personality, services, pricing, hours, and tone once. The AI handles every conversation in character.',
-  },
-  {
-    icon: '📊',
-    title: 'Full conversation history',
-    desc: 'Every AI conversation is logged, searchable, and exportable from your Kyra agency dashboard.',
-  },
-  {
-    icon: '🔒',
-    title: 'STOP keyword compliance',
-    desc: 'Detects opt-out keywords instantly and permanently tags the contact — never messages them again.',
-  },
-  {
     icon: '🏢',
     title: 'One dashboard, all clients',
-    desc: 'Manage every client\'s AI worker from a single Kyra login. No switching sub-accounts.',
+    desc: 'Manage every client\'s website, AI worker, and leads from a single Kyra login. No switching sub-accounts.',
   },
 ];
 
 const VERTICALS = [
-  { emoji: '🦷', name: 'Dental Clinics', result: '+40% appointment bookings' },
-  { emoji: '🏡', name: 'Real Estate', result: 'Every lead responded to in <60s' },
-  { emoji: '🌿', name: 'Cannabis Dispensaries', result: 'Built for high-volume SMS traffic' },
-  { emoji: '🚗', name: 'Auto Dealerships', result: 'Test drive bookings on autopilot' },
-  { emoji: '💆', name: 'Med Spa / Aesthetics', result: 'Consultation bookings 24/7' },
-  { emoji: '🏋️', name: 'Fitness / Gyms', result: 'Trial sign-ups → zero no-shows' },
-  { emoji: '⚖️', name: 'Law Firms', result: 'Instant intake qualification' },
-  { emoji: '🔧', name: 'Home Services', result: 'Emergency calls never missed' },
-  { emoji: '🏥', name: 'Chiropractic', result: 'Re-activation campaigns automated' },
-  { emoji: '💰', name: 'Mortgage / Finance', result: 'Leads qualified before human call' },
-  { emoji: '🐾', name: 'Veterinary Clinics', result: '24/7 appointment booking' },
-  { emoji: '🌞', name: 'Solar', result: 'High-ticket follow-up automated' },
+  { emoji: '🦷', name: 'Dental Clinics', result: '35-page site + appointment booking AI' },
+  { emoji: '🏡', name: 'Real Estate', result: 'Neighborhood pages + lead qualification AI' },
+  { emoji: '🌿', name: 'Cannabis', result: 'Menu pages + high-volume SMS handling' },
+  { emoji: '🚗', name: 'Auto Dealerships', result: 'Inventory pages + test drive booking AI' },
+  { emoji: '💆', name: 'Med Spa', result: 'Treatment pages + consultation booking 24/7' },
+  { emoji: '🏋️', name: 'Fitness / Gyms', result: 'Class pages + trial sign-up AI' },
+  { emoji: '⚖️', name: 'Law Firms', result: '40-page site + instant intake qualification' },
+  { emoji: '🔧', name: 'Home Services', result: 'Service area pages + emergency dispatch AI' },
+  { emoji: '🏥', name: 'Chiropractic', result: 'Treatment pages + re-activation campaigns' },
+  { emoji: '💰', name: 'Mortgage', result: 'Rate pages + lead pre-qualification AI' },
+  { emoji: '🐾', name: 'Veterinary', result: 'Service pages + 24/7 appointment booking' },
+  { emoji: '🌞', name: 'Solar', result: 'Service area pages + high-ticket follow-up AI' },
 ];
 
 const HOW_IT_WORKS = [
@@ -77,17 +77,17 @@ const HOW_IT_WORKS = [
   {
     step: '2',
     title: 'Add your first client',
-    desc: 'Pick an industry template (dental, real estate, cannabis, etc.). Customize the AI name, personality, and business info.',
+    desc: 'Enter the business name, industry, and location. Kyra generates a 30+ page website, deploys an AI worker, and sets up lead capture — automatically.',
   },
   {
     step: '3',
     title: 'Connect GHL sub-account',
-    desc: "Paste the client's GHL Private Integration token. Kyra starts monitoring their inbox immediately.",
+    desc: "Paste the client's GHL Private Integration token. Kyra starts monitoring their inbox and syncing leads immediately.",
   },
   {
     step: '4',
     title: 'Watch it work',
-    desc: 'Every inbound message gets a smart reply within 60 seconds. Check the Conversations tab to see everything in real time.',
+    desc: 'Client has a live website, an AI worker handling chats and messages, and every lead flowing into GHL CRM. All in under 10 minutes.',
   },
 ];
 
@@ -105,27 +105,26 @@ export default function GhlMarketplacePage() {
             Official GoHighLevel Integration
           </div>
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-black leading-tight mb-6">
-            Give Every GHL Client
-            <br />
-            <span className="text-indigo-300">an AI worker</span>
+            Give every GHL client a{' '}
+            <span className="text-indigo-300">live website + AI worker</span>
+            <br />in 10 minutes
           </h1>
           <p className="text-xl text-indigo-200 max-w-2xl mx-auto mb-10 leading-relaxed">
-            Kyra plugs into any GHL sub-account and handles inbound conversations 24/7.
-            Responds in under 60 seconds. Books appointments. Updates the CRM. Escalates hot leads.
-            All white-labeled under your agency brand.
+            Kyra generates a 30+ page SEO website, deploys an AI worker, and syncs every lead to GHL —
+            all from one agency dashboard. Your clients get a complete online business. You get recurring revenue.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/solo"
+              href="/signup/agency"
               className="inline-block bg-white text-indigo-900 font-bold text-lg px-8 py-4 rounded-xl hover:bg-indigo-50 transition-colors"
             >
-              Start Free — No Credit Card Required
+              Start Free — First Site in 10 Minutes
             </Link>
             <Link
               href="/try/dental"
               className="inline-block bg-white/10 border border-white/30 text-white font-semibold text-lg px-8 py-4 rounded-xl hover:bg-white/20 transition-colors"
             >
-              See Live Demo →
+              See Live Demo
             </Link>
           </div>
           <p className="text-indigo-400 text-sm mt-4">No credit card · Setup in under 10 minutes · Cancel anytime</p>
@@ -137,10 +136,10 @@ export default function GhlMarketplacePage() {
         <div className="max-w-5xl mx-auto px-4">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
             {[
-              { value: '< 60s', label: 'Average response time', sub: 'Day and night' },
-              { value: '24/7', label: 'Coverage across channels', sub: 'Never misses a lead' },
-              { value: '21', label: 'Industry templates', sub: 'Ready to deploy' },
-              { value: '100%', label: 'Leads responded to', sub: 'Designed for zero missed follow-ups' },
+              { value: '30+', label: 'Pages per client site', sub: 'Auto-generated SEO content' },
+              { value: '< 10 min', label: 'From signup to live site', sub: 'Website + AI worker + CRM' },
+              { value: '5x', label: 'Average agency markup', sub: '$99 cost → $500+ revenue' },
+              { value: '24/7', label: 'AI worker coverage', sub: 'Never misses a lead' },
             ].map((s) => (
               <div key={s.label}>
                 <p className="text-4xl font-black text-indigo-700">{s.value}</p>
@@ -155,7 +154,7 @@ export default function GhlMarketplacePage() {
       {/* ── How It Works ── */}
       <section className="py-20 px-4">
         <div className="max-w-5xl mx-auto">
-          <h2 className="text-3xl font-black text-center mb-3">Up and running in under 10 minutes</h2>
+          <h2 className="text-3xl font-black text-center mb-3">Live website + AI worker in under 10 minutes</h2>
           <p className="text-center text-gray-500 mb-12">No code. No API setup. No technical expertise required.</p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {HOW_IT_WORKS.map((step) => (
@@ -174,7 +173,7 @@ export default function GhlMarketplacePage() {
       {/* ── Features ── */}
       <section className="bg-gray-50 py-20 px-4">
         <div className="max-w-5xl mx-auto">
-          <h2 className="text-3xl font-black text-center mb-3">Everything an AI worker should do</h2>
+          <h2 className="text-3xl font-black text-center mb-3">Website + AI worker + CRM — everything your clients need</h2>
           <p className="text-center text-gray-500 mb-12">Works inside GHL natively. No Zapier. No webhooks to configure.</p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {FEATURES.map((f) => (
@@ -191,8 +190,8 @@ export default function GhlMarketplacePage() {
       {/* ── Verticals ── */}
       <section className="py-20 px-4">
         <div className="max-w-5xl mx-auto">
-          <h2 className="text-3xl font-black text-center mb-3">Works for every vertical your clients serve</h2>
-          <p className="text-center text-gray-500 mb-12">21 pre-built industry templates. Pick one, customize, go live.</p>
+          <h2 className="text-3xl font-black text-center mb-3">Website + AI worker for every vertical</h2>
+          <p className="text-center text-gray-500 mb-12">Each client gets a full SEO site + AI worker trained on their industry. Pick one, deploy, go live.</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {VERTICALS.map((v) => (
               <div
@@ -208,77 +207,39 @@ export default function GhlMarketplacePage() {
         </div>
       </section>
 
-      {/* ── Cannabis Section (experience-based, not a revenue claim) ── */}
-      <section className="bg-green-950 text-white py-20 px-4">
+      {/* ── Revenue callout ── */}
+      <section className="py-20 px-4 bg-gray-50">
         <div className="max-w-4xl mx-auto">
-          <div className="flex items-center gap-3 mb-6">
-            <span className="text-3xl">🌿</span>
-            <span className="text-green-400 text-sm font-bold uppercase tracking-wider">Built for high-volume cannabis</span>
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-black mb-6 leading-tight">
-            Battle-tested in high-volume cannabis.
-            <br />
-            <span className="text-green-400">Now packaged for GHL agencies.</span>
-          </h2>
-          <p className="text-green-100 text-lg mb-10 max-w-2xl leading-relaxed">
-            Kyra\'s AI workers are designed from real-world deployments in high-volume cannabis and retail environments — where
-            every missed text is lost revenue. The same architecture now runs inside your clients\' GHL sub-accounts.
-          </p>
-          <div className="grid sm:grid-cols-3 gap-6 mb-10">
-            {[
-              { value: 'High volume', label: 'Handles heavy Friday-night text traffic', icon: '💬' },
-              { value: 'Multi-channel', label: 'SMS, web chat, social DMs via GHL', icon: '📡' },
-              { value: '< 60s', label: 'Target response time to inbound product questions', icon: '⚡' },
-            ].map((s) => (
-              <div key={s.label} className="bg-white/5 border border-white/10 rounded-xl p-5">
-                <div className="text-2xl mb-2">{s.icon}</div>
-                <p className="text-3xl font-black text-green-300">{s.value}</p>
-                <p className="text-sm text-green-200 mt-1">{s.label}</p>
-              </div>
-            ))}
-          </div>
-          <Link
-            href="/try/cannabis"
-            className="inline-block bg-green-500 hover:bg-green-400 text-white font-bold px-6 py-3 rounded-xl transition-colors"
-          >
-            See Cannabis AI Demo →
-          </Link>
-        </div>
-      </section>
-
-      {/* ── Designed Outcomes ── */}
-      <section className="py-20 px-4 bg-white">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl font-black text-center mb-4">What Kyra AI workers are built to deliver</h2>
+          <h2 className="text-3xl font-black text-center mb-4">The agency math</h2>
           <p className="text-center text-gray-500 mb-12">
-            Based on real-world deployments and internal testing — not hypotheticals.
+            You pay Kyra $99–499/mo. You charge each client $500–2,000/mo for their website + AI worker + CRM.
           </p>
           <div className="grid sm:grid-cols-3 gap-6">
             {[
               {
-                stat: '< 60s',
-                label: 'First response time',
-                desc: 'Aim to reply to every inbound GHL message — SMS, WhatsApp, Instagram — in under 60 seconds.',
-                emoji: '⚡',
+                plan: 'Lite — 3 clients',
+                cost: '$99/mo',
+                revenue: '$1,500–2,400/mo',
+                margin: '15–24x ROI',
               },
               {
-                stat: '24/7',
-                label: 'Coverage',
-                desc: 'AI workers handle nights, weekends, and holidays so your clients never miss a lead.',
-                emoji: '🌙',
+                plan: 'Pro — 10 clients',
+                cost: '$249/mo',
+                revenue: '$8,000–12,000/mo',
+                margin: '32–48x ROI',
               },
               {
-                stat: '40+',
-                label: 'Messages in one rush',
-                desc: 'Designed to handle dozens of inbound texts during peak hours without dropping the ball.',
-                emoji: '📲',
+                plan: 'Scale — 30 clients',
+                cost: '$499/mo',
+                revenue: '$30,000–60,000/mo',
+                margin: '60–120x ROI',
               },
             ].map((r) => (
-              <div key={r.stat} className="border border-gray-200 rounded-2xl p-6 text-center">
-                <div className="text-3xl mb-3">{r.emoji}</div>
-                <p className="text-3xl font-black text-gray-900 mb-1">{r.stat}</p>
-                <p className="text-sm font-semibold text-indigo-600 mb-3">{r.label}</p>
-                <p className="text-sm text-gray-500 leading-relaxed">{r.desc}</p>
+              <div key={r.plan} className="border border-gray-200 rounded-2xl p-6 text-center bg-white">
+                <p className="text-sm font-semibold text-gray-500 mb-2">{r.plan}</p>
+                <p className="text-sm text-gray-400">Your cost: {r.cost}</p>
+                <p className="text-2xl font-black text-green-600 mt-2">{r.revenue}</p>
+                <p className="text-xs text-green-600 font-semibold mt-1">{r.margin}</p>
               </div>
             ))}
           </div>
@@ -296,20 +257,20 @@ export default function GhlMarketplacePage() {
                 a: 'No — Kyra works on top of GHL. It monitors the GHL inbox for new inbound messages and sends replies through the GHL messaging API. Everything stays in GHL. Your clients never leave their existing workflow.',
               },
               {
+                q: 'Do my clients get a real website?',
+                a: 'Yes. Kyra generates a live, hosted 30+ page SEO website for each client — service pages, city/location pages, blog posts, FAQ, contact page. All indexed by Google. All with lead capture forms that sync to the CRM.',
+              },
+              {
                 q: "What happens if the AI doesn't know the answer?",
-                a: 'You configure a fallback behavior per client — either the AI says "Let me have a team member follow up" and tags the contact as escalated, or it can be set to always respond confidently within its configured knowledge.',
+                a: 'You configure a fallback behavior per client — either the AI says "Let me have a team member follow up" and tags the contact as escalated, or it can be set to respond confidently within its configured knowledge.',
               },
               {
                 q: 'Can I white-label this for my clients?',
-                a: 'Yes. The AI worker has a custom name (e.g., "Alex from Dental Plus") and operates from your client\'s GHL account. Your clients never see "Kyra" — they see their own branded AI.',
+                a: 'Yes. The AI worker has a custom name and operates from your client\'s GHL account. The website is on a custom domain. Your clients never see "Kyra."',
               },
               {
-                q: 'How do billing and credits work?',
-                a: 'Every paid plan includes monthly platform credits — Lite: 500, Pro: 1,500, Scale: 2,500. Credits power AI conversations without needing your own API key. Need more? Add your own OpenAI or Anthropic key (BYOK) at any time.',
-              },
-              {
-                q: 'Is there a limit on how many messages the AI sends per client?',
-                a: 'No per-message limits on the flat-rate plans. 1 credit = 1 conversation on credit packs. The flat plans are unlimited.',
+                q: 'How does the Growth Engine work?',
+                a: 'AI analyzes search trends for your client\'s industry and location, then suggests new pages to target those keywords. One click to generate and publish. Sites grow their SEO footprint automatically over time.',
               },
               {
                 q: 'What GHL plan do I need?',
@@ -328,15 +289,15 @@ export default function GhlMarketplacePage() {
       {/* ── Final CTA ── */}
       <section className="bg-indigo-700 text-white py-20 px-4 text-center">
         <div className="max-w-2xl mx-auto">
-          <h2 className="text-3xl sm:text-4xl font-black mb-4">Deploy your first AI worker today.</h2>
+          <h2 className="text-3xl sm:text-4xl font-black mb-4">First client site live in 10 minutes.</h2>
           <p className="text-indigo-200 text-lg mb-8">
-            Connect GHL. Pick a template. Live in 10 minutes. Free to start included.
+            30+ page website. AI worker. CRM. All synced to GHL. Free to start.
           </p>
           <Link
-            href="/solo"
+            href="/signup/agency"
             className="inline-block bg-white text-indigo-900 font-black text-lg px-10 py-4 rounded-xl hover:bg-indigo-50 transition-colors"
           >
-            Get Started Free →
+            Start Free — Build Your First Site
           </Link>
           <p className="text-indigo-400 text-sm mt-4">
             Already a GHL Agency partner? Use your existing login — no new account needed.
