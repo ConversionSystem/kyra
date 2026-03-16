@@ -9,14 +9,14 @@ import PublicFooter from '@/components/layout/public-footer';
 
 export const metadata: Metadata = {
   title: 'Kyra for GoHighLevel — Website + AI Worker + CRM for Every Sub-Account',
-  description: 'Kyra adds a 30+ page SEO website, an AI worker, and a full CRM to every GHL sub-account. White-label, multi-client, one dashboard. The Business in a Box that GHL agencies need.',
+  description: 'Kyra adds a 15-25 page SEO-optimized website, an AI worker, and a full CRM to every GHL sub-account. White-label, multi-client, one dashboard. The Business in a Box that GHL agencies need.',
 };
 
 const features = [
   {
     icon: Globe,
     title: 'AI Website Builder',
-    desc: '30+ page SEO website generated for each client — service pages, city pages, blog, FAQ, contact. All indexed by Google. All with lead capture forms.',
+    desc: '15-25 page SEO-optimized website generated for each client — service pages, city pages, blog, FAQ, contact. Built for search engines. All with lead capture forms.',
   },
   {
     icon: Bot,
@@ -41,13 +41,13 @@ const features = [
   {
     icon: TrendingUp,
     title: 'Growth Engine',
-    desc: 'AI analyzes search trends and suggests new SEO pages. One click to generate and publish. Sites grow their organic traffic over time.',
+    desc: 'AI suggests new pages to grow your search presence. One click to generate and publish. Sites keep growing with AI-generated content.',
   },
 ];
 
 const comparison = [
   { feature: 'AI chat / SMS responses', kyra: true, ghl: true },
-  { feature: '30+ page SEO website per client', kyra: true, ghl: false },
+  { feature: '15-25 page SEO-optimized website per client', kyra: true, ghl: false },
   { feature: 'AI-generated service & city pages', kyra: true, ghl: false },
   { feature: 'Growth Engine — ongoing SEO pages', kyra: true, ghl: false },
   { feature: 'Lead capture forms on every page', kyra: true, ghl: false },
@@ -80,7 +80,7 @@ export default function GHLPage() {
         </h1>
 
         <p className="text-xl text-gray-500 max-w-2xl mx-auto mb-10">
-          Every GHL sub-account gets a 30+ page SEO website, an AI worker that handles conversations 24/7, and a CRM that captures every lead. Deployed in under 10 minutes. White-labeled under your brand.
+          Every GHL sub-account gets a 15-25 page SEO-optimized website, an AI worker that handles conversations 24/7, and a CRM that captures every lead. Deployed in under 10 minutes. White-labeled under your brand.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -235,7 +235,7 @@ export default function GHLPage() {
           $99/mo for you. $500–2,000/mo from each client.
         </h2>
         <p className="text-gray-500 text-lg mb-10 max-w-xl mx-auto">
-          Each client gets a 30+ page website, AI worker, CRM, and lead capture.
+          Each client gets a 15-25 page SEO-optimized website, AI worker, CRM, and lead capture.
           You set the price. The margins are yours.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
