@@ -47,7 +47,7 @@ const FEATURES = [
   { icon: '🤖', title: 'AI Worker', desc: 'Chat widget on every site. Books appointments, captures leads, answers questions 24/7. Trained on the business automatically.' },
   { icon: '📊', title: 'CRM Built-In', desc: 'Every lead from the website, chat, and GHL flows into one inbox. Nothing falls through the cracks.' },
   { icon: '📈', title: 'Growth Engine', desc: 'AI suggests new pages to grow your search presence. One click to generate and publish. Sites that keep growing with AI-generated content.' },
-  { icon: '🏢', title: 'One Dashboard', desc: 'Manage 30 clients from one login. See every site, every lead, every conversation. White-label everything.' },
+  { icon: '🏢', title: 'One Dashboard', desc: 'Manage 20 clients from one login. See every site, every lead, every conversation. White-label everything.' },
   { icon: '🔗', title: 'GHL Integration', desc: 'Connects to GoHighLevel in 2 minutes. AI replies to every SMS, email, and DM. AI booking, connected to your GHL Calendar.' },
 ];
 
@@ -206,7 +206,7 @@ export default function HomePage() {
               <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
                 <p className="text-sm text-slate-400 mb-1">Typical agency revenue on Pro plan (10 clients)</p>
                 <p className="text-3xl font-black text-green-400">$8,000–12,000/mo</p>
-                <p className="text-sm text-slate-500 mt-1">10 clients x $800–1,200/mo — $249 Kyra cost</p>
+                <p className="text-sm text-slate-500 mt-1">10 clients x $800–1,200/mo — $299 Kyra cost</p>
               </div>
 
               <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
@@ -365,9 +365,9 @@ export default function HomePage() {
                 color: 'border-white/10',
               },
               {
-                plan: 'Pro — $249/mo',
+                plan: 'Pro — $299/mo',
                 clients: '10 clients',
-                kyra: '$249/mo',
+                kyra: '$299/mo',
                 charge: 'Charge $800–1,200/mo each',
                 revenue: '$8,000–12,000/mo revenue',
                 margin: '$7,750–11,750/mo margin',
@@ -376,11 +376,11 @@ export default function HomePage() {
               },
               {
                 plan: 'Scale — $499/mo',
-                clients: '30 clients',
+                clients: '20 clients',
                 kyra: '$499/mo',
                 charge: 'Charge $500–1,000/mo each',
-                revenue: '$15,000–30,000/mo revenue',
-                margin: '$14,500–29,500/mo margin',
+                revenue: '$10,000–20,000/mo revenue',
+                margin: '$9,500–19,500/mo margin',
                 color: 'border-white/10',
               },
             ].map((m) => (
