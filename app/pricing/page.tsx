@@ -35,8 +35,8 @@ const PLANS = [
   },
   {
     name: 'Pro',
-    monthly: 249, annual: 199,
-    annualSave: 600,
+    monthly: 299, annual: 239,
+    annualSave: 720,
     period: '/month',
     desc: 'Full AI workforce — up to 10 clients, each with website + AI worker + CRM.',
     cta: 'Try Free — Build Your First Site',
@@ -64,14 +64,14 @@ const PLANS = [
     monthly: 499, annual: 399,
     annualSave: 1200,
     period: '/month',
-    desc: 'Built for high-volume agencies — 30 clients, each with the full Business in a Box.',
+    desc: 'Built for high-volume agencies — 20 clients, each with the full Business in a Box.',
     cta: 'Try Free — Build Your First Site',
     href: '/website-builder?plan=scale',
     featured: false,
     badge: 'For high-volume agencies',
-    revenueCallout: 'Charge $1,000–2,000/mo per client = $30,000–60,000/mo revenue on $499 cost',
+    revenueCallout: 'Charge $1,000–2,000/mo per client = $20,000–40,000/mo revenue on $499 cost',
     features: [
-      '30 client AI workers',
+      '20 client AI workers',
       'AI Website Builder — 15-25 SEO-optimized pages per client',
       'Lead capture forms + CRM sync',
       'Growth Engine — AI-powered SEO page generation',
@@ -318,7 +318,7 @@ export default function PricingPage() {
             },
             {
               old: '"I don\'t have time to manage client sites."',
-              truth: 'The Growth Engine suggests new pages to grow your search presence. One click to generate and publish. Sites keep growing with AI-generated content. You manage 30 clients from one dashboard.',
+              truth: 'The Growth Engine suggests new pages to grow your search presence. One click to generate and publish. Sites keep growing with AI-generated content. you manage 20 clients from one dashboard.',
             },
             {
               old: '"AI chatbots don\'t actually work."',
