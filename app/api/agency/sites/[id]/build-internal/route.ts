@@ -95,6 +95,7 @@ async function runBuild(siteId: string, supabase: ReturnType<typeof createServic
     tagline: site.tagline || '',
     url: `https://${domain}`,
     bookingUrl: site.booking_url || '',
+    googleReviewUrl: (site as Record<string, unknown>).google_review_url || '',
     industry: site.industry || '',
     emergencyText: site.emergency_247 ? '24/7 Emergency Service Available' : '',
     services,
