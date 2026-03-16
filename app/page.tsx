@@ -6,10 +6,10 @@ import PublicFooter from '@/components/layout/public-footer';
 
 export const metadata: Metadata = {
   title: 'Kyra — Business in a Box for Agencies | AI Website Builder + AI Worker + CRM',
-  description: 'Deploy a complete AI-powered business for your clients in 10 minutes. 30+ page SEO website, AI worker, CRM, and lead capture — all from one dashboard. Agencies resell at $500-2,000/mo.',
+  description: 'Deploy a complete AI-powered business for your clients in 10 minutes. 15-25 page SEO-optimized website, AI worker, CRM, and lead capture — all from one dashboard. Agencies resell at $500-2,000/mo.',
   openGraph: {
     title: 'Kyra — Your clients get a website, an AI worker, and a full CRM. You get 10 minutes.',
-    description: 'The AI workforce platform for agencies. 30+ page SEO websites, AI workers, built-in CRM. Deploy in minutes, resell at 5x markup.',
+    description: 'The AI workforce platform for agencies. 15-25 page SEO-optimized websites, AI workers, built-in CRM. Deploy in minutes, resell at 3x-10x markup.',
     url: 'https://kyra.conversionsystem.com',
   },
   alternates: { canonical: 'https://kyra.conversionsystem.com' },
@@ -31,24 +31,24 @@ const HERO_DEMO = {
 };
 
 const INDUSTRIES = [
-  { emoji: '🦷', name: 'Dental', slug: 'dental', desc: '35-page site + appointment booking AI + review requests' },
+  { emoji: '🦷', name: 'Dental', slug: 'dental', desc: '20-page site + appointment booking AI + review requests' },
   { emoji: '🏡', name: 'Real Estate', slug: 'realestate', desc: 'Neighborhood pages + buyer/seller AI + lead pipeline' },
   { emoji: '🚗', name: 'Auto', slug: 'auto', desc: 'Inventory pages + test drive booking + lead capture' },
   { emoji: '🌿', name: 'Cannabis', slug: 'cannabis', desc: 'Menu pages + age verification + order routing' },
   { emoji: '🍽️', name: 'Restaurant', slug: 'restaurant', desc: 'Menu site + reservations AI + catering coordination' },
   { emoji: '✨', name: 'Med Spa', slug: 'medspa', desc: 'Treatment pages + consultation booking + follow-ups' },
-  { emoji: '⚖️', name: 'Law Firm', slug: 'law-firm', desc: '40-page site + intake AI + case routing' },
+  { emoji: '⚖️', name: 'Law Firm', slug: 'law-firm', desc: 'Up to 25-page site + intake AI + case routing' },
   { emoji: '🏠', name: 'HVAC', slug: 'hvac', desc: 'Service area pages + emergency dispatch + quote follow-up' },
   { emoji: '💇', name: 'Salon', slug: 'salon', desc: 'Service pages + appointment booking + rebooking reminders' },
 ];
 
 const FEATURES = [
-  { icon: '🌐', title: 'AI Website Builder', desc: '30+ page SEO site generated in minutes. Service pages, city pages, blog, FAQ, contact — all written by AI, indexed by Google.' },
+  { icon: '🌐', title: 'AI Website Builder', desc: '15-25 SEO-optimized pages generated in minutes. Service pages, city pages, blog, FAQ, contact — all written by AI, built for search engines.' },
   { icon: '🤖', title: 'AI Worker', desc: 'Chat widget on every site. Books appointments, captures leads, answers questions 24/7. Trained on the business automatically.' },
   { icon: '📊', title: 'CRM Built-In', desc: 'Every lead from the website, chat, and GHL flows into one inbox. Nothing falls through the cracks.' },
-  { icon: '📈', title: 'Growth Engine', desc: 'AI analyzes search trends and suggests new pages. One click to generate and publish. Sites that grow themselves.' },
+  { icon: '📈', title: 'Growth Engine', desc: 'AI suggests new pages to grow your search presence. One click to generate and publish. Sites that keep growing with AI-generated content.' },
   { icon: '🏢', title: 'One Dashboard', desc: 'Manage 30 clients from one login. See every site, every lead, every conversation. White-label everything.' },
-  { icon: '🔗', title: 'GHL Integration', desc: 'Connects to GoHighLevel in 2 minutes. AI replies to every SMS, email, and DM. Books into GHL Calendar automatically.' },
+  { icon: '🔗', title: 'GHL Integration', desc: 'Connects to GoHighLevel in 2 minutes. AI replies to every SMS, email, and DM. AI booking, connected to your GHL Calendar.' },
 ];
 
 export default function HomePage() {
@@ -78,15 +78,15 @@ export default function HomePage() {
               <span className="text-indigo-400">You get 10 minutes.</span>
             </h1>
             <p className="text-slate-300 text-lg sm:text-xl leading-relaxed mb-8 max-w-lg">
-              Kyra builds a 30-page SEO website, deploys an AI worker, and sets up lead capture — all from one dashboard. Agencies resell at $500–2,000/mo.
+              Kyra builds a 15-25 page SEO-optimized website, deploys an AI worker, and sets up lead capture — all from one dashboard. Agencies resell at $500–2,000/mo.
             </p>
 
             {/* Stats row */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
               {[
-                { value: '30+', label: 'Pages per site, auto-generated' },
+                { value: '15–25', label: 'Pages per site, auto-generated' },
                 { value: '< 10 min', label: 'From signup to live site' },
-                { value: '5x', label: 'Avg agency resale markup' },
+                { value: '3x–10x', label: 'Avg agency resale markup' },
                 { value: '$99/mo', label: 'Starting price' },
               ].map((s) => (
                 <div key={s.label} className="bg-white/10 border border-white/10 rounded-xl p-3 text-center">
@@ -171,7 +171,7 @@ export default function HomePage() {
               <ul className="space-y-3">
                 {[
                   'Deploy a new client site + AI worker in under 10 minutes',
-                  '30+ page SEO website generated per client',
+                  '15-25 page SEO-optimized website per client',
                   'AI worker trained on the business automatically',
                   'CRM captures every lead from website, chat, and GHL',
                   'Growth Engine suggests new pages to rank for',
@@ -190,7 +190,7 @@ export default function HomePage() {
               <div className="grid grid-cols-2 gap-4">
                 {[
                   { value: '< 10 min', label: 'Site + AI worker live', sub: 'From signup to deployed' },
-                  { value: '30+', label: 'Pages per site', sub: 'Auto-generated SEO content' },
+                  { value: '15–25', label: 'Pages per site', sub: 'Auto-generated SEO content' },
                   { value: '24/7', label: 'AI worker coverage', sub: 'Never misses a lead' },
                   { value: '5x–10x', label: 'Resale markup', sub: '$99 cost → $500–2,000 revenue' },
                 ].map((s) => (
@@ -245,7 +245,7 @@ export default function HomePage() {
               {
                 step: '01',
                 title: 'Sign up and add a client',
-                desc: 'Create your agency account, enter your client\'s business info. Kyra generates a 30+ page SEO website, deploys an AI worker, and sets up the CRM — automatically.',
+                desc: 'Create your agency account, enter your client\'s business info. Kyra generates a 15-25 page SEO-optimized website, deploys an AI worker, and sets up the CRM — automatically.',
               },
               {
                 step: '02',
@@ -320,7 +320,7 @@ export default function HomePage() {
           <div className="grid sm:grid-cols-3 gap-6">
             {[
               {
-                before: 'Build an HVAC website + AI worker in 8 minutes',
+                before: 'Build an HVAC website + AI worker in minutes',
                 after: 'Charge client $800/mo',
                 icon: '🏠',
               },
@@ -376,7 +376,7 @@ export default function HomePage() {
               Your first client site. Live in 10 minutes.
             </h2>
             <p className="text-indigo-200 text-lg mb-8 max-w-lg mx-auto">
-              30+ page website. AI worker. CRM. Lead capture. All deployed from one dashboard — no code, no infrastructure, no waiting.
+              15-25 page SEO-optimized website. AI worker. CRM. Lead capture. All deployed from one dashboard — no code, no infrastructure, no waiting.
             </p>
             <Link
               href="/signup/agency"
