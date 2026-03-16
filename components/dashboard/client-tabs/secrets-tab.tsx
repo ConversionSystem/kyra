@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
-import { AlertTriangle, Check, Copy, Eye, EyeOff, Key, Plus, Shield, Trash2 } from 'lucide-react';
+import { AlertTriangle, Check, Copy, Eye, EyeOff, Key, Loader2, Plus, Shield, Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -31,6 +31,7 @@ export default function SecretsTab({ clientId }: { clientId: string }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingSecret, setEditingSecret] = useState<SecretRow | null>(null);
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [showValue, setShowValue] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -180,9 +181,11 @@ export default function SecretsTab({ clientId }: { clientId: string }) {
   };
 
   const handleDelete = async (secret: SecretRow) => {
+    if (deletingId) return; // prevent double-click
     const ok = window.confirm(`Delete ${secret.key_name}? This cannot be undone.`);
     if (!ok) return;
 
+    setDeletingId(secret.id);
     try {
       const res = await fetch(`/api/agency/clients/${clientId}/secrets/${secret.id}`, {
         method: 'DELETE',
@@ -198,6 +201,8 @@ export default function SecretsTab({ clientId }: { clientId: string }) {
       await fetchSecrets();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete secret');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -331,10 +336,13 @@ export default function SecretsTab({ clientId }: { clientId: string }) {
                         <button
                           type="button"
                           onClick={() => handleDelete(secret)}
-                          className="inline-flex items-center gap-1.5 rounded-md border border-red-200 px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
+                          disabled={!!deletingId}
+                          className="inline-flex items-center gap-1.5 rounded-md border border-red-200 px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
-                          Delete
+                          {deletingId === secret.id
+                            ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            : <Trash2 className="h-3.5 w-3.5" />}
+                          {deletingId === secret.id ? 'Deleting...' : 'Delete'}
                         </button>
                       </div>
                     </td>
