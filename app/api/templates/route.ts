@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
       soul_template: soulContent,
       skills: template.suggestedTools,
       is_public: false,
-    }, { onConflict: 'id' });
+    }, { onConflict: 'agency_id,name' });
 
   return NextResponse.json({
     success: true,
