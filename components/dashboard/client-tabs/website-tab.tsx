@@ -1104,6 +1104,7 @@ function OverviewView({
       {/* Live site preview card */}
       {siteUrl && site.status === 'live' && (
         <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+          {/* Browser chrome bar */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50">
             <div className="flex items-center gap-2">
               <div className="flex gap-1.5">
@@ -1111,22 +1112,31 @@ function OverviewView({
                 <div className="w-3 h-3 rounded-full bg-yellow-400" />
                 <div className="w-3 h-3 rounded-full bg-green-400" />
               </div>
-              <span className="text-xs text-gray-500 font-mono ml-2">{siteUrl.replace('https://','')}</span>
+              <span className="text-xs text-gray-500 font-mono ml-2 truncate max-w-[200px]">{siteUrl.replace('https://','')}</span>
             </div>
             <a href={siteUrl} target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-1 text-xs text-indigo-600 hover:underline font-medium">
               Open <ExternalLink className="h-3 w-3" />
             </a>
           </div>
-          <div className="relative" style={{ paddingTop: '56.25%' }}>
-            <iframe
-              src={siteUrl}
-              title={`${site.business_name} preview`}
-              className="absolute inset-0 w-full h-full border-0"
-              style={{ transform: 'scale(0.5)', transformOrigin: '0 0', width: '200%', height: '200%' }}
-              loading="lazy"
-            />
-          </div>
+          {/* Thumbnail placeholder — links to site */}
+          <a href={siteUrl} target="_blank" rel="noopener noreferrer" className="block">
+            <div className="bg-gradient-to-br from-indigo-50 to-slate-100 h-48 flex flex-col items-center justify-center gap-3 hover:from-indigo-100 transition-colors group">
+              <div className="w-12 h-12 rounded-xl bg-indigo-600 flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
+                <Globe className="h-6 w-6 text-white" />
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-semibold text-gray-700">{site.business_name}</p>
+                <p className="text-xs text-indigo-600 mt-0.5 flex items-center justify-center gap-1">
+                  View live site <ExternalLink className="h-3 w-3" />
+                </p>
+              </div>
+              <div className="flex items-center gap-4 text-xs text-gray-400 mt-1">
+                <span className="flex items-center gap-1"><CheckCircle2 className="h-3 w-3 text-green-500" /> Live</span>
+                <span>{site.page_count || 0} pages</span>
+              </div>
+            </div>
+          </a>
         </div>
       )}
 
