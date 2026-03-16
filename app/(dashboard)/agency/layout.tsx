@@ -26,9 +26,7 @@ export default async function AgencyLayout({
   // Master emails are exempt.
   const accountType = (agency.settings as Record<string, unknown>)?.account_type as string | undefined;
   const isSolo = accountType === 'solo';
-  if (!isMaster && !isSolo && agency.plan === 'free') {
-    redirect('/agency/billing?required=true');
-  }
+  // Free plan is now a valid agency plan — no redirect needed
 
   return (
     <div className="min-h-screen bg-gray-50 lg:flex">
