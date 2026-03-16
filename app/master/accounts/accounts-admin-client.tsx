@@ -25,7 +25,7 @@ interface Account {
   solo_client_id: string | null;
 }
 
-const PLANS = ['free', 'solo_pro', 'starter', 'pro', 'scale'];
+const PLANS = ['free', 'starter', 'pro', 'scale'];
 const PLAN_LABELS: Record<string, string> = {
   free: 'Free', solo_pro: 'Solo Pro', starter: 'Lite', pro: 'Pro', scale: 'Scale',
 };

@@ -9,30 +9,6 @@ import PublicFooter from '@/components/layout/public-footer';
 
 const PLANS = [
   {
-    name: 'Solo Pro',
-    monthly: 39, annual: 29,
-    annualSave: 120,
-    period: '/month',
-    desc: 'Your personal AI worker + website. Handles leads, books appointments, chats with customers 24/7.',
-    cta: 'Try Free — Build Your First Site',
-    href: '/website-builder?plan=solo_pro',
-    featured: false,
-    badge: 'FOR SOLO BUSINESSES',
-    revenueCallout: null,
-    features: [
-      '1 AI Worker powered by OpenClaw',
-      'AI Website Builder — 15-25 SEO-optimized pages per client',
-      'Lead capture forms + CRM sync',
-      '2,000 credits / month',
-      'Messaging across SMS, Telegram & web chat',
-      'Built-in CRM with contacts, deals & pipeline',
-      'AI Templates — pick one, deploy instantly',
-      'Knowledge Base — teach your AI with docs & links',
-      'Email support',
-    ],
-    limits: [],
-  },
-  {
     name: 'Lite',
     monthly: 99, annual: 79,
     annualSave: 240,
@@ -186,7 +162,7 @@ export default function PricingPage() {
 
       {/* Plans */}
       <section className="max-w-6xl mx-auto px-4 pb-20">
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid sm:grid-cols-3 gap-4">
           {PLANS.map((plan) => {
             const price = annual && plan.annual > 0 ? plan.annual : plan.monthly;
             const displayPrice = price === 0 ? '$0' : `$${price}`;
@@ -296,7 +272,7 @@ export default function PricingPage() {
         {/* Credits callout */}
         <div className="mt-6 rounded-2xl border border-indigo-500/30 bg-indigo-950/40 p-5 text-center">
           <p className="text-indigo-200 text-sm font-semibold">
-            Platform credits are included — no API keys needed to start. Solo Pro: 2,000/mo · Lite: 500 · Pro: 1,500 · Scale: 2,500. BYOK available on Lite+.
+            Platform credits are included — no API keys needed to start. Lite: 500 · Pro: 1,500 · Scale: 2,500. BYOK available on Lite+.
           </p>
         </div>
 
