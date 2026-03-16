@@ -53,6 +53,7 @@ interface SiteData {
   design_style: string;
   ai_name: string | null;
   booking_url: string | null;
+  google_review_url: string | null;
   ga4_id?: string | null;
   white_label?: boolean;
 }
@@ -840,6 +841,7 @@ function SettingsView({ site, onRefreshSite, onDeleteSite }: {
     site_domain: site.site_domain || '',
     ga4_id: site.ga4_id || '',
     booking_url: site.booking_url || '',
+    google_review_url: site.google_review_url || '',
     white_label: site.white_label || false,
     color_primary: site.color_primary || '#6366f1',
     design_style: site.design_style || 'modern-dark',
@@ -930,6 +932,18 @@ function SettingsView({ site, onRefreshSite, onDeleteSite }: {
             placeholder="https://calendly.com/..."
             className={inputClass}
           />
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Google Review URL</label>
+          <input
+            type="text"
+            value={form.google_review_url}
+            onChange={(e) => setForm((f) => ({ ...f, google_review_url: e.target.value }))}
+            placeholder="https://g.page/r/YOUR_ID/review"
+            className={inputClass}
+          />
+          <p className="text-xs text-gray-400 mt-1">Shown on the Reviews page as a &quot;Leave a Review&quot; button</p>
         </div>
 
         <div>
