@@ -72,10 +72,11 @@ export default function HomePage() {
           {/* Left: Headline + CTA */}
           <div>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-[1.05] mb-6 tracking-tight">
-              Your clients get a website, an{' '}
-              <span className="text-indigo-400">AI worker</span>, and a full CRM.
+              The{' '}
+              <span className="text-indigo-400">Business in a Box</span>
+              {' '}for agencies.
               <br />
-              <span className="text-indigo-400">You get 10 minutes.</span>
+              <span className="text-white/80 text-3xl sm:text-4xl font-bold">Website. AI worker. CRM. Live in minutes.</span>
             </h1>
             <p className="text-slate-300 text-lg sm:text-xl leading-relaxed mb-8 max-w-lg">
               Kyra builds a 15-25 page SEO-optimized website, deploys an AI worker, and sets up lead capture — all from one dashboard. Agencies resell at $500–2,000/mo.
@@ -84,10 +85,10 @@ export default function HomePage() {
             {/* Stats row */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
               {[
-                { value: '15–25', label: 'Pages per site, auto-generated' },
-                { value: '< 10 min', label: 'From signup to live site' },
-                { value: '3x–10x', label: 'Avg agency resale markup' },
-                { value: '$99/mo', label: 'Starting price' },
+                { value: '15–25', label: 'SEO pages per client site' },
+                { value: '7-day', label: 'Free trial — no card needed' },
+                { value: '3x–10x', label: 'Agency resale markup' },
+                { value: '$99/mo', label: 'Lite plan — 3 clients' },
               ].map((s) => (
                 <div key={s.label} className="bg-white/10 border border-white/10 rounded-xl p-3 text-center">
                   <p className="text-xl font-black text-white">{s.value}</p>
@@ -97,18 +98,18 @@ export default function HomePage() {
             </div>
 
             {/* CTAs */}
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-col sm:flex-row gap-3 items-center">
               <Link
                 href="/signup/agency"
                 className="inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 transition text-white font-bold text-lg px-8 py-4 rounded-xl"
               >
-                Start Free — First Site Live in 10 Minutes
+                Start Free — First Site Live in Minutes
               </Link>
               <Link
-                href="/demo/dental"
-                className="inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/15 border border-white/10 transition text-white font-semibold text-lg px-8 py-4 rounded-xl"
+                href="/try/dental"
+                className="text-slate-400 hover:text-white transition font-medium text-lg"
               >
-                See It Live
+                See a Live Demo →
               </Link>
             </div>
             <p className="text-sm text-slate-500 mt-3">
@@ -342,6 +343,75 @@ export default function HomePage() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ── Real margin math ─────────────────────────────────────────── */}
+      <section className="border-t border-white/10 py-20">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl font-black mb-4">The math is obvious.</h2>
+            <p className="text-slate-400 text-lg">What Kyra costs you vs. what you charge clients.</p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              {
+                plan: 'Lite — $99/mo',
+                clients: '3 clients',
+                kyra: '$99/mo',
+                charge: 'Charge $500–800/mo each',
+                revenue: '$1,500–2,400/mo revenue',
+                margin: '$1,400–2,300/mo margin',
+                color: 'border-white/10',
+              },
+              {
+                plan: 'Pro — $249/mo',
+                clients: '10 clients',
+                kyra: '$249/mo',
+                charge: 'Charge $800–1,200/mo each',
+                revenue: '$8,000–12,000/mo revenue',
+                margin: '$7,750–11,750/mo margin',
+                color: 'border-indigo-500/50',
+                highlight: true,
+              },
+              {
+                plan: 'Scale — $499/mo',
+                clients: '30 clients',
+                kyra: '$499/mo',
+                charge: 'Charge $500–1,000/mo each',
+                revenue: '$15,000–30,000/mo revenue',
+                margin: '$14,500–29,500/mo margin',
+                color: 'border-white/10',
+              },
+            ].map((m) => (
+              <div key={m.plan} className={`bg-white/5 border ${m.color} rounded-2xl p-6 ${m.highlight ? 'ring-1 ring-indigo-500/50' : ''}`}>
+                {m.highlight && <div className="text-xs font-black text-indigo-400 uppercase tracking-widest mb-3">Most popular</div>}
+                <p className="text-white font-black text-lg mb-1">{m.plan}</p>
+                <p className="text-slate-400 text-sm mb-4">{m.clients}</p>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Your Kyra cost</span>
+                    <span className="text-red-400 font-semibold">{m.kyra}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">You charge</span>
+                    <span className="text-white font-semibold">{m.charge}</span>
+                  </div>
+                  <div className="border-t border-white/10 pt-2 flex justify-between">
+                    <span className="text-slate-400">Monthly revenue</span>
+                    <span className="text-green-400 font-bold">{m.revenue}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-300 font-semibold">Your margin</span>
+                    <span className="text-green-400 font-black">{m.margin}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-center text-slate-500 text-sm mt-6">
+            * Margin = client revenue minus Kyra subscription. Does not include your time, custom work, or add-on services you charge separately.
+          </p>
         </div>
       </section>
 

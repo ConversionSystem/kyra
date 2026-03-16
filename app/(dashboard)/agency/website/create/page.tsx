@@ -519,15 +519,6 @@ function StepServices({
                 className="w-full text-sm font-medium text-gray-900 bg-transparent focus:outline-none"
               />
             </div>
-            <div className="shrink-0 w-36">
-              <input
-                type="text"
-                value={service.priceFrom || ''}
-                onChange={(e) => updateService(index, { priceFrom: e.target.value })}
-                placeholder="Starting at $X"
-                className="w-full text-xs text-gray-500 bg-gray-50 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-400"
-              />
-            </div>
             <button
               onClick={() => removeService(index)}
               className="shrink-0 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
