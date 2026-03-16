@@ -14,8 +14,8 @@ const PLANS = [
     annualSave: 120,
     period: '/month',
     desc: 'Your personal AI worker + website. Handles leads, books appointments, chats with customers 24/7.',
-    cta: 'Start Solo Pro',
-    href: '/solo?plan=solo_pro',
+    cta: 'Try Free — Build Your First Site',
+    href: '/website-builder?plan=solo_pro',
     featured: false,
     badge: 'FOR SOLO BUSINESSES',
     revenueCallout: null,
@@ -38,8 +38,8 @@ const PLANS = [
     annualSave: 240,
     period: '/month',
     desc: 'Launch your AI agency with 3 clients — each gets a full website + AI worker + CRM.',
-    cta: 'Start Lite',
-    href: '/signup/agency?plan=starter',
+    cta: 'Try Free — Build Your First Site',
+    href: '/website-builder?plan=starter',
     featured: false,
     badge: 'Start here',
     revenueCallout: 'Charge $500–800/mo per client = $1,500–2,400/mo revenue on $99 cost',
@@ -63,8 +63,8 @@ const PLANS = [
     annualSave: 600,
     period: '/month',
     desc: 'Full AI workforce — up to 10 clients, each with website + AI worker + CRM.',
-    cta: 'Start Pro',
-    href: '/signup/agency?plan=pro',
+    cta: 'Try Free — Build Your First Site',
+    href: '/website-builder?plan=pro',
     featured: true,
     badge: 'Best for growing agencies',
     revenueCallout: 'Charge $800–1,200/mo per client = $8,000–12,000/mo revenue on $249 cost',
@@ -89,8 +89,8 @@ const PLANS = [
     annualSave: 1200,
     period: '/month',
     desc: 'Built for high-volume agencies — 30 clients, each with the full Business in a Box.',
-    cta: 'Start Scale',
-    href: '/signup/agency?plan=scale',
+    cta: 'Try Free — Build Your First Site',
+    href: '/website-builder?plan=scale',
     featured: false,
     badge: 'For high-volume agencies',
     revenueCallout: 'Charge $1,000–2,000/mo per client = $30,000–60,000/mo revenue on $499 cost',
@@ -131,7 +131,7 @@ const FAQ = [
   },
   {
     q: 'Is there a long-term contract?',
-    a: 'Monthly plans cancel anytime. Annual plans are billed upfront for the year and save 20%. 7-day free trial on all paid plans.',
+    a: 'Monthly plans cancel anytime. Annual plans are billed upfront for the year and save 20%. 1 free account on all plans.',
   },
   {
     q: 'What happens if my client count exceeds my plan?',
@@ -153,7 +153,7 @@ export default function PricingPage() {
       {/* Header */}
       <section className="py-20 text-center px-4">
         <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 text-sm font-medium mb-6">
-          Agency from $99/mo · 7-day free trial · Cancel anytime
+          Agency from $99/mo · 1 free account included — no credit card needed
         </div>
         <h1 className="text-4xl sm:text-5xl font-black mb-4">
           Your cost: $99–499/mo. Your client pays: $500–2,000/mo.
@@ -285,7 +285,7 @@ export default function PricingPage() {
               <p className="text-slate-400 text-sm mt-1">300 AI calling minutes · inbound + outbound · transcripts · auto-escalation to human</p>
             </div>
             <a
-              href="/solo?addon=voice"
+              href="/website-builder?addon=voice"
               className="shrink-0 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-3 rounded-xl transition text-sm whitespace-nowrap"
             >
               Add Voice AI
@@ -377,12 +377,12 @@ export default function PricingPage() {
       {/* CTA */}
       <section className="border-t border-white/10 py-20 text-center px-4">
         <h2 className="text-3xl sm:text-4xl font-black mb-4">First client site live in 10 minutes.</h2>
-        <p className="text-slate-400 mb-8">Start on Lite at $99/mo. 7-day free trial — no charge today.</p>
+        <p className="text-slate-400 mb-8">Start on Lite at $99/mo. 1 free account included — no credit card needed.</p>
         <Link
-          href="/signup/agency"
+          href="/website-builder"
           className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-lg px-8 py-4 rounded-xl transition"
         >
-          Start Free — Build Your First Site
+          Try It Free — Build Your First Site →
         </Link>
         <p className="text-slate-600 text-sm mt-4">Cancel anytime · Upgrade as you grow · Website + AI worker + CRM included</p>
       </section>
