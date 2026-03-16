@@ -99,7 +99,7 @@ const FAQ = [
   },
   {
     q: 'How do agencies make money with Kyra?',
-    a: 'You pay $99–$499/mo for Kyra. You charge each client $500–$2,000/mo for their website + AI worker + CRM. At Pro ($249/mo, 10 clients) billing $1,000/client = $10,000/mo revenue — $9,751/mo margin. The math works from day one.',
+    a: 'You pay $99–$499/mo for Kyra. You charge each client $500–$2,000/mo for their website + AI worker + CRM. At Pro ($299/mo, 10 clients) billing $1,000/client = $10,000/mo revenue — $9,751/mo margin. The math works from day one.',
   },
   {
     q: 'How long does it take to set up a new client?',
