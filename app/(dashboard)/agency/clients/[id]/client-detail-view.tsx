@@ -487,7 +487,7 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
             />
           )}
           {!isPremiumLocked(activeTab) && activeTab === 'ai-teams' && (
-            <AgentsClient />
+            <AgentsClient clientId={initialClient.id} embedded />
           )}
           {!isPremiumLocked(activeTab) && activeTab === 'automation' && (
             <AutopilotClient />
