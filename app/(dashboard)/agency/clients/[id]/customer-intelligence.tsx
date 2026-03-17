@@ -127,8 +127,8 @@ export function CustomerIntelligence({ clientId }: { clientId: string }) {
       setNewFact('');
       setAddingFact(null);
       load();
-    } catch {
-      // ignore
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to add fact');
     } finally {
       setSavingFact(false);
     }
