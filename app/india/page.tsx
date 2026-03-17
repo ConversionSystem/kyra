@@ -166,7 +166,7 @@ export default function IndiaPage() {
               'Works across every channel your clients already use: SMS, WhatsApp, Instagram, FB Messenger, Live Chat, Google Business',
               "Reads GHL contact data before every reply — knows the customer's history",
               'Writes conversation notes + tags directly back to GHL CRM',
-              'Your clients never see Kyra — they see their own branded AI worker',
+              'Your clients see their own branded AI worker on portal and chat widget',
               'Manages 1 client or 50 from the same dashboard',
             ].map(item => (
               <div key={item} className="flex items-start gap-3 text-sm text-gray-300">
