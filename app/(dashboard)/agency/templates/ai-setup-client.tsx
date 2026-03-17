@@ -76,12 +76,22 @@ export function AISetupClient({ agencyId, businessName, dbTemplates }: AISetupPr
 
   const handleActivatePackage = async (pkgId: string) => {
     setActivating(pkgId);
-    await fetch('/api/packages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ package_id: pkgId }),
-    });
-    setActivated(prev => new Set([...prev, pkgId]));
+    try {
+      const res = await fetch('/api/packages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ packageId: pkgId }), // server expects 'packageId'
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert((data as { error?: string }).error || 'Failed to activate package.');
+        setActivating(null);
+        return;
+      }
+      setActivated(prev => new Set([...prev, pkgId]));
+    } catch {
+      alert('Failed to activate package. Please try again.');
+    }
     setActivating(null);
   };
 
@@ -200,7 +210,7 @@ export function AISetupClient({ agencyId, businessName, dbTemplates }: AISetupPr
                     </span>
                     <span>{t.variableCount} variables</span>
                   </div>
-                  <a href={`/agency/ai-setup?template=${t.id}`}>
+                  <a href={`/agency/clients/new?template=${t.id}`}>
                     <Button variant="outline" size="sm" className="w-full text-xs">
                       Use Template <ArrowRight className="h-3 w-3 ml-1" />
                     </Button>

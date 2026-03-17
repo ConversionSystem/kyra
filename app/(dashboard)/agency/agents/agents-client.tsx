@@ -7,7 +7,7 @@ import { AISuggestButton } from '@/components/ai/suggest-button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Bot, Send, ChevronDown, ChevronUp, Loader2, Zap, Info, FlaskConical } from 'lucide-react';
+import { Bot, Send, ChevronDown, ChevronUp, Loader2, Zap, Info, FlaskConical, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SectionNav } from '@/components/dashboard/section-nav';
 
@@ -27,6 +27,7 @@ interface AgentInfo {
 interface RoutingResult {
   routedTo: { id: string; name: string; emoji: string; description: string };
   generatedPromptPreview: string;
+  error?: string;
 }
 
 const TOOL_LABELS: Record<string, string> = {
@@ -37,7 +38,14 @@ const TOOL_LABELS: Record<string, string> = {
   send_payment_link: '💳 Payments',
 };
 
-export function AgentsClient() {
+interface AgentsClientProps {
+  // When rendered inside a client tab, pass clientId so config
+  // is scoped per-client rather than agency-wide.
+  clientId?: string;
+  embedded?: boolean;
+}
+
+export function AgentsClient({ clientId, embedded }: AgentsClientProps = {}) {
   const [agents, setAgents] = useState<AgentInfo[]>([]);
   const [routingEnabled, setRoutingEnabled] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -45,60 +53,113 @@ export function AgentsClient() {
   const [testResult, setTestResult] = useState<RoutingResult | null>(null);
   const [testing, setTesting] = useState(false);
   const [saving, setSaving] = useState<string | null>(null);
+  const [saveStatus, setSaveStatus] = useState<Record<string, 'success' | 'error'>>({});
+  const [globalError, setGlobalError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const apiUrl = clientId
+    ? `/api/agency/agents?clientId=${clientId}`
+    : '/api/agency/agents';
+
   useEffect(() => {
-    fetch('/api/agency/agents')
+    fetch(apiUrl)
       .then(r => r.json())
       .then(d => {
+        if (d.error) { setGlobalError(d.error); return; }
         setAgents(d.agents ?? []);
         setRoutingEnabled(d.routingEnabled ?? false);
-        setLoading(false);
       })
-      .catch(() => setLoading(false));
-  }, []);
+      .catch(() => setGlobalError('Failed to load agent config.'))
+      .finally(() => setLoading(false));
+  }, [apiUrl]);
+
+  const showSaveStatus = (id: string, status: 'success' | 'error') => {
+    setSaveStatus(prev => ({ ...prev, [id]: status }));
+    setTimeout(() => setSaveStatus(prev => { const n = { ...prev }; delete n[id]; return n; }), 3000);
+  };
 
   const toggleAgent = async (roleId: string, enabled: boolean) => {
     setSaving(roleId);
     const agent = agents.find(a => a.id === roleId);
-    await fetch('/api/agency/agents', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'update_agent',
-        roleId,
-        enabled,
-        customPersonality: agent?.customPersonality ?? undefined,
-      }),
-    });
-    setAgents(prev => prev.map(a => a.id === roleId ? { ...a, enabled } : a));
+    try {
+      const res = await fetch('/api/agency/agents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update_agent',
+          roleId,
+          enabled,
+          customPersonality: agent?.customPersonality ?? undefined,
+          ...(clientId && { clientId }),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        showSaveStatus(roleId, 'error');
+        // Revert optimistic toggle
+        setAgents(prev => prev.map(a => a.id === roleId ? { ...a, enabled: !enabled } : a));
+      } else {
+        setAgents(prev => prev.map(a => a.id === roleId ? { ...a, enabled } : a));
+        showSaveStatus(roleId, 'success');
+      }
+    } catch {
+      showSaveStatus(roleId, 'error');
+      setAgents(prev => prev.map(a => a.id === roleId ? { ...a, enabled: !enabled } : a));
+    }
     setSaving(null);
   };
 
   const savePersonality = async (roleId: string, customPersonality: string) => {
     setSaving(roleId);
     const agent = agents.find(a => a.id === roleId);
-    await fetch('/api/agency/agents', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'update_agent',
-        roleId,
-        enabled: agent?.enabled ?? false,
-        customPersonality: customPersonality || undefined,
-      }),
-    });
-    setAgents(prev => prev.map(a => a.id === roleId ? { ...a, customPersonality } : a));
+    try {
+      const res = await fetch('/api/agency/agents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update_agent',
+          roleId,
+          enabled: agent?.enabled ?? false,
+          customPersonality: customPersonality || undefined,
+          ...(clientId && { clientId }),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        showSaveStatus(roleId, 'error');
+      } else {
+        setAgents(prev => prev.map(a => a.id === roleId ? { ...a, customPersonality } : a));
+        showSaveStatus(roleId, 'success');
+      }
+    } catch {
+      showSaveStatus(roleId, 'error');
+    }
     setSaving(null);
   };
 
   const toggleRouting = async (enabled: boolean) => {
+    // Optimistic update
     setRoutingEnabled(enabled);
-    await fetch('/api/agency/agents', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'toggle_routing', enabled }),
-    });
+    try {
+      const res = await fetch('/api/agency/agents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'toggle_routing',
+          enabled,
+          ...(clientId && { clientId }),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        // Revert on failure
+        setRoutingEnabled(!enabled);
+        setGlobalError('Failed to save routing setting.');
+      }
+    } catch {
+      setRoutingEnabled(!enabled);
+      setGlobalError('Network error — routing setting not saved.');
+    }
   };
 
   const testRouting = async () => {
@@ -109,11 +170,22 @@ export function AgentsClient() {
       const res = await fetch('/api/agency/agents', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'test_routing', message: testMessage }),
+        body: JSON.stringify({
+          action: 'test_routing',
+          message: testMessage,
+          ...(clientId && { clientId }),
+        }),
       });
       const data = await res.json();
-      setTestResult(data);
-    } catch { /* ignore */ }
+      // Guard: only set if we got a valid routedTo object back
+      if (data.routedTo?.name) {
+        setTestResult(data);
+      } else {
+        setTestResult({ routedTo: { id: '', name: '', emoji: '⚠️', description: '' }, generatedPromptPreview: '', error: data.error || 'Routing test failed.' });
+      }
+    } catch {
+      setTestResult({ routedTo: { id: '', name: '', emoji: '⚠️', description: '' }, generatedPromptPreview: '', error: 'Network error — could not test routing.' });
+    }
     setTesting(false);
   };
 
@@ -129,7 +201,8 @@ export function AgentsClient() {
 
   return (
     <div className="space-y-0">
-      <SectionNav currentHref="/agency/agents" />
+      {/* SectionNav only shown on the standalone /agency/agents page, not when embedded in a client tab */}
+      {!embedded && <SectionNav currentHref="/agency/agents" />}
     <div className="p-4 sm:p-6 md:p-8 space-y-6 max-w-3xl">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -145,6 +218,15 @@ export function AgentsClient() {
           {enabledCount} active
         </Badge>
       </div>
+
+      {/* Global error banner */}
+      {globalError && (
+        <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          {globalError}
+          <button onClick={() => setGlobalError(null)} className="ml-auto text-red-400 hover:text-red-600">✕</button>
+        </div>
+      )}
 
       {/* Smart Routing Toggle */}
       <Card className="bg-white border-gray-200">
@@ -182,20 +264,33 @@ export function AgentsClient() {
                 onKeyDown={e => e.key === 'Enter' && testRouting()}
                 className="bg-gray-50 border-gray-200 text-gray-900"
               />
-              <Button onClick={testRouting} disabled={testing} className="bg-blue-600 hover:bg-blue-700 shrink-0">
+              <Button onClick={testRouting} disabled={testing || !testMessage.trim()} className="bg-blue-600 hover:bg-blue-700 shrink-0">
                 {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               </Button>
             </div>
             {testResult && (
-              <div className="bg-gray-50 rounded-lg p-3 flex items-center gap-3">
-                <span className="text-2xl">{testResult.routedTo.emoji}</span>
-                <div>
-                  <p className="text-gray-900 font-medium">
-                    → {testResult.routedTo.name}
-                  </p>
-                  <p className="text-gray-500 text-xs">{testResult.routedTo.description}</p>
+              testResult.error ? (
+                <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                  <AlertTriangle className="h-4 w-4 shrink-0" />
+                  {testResult.error}
                 </div>
-              </div>
+              ) : (
+                <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">{testResult.routedTo.emoji}</span>
+                    <div>
+                      <p className="text-gray-900 font-medium">→ {testResult.routedTo.name}</p>
+                      <p className="text-gray-500 text-xs">{testResult.routedTo.description}</p>
+                    </div>
+                  </div>
+                  {testResult.generatedPromptPreview && (
+                    <details className="text-xs">
+                      <summary className="text-gray-400 cursor-pointer hover:text-gray-600 select-none">Preview prompt snippet</summary>
+                      <pre className="mt-2 bg-gray-100 rounded p-2 text-gray-600 whitespace-pre-wrap overflow-x-auto">{testResult.generatedPromptPreview}</pre>
+                    </details>
+                  )}
+                </div>
+              )
             )}
           </CardContent>
         </Card>
@@ -213,6 +308,7 @@ export function AgentsClient() {
       <div className="space-y-3">
         {agents.map(agent => {
           const isExpanded = expandedId === agent.id;
+          const status = saveStatus[agent.id];
           return (
             <Card key={agent.id} className={cn(
               'bg-white border-gray-200 transition-all',
@@ -229,6 +325,9 @@ export function AgentsClient() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
+                    {/* Per-agent save feedback */}
+                    {status === 'success' && <CheckCircle2 className="h-4 w-4 text-emerald-500" />}
+                    {status === 'error' && <AlertTriangle className="h-4 w-4 text-red-500" />}
                     <Switch
                       checked={agent.enabled}
                       onCheckedChange={(v) => toggleAgent(agent.id, v)}
@@ -255,6 +354,9 @@ export function AgentsClient() {
                             {TOOL_LABELS[t] ?? t}
                           </Badge>
                         ))}
+                        {agent.suggestedTools.length === 0 && (
+                          <span className="text-xs text-gray-400 italic">No tools — uses conversation only</span>
+                        )}
                       </div>
                     </div>
 
@@ -294,7 +396,17 @@ export function AgentsClient() {
                         rows={3}
                         className="w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-md p-2 text-sm resize-y"
                       />
-                      <div className="flex justify-end mt-2">
+                      <div className="flex items-center justify-end gap-3 mt-2">
+                        {status === 'success' && (
+                          <span className="text-xs text-emerald-600 flex items-center gap-1">
+                            <CheckCircle2 className="h-3 w-3" /> Saved
+                          </span>
+                        )}
+                        {status === 'error' && (
+                          <span className="text-xs text-red-500 flex items-center gap-1">
+                            <AlertTriangle className="h-3 w-3" /> Save failed
+                          </span>
+                        )}
                         <Button
                           size="sm"
                           variant="outline"

@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { waitUntil } from '@vercel/functions';
 import { requireAgencyMember } from '@/lib/agency/middleware';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { generateSiteContent } from '@/lib/sites/content-engine';
+import { provisionClientGateway } from '@/lib/ovh/provisioner';
 import type { WizardData } from '@/lib/sites/types';
+
+// Allow up to 5 min for auto-generate (used by bulk generation)
+export const maxDuration = 300;
 
 /**
  * GET /api/agency/sites
@@ -76,11 +82,87 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // Clean up old ghost drafts for this client before creating a new one
+  if (body.client_id) {
+    await supabase
+      .from('client_sites')
+      .delete()
+      .eq('agency_id', auth.data.agency.id)
+      .eq('client_id', body.client_id)
+      .eq('status', 'draft');
+    // If a live site already exists, return it instead of creating a duplicate
+    const { data: liveSite } = await supabase
+      .from('client_sites')
+      .select('*')
+      .eq('agency_id', auth.data.agency.id)
+      .eq('client_id', body.client_id)
+      .eq('status', 'live')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (liveSite) {
+      return NextResponse.json({ ok: true, data: liveSite });
+    }
+  }
+
+  // If no client_id provided, auto-create an agency_clients row so the
+  // widget lead form and knowledge sync always have a valid client reference.
+  let clientId = body.client_id || null;
+  if (!clientId) {
+    const slug = body.business_name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+      .slice(0, 60);
+
+    const { data: newClient, error: clientErr } = await supabase
+      .from('agency_clients')
+      .insert({
+        agency_id: auth.data.agency.id,
+        name: body.business_name,
+        slug: `${slug}-${Date.now().toString(36)}`,
+        industry: body.industry || '',
+        status: 'setup',
+      })
+      .select('id')
+      .single();
+
+    if (clientErr || !newClient) {
+      console.error('[sites] Failed to auto-create client:', clientErr);
+      return NextResponse.json({ error: 'Failed to create client for site' }, { status: 500 });
+    }
+
+    clientId = newClient.id;
+    console.log(`[sites] Auto-created agency_clients row ${clientId} for "${body.business_name}"`);
+
+    // Auto-provision OpenClaw container for this client (non-blocking)
+    const agencyId = auth.data.agency.id;
+    const clientName = body.business_name;
+    const provisionWithRetry = async () => {
+      const result = await provisionClientGateway(clientId!, agencyId, {}, {}, clientName);
+      if (result.success) {
+        console.log(`[sites] ✅ Container provisioned for ${clientId}: ${result.gatewayUrl}`);
+        return;
+      }
+      console.warn(`[sites] First provision attempt failed for ${clientId}: ${result.error}. Retrying in 5s...`);
+      await new Promise(r => setTimeout(r, 5000));
+      const retry = await provisionClientGateway(clientId!, agencyId, {}, {}, clientName);
+      if (retry.success) {
+        console.log(`[sites] ✅ Container provisioned on retry for ${clientId}: ${retry.gatewayUrl}`);
+      } else {
+        console.error(`[sites] ❌ Gateway provisioning failed after retry for ${clientId}: ${retry.error}`);
+      }
+    };
+    provisionWithRetry().catch(err => {
+      console.error(`[sites] Gateway provisioning error for ${clientId}:`, err);
+    });
+  }
+
   const { data: site, error } = await supabase
     .from('client_sites')
     .insert({
       agency_id: auth.data.agency.id,
-      client_id: body.client_id || null,
+      client_id: clientId,
       business_name: body.business_name,
       industry: body.industry,
       phone: body.phone || null,
@@ -102,7 +184,9 @@ export async function POST(request: NextRequest) {
       ai_tone: body.ai_tone || 'professional',
       ai_capabilities: body.ai_capabilities || null,
       booking_url: body.booking_url || null,
-      template_id: body.industry, // default template = industry name
+      rating: body.google_rating != null ? Number(body.google_rating) : null,
+      review_count: body.review_count != null ? Number(body.review_count) : null,
+      template_id: 'generic', // only template supported
       status: 'draft',
     })
     .select()
@@ -111,6 +195,17 @@ export async function POST(request: NextRequest) {
   if (error || !site) {
     console.error('[sites] Failed to create site:', error);
     return NextResponse.json({ error: 'Failed to create site' }, { status: 500 });
+  }
+
+  // Optional: auto-trigger content generation (used by bulk generation)
+  // Uses waitUntil so Vercel keeps the function alive after response is sent
+  const autoGenerate = (body as Record<string, unknown>).auto_generate === true;
+  if (autoGenerate) {
+    waitUntil(
+      generateSiteContent(site.id).catch((err) => {
+        console.error(`[sites] Auto-generate failed for ${site.id}:`, err);
+      })
+    );
   }
 
   return NextResponse.json({ ok: true, data: site }, { status: 201 });

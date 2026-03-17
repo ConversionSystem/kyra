@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAgencyMember } from '@/lib/agency/middleware';
 import { createClient } from '@/lib/supabase/server';
 import { syncSkillsToContainer } from '@/lib/skills/sync';
 
@@ -10,10 +11,15 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: clientId } = await params;
-  const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // Verify the caller is an agency member (not just any authenticated user)
+  const auth = await requireAgencyMember();
+  if (auth.error) {
+    return NextResponse.json({ error: auth.error.message }, { status: auth.error.status });
+  }
+
+  const { agency } = auth.data;
+  const supabase = await createClient();
 
   const body = await req.json();
   const { skillId, enabled } = body;
@@ -22,11 +28,12 @@ export async function PATCH(
     return NextResponse.json({ error: 'skillId and enabled (boolean) required' }, { status: 400 });
   }
 
-  // Get current client settings
+  // Get current client settings — must belong to this agency
   const { data: client, error: fetchError } = await supabase
     .from('agency_clients')
     .select('settings')
     .eq('id', clientId)
+    .eq('agency_id', agency.id)
     .single();
 
   if (fetchError || !client) {
@@ -46,7 +53,8 @@ export async function PATCH(
   const { error: updateError } = await supabase
     .from('agency_clients')
     .update({ settings: { ...settings, enabled_skills: updated } })
-    .eq('id', clientId);
+    .eq('id', clientId)
+    .eq('agency_id', agency.id);
 
   if (updateError) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });

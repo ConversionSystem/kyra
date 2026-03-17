@@ -68,7 +68,7 @@ const navSections: NavSection[] = [
     items: [
       { label: 'Mission Control', href: '/agency', icon: Activity },
       { label: 'Clients', href: '/agency/clients', icon: Users },
-      { label: 'Website Builder', href: '/agency/website/create', icon: Globe },
+      { label: 'Websites', href: '/agency/sites', icon: Globe },
     ],
   },
   // CRM now lives inside each client's dashboard (CRM tab)
@@ -98,6 +98,7 @@ const soloNavSections: NavSection[] = [
   {
     items: [
       { label: 'Mission Control', href: '/agency', icon: Activity },
+      { label: 'Websites', href: '/agency/sites', icon: Globe },
     ],
   },
   {

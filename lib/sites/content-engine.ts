@@ -16,6 +16,7 @@
 
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import type { ClientSite, SiteService, SiteCity, ContentSection, FaqItem } from './types';
+import { INDUSTRY_DEFAULTS } from './industry-defaults';
 import {
   homepagePrompt,
   aboutPrompt,
@@ -23,6 +24,8 @@ import {
   cityPrompt,
   cityServicePrompt,
   faqPrompt,
+  blogPrompt,
+  getBlogTopics,
   metaPrompt,
   contactPageData,
   reviewsPageData,
@@ -32,25 +35,43 @@ import {
   generateServiceSchema,
   generateFAQSchema,
 } from './schema-generator';
+import { syncSiteToKnowledgeBase } from './knowledge-sync';
+import { checkContentSimilarity } from './content-checker';
 
 // ---------- Constants ----------
 
-const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
+// Use OpenRouter if key is set; fall back to OpenAI directly
+const HAS_OPENROUTER = !!process.env.OPENROUTER_API_KEY;
+const API_URL = HAS_OPENROUTER
+  ? 'https://openrouter.ai/api/v1/chat/completions'
+  : 'https://api.openai.com/v1/chat/completions';
 const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY;
 
 const BATCH_SIZE = 8;
 const MAX_RETRIES = 3;
 const BASE_RETRY_DELAY_MS = 2000;
 
-// Model routing
-const MODELS = {
-  hero: 'anthropic/claude-sonnet-4-5',
-  service: 'openai/gpt-4o',
-  city: 'openai/gpt-4o',
-  cityService: 'openai/gpt-4o-mini',
-  faq: 'anthropic/claude-3-5-haiku',
-  meta: 'anthropic/claude-3-5-haiku',
-} as const;
+// Model routing — OpenRouter uses "provider/model", OpenAI uses just "model"
+const MODELS = HAS_OPENROUTER
+  ? {
+      hero:        'anthropic/claude-sonnet-4-5',
+      service:     'openai/gpt-4o',
+      city:        'openai/gpt-4o',
+      cityService: 'openai/gpt-4o-mini',
+      faq:         'anthropic/claude-3-5-haiku',
+      blog:        'openai/gpt-4o-mini',
+      meta:        'anthropic/claude-3-5-haiku',
+    }
+  : {
+      // OpenAI fallback — all models via OpenAI directly
+      hero:        'gpt-4o',
+      service:     'gpt-4o',
+      city:        'gpt-4o',
+      cityService: 'gpt-4o-mini',
+      faq:         'gpt-4o-mini',
+      blog:        'gpt-4o-mini',
+      meta:        'gpt-4o-mini',
+    };
 
 const MAX_TOKENS = {
   hero: 2000,
@@ -58,6 +79,7 @@ const MAX_TOKENS = {
   city: 1200,
   cityService: 1000,
   faq: 2000,
+  blog: 1500,
   meta: 500,
 } as const;
 
@@ -94,7 +116,7 @@ const SERVICE_AREA_INDUSTRIES = new Set([
 
 interface PageTask {
   slug: string;
-  pageType: 'homepage' | 'service' | 'city' | 'city_service' | 'utility';
+  pageType: 'homepage' | 'service' | 'city' | 'city_service' | 'utility' | 'blog';
   title: string;
   model: string;
   maxTokens: number;
@@ -137,6 +159,27 @@ export async function generateSiteContent(
 
   const clientSite = site as unknown as ClientSite;
 
+  // 1b. Auto-fill services + cities from industry defaults if missing (e.g. Quick Start)
+  const industryKey = (clientSite.industry || '').toLowerCase().replace(/\s+/g, '-');
+  const industryDefaults = INDUSTRY_DEFAULTS[industryKey];
+  if (!clientSite.services?.length && industryDefaults?.services?.length) {
+    clientSite.services = industryDefaults.services as SiteService[];
+    console.log(`[content-engine] Auto-filled ${clientSite.services.length} services from industry defaults (${industryKey})`);
+    // Persist to DB so build step has the services
+    await supabase.from('client_sites').update({ services: clientSite.services }).eq('id', siteId);
+  }
+  if (!clientSite.cities?.length && industryDefaults?.needsGeoPages && industryDefaults?.nearbyCities?.length && clientSite.address?.city) {
+    // Use primary city as the starting city
+    const primarySlug = clientSite.address.city.toLowerCase().replace(/[^a-z0-9]/g, '-');
+    clientSite.cities = [{ name: clientSite.address.city, slug: primarySlug, state: clientSite.address.state || '' }] as SiteCity[];
+    console.log(`[content-engine] Auto-filled primary city: ${clientSite.address.city}`);
+    await supabase.from('client_sites').update({ cities: clientSite.cities }).eq('id', siteId);
+  }
+  if (!clientSite.color_primary && industryDefaults?.colors?.primary) {
+    clientSite.color_primary = industryDefaults.colors.primary;
+    await supabase.from('client_sites').update({ color_primary: clientSite.color_primary }).eq('id', siteId);
+  }
+
   // 2. Update status to 'generating'
   await supabase
     .from('client_sites')
@@ -153,6 +196,14 @@ export async function generateSiteContent(
 
     // 5. Generate meta titles/descriptions for pages missing them
     await generateMeta(clientSite, siteId);
+
+    // 5b. Content similarity check (non-blocking, just log)
+    try {
+      const { warning } = await checkContentSimilarity(siteId, clientSite.industry, clientSite.address?.state || '');
+      if (warning) console.warn('[content-engine] Similarity warning:', warning);
+    } catch (err) {
+      console.warn('[content-engine] Similarity check failed:', err);
+    }
 
     // 6. Count successes
     const succeeded = results.filter((r) => r.success).length;
@@ -195,9 +246,26 @@ export async function generateSiteContent(
         `[content-engine] Site ${siteId}: ${succeeded}/${tasks.length} pages generated, cost: $${totalCost.toFixed(4)}`,
       );
 
-      // 8. Auto-trigger build + deploy (fire-and-forget)
-      triggerBuildAndDeploy(siteId, supabase).catch((err) => {
-        console.error(`[content-engine] Auto-build failed for site ${siteId}:`, err);
+      // 8. Sync to AI knowledge base so the chat widget knows the website content
+      try {
+        await syncSiteToKnowledgeBase(siteId);
+      } catch (err) {
+        console.error("[CONTENT-ENGINE] Knowledge sync failed (non-fatal):", err);
+      }
+
+      // 9. Kick off VPS build via internal API call (separate Vercel function, own maxDuration+waitUntil)
+      //    This avoids the 5-min cap: content gen runs in the generate route's waitUntil,
+      //    VPS build runs in the build route's waitUntil. Status is 'building' when we get here.
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://kyra.conversionsystem.com';
+      fetch(`${appUrl}/api/agency/sites/${siteId}/build-internal`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.KYRA_API_SECRET || ''}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ internal: true }),
+      }).catch((err) => {
+        console.error(`[content-engine] Build trigger failed for site ${siteId}:`, err);
       });
     } else {
       await supabase
@@ -314,7 +382,7 @@ function buildTaskList(site: ClientSite): PageTask[] {
   }
 
   // ── TIER 3: City + City x Service pages ──
-  if (isServiceArea && site.cities?.length) {
+  if (site.cities?.length) {
     for (const city of site.cities) {
       // City overview page
       tasks.push({
@@ -350,6 +418,19 @@ function buildTaskList(site: ClientSite): PageTask[] {
     maxTokens: MAX_TOKENS.faq,
     prompt: faqPrompt(site),
   });
+
+  // ── TIER 5: Blog posts (2 evergreen posts, GPT-4o-mini) ──
+  const blogTopics = getBlogTopics(site);
+  for (const topic of blogTopics) {
+    tasks.push({
+      slug: `/blog/${topic.slug}`,
+      pageType: 'blog',
+      title: topic.title,
+      model: MODELS.blog,
+      maxTokens: MAX_TOKENS.blog,
+      prompt: blogPrompt(site, topic),
+    });
+  }
 
   // ── Template pages (no LLM) ──
   const contact = contactPageData(site);
@@ -456,9 +537,13 @@ async function executeTask(
       cost = (totalTokens / 1000) * (COST_PER_1K[task.model] || 0.001);
 
       // Parse the response
-      content = task.slug === '/faq'
-        ? parseFaqContent(rawContent, task.title)
-        : parseContent(rawContent, task.title);
+      if (task.slug === '/faq') {
+        content = parseFaqContent(rawContent, task.title);
+      } else if (task.pageType === 'blog') {
+        content = parseBlogContent(rawContent, task.title);
+      } else {
+        content = parseContent(rawContent, task.title);
+      }
     }
 
     // Generate schema markup
@@ -510,11 +595,17 @@ async function executeTask(
 async function generateMeta(site: ClientSite, siteId: string): Promise<void> {
   try {
     const raw = await callLLM(MODELS.meta, metaPrompt(site), MAX_TOKENS.meta);
-    if (!raw) return;
+    if (!raw) {
+      console.warn('[content-engine] generateMeta: empty LLM response');
+      return;
+    }
 
     // Parse JSON array from response
     const jsonMatch = raw.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) return;
+    if (!jsonMatch) {
+      console.warn('[content-engine] generateMeta: no JSON array found in response. Raw:', raw.slice(0, 200));
+      return;
+    }
 
     const metaItems = JSON.parse(jsonMatch[0]) as Array<{
       page: string;
@@ -524,20 +615,25 @@ async function generateMeta(site: ClientSite, siteId: string): Promise<void> {
 
     const supabase = createServiceClientWithoutCookies();
 
-    // Update pages that don't already have custom meta
+    // Strip markdown artifacts and update ALL pages with AI-generated meta
+    const cleanMeta = (s: string) => s
+      .replace(/\*\*/g, '').replace(/\*/g, '').replace(/^#+\s*/gm, '').trim();
+
     for (const item of metaItems) {
+      const title = cleanMeta(item.meta_title || '');
+      const desc = cleanMeta(item.meta_description || '');
+      if (!title || !desc) continue;
       const slug = pageToSlug(item.page, site);
       if (!slug) continue;
 
       await supabase
         .from('site_pages')
         .update({
-          meta_title: item.meta_title?.slice(0, 60) || undefined,
-          meta_description: item.meta_description?.slice(0, 155) || undefined,
+          meta_title: title.slice(0, 60),
+          meta_description: desc.slice(0, 155),
         })
         .eq('site_id', siteId)
-        .eq('slug', slug)
-        .is('meta_description', null);
+        .eq('slug', slug);
     }
   } catch (err) {
     console.warn('[content-engine] Meta generation failed (non-fatal):', err);
@@ -586,7 +682,7 @@ async function callLLM(
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const res = await fetch(OPENROUTER_URL, {
+      const res = await fetch(API_URL, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${OPENROUTER_KEY}`,
@@ -669,12 +765,13 @@ function parseContent(raw: string, fallbackTitle: string): ParsedContent {
 
   // Split by markdown headings (## or ###)
   const headingRegex = /^#{1,3}\s+(.+)$/gm;
-  const headings: Array<{ title: string; start: number; end: number }> = [];
+  const headings: Array<{ title: string; matchStart: number; start: number; end: number }> = [];
   let match: RegExpExecArray | null;
 
   while ((match = headingRegex.exec(cleaned)) !== null) {
     headings.push({
       title: match[1].trim(),
+      matchStart: match.index,
       start: match.index + match[0].length,
       end: cleaned.length,
     });
@@ -682,7 +779,7 @@ function parseContent(raw: string, fallbackTitle: string): ParsedContent {
 
   // Set end positions
   for (let i = 0; i < headings.length - 1; i++) {
-    headings[i].end = headings[i + 1].start - headings[i + 1].title.length - 4;
+    headings[i].end = headings[i + 1].matchStart;
   }
 
   for (const heading of headings) {
@@ -709,8 +806,9 @@ function parseContent(raw: string, fallbackTitle: string): ParsedContent {
       const descMatch = body.match(
         /meta[_ ]?description[:\s]*["']?(.+?)["']?\s*$/im,
       );
-      if (titleMatch) metaTitle = titleMatch[1].trim().slice(0, 60);
-      if (descMatch) metaDescription = descMatch[1].trim().slice(0, 155);
+      const stripMd = (s: string) => s.replace(/\*\*/g, '').replace(/\*/g, '').replace(/^#+\s*/gm, '').trim();
+      if (titleMatch) metaTitle = stripMd(titleMatch[1]).slice(0, 60);
+      if (descMatch) metaDescription = stripMd(descMatch[1]).slice(0, 155);
       continue;
     }
 
@@ -727,11 +825,16 @@ function parseContent(raw: string, fallbackTitle: string): ParsedContent {
       }
     }
 
-    sections.push({
-      heading: heading.title.replace(/^#+\s*/, ''),
-      body: bodyLines.join('\n'),
-      ...(bullets.length > 0 ? { bullets } : {}),
-    });
+    const bodyText = bodyLines.join('\n').trim();
+    const bulletList = bullets.filter(b => b.trim().length > 0);
+    // Only push sections that have actual content
+    if (bodyText || bulletList.length > 0 || heading.title) {
+      sections.push({
+        heading: heading.title.replace(/^#+\s*/, ''),
+        body: bodyText,
+        ...(bulletList.length > 0 ? { bullets: bulletList } : {}),
+      });
+    }
   }
 
   // If no sections were parsed, treat the whole response as a single section
@@ -806,6 +909,51 @@ function parseFaqContent(raw: string, fallbackTitle: string): ParsedContent {
   };
 }
 
+function parseBlogContent(raw: string, fallbackTitle: string): ParsedContent {
+  const cleaned = raw.replace(/\u2014/g, ' - ').replace(/\u2013/g, '-').trim();
+
+  // Blog prompts return JSON — try parsing it first
+  if (cleaned.startsWith('{') || cleaned.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(cleaned.startsWith('[') ? cleaned : cleaned);
+      if (parsed.hero_h1) {
+        return {
+          hero_h1: parsed.hero_h1 || fallbackTitle,
+          hero_subtitle: parsed.hero_subtitle || null,
+          content_sections: parsed.content_sections || [],
+          faq: parsed.faq || null,
+          meta_title: parsed.meta_title || null,
+          meta_description: parsed.meta_description || null,
+        };
+      }
+    } catch {
+      // Fall through to markdown parsing
+    }
+  }
+
+  // Also try extracting JSON from markdown-wrapped response
+  const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    try {
+      const parsed = JSON.parse(jsonMatch[0]);
+      if (parsed.hero_h1) {
+        return {
+          hero_h1: parsed.hero_h1 || fallbackTitle,
+          hero_subtitle: parsed.hero_subtitle || null,
+          content_sections: parsed.content_sections || [],
+          faq: parsed.faq || null,
+          meta_title: parsed.meta_title || null,
+          meta_description: parsed.meta_description || null,
+        };
+      }
+    } catch {
+      // Fall through to markdown parsing
+    }
+  }
+
+  return parseContent(raw, fallbackTitle);
+}
+
 // ---------- Utilities ----------
 
 function cleanLine(line: string): string {
@@ -854,8 +1002,18 @@ async function triggerBuildAndDeploy(siteId: string, supabase: any): Promise<voi
 
   // 3. Build constants data for the template
   const services = (site.services || []) as Array<{ name: string; slug: string; description?: string }>;
-  const cities = (site.cities || []) as Array<{ name: string; slug: string; state?: string }>;
   const address = site.address || {};
+  // Always include primary city — if user skipped Step 3, cities array is empty
+  // but the primary city from their address should still generate city pages
+  let cities = (site.cities || []) as Array<{ name: string; slug: string; state?: string }>;
+  const primaryCity = address.city || '';
+  if (cities.length === 0 && primaryCity) {
+    cities = [{
+      name: primaryCity,
+      slug: primaryCity.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+      state: address.state || '',
+    }];
+  }
 
   const constants = {
     name: site.business_name || '',
@@ -869,6 +1027,7 @@ async function triggerBuildAndDeploy(siteId: string, supabase: any): Promise<voi
     hours: site.hours || {},
     coordinates: { lat: address.lat || 0, lng: address.lng || 0 },
     tagline: site.tagline || '',
+    googleReviewUrl: (site as Record<string, unknown>).google_review_url || '',
     services,
     serviceAreas: cities,
   };
@@ -877,6 +1036,7 @@ async function triggerBuildAndDeploy(siteId: string, supabase: any): Promise<voi
     colorPrimary: site.color_primary || '#dc2626',
     colorSecondary: site.color_secondary || '#111827',
     designStyle: site.design_style || 'modern-dark',
+    bookingUrl: site.booking_url || null,
   };
 
   // 4. Format page content for template
@@ -908,7 +1068,7 @@ async function triggerBuildAndDeploy(siteId: string, supabase: any): Promise<voi
     },
     body: JSON.stringify({
       domain,
-      template: site.template_id || 'generic',
+      template: 'generic',
       constants,
       theme,
       pages: pagesData,
@@ -939,4 +1099,95 @@ async function triggerBuildAndDeploy(siteId: string, supabase: any): Promise<voi
     .eq('id', siteId);
 
   console.log(`[content-engine] Site ${siteId} deployed to https://${domain}`);
+
+  // Sync site content to knowledge base (fire-and-forget)
+  syncSiteToKnowledgeBase(siteId).catch((err) =>
+    console.warn('[content-engine] Knowledge sync failed:', err),
+  );
+
+  // Sync business info into client container_config so the chat widget AI knows about the business.
+  // Without this, the bot has zero context — it doesn't know phone, hours, address, or what the business does.
+  if (site.client_id) {
+    const { data: existingClient } = await supabase
+      .from('agency_clients')
+      .select('container_config')
+      .eq('id', site.client_id)
+      .single();
+
+    const existingCfg = (existingClient?.container_config as Record<string, unknown>) ?? {};
+    const addrObj = (site.address as Record<string, string>) ?? {};
+    const addrStr = [addrObj.street, addrObj.city, addrObj.state, addrObj.zip].filter(Boolean).join(', ');
+    const hoursObj = (site.hours as Record<string, string>) ?? {};
+    const hoursStr = Object.entries(hoursObj)
+      .map(([day, hrs]) => `${day}: ${hrs}`)
+      .join(', ');
+
+    // Build a rich persona describing the business
+    const servicesArr = (site.services as Array<{name: string}>) ?? [];
+    const serviceList = servicesArr.map((s) => s.name).join(', ');
+    const persona = `${site.ai_name || site.business_name} — the AI assistant for ${site.business_name}. ${
+      site.tagline ? site.tagline + '.' : ''
+    } You help customers with: ${serviceList || 'our services'}. Always be helpful, accurate, and guide customers toward booking or contacting us.`;
+
+    await supabase
+      .from('agency_clients')
+      .update({
+        container_config: {
+          ...existingCfg,
+          persona,
+          business_name: site.business_name,
+          business_phone: site.phone || '',
+          business_address: addrStr,
+          business_hours: hoursStr,
+          widget_title: `Chat with ${site.business_name}`,
+          widget_color: site.color_primary || '#6366f1',
+          widget_greeting: `Hi! 👋 I'm ${site.ai_name || 'your AI assistant'} for ${site.business_name}. How can I help you today?`,
+        },
+      })
+      .eq('id', site.client_id);
+
+    console.log(`[content-engine] Synced business context to client container_config for ${site.business_name}`);
+  }
+
+  // Send Telegram notification if agency has telegram connected
+  sendSiteLiveNotification(site.business_name, domain, site.agency_id, supabase).catch((err) =>
+    console.warn('[content-engine] Site-live notification failed:', err),
+  );
+}
+
+// ---------- Site Live Notification ----------
+
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function sendSiteLiveNotification(businessName: string, domain: string, agencyId: string, supabase: any): Promise<void> {
+  if (!TELEGRAM_BOT_TOKEN) return;
+
+  // Find the agency owner's telegram channel
+  const { data: agency } = await supabase
+    .from('agencies')
+    .select('owner_id')
+    .eq('id', agencyId)
+    .single();
+
+  if (!agency?.owner_id) return;
+
+  const { data: channel } = await supabase
+    .from('user_channels')
+    .select('metadata')
+    .eq('user_id', agency.owner_id)
+    .eq('channel_type', 'telegram')
+    .eq('status', 'connected')
+    .single();
+
+  const chatId = channel?.metadata?.chatId;
+  if (!chatId) return;
+
+  const message = `\u{1F680} Site live: ${businessName} \u2014 https://${domain}`;
+
+  await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: chatId, text: message }),
+  });
 }
