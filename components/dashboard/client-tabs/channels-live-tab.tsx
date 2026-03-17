@@ -34,6 +34,7 @@ export default function ChannelsLiveTab({
   const [copied, setCopied] = useState<string | null>(null);
 
   const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://kyra.conversionsystem.com';
+  // Correct path: /api/widget/[clientId]/script (served dynamically per-client)
   const scriptTag = `<script src="${appUrl}/api/widget/${client.id}/script" defer></script>`;
 
   const copy = (text: string, key: string) => {

@@ -72,8 +72,38 @@ export function getAllPages(): PageContent[] {
 }
 
 /**
- * Strip markdown artifacts (**bold**, *italic*, # headings) from AI-generated text.
+ * Strip markdown artifacts (**bold**, *italic*, # headings, leading colons) from AI-generated text.
  */
 export function cleanText(s: string): string {
   return s.replace(/\*\*/g, '').replace(/\*/g, '').replace(/^#+\s*/gm, '').replace(/^:\s*/, '').trim();
+}
+
+/**
+ * Map raw industry slugs to proper display labels for titles/meta.
+ */
+const INDUSTRY_LABELS: Record<string, string> = {
+  hvac: 'HVAC Services',
+  plumbing: 'Plumbing Services',
+  dental: 'Dental Practice',
+  legal: 'Law Firm',
+  restaurant: 'Restaurant',
+  'real-estate': 'Real Estate',
+  auto: 'Auto Services',
+  'med-spa': 'Medical Spa',
+  fitness: 'Fitness & Gym',
+  veterinary: 'Veterinary Clinic',
+  cannabis: 'Cannabis Dispensary',
+  consulting: 'Consulting Firm',
+  electrical: 'Electrical Services',
+  roofing: 'Roofing Services',
+  landscaping: 'Landscaping Services',
+};
+
+/**
+ * Get a proper industry label from a raw industry slug.
+ * Falls back to title-cased slug if not in the map.
+ */
+export function getIndustryLabel(industry: string): string {
+  return INDUSTRY_LABELS[industry.toLowerCase()] ||
+    industry.charAt(0).toUpperCase() + industry.slice(1).replace(/-/g, ' ');
 }

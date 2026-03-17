@@ -8,66 +8,58 @@ import PublicNav from '@/components/layout/public-nav';
 import PublicFooter from '@/components/layout/public-footer';
 
 export const metadata: Metadata = {
-  title: 'Kyra for GoHighLevel Agencies — OpenClaw-Powered Autonomous AI Workers',
-  description: 'Kyra adds OpenClaw-powered autonomous AI workers to every GHL sub-account. White-label, multi-client, conversation logging, GHL workflow triggers. For serious GHL agencies.',
+  title: 'Kyra for GoHighLevel — Website + AI Worker + CRM for Every Sub-Account',
+  description: 'Kyra adds a 15-25 page SEO-optimized website, an AI worker, and a full CRM to every GHL sub-account. White-label, multi-client, one dashboard. The Business in a Box that GHL agencies need.',
 };
 
 const features = [
   {
     icon: Globe,
-    title: 'White-Label Client Portals',
-    desc: 'Every client gets a branded chat portal. Share a link — they chat with their AI. No Kyra branding, no GHL branding. Just yours.',
-    ghl: false,
+    title: 'AI Website Builder',
+    desc: '15-25 page SEO-optimized website generated for each client — service pages, city pages, blog, FAQ, contact. Built for search engines. All with lead capture forms.',
+  },
+  {
+    icon: Bot,
+    title: 'AI Worker on Every Site',
+    desc: 'Chat widget that books appointments, captures leads, answers questions 24/7. Trained on each client\'s business automatically.',
   },
   {
     icon: Layers,
-    title: 'Multi-Client Portfolio Dashboard',
-    desc: 'Manage 20 clients\' AI workers from one dashboard. Configure, monitor, and bill each one independently.',
-    ghl: false,
+    title: 'Multi-Client Dashboard',
+    desc: 'Manage 30 clients\' websites, AI workers, and leads from one dashboard. Deploy a new client in under 10 minutes.',
   },
   {
     icon: MessageSquare,
     title: 'Conversations Inbox',
     desc: 'See every message your AI workers send and receive — across all clients in one feed. Filter by client or channel.',
-    ghl: false,
   },
   {
     icon: Zap,
     title: 'GHL Workflow Triggers',
-    desc: 'When your AI handles a conversation, fire any GHL workflow automatically. Tag contacts, notify team, send follow-ups — automatically.',
-    ghl: false,
-  },
-  {
-    icon: Bot,
-    title: 'Per-Client AI Isolation',
-    desc: 'Each client\'s AI is fully isolated — separate memory, separate personality, separate channels. No cross-contamination.',
-    ghl: false,
+    desc: 'When your AI handles a conversation, fire any GHL workflow automatically. Tag contacts, notify team, send follow-ups.',
   },
   {
     icon: TrendingUp,
-    title: 'Client Billing Management',
-    desc: 'Charge your clients $300-2000/mo for their AI worker. Kyra handles the billing layer so you focus on selling.',
-    ghl: false,
+    title: 'Growth Engine',
+    desc: 'AI suggests new pages to grow your search presence. One click to generate and publish. Sites keep growing with AI-generated content.',
   },
 ];
 
 const comparison = [
-  { feature: 'AI Terminal', kyra: true, ghl: true },
+  { feature: 'AI chat / SMS responses', kyra: true, ghl: true },
+  { feature: '15-25 page SEO-optimized website per client', kyra: true, ghl: false },
+  { feature: 'AI-generated service & city pages', kyra: true, ghl: false },
+  { feature: 'Growth Engine — ongoing SEO pages', kyra: true, ghl: false },
+  { feature: 'Lead capture forms on every page', kyra: true, ghl: false },
   { feature: 'White-label branding', kyra: true, ghl: false },
   { feature: 'Multi-client dashboard', kyra: true, ghl: false },
   { feature: 'Conversation logging & inbox', kyra: true, ghl: false },
   { feature: 'GHL workflow triggers from AI', kyra: true, ghl: false },
-  { feature: 'Client share portals', kyra: true, ghl: false },
-  { feature: 'Per-client isolation', kyra: true, ghl: false },
+  { feature: 'Per-client AI isolation', kyra: true, ghl: false },
+  { feature: 'Built-in CRM per client', kyra: true, ghl: false },
   { feature: 'Client billing management', kyra: true, ghl: false },
-  { feature: 'Custom AI personality', kyra: true, ghl: false },
-  { feature: 'Multi-channel (Telegram/SMS)', kyra: true, ghl: false },
-  { feature: '\u{1F493} Heartbeat Protocol — AI checks in hourly, works toward client goals', kyra: true, ghl: false },
-  { feature: '\u{1F4B0} Token Budget Manager — Per-client spend limits, model selection', kyra: true, ghl: false },
-  { feature: '\u{1F4CA} Performance Telemetry — Weekly ROI reports, auto-emailed', kyra: true, ghl: false },
+  { feature: 'Custom AI personality per client', kyra: true, ghl: false },
 ];
-
-const testimonials: { name: string; company: string; revenue?: string; quote: string }[] = [];
 
 export default function GHLPage() {
   return (
@@ -83,23 +75,24 @@ export default function GHLPage() {
         </div>
 
         <h1 className="text-5xl sm:text-6xl font-black text-gray-900 leading-tight tracking-tight mb-6">
-          The autonomous AI layer every GHL agency needs.
+          GHL gives them the CRM.<br />
+          <span className="text-indigo-600">Kyra gives them the website, AI worker, and leads.</span>
         </h1>
 
         <p className="text-xl text-gray-500 max-w-2xl mx-auto mb-10">
-          GHL gives your clients the best CRM and marketing infrastructure available. Kyra adds the OpenClaw-powered AI workers that operate inside it — 24/7, without you touching anything.
+          Every GHL sub-account gets a 15-25 page SEO-optimized website, an AI worker that handles conversations 24/7, and a CRM that captures every lead. Deployed in under 10 minutes. White-labeled under your brand.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
-            href="/solo"
+            href="/website-builder"
             className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-8 py-4 rounded-xl transition text-lg"
           >
-            Deploy your first AI worker free
+            Try It Free — Build Your First Site
             <ArrowRight className="h-5 w-5" />
           </Link>
           <Link
-            href="https://kyra.conversionsystem.com"
+            href="/demo/dental"
             className="inline-flex items-center gap-2 border border-gray-200 text-gray-700 hover:bg-gray-50 font-semibold px-8 py-4 rounded-xl transition text-lg"
           >
             See live demo
@@ -107,28 +100,28 @@ export default function GHLPage() {
         </div>
 
         <p className="mt-4 text-sm text-gray-400">
-          Free to start · No credit card · White-label from day one · 500 credits included
+          1 free account included — no credit card needed
         </p>
       </section>
 
-      {/* What's New */}
+      {/* What Kyra adds that GHL doesn't */}
       <section className="max-w-4xl mx-auto px-6 pb-10">
         <div className="rounded-xl bg-indigo-50 border border-indigo-100 px-6 py-4 text-sm text-indigo-700">
-          <span className="font-semibold">{'\u{1F195}'} Just shipped:</span>{' '}
-          Heartbeat Protocol, Token Budget Manager, and Performance Telemetry — the tools agencies need to prove AI ROI to their clients.
+          <span className="font-semibold">The gap:</span>{' '}
+          GHL is the best CRM and marketing platform for agencies. But it doesn&apos;t build websites, and its AI features are basic. Kyra fills both gaps — a full SEO website + trained AI worker per client, managed from one dashboard.
         </div>
       </section>
 
       {/* Comparison table */}
       <section className="max-w-4xl mx-auto px-6 pb-20">
         <h2 className="text-2xl font-bold text-gray-900 text-center mb-8">
-          What GHL&apos;s basic terminal doesn&apos;t give you
+          What GHL alone doesn&apos;t give your clients
         </h2>
         <div className="rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
           <div className="grid grid-cols-3 bg-gray-50 border-b border-gray-200 px-6 py-3">
             <span className="text-sm font-semibold text-gray-700">Feature</span>
-            <span className="text-sm font-semibold text-indigo-600 text-center">Kyra</span>
-            <span className="text-sm font-semibold text-gray-400 text-center">GHL Basic</span>
+            <span className="text-sm font-semibold text-indigo-600 text-center">GHL + Kyra</span>
+            <span className="text-sm font-semibold text-gray-400 text-center">GHL Alone</span>
           </div>
           {comparison.map((row, i) => (
             <div
@@ -157,10 +150,10 @@ export default function GHLPage() {
       <section className="bg-gray-50 py-20">
         <div className="max-w-5xl mx-auto px-6">
           <h2 className="text-3xl font-bold text-gray-900 text-center mb-4">
-            The platform GHL agencies need
+            Business in a Box for every GHL client
           </h2>
           <p className="text-gray-500 text-center max-w-xl mx-auto mb-12">
-            Everything your agency needs to sell, manage, and bill AI workers at scale.
+            Website + AI worker + CRM + lead capture + Growth Engine. All deployed in minutes, all managed from your dashboard.
           </p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {features.map((f, i) => (
@@ -190,8 +183,8 @@ export default function GHLPage() {
           <div className="grid sm:grid-cols-3 gap-4 mb-8">
             {[
               'AI qualifies lead → GHL creates opportunity',
-              'AI handles service request → GHL notifies team',
-              'AI answers FAQ → GHL tags contact as interested',
+              'AI books appointment → GHL sends confirmation',
+              'Website form submitted → GHL tags contact',
             ].map((example, i) => (
               <div key={i} className="rounded-xl bg-white/10 border border-white/20 p-4">
                 <p className="text-sm text-indigo-100">{example}</p>
@@ -206,24 +199,24 @@ export default function GHLPage() {
 
       {/* How it works together */}
       <section className="max-w-4xl mx-auto px-6 pb-20">
-        <h2 className="text-2xl font-bold text-gray-900 text-center mb-8">How GHL + OpenClaw + Kyra work together</h2>
+        <h2 className="text-2xl font-bold text-gray-900 text-center mb-8">How GHL + Kyra work together</h2>
         <div className="grid sm:grid-cols-3 gap-5">
           {[
             {
               label: 'GHL handles',
-              desc: 'CRM, pipeline, SMS routing, calendar, contacts — the infrastructure.',
+              desc: 'CRM, pipeline, SMS routing, calendar, contacts — the marketing infrastructure.',
               color: 'border-orange-200 bg-orange-50',
               labelColor: 'text-orange-700',
             },
             {
-              label: 'OpenClaw handles',
-              desc: 'Autonomous decisions, persistent memory, multi-channel operation — the brain.',
+              label: 'Kyra handles',
+              desc: 'SEO websites, AI workers, lead capture, Growth Engine — the client-facing business.',
               color: 'border-indigo-200 bg-indigo-50',
               labelColor: 'text-indigo-700',
             },
             {
-              label: 'Kyra handles',
-              desc: 'Deploying, managing, and scaling the AI workforce — the platform.',
+              label: 'You handle',
+              desc: 'Billing your clients $500–2,000/mo and growing your agency. Kyra + GHL do the rest.',
               color: 'border-green-200 bg-green-50',
               labelColor: 'text-green-700',
             },
@@ -236,52 +229,31 @@ export default function GHLPage() {
         </div>
       </section>
 
-      {/* Early adopter CTA */}
-      <section className="bg-gray-50 py-20">
-        <div className="max-w-2xl mx-auto px-6 text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            Be among the first GHL agencies on Kyra
-          </h2>
-          <p className="text-gray-500 mb-8">
-            Early agencies get direct access to the founding team, priority support,
-            and shape the roadmap. GHL + Kyra is a powerful combination — let&apos;s build it together.
-          </p>
-          <Link
-            href="/solo"
-            className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-8 py-3.5 rounded-xl transition"
-          >
-            Apply for early access
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-      </section>
-
       {/* Pricing CTA */}
       <section className="max-w-3xl mx-auto px-6 py-20 text-center">
         <h2 className="text-3xl font-bold text-gray-900 mb-4">
-          Sell AI workers. Keep the margin.
+          $99/mo for you. $500–2,000/mo from each client.
         </h2>
         <p className="text-gray-500 text-lg mb-10 max-w-xl mx-auto">
-          Kyra is your backend. You set the price for your clients.
-          Agencies typically charge $300–$2,000/month per AI worker.
-          See our plans for what Kyra costs you.
+          Each client gets a 15-25 page SEO-optimized website, AI worker, CRM, and lead capture.
+          You set the price. The margins are yours.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
-            href="/solo"
+            href="/website-builder"
             className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-10 py-4 rounded-xl transition text-lg"
           >
-            Start free
+            Try It Free — Build Your First Site
             <ArrowRight className="h-5 w-5" />
           </Link>
           <Link
-            href="/agency/billing"
+            href="/pricing"
             className="inline-flex items-center gap-2 border border-gray-200 text-gray-700 hover:bg-gray-50 font-semibold px-10 py-4 rounded-xl transition text-lg"
           >
             See pricing
           </Link>
         </div>
-        <p className="mt-4 text-sm text-gray-400">Free to start · No credit card required · 500 credits included</p>
+        <p className="mt-4 text-sm text-gray-400">1 free account included — no credit card needed</p>
       </section>
 
       <PublicFooter />

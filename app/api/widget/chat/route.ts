@@ -25,7 +25,22 @@ import {
   getLeadCapturePrompt,
 } from '@/lib/chat/lead-capture';
 import { deductCredits, requireCredits } from '@/lib/billing/credit-engine';
-import { resolveClientGateway } from '@/lib/ovh/provisioner';
+import OpenAI from 'openai';
+
+// Direct LLM client for widget chat — bypasses OpenClaw gateway which has agency persona/SOUL.md
+// Widget visitors should NEVER interact with the agency owner's AI persona
+function getDirectLLMClient() {
+  const openrouterKey = process.env.OPENROUTER_API_KEY;
+  if (openrouterKey) {
+    return new OpenAI({
+      baseURL: 'https://openrouter.ai/api/v1',
+      apiKey: openrouterKey,
+    });
+  }
+  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+}
+
+const WIDGET_MODEL = 'openai/gpt-4o-mini'; // Fast, cheap, good enough for customer service
 
 // CORS headers required on EVERY response — the widget is embedded on external sites
 const CORS = {
@@ -97,22 +112,20 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (dbErr || !client) {
-    return NextResponse.json({ error: 'Client not found' }, { status: 404, headers: CORS });
+    // Return a graceful fallback response instead of a hard error
+    // (Visitor still gets a reply even if the client config is missing)
+    return NextResponse.json({
+      response: "Hi! Thanks for reaching out. Our team will get back to you shortly. You can also call us directly for immediate assistance.",
+      sessionId: null,
+    }, { headers: CORS });
   }
 
   if (client.status !== 'active' && client.status !== 'setup') {
-    return NextResponse.json({ error: 'Client AI not active' }, { status: 403, headers: CORS });
+    return NextResponse.json({
+      response: "Hi! Thanks for your message. We'll be in touch soon. Feel free to call us if you need immediate help!",
+      sessionId: null,
+    }, { headers: CORS });
   }
-
-  // Use resolveClientGateway to get a fresh read of the gateway URL/token/status.
-  // Falls back gracefully if the DB check shows the container isn't ready.
-  const gateway = await resolveClientGateway(clientId);
-  if (!gateway) {
-    return NextResponse.json({ error: 'AI not available' }, { status: 503, headers: CORS });
-  }
-
-  const liveGatewayUrl = gateway.url;
-  const liveGatewayToken = gateway.token;
 
   // ── Credit check ──────────────────────────────────────────────────────────
   const creditCheck = await requireCredits(client.agency_id, 'chat.message');
@@ -129,6 +142,35 @@ export async function POST(request: NextRequest) {
   const cfg = (client.container_config as Record<string, unknown>) ?? {};
   const persona = (cfg.persona as string) || `AI assistant for ${client.name}`;
   const businessName = (cfg.business_name as string) || client.name;
+
+  // ── Fetch site config for tone + capabilities ─────────────────────────────
+  const { data: siteData } = await supabase
+    .from('client_sites')
+    .select('ai_tone, ai_capabilities, ai_name, hours, booking_url, phone, business_name')
+    .eq('client_id', clientId)
+    .single();
+
+  const aiTone = (siteData?.ai_tone as string) || 'professional';
+  const aiCapabilities = (siteData?.ai_capabilities as string[]) || [];
+  const aiName = (siteData?.ai_name as string) || (cfg.persona as string)?.split(' ')[0] || 'Alex';
+
+  const toneInstruction: Record<string, string> = {
+    professional: 'Maintain a professional, knowledgeable tone. Be helpful and precise.',
+    friendly: 'Be warm, friendly and approachable. Use conversational language like talking to a friend.',
+    casual: 'Be casual, relaxed and conversational. Keep it light and easy-going.',
+  };
+
+  const capabilityMap: Record<string, string> = {
+    answer_questions: 'Answer customer questions accurately using your knowledge base.',
+    book_appointments: `Help customers book appointments. ${siteData?.booking_url ? 'Share this booking link: ' + siteData.booking_url : 'Ask them to call to schedule.'}`,
+    capture_leads: 'Collect customer name, email and phone number when they show interest.',
+    provide_quotes: 'Provide rough price estimates when asked, based on typical industry rates.',
+    qualify_leads: 'Ask qualifying questions to understand their needs before connecting them to the team.',
+  };
+
+  const capabilityInstructions = aiCapabilities
+    .map((cap: string) => capabilityMap[cap])
+    .filter(Boolean);
 
   // ── Knowledge RAG ──────────────────────────────────────────────────────────
   // Fetch relevant knowledge base documents and inject into system prompt.
@@ -150,52 +192,42 @@ export async function POST(request: NextRequest) {
 
   // ── Build System Prompt ────────────────────────────────────────────────────
   const systemPrompt = [
-    `You are ${persona}. You are a helpful AI assistant for ${businessName}, responding via a web chat widget on their website.`,
-    `Be warm, helpful, and concise. Keep replies to 2-4 sentences unless more detail is needed.`,
-    `Answer questions accurately using your knowledge base. If you know the answer from your training, share it confidently.`,
+    `You are ${aiName}, a helpful AI assistant for ${businessName}, responding via a web chat widget on their website.`,
+    toneInstruction[aiTone] || toneInstruction.professional,
+    `Keep replies to 2-4 sentences unless more detail is needed.`,
+    ...capabilityInstructions,
     `Do not mention you are an AI unless directly asked.`,
     cfg.calendar_url ? `When scheduling is mentioned, share this booking link: ${cfg.calendar_url}` : '',
+    siteData?.booking_url ? `Booking link: ${siteData.booking_url}` : '',
     cfg.business_hours ? `Business hours: ${cfg.business_hours}` : '',
+    siteData?.hours ? `Hours: ${siteData.hours}` : '',
     cfg.business_phone ? `Business phone: ${cfg.business_phone}` : '',
+    siteData?.phone ? `Phone: ${siteData.phone}` : '',
     cfg.business_address ? `Business address: ${cfg.business_address}` : '',
     `If you can't resolve something, say: "Let me connect you with our team — they'll follow up shortly."`,
     knowledgeSection,
     leadCapturePrompt,
   ].filter(Boolean).join('\n');
 
-  // ── Call AI Gateway ────────────────────────────────────────────────────────
+  // ── Call LLM directly (bypasses OpenClaw gateway + agency persona) ─────────
+  // Widget visitors are CUSTOMERS — they should talk to a business-specific assistant,
+  // NOT the agency's OpenClaw container which has SOUL.md / CEO persona.
   let aiResponse = '';
   try {
-    const chatRes = await fetch(`${liveGatewayUrl}/v1/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${liveGatewayToken}`,
-      },
-      body: JSON.stringify({
-        model: 'openai/gpt-4o-mini',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          // Inject conversation history so AI has context (last 10 turns)
-          ...(Array.isArray(history) ? history.slice(-10) : []),
-          { role: 'user', content: message.trim() },
-        ],
-        stream: false,
-      }),
-      signal: AbortSignal.timeout(25_000),
+    const llm = getDirectLLMClient();
+    const chatRes = await llm.chat.completions.create({
+      model: WIDGET_MODEL,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        // Inject conversation history so AI has context (last 10 turns)
+        ...(Array.isArray(history) ? (history as Array<{role: 'user'|'assistant', content: string}>).slice(-10) : []),
+        { role: 'user', content: message.trim() },
+      ],
     });
-
-    if (!chatRes.ok) {
-      const errText = await chatRes.text().catch(() => '');
-      console.error(`[widget/chat] Gateway error ${chatRes.status}: ${errText.slice(0, 200)}`);
-      return NextResponse.json({ error: 'AI unavailable' }, { status: 503, headers: CORS });
-    }
-
-    const data = await chatRes.json();
-    aiResponse = data?.choices?.[0]?.message?.content || '';
+    aiResponse = chatRes.choices[0]?.message?.content || '';
   } catch (err: unknown) {
     const errMsg = err instanceof Error ? err.message : String(err);
-    console.error(`[widget/chat] Gateway timeout/error: ${errMsg}`);
+    console.error(`[widget/chat] LLM error: ${errMsg}`);
     return NextResponse.json({ error: 'AI unavailable' }, { status: 503, headers: CORS });
   }
 

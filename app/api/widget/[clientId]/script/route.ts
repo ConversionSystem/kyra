@@ -41,12 +41,12 @@ export async function GET(
     .eq('id', clientId)
     .single();
 
-  if (!client || !['active', 'setup'].includes(client.status || '')) {
-    return new NextResponse('// Widget not available', { status: 404, headers: { 'Content-Type': 'application/javascript' } });
-  }
+  // Allow the widget to load even for inactive/missing clients
+  // Chat will return a graceful fallback message in that case
+  // This ensures the widget always renders on client sites
 
-  const cfg = (client.container_config as Record<string, unknown>) ?? {};
-  const widgetTitle = (cfg.widget_title as string) || `Chat with ${client.name}`;
+  const cfg = client ? ((client.container_config as Record<string, unknown>) ?? {}) : {};
+  const widgetTitle = (cfg.widget_title as string) || (client ? `Chat with ${client.name}` : 'Chat with us');
   const widgetColor = (cfg.widget_color as string) || '#6366f1'; // indigo default
   const widgetGreeting = (cfg.widget_greeting as string) || `Hi! 👋 How can I help you today?`;
   const widgetPoweredBy = cfg.widget_powered_by !== false; // default true
@@ -80,32 +80,37 @@ export async function GET(
     '#kyra-widget-btn:hover { transform:scale(1.08); }',
     '#kyra-widget-btn svg { width:28px; height:28px; fill:white; }',
     '#kyra-widget-badge { position:absolute; top:-2px; right:-2px; width:16px; height:16px; background:#ef4444; border-radius:50%; display:none; }',
-    '#kyra-widget-panel { position:fixed; bottom:96px; ' + (POSITION === 'bottom-left' ? 'left:24px; transform-origin:bottom left;' : 'right:24px; transform-origin:bottom right;') + ' width:360px; max-width:calc(100vw - 48px); height:520px; max-height:calc(100vh - 120px); background:#fff; color:#111; border-radius:16px; box-shadow:0 8px 40px rgba(0,0,0,0.18); z-index:99998; display:flex; flex-direction:column; overflow:hidden; transition:opacity 0.2s,transform 0.2s; }',
-    '#kyra-widget-panel.hidden { opacity:0; transform:scale(0.92); pointer-events:none; }',
-    '#kyra-widget-header { background:' + COLOR + '; padding:16px; display:flex; align-items:center; gap:10px; }',
-    '#kyra-widget-header .avatar { width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }',
-    '#kyra-widget-header .title { color:#fff; font-weight:600; font-size:14px; font-family:system-ui,sans-serif; flex:1; }',
-    '#kyra-widget-header .subtitle { color:rgba(255,255,255,0.7); font-size:11px; font-family:system-ui,sans-serif; }',
-    '#kyra-widget-header .close-btn { background:none; border:none; cursor:pointer; color:rgba(255,255,255,0.7); font-size:20px; line-height:1; padding:0; }',
-    '#kyra-widget-messages { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:10px; background:#f9fafb; }',
-    '.kyra-msg { display:flex; align-items:flex-end; gap:8px; max-width:85%; }',
+    '#kyra-widget-backdrop { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:99997; }',
+    '#kyra-widget-panel { position:fixed; bottom:96px; ' + (POSITION === 'bottom-left' ? 'left:24px; transform-origin:bottom left;' : 'right:24px; transform-origin:bottom right;') + ' width:380px; max-width:calc(100vw - 32px); height:540px; max-height:calc(100vh - 120px); background:#fff; color:#111; border-radius:20px; box-shadow:0 8px 40px rgba(0,0,0,0.22); z-index:99998; display:flex; flex-direction:column; overflow:hidden; transition:opacity 0.22s,transform 0.22s; }',
+    '#kyra-widget-panel.hidden { opacity:0; transform:scale(0.9) translateY(8px); pointer-events:none; }',
+    '#kyra-widget-header { background:' + COLOR + '; padding:14px 16px; display:flex; align-items:center; gap:12px; }',
+    '#kyra-widget-header .avatar { width:40px; height:40px; border-radius:50%; background:rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }',
+    '#kyra-widget-header .info { flex:1; min-width:0; }',
+    '#kyra-widget-header .title { color:#fff; font-weight:700; font-size:15px; font-family:system-ui,sans-serif; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }',
+    '#kyra-widget-header .subtitle { color:rgba(255,255,255,0.75); font-size:12px; font-family:system-ui,sans-serif; display:flex; align-items:center; gap:4px; margin-top:1px; }',
+    '#kyra-widget-header .online-dot { width:7px; height:7px; border-radius:50%; background:#4ade80; flex-shrink:0; }',
+    '#kyra-widget-header .close-btn { background:rgba(255,255,255,0.15); border:none; cursor:pointer; color:#fff; font-size:18px; line-height:1; padding:6px; border-radius:50%; width:32px; height:32px; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:background 0.15s; }',
+    '#kyra-widget-header .close-btn:hover { background:rgba(255,255,255,0.25); }',
+    '#kyra-widget-messages { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px; background:#f8f9fa; -webkit-overflow-scrolling:touch; }',
+    '.kyra-msg { display:flex; align-items:flex-end; gap:8px; max-width:88%; }',
     '.kyra-msg.user { margin-left:auto; flex-direction:row-reverse; }',
-    '.kyra-msg-bubble { padding:10px 14px; border-radius:16px; font-size:13px; line-height:1.5; font-family:system-ui,sans-serif; word-wrap:break-word; }',
-    '.kyra-msg.bot .kyra-msg-bubble { background:#fff; color:#111; border-bottom-left-radius:4px; box-shadow:0 1px 4px rgba(0,0,0,0.08); }',
+    '.kyra-msg-bubble { padding:11px 15px; border-radius:18px; font-size:14px; line-height:1.55; font-family:system-ui,sans-serif; word-wrap:break-word; word-break:break-word; }',
+    '.kyra-msg.bot .kyra-msg-bubble { background:#fff; color:#1a1a1a; border-bottom-left-radius:4px; box-shadow:0 1px 3px rgba(0,0,0,0.1); }',
     '.kyra-msg.user .kyra-msg-bubble { background:' + COLOR + '; color:#fff; border-bottom-right-radius:4px; }',
-    '.kyra-msg-avatar { width:28px; height:28px; border-radius:50%; background:' + COLOR + '; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }',
-    '.kyra-typing { display:flex; align-items:center; gap:4px; padding:10px 14px; }',
-    '.kyra-typing span { width:6px; height:6px; border-radius:50%; background:#9ca3af; animation:kyra-bounce 1.2s infinite; }',
+    '.kyra-msg-avatar { width:30px; height:30px; border-radius:50%; background:' + COLOR + '; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; box-shadow:0 1px 3px rgba(0,0,0,0.12); }',
+    '.kyra-typing { display:flex; align-items:center; gap:4px; padding:11px 15px; }',
+    '.kyra-typing span { width:7px; height:7px; border-radius:50%; background:#9ca3af; animation:kyra-bounce 1.2s infinite; }',
     '.kyra-typing span:nth-child(2) { animation-delay:0.2s; }',
     '.kyra-typing span:nth-child(3) { animation-delay:0.4s; }',
-    '@keyframes kyra-bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }',
-    '#kyra-widget-input-area { padding:12px; background:#fff; border-top:1px solid #e5e7eb; display:flex; gap:8px; align-items:flex-end; }',
-    '#kyra-widget-input { flex:1; border:1px solid #e5e7eb; border-radius:10px; padding:10px 12px; font-size:13px; font-family:system-ui,sans-serif; resize:none; outline:none; max-height:100px; line-height:1.4; color:#111; background:#fff; }',
-    '#kyra-widget-input:focus { border-color:' + COLOR + '; }',
-    '#kyra-widget-send { width:36px; height:36px; border-radius:50%; background:' + COLOR + '; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:opacity 0.2s; }',
-    '#kyra-widget-send:disabled { opacity:0.5; cursor:not-allowed; }',
-    '#kyra-widget-send svg { width:16px; height:16px; fill:white; }',
-    '#kyra-widget-powered { text-align:center; padding:6px; font-size:11px; color:#6b7280; font-family:system-ui,sans-serif; background:#fff; border-top:1px solid #f3f4f6; }',
+    '@keyframes kyra-bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-7px)} }',
+    '#kyra-widget-input-area { padding:12px 14px; background:#fff; border-top:1px solid #e5e7eb; display:flex; gap:10px; align-items:flex-end; padding-bottom:max(12px, env(safe-area-inset-bottom)); }',
+    '#kyra-widget-input { flex:1; border:1.5px solid #e5e7eb; border-radius:12px; padding:11px 14px; font-size:15px; font-family:system-ui,sans-serif; resize:none; outline:none; max-height:110px; line-height:1.4; color:#1a1a1a; background:#fff; -webkit-appearance:none; }',
+    '#kyra-widget-input:focus { border-color:' + COLOR + '; box-shadow:0 0 0 3px ' + COLOR + '22; }',
+    '#kyra-widget-send { width:42px; height:42px; border-radius:50%; background:' + COLOR + '; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:opacity 0.2s,transform 0.15s; }',
+    '#kyra-widget-send:hover { transform:scale(1.05); }',
+    '#kyra-widget-send:disabled { opacity:0.45; cursor:not-allowed; transform:none; }',
+    '#kyra-widget-send svg { width:18px; height:18px; fill:white; }',
+    '#kyra-widget-powered { text-align:center; padding:7px 8px; font-size:11px; color:#9ca3af; font-family:system-ui,sans-serif; background:#fff; border-top:1px solid #f3f4f6; }',
     '#kyra-widget-powered a { color:#6366f1; text-decoration:none; font-weight:600; }',
     '#kyra-widget-powered a:hover { text-decoration:underline; }',
   ].join('');
@@ -120,6 +125,12 @@ export async function GET(
   var history = []; // [{role:'user'|'assistant', content:string}] — last 10 turns
 
   // ── DOM ─────────────────────────────────────────────────────────────────────
+  // Backdrop (mobile only)
+  var backdrop = document.createElement('div');
+  backdrop.id = 'kyra-widget-backdrop';
+  backdrop.addEventListener('click', closePanel);
+  document.body.appendChild(backdrop);
+
   // Chat button
   var btn = document.createElement('button');
   btn.id = 'kyra-widget-btn';
@@ -134,7 +145,7 @@ export async function GET(
   panel.innerHTML = [
     '<div id="kyra-widget-header">',
     '  <div class="avatar">' + AVATAR + '</div>',
-    '  <div><div class="title">' + TITLE + '</div><div class="subtitle">Typically replies instantly</div></div>',
+    '  <div class="info"><div class="title">' + TITLE + '</div><div class="subtitle"><span class="online-dot"></span>Online · Typically replies instantly</div></div>',
     '  <button class="close-btn" aria-label="Close chat">✕</button>',
     '</div>',
     '<div id="kyra-widget-messages"></div>',
@@ -194,21 +205,92 @@ export async function GET(
     isOpen = true;
     panel.classList.remove('hidden');
     btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>';
+    var isMobile = window.innerWidth <= 600;
+    if (isMobile) {
+      // On mobile: hide the button (close is in the header), show backdrop
+      btn.style.display = 'none';
+      backdrop.style.display = 'block';
+    }
     if (!greeted && messagesEl.children.length === 0) {
       greeted = true;
       addMessage('bot', GREETING);
     }
-    setTimeout(function() { if (inputEl) inputEl.focus(); }, 100);
+    applyMobileLayout();
+    setTimeout(function() {
+      if (inputEl) {
+        inputEl.focus();
+        if (isMobile) { setTimeout(applyMobileLayout, 400); }
+      }
+    }, 100);
   }
 
   function closePanel() {
     isOpen = false;
     panel.classList.add('hidden');
+    btn.style.display = '';
+    backdrop.style.display = 'none';
     btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>';
+    // Restore desktop button position
+    if (window.innerWidth > 600) {
+      btn.style.bottom = '24px';
+    }
   }
 
   btn.addEventListener('click', function() { isOpen ? closePanel() : openPanel(); });
   closeBtn.addEventListener('click', closePanel);
+
+  // ── Mobile sizing (JS-driven — more reliable than CSS media queries on iOS) ─
+  function applyMobileLayout() {
+    var isMobile = window.innerWidth <= 600;
+    if (isMobile) {
+      // Use visualViewport for accurate height (accounts for iOS keyboard + browser chrome)
+      var vvp = window.visualViewport;
+      var vvpHeight = vvp ? vvp.height : window.innerHeight;
+      var vvpOffsetTop = vvp ? vvp.offsetTop : 0;
+      var bottomOffset = Math.round(window.innerHeight - vvpOffsetTop - vvpHeight);
+      // Panel takes 80% of visible viewport height (tall enough to read the conversation)
+      var panelH = Math.round(vvpHeight * 0.80);
+      panel.style.position = 'fixed';
+      panel.style.left = '0';
+      panel.style.right = '0';
+      panel.style.bottom = bottomOffset + 'px';
+      panel.style.top = 'auto';
+      panel.style.width = '100%';
+      panel.style.maxWidth = '100%';
+      panel.style.height = panelH + 'px';
+      panel.style.maxHeight = panelH + 'px';
+      panel.style.borderRadius = '20px 20px 0 0';
+      // Button is hidden when panel open on mobile — shown when closed
+      if (!isOpen) {
+        btn.style.display = '';
+        btn.style.bottom = '24px';
+      }
+    } else {
+      // Desktop: restore defaults
+      panel.style.position = 'fixed';
+      panel.style.left = '';
+      panel.style.right = POSITION === 'bottom-left' ? '' : '24px';
+      panel.style.bottom = '100px';
+      panel.style.top = 'auto';
+      panel.style.width = '380px';
+      panel.style.maxWidth = 'calc(100vw - 32px)';
+      panel.style.height = '560px';
+      panel.style.maxHeight = 'calc(100vh - 130px)';
+      panel.style.borderRadius = '20px';
+      btn.style.display = '';
+      btn.style.bottom = '24px';
+    }
+    // Always scroll messages to bottom when layout changes (keyboard open/close)
+    if (isOpen) scrollToBottom();
+  }
+
+  applyMobileLayout();
+  window.addEventListener('resize', applyMobileLayout);
+  // Critical: re-apply when iOS keyboard opens/closes (visualViewport resize event)
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', applyMobileLayout);
+    window.visualViewport.addEventListener('scroll', applyMobileLayout);
+  }
 
   // ── Send ─────────────────────────────────────────────────────────────────────
   async function sendMessage() {

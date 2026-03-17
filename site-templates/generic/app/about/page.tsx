@@ -54,11 +54,11 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Sections from pages.json */}
-      {sections.length > 0 && (
+      {/* Sections from pages.json — skip empty sections */}
+      {sections.filter(s => s.body || s.bullets.length > 0).length > 0 && (
         <section className="py-20 sm:py-28">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-8">
-            {sections.map((section, idx) => (
+            {sections.filter(s => s.body || s.bullets.length > 0).map((section, idx) => (
               <div key={idx} className="bg-white/5 border border-white/10 rounded-2xl p-8">
                 <h2 className="text-2xl font-bold mb-4">{section.heading}</h2>
                 <div className="space-y-3 mb-4">
