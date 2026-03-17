@@ -164,7 +164,7 @@ export default async function AgencyOverviewPage() {
           <div className="divide-y divide-indigo-50">
             {[
               { n: 1, title: 'Add your first client', desc: 'Pick an industry template — AI personality is pre-written.', href: '/agency/clients/new', cta: 'Add Client' },
-              { n: 2, title: 'Connect GoHighLevel', desc: 'Link your GHL account so the AI responds to SMS automatically.', href: '/agency/ghl-setup', cta: 'Connect GHL' },
+              { n: 2, title: 'Connect GoHighLevel', desc: 'Link your GHL account so the AI responds to SMS automatically.', href: '/agency/clients', cta: 'Connect GHL' },
               { n: 3, title: 'Watch your AI go live', desc: 'The AI responds to GHL messages within 60 seconds.', href: '/agency', cta: 'View Feed' },
             ].map(step => (
               <div key={step.n} className="flex items-start gap-4 p-5">
