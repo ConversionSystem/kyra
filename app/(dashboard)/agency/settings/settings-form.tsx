@@ -115,6 +115,8 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
   // --- Delete agency ---
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // ======== Save settings ========
   const handleSave = async () => {
@@ -190,8 +192,10 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
   };
 
   // ======== Remove member ========
+  const [removeError, setRemoveError] = useState<string | null>(null);
   const handleRemoveMember = async (memberId: string) => {
     setRemovingId(memberId);
+    setRemoveError(null);
     try {
       const res = await fetch(`/api/agency/members?id=${memberId}`, { method: 'DELETE' });
       if (!res.ok) {
@@ -199,10 +203,31 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
         throw new Error(body.error ?? 'Failed to remove member');
       }
       setMembers((prev) => prev.filter((m) => m.id !== memberId));
-    } catch (err) {
-      // silently fail for now
+    } catch (err: unknown) {
+      setRemoveError(err instanceof Error ? err.message : 'Failed to remove member');
+      setTimeout(() => setRemoveError(null), 5000);
     } finally {
       setRemovingId(null);
+    }
+  };
+
+  // ======== Delete agency ========
+  const handleDeleteAgency = async () => {
+    if (deleteConfirmText !== agency.slug) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch('/api/agency/settings', { method: 'DELETE' });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? 'Failed to delete agency');
+      }
+      // Redirect to home after deletion
+      window.location.href = '/';
+    } catch (err: unknown) {
+      setDeleteError(err instanceof Error ? err.message : 'Failed to delete agency');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -494,6 +519,11 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {removeError && (
+            <div className="rounded-md bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-600 mb-3">
+              {removeError}
+            </div>
+          )}
           <div className="space-y-3 mb-6">
             {members.map((member) => {
               const config = roleConfig[member.role as AgencyRole] ?? roleConfig.member;
@@ -662,6 +692,11 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
                   Type <span className="font-mono font-bold">{agency.slug}</span> to confirm
                   deletion. This will permanently remove your agency, all clients, and all data.
                 </p>
+                {deleteError && (
+                  <div className="rounded-md bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-600 mb-3">
+                    {deleteError}
+                  </div>
+                )}
                 <div className="flex gap-3">
                   <Input
                     value={deleteConfirmText}
@@ -671,17 +706,19 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
                   />
                   <Button
                     variant="outline"
-                    disabled={deleteConfirmText !== agency.slug}
+                    onClick={handleDeleteAgency}
+                    disabled={deleteConfirmText !== agency.slug || deleting}
                     className="border-red-200 text-red-600 hover:bg-red-50 gap-2 shrink-0"
                   >
-                    <Trash2 className="h-4 w-4" />
-                    Confirm Delete
+                    {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                    {deleting ? 'Deleting…' : 'Confirm Delete'}
                   </Button>
                   <Button
                     variant="outline"
                     onClick={() => {
                       setShowDeleteConfirm(false);
                       setDeleteConfirmText('');
+                      setDeleteError(null);
                     }}
                     className="shrink-0"
                   >
