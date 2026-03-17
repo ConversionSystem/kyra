@@ -18,13 +18,39 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const admin = createServiceClientWithoutCookies();
 
+  // Try to get existing credits row
   const { data: current } = await admin
     .from('agency_credits')
     .select('id, balance, lifetime_purchased, lifetime_used')
     .eq('agency_id', id)
     .single();
 
-  if (!current) return NextResponse.json({ error: 'Credits record not found' }, { status: 404 });
+  if (!current) {
+    // No credits row yet — create one (new accounts may not have this row)
+    const initialBalance = Math.max(0, amount);
+    const { error: insertErr } = await admin
+      .from('agency_credits')
+      .insert({
+        agency_id: id,
+        balance: initialBalance,
+        lifetime_purchased: amount > 0 ? amount : 0,
+        lifetime_used: 0,
+      });
+    if (insertErr) return NextResponse.json({ error: `Failed to create credits: ${insertErr.message}` }, { status: 500 });
+
+    // Log transaction
+    try {
+      await admin.from('credit_transactions').insert({
+        agency_id: id,
+        amount,
+        type: amount > 0 ? 'admin_grant' : 'admin_deduct',
+        description: note || `Admin adjustment: ${amount > 0 ? '+' : ''}${amount} credits`,
+        balance_after: initialBalance,
+      });
+    } catch { /* ignore — table may not exist */ }
+
+    return NextResponse.json({ ok: true, newBalance: initialBalance, delta: amount });
+  }
 
   const newBalance = Math.max(0, current.balance + amount);
   const newLifetimePurchased = amount > 0 ? current.lifetime_purchased + amount : current.lifetime_purchased;
