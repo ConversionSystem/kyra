@@ -160,7 +160,7 @@ const SLIDES: Slide[] = [
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           {[
             { icon: Bot, title: 'AI Workers', desc: 'Each client gets a dedicated AI that knows their business, services, hours, and personality. Not a chatbot — a worker.', color: 'text-indigo-400 bg-indigo-500/20' },
-            { icon: Globe, title: 'Every Channel', desc: 'SMS, web chat, Telegram, WhatsApp, voice calls, GoHighLevel — one AI handles all of them simultaneously.', color: 'text-emerald-400 bg-emerald-500/20' },
+            { icon: Globe, title: 'Multi-Channel', desc: 'SMS (via GHL), web chat, Telegram, WhatsApp, voice calls — one AI handles all of them simultaneously.', color: 'text-emerald-400 bg-emerald-500/20' },
             { icon: Shield, title: 'Your Brand', desc: 'White-label everything — dashboard, portal, chat widget. Your clients never see Kyra. They see you.', color: 'text-purple-400 bg-purple-500/20' },
           ].map(({ icon: Icon, title, desc, color }) => (
             <div key={title} className="bg-white/5 border border-white/10 rounded-xl p-6">
@@ -188,14 +188,14 @@ const SLIDES: Slide[] = [
         <p className="text-slate-400 text-center mb-10">For each of your clients — automatically, 24/7</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[
-            { emoji: '💬', title: 'Responds in < 60 seconds', desc: 'Every inbound message — SMS, web chat, social DMs' },
-            { emoji: '📅', title: 'Books appointments', desc: 'Checks calendar, suggests times, confirms bookings' },
+            { emoji: '💬', title: 'Responds in < 60 seconds', desc: 'Every inbound message — SMS, web chat, Telegram, WhatsApp' },
+            { emoji: '📅', title: 'Books appointments', desc: 'Checks GHL calendar availability, books and confirms' },
             { emoji: '🏷️', title: 'Qualifies leads', desc: 'Asks the right questions, scores leads, tags hot ones' },
             { emoji: '📋', title: 'Updates the CRM', desc: 'Creates contacts, logs conversations, moves deals' },
             { emoji: '📞', title: 'Answers phone calls', desc: 'Picks up, has a natural conversation, takes action' },
-            { emoji: '🔄', title: 'Follows up automatically', desc: 'Day 1, 3, 7 — customizable sequences per client' },
+            { emoji: '🔄', title: 'Follows up on leads', desc: 'Automated follow-up sequences via GHL workflows' },
             { emoji: '🚨', title: 'Escalates to humans', desc: 'Complex issues get flagged instantly to your team' },
-            { emoji: '⭐', title: 'Asks for reviews', desc: 'Post-service follow-up to generate Google reviews' },
+            { emoji: '🌐', title: 'Works across all channels', desc: 'One AI brain handles SMS, voice, web chat, and Telegram simultaneously' },
             { emoji: '📊', title: 'Reports performance', desc: 'You see every conversation, every lead, every outcome' },
           ].map(({ emoji, title, desc }) => (
             <div key={title} className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-start gap-3">
