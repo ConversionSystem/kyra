@@ -4,7 +4,7 @@
  * Returns current month voice usage for the agency.
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,10 +14,25 @@ function currentMonth(): string {
 }
 
 export async function GET(req: NextRequest) {
+  // Auth check
+  const sb = await createClient();
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   const agencyId = req.nextUrl.searchParams.get('agencyId');
   if (!agencyId) {
     return NextResponse.json({ error: 'Missing agencyId' }, { status: 400 });
   }
+
+  // Verify user belongs to this agency
+  const { data: member } = await sb
+    .from('agency_members')
+    .select('id')
+    .eq('agency_id', agencyId)
+    .eq('user_id', user.id)
+    .single();
+
+  if (!member) return NextResponse.json({ error: 'Access denied' }, { status: 403 });
 
   const month = currentMonth();
   const supabase = createServiceClientWithoutCookies();

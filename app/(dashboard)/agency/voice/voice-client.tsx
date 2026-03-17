@@ -83,7 +83,7 @@ const PROVIDERS = [
     id: 'openclaw',
     name: 'Kyra Native',
     logo: '🦞',
-    description: 'Built on Deepgram + OpenClaw TTS. No third-party account needed. Billed through Kyra credits.',
+    description: 'Built on Deepgram + Kyra TTS. No third-party account needed. Billed through Kyra credits.',
     pricing: '~5 credits/min (vs $0.25+ elsewhere)',
     bestFor: 'Agencies who want one bill. Simplest setup.',
     signupUrl: '',
@@ -114,9 +114,9 @@ const PROVIDERS = [
     bestFor: 'Agencies with 10+ clients',
     signupUrl: 'https://app.synthflow.ai',
     docsUrl: 'https://docs.synthflow.ai',
-    color: 'border-purple-200 bg-purple-50/50 hover:border-purple-300',
-    badge: 'Best for Agencies',
-    badgeColor: 'bg-purple-100 text-purple-700',
+    color: 'border-purple-200 bg-purple-50/50 hover:border-purple-300 opacity-60',
+    badge: 'Coming Soon',
+    badgeColor: 'bg-gray-100 text-gray-500',
   },
   {
     id: 'retell',
@@ -127,9 +127,9 @@ const PROVIDERS = [
     bestFor: 'High call volume, enterprise',
     signupUrl: 'https://www.retellai.com',
     docsUrl: 'https://docs.retellai.com',
-    color: 'border-emerald-200 bg-emerald-50/50 hover:border-emerald-300',
-    badge: 'Enterprise',
-    badgeColor: 'bg-emerald-100 text-emerald-700',
+    color: 'border-emerald-200 bg-emerald-50/50 hover:border-emerald-300 opacity-60',
+    badge: 'Coming Soon',
+    badgeColor: 'bg-gray-100 text-gray-500',
   },
 ] as const;
 
@@ -353,12 +353,16 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {PROVIDERS.map((p) => (
+            {PROVIDERS.map((p) => {
+              const comingSoon = p.badge === 'Coming Soon';
+              return (
               <button
                 key={p.id}
-                onClick={() => { setSelectedProvider(p.id); setStep('setup'); }}
+                onClick={() => { if (!comingSoon) { setSelectedProvider(p.id); setStep('setup'); } }}
+                disabled={comingSoon}
                 className={cn(
-                  'text-left p-5 rounded-xl border-2 transition-all hover:shadow-md',
+                  'text-left p-5 rounded-xl border-2 transition-all',
+                  comingSoon ? 'cursor-not-allowed' : 'hover:shadow-md',
                   p.color,
                 )}
               >
@@ -375,10 +379,11 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
                   <div className="text-xs text-gray-500">⭐ Best for: {p.bestFor}</div>
                 </div>
                 <div className="mt-3 flex items-center text-sm text-blue-600 font-medium">
-                  Select <ArrowRight className="w-4 h-4 ml-1" />
+                  {comingSoon ? 'Coming soon' : <>Select <ArrowRight className="w-4 h-4 ml-1" /></>}
                 </div>
               </button>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -422,7 +427,7 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
                 No External Account Needed
               </CardTitle>
               <CardDescription>
-                Kyra Native is built directly into your platform. Voice is handled by Deepgram + OpenClaw TTS — billed through your Kyra credits (~5 credits/min). No third-party signup required.
+                Kyra Native is built directly into your platform. Voice is handled by Deepgram + Kyra TTS — billed through your Kyra credits (~5 credits/min). No third-party signup required.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -431,7 +436,7 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
                   🎙️ Deepgram STT — best-in-class accuracy
                 </div>
                 <div className="flex items-center gap-1.5 text-xs font-medium text-indigo-700 bg-indigo-100 rounded-lg px-3 py-1.5">
-                  🔊 OpenClaw TTS — natural voices
+                  🔊 Kyra TTS — natural voices
                 </div>
                 <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-100 rounded-lg px-3 py-1.5">
                   💳 ~5 credits/min (vs $0.25+ elsewhere)
