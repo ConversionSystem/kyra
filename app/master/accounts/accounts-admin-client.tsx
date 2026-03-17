@@ -82,66 +82,84 @@ function AccountDrawer({
 
   function showMsg(type: 'ok' | 'err', text: string) {
     setMsg({ type, text });
-    setTimeout(() => setMsg(null), 4000);
+    // Success messages auto-dismiss; errors stay until user dismisses or next action
+    if (type === 'ok') setTimeout(() => setMsg(null), 4000);
   }
 
   async function applyCredits(delta: number) {
     if (!delta || isNaN(delta)) return;
     setLoading('credits');
-    const res = await fetch(`/api/admin/accounts/${account.id}/credits`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ amount: delta, note: creditNote }),
-    });
-    const data = await res.json();
-    setLoading(null);
-    if (data.ok) {
-      showMsg('ok', `Credits updated → balance: ${data.newBalance}`);
-      setCreditAmount('');
-      setCreditNote('');
-      onUpdated();
-    } else {
-      showMsg('err', data.error ?? 'Failed');
+    try {
+      const res = await fetch(`/api/admin/accounts/${account.id}/credits`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: delta, note: creditNote }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        showMsg('ok', `Credits updated → balance: ${data.newBalance}`);
+        setCreditAmount('');
+        setCreditNote('');
+        onUpdated();
+      } else {
+        showMsg('err', data.error ?? `Failed (HTTP ${res.status})`);
+      }
+    } catch (e) {
+      showMsg('err', `Network error: ${String(e)}`);
     }
+    setLoading(null);
   }
 
   async function saveEdits() {
     setLoading('edit');
-    const res = await fetch(`/api/admin/accounts/${account.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ plan: editPlan, account_type: editType, name: editName }),
-    });
-    const data = await res.json();
-    setLoading(null);
-    if (data.ok) {
-      showMsg('ok', 'Account updated');
-      onUpdated();
-    } else {
-      showMsg('err', data.error ?? 'Failed');
+    try {
+      const res = await fetch(`/api/admin/accounts/${account.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: editPlan, account_type: editType, name: editName }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        showMsg('ok', 'Account updated');
+        onUpdated();
+      } else {
+        showMsg('err', data.error ?? `Failed (HTTP ${res.status})`);
+      }
+    } catch (e) {
+      showMsg('err', `Network error: ${String(e)}`);
     }
+    setLoading(null);
   }
 
   async function sendPasswordReset() {
     setLoading('password');
-    const res = await fetch(`/api/admin/accounts/${account.id}/reset-password`, { method: 'POST' });
-    const data = await res.json();
+    try {
+      const res = await fetch(`/api/admin/accounts/${account.id}/reset-password`, { method: 'POST' });
+      const data = await res.json();
+      if (data.ok) showMsg('ok', `Password reset sent to ${data.email}`);
+      else showMsg('err', data.error ?? `Failed (HTTP ${res.status})`);
+    } catch (e) {
+      showMsg('err', `Network error: ${String(e)}`);
+    }
     setLoading(null);
-    if (data.ok) showMsg('ok', `Password reset sent to ${data.email}`);
-    else showMsg('err', data.error ?? 'Failed');
   }
 
   async function deleteAccount() {
     setLoading('delete');
-    const res = await fetch(`/api/admin/accounts/${account.id}`, { method: 'DELETE' });
-    const data = await res.json();
-    setLoading(null);
-    if (data.ok) {
-      onClose();
-      onUpdated();
-    } else {
-      showMsg('err', data.error ?? 'Delete failed');
+    try {
+      const res = await fetch(`/api/admin/accounts/${account.id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.ok) {
+        showMsg('ok', 'Account deleted');
+        // Brief delay so the user sees the success message before drawer closes
+        setTimeout(() => { onClose(); onUpdated(); }, 800);
+      } else {
+        showMsg('err', data.error ?? `Delete failed (HTTP ${res.status})`);
+      }
+    } catch (e) {
+      showMsg('err', `Network error: ${String(e)}`);
     }
+    setLoading(null);
   }
 
   const creditDelta = parseFloat(creditAmount) || 0;
@@ -176,8 +194,13 @@ function AccountDrawer({
           {/* Status bar */}
           {msg && (
             <div className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium ${msg.type === 'ok' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
-              {msg.type === 'ok' ? <Check className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
-              {msg.text}
+              {msg.type === 'ok' ? <Check className="h-4 w-4 shrink-0" /> : <AlertTriangle className="h-4 w-4 shrink-0" />}
+              <span className="flex-1">{msg.text}</span>
+              {msg.type === 'err' && (
+                <button onClick={() => setMsg(null)} className="text-red-400 hover:text-red-600 shrink-0">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
             </div>
           )}
 
@@ -388,6 +411,8 @@ export default function AccountsAdminClient() {
   const [onlyNoWorkers, setOnlyNoWorkers] = useState(false);
   const [selected, setSelected] = useState<Account | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [syncMsg, setSyncMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
 
   const fetch_ = useCallback(async () => {
     setLoading(true);
@@ -436,6 +461,23 @@ export default function AccountsAdminClient() {
     setLoading(false);
   }, []);
 
+  const syncToCRM = async () => {
+    setSyncing(true);
+    setSyncMsg(null);
+    try {
+      const res = await fetch('/api/admin/sync-leads', { method: 'POST' });
+      const data = await res.json();
+      if (data.ok) {
+        setSyncMsg({ type: 'ok', text: `Synced ${data.synced} leads to CRM (${data.skipped} already existed${data.errors ? `, ${data.errors} errors` : ''})` });
+      } else {
+        setSyncMsg({ type: 'err', text: data.error ?? 'Sync failed' });
+      }
+    } catch (e) {
+      setSyncMsg({ type: 'err', text: `Network error: ${String(e)}` });
+    }
+    setSyncing(false);
+  };
+
   const filtered = accounts
     .filter(a => {
       const q = search.toLowerCase();
@@ -475,10 +517,16 @@ export default function AccountsAdminClient() {
           </h1>
           {lastRefresh && <p className="text-xs text-gray-400 mt-0.5">Last refreshed {lastRefresh.toLocaleTimeString()}</p>}
         </div>
-        <button onClick={fetch_} disabled={loading}
-          className="flex items-center gap-2 text-sm border border-gray-200 rounded-xl px-4 py-2 hover:bg-gray-50 transition disabled:opacity-50">
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={syncToCRM} disabled={syncing}
+            className="flex items-center gap-2 text-sm border border-indigo-200 text-indigo-600 rounded-xl px-4 py-2 hover:bg-indigo-50 transition disabled:opacity-50">
+            <Zap className={`h-4 w-4 ${syncing ? 'animate-pulse' : ''}`} /> {syncing ? 'Syncing…' : 'Sync to CRM'}
+          </button>
+          <button onClick={fetch_} disabled={loading}
+            className="flex items-center gap-2 text-sm border border-gray-200 rounded-xl px-4 py-2 hover:bg-gray-50 transition disabled:opacity-50">
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
+          </button>
+        </div>
       </div>
 
       {/* Fetch error */}
@@ -486,6 +534,15 @@ export default function AccountsAdminClient() {
         <div className="mb-4 flex items-center gap-3 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
           <AlertTriangle className="h-4 w-4 shrink-0" />
           <span>{fetchError}</span>
+        </div>
+      )}
+
+      {/* Sync message */}
+      {syncMsg && (
+        <div className={`mb-4 flex items-center gap-3 rounded-xl px-4 py-3 text-sm ${syncMsg.type === 'ok' ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-red-50 border border-red-200 text-red-700'}`}>
+          {syncMsg.type === 'ok' ? <Check className="h-4 w-4 shrink-0" /> : <AlertTriangle className="h-4 w-4 shrink-0" />}
+          <span className="flex-1">{syncMsg.text}</span>
+          <button onClick={() => setSyncMsg(null)} className="shrink-0 hover:opacity-70"><X className="h-3.5 w-3.5" /></button>
         </div>
       )}
 
