@@ -34,10 +34,10 @@ export async function GET(
 
   const supabase = getSupabase();
 
-  // Fetch widget config from client
+  // Fetch widget config from client (including agency_id for branding)
   const { data: client } = await supabase
     .from('agency_clients')
-    .select('id, name, status, container_config, gateway_status')
+    .select('id, name, status, container_config, gateway_status, agency_id')
     .eq('id', clientId)
     .single();
 
@@ -45,9 +45,25 @@ export async function GET(
   // Chat will return a graceful fallback message in that case
   // This ensures the widget always renders on client sites
 
+  // Fetch agency branding settings
+  let agencySettings: Record<string, unknown> = {};
+  if (client?.agency_id) {
+    const { data: agency } = await supabase
+      .from('agencies')
+      .select('id, name, settings')
+      .eq('id', client.agency_id)
+      .single();
+    agencySettings = (agency?.settings as Record<string, unknown>) ?? {};
+  }
+
+  const agencyPrimaryColor = (agencySettings.primary_color as string) || null;
+  const agencyAccentColor = (agencySettings.accent_color as string) || null;
+  const agencyCompanyName = (agencySettings.company_name as string) || null;
+
   const cfg = client ? ((client.container_config as Record<string, unknown>) ?? {}) : {};
-  const widgetTitle = (cfg.widget_title as string) || (client ? `Chat with ${client.name}` : 'Chat with us');
-  const widgetColor = (cfg.widget_color as string) || '#6366f1'; // indigo default
+  // Priority: container_config override → agency primary_color → agency accent_color → default
+  const widgetColor = (cfg.widget_color as string) || agencyPrimaryColor || agencyAccentColor || '#6366f1';
+  const widgetTitle = (cfg.widget_title as string) || (agencyCompanyName ? `Chat with ${agencyCompanyName}` : (client ? `Chat with ${client.name}` : 'Chat with us'));
   const widgetGreeting = (cfg.widget_greeting as string) || `Hi! 👋 How can I help you today?`;
   const widgetPoweredBy = cfg.widget_powered_by !== false; // default true
   const widgetPosition = (cfg.widget_position as string) || 'bottom-right';
@@ -110,9 +126,9 @@ export async function GET(
     '#kyra-widget-send:hover { transform:scale(1.05); }',
     '#kyra-widget-send:disabled { opacity:0.45; cursor:not-allowed; transform:none; }',
     '#kyra-widget-send svg { width:18px; height:18px; fill:white; }',
-    '#kyra-widget-powered { text-align:center; padding:7px 8px; font-size:11px; color:#9ca3af; font-family:system-ui,sans-serif; background:#fff; border-top:1px solid #f3f4f6; }',
-    '#kyra-widget-powered a { color:#6366f1; text-decoration:none; font-weight:600; }',
-    '#kyra-widget-powered a:hover { text-decoration:underline; }',
+    '#kyra-widget-powered { text-align:center; padding:4px 8px; font-size:8px; color:#c0c0c0; font-family:system-ui,sans-serif; background:#fff; border-top:1px solid #f3f4f6; }',
+    '#kyra-widget-powered a { color:#c0c0c0; text-decoration:none; font-weight:500; }',
+    '#kyra-widget-powered a:hover { color:#9ca3af; text-decoration:underline; }',
   ].join('');
   document.head.appendChild(style);
 
@@ -155,7 +171,7 @@ export async function GET(
     '    <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>',
     '  </button>',
     '</div>',
-    POWERED_BY ? '<div id="kyra-widget-powered">⚡ AI by <a href="https://kyra.conversionsystem.com/signup/agency?utm_source=widget&utm_medium=powered_by&utm_campaign=viral" target="_blank" rel="noopener" title="Get your own AI worker — free to start">Kyra</a> · <a href="https://kyra.conversionsystem.com/signup/agency?utm_source=widget&utm_medium=powered_by&utm_campaign=viral" target="_blank" rel="noopener" style="color:#9ca3af;font-weight:normal">Get one free →</a></div>' : '',
+    POWERED_BY ? '<div id="kyra-widget-powered"><a href="https://kyra.conversionsystem.com/signup/agency?utm_source=widget&utm_medium=powered_by&utm_campaign=viral" target="_blank" rel="noopener" title="Get your own AI worker — free to start">Powered by Kyra</a></div>' : '',
   ].join('');
   document.body.appendChild(panel);
 
