@@ -45,6 +45,9 @@ export default function RootLayout({
           }}
         />
         <SchemaMarkup data={localBusinessSchema()} />
+        {process.env.NEXT_PUBLIC_WIDGET_CLIENT_ID && (
+          <meta name="kyra-client-id" content={process.env.NEXT_PUBLIC_WIDGET_CLIENT_ID} />
+        )}
       </head>
       <body className={inter.className}>
         <Navbar />
