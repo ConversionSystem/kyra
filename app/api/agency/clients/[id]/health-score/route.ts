@@ -12,12 +12,13 @@ export async function GET(_req: NextRequest, ctx: Context) {
   const sb = await createClient();
   const sbService = await createServiceClient();
 
-  const { data: { session } } = await sb.auth.getSession();
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  // Get agency for this user
-  const { data: agency } = await sbService.from('agencies').select('id').eq('owner_id', session.user.id).single();
-  if (!agency) return NextResponse.json({ error: 'Agency not found' }, { status: 404 });
+  // Get agency via membership (not owner-only)
+  const { data: membership } = await sb.from('agency_members').select('agency_id').eq('user_id', user.id).single();
+  if (!membership) return NextResponse.json({ error: 'No agency' }, { status: 404 });
+  const agency = { id: membership.agency_id };
 
   // Get client (verify ownership)
   const { data: client } = await sbService.from('agency_clients')
