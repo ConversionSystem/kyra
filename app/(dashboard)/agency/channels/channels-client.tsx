@@ -266,13 +266,17 @@ export function ChannelsClient({ clientId, embedded }: { clientId?: string; embe
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<ChannelDef | null>(null);
   const [connecting, setConnecting] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
   const [tokenValue, setTokenValue] = useState('');
   const [extraValue, setExtraValue] = useState('');   // second field (e.g. access token for WhatsApp Business)
+  const [slackAppToken, setSlackAppToken] = useState(''); // Slack App-Level Token (xapp-)
   const [pairingValue, setPairingValue] = useState('');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [pairMessage, setPairMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [embedCopied, setEmbedCopied] = useState(false);
   const [pairingPhase, setPairingPhase] = useState(false);
+  // Dynamic app URL — resolves at runtime so embed codes use the actual domain
+  const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://kyra.conversionsystem.com';
 
   const loadStatus = useCallback(async () => {
     try {
@@ -295,6 +299,7 @@ export function ChannelsClient({ clientId, embedded }: { clientId?: string; embe
     setSelected(ch);
     setTokenValue('');
     setExtraValue('');
+    setSlackAppToken('');
     setPairingValue('');
     setMessage(null);
     setPairMessage(null);
@@ -304,6 +309,7 @@ export function ChannelsClient({ clientId, embedded }: { clientId?: string; embe
   const closeModal = () => {
     setSelected(null);
     setConnecting(false);
+    setDisconnecting(false);
     setMessage(null);
     setPairMessage(null);
     setPairingPhase(false);
@@ -325,7 +331,11 @@ export function ChannelsClient({ clientId, embedded }: { clientId?: string; embe
       } else if (selected.id === 'discord') {
         channelConfig = { token: tokenValue.trim() };
       } else if (selected.id === 'slack') {
-        channelConfig = { botToken: tokenValue.trim() };
+        channelConfig = {
+          botToken: tokenValue.trim(),
+          // App-Level Token required for Socket Mode
+          ...(slackAppToken.trim() && { appToken: slackAppToken.trim() }),
+        };
       } else if (selected.id === 'signal') {
         channelConfig = { phoneNumber: tokenValue.trim() };
       } else if (selected.id === 'whatsapp-business') {
@@ -408,13 +418,40 @@ export function ChannelsClient({ clientId, embedded }: { clientId?: string; embe
 
   const getEmbedCode = () => {
     const cId = clientId || 'YOUR_CLIENT_ID';
-    return `<script src="https://kyra.conversionsystem.com/widget/chat.js" data-client-id="${cId}" defer></script>`;
+    // Correct path: /api/widget/[clientId]/script — NOT /widget/chat.js (doesn't exist)
+    return `<script src="${appUrl}/api/widget/${cId}/script" defer></script>`;
   };
 
   const copyEmbed = async () => {
     await navigator.clipboard.writeText(getEmbedCode());
     setEmbedCopied(true);
     setTimeout(() => setEmbedCopied(false), 2000);
+  };
+
+  const disconnectChannel = async () => {
+    if (!selected) return;
+    setDisconnecting(true);
+    setMessage(null);
+    try {
+      const res = await fetch('/api/openclaw/channels', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          channel: selected.id,
+          ...(clientId && { clientId }),
+        }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setMessage({ type: 'success', text: `${selected.name} disconnected. Gateway is restarting (~30 seconds).` });
+        loadStatus();
+      } else {
+        setMessage({ type: 'error', text: data.error?.message || 'Disconnect failed.' });
+      }
+    } catch {
+      setMessage({ type: 'error', text: 'Network error — please try again.' });
+    }
+    setDisconnecting(false);
   };
 
   // Split channels into connected and available
@@ -579,7 +616,7 @@ export function ChannelsClient({ clientId, embedded }: { clientId?: string; embe
                     {selected.icon}
                   </div>
                   <div>
-                    <h2 className="text-lg font-bold text-white">Connect {selected.name}</h2>
+                    <h2 className="text-lg font-bold text-white">{channelStatus[selected.id]?.configured ? 'Manage' : 'Connect'} {selected.name}</h2>
                     <p className="text-sm text-white/80">{selected.tagline}</p>
                   </div>
                 </div>
@@ -603,6 +640,17 @@ export function ChannelsClient({ clientId, embedded }: { clientId?: string; embe
                   <span className="text-xs font-medium bg-white/25 text-white px-3 py-1 rounded-full">
                     {PLAN_LABELS[selected.plan].label}
                   </span>
+                )}
+                {/* Disconnect button — only shown when channel is already connected */}
+                {channelStatus[selected.id]?.configured && selected.setupKind !== 'embed' && (
+                  <button
+                    onClick={disconnectChannel}
+                    disabled={disconnecting}
+                    className="ml-auto flex items-center gap-1.5 text-xs font-medium bg-white/10 hover:bg-red-500/60 text-white/80 hover:text-white px-3 py-1 rounded-full transition-colors"
+                  >
+                    {disconnecting ? <Loader2 className="h-3 w-3 animate-spin" /> : <WifiOff className="h-3 w-3" />}
+                    {disconnecting ? 'Disconnecting…' : 'Disconnect'}
+                  </button>
                 )}
               </div>
             </div>
@@ -701,6 +749,25 @@ export function ChannelsClient({ clientId, embedded }: { clientId?: string; embe
                           />
                         </div>
                       )}
+
+                      {/* Slack: App-Level Token required for Socket Mode */}
+                      {selected.id === 'slack' && (
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                            App-Level Token <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="password"
+                            placeholder="xapp-1-..."
+                            value={slackAppToken}
+                            onChange={e => setSlackAppToken(e.target.value)}
+                            className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                          />
+                          <p className="text-[11px] text-gray-400 mt-1">
+                            Required for Socket Mode. Create under Settings → Basic Information → App-Level Tokens.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -711,15 +778,16 @@ export function ChannelsClient({ clientId, embedded }: { clientId?: string; embe
                     </p>
                   )}
 
-                  {/* Connect button */}
-                  {!message?.type && (
+                  {/* Connect / Reconnect button — hidden only on error (let user fix input) */}
+                  {message?.type !== 'error' && (
                     <button
-                      onClick={connectChannel}
+                      onClick={() => { setMessage(null); connectChannel(); }}
                       disabled={
                         connecting ||
                         (selected.tokenField && !selected.tokenField.startsWith('_') && !tokenValue.trim()) ||
                         (selected.id === 'whatsapp-business' && !extraValue.trim()) ||
-                        (selected.id === 'imessage' && !extraValue.trim())
+                        (selected.id === 'imessage' && !extraValue.trim()) ||
+                        (selected.id === 'slack' && !slackAppToken.trim())
                       }
                       className={cn(
                         'w-full py-3 rounded-xl text-sm font-semibold text-white transition-all flex items-center justify-center gap-2 bg-gradient-to-r disabled:opacity-50 disabled:cursor-not-allowed',
@@ -728,11 +796,22 @@ export function ChannelsClient({ clientId, embedded }: { clientId?: string; embe
                     >
                       {connecting ? (
                         <><Loader2 className="h-4 w-4 animate-spin" /> Connecting...</>
+                      ) : channelStatus[selected.id]?.configured ? (
+                        <>Update {selected.name}</>
                       ) : selected.setupKind === 'qr' ? (
                         <><Radio className="h-4 w-4" /> Start QR Pairing</>
                       ) : (
                         <>Connect {selected.name}</>
                       )}
+                    </button>
+                  )}
+                  {/* On error: show a plain retry link so the user can fix and resubmit */}
+                  {message?.type === 'error' && (
+                    <button
+                      onClick={() => setMessage(null)}
+                      className="text-sm text-indigo-600 hover:underline"
+                    >
+                      ← Try again
                     </button>
                   )}
                 </>
