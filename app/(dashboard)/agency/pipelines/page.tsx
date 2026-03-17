@@ -1,17 +1,7 @@
 import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
-import { getAgencyForUser } from '@/lib/agency/queries';
-import { PipelineBuilderClient } from './pipeline-builder-client';
 
-export default async function PipelinesPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/login');
-  const result = await getAgencyForUser(user.id);
-  if (!result) redirect('/signup/agency');
-
-  const settings = (result.agency.settings as Record<string, unknown>) ?? {};
-  const pipelines = (settings.pipelines as Array<Record<string, unknown>>) || [];
-
-  return <PipelineBuilderClient initialPipelines={pipelines} />;
+// Pipelines merged into Proactive AI (automations).
+// Visual pipeline builder was UI-only with no execution engine.
+export default function PipelinesPage() {
+  redirect('/agency/automations');
 }

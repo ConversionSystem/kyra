@@ -32,9 +32,7 @@ const NAV_LINKS: NavLink[] = [
   { label: 'Chat Widget',   href: '/agency/widget',      icon: MessageCircle, desc: 'Web chat embed code',               section: 'channels' },
 
   // ── Automation ──
-  { label: 'Autopilot',     href: '/agency/autopilot',   icon: ZapIcon,       desc: 'Scheduled AI actions',              section: 'automation' },
-  { label: 'Pipelines',     href: '/agency/pipelines',   icon: GitBranch,     desc: 'Multi-step workflows',              section: 'automation' },
-  { label: 'Proactive AI',  href: '/agency/automations', icon: Settings2,     desc: 'Trigger rules',                     section: 'automation' },
+  { label: 'Automations',   href: '/agency/automations', icon: ZapIcon,       desc: 'Scheduled actions & triggers',      section: 'automation' },
 
   // ── Insights ──
   { label: 'Performance',   href: '/agency/performance', icon: BarChart3,     desc: 'AI worker stats',                   section: 'insights' },

@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Loader2, Zap, ChevronDown, ChevronUp, Clock, Users, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AISuggestButton } from '@/components/ai/suggest-button';
-import { SectionNav } from '@/components/dashboard/section-nav';
+// SectionNav removed — autopilot is now only shown embedded in client detail view
 
 interface AutopilotAction {
   id: string;
@@ -60,37 +60,45 @@ export function AutopilotClient() {
   const [loading, setLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState(new Date().getDay());
 
+  const [error, setError] = useState<string | null>(null);
   const load = () => {
+    setError(null);
     fetch('/api/agency/autopilot')
-      .then(r => r.json())
+      .then(r => { if (!r.ok) throw new Error(`Failed (${r.status})`); return r.json(); })
       .then(d => {
         setEnabled(d.enabled ?? false);
         setSchedule(d.schedule ?? []);
         setOverview(d.overview ?? []);
         setStats(d.stats ?? { actionsRun: 0, enabledCount: 0, totalCount: 0, lastRunAt: null });
-        setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(e => setError(e instanceof Error ? e.message : 'Failed to load autopilot'))
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => { load(); }, []);
 
   const toggleAutopilot = async (val: boolean) => {
     setEnabled(val);
-    await fetch('/api/agency/autopilot', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'toggle', enabled: val }),
-    });
+    try {
+      const res = await fetch('/api/agency/autopilot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'toggle', enabled: val }),
+      });
+      if (!res.ok) { setEnabled(!val); setError('Failed to toggle autopilot'); }
+    } catch { setEnabled(!val); setError('Network error'); }
   };
 
   const toggleAction = async (actionId: string, val: boolean) => {
     setSchedule(prev => prev.map(a => a.id === actionId ? { ...a, enabled: val } : a));
-    await fetch('/api/agency/autopilot', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'toggle_action', actionId, enabled: val }),
-    });
+    try {
+      const res = await fetch('/api/agency/autopilot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'toggle_action', actionId, enabled: val }),
+      });
+      if (!res.ok) { setSchedule(prev => prev.map(a => a.id === actionId ? { ...a, enabled: !val } : a)); setError('Failed to toggle action'); }
+    } catch { setSchedule(prev => prev.map(a => a.id === actionId ? { ...a, enabled: !val } : a)); }
   };
 
   const saveMessage = async (actionId: string) => {
@@ -122,7 +130,6 @@ export function AutopilotClient() {
 
   return (
     <div className="space-y-0">
-    <SectionNav currentHref="/agency/autopilot" />
     <div className="p-4 sm:p-6 md:p-8 space-y-6 max-w-3xl">
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
@@ -138,6 +145,14 @@ export function AutopilotClient() {
           label="Suggest Sequences"
         />
       </div>
+
+      {/* Error */}
+      {error && (
+        <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700">
+          <span className="flex-1">{error}</span>
+          <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600">✕</button>
+        </div>
+      )}
 
       {/* Master toggle + stats */}
       <Card>
