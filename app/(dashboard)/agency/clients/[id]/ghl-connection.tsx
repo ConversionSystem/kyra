@@ -58,6 +58,8 @@ export default function GHLConnection({
   const [showInstructions, setShowInstructions] = useState(false);
   const [showLocationId, setShowLocationId] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
+  const [showReconnect, setShowReconnect] = useState(false);
+  const [confirmDisconnect, setConfirmDisconnect] = useState(false);
 
   const isConnected = !!ghlLocationId && !disconnected;
 
@@ -115,14 +117,6 @@ export default function GHLConnection({
   }, [clientId, token, locationIdInput, onConnected]);
 
   const handleDisconnect = useCallback(async () => {
-    if (
-      !confirm(
-        'Are you sure you want to disconnect GoHighLevel? The AI will lose access to the CRM.',
-      )
-    ) {
-      return;
-    }
-
     setIsDisconnecting(true);
     setError(null);
 
@@ -140,6 +134,7 @@ export default function GHLConnection({
       }
 
       setDisconnected(true);
+      setConfirmDisconnect(false);
       onDisconnected?.();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to disconnect');
@@ -224,32 +219,72 @@ export default function GHLConnection({
               </div>
             </div>
 
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleOAuthConnect}
-                disabled={isConnecting}
-                className="flex items-center gap-2"
-              >
-                <RefreshCw className="h-4 w-4" />
-                Reconnect
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDisconnect}
-                disabled={isDisconnecting}
-                className="flex items-center gap-2 text-red-600 hover:text-red-600 border-red-500/30 hover:border-red-200 hover:bg-red-50"
-              >
-                {isDisconnecting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
+            {/* Reconnect form (hidden by default) */}
+            {showReconnect && (
+              <div className="rounded-lg border border-indigo-200 bg-indigo-50/30 p-4 space-y-3">
+                <p className="text-sm font-medium text-gray-700">Paste a new Private Integration token:</p>
+                <Input
+                  type="password"
+                  placeholder="pit-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                  value={token}
+                  onChange={e => setToken(e.target.value)}
+                  className="font-mono text-sm"
+                />
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={handleTokenConnect} disabled={isValidating || !token.trim()} className="gap-2">
+                    {isValidating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Key className="h-3.5 w-3.5" />}
+                    {isValidating ? 'Validating…' : 'Reconnect'}
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => { setShowReconnect(false); setToken(''); }}>Cancel</Button>
+                </div>
+              </div>
+            )}
+
+            {/* Disconnect confirmation (inline, not browser alert) */}
+            {confirmDisconnect && (
+              <div className="rounded-lg border border-red-200 bg-red-50 p-4 space-y-2">
+                <p className="text-sm text-red-700 font-medium">
+                  Are you sure? The AI will lose access to this GHL sub-account.
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleDisconnect}
+                    disabled={isDisconnecting}
+                    className="text-red-600 border-red-200 hover:bg-red-100 gap-1.5"
+                  >
+                    {isDisconnecting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Unplug className="h-3.5 w-3.5" />}
+                    {isDisconnecting ? 'Disconnecting…' : 'Yes, disconnect'}
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setConfirmDisconnect(false)}>Cancel</Button>
+                </div>
+              </div>
+            )}
+
+            {/* Action buttons */}
+            {!showReconnect && !confirmDisconnect && (
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowReconnect(true)}
+                  className="flex items-center gap-2"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Reconnect
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setConfirmDisconnect(true)}
+                  className="flex items-center gap-2 text-red-600 hover:text-red-600 border-red-500/30 hover:border-red-200 hover:bg-red-50"
+                >
                   <Unplug className="h-4 w-4" />
-                )}
-                Disconnect
-              </Button>
-            </div>
+                  Disconnect
+                </Button>
+              </div>
+            )}
           </div>
         ) : (
           /* ── Disconnected State ───────────────────────────────────────── */
