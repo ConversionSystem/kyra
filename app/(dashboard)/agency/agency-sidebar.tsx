@@ -259,8 +259,8 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
 
   const logoUrl = settings?.logo_url;
   const companyName = settings?.company_name || agencyName;
-  // Sidebar is always dark — branding only applies to logo/name, not background
-  const hasBranding = false;
+  const hasBranding = !!(logoUrl || settings?.primary_color || settings?.company_name);
+  const brandBg = hasBranding && settings?.primary_color ? settings.primary_color : undefined;
 
   const sidebarContent = (
     <>
@@ -417,7 +417,7 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
   return (
     <>
       {/* Mobile top bar */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-gray-900 border-b border-gray-800 flex items-center px-4 gap-3">
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-gray-900 border-b border-gray-800 flex items-center px-4 gap-3" style={brandBg ? { backgroundColor: brandBg } : undefined}>
         <button
           onClick={() => setMobileOpen(true)}
           className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
@@ -445,6 +445,7 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
           'lg:hidden fixed top-0 left-0 bottom-0 z-50 w-60 flex flex-col transition-transform duration-200 ease-in-out bg-gray-900',
           mobileOpen ? 'translate-x-0' : '-translate-x-full',
         )}
+        style={brandBg ? { backgroundColor: brandBg } : undefined}
       >
         {sidebarContent}
       </aside>
@@ -452,6 +453,7 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
       {/* Desktop sidebar — collapsed (icons only), expands on hover */}
       <aside
         className="hidden lg:flex border-r border-gray-800 bg-gray-900 flex-col shrink-0 w-14 hover:w-52 transition-all duration-200 ease-in-out group/sidebar overflow-hidden scrollbar-hide"
+        style={brandBg ? { backgroundColor: brandBg } : undefined}
       >
         {sidebarContent}
       </aside>
