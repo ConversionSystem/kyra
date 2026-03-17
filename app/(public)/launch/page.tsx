@@ -33,7 +33,7 @@ const FEATURES = [
   {
     icon: Palette,
     title: 'White-Label Everything',
-    desc: 'Your brand, your domain, your colors. Clients never see Kyra. It looks and feels like your own platform.',
+    desc: 'Your brand, your colors, your company name. White-label dashboard, portal, and chat widget. Custom domains coming soon.',
   },
 ];
 
