@@ -6,8 +6,8 @@ import { createClient } from '@/lib/supabase/server';
 
 export async function POST(req: NextRequest) {
   const sb = await createClient();
-  const { data: { session } } = await sb.auth.getSession();
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { url } = await req.json();
   if (!url || typeof url !== 'string' || !url.startsWith('http')) {

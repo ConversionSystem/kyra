@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { requireAgencyMember, requireAgencyAdmin } from '@/lib/agency/middleware';
 
 /**
@@ -105,4 +105,89 @@ export async function PATCH(request: NextRequest) {
   }
 
   return NextResponse.json(updated);
+}
+
+/**
+ * DELETE /api/agency/settings
+ * Delete the current user's agency. Requires owner role.
+ * Deletes: client_sites, agency_clients, agency_credits, agency_members, crm_contacts, then agencies.
+ * Also cleans up containers via provisioner (best-effort).
+ */
+export async function DELETE() {
+  const result = await requireAgencyAdmin();
+  if (result.error) {
+    return NextResponse.json({ error: result.error.message }, { status: result.error.status });
+  }
+
+  const { agency, membership } = result.data;
+
+  // Only owner can delete
+  if (membership.role !== 'owner') {
+    return NextResponse.json({ error: 'Only the agency owner can delete the agency' }, { status: 403 });
+  }
+
+  const admin = createServiceClientWithoutCookies();
+  const agencyId = agency.id;
+  const errors: string[] = [];
+
+  // Collect client IDs for container cleanup
+  const { data: clients } = await admin.from('agency_clients').select('id').eq('agency_id', agencyId);
+  const settings = (agency.settings ?? {}) as Record<string, unknown>;
+  const containerIds: string[] = (clients ?? []).map((c: { id: string }) => c.id);
+  if (settings.solo_client_id && typeof settings.solo_client_id === 'string') {
+    containerIds.push(settings.solo_client_id);
+  }
+  containerIds.push(agencyId);
+  const uniqueContainerIds = [...new Set(containerIds)];
+
+  // Delete DB records in FK-safe order
+  for (const table of ['client_sites', 'client_conversations', 'pipeline_leads', 'credit_transactions', 'crm_contacts']) {
+    const { error } = await admin.from(table).delete().eq('agency_id', agencyId);
+    if (error && !error.message.includes('does not exist')) {
+      errors.push(`${table}: ${error.message}`);
+    }
+  }
+
+  // Delete client_sites by client_id too
+  for (const cid of uniqueContainerIds) {
+    await admin.from('client_sites').delete().eq('client_id', cid);
+  }
+
+  const r1 = await admin.from('agency_clients').delete().eq('agency_id', agencyId);
+  if (r1.error) errors.push(`clients: ${r1.error.message}`);
+
+  const r2 = await admin.from('agency_credits').delete().eq('agency_id', agencyId);
+  if (r2.error) errors.push(`credits: ${r2.error.message}`);
+
+  const r3 = await admin.from('agency_members').delete().eq('agency_id', agencyId);
+  if (r3.error) errors.push(`members: ${r3.error.message}`);
+
+  const r4 = await admin.from('agencies').delete().eq('id', agencyId);
+  if (r4.error) {
+    return NextResponse.json({ error: `Failed to delete agency: ${r4.error.message}` }, { status: 500 });
+  }
+
+  // Delete auth user (the owner)
+  if (agency.owner_id) {
+    const { error: authErr } = await admin.auth.admin.deleteUser(agency.owner_id);
+    if (authErr) errors.push(`auth: ${authErr.message}`);
+  }
+
+  // Container cleanup (best-effort with timeout)
+  const provisionerUrl = process.env.OVH_PROVISIONER_URL || 'https://provisioner.gw.kyra.conversionsystem.com';
+  const provisionerSecret = process.env.OVH_PROVISIONER_SECRET || 'kyra-provisioner-2026';
+  for (const cid of uniqueContainerIds) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5000);
+      await fetch(`${provisionerUrl}/containers/${cid}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${provisionerSecret}` },
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+    } catch { /* best-effort */ }
+  }
+
+  return NextResponse.json({ ok: true, errors: errors.length > 0 ? errors : undefined });
 }
