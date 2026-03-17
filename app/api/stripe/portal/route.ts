@@ -16,6 +16,10 @@ export async function POST() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    if (!stripe) {
+      return NextResponse.json({ error: 'Stripe is not configured. Contact support.' }, { status: 503 });
+    }
+
     // Get agency membership
     const { data: membership } = await supabase
       .from('agency_members')

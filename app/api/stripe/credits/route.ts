@@ -28,6 +28,8 @@ export async function POST(request: NextRequest) {
   const pack = body.packId ? getCreditPack(body.packId) : null;
   if (!pack) return NextResponse.json({ error: 'Invalid pack ID' }, { status: 400 });
 
+  if (!stripe) return NextResponse.json({ error: 'Stripe is not configured. Contact support.' }, { status: 503 });
+
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://kyra.conversionsystem.com';
 
   const session = await stripe.checkout.sessions.create({
