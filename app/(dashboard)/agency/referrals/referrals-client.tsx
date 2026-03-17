@@ -105,10 +105,13 @@ export default function ReferralsClient({ agencyId: _agencyId, agencyName, agenc
   const currentReferralCredits = isEarlyBird ? 150 : 100;
   const streakProgress = Math.min(stats.weeklyCount, 3);
 
+  const [inviteError, setInviteError] = useState<string | null>(null);
   const loadInvite = useCallback(() => {
+    setInviteError(null);
     fetch('/api/agency/invite')
-      .then(r => r.json())
+      .then(r => { if (!r.ok) throw new Error(`Failed (${r.status})`); return r.json(); })
       .then(d => { setInviteUrl(d.url ?? ''); setInviteClicks(d.clicks ?? 0); })
+      .catch(e => setInviteError(e instanceof Error ? e.message : 'Failed to load invite link'))
       .finally(() => setLoadingInvite(false));
   }, []);
 
@@ -116,10 +119,16 @@ export default function ReferralsClient({ agencyId: _agencyId, agencyName, agenc
 
   const rotateCode = async () => {
     setRotatingCode(true);
-    const res = await fetch('/api/agency/invite', { method: 'POST' });
-    const d = await res.json();
-    setInviteUrl(d.url ?? '');
-    setInviteClicks(0);
+    setInviteError(null);
+    try {
+      const res = await fetch('/api/agency/invite', { method: 'POST' });
+      if (!res.ok) throw new Error(`Failed (${res.status})`);
+      const d = await res.json();
+      setInviteUrl(d.url ?? '');
+      setInviteClicks(0);
+    } catch (e) {
+      setInviteError(e instanceof Error ? e.message : 'Failed to rotate code');
+    }
     setRotatingCode(false);
   };
 
@@ -267,6 +276,14 @@ Worth checking out 🤙`,
                 : <><Copy className="h-4 w-4 mr-1.5" />Copy my link</>}
             </Button>
           </div>
+        </div>
+      )}
+
+      {/* ── Invite error ── */}
+      {inviteError && (
+        <div className="flex items-center gap-3 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
+          <span className="flex-1">{inviteError}</span>
+          <button onClick={() => { setInviteError(null); loadInvite(); }} className="text-xs font-semibold text-red-600 hover:text-red-800 underline shrink-0">Retry</button>
         </div>
       )}
 
