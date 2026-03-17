@@ -115,12 +115,15 @@ export function buildAgentPrompt(
   basePrompt: string,
   agent: AgentRole,
   businessName: string,
+  customPersonality?: string | null,
 ): string {
+  // Use custom personality if set, otherwise fall back to the role default
+  const personality = customPersonality?.trim() || agent.defaultPersonality;
   return [
     basePrompt,
     '',
     `=== YOUR ROLE: ${agent.name} ===`,
-    agent.defaultPersonality,
+    personality,
     `You are the ${agent.name} specialist for ${businessName}.`,
     `Focus on: ${agent.description}`,
     '=== END ROLE ===',
