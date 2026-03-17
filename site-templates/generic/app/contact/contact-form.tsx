@@ -1,15 +1,55 @@
 'use client';
 
 import { FormEvent, useState } from 'react';
-import { SERVICES } from '@/lib/constants';
+import { SERVICES, BUSINESS } from '@/lib/constants';
 
 export function ContactForm() {
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSubmitted(true);
-    event.currentTarget.reset();
+    setSubmitting(true);
+    setError(null);
+
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const data = {
+      name: formData.get('name') as string,
+      phone: formData.get('phone') as string,
+      email: formData.get('email') as string,
+      serviceType: formData.get('serviceType') as string,
+      message: formData.get('message') as string,
+      businessName: BUSINESS.name,
+      source: 'website-contact-form',
+    };
+
+    try {
+      // Send to Kyra lead capture API
+      const clientId = typeof window !== 'undefined'
+        ? (document.querySelector('meta[name="kyra-client-id"]') as HTMLMetaElement)?.content
+          || (window as Record<string, unknown>).__KYRA_CLIENT_ID__
+          || ''
+        : '';
+
+      if (clientId) {
+        await fetch(`https://kyra.conversionsystem.com/api/widget/${clientId}/lead`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        }).catch(() => {
+          // Non-fatal — still show success to the user
+        });
+      }
+
+      setSubmitted(true);
+      form.reset();
+    } catch {
+      setError('Something went wrong. Please try again or call us directly.');
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -65,10 +105,17 @@ export function ContactForm() {
 
       <button
         type="submit"
-        className="w-full bg-red-600 hover:bg-red-700 text-white rounded-xl px-5 py-3 font-semibold transition"
+        disabled={submitting}
+        className="w-full bg-red-600 hover:bg-red-700 text-white rounded-xl px-5 py-3 font-semibold transition disabled:opacity-50"
       >
-        Send Message
+        {submitting ? 'Sending...' : 'Send Message'}
       </button>
+
+      {error && (
+        <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3">
+          {error}
+        </p>
+      )}
 
       {submitted && (
         <p className="text-sm text-green-400 bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-3">
