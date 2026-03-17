@@ -28,13 +28,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   if (account_type) {
     const { data: ag } = await admin.from('agencies').select('settings').eq('id', id).single();
-    updates.settings = { ...(ag?.settings ?? {}), account_type };
-    if (account_type === 'solo' && !ag?.settings?.solo_client_id) {
-      (updates.settings as Record<string, unknown>).solo_client_id = id;
+    const existingSettings = (ag?.settings ?? {}) as Record<string, unknown>;
+    const newSettings: Record<string, unknown> = { ...existingSettings, account_type };
+    if (account_type === 'solo' && !existingSettings.solo_client_id) {
+      newSettings.solo_client_id = id;
     }
     if (account_type === 'agency') {
-      delete (updates.settings as Record<string, unknown>).solo_client_id;
+      delete newSettings.solo_client_id;
     }
+    updates.settings = newSettings;
   }
 
   const { data, error } = await admin
@@ -70,18 +72,25 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     .select('id, gateway_url')
     .eq('agency_id', agencyId);
 
-  const clientIds = [
-    ...(clients ?? []).map((c: { id: string; gateway_url: string | null }) => c.id),
-    agency.settings?.solo_client_id ?? agencyId,
-  ];
+  const settings = (agency.settings ?? {}) as Record<string, unknown>;
+  const clientIds = (clients ?? []).map((c: { id: string; gateway_url: string | null }) => c.id);
+  // Also delete the agency's own container (solo_client_id or the agency ID itself if it has one)
+  if (settings.solo_client_id && typeof settings.solo_client_id === 'string') {
+    clientIds.push(settings.solo_client_id);
+  }
+  // Agency owner containers use agencyId as container ID
+  clientIds.push(agencyId);
   const uniqueIds = [...new Set(clientIds)];
 
   for (const cid of uniqueIds) {
     try {
-      await fetch(`${PROVISIONER_URL}/containers/${cid}`, {
+      const res = await fetch(`${PROVISIONER_URL}/containers/${cid}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${PROVISIONER_SECRET}` },
       });
+      if (!res.ok && res.status !== 404) {
+        errors.push(`Container ${cid}: HTTP ${res.status}`);
+      }
     } catch (e) {
       errors.push(`Container ${cid}: ${String(e)}`);
     }
