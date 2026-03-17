@@ -33,7 +33,11 @@ export default async function ClientPortalPage({
 
   const agencySettings = (agency?.settings as Record<string, unknown>) || {};
   const accentColor = (agencySettings.accent_color as string | undefined) || '#4f46e5';
+  const primaryColor = (agencySettings.primary_color as string | undefined) || undefined;
+  const companyName = (agencySettings.company_name as string | undefined) || undefined;
+  const logoUrl = (agencySettings.logo_url as string | undefined) || undefined;
   const isSoloAccount = agencySettings.account_type === 'solo';
+  const displayName = companyName || agency?.name || 'AI Assistant';
 
   // ?terminal=1 → send to raw OpenClaw terminal (power user / agency testing)
   if (sp?.terminal === '1' && client.gateway_status === 'running' && client.gateway_url) {
@@ -53,6 +57,9 @@ export default async function ClientPortalPage({
         gatewayToken={client.gateway_token}
         accentColor={accentColor}
         showPoweredByKyra={isSoloAccount}
+        companyName={companyName}
+        logoUrl={logoUrl}
+        primaryColor={primaryColor}
       />
     );
   }
@@ -63,16 +70,21 @@ export default async function ClientPortalPage({
       {/* Header */}
       <div className="border-b border-gray-800 bg-gray-900/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-3">
-          <div
-            className="w-9 h-9 rounded-xl flex items-center justify-center text-lg font-bold text-white"
-            style={{ backgroundColor: accentColor }}
-          >
-            {client.name.charAt(0).toUpperCase()}
-          </div>
+          {logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logoUrl} alt={displayName} className="w-9 h-9 rounded-xl object-contain" />
+          ) : (
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center text-lg font-bold text-white"
+              style={{ backgroundColor: primaryColor || accentColor }}
+            >
+              {client.name.charAt(0).toUpperCase()}
+            </div>
+          )}
           <div>
             <p className="font-bold text-white text-base">{client.name}</p>
             <p className="text-xs text-gray-400">
-              {client.industry || 'AI Worker'} · {agency?.name || 'Kyra'}
+              {client.industry || 'AI Worker'} · {displayName}
             </p>
           </div>
         </div>
@@ -87,10 +99,12 @@ export default async function ClientPortalPage({
         </div>
       </div>
 
-      <p className="text-center text-[11px] text-gray-600 pb-4 pt-2">
-        Powered by{' '}
-        <Link href="/" className="text-gray-500 hover:text-gray-400 transition">Kyra</Link>
-      </p>
+      {!companyName && (
+        <p className="text-center text-[11px] text-gray-600 pb-4 pt-2">
+          Powered by{' '}
+          <Link href="/" className="text-gray-500 hover:text-gray-400 transition">Kyra</Link>
+        </p>
+      )}
     </div>
   );
 }

@@ -17,6 +17,9 @@ interface PortalChatProps {
   gatewayToken: string;
   accentColor?: string;
   showPoweredByKyra?: boolean;
+  companyName?: string;
+  logoUrl?: string;
+  primaryColor?: string;
 }
 
 function timeStr(d: Date) {
@@ -30,7 +33,12 @@ export default function PortalChat({
   gatewayToken,
   accentColor = '#4f46e5',
   showPoweredByKyra = false,
+  companyName,
+  logoUrl,
+  primaryColor,
 }: PortalChatProps) {
+  const displayName = companyName || agencyName || 'AI Assistant';
+  const headerColor = primaryColor || accentColor;
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState(false);
@@ -165,17 +173,20 @@ export default function PortalChat({
     <div className="flex flex-col h-screen bg-gray-50">
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 bg-white border-b border-gray-200 shadow-sm">
-        <div
-          className="h-9 w-9 rounded-full flex items-center justify-center text-white shrink-0"
-          style={{ backgroundColor: accentColor }}
-        >
-          <Bot className="h-5 w-5" />
-        </div>
+        {logoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={logoUrl} alt={displayName} className="h-9 w-9 rounded-full object-contain shrink-0" />
+        ) : (
+          <div
+            className="h-9 w-9 rounded-full flex items-center justify-center text-white shrink-0"
+            style={{ backgroundColor: headerColor }}
+          >
+            <Bot className="h-5 w-5" />
+          </div>
+        )}
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-gray-900 text-sm truncate">{clientName} AI</p>
-          {agencyName && (
-            <p className="text-xs text-gray-400">via {agencyName}</p>
-          )}
+          <p className="text-xs text-gray-400">via {displayName}</p>
         </div>
         <div className="flex items-center gap-1.5 text-xs text-green-600">
           <span className="h-1.5 w-1.5 bg-green-500 rounded-full animate-pulse inline-block" />
@@ -187,12 +198,17 @@ export default function PortalChat({
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
-            <div
-              className="h-16 w-16 rounded-full flex items-center justify-center text-white"
-              style={{ backgroundColor: accentColor }}
-            >
-              <Bot className="h-8 w-8" />
-            </div>
+            {logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={logoUrl} alt={displayName} className="h-16 w-16 rounded-full object-contain" />
+            ) : (
+              <div
+                className="h-16 w-16 rounded-full flex items-center justify-center text-white"
+                style={{ backgroundColor: headerColor }}
+              >
+                <Bot className="h-8 w-8" />
+              </div>
+            )}
             <div>
               <p className="font-semibold text-gray-700">{clientName} AI</p>
               <p className="text-sm text-gray-400 mt-1">How can I help you today?</p>
@@ -265,20 +281,22 @@ export default function PortalChat({
             )}
           </button>
         </form>
-        {showPoweredByKyra ? (
-          <a
-            href="https://kyra.conversionsystem.com/solo"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-1.5 mt-2 py-1 text-[10px] text-gray-400 hover:text-gray-600 transition group"
-          >
-            <span className="inline-flex items-center gap-1 bg-gray-100 border border-gray-200 rounded-full px-2.5 py-0.5 group-hover:bg-gray-200 transition">
-              <span className="font-semibold text-gray-500">Powered by Kyra</span>
-              <span className="text-gray-400">— AI for business</span>
-            </span>
-          </a>
-        ) : (
-          <p className="text-center text-[10px] text-gray-300 mt-2">Powered by Kyra AI</p>
+        {!companyName && (
+          showPoweredByKyra ? (
+            <a
+              href="https://kyra.conversionsystem.com/solo"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-1.5 mt-2 py-1 text-[10px] text-gray-400 hover:text-gray-600 transition group"
+            >
+              <span className="inline-flex items-center gap-1 bg-gray-100 border border-gray-200 rounded-full px-2.5 py-0.5 group-hover:bg-gray-200 transition">
+                <span className="font-semibold text-gray-500">Powered by Kyra</span>
+                <span className="text-gray-400">— AI for business</span>
+              </span>
+            </a>
+          ) : (
+            <p className="text-center text-[10px] text-gray-300 mt-2">Powered by Kyra AI</p>
+          )
         )}
       </div>
     </div>
