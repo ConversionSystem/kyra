@@ -25,7 +25,7 @@ interface Account {
   solo_client_id: string | null;
 }
 
-const PLANS = ['free', 'starter', 'pro', 'scale'];
+const PLANS = ['free', 'solo_pro', 'starter', 'pro', 'scale'];
 const PLAN_LABELS: Record<string, string> = {
   free: 'Free', solo_pro: 'Solo Pro', starter: 'Lite', pro: 'Pro', scale: 'Scale',
 };
@@ -412,18 +412,29 @@ export default function AccountsAdminClient() {
   useEffect(() => { fetch_(); }, [fetch_]);
 
   // Refresh selected account after action
-  function onUpdated() {
-    fetch_().then(() => {
-      // Re-select updated account if still open
-      if (selected) {
-        setAccounts(prev => {
-          const updated = prev.find(a => a.id === selected.id);
-          if (updated) setSelected(updated);
-          return prev;
+  const onUpdated = useCallback(async () => {
+    setLoading(true);
+    setFetchError(null);
+    try {
+      const res = await fetch('/api/admin/accounts');
+      const data = await res.json();
+      if (!res.ok) {
+        setFetchError(`API error ${res.status}: ${data?.error ?? 'Unknown error'}`);
+      } else {
+        const list: Account[] = Array.isArray(data) ? data : [];
+        setAccounts(list);
+        // Re-select the updated account so the drawer shows fresh data
+        setSelected(prev => {
+          if (!prev) return null;
+          return list.find(a => a.id === prev.id) ?? null;
         });
       }
-    });
-  }
+    } catch (e) {
+      setFetchError(String(e));
+    }
+    setLastRefresh(new Date());
+    setLoading(false);
+  }, []);
 
   const filtered = accounts
     .filter(a => {
@@ -609,7 +620,7 @@ export default function AccountsAdminClient() {
                     <td className="px-3 py-3 text-right">
                       <button
                         onClick={e => { e.stopPropagation(); setSelected(a); }}
-                        className="text-xs px-3 py-1.5 border border-gray-200 rounded-lg hover:border-indigo-300 hover:text-indigo-600 transition opacity-0 group-hover:opacity-100"
+                        className="text-xs px-3 py-1.5 border border-gray-200 rounded-lg hover:border-indigo-300 hover:text-indigo-600 transition text-gray-500"
                       >
                         Manage
                       </button>
