@@ -97,7 +97,7 @@ const SLIDES: Slide[] = [
           </h1>
           <p className="text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
             Deploy AI that answers calls, responds to messages, books appointments, 
-            and manages your clients' CRM — all from one dashboard. White-labeled under your brand.
+            and manages your clients' CRM — all from one dashboard. Branded under your name, logo, and colors.
           </p>
         </div>
         <div className="flex items-center gap-4 mt-4">
@@ -161,7 +161,7 @@ const SLIDES: Slide[] = [
           {[
             { icon: Bot, title: 'AI Workers', desc: 'Each client gets a dedicated AI that knows their business, services, hours, and personality. Not a chatbot — a worker.', color: 'text-indigo-400 bg-indigo-500/20' },
             { icon: Globe, title: 'Multi-Channel', desc: 'SMS (via GHL), web chat, Telegram, WhatsApp, voice calls — one AI handles all of them simultaneously.', color: 'text-emerald-400 bg-emerald-500/20' },
-            { icon: Shield, title: 'Your Brand', desc: 'White-label everything — dashboard, portal, chat widget. Your clients never see Kyra. They see you.', color: 'text-purple-400 bg-purple-500/20' },
+            { icon: Shield, title: 'Your Brand', desc: 'Your logo, your colors, your company name across dashboard, portal, and chat widget. Custom domains coming soon.', color: 'text-purple-400 bg-purple-500/20' },
           ].map(({ icon: Icon, title, desc, color }) => (
             <div key={title} className="bg-white/5 border border-white/10 rounded-xl p-6">
               <div className={`rounded-xl ${color} p-3 w-fit mb-4`}>
@@ -314,7 +314,7 @@ const SLIDES: Slide[] = [
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           {[
             { icon: Users, title: 'One dashboard for all clients', desc: 'Manage 20 AI workers from a single login. See every conversation, every lead, every metric.' },
-            { icon: Shield, title: 'Fully white-labeled', desc: 'Your logo, your colors, your domain. Clients see your brand — not ours.' },
+            { icon: Shield, title: 'White-label branding', desc: 'Your logo, colors, and name on dashboard, portal, and chat widget. Custom domains coming soon.' },
             { icon: Zap, title: '21 industry templates', desc: 'Dental, legal, HVAC, real estate, restaurants, salons — launch a new client in minutes.' },
             { icon: BarChart3, title: 'Built-in CRM & analytics', desc: 'Contacts, deals, pipeline, conversation inbox, performance dashboards — all included.' },
             { icon: Phone, title: 'Voice AI included', desc: 'Your AI worker answers phone calls, books appointments, and logs transcripts to the CRM.' },
@@ -403,7 +403,7 @@ const SLIDES: Slide[] = [
             price={499}
             clients={20}
             credits="50,000"
-            features={['20 AI workers', 'Dedicated infrastructure', 'Custom domain', 'Advanced analytics', 'Phone support']}
+            features={['20 AI workers', 'Dedicated infrastructure', 'Custom domain (coming soon)', 'Advanced analytics', 'Phone support']}
             cta="Start Scale →"
           />
         </div>

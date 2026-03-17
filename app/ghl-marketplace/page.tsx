@@ -266,7 +266,7 @@ export default function GhlMarketplacePage() {
               },
               {
                 q: 'Can I white-label this for my clients?',
-                a: 'Yes. The AI worker has a custom name and operates from your client\'s GHL account. The website is on a custom domain. Your clients never see "Kyra."',
+                a: 'Yes. The AI worker has a custom name and operates from your client\'s GHL account. The website is on a custom domain. Your clients see your branding on the dashboard, portal, and chat widget.',
               },
               {
                 q: 'How does the Growth Engine work?',

@@ -21,7 +21,7 @@ const COMPARISON = [
   { feature: 'Alert rules', kyra: 'Configurable — offline, spike, stale', mc: 'Built-in monitoring', winner: 'tie' },
   { feature: 'Pipeline builder', kyra: 'Visual agent chaining with templates', mc: 'Scheduler + manual chains', winner: 'tie' },
   { feature: 'Autopilot', kyra: 'Pre-built sequences — follow-ups, reminders, reviews', mc: 'Cron scheduler (manual setup)', winner: 'kyra' },
-  { feature: 'White-label', kyra: 'Full white-label — your brand, your domain', mc: 'Not designed for reselling', winner: 'kyra' },
+  { feature: 'White-label', kyra: 'White-label — your logo, colors, and name', mc: 'Not designed for reselling', winner: 'kyra' },
   { feature: 'Client management', kyra: 'Multi-client dashboard with isolation', mc: 'Single-user focus', winner: 'kyra' },
   { feature: 'Billing system', kyra: 'Built-in credits + Stripe integration', mc: 'No billing — free/self-hosted', winner: 'kyra' },
   { feature: 'Price', kyra: 'Free tier + paid from $99/mo', mc: 'Free (self-hosted) + OpenClaw costs', winner: 'mc' },

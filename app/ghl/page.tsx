@@ -80,7 +80,7 @@ export default function GHLPage() {
         </h1>
 
         <p className="text-xl text-gray-500 max-w-2xl mx-auto mb-10">
-          Every GHL sub-account gets a 15-25 page SEO-optimized website, an AI worker that handles conversations 24/7, and a CRM that captures every lead. Deployed in under 10 minutes. White-labeled under your brand.
+          Every GHL sub-account gets a 15-25 page SEO-optimized website, an AI worker that handles conversations 24/7, and a CRM that captures every lead. Deployed in under 10 minutes. Branded with your agency name, logo, and colors.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
