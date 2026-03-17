@@ -90,7 +90,7 @@ const SLIDES: Slide[] = [
             <Sparkles className="h-4 w-4 text-indigo-400" />
             The AI Workforce Platform for Agencies
           </div>
-          <h1 className="text-5xl sm:text-7xl font-black text-white leading-[1.05] mb-6">
+          <h1 className="text-3xl sm:text-5xl lg:text-7xl font-black text-white leading-[1.05] mb-6">
             Give every client
             <br />
             <span className="text-indigo-400">an AI worker.</span>
@@ -102,7 +102,7 @@ const SLIDES: Slide[] = [
         </div>
         <div className="flex items-center gap-4 mt-4">
           <span className="text-slate-500 text-sm">Powered by</span>
-          <span className="text-2xl font-black text-white">Kyra</span>
+          <span className="text-xl sm:text-2xl font-black text-white">Kyra</span>
         </div>
       </div>
     ),
@@ -113,8 +113,8 @@ const SLIDES: Slide[] = [
     id: 'problem',
     bg: 'from-red-950 via-slate-900 to-slate-900',
     content: (
-      <div className="flex flex-col justify-center px-8 sm:px-16 h-full max-w-5xl mx-auto">
-        <h2 className="text-4xl sm:text-5xl font-black text-white mb-10">
+      <div className="flex flex-col justify-center px-4 sm:px-8 lg:px-16 min-h-full max-w-5xl mx-auto">
+        <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black text-white mb-10">
           Your clients are <span className="text-red-400">bleeding leads.</span>
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -147,9 +147,9 @@ const SLIDES: Slide[] = [
     id: 'solution',
     bg: 'from-indigo-950 via-slate-900 to-slate-900',
     content: (
-      <div className="flex flex-col justify-center px-8 sm:px-16 h-full max-w-5xl mx-auto">
+      <div className="flex flex-col justify-center px-4 sm:px-8 lg:px-16 min-h-full max-w-5xl mx-auto">
         <div className="text-center mb-12">
-          <h2 className="text-4xl sm:text-5xl font-black text-white mb-4">
+          <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black text-white mb-4">
             Meet <span className="text-indigo-400">Kyra</span>
           </h2>
           <p className="text-xl text-slate-300 max-w-2xl mx-auto">
@@ -181,8 +181,8 @@ const SLIDES: Slide[] = [
     id: 'capabilities',
     bg: 'from-slate-900 via-slate-900 to-indigo-950',
     content: (
-      <div className="flex flex-col justify-center px-8 sm:px-16 h-full max-w-5xl mx-auto">
-        <h2 className="text-4xl sm:text-5xl font-black text-white mb-4 text-center">
+      <div className="flex flex-col justify-center px-4 sm:px-8 lg:px-16 min-h-full max-w-5xl mx-auto">
+        <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black text-white mb-4 text-center">
           What your AI worker does <span className="text-indigo-400">every day</span>
         </h2>
         <p className="text-slate-400 text-center mb-10">For each of your clients — automatically, 24/7</p>
@@ -216,44 +216,44 @@ const SLIDES: Slide[] = [
     id: 'revenue',
     bg: 'from-emerald-950 via-slate-900 to-slate-900',
     content: (
-      <div className="flex flex-col justify-center px-8 sm:px-16 h-full max-w-4xl mx-auto text-center">
-        <h2 className="text-4xl sm:text-5xl font-black text-white mb-4">
+      <div className="flex flex-col justify-center px-4 sm:px-8 lg:px-16 min-h-full max-w-4xl mx-auto text-center">
+        <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black text-white mb-4">
           The math is <span className="text-emerald-400">ridiculously good.</span>
         </h2>
         <p className="text-slate-400 text-lg mb-10">Your cost vs. what you charge your clients</p>
 
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-8 mb-8">
-          <div className="grid grid-cols-3 gap-6 mb-8">
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-8 mb-6 sm:mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-8">
             <div>
               <p className="text-sm text-slate-400 mb-1">Your cost per client</p>
-              <p className="text-4xl font-black text-white">~$25</p>
+              <p className="text-2xl sm:text-4xl font-black text-white">~$25</p>
               <p className="text-xs text-slate-500">platform cost/client on Pro</p>
             </div>
             <div>
               <p className="text-sm text-slate-400 mb-1">What agencies charge</p>
-              <p className="text-4xl font-black text-emerald-400">$500–2,000</p>
+              <p className="text-2xl sm:text-4xl font-black text-emerald-400">$500–2,000</p>
               <p className="text-xs text-slate-500">per client per month</p>
             </div>
             <div>
               <p className="text-sm text-slate-400 mb-1">Your margin</p>
-              <p className="text-4xl font-black text-emerald-400">95%+</p>
+              <p className="text-2xl sm:text-4xl font-black text-emerald-400">95%+</p>
               <p className="text-xs text-slate-500">pure recurring revenue</p>
             </div>
           </div>
 
           <div className="border-t border-white/10 pt-6">
             <p className="text-slate-400 text-sm mb-4">Example: 10 clients on Pro plan ($299/mo)</p>
-            <div className="grid grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
               <div>
-                <p className="text-2xl font-black text-white">$299/mo</p>
+                <p className="text-lg sm:text-xl sm:text-2xl font-black text-white">$299/mo</p>
                 <p className="text-xs text-slate-500">Your Kyra cost</p>
               </div>
               <div>
-                <p className="text-2xl font-black text-emerald-400">$9,970/mo</p>
+                <p className="text-lg sm:text-2xl font-black text-emerald-400">$9,970/mo</p>
                 <p className="text-xs text-slate-500">Client revenue (10 × $997)</p>
               </div>
               <div>
-                <p className="text-2xl font-black text-emerald-400">$9,671/mo</p>
+                <p className="text-lg sm:text-2xl font-black text-emerald-400">$9,671/mo</p>
                 <p className="text-xs text-slate-500">Net profit</p>
               </div>
             </div>
@@ -272,8 +272,8 @@ const SLIDES: Slide[] = [
     id: 'how-it-works',
     bg: 'from-slate-900 via-indigo-950 to-slate-900',
     content: (
-      <div className="flex flex-col justify-center px-8 sm:px-16 h-full max-w-4xl mx-auto">
-        <h2 className="text-4xl sm:text-5xl font-black text-white mb-4 text-center">
+      <div className="flex flex-col justify-center px-4 sm:px-8 lg:px-16 min-h-full max-w-4xl mx-auto">
+        <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black text-white mb-4 text-center">
           Live in <span className="text-indigo-400">5 minutes.</span> Not 5 weeks.
         </h2>
         <p className="text-slate-400 text-center mb-12">No developers. No code. No infrastructure to manage.</p>
@@ -284,8 +284,8 @@ const SLIDES: Slide[] = [
             { n: 2, title: 'Connect their channels', desc: 'Paste a GHL token, Telegram bot key, or embed the web chat widget. One field, one click.', time: '2 min' },
             { n: 3, title: 'Go live', desc: 'The AI starts responding to every inbound message within 60 seconds. You monitor from the dashboard.', time: '0 min' },
           ].map(({ n, title, desc, time }) => (
-            <div key={n} className="flex items-start gap-6">
-              <div className="shrink-0 w-14 h-14 rounded-2xl bg-indigo-600 flex items-center justify-center text-2xl font-black text-white">
+            <div key={n} className="flex items-start gap-4 sm:gap-6">
+              <div className="shrink-0 w-10 h-10 sm:w-14 sm:h-14 rounded-2xl bg-indigo-600 flex items-center justify-center text-xl sm:text-2xl font-black text-white">
                 {n}
               </div>
               <div className="flex-1">
@@ -307,8 +307,8 @@ const SLIDES: Slide[] = [
     id: 'why-kyra',
     bg: 'from-slate-900 via-slate-900 to-purple-950',
     content: (
-      <div className="flex flex-col justify-center px-8 sm:px-16 h-full max-w-5xl mx-auto">
-        <h2 className="text-4xl sm:text-5xl font-black text-white mb-10 text-center">
+      <div className="flex flex-col justify-center px-4 sm:px-8 lg:px-16 min-h-full max-w-5xl mx-auto">
+        <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black text-white mb-10 text-center">
           Why agencies choose <span className="text-indigo-400">Kyra</span>
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -340,8 +340,8 @@ const SLIDES: Slide[] = [
     id: 'objections',
     bg: 'from-slate-900 via-slate-900 to-slate-900',
     content: (
-      <div className="flex flex-col justify-center px-8 sm:px-16 h-full max-w-4xl mx-auto">
-        <h2 className="text-4xl sm:text-5xl font-black text-white mb-10 text-center">
+      <div className="flex flex-col justify-center px-4 sm:px-8 lg:px-16 min-h-full max-w-4xl mx-auto">
+        <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black text-white mb-10 text-center">
           "But what about..."
         </h2>
         <div className="space-y-4">
@@ -366,13 +366,13 @@ const SLIDES: Slide[] = [
     id: 'pricing',
     bg: 'from-indigo-950 via-slate-900 to-slate-900',
     content: (
-      <div className="flex flex-col justify-center px-8 sm:px-12 h-full max-w-6xl mx-auto">
-        <h2 className="text-4xl sm:text-5xl font-black text-white mb-2 text-center">
+      <div className="flex flex-col justify-center px-4 sm:px-8 lg:px-12 min-h-full max-w-6xl mx-auto">
+        <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black text-white mb-2 text-center">
           Simple pricing. <span className="text-indigo-400">Massive margins.</span>
         </h2>
         <p className="text-slate-400 text-center mb-8">Start free. Upgrade when you're ready to scale.</p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <PricingCard
             name="Free"
             price={0}
@@ -423,7 +423,7 @@ const SLIDES: Slide[] = [
       <div className="flex flex-col items-center justify-center text-center px-8 h-full">
         <div className="mb-8">
           <Award className="h-16 w-16 text-indigo-400 mx-auto mb-6" />
-          <h2 className="text-5xl sm:text-6xl font-black text-white mb-6">
+          <h2 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white mb-6">
             Ready to offer AI
             <br />
             to every client?
@@ -436,13 +436,13 @@ const SLIDES: Slide[] = [
         <div className="flex flex-col sm:flex-row gap-4 mt-4">
           <Link
             href="/signup/agency"
-            className="inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 transition text-white font-bold text-xl px-10 py-5 rounded-2xl shadow-lg shadow-indigo-500/30"
+            className="inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 transition text-white font-bold text-base sm:text-xl px-6 sm:px-10 py-4 sm:py-5 rounded-2xl shadow-lg shadow-indigo-500/30"
           >
             Start Free Now <ArrowRight className="h-5 w-5" />
           </Link>
           <Link
             href="/try/dental"
-            className="inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 transition text-white font-bold text-xl px-10 py-5 rounded-2xl border border-white/20"
+            className="inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 transition text-white font-bold text-base sm:text-xl px-6 sm:px-10 py-4 sm:py-5 rounded-2xl border border-white/20"
           >
             See Live Demo
           </Link>
@@ -500,7 +500,7 @@ export default function AgencyPitchDeck() {
   return (
     <div className={`min-h-screen bg-gradient-to-br ${slide.bg} relative overflow-hidden select-none`}>
       {/* Slide content */}
-      <div className="min-h-screen flex items-center justify-center py-16">
+      <div className="min-h-screen flex items-center justify-center py-12 sm:py-16 overflow-y-auto">
         {slide.content}
       </div>
 
@@ -508,17 +508,17 @@ export default function AgencyPitchDeck() {
       {current > 0 && (
         <button
           onClick={() => setCurrent(c => c - 1)}
-          className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition"
+          className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 p-2 sm:p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition z-10"
         >
-          <ChevronLeft className="h-6 w-6" />
+          <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
         </button>
       )}
       {current < total - 1 && (
         <button
           onClick={() => setCurrent(c => c + 1)}
-          className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition"
+          className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 p-2 sm:p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition z-10"
         >
-          <ChevronRight className="h-6 w-6" />
+          <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
         </button>
       )}
 
