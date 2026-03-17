@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 
-// Automation lives inside each client's dashboard (Scheduled Tasks tab).
-// No agency-level OpenClaw exists — redirect to clients.
+// Autopilot merged into Proactive AI (automations).
+// Scheduled actions now managed from one unified automation dashboard.
 export default function AutopilotPage() {
-  redirect('/agency/clients');
+  redirect('/agency/automations');
 }
