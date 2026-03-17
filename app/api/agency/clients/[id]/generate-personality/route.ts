@@ -99,7 +99,8 @@ Generate a professional AI assistant personality for this business.`;
       greeting: typeof parsed.greeting === 'string' ? parsed.greeting : '',
       instructions: typeof parsed.instructions === 'string' ? parsed.instructions : '',
     });
-  } catch (err: any) {
-    return NextResponse.json({ error: `Generation failed: ${err.message}` }, { status: 500 });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ error: `Generation failed: ${msg}` }, { status: 500 });
   }
 }

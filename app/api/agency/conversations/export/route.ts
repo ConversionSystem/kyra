@@ -17,10 +17,23 @@ export async function GET(req: NextRequest) {
   const sb = await createClient();
   const sbService = await createServiceClient();
 
-  const { data: { session } } = await sb.auth.getSession();
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // Use getUser() (cryptographically verified) instead of getSession() (cache-based)
+  const { data: { user }, error: authError } = await sb.auth.getUser();
+  if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { data: agency } = await sbService.from('agencies').select('id, name').eq('owner_id', session.user.id).single();
+  // Resolve agency via membership — supports owner + admin + member roles
+  const { data: membership } = await sbService
+    .from('agency_members')
+    .select('agency_id')
+    .eq('user_id', user.id)
+    .single();
+  if (!membership) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+  const { data: agency } = await sbService
+    .from('agencies')
+    .select('id, name')
+    .eq('id', membership.agency_id)
+    .single();
   if (!agency) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   const url = new URL(req.url);

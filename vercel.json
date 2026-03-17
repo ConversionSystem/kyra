@@ -3,6 +3,13 @@
     "deploymentEnabled": false
   },
   "ignoreCommand": "exit 1",
+  "functions": {
+    "app/api/agency/sites/[id]/build/route.ts": { "maxDuration": 300 },
+    "app/api/agency/sites/[id]/generate/route.ts": { "maxDuration": 300 },
+    "app/api/agency/sites/[id]/deploy/route.ts": { "maxDuration": 300 },
+    "app/api/agency/sites/[id]/growth/route.ts": { "maxDuration": 60 },
+    "app/api/agency/sites/[id]/pages/route.ts": { "maxDuration": 60 }
+  },
   "crons": [
     {
       "path": "/api/ghl/poll",

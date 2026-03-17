@@ -20,6 +20,7 @@ export interface PlanConfig {
   badgeColor?: string;
   cta: string;
   stripePriceKey: string;   // key in STRIPE_PRICE_IDS
+  hidden?: boolean;         // hidden from new signups (legacy plan)
 }
 
 export const PLANS: Record<Plan, PlanConfig> = {
@@ -54,6 +55,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     maxClients: 1,
     monthlyCredits: 2000,
     trialDays: 0,
+    hidden: true,
     description: 'Your personal AI worker — run it for your own business with no limits.',
     features: [
       '1 AI Worker powered by OpenClaw',
@@ -99,7 +101,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
   },
   pro: {
     name: 'Pro',
-    price: 249,
+    price: 299,
     maxClients: 10,
     monthlyCredits: 25000,
     trialDays: 0,
@@ -126,12 +128,12 @@ export const PLANS: Record<Plan, PlanConfig> = {
   scale: {
     name: 'Scale',
     price: 499,
-    maxClients: 30,
+    maxClients: 20,
     monthlyCredits: 50000,
     trialDays: 0,
-    description: 'Built for high-volume agencies running 30+ AI workers.',
+    description: 'Built for high-volume agencies — up to 20 clients, full Business in a Box.',
     features: [
-      '30 client AI workers',
+      '20 client AI workers',
       '50,000 platform credits / month',
       'Everything in Pro',
       'Dedicated infrastructure',
@@ -152,6 +154,9 @@ export const PLANS: Record<Plan, PlanConfig> = {
 
 /** All valid plan IDs */
 export const PLAN_IDS = Object.keys(PLANS) as Plan[];
+
+/** Plans available for new signups (excludes hidden/legacy plans) */
+export const AVAILABLE_PLANS = PLAN_IDS.filter(id => !PLANS[id]?.hidden);
 
 /** Get the max clients allowed for a plan */
 export function getPlanClientLimit(plan: Plan | string): number {
@@ -223,7 +228,7 @@ export function classifyChatAction(opts: {
 export const ANNUAL_PRICES: Partial<Record<Plan, { monthly: number; annualTotal: number; savings: number }>> = {
   solo_pro: { monthly: 29,  annualTotal: 348,  savings: 120  },
   starter:  { monthly: 79,  annualTotal: 948,  savings: 240  },
-  pro:      { monthly: 199, annualTotal: 2388, savings: 600  },
+  pro:      { monthly: 239, annualTotal: 2868, savings: 720  },
   scale:    { monthly: 399, annualTotal: 4788, savings: 1200 },
 };
 

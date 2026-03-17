@@ -113,6 +113,10 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ error: 'Failed to update page' }, { status: 500 });
   }
 
+  // NOTE: Rebuild is triggered explicitly by the user via the "Publish to Live Site" button
+  // which calls POST /api/agency/sites/[id]/build — do NOT auto-trigger here.
+  // Auto-triggering a full 5-min VPS build on every keystroke/save is too expensive.
+
   return NextResponse.json({ ok: true, data: page });
 }
 

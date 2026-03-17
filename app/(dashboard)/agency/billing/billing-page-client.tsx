@@ -98,9 +98,7 @@ export function BillingPageClient({
   }, []);
 
   // ── Plan config ───────────────────────────────────────────────────────────
-  const PLAN_ORDER: Plan[] = isSolo
-    ? ['solo_pro', 'starter', 'pro', 'scale']
-    : ['starter', 'pro', 'scale'];
+  const PLAN_ORDER: Plan[] = ['starter', 'pro', 'scale'];
 
   const planIndex = (p: string) => PLAN_ORDER.indexOf(p as Plan);
 
@@ -378,7 +376,7 @@ export function BillingPageClient({
           </div>
         </div>
 
-        <div className={`grid gap-4 ${PLAN_ORDER.length === 4 ? 'sm:grid-cols-2 xl:grid-cols-4' : 'sm:grid-cols-3'}`}>
+        <div className="grid gap-4 sm:grid-cols-3">
           {PLAN_ORDER.map((id) => {
             const plan        = PLANS[id];
             if (!plan) return null;
@@ -386,15 +384,12 @@ export function BillingPageClient({
             const isLoading   = loading === id;
             const displayPrice = getPlanPrice(id);
             const annualInfo  = ANNUAL_PRICES[id];
-            const isSoloPro   = id === 'solo_pro';
-
             return (
               <Card
                 key={id}
                 className={`relative flex flex-col transition-all hover:shadow-md ${
                   plan.highlighted ? 'border-indigo-300 shadow-md shadow-indigo-50' : 'border-gray-200'
-                } ${isSoloPro && !isCurrent ? 'border-violet-200' : ''}
-                ${isCurrent ? 'ring-2 ring-indigo-400 ring-offset-1' : ''}`}
+                } ${isCurrent ? 'ring-2 ring-indigo-400 ring-offset-1' : ''}`}
               >
                 {plan.highlighted && !isCurrent && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
@@ -434,7 +429,7 @@ export function BillingPageClient({
                     <p className="text-xs text-green-600 font-semibold">Save ${annualInfo.savings}/year</p>
                   )}
 
-                  <p className={`text-sm font-bold mt-1 ${isSoloPro ? 'text-violet-600' : 'text-indigo-600'}`}>
+                  <p className="text-sm font-bold mt-1 text-indigo-600">
                     {plan.maxClients} AI worker{plan.maxClients !== 1 ? 's' : ''}
                   </p>
                   <p className="text-xs text-gray-500 mt-0.5">{plan.description}</p>
@@ -459,12 +454,10 @@ export function BillingPageClient({
                       className={`w-full text-sm font-semibold ${
                         plan.highlighted
                           ? 'bg-indigo-600 hover:bg-indigo-700 text-white border-0'
-                          : isSoloPro
-                          ? 'bg-violet-600 hover:bg-violet-700 text-white border-0'
                           : ''
                       }`}
                       size="sm"
-                      variant={plan.highlighted || isSoloPro ? 'default' : 'outline'}
+                      variant={plan.highlighted ? 'default' : 'outline'}
                       onClick={() => handleUpgrade(id)}
                       disabled={!!loading}
                     >

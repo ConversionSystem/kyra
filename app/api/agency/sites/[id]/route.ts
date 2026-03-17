@@ -74,6 +74,8 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     'logo_url', 'photos', 'color_primary', 'color_secondary', 'design_style', 'tagline',
     'ai_name', 'ai_tone', 'ai_capabilities', 'booking_url',
     'template_id', 'site_domain', 'site_subdomain',
+    // Settings page fields
+    'ga4_id', 'white_label', 'google_rating', 'rating', 'google_review_url',
   ];
 
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
@@ -112,10 +114,10 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
 
   const supabase = createServiceClientWithoutCookies();
 
-  // Verify ownership
+  // Verify ownership + get subdomain for VPS cleanup
   const { data: existing } = await supabase
     .from('client_sites')
-    .select('id')
+    .select('id, site_subdomain')
     .eq('id', siteId)
     .eq('agency_id', auth.data.agency.id)
     .single();
@@ -133,6 +135,19 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
   if (error) {
     console.error('[sites] Failed to delete site:', error);
     return NextResponse.json({ error: 'Failed to delete site' }, { status: 500 });
+  }
+
+  // Remove VPS files (fire-and-forget — DB is already deleted, don't fail on VPS cleanup error)
+  const subdomain = (existing as { id: string; site_subdomain?: string | null }).site_subdomain;
+  if (subdomain) {
+    const provisionerUrl = process.env.PROVISIONER_URL || 'http://15.204.91.157:9090';
+    const provisionerSecret = process.env.PROVISIONER_SECRET || 'kyra-provisioner-2026';
+    fetch(`${provisionerUrl}/sites/${encodeURIComponent(subdomain)}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${provisionerSecret}` },
+    }).catch((err) => {
+      console.error('[sites/delete] VPS cleanup failed (non-fatal):', err.message);
+    });
   }
 
   return NextResponse.json({ ok: true, data: { deleted: true } });

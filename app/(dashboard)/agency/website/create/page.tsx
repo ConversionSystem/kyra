@@ -49,6 +49,8 @@ interface WizardData {
   differentiator: string;
   existingWebsite: string;
   licenseNumber: string;
+  googleRating: string;
+  reviewCount: string;
 
   // Step 2: Services
   services: ServiceItem[];
@@ -94,6 +96,8 @@ const initialWizardData: WizardData = {
   differentiator: '',
   existingWebsite: '',
   licenseNumber: '',
+  googleRating: '',
+  reviewCount: '',
   services: [],
   emergency247: false,
   selectedCities: [],
@@ -183,10 +187,52 @@ function StepBusinessInfo({
   data: WizardData;
   onChange: (updates: Partial<WizardData>) => void;
 }) {
+  const [suggestingDiff, setSuggestingDiff] = useState(false);
+  const [diffSuggestions, setDiffSuggestions] = useState<string[]>([]);
+
   const industries = Object.entries(INDUSTRY_DEFAULTS).map(([key, val]) => ({
     value: key,
     label: val.label,
   }));
+
+  const diffPlaceholder: Record<string, string> = {
+    hvac: "We are a family-owned HVAC company serving San Mateo County since 1988. NATE-certified technicians, same-day emergency service, upfront pricing.",
+    legal: "We are a boutique firm focused on personal injury and family law. 20+ years experience, free consultations, no win no fee.",
+    consulting: "We have helped 50+ tech startups scale their revenue through data-driven growth systems. 17 years experience, Silicon Valley based.",
+    plumbing: "Family-owned plumbing company with 15 years serving the local area. Licensed, insured, 24/7 emergency service.",
+    roofing: "Local roofing contractor with 20+ years experience. Licensed, insured, free inspections, 10-year workmanship warranty.",
+    dental: "Modern dental practice focused on painless, compassionate care. Same-day appointments, all insurance accepted, evening hours.",
+    medical: "Patient-first medical practice with same-day appointments. Board-certified physicians, modern facilities, accepting new patients.",
+    'real-estate': "Top-producing local realtor with 15+ years experience. Sold 200+ homes, expert market knowledge, dedicated negotiator.",
+  };
+
+  const handleSuggestDifferentiator = async () => {
+    if (!data.businessName || !data.industry) return;
+    setSuggestingDiff(true);
+    setDiffSuggestions([]);
+    try {
+      const res = await fetch('/api/agency/sites/suggest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'differentiator',
+          industry: INDUSTRY_DEFAULTS[data.industry]?.label || data.industry,
+          city: data.city || 'your area',
+          yearsInBusiness: data.yearsInBusiness,
+          businessName: data.businessName,
+          license: data.licenseNumber,
+          rating: data.googleRating,
+          reviewCount: data.reviewCount,
+        }),
+      });
+      const result = await res.json();
+      if (result.suggestions?.length) setDiffSuggestions(result.suggestions);
+    } catch {
+      // Silently fail
+    } finally {
+      setSuggestingDiff(false);
+    }
+  };
 
   const handleIndustryChange = (industry: string) => {
     const defaults = INDUSTRY_DEFAULTS[industry];
@@ -284,6 +330,32 @@ function StepBusinessInfo({
             />
           </div>
 
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Google Rating (optional)</label>
+            <input
+              type="number"
+              min="0"
+              max="5"
+              step="0.1"
+              value={data.googleRating}
+              onChange={(e) => onChange({ googleRating: e.target.value })}
+              placeholder="4.8"
+              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Number of Reviews (optional)</label>
+            <input
+              type="number"
+              min="0"
+              value={data.reviewCount}
+              onChange={(e) => onChange({ reviewCount: e.target.value })}
+              placeholder="127"
+              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            />
+          </div>
+
           <div className="sm:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-1">Street Address</label>
             <input
@@ -333,16 +405,42 @@ function StepBusinessInfo({
 
           <div className="sm:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              What makes you different? *
+              What makes you different?
             </label>
             <p className="text-xs text-gray-400 mb-1.5">2-3 sentences about what sets your business apart. This seeds all your website copy.</p>
-            <textarea
-              value={data.differentiator}
-              onChange={(e) => onChange({ differentiator: e.target.value })}
-              placeholder="We're a family-owned HVAC company that's been serving San Mateo County since 1988. Our technicians are NATE-certified and we offer same-day emergency service with upfront pricing — no surprise fees."
-              rows={3}
-              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-y"
-            />
+            <div className="flex items-start gap-2">
+              <textarea
+                value={data.differentiator}
+                onChange={(e) => onChange({ differentiator: e.target.value })}
+                placeholder={diffPlaceholder[data.industry] || "Describe what makes your business unique — your experience, specialties, and what customers love about you."}
+                rows={3}
+                className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-y"
+              />
+              <button
+                onClick={handleSuggestDifferentiator}
+                disabled={suggestingDiff || !data.businessName || !data.industry}
+                className="shrink-0 px-3 py-3 rounded-xl border border-gray-200 text-gray-400 hover:text-indigo-600 hover:border-indigo-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                title="AI suggest"
+              >
+                {suggestingDiff ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              </button>
+            </div>
+            {diffSuggestions.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {diffSuggestions.map((s, i) => (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      onChange({ differentiator: data.differentiator ? `${data.differentiator} ${s}` : s });
+                      setDiffSuggestions([]);
+                    }}
+                    className="text-xs px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors border border-indigo-200"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="sm:col-span-2">
@@ -419,15 +517,6 @@ function StepServices({
                 value={service.name}
                 onChange={(e) => updateService(index, { name: e.target.value })}
                 className="w-full text-sm font-medium text-gray-900 bg-transparent focus:outline-none"
-              />
-            </div>
-            <div className="shrink-0 w-36">
-              <input
-                type="text"
-                value={service.priceFrom || ''}
-                onChange={(e) => updateService(index, { priceFrom: e.target.value })}
-                placeholder="Starting at $X"
-                className="w-full text-xs text-gray-500 bg-gray-50 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-400"
               />
             </div>
             <button
@@ -541,7 +630,7 @@ function StepServiceArea({
       <div className="space-y-4">
         <div>
           <p className="text-sm font-medium text-gray-700 mb-2">
-            Nearby cities <span className="text-gray-400 font-normal">(max 6 recommended)</span>
+            Nearby cities <span className="text-gray-400 font-normal">(suggestions — add your actual service cities below)</span>
           </p>
           <div className="flex flex-wrap gap-2">
             {nearbyCities.map((city) => {
@@ -618,6 +707,36 @@ function StepPhotosBrand({
 }) {
   const photoInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const [suggestingTagline, setSuggestingTagline] = useState(false);
+  const [taglineSuggestions, setTaglineSuggestions] = useState<string[]>([]);
+
+  const handleSuggestTagline = async () => {
+    if (!data.businessName || !data.industry) return;
+    setSuggestingTagline(true);
+    setTaglineSuggestions([]);
+    try {
+      const res = await fetch('/api/agency/sites/suggest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'tagline',
+          industry: INDUSTRY_DEFAULTS[data.industry]?.label || data.industry,
+          city: data.city || 'your area',
+          yearsInBusiness: data.yearsInBusiness,
+          businessName: data.businessName,
+          license: data.licenseNumber,
+          rating: data.googleRating,
+          reviewCount: data.reviewCount,
+        }),
+      });
+      const result = await res.json();
+      if (result.suggestions?.length) setTaglineSuggestions(result.suggestions);
+    } catch {
+      // Silently fail
+    } finally {
+      setSuggestingTagline(false);
+    }
+  };
 
   const handlePhotoUpload = (files: FileList | null) => {
     if (!files) return;
@@ -664,6 +783,61 @@ function StepPhotosBrand({
         <p className="text-gray-500 mt-2">
           Real photos build trust. Sites with real photos get 2x more leads.
         </p>
+      </div>
+
+      {/* Live brand preview mockup */}
+      <div className="mb-8 rounded-2xl overflow-hidden border border-gray-200 shadow-sm">
+        {/* Browser chrome */}
+        <div className="bg-gray-100 border-b border-gray-200 px-4 py-2.5 flex items-center gap-3">
+          <div className="flex gap-1.5">
+            <div className="w-3 h-3 rounded-full bg-red-400" />
+            <div className="w-3 h-3 rounded-full bg-yellow-400" />
+            <div className="w-3 h-3 rounded-full bg-green-400" />
+          </div>
+          <div className="flex-1 bg-white rounded-md px-3 py-1 text-xs text-gray-400 font-mono">
+            {data.businessName ? data.businessName.toLowerCase().replace(/\s+/g, '-') + '.kyra.com' : 'your-business.kyra.com'}
+          </div>
+        </div>
+        {/* Mock hero section */}
+        <div className="relative p-8" style={{ background: `linear-gradient(135deg, #111827 0%, #000 100%)` }}>
+          {/* Brand color accent */}
+          <div className="absolute top-0 right-0 w-48 h-48 rounded-full opacity-20 blur-3xl"
+            style={{ background: data.colorPrimary }} />
+          <div className="relative">
+            <div className="inline-flex items-center gap-2 rounded-full px-3 py-1 mb-4 text-xs font-medium"
+              style={{ background: `${data.colorPrimary}20`, color: data.colorPrimary, border: `1px solid ${data.colorPrimary}30` }}>
+              ⚡ {INDUSTRY_DEFAULTS[data.industry]?.label || 'Professional Services'}
+            </div>
+            <h3 className="text-2xl font-bold text-white mb-2">
+              {data.businessName || 'Your Business Name'}
+            </h3>
+            {data.tagline && (
+              <p className="text-gray-400 text-sm mb-4">{data.tagline}</p>
+            )}
+            <div className="flex gap-2 mt-4">
+              <div className="px-4 py-2 rounded-lg text-sm font-semibold text-white"
+                style={{ background: data.colorPrimary }}>
+                Call Now
+              </div>
+              <div className="px-4 py-2 rounded-lg text-sm font-medium text-white border border-white/20">
+                Get Quote
+              </div>
+            </div>
+          </div>
+        </div>
+        {/* Mock nav */}
+        <div className="bg-gray-900 px-6 py-3 flex items-center justify-between border-t border-white/10">
+          <span className="text-white text-sm font-bold"
+            style={{ color: data.colorPrimary }}>{data.businessName || 'Your Business'}</span>
+          <div className="flex gap-4">
+            {['Home', 'Services', 'Contact'].map(item => (
+              <span key={item} className="text-xs text-gray-500">{item}</span>
+            ))}
+          </div>
+        </div>
+        <div className="bg-gray-50 px-4 py-2 text-center text-xs text-gray-400">
+          Live preview — updates as you customize
+        </div>
       </div>
 
       <div className="space-y-8">
@@ -843,13 +1017,27 @@ function StepPhotosBrand({
               className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
             <button
-              className="shrink-0 px-3 py-3 rounded-xl border border-gray-200 text-gray-400 hover:text-indigo-600 hover:border-indigo-300 transition-colors"
-              title="AI suggest (coming soon)"
-              disabled
+              onClick={handleSuggestTagline}
+              disabled={suggestingTagline || !data.businessName || !data.industry}
+              className="shrink-0 px-3 py-3 rounded-xl border border-gray-200 text-gray-400 hover:text-indigo-600 hover:border-indigo-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              title="AI suggest"
             >
-              <Sparkles className="h-4 w-4" />
+              {suggestingTagline ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
             </button>
           </div>
+          {taglineSuggestions.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {taglineSuggestions.map((s, i) => (
+                <button
+                  key={i}
+                  onClick={() => { onChange({ tagline: s }); setTaglineSuggestions([]); }}
+                  className="text-xs px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors border border-indigo-200"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -998,6 +1186,89 @@ function StepAIPersonality({
           </div>
           <p className="text-xs text-gray-400 mt-1">Calendly, GHL, or any scheduling link</p>
         </div>
+
+        {/* Live chat widget preview */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            Live Preview — How it looks on your site
+          </label>
+          <div className="relative rounded-2xl overflow-hidden border border-gray-200 bg-gray-900"
+            style={{ minHeight: 280 }}>
+            {/* Mock site background */}
+            <div className="p-6 opacity-30">
+              <div className="h-4 bg-white/20 rounded w-1/2 mb-3" />
+              <div className="h-3 bg-white/10 rounded w-3/4 mb-2" />
+              <div className="h-3 bg-white/10 rounded w-2/3" />
+            </div>
+            {/* Chat widget */}
+            <div className="absolute bottom-4 right-4 flex flex-col items-end gap-3">
+              {/* Chat bubble */}
+              <div className="bg-white rounded-2xl shadow-2xl w-64 overflow-hidden border border-gray-100">
+                {/* Header */}
+                <div className="px-4 py-3 text-white text-sm font-semibold flex items-center gap-2"
+                  style={{ background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)' }}>
+                  <div className="h-7 w-7 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold">
+                    {(data.aiName || 'A').charAt(0)}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold leading-none">{data.aiName || 'Alex'}</p>
+                    <p className="text-[10px] text-white/70 leading-none mt-0.5">
+                      {data.businessName || 'Your Business'} • Online
+                    </p>
+                  </div>
+                  <div className="ml-auto h-2 w-2 rounded-full bg-green-400 animate-pulse" />
+                </div>
+                {/* Messages */}
+                <div className="p-3 space-y-2 bg-gray-50">
+                  <div className="flex gap-2 items-start">
+                    <div className="h-6 w-6 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-bold text-indigo-600 shrink-0">
+                      {(data.aiName || 'A').charAt(0)}
+                    </div>
+                    <div className="bg-white rounded-xl rounded-tl-sm px-3 py-2 text-xs text-gray-700 shadow-sm max-w-[160px]">
+                      {data.aiTone === 'casual'
+                        ? `Hey! 👋 How can I help?`
+                        : data.aiTone === 'friendly'
+                        ? `Hi there! How can I assist you today?`
+                        : `Hello! How may I assist you?`}
+                    </div>
+                  </div>
+                  {data.aiCapabilities.includes('book_appointments') && (
+                    <div className="flex gap-2 items-start">
+                      <div className="h-6 w-6 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-bold text-indigo-600 shrink-0">
+                        {(data.aiName || 'A').charAt(0)}
+                      </div>
+                      <div className="bg-white rounded-xl rounded-tl-sm px-3 py-2 text-xs text-gray-700 shadow-sm max-w-[160px]">
+                        I can book appointments — just let me know your availability!
+                      </div>
+                    </div>
+                  )}
+                </div>
+                {/* Input */}
+                <div className="px-3 pb-3 bg-gray-50">
+                  <div className="flex items-center gap-2 bg-white rounded-xl border border-gray-200 px-3 py-2">
+                    <span className="text-xs text-gray-400 flex-1">Type a message...</span>
+                    <div className="h-5 w-5 rounded-full bg-indigo-500 flex items-center justify-center">
+                      <svg className="h-2.5 w-2.5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M2 21l21-9L2 3v7l15 2-15 2v7z" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {/* Chat button */}
+              <div className="h-12 w-12 rounded-full flex items-center justify-center shadow-lg cursor-pointer"
+                style={{ background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)' }}>
+                <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+          <p className="text-xs text-gray-400 mt-2 text-center">
+            This widget is embedded on every page of your site — available 24/7
+          </p>
+        </div>
       </div>
     </div>
   );
@@ -1020,24 +1291,73 @@ const STATUS_PROGRESS: Record<string, number> = {
   live: 100,
 };
 
+const BUILDING_FACTS = [
+  '✍️ Writing your homepage copy...',
+  '🏙️ Creating local city landing pages...',
+  '📝 Generating service page content...',
+  '🔍 Optimizing meta titles for Google...',
+  '❓ Building your FAQ with real questions customers ask...',
+  '⭐ Adding schema markup for rich search results...',
+  '📍 Setting up Google Maps integration...',
+  '💬 Training your AI chat widget...',
+  '📱 Ensuring mobile-responsive design...',
+  '🚀 Almost there — final touches...',
+];
+
+const DID_YOU_KNOW = [
+  'Sites with FAQ pages rank 2x higher for voice search.',
+  'Local landing pages get 3x more conversions than generic pages.',
+  'Businesses with chat widgets see 40% more leads.',
+  'Your AI worker can handle 80% of customer questions automatically.',
+  'Schema markup helps Google understand your business — it is built in.',
+];
+
+const BUILD_STEPS = [
+  { key: 'info', label: 'Business info processed' },
+  { key: 'services', label: 'Service pages started' },
+  { key: 'content', label: 'Generating content' },
+  { key: 'build', label: 'Building static site' },
+  { key: 'live', label: 'Going live' },
+];
+
+function getCompletedSteps(status: string): number {
+  if (status === 'live') return 5;
+  if (status === 'deploying') return 4;
+  if (status === 'building') return 3;
+  if (status === 'generating') return 2;
+  return 1;
+}
+
 function StepGenerating({
   siteId,
   onComplete,
 }: {
   siteId: string | null;
-  onComplete: () => void;
+  onComplete: (info: { url: string; domain: string }) => void;
 }) {
   const [status, setStatus] = useState<string>('generating');
   const [pageCount, setPageCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [retrying, setRetrying] = useState(false);
+  const [factIndex, setFactIndex] = useState(0);
+  const [tipIndex, setTipIndex] = useState(0);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef(Date.now());
   const completedRef = useRef(false);
+  const buildTriggeredRef = useRef(false);
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
 
-  const TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes
+  const TIMEOUT_MS = 10 * 60 * 1000;
+
+  // Rotate facts and tips every 5 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setFactIndex((i) => (i + 1) % BUILDING_FACTS.length);
+      setTipIndex((i) => (i + 1) % DID_YOU_KNOW.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     if (!siteId) {
@@ -1049,10 +1369,9 @@ function StepGenerating({
     completedRef.current = false;
 
     const poll = async () => {
-      // Timeout check
       if (Date.now() - startTimeRef.current > TIMEOUT_MS) {
         if (pollRef.current) clearInterval(pollRef.current);
-        setError('Generation is taking longer than expected. Please check back later or try again.');
+        setError('Generation is taking longer than expected (8+ min). This usually means an AI API issue. Please try again — it typically completes in 2–4 minutes.');
         return;
       }
 
@@ -1071,7 +1390,15 @@ function StepGenerating({
         if (site.status === 'live' && !completedRef.current) {
           completedRef.current = true;
           if (pollRef.current) clearInterval(pollRef.current);
-          setTimeout(() => onCompleteRef.current(), 600);
+          const domain = site.site_domain || site.site_subdomain || '';
+          const url = domain ? `https://${domain}` : '';
+          setTimeout(() => onCompleteRef.current({ url, domain }), 600);
+
+        } else if (site.status === 'building' && !buildTriggeredRef.current) {
+          buildTriggeredRef.current = true;
+          console.log('[wizard] Status=building — triggering VPS build via /build API');
+          fetch(`/api/agency/sites/${siteId}/build`, { method: 'POST' }).catch(() => {});
+
         } else if (site.status === 'error') {
           if (pollRef.current) clearInterval(pollRef.current);
           setError('Something went wrong during generation. Please try again.');
@@ -1103,7 +1430,7 @@ function StepGenerating({
   };
 
   const progress = STATUS_PROGRESS[status] ?? 15;
-  const statusLabel = STATUS_LABELS[status] ?? 'Working...';
+  const completedSteps = getCompletedSteps(status);
 
   return (
     <div className="max-w-lg mx-auto text-center py-12">
@@ -1112,7 +1439,9 @@ function StepGenerating({
           <Sparkles className="h-10 w-10 text-indigo-600 animate-pulse" />
         </div>
         <h2 className="text-2xl font-bold text-gray-900">Building Your Website</h2>
-        <p className="text-gray-500 mt-2">Sit tight, this usually takes 1 to 2 minutes...</p>
+        <p className="text-indigo-600 mt-2 font-medium text-sm transition-all duration-500">
+          {BUILDING_FACTS[factIndex]}
+        </p>
       </div>
 
       {error ? (
@@ -1138,18 +1467,40 @@ function StepGenerating({
             />
           </div>
 
-          {/* Current status */}
-          <div className="flex items-center justify-center gap-2 text-sm text-indigo-600 font-medium mb-4">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span>{statusLabel}</span>
-          </div>
-
           {/* Page count */}
           {pageCount > 0 && (
-            <p className="text-sm text-gray-500">
-              {pageCount} {pageCount === 1 ? 'page' : 'pages'} generated
+            <p className="text-lg font-bold text-gray-900 mb-4">
+              {pageCount} {pageCount === 1 ? 'page' : 'pages'} written so far...
             </p>
           )}
+
+          {/* Steps tracker */}
+          <div className="text-left bg-gray-50 rounded-xl border border-gray-200 p-4 mb-6 space-y-2">
+            {BUILD_STEPS.map((step, i) => {
+              const done = i < completedSteps;
+              const active = i === completedSteps;
+              return (
+                <div key={step.key} className="flex items-center gap-2.5 text-sm">
+                  {done ? (
+                    <span className="text-green-500">✅</span>
+                  ) : active ? (
+                    <Loader2 className="h-4 w-4 text-indigo-500 animate-spin" />
+                  ) : (
+                    <span className="text-gray-300">○</span>
+                  )}
+                  <span className={done ? 'text-gray-700' : active ? 'text-indigo-600 font-medium' : 'text-gray-400'}>
+                    {step.label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Did you know tip */}
+          <div className="bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-3 transition-all duration-500">
+            <p className="text-xs text-indigo-500 font-medium mb-0.5">Did you know?</p>
+            <p className="text-sm text-indigo-700">{DID_YOU_KNOW[tipIndex]}</p>
+          </div>
         </>
       )}
     </div>
@@ -1438,18 +1789,63 @@ function StepReviewLaunch({
           </div>
         )}
 
+        {/* Live Preview iframe */}
+        {isLive && siteUrl && (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 bg-gray-50">
+              <div className="flex items-center gap-2">
+                <div className="flex gap-1.5">
+                  <div className="w-3 h-3 rounded-full bg-red-400" />
+                  <div className="w-3 h-3 rounded-full bg-yellow-400" />
+                  <div className="w-3 h-3 rounded-full bg-green-400" />
+                </div>
+                <span className="text-xs font-mono text-gray-500 ml-2 truncate">{siteUrl}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <a
+                  href={siteUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1"
+                >
+                  Open Full Site
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              </div>
+            </div>
+            <iframe
+              src={siteUrl}
+              className="w-full border-0"
+              style={{ height: '600px' }}
+              title={`${data.businessName} preview`}
+              sandbox="allow-scripts allow-same-origin allow-popups"
+            />
+          </div>
+        )}
+
         {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-3 pt-4">
           {isLive && siteUrl && (
-            <a
-              href={siteUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors"
-            >
-              <ExternalLink className="h-4 w-4" />
-              Visit Your Website
-            </a>
+            <>
+              <a
+                href={siteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors"
+              >
+                <ExternalLink className="h-4 w-4" />
+                Visit Your Website
+              </a>
+              {data.siteId && (
+                <button
+                  onClick={() => reviewRouter.push(`/agency/website/${data.siteId}/editor`)}
+                  className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-white border border-indigo-200 text-indigo-700 rounded-xl font-medium hover:bg-indigo-50 transition-colors"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Edit Pages
+                </button>
+              )}
+            </>
           )}
           <button
             onClick={() => reviewRouter.push(backUrl)}
@@ -1481,6 +1877,9 @@ export default function WebsiteBuilderWizard() {
     ...(clientNameParam ? { businessName: clientNameParam } : {}),
   }));
   const [saving, setSaving] = useState(false);
+  const [buildResult, setBuildResult] = useState<{ url: string; domain: string } | null>(null);
+  const [copiedUrl, setCopiedUrl] = useState(false);
+  const [copiedMsg, setCopiedMsg] = useState(false);
 
   const industryDefaults = INDUSTRY_DEFAULTS[data.industry];
   const needsGeoPages = industryDefaults?.needsGeoPages ?? false;
@@ -1509,6 +1908,28 @@ export default function WebsiteBuilderWizard() {
     setData((prev) => ({ ...prev, ...updates }));
   };
 
+  // On mount: if we have a clientId, check for existing site to avoid duplicate drafts
+  useEffect(() => {
+    if (!clientIdParam) return;
+    fetch(`/api/agency/sites?clientId=${encodeURIComponent(clientIdParam)}`)
+      .then(r => r.json())
+      .then(result => {
+        const sites: Array<{ id: string; status: string; business_name?: string }> = result.data || [];
+        if (!sites.length) return;
+        // Sort newest first
+        const latest = sites[0];
+        if (latest.status === 'live') {
+          // Already live — redirect back to client page
+          router.replace(`/agency/clients/${clientIdParam}?tab=website`);
+        } else if (latest.status === 'draft' || latest.status === 'generating' || latest.status === 'building') {
+          // In-progress draft — resume it instead of creating a new one
+          setData(prev => ({ ...prev, siteId: latest.id, businessName: prev.businessName || latest.business_name || '' }));
+        }
+      })
+      .catch(() => {/* non-fatal — wizard proceeds normally */});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clientIdParam]);
+
   const saveToApi = useCallback(async (currentStep: number) => {
     setSaving(true);
     try {
@@ -1527,6 +1948,9 @@ export default function WebsiteBuilderWizard() {
             years_in_business: data.yearsInBusiness ? parseInt(data.yearsInBusiness) : null,
             license: data.licenseNumber,
             existing_website: data.existingWebsite,
+            rating: data.googleRating ? parseFloat(data.googleRating) : null,
+            google_rating: data.googleRating ? parseFloat(data.googleRating) : null,
+            review_count: data.reviewCount ? parseInt(data.reviewCount) : null,
             ...(clientIdParam ? { client_id: clientIdParam } : {}),
           }),
         });
@@ -1555,6 +1979,9 @@ export default function WebsiteBuilderWizard() {
           body.owner_story = data.differentiator;
           body.years_in_business = data.yearsInBusiness ? parseInt(data.yearsInBusiness) : null;
           body.license = data.licenseNumber;
+          body.rating = data.googleRating ? parseFloat(data.googleRating) : null;
+          body.google_rating = data.googleRating ? parseFloat(data.googleRating) : null;
+          body.review_count = data.reviewCount ? parseInt(data.reviewCount) : null;
         } else if (currentStep === 2) {
           body.services = data.services.map((s) => ({
             name: s.name,
@@ -1563,14 +1990,51 @@ export default function WebsiteBuilderWizard() {
           }));
           body.emergency_247 = data.emergency247;
         } else if (currentStep === 3) {
-          body.cities = data.selectedCities.map((c) => ({ name: c, slug: c.toLowerCase().replace(/\s+/g, '-') }));
+          body.cities = data.selectedCities.map((c) => ({ name: c, slug: c.toLowerCase().trim().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '-'), state: data.state || '' }));
         } else if (currentStep === 4) {
           body.color_primary = data.colorPrimary;
           body.color_secondary = data.colorSecondary;
           body.design_style = data.designStyle;
           body.tagline = data.tagline;
+
+          // Upload photos via FormData
+          if (data.photos.length > 0) {
+            for (let i = 0; i < data.photos.length; i++) {
+              const formData = new FormData();
+              formData.append('file', data.photos[i]);
+              formData.append('alt', `${data.businessName} photo ${i + 1}`);
+              formData.append('placement', String(i));
+              await fetch(`/api/agency/sites/${data.siteId}/photos`, {
+                method: 'POST',
+                body: formData,
+              }).catch((err) => console.error('[wizard] Photo upload failed:', err));
+            }
+          }
+
+          // Upload logo separately
+          if (data.logo) {
+            const logoFormData = new FormData();
+            logoFormData.append('file', data.logo);
+            logoFormData.append('alt', `${data.businessName} logo`);
+            logoFormData.append('placement', 'logo');
+            try {
+              const logoRes = await fetch(`/api/agency/sites/${data.siteId}/photos`, {
+                method: 'POST',
+                body: logoFormData,
+              });
+              if (logoRes.ok) {
+                const logoResult = await logoRes.json();
+                const logoUrl = logoResult.data?.url || logoResult.url;
+                if (logoUrl) {
+                  body.logo_url = logoUrl;
+                }
+              }
+            } catch (err) {
+              console.error('[wizard] Logo upload failed:', err);
+            }
+          }
         } else if (currentStep === 5) {
-          body.ai_name = data.aiName;
+          body.ai_name = data.aiName.trim() || data.businessName || 'Your AI Assistant';
           body.ai_tone = data.aiTone;
           body.ai_capabilities = data.aiCapabilities;
           body.hours = {
@@ -1620,13 +2084,20 @@ export default function WebsiteBuilderWizard() {
         .slice(0, 30);
       const subdomain = `${slug}.sites.kyra.conversionsystem.com`;
 
-      // Trigger generation and set subdomain in parallel
-      fetch(`/api/agency/sites/${data.siteId}/generate`, { method: 'POST' }).catch(() => {});
-      fetch(`/api/agency/sites/${data.siteId}`, {
+      // IMPORTANT: PATCH subdomain FIRST, then generate.
+      // The content engine reads site_subdomain from DB to determine the domain.
+      // If generate starts before PATCH completes, site_subdomain is null → build fails.
+      await fetch(`/api/agency/sites/${data.siteId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ site_subdomain: subdomain }),
-      }).catch(() => {});
+      });
+      // Now trigger generation — domain is guaranteed to be in DB
+      fetch(`/api/agency/sites/${data.siteId}/generate`, { method: 'POST' }).catch(() => {});
+    }
+    // Auto-add primary city to selectedCities when reaching step 3
+    if (next === 3 && data.city && !data.selectedCities.includes(data.city)) {
+      setData(prev => ({ ...prev, selectedCities: [prev.city, ...prev.selectedCities].filter(Boolean) }));
     }
     setStep(next);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1640,7 +2111,7 @@ export default function WebsiteBuilderWizard() {
   const canAdvance = (): boolean => {
     switch (step) {
       case 1:
-        return !!(data.businessName.trim() && data.industry && data.differentiator.trim());
+        return !!(data.businessName.trim() && data.industry);
       case 2:
         return data.services.length > 0;
       case 3:
@@ -1648,11 +2119,135 @@ export default function WebsiteBuilderWizard() {
       case 4:
         return true; // All brand settings have defaults
       case 5:
-        return !!data.aiName.trim();
+        return true; // aiName optional
       default:
         return true;
     }
   };
+
+  if (buildResult && buildResult.url) {
+    const totalPages =
+      1 + // home
+      1 + // about
+      1 + // contact
+      1 + // faq
+      1 + // reviews
+      data.services.length +
+      data.selectedCities.length +
+      data.selectedCities.length * Math.min(data.services.length, 3);
+
+    const clientMsg = `Hi! 🎉 Great news — your new AI-powered website is live!\n\n🌐 ${buildResult.url}\n\nWhat's included:\n✅ ${data.services.length} service pages (SEO-optimized)\n✅ ${data.selectedCities.length > 0 ? `${data.selectedCities.length} city pages` : 'Local area pages'}\n✅ AI chat widget — visitors can reach you 24/7\n✅ Lead capture forms\n✅ Google Maps + contact info\n\nLet me know if you'd like any changes!`;
+
+    return (
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
+        <div className="max-w-xl w-full">
+          {/* Hero celebration */}
+          <div className="text-center mb-8">
+            <div className="text-7xl mb-5 animate-bounce">🎉</div>
+            <h1 className="text-4xl font-bold text-white mb-3">
+              {data.businessName || 'Your site'} is live!
+            </h1>
+            <p className="text-gray-400 text-lg">
+              AI-powered website deployed and ready for customers.
+            </p>
+          </div>
+
+          {/* Stats row */}
+          <div className="grid grid-cols-4 gap-3 mb-6">
+            {[
+              { value: totalPages, label: 'Pages' },
+              { value: data.services.length, label: 'Services' },
+              { value: data.selectedCities.length || 1, label: 'Cities' },
+              { value: '24/7', label: 'AI Chat' },
+            ].map(({ value, label }) => (
+              <div key={label} className="bg-white/5 border border-white/10 rounded-2xl p-4 text-center">
+                <p className="text-2xl font-bold text-white mb-1">{value}</p>
+                <p className="text-xs text-gray-500">{label}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* URL card */}
+          <div className="bg-indigo-950/60 border border-indigo-500/30 rounded-2xl p-5 mb-4">
+            <p className="text-xs text-indigo-400 uppercase tracking-wider mb-2 font-medium">🌐 Live URL</p>
+            <p className="text-indigo-300 font-mono text-sm break-all mb-4">{buildResult.url}</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => { navigator.clipboard.writeText(buildResult.url); setCopiedUrl(true); setTimeout(() => setCopiedUrl(false), 2500); }}
+                className="flex-1 border border-white/20 text-gray-300 rounded-xl py-2.5 text-sm hover:bg-white/5 transition"
+              >
+                {copiedUrl ? '✓ Copied!' : '📋 Copy URL'}
+              </button>
+              <a
+                href={buildResult.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 bg-indigo-600 text-white rounded-xl py-2.5 text-sm font-semibold hover:bg-indigo-500 transition text-center"
+              >
+                Visit Site →
+              </a>
+            </div>
+          </div>
+
+          {/* What's included checklist */}
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-5 mb-4">
+            <p className="text-xs text-gray-500 uppercase tracking-wider mb-3 font-medium">✅ What&apos;s included</p>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                `${data.services.length} service pages`,
+                'SEO-optimized content',
+                'AI chat widget (24/7)',
+                'Lead capture forms',
+                'Google Maps embed',
+                'Blog posts (2 articles)',
+                'FAQ schema markup',
+                'Mobile responsive',
+              ].map(item => (
+                <div key={item} className="flex items-center gap-2 text-sm text-gray-300">
+                  <span className="text-green-400 text-xs">✓</span>
+                  {item}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Share with client */}
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-5 mb-6">
+            <p className="text-xs text-gray-500 uppercase tracking-wider mb-3 font-medium">📲 Send to your client</p>
+            <div className="bg-black/30 rounded-xl p-3 mb-3 text-left max-h-32 overflow-y-auto">
+              <p className="text-xs text-gray-400 leading-relaxed whitespace-pre-line">{clientMsg}</p>
+            </div>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(clientMsg);
+                setCopiedMsg(true);
+                setTimeout(() => setCopiedMsg(false), 2500);
+              }}
+              className="w-full bg-white/10 border border-white/20 text-gray-200 rounded-xl py-3 text-sm hover:bg-white/15 transition font-medium"
+            >
+              {copiedMsg ? '✓ Copied to clipboard!' : '📋 Copy client message'}
+            </button>
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-3">
+            <button
+              onClick={() => router.push(clientIdParam ? `/agency/clients/${clientIdParam}?tab=website` : '/agency/clients')}
+              className="flex-1 bg-indigo-600 text-white rounded-xl py-3 text-sm font-semibold hover:bg-indigo-500 transition"
+            >
+              Go to Dashboard
+            </button>
+            <button
+              onClick={() => setBuildResult(null)}
+              className="px-4 border border-white/20 text-gray-400 rounded-xl py-3 text-sm hover:bg-white/5 transition"
+            >
+              Review
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -1694,7 +2289,7 @@ export default function WebsiteBuilderWizard() {
         {step === 6 && (
           <StepGenerating
             siteId={data.siteId}
-            onComplete={() => setStep(7)}
+            onComplete={(info) => { setBuildResult(info); setStep(7); }}
           />
         )}
         {step === 7 && (

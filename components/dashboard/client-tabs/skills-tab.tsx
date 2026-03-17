@@ -78,7 +78,6 @@ export default function SkillsTab({ client }: SkillsTabProps) {
   // ClawHub live state
   const [clawHubSkills, setClawHubSkills] = useState<ClawHubSkill[]>([]);
   const [clawHubLoading, setClawHubLoading] = useState(false);
-  const [clawHubSearch, setClawHubSearch] = useState('');
   const [clawHubSearchInput, setClawHubSearchInput] = useState('');
   const [installedSkills, setInstalledSkills] = useState<InstalledSkill[]>([]);
   const [installingSlug, setInstallingSlug] = useState<string | null>(null);
@@ -124,7 +123,6 @@ export default function SkillsTab({ client }: SkillsTabProps) {
   useEffect(() => {
     if (!showMarketplace) return;
     const timer = setTimeout(() => {
-      setClawHubSearch(clawHubSearchInput);
       fetchClawHub(clawHubSearchInput);
     }, 400);
     return () => clearTimeout(timer);
@@ -406,7 +404,7 @@ export default function SkillsTab({ client }: SkillsTabProps) {
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <button
-                  onClick={() => fetchClawHub(clawHubSearch)}
+                  onClick={() => fetchClawHub(clawHubSearchInput)}
                   className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-white px-2.5 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50 transition-colors"
                 >
                   <RefreshCw className="h-3 w-3" /> Refresh
@@ -432,7 +430,7 @@ export default function SkillsTab({ client }: SkillsTabProps) {
           ) : clawHubSkills.length === 0 ? (
             <div className="rounded-xl border border-gray-200 bg-gray-50 p-8 text-center text-sm text-gray-500">
               <Sparkles className="mx-auto mb-2 h-5 w-5 text-gray-400" />
-              {clawHubSearch ? `No skills match "${clawHubSearch}"` : 'No skills found. Try searching for something.'}
+              {clawHubSearchInput.trim() ? `No skills match "${clawHubSearchInput}"` : 'No skills found. Try searching for something.'}
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
