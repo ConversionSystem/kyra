@@ -980,20 +980,29 @@ interface Conversation {
 
 function ConversationsTab({ client }: { client: AgencyClient }) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [migrationRequired, setMigrationRequired] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadConversations = useCallback(() => {
     fetch(`/api/agency/clients/${client.id}/conversations`)
       .then(r => r.json())
       .then(d => {
         if (d.migrationRequired) { setMigrationRequired(true); return; }
         setConversations(d.conversations || []);
+        setTotal(d.total ?? (d.conversations || []).length);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [client.id]);
+
+  useEffect(() => {
+    loadConversations();
+    // Auto-refresh every 10 seconds so new conversations appear without manual reload
+    const interval = setInterval(loadConversations, 10_000);
+    return () => clearInterval(interval);
+  }, [loadConversations]);
 
   const channelBadge: Record<string, string> = {
     test_chat: 'bg-blue-50 text-blue-600 border-blue-200',
@@ -1058,7 +1067,7 @@ CREATE POLICY "Service insert" ON client_conversations FOR INSERT WITH CHECK (tr
         <Inbox className="h-10 w-10 text-gray-300" />
         <p className="font-medium text-gray-600">No conversations yet</p>
         <p className="text-sm text-gray-400">
-          Use the Test Chat tab or share the portal link — conversations will appear here.
+          Open the Terminal tab to test the AI, or share the portal link — conversations will appear here automatically.
         </p>
       </div>
     );
@@ -1066,7 +1075,7 @@ CREATE POLICY "Service insert" ON client_conversations FOR INSERT WITH CHECK (tr
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-gray-500">{conversations.length} conversation{conversations.length !== 1 ? 's' : ''} logged</p>
+      <p className="text-sm text-gray-500">{total} conversation{total !== 1 ? 's' : ''} logged{total > conversations.length ? ` (showing ${conversations.length} most recent)` : ''}</p>
       {conversations.map(conv => {
         const isEscalated = conv.ai_response?.includes("I'll flag this for our team");
         const isProactive = conv.user_message?.includes('[NEW CONTACT]');

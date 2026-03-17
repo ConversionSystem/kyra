@@ -44,7 +44,9 @@ export default function SitePortalPage() {
           if (data?.length) setSite(data[0]);
         }
         if (convsRes.ok) {
-          const { data: convs } = await convsRes.json();
+          const convsJson = await convsRes.json();
+          // API returns { conversations: [...], total: N } — not { data: [...] }
+          const convs = convsJson.conversations;
           if (Array.isArray(convs)) {
             const today = new Date().toDateString();
             const todayCount = convs.filter((c: { created_at: string }) =>
@@ -53,7 +55,8 @@ export default function SitePortalPage() {
             const leads = convs.filter((c: { metadata?: { lead?: boolean } }) =>
               c.metadata?.lead === true
             ).length;
-            setConvStats({ total: convs.length, today: todayCount, leads });
+            // Use server-side total count for accuracy
+            setConvStats({ total: convsJson.total ?? convs.length, today: todayCount, leads });
           }
         }
       } finally {
