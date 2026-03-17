@@ -80,15 +80,16 @@ export function BillingPageClient({
       }
       if (fleetRes.ok) {
         const d = await fleetRes.json();
-        setClientCount(d.summary?.total ?? clientCount);
+        setClientCount(d.summary?.total ?? initialClientCount);
         setConversations(
-          d.clients?.reduce((s: number, c: { usage_this_month: number }) => s + (c.usage_this_month ?? 0), 0) ?? conversations
+          d.clients?.reduce((s: number, c: { usage_this_month: number }) => s + (c.usage_this_month ?? 0), 0) ?? initialConversations
         );
       }
       setLastUpdated(new Date());
-    } catch { /* silent */ }
+    } catch { /* silent — polling will retry */ }
     finally { setPolling(false); }
-  }, [clientCount, conversations]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     fetchLive();

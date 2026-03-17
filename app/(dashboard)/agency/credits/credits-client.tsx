@@ -229,12 +229,7 @@ function UsageTab() {
                   return (
                     <div key={c.clientId} className="py-3">
                       <div className="flex items-center justify-between mb-1.5">
-                        <div className="flex items-center gap-2">
-                          <div className="h-7 w-7 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-bold text-indigo-700">
-                            {c.clientName.charAt(0).toUpperCase()}
-                          </div>
-                          <span className="text-sm font-medium text-gray-800">{c.clientName}</span>
-                        </div>
+                        <span className="text-sm font-medium text-gray-800">{c.clientName}</span>
                         <span className="text-sm font-semibold text-gray-700">
                           {c.creditsUsed.toLocaleString()} credits
                         </span>
