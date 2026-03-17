@@ -4,6 +4,90 @@ import { AGENT_ROLES, routeToAgent, buildAgentPrompt } from '@/lib/multi-agent/a
 
 export const dynamic = 'force-dynamic';
 
+// ── Helper: resolve config scope ─────────────────────────────────────────────
+// If clientId is provided, read/write from agency_clients.container_config.agent_config
+// so each client can have its own team setup.
+// Otherwise fall back to agencies.settings (agency-wide default).
+
+async function getConfigScope(
+  sb: Awaited<ReturnType<typeof createClient>>,
+  agencyId: string,
+  clientId?: string | null,
+): Promise<{
+  settings: Record<string, unknown>;
+  savedConfig: Array<{ roleId: string; enabled: boolean; customPersonality?: string }> | undefined;
+  businessName: string;
+  routingEnabled: boolean;
+}> {
+  if (clientId) {
+    const { data: client } = await sb
+      .from('agency_clients')
+      .select('name, container_config')
+      .eq('id', clientId)
+      .eq('agency_id', agencyId)
+      .single();
+
+    const cfg = (client?.container_config ?? {}) as Record<string, unknown>;
+    return {
+      settings: cfg,
+      savedConfig: cfg.agent_config as Array<{ roleId: string; enabled: boolean; customPersonality?: string }> | undefined,
+      businessName: client?.name ?? '',
+      routingEnabled: cfg.multi_agent_routing === true,
+    };
+  }
+
+  const { data: agency } = await sb
+    .from('agencies')
+    .select('settings, name')
+    .eq('id', agencyId)
+    .single();
+
+  const settings = (agency?.settings ?? {}) as Record<string, unknown>;
+  return {
+    settings,
+    savedConfig: settings.agent_config as Array<{ roleId: string; enabled: boolean; customPersonality?: string }> | undefined,
+    businessName: agency?.name ?? '',
+    routingEnabled: settings.multi_agent_routing === true,
+  };
+}
+
+async function saveConfigScope(
+  sb: Awaited<ReturnType<typeof createClient>>,
+  agencyId: string,
+  patch: Record<string, unknown>,
+  clientId?: string | null,
+): Promise<{ error: string | null }> {
+  if (clientId) {
+    // Read current container_config, deep-merge patch
+    const { data: client } = await sb
+      .from('agency_clients')
+      .select('container_config')
+      .eq('id', clientId)
+      .eq('agency_id', agencyId)
+      .single();
+
+    const existing = (client?.container_config ?? {}) as Record<string, unknown>;
+    const { error } = await sb
+      .from('agency_clients')
+      .update({ container_config: { ...existing, ...patch } })
+      .eq('id', clientId);
+    return { error: error?.message ?? null };
+  }
+
+  const { data: agency } = await sb
+    .from('agencies')
+    .select('settings')
+    .eq('id', agencyId)
+    .single();
+
+  const existing = (agency?.settings ?? {}) as Record<string, unknown>;
+  const { error } = await sb
+    .from('agencies')
+    .update({ settings: { ...existing, ...patch } })
+    .eq('id', agencyId);
+  return { error: error?.message ?? null };
+}
+
 // GET — list agent roles + current config
 export async function GET(req: NextRequest) {
   const sb = await createClient();
@@ -17,22 +101,12 @@ export async function GET(req: NextRequest) {
     .single();
   if (!membership) return NextResponse.json({ error: 'No agency' }, { status: 404 });
 
-  // Get saved agent config from agency settings
-  const { data: agency } = await sb
-    .from('agencies')
-    .select('settings, name')
-    .eq('id', membership.agency_id)
-    .single();
-
-  const savedConfig = (agency?.settings as Record<string, unknown>)?.agent_config as Array<{
-    roleId: string;
-    enabled: boolean;
-    customPersonality?: string;
-  }> | undefined;
+  const clientId = req.nextUrl.searchParams.get('clientId') || null;
+  const scope = await getConfigScope(sb, membership.agency_id, clientId);
 
   // Merge saved config with role definitions
   const agents = AGENT_ROLES.map(role => {
-    const saved = savedConfig?.find(c => c.roleId === role.id);
+    const saved = scope.savedConfig?.find(c => c.roleId === role.id);
     return {
       ...role,
       enabled: saved?.enabled ?? (role.id === 'front-desk'),
@@ -42,8 +116,8 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     agents,
-    businessName: agency?.name ?? '',
-    routingEnabled: (agency?.settings as Record<string, unknown>)?.multi_agent_routing === true,
+    businessName: scope.businessName,
+    routingEnabled: scope.routingEnabled,
   });
 }
 
@@ -62,74 +136,46 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
   const { action } = body;
+  const clientId: string | null = body.clientId ?? null;
 
   if (action === 'update_agent') {
     const { roleId, enabled, customPersonality } = body;
-    
-    // Get current settings
-    const { data: agency } = await sb
-      .from('agencies')
-      .select('settings')
-      .eq('id', membership.agency_id)
-      .single();
 
-    const settings = (agency?.settings ?? {}) as Record<string, unknown>;
-    const config = (settings.agent_config ?? []) as Array<{
-      roleId: string;
-      enabled: boolean;
-      customPersonality?: string;
+    const scope = await getConfigScope(sb, membership.agency_id, clientId);
+    const config = (scope.settings.agent_config ?? []) as Array<{
+      roleId: string; enabled: boolean; customPersonality?: string;
     }>;
 
-    // Update or add agent config
     const idx = config.findIndex(c => c.roleId === roleId);
-    const update = { roleId, enabled, customPersonality };
-    if (idx >= 0) {
-      config[idx] = update;
-    } else {
-      config.push(update);
-    }
+    const entry = { roleId, enabled, ...(customPersonality != null && { customPersonality }) };
+    if (idx >= 0) config[idx] = entry;
+    else config.push(entry);
 
-    await sb
-      .from('agencies')
-      .update({ settings: { ...settings, agent_config: config } })
-      .eq('id', membership.agency_id);
-
+    const { error } = await saveConfigScope(sb, membership.agency_id, { agent_config: config }, clientId);
+    if (error) return NextResponse.json({ error }, { status: 500 });
     return NextResponse.json({ success: true });
   }
 
   if (action === 'toggle_routing') {
     const { enabled } = body;
-    
-    const { data: agency } = await sb
-      .from('agencies')
-      .select('settings')
-      .eq('id', membership.agency_id)
-      .single();
-
-    const settings = (agency?.settings ?? {}) as Record<string, unknown>;
-    
-    await sb
-      .from('agencies')
-      .update({ settings: { ...settings, multi_agent_routing: enabled } })
-      .eq('id', membership.agency_id);
-
+    const { error } = await saveConfigScope(sb, membership.agency_id, { multi_agent_routing: enabled }, clientId);
+    if (error) return NextResponse.json({ error }, { status: 500 });
     return NextResponse.json({ success: true });
   }
 
   if (action === 'test_routing') {
     const { message } = body;
     const agent = routeToAgent(message);
-    
-    const { data: agency } = await sb
-      .from('agencies')
-      .select('name')
-      .eq('id', membership.agency_id)
-      .single();
+
+    // Load saved config to pick up customPersonality for accurate test preview
+    const scope = await getConfigScope(sb, membership.agency_id, clientId);
+    const savedAgent = scope.savedConfig?.find(c => c.roleId === agent.id);
 
     const prompt = buildAgentPrompt(
       'You are an AI worker.',
       agent,
-      agency?.name ?? 'My Business',
+      scope.businessName || 'My Business',
+      savedAgent?.customPersonality,
     );
 
     return NextResponse.json({
