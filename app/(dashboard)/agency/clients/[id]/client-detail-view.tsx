@@ -302,25 +302,9 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
             <ArrowLeft className="h-4 w-4" />
           </Link>
 
-          {/* Client avatar */}
-          <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-indigo-100 to-indigo-200 border border-indigo-200 flex items-center justify-center text-sm font-bold text-indigo-700 shrink-0">
-            {initialClient.name.charAt(0).toUpperCase()}
-          </div>
-
-          {/* Client name + badges */}
+          {/* Client name */}
           <div className="min-w-0 flex items-center gap-2.5 flex-1">
             <h1 className="text-lg font-semibold text-gray-900 truncate">{initialClient.name}</h1>
-            <Badge className={statusColors[initialClient.status]}>
-              {initialClient.status}
-            </Badge>
-            {initialClient.industry && initialClient.industry !== 'General' && (
-              <span className="text-xs text-gray-400 hidden sm:inline">{initialClient.industry}</span>
-            )}
-            {initialClient.template && (
-              <span className="text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full hidden md:inline">
-                {initialClient.template.name}
-              </span>
-            )}
           </div>
 
           {(!initialClient.gateway_status || initialClient.gateway_status === 'error') && (
