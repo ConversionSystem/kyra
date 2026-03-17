@@ -50,6 +50,29 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   return NextResponse.json({ ok: true, data });
 }
 
+// Helper: delete container with timeout (best-effort, never blocks)
+async function deleteContainer(cid: string): Promise<string | null> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000); // 5s max
+    const res = await fetch(`${PROVISIONER_URL}/containers/${cid}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${PROVISIONER_SECRET}` },
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    if (!res.ok && res.status !== 404) {
+      return `Container ${cid}: HTTP ${res.status}`;
+    }
+    return null;
+  } catch (e) {
+    const msg = String(e);
+    // Aborted = timeout, not a real error for our purposes
+    if (msg.includes('abort')) return `Container ${cid}: timeout (will be cleaned up later)`;
+    return `Container ${cid}: ${msg}`;
+  }
+}
+
 // DELETE — full account deletion
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await requireMaster();
@@ -67,44 +90,53 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
   if (!agency) return NextResponse.json({ error: 'Agency not found' }, { status: 404 });
 
+  // ── 1. Collect container IDs BEFORE deleting DB rows ─────────────────
   const { data: clients } = await admin
     .from('agency_clients')
-    .select('id, gateway_url')
+    .select('id')
     .eq('agency_id', agencyId);
 
   const settings = (agency.settings ?? {}) as Record<string, unknown>;
-  const clientIds = (clients ?? []).map((c: { id: string; gateway_url: string | null }) => c.id);
-  // Also delete the agency's own container (solo_client_id or the agency ID itself if it has one)
+  const containerIds: string[] = (clients ?? []).map((c: { id: string }) => c.id);
   if (settings.solo_client_id && typeof settings.solo_client_id === 'string') {
-    clientIds.push(settings.solo_client_id);
+    containerIds.push(settings.solo_client_id);
   }
-  // Agency owner containers use agencyId as container ID
-  clientIds.push(agencyId);
-  const uniqueIds = [...new Set(clientIds)];
+  containerIds.push(agencyId);
+  const uniqueIds = [...new Set(containerIds)];
 
-  for (const cid of uniqueIds) {
-    try {
-      const res = await fetch(`${PROVISIONER_URL}/containers/${cid}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${PROVISIONER_SECRET}` },
-      });
-      if (!res.ok && res.status !== 404) {
-        errors.push(`Container ${cid}: HTTP ${res.status}`);
-      }
-    } catch (e) {
-      errors.push(`Container ${cid}: ${String(e)}`);
-    }
+  // ── 2. Delete DB records (this is what matters) ────────────────────────
+  const dbErrors: string[] = [];
+
+  const r1 = await admin.from('agency_clients').delete().eq('agency_id', agencyId);
+  if (r1.error) dbErrors.push(`clients: ${r1.error.message}`);
+
+  const r2 = await admin.from('agency_credits').delete().eq('agency_id', agencyId);
+  if (r2.error) dbErrors.push(`credits: ${r2.error.message}`);
+
+  const r3 = await admin.from('agency_members').delete().eq('agency_id', agencyId);
+  if (r3.error) dbErrors.push(`members: ${r3.error.message}`);
+
+  // Delete CRM contacts for this agency too (non-fatal)
+  await admin.from('crm_contacts').delete().eq('agency_id', agencyId);
+
+  const r4 = await admin.from('agencies').delete().eq('id', agencyId);
+  if (r4.error) dbErrors.push(`agency: ${r4.error.message}`);
+
+  if (dbErrors.length > 0) {
+    return NextResponse.json({ error: `DB delete failed: ${dbErrors.join('; ')}` }, { status: 500 });
   }
 
-  await admin.from('agency_clients').delete().eq('agency_id', agencyId);
-  await admin.from('agency_credits').delete().eq('agency_id', agencyId);
-  await admin.from('agency_members').delete().eq('agency_id', agencyId);
-  await admin.from('agencies').delete().eq('id', agencyId);
-
+  // ── 3. Delete auth user ────────────────────────────────────────────────
   if (agency.owner_id) {
     const { error: authErr } = await admin.auth.admin.deleteUser(agency.owner_id);
     if (authErr) errors.push(`Auth user: ${authErr.message}`);
   }
 
-  return NextResponse.json({ ok: true, errors });
+  // Fire all container deletes in parallel with timeouts
+  const containerResults = await Promise.all(uniqueIds.map(deleteContainer));
+  for (const err of containerResults) {
+    if (err) errors.push(err);
+  }
+
+  return NextResponse.json({ ok: true, errors: errors.length > 0 ? errors : undefined });
 }
