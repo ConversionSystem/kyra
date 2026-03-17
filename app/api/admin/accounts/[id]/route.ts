@@ -104,9 +104,24 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   containerIds.push(agencyId);
   const uniqueIds = [...new Set(containerIds)];
 
-  // ── 2. Delete DB records (this is what matters) ────────────────────────
+  // ── 2. Delete DB records in FK-safe order ───────────────────────────────
+  // Tables with foreign keys to agency_clients / agencies must be deleted first.
   const dbErrors: string[] = [];
 
+  // Child tables first (FK → agency_clients or agencies)
+  for (const table of ['client_sites', 'client_conversations', 'pipeline_leads', 'credit_transactions', 'crm_contacts']) {
+    const { error } = await admin.from(table).delete().eq('agency_id', agencyId);
+    if (error && !error.message.includes('does not exist')) {
+      dbErrors.push(`${table}: ${error.message}`);
+    }
+  }
+
+  // Also delete client_sites by client_id (some may reference client_id not agency_id)
+  for (const cid of uniqueIds) {
+    await admin.from('client_sites').delete().eq('client_id', cid);
+  }
+
+  // Now safe to delete agency_clients
   const r1 = await admin.from('agency_clients').delete().eq('agency_id', agencyId);
   if (r1.error) dbErrors.push(`clients: ${r1.error.message}`);
 
@@ -116,9 +131,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const r3 = await admin.from('agency_members').delete().eq('agency_id', agencyId);
   if (r3.error) dbErrors.push(`members: ${r3.error.message}`);
 
-  // Delete CRM contacts for this agency too (non-fatal)
-  await admin.from('crm_contacts').delete().eq('agency_id', agencyId);
-
+  // Finally delete the agency itself
   const r4 = await admin.from('agencies').delete().eq('id', agencyId);
   if (r4.error) dbErrors.push(`agency: ${r4.error.message}`);
 
