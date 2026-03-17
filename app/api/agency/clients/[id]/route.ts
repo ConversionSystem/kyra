@@ -219,7 +219,17 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
 
   const { agency } = result.data;
   const supabase = await createClient();
+  const warnings: string[] = [];
 
+  // Delete child tables first (FK constraints)
+  for (const table of ['client_sites', 'client_conversations', 'crm_contacts']) {
+    const { error: childErr } = await supabase.from(table).delete().eq('client_id', id);
+    if (childErr && !childErr.message.includes('does not exist')) {
+      warnings.push(`${table}: ${childErr.message}`);
+    }
+  }
+
+  // Delete the client record
   const { error } = await supabase
     .from('agency_clients')
     .delete()
@@ -228,8 +238,22 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
 
   if (error) {
     console.error('Failed to delete client:', error);
-    return NextResponse.json({ error: 'Failed to delete client' }, { status: 500 });
+    return NextResponse.json({ error: `Failed to delete client: ${error.message}` }, { status: 500 });
   }
 
-  return NextResponse.json({ success: true });
+  // Container cleanup (best-effort with timeout)
+  try {
+    const provisionerUrl = process.env.OVH_PROVISIONER_URL || 'https://provisioner.gw.kyra.conversionsystem.com';
+    const provisionerSecret = process.env.OVH_PROVISIONER_SECRET || 'kyra-provisioner-2026';
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    await fetch(`${provisionerUrl}/containers/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${provisionerSecret}` },
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+  } catch { /* best-effort */ }
+
+  return NextResponse.json({ success: true, warnings: warnings.length > 0 ? warnings : undefined });
 }

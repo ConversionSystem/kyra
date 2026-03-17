@@ -574,7 +574,12 @@ function SettingsTab({
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string; section?: string } | null>(null);
+
+  const showMsg = (type: 'success' | 'error', text: string, section?: string) => {
+    setSaveMessage({ type, text, section });
+    if (type === 'success') setTimeout(() => setSaveMessage(null), 4000);
+  };
 
   // Export state
   const [showExportMenu, setShowExportMenu] = useState(false);
@@ -607,11 +612,11 @@ function SettingsTab({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, industry, status }),
       });
-      if (!res.ok) throw new Error('Failed to save');
-      setSaveMessage({ type: 'success', text: 'Client updated.' });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || 'Failed to save'); }
+      showMsg('success', 'Client updated.', 'general');
       onRefresh();
-    } catch {
-      setSaveMessage({ type: 'error', text: 'Failed to save.' });
+    } catch (e) {
+      showMsg('error', e instanceof Error ? e.message : 'Failed to save.', 'general');
     } finally {
       setIsSaving(false);
     }
@@ -628,10 +633,10 @@ function SettingsTab({
         body: JSON.stringify({ ai_model: modelId }),
       });
       if (!res.ok) throw new Error('Failed to save model');
-      setSaveMessage({ type: 'success', text: 'AI model updated. Takes effect on next conversation.' });
+      showMsg('success', 'AI model updated. Takes effect on next conversation.', 'model');
       onRefresh();
     } catch {
-      setSaveMessage({ type: 'error', text: 'Failed to update model.' });
+      showMsg('error', 'Failed to update model.', 'model');
     } finally {
       setIsSavingModel(false);
     }
@@ -647,9 +652,9 @@ function SettingsTab({
         body: JSON.stringify({ settings: { agency_notes: notes } }),
       });
       if (!res.ok) throw new Error('Failed to save notes');
-      setSaveMessage({ type: 'success', text: 'Notes saved.' });
+      showMsg('success', 'Notes saved.', 'notes');
     } catch {
-      setSaveMessage({ type: 'error', text: 'Failed to save notes.' });
+      showMsg('error', 'Failed to save notes.', 'notes');
     } finally {
       setIsSavingNotes(false);
     }
@@ -662,7 +667,7 @@ function SettingsTab({
       if (!res.ok) throw new Error('Failed to delete');
       router.push('/agency/clients');
     } catch {
-      setSaveMessage({ type: 'error', text: 'Failed to delete.' });
+      showMsg('error', 'Failed to delete client.', 'delete');
       setIsDeleting(false);
     }
   };
@@ -683,7 +688,7 @@ function SettingsTab({
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      setSaveMessage({ type: 'error', text: 'Export failed.' });
+      showMsg('error', 'Export failed.', 'export');
     } finally {
       setIsExporting(false);
     }
@@ -705,7 +710,7 @@ function SettingsTab({
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      setSaveMessage({ type: 'error', text: 'Export failed.' });
+      showMsg('error', 'Export failed.', 'export');
     } finally {
       setIsExporting(false);
     }
@@ -713,14 +718,6 @@ function SettingsTab({
 
   return (
     <div className="space-y-6">
-      {saveMessage && (
-        <div className={`rounded-md px-4 py-3 text-sm ${
-          saveMessage.type === 'success' ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-red-50 border border-red-200 text-red-700'
-        }`}>
-          {saveMessage.text}
-        </div>
-      )}
-
       <Card>
         <CardHeader>
           <CardTitle>General</CardTitle>
@@ -761,9 +758,14 @@ function SettingsTab({
               ))}
             </div>
           </div>
-          <Button onClick={handleSave} disabled={isSaving} className="gap-2">
-            {isSaving ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving...</> : <><Save className="h-4 w-4" /> Save Changes</>}
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button onClick={handleSave} disabled={isSaving} className="gap-2">
+              {isSaving ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving...</> : <><Save className="h-4 w-4" /> Save Changes</>}
+            </Button>
+            {saveMessage?.section === 'general' && (
+              <span className={`text-sm ${saveMessage.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>{saveMessage.text}</span>
+            )}
+          </div>
         </CardContent>
       </Card>
 
