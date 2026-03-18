@@ -87,6 +87,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   const allowedFields = [
     'title', 'meta_title', 'meta_description',
     'hero_h1', 'hero_subtitle', 'content_sections', 'faq', 'schema_markup',
+    'hidden',
   ];
 
   const updates: Record<string, unknown> = {
@@ -156,4 +157,38 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   });
 
   return NextResponse.json({ ok: true, data: { status: 'regenerating', slug: decodedSlug } });
+}
+
+/**
+ * DELETE /api/agency/sites/[id]/pages/[slug]
+ * Delete a page from a site.
+ */
+export async function DELETE(_request: NextRequest, { params }: RouteContext) {
+  const { id: siteId, slug } = await params;
+
+  const auth = await requireAgencyMember();
+  if (auth.error) {
+    return NextResponse.json({ error: auth.error.message }, { status: auth.error.status });
+  }
+
+  const result = await getSiteAndPage(siteId, slug, auth.data.agency.id);
+  if (result.error) {
+    return NextResponse.json({ error: result.error }, { status: 404 });
+  }
+
+  const supabase = createServiceClientWithoutCookies();
+  await supabase.from('site_pages').delete().eq('id', result.page!.id);
+
+  // Update page count
+  const { count } = await supabase
+    .from('site_pages')
+    .select('id', { count: 'exact', head: true })
+    .eq('site_id', siteId);
+
+  await supabase
+    .from('client_sites')
+    .update({ page_count: count || 0 })
+    .eq('id', siteId);
+
+  return NextResponse.json({ ok: true });
 }
