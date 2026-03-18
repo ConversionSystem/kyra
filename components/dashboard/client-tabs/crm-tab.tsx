@@ -601,7 +601,7 @@ function ContactDetailPanel({ contact: initial, onBack, client }: { contact: Con
         if (data.activities) setActivities(data.activities);
         if (data.deals) setDeals(data.deals);
       }
-    } catch { /* ignore */ }
+    } catch (err) { console.error('[crm-tab]', err); }
   }, [contact.id]);
 
   const loadActivities = useCallback(async () => {
@@ -611,7 +611,7 @@ function ContactDetailPanel({ contact: initial, onBack, client }: { contact: Con
       if (activityFilter !== 'all') params.set('type', activityFilter);
       const res = await fetch(`/api/agency/crm/activities?${params}`);
       if (res.ok) { const data = await res.json(); setActivities(Array.isArray(data) ? data : data.activities || []); }
-    } catch { /* ignore */ } finally { setLoadingActivities(false); }
+    } catch (err) { console.error('[crm-tab]', err); } finally { setLoadingActivities(false); }
   }, [contact.id, activityFilter]);
 
   const loadTasks = useCallback(async () => {
@@ -619,7 +619,7 @@ function ContactDetailPanel({ contact: initial, onBack, client }: { contact: Con
     try {
       const res = await fetch(`/api/agency/crm/tasks?contact_id=${contact.id}`);
       if (res.ok) { const data = await res.json(); setTasks(Array.isArray(data) ? data : data.tasks || []); }
-    } catch { /* ignore */ } finally { setLoadingTasks(false); }
+    } catch (err) { console.error('[crm-tab]', err); } finally { setLoadingTasks(false); }
   }, [contact.id]);
 
   const loadDeals = useCallback(async () => {
@@ -627,7 +627,7 @@ function ContactDetailPanel({ contact: initial, onBack, client }: { contact: Con
     try {
       const res = await fetch(`/api/agency/crm/deals?contact_id=${contact.id}`);
       if (res.ok) { const data = await res.json(); setDeals(Array.isArray(data) ? data : data.deals || []); }
-    } catch { /* ignore */ } finally { setLoadingDeals(false); }
+    } catch (err) { console.error('[crm-tab]', err); } finally { setLoadingDeals(false); }
   }, [contact.id]);
 
   useEffect(() => { loadDetail(); }, [loadDetail]);
@@ -1043,14 +1043,14 @@ function DealsSection() {
     try {
       const res = await fetch('/api/agency/crm/deals?sort=value&order=desc');
       if (res.ok) { const data = await res.json(); setDeals(Array.isArray(data) ? data : data.deals || []); }
-    } catch { /* ignore */ } finally { setLoading(false); }
+    } catch (err) { console.error('[crm-tab]', err); } finally { setLoading(false); }
   }, []);
 
   const loadContacts = useCallback(async () => {
     try {
       const res = await fetch('/api/agency/crm/contacts?limit=200');
       if (res.ok) { const data = await res.json(); setContacts(Array.isArray(data) ? data : data.contacts || []); }
-    } catch { /* ignore */ }
+    } catch (err) { console.error('[crm-tab]', err); }
   }, []);
 
   useEffect(() => { loadDeals(); loadContacts(); }, [loadDeals, loadContacts]);
@@ -1211,14 +1211,14 @@ function CampaignsSection({ client }: { client: AgencyClient }) {
     try {
       const res = await fetch(`/api/agency/clients/${client.id}/email/campaigns`);
       if (res.ok) { const data = await res.json(); setCampaigns(Array.isArray(data) ? data : data.campaigns || []); }
-    } catch { /* ignore */ } finally { setLoading(false); }
+    } catch (err) { console.error('[crm-tab]', err); } finally { setLoading(false); }
   }, [client.id]);
 
   const loadTemplates = useCallback(async () => {
     try {
       const res = await fetch(`/api/agency/clients/${client.id}/email/templates`);
       if (res.ok) { const data = await res.json(); setTemplates(Array.isArray(data) ? data : data.templates || []); }
-    } catch { /* ignore */ }
+    } catch (err) { console.error('[crm-tab]', err); }
   }, [client.id]);
 
   useEffect(() => { loadCampaigns(); loadTemplates(); }, [loadCampaigns, loadTemplates]);
@@ -1471,7 +1471,7 @@ function TasksSection() {
       else if (filter !== 'all') params.set('status', 'pending');
       const res = await fetch(`/api/agency/crm/tasks?${params}`);
       if (res.ok) { const data = await res.json(); setTasks(Array.isArray(data) ? data : data.tasks || []); }
-    } catch { /* ignore */ } finally { setLoading(false); }
+    } catch (err) { console.error('[crm-tab]', err); } finally { setLoading(false); }
   }, [filter]);
 
   useEffect(() => { loadTasks(); }, [loadTasks]);
@@ -1664,7 +1664,7 @@ function AnalyticsSection() {
         ]);
         if (mounted && aRes.ok) setAnalytics(await aRes.json());
         if (mounted && fRes.ok) setFeed(await fRes.json());
-      } catch { /* ignore */ } finally { if (mounted) setLoading(false); }
+      } catch (err) { console.error('[crm-tab]', err); } finally { if (mounted) setLoading(false); }
     })();
     return () => { mounted = false; };
   }, []);
@@ -1773,7 +1773,7 @@ function ActivitySection() {
     try {
       const res = await fetch('/api/agency/crm/feed');
       if (res.ok) setFeed(await res.json());
-    } catch { /* ignore */ } finally { setLoading(false); }
+    } catch (err) { console.error('[crm-tab]', err); } finally { setLoading(false); }
   }, []);
 
   useEffect(() => { loadFeed(); }, [loadFeed]);

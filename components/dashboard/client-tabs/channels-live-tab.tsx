@@ -61,7 +61,9 @@ export default function ChannelsLiveTab({
       });
       setWidgetSaved(true);
       setTimeout(() => setWidgetSaved(false), 2000);
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.error('[channels] widget save failed:', err);
+    }
     setSavingWidget(false);
   };
 

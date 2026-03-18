@@ -9,13 +9,18 @@ async function getAgencyId(userId: string): Promise<string | null> {
 }
 
 export async function GET() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const agencyId = await getAgencyId(user.id);
-  if (!agencyId) return NextResponse.json({ error: 'No agency' }, { status: 404 });
+    const agencyId = await getAgencyId(user.id);
+    if (!agencyId) return NextResponse.json({ error: 'No agency' }, { status: 404 });
 
-  const feed = await getCommandFeed(agencyId);
-  return NextResponse.json(feed);
+    const feed = await getCommandFeed(agencyId);
+    return NextResponse.json(feed);
+  } catch (err) {
+    console.error('[crm/feed] GET error:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 }

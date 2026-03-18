@@ -77,7 +77,7 @@ export default function ReferralShareWidget({ agencyId, referralCount, creditsEa
               href={linkedInUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-xs font-semibold bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition"
+              className="flex items-center gap-1.5 text-xs font-semibold bg-indigo-600 text-white px-3 py-2 rounded-lg hover:bg-indigo-700 transition"
             >
               <Share2 className="h-3 w-3" /> LinkedIn
             </a>

@@ -973,13 +973,13 @@ function ConversationsTab({ client }: { client: AgencyClient }) {
 
   const loadConversations = useCallback(() => {
     fetch(`/api/agency/clients/${client.id}/conversations`)
-      .then(r => r.json())
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
       .then(d => {
         if (d.migrationRequired) { setMigrationRequired(true); return; }
         setConversations(d.conversations || []);
         setTotal(d.total ?? (d.conversations || []).length);
       })
-      .catch(() => {})
+      .catch((err) => console.error('[conversations] load failed:', err))
       .finally(() => setLoading(false));
   }, [client.id]);
 
@@ -1235,7 +1235,7 @@ function ChannelsTab({ client, onTabChange }: { client: AgencyClient; onTabChang
   const saveWidgetAppearance = async () => {
     setSavingWidget(true);
     try {
-      await fetch(`/api/agency/clients/${client.id}`, {
+      const res = await fetch(`/api/agency/clients/${client.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1247,9 +1247,12 @@ function ChannelsTab({ client, onTabChange }: { client: AgencyClient; onTabChang
           },
         }),
       });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setWidgetSaved(true);
       setTimeout(() => setWidgetSaved(false), 2000);
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.error('[widget] save failed:', err);
+    }
     setSavingWidget(false);
   };
 

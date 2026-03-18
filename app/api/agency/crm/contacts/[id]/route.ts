@@ -11,58 +11,73 @@ async function getAgencyId(userId: string): Promise<string | null> {
 
 // GET /api/agency/crm/contacts/[id] — Contact detail + timeline
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const agencyId = await getAgencyId(user.id);
-  if (!agencyId) return NextResponse.json({ error: 'No agency' }, { status: 404 });
+    const agencyId = await getAgencyId(user.id);
+    if (!agencyId) return NextResponse.json({ error: 'No agency' }, { status: 404 });
 
-  const { id } = await params;
-  const contact = await getContactById(agencyId, id);
-  if (!contact) return NextResponse.json({ error: 'Contact not found' }, { status: 404 });
+    const { id } = await params;
+    const contact = await getContactById(agencyId, id);
+    if (!contact) return NextResponse.json({ error: 'Contact not found' }, { status: 404 });
 
-  const activities = await getTimeline(agencyId, id, 50);
+    const activities = await getTimeline(agencyId, id, 50);
 
-  // Get deals for this contact
-  const svc = createServiceClientWithoutCookies();
-  const { data: deals } = await svc
-    .from('crm_deals')
-    .select('*')
-    .eq('agency_id', agencyId)
-    .eq('contact_id', id)
-    .order('created_at', { ascending: false });
+    // Get deals for this contact
+    const svc = createServiceClientWithoutCookies();
+    const { data: deals } = await svc
+      .from('crm_deals')
+      .select('*')
+      .eq('agency_id', agencyId)
+      .eq('contact_id', id)
+      .order('created_at', { ascending: false });
 
-  return NextResponse.json({ ...contact, activities, deals: deals || [] });
+    return NextResponse.json({ ...contact, activities, deals: deals || [] });
+  } catch (err) {
+    console.error('[crm/contacts/id] GET error:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 }
 
 // PATCH /api/agency/crm/contacts/[id] — Update contact
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const agencyId = await getAgencyId(user.id);
-  if (!agencyId) return NextResponse.json({ error: 'No agency' }, { status: 404 });
+    const agencyId = await getAgencyId(user.id);
+    if (!agencyId) return NextResponse.json({ error: 'No agency' }, { status: 404 });
 
-  const { id } = await params;
-  const body = await req.json();
-  const updated = await updateContact(agencyId, id, body);
-  if (!updated) return NextResponse.json({ error: 'Update failed' }, { status: 500 });
-  return NextResponse.json(updated);
+    const { id } = await params;
+    const body = await req.json();
+    const updated = await updateContact(agencyId, id, body);
+    if (!updated) return NextResponse.json({ error: 'Update failed' }, { status: 500 });
+    return NextResponse.json(updated);
+  } catch (err) {
+    console.error('[crm/contacts/id] PATCH error:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 }
 
 // DELETE /api/agency/crm/contacts/[id]
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const agencyId = await getAgencyId(user.id);
-  if (!agencyId) return NextResponse.json({ error: 'No agency' }, { status: 404 });
+    const agencyId = await getAgencyId(user.id);
+    if (!agencyId) return NextResponse.json({ error: 'No agency' }, { status: 404 });
 
-  const { id } = await params;
-  const ok = await deleteContact(agencyId, id);
-  if (!ok) return NextResponse.json({ error: 'Delete failed' }, { status: 500 });
-  return NextResponse.json({ ok: true });
+    const { id } = await params;
+    const ok = await deleteContact(agencyId, id);
+    if (!ok) return NextResponse.json({ error: 'Delete failed' }, { status: 500 });
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error('[crm/contacts/id] DELETE error:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 }

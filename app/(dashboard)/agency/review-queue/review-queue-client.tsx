@@ -32,13 +32,18 @@ export function ReviewQueueClient() {
   const [showSettings, setShowSettings] = useState(false);
 
   const fetchQueue = useCallback(async () => {
-    const res = await fetch('/api/agency/review-queue');
-    if (res.ok) {
-      const data = await res.json();
-      setItems(data.items || []);
-      setSettings(data.settings || { enabled: false, client_ids: [] });
+    try {
+      const res = await fetch('/api/agency/review-queue');
+      if (res.ok) {
+        const data = await res.json();
+        setItems(data.items || []);
+        setSettings(data.settings || { enabled: false, client_ids: [] });
+      }
+    } catch (err) {
+      console.error('[review-queue] fetch error:', err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => { fetchQueue(); }, [fetchQueue]);

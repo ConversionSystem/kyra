@@ -1,0 +1,116 @@
+You are continuing a full end-to-end audit of Kyra — an AI Workforce Platform for agencies (Next.js, Supabase, Tailwind CSS).
+
+## CURRENT STATE
+You are already on branch: audit/full-platform-audit-mar18
+Previous session already fixed 13 files:
+- client-detail-view.tsx
+- crm/contacts/[id]/contact-detail.tsx
+- crm/contacts/contacts-list.tsx
+- review-queue/review-queue-client.tsx
+- settings/webhooks/webhook-settings-client.tsx
+- app/api/agency/conversations/route.ts
+- app/api/agency/crm/contacts/[id]/route.ts
+- app/api/agency/crm/feed/route.ts
+- components/dashboard/client-tabs/channels-live-tab.tsx
+- components/dashboard/client-tabs/crm-tab.tsx
+- components/dashboard/client-tabs/website-tab.tsx
+- components/dashboard/referral-share-widget.tsx
+- components/ui/switch.tsx
+
+## YOUR TASK
+1. First: stash or commit the current uncommitted changes with: git add -A && git commit -m "audit: partial fixes - CRM, conversations, channels, review queue"
+2. Then continue auditing ALL remaining areas that haven't been fixed yet
+
+## AREAS TO AUDIT (go through each one)
+
+### A. CLIENT LIST
+- app/(dashboard)/agency/clients/page.tsx — loading state, empty state, error state, bulk actions working
+
+### B. CLIENT CREATION
+- app/(dashboard)/agency/clients/new/page.tsx — form validation, error handling, success redirect
+
+### C. CLIENT DETAIL TABS (read client-detail-view.tsx to see current tab structure, then check each tab component):
+- components/dashboard/client-tabs/ai-personality-tab.tsx (or similar name)
+- components/dashboard/client-tabs/ai-templates-tab.tsx
+- components/dashboard/client-tabs/ai-teams-tab.tsx
+- components/dashboard/client-tabs/secrets-vault-tab.tsx
+- components/dashboard/client-tabs/skills-tab.tsx
+- components/dashboard/client-tabs/conversations-tab.tsx (already touched channels-live-tab and crm-tab)
+- components/dashboard/client-tabs/usage-analytics-tab.tsx (or similar)
+- components/dashboard/client-tabs/settings-tab.tsx
+
+### D. BILLING & CREDITS
+- app/(dashboard)/agency/billing/page.tsx + any client components
+- app/(dashboard)/agency/credits/page.tsx + any client components
+- Check: are loading states present? Are Stripe errors handled gracefully?
+
+### E. REFERRALS
+- app/(dashboard)/agency/referrals/ — check referral dashboard, copy link, stats
+
+### F. PIPELINE
+- app/(dashboard)/agency/pipelines/ — check all 5 pipeline stages, lead cards, AI closer tab
+
+### G. SETTINGS
+- app/(dashboard)/agency/settings/page.tsx — check profile save, branding, danger zone
+- app/(dashboard)/agency/api-keys/ — BYOK key management
+
+### H. SECONDARY PAGES
+- app/(dashboard)/agency/channels/page.tsx
+- app/(dashboard)/agency/widget/ — embed code display
+- app/(dashboard)/agency/templates/ — template gallery
+- app/(dashboard)/agency/performance/
+- app/(dashboard)/agency/usage/
+- app/(dashboard)/agency/revenue/
+- app/(dashboard)/agency/autopilot/
+- app/(dashboard)/agency/review-queue/ (already partly fixed)
+- app/(dashboard)/agency/ai-model/
+- app/(dashboard)/agency/agents/
+- app/(dashboard)/agency/voice/
+- app/(dashboard)/agency/automations/
+- app/(dashboard)/agency/ai-setup/
+
+## FOR EACH AREA CHECK:
+
+### Bugs
+- Missing loading states — add skeleton loaders (animate-pulse) or spinners
+- Missing error states — show error message with retry option
+- Missing empty states — icon + message + CTA button
+- Missing try/catch on API calls in client components
+- Forms missing validation (required fields, error messages)
+- getSession() usage → must use getUser() in API routes (security)
+- Fire-and-forget DB writes → must be awaited
+- Wrong API route paths
+
+### Branding (ENFORCE STRICTLY)
+- Sidebar: bg-gray-900 ALWAYS — never color overrides
+- Primary buttons: bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg
+- Danger: bg-red-600 hover:bg-red-700
+- Status badges: green=active, amber=warning/not deployed, red=error
+- Cards: rounded-xl border border-gray-200 shadow-sm (light) or border-gray-700 (dark)
+- Empty states: must have icon + message + action button
+- Loading: skeleton (animate-pulse bg-gray-200 rounded) preferred over plain spinner
+- Page headers: h1 text-2xl font-bold + subtitle text-sm text-gray-500
+- Consistent gap-4 or gap-6 in grids, p-6 on cards
+
+### Navigation
+- All nav links work (no broken routes)
+- Back buttons work
+- Breadcrumbs correct
+- No duplicate nav paths to same content
+
+## FIXING RULES
+- Fix as you go
+- Do NOT change DB schema or add migrations
+- Do NOT touch Stripe prices or plan IDs
+- Do NOT reorder sidebar nav items
+- Commit every 20-25 fixes: git add -A && git commit -m "audit: fix [area] - [summary]"
+
+## FINAL STEPS (REQUIRED — do not skip)
+1. Run: npx tsc --noEmit
+2. Fix any TypeScript errors found
+3. Run: npm run build
+4. If build fails, fix errors and rebuild
+5. git add -A && git commit -m "audit: final fixes and TypeScript cleanup"
+6. git push -u origin audit/full-platform-audit-mar18
+7. gh pr create --title "Full Platform Audit Mar 18 - Bugs UX and Branding" --body "Comprehensive end-to-end audit. Fixed loading/error/empty states, TypeScript errors, auth security, CORS, branding consistency, navigation issues, duplicate content." --base main
+8. Run: openclaw system event --text "Done: Kyra full platform audit PR is ready - audit/full-platform-audit-mar18" --mode now
