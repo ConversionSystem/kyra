@@ -2,496 +2,486 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Trusted Networx × Kyra — AI-Powered Business Integration</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOW Assessment — Trusted Networx × Kyra AI</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
   *{margin:0;padding:0;box-sizing:border-box}
-  :root{--bg:#0a0a0f;--card:#12121a;--card-border:rgba(59,130,246,0.15);--text:#f1f1f4;--text-muted:#8b8b9e;--accent:#3b82f6;--accent-light:#60a5fa;--accent-glow:rgba(59,130,246,0.25);--green:#22c55e;--red:#ef4444;--amber:#f59e0b;--gradient-1:linear-gradient(135deg,#2563eb,#3b82f6);--gradient-2:linear-gradient(135deg,#3b82f6 0%,#06b6d4 100%)}
-  html,body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--text);overflow:hidden;height:100%;width:100%;-webkit-font-smoothing:antialiased}
-  .deck{height:100%;width:100%;position:relative;overflow:hidden}
-  .slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:2rem 1.5rem;opacity:0;transform:translateX(100%);transition:all .5s cubic-bezier(.4,0,.2,1);overflow-y:auto;-webkit-overflow-scrolling:touch}
-  .slide.active{opacity:1;transform:translateX(0)}.slide.prev{opacity:0;transform:translateX(-100%)}
-  .progress{position:fixed;top:0;left:0;height:3px;background:var(--gradient-1);transition:width .4s ease;z-index:100;border-radius:0 2px 2px 0}
-  .nav-dots{position:fixed;bottom:1.25rem;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:100}
-  .nav-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.2);transition:all .3s;cursor:pointer;border:none}
-  .nav-dot.active{background:var(--accent);width:20px;border-radius:3px}
-  .slide-counter{position:fixed;bottom:1.25rem;right:1.5rem;font-size:.7rem;color:var(--text-muted);z-index:100;font-variant-numeric:tabular-nums}
-  .nav-arrow{position:fixed;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:var(--text-muted);width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:100;transition:all .2s;font-size:1rem}
-  .nav-arrow:hover{background:rgba(59,130,246,.15);color:var(--accent-light);border-color:var(--accent)}
-  .nav-arrow.left{left:.75rem}.nav-arrow.right{right:.75rem}
-  @media(max-width:768px){.nav-arrow{display:none}.slide{padding:1.5rem 1.25rem}}
-  .eyebrow{font-size:.65rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--accent-light);margin-bottom:.75rem}
-  h1{font-size:clamp(1.75rem,6vw,3rem);font-weight:800;line-height:1.1;letter-spacing:-.03em}
-  h2{font-size:clamp(1.4rem,4.5vw,2.25rem);font-weight:700;line-height:1.15;letter-spacing:-.02em}
-  .subtitle{font-size:clamp(.9rem,2.5vw,1.1rem);color:var(--text-muted);line-height:1.5;margin-top:.75rem;font-weight:400}
-  .gradient-text{background:var(--gradient-1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-  .card{background:var(--card);border:1px solid var(--card-border);border-radius:16px;padding:1.25rem;margin-top:1rem}
-  .card-sm{background:var(--card);border:1px solid var(--card-border);border-radius:12px;padding:1rem}
-  .card-grid{display:grid;gap:.75rem;margin-top:1.25rem}
-  .card-grid-2{grid-template-columns:1fr 1fr}
-  .card-grid-3{grid-template-columns:1fr}
-  @media(min-width:500px){.card-grid-3{grid-template-columns:1fr 1fr 1fr}}
-  .icon-circle-sm{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0}
-  .badge{display:inline-flex;align-items:center;gap:4px;font-size:.65rem;font-weight:600;padding:3px 8px;border-radius:6px;text-transform:uppercase;letter-spacing:.05em}
-  .badge-red{background:rgba(239,68,68,.15);color:#f87171}.badge-green{background:rgba(34,197,94,.15);color:#4ade80}.badge-amber{background:rgba(245,158,11,.15);color:#fbbf24}.badge-blue{background:rgba(59,130,246,.15);color:#93c5fd}
-  .feature-list{list-style:none;margin-top:1rem}
-  .feature-list li{display:flex;align-items:flex-start;gap:.6rem;padding:.6rem 0;font-size:.85rem;color:var(--text-muted);line-height:1.4;border-bottom:1px solid rgba(255,255,255,.04)}
-  .feature-list li:last-child{border-bottom:none}
-  .check{color:var(--green);font-size:.8rem;margin-top:2px;flex-shrink:0}.cross{color:var(--red);font-size:.8rem;margin-top:2px;flex-shrink:0}
-  .flow-step{display:flex;align-items:flex-start;gap:.75rem;padding:.6rem 0}
-  .flow-num{width:28px;height:28px;border-radius:50%;background:var(--gradient-1);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0}
-  .flow-content h4{font-size:.85rem;font-weight:600;margin-bottom:.15rem}
-  .flow-content p{font-size:.75rem;color:var(--text-muted);line-height:1.4}
-  .worker-card{background:var(--card);border:1px solid var(--card-border);border-radius:14px;padding:1rem;display:flex;gap:.75rem;align-items:flex-start;margin-bottom:.6rem}
-  .worker-card h4{font-size:.85rem;font-weight:600;margin-bottom:.2rem}
-  .worker-card p{font-size:.72rem;color:var(--text-muted);line-height:1.4}
-  .slide-cover{text-align:center;justify-content:center;align-items:center}
-  .cover-tagline{font-size:clamp(.8rem,2vw,1rem);color:var(--text-muted);margin-top:1.5rem;font-weight:400}
-  .swipe-hint{position:fixed;bottom:3rem;left:50%;transform:translateX(-50%);font-size:.65rem;color:var(--text-muted);opacity:.5;z-index:100;animation:pulse 2s infinite}
-  @keyframes pulse{0%,100%{opacity:.3}50%{opacity:.7}}
-  .slide-scroll{max-height:calc(100vh - 6rem);overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:3rem}
-  .slide-scroll::-webkit-scrollbar{display:none}
-  .cta-button{display:inline-flex;align-items:center;gap:.5rem;padding:.85rem 1.75rem;background:var(--gradient-1);color:white;border:none;border-radius:12px;font-size:.9rem;font-weight:600;cursor:pointer;transition:all .2s;text-decoration:none;margin-top:1.5rem}
-  .cta-button:hover{transform:translateY(-1px);box-shadow:0 8px 24px var(--accent-glow)}
-  .mini-label{font-size:.65rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.35rem}
-  .highlight-box{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:12px;padding:1rem;margin-top:1rem}
-  .highlight-box-green{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:12px;padding:1rem;margin-top:1rem}
-  .highlight-box-blue{background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:12px;padding:1rem;margin-top:1rem}
-  .arch-box{background:rgba(59,130,246,.05);border:1px solid rgba(59,130,246,.15);border-radius:12px;padding:.75rem;text-align:center;font-size:.7rem;color:var(--text-muted)}
-  .arch-box strong{color:var(--text);font-weight:600}
-  .arch-arrow{text-align:center;color:rgba(59,130,246,.4);font-size:1.2rem;line-height:1}
+  html{scroll-behavior:smooth}
+  body{font-family:'Inter',-apple-system,sans-serif;background:#0a0a0f;color:#f1f1f4;-webkit-font-smoothing:antialiased;line-height:1.6}
+
+  .container{max-width:720px;margin:0 auto;padding:2rem 1.5rem 6rem}
+  @media(max-width:768px){.container{padding:1.5rem 1.25rem 5rem}}
+
+  /* Header */
+  .header{text-align:center;padding:3rem 0 2.5rem;border-bottom:1px solid rgba(59,130,246,.15)}
+  .header-badge{display:inline-flex;align-items:center;gap:6px;font-size:.65rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#60a5fa;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);border-radius:20px;padding:5px 14px;margin-bottom:1.25rem}
+  .header h1{font-size:clamp(1.6rem,5vw,2.4rem);font-weight:800;letter-spacing:-.03em;line-height:1.15}
+  .header .subtitle{color:#8b8b9e;font-size:.95rem;margin-top:.75rem}
+  .gradient-text{background:linear-gradient(135deg,#2563eb,#3b82f6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+
+  /* TOC */
+  .toc{background:#12121a;border:1px solid rgba(59,130,246,.12);border-radius:16px;padding:1.25rem 1.5rem;margin:2rem 0}
+  .toc-title{font-size:.7rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#60a5fa;margin-bottom:.75rem}
+  .toc a{display:block;font-size:.85rem;color:#8b8b9e;padding:.35rem 0;text-decoration:none;transition:color .2s}
+  .toc a:hover{color:#f1f1f4}
+  .toc a span{color:#3b82f6;margin-right:.5rem;font-weight:600}
+
+  /* Sections */
+  .section{margin-top:2.5rem;scroll-margin-top:2rem}
+  .section-label{font-size:.6rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:#60a5fa;margin-bottom:.5rem}
+  .section h2{font-size:clamp(1.2rem,3.5vw,1.6rem);font-weight:700;letter-spacing:-.02em;line-height:1.2;margin-bottom:.75rem}
+  .section p,.section li{font-size:.88rem;color:#a0a0b8;line-height:1.7}
+  .section p+p{margin-top:.75rem}
+
+  /* Cards */
+  .card{background:#12121a;border:1px solid rgba(59,130,246,.12);border-radius:14px;padding:1.25rem;margin-top:1rem}
+  .card-red{border-color:rgba(239,68,68,.2);background:rgba(239,68,68,.04)}
+  .card-green{border-color:rgba(34,197,94,.2);background:rgba(34,197,94,.04)}
+  .card-blue{border-color:rgba(59,130,246,.2);background:rgba(59,130,246,.04)}
+  .card-amber{border-color:rgba(245,158,11,.2);background:rgba(245,158,11,.04)}
+
+  /* Grade table */
+  .grade-table{width:100%;border-collapse:collapse;margin-top:.75rem;font-size:.8rem}
+  .grade-table th{text-align:left;color:#8b8b9e;font-weight:600;font-size:.65rem;letter-spacing:.08em;text-transform:uppercase;padding:.5rem .75rem;border-bottom:1px solid rgba(255,255,255,.06)}
+  .grade-table td{padding:.6rem .75rem;border-bottom:1px solid rgba(255,255,255,.03);color:#a0a0b8;vertical-align:top}
+  .grade-table tr:last-child td{border-bottom:none}
+
+  /* Badges */
+  .badge{display:inline-flex;align-items:center;font-size:.6rem;font-weight:700;padding:2px 8px;border-radius:5px;text-transform:uppercase;letter-spacing:.04em}
+  .badge-green{background:rgba(34,197,94,.15);color:#4ade80}
+  .badge-red{background:rgba(239,68,68,.15);color:#f87171}
+  .badge-amber{background:rgba(245,158,11,.15);color:#fbbf24}
+  .badge-blue{background:rgba(59,130,246,.15);color:#93c5fd}
+  .badge-gray{background:rgba(255,255,255,.08);color:#8b8b9e}
+
+  /* Lists */
+  .check-list{list-style:none;margin-top:.75rem}
+  .check-list li{display:flex;align-items:flex-start;gap:.6rem;padding:.45rem 0;font-size:.85rem;color:#a0a0b8;border-bottom:1px solid rgba(255,255,255,.03)}
+  .check-list li:last-child{border-bottom:none}
+  .check{color:#22c55e;flex-shrink:0;margin-top:2px}.cross{color:#ef4444;flex-shrink:0;margin-top:2px}
+
+  /* Comparison */
+  .vs-grid{display:grid;grid-template-columns:1fr auto auto;gap:.35rem;font-size:.78rem;margin-top:.75rem}
+  .vs-grid .label{color:#8b8b9e;padding:.45rem 0;border-bottom:1px solid rgba(255,255,255,.04)}
+  .vs-grid .col-head{text-align:center;font-weight:700;padding:.45rem 0;min-width:55px}
+  .vs-grid .cell{text-align:center;padding:.45rem 0;border-bottom:1px solid rgba(255,255,255,.04)}
+
+  /* Mini label */
+  .mini-label{font-size:.6rem;font-weight:700;color:#8b8b9e;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.35rem}
+
+  /* Divider */
+  .divider{height:1px;background:linear-gradient(90deg,transparent,rgba(59,130,246,.15),transparent);margin:2.5rem 0}
+
+  /* SOW item */
+  .sow-item{background:#12121a;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:1rem 1.25rem;margin-top:.75rem}
+  .sow-item h4{font-size:.85rem;font-weight:700;margin-bottom:.25rem;display:flex;align-items:center;gap:.5rem}
+  .sow-item p{font-size:.78rem;color:#8b8b9e;line-height:1.6}
+  .sow-item .detail{font-size:.72rem;color:#6b6b80;margin-top:.5rem;line-height:1.5;padding-top:.5rem;border-top:1px solid rgba(255,255,255,.04)}
+
+  /* CTA */
+  .cta-section{text-align:center;margin-top:3rem;padding:2.5rem 1.5rem;background:#12121a;border:1px solid rgba(59,130,246,.15);border-radius:20px}
+  .cta-button{display:inline-flex;align-items:center;gap:.5rem;padding:.85rem 2rem;background:linear-gradient(135deg,#2563eb,#3b82f6);color:white;border:none;border-radius:12px;font-size:.9rem;font-weight:600;cursor:pointer;transition:all .2s;text-decoration:none}
+  .cta-button:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(59,130,246,.25)}
+
+  /* Sticky nav */
+  .sticky-nav{position:fixed;top:0;left:0;right:0;z-index:50;backdrop-filter:blur(12px);background:rgba(10,10,15,.85);border-bottom:1px solid rgba(255,255,255,.05);padding:.6rem 1.5rem;display:flex;align-items:center;justify-content:space-between;transform:translateY(-100%);transition:transform .3s}
+  .sticky-nav.visible{transform:translateY(0)}
+  .sticky-nav .logo{font-size:.8rem;font-weight:700;color:#f1f1f4}
+  .sticky-nav .logo span{color:#3b82f6}
+  .sticky-nav a{font-size:.75rem;color:#60a5fa;text-decoration:none}
+
+  /* Footer */
+  .footer{text-align:center;padding:2rem 0;color:#4a4a5e;font-size:.7rem;border-top:1px solid rgba(255,255,255,.04);margin-top:3rem}
 </style>
 </head>
 <body>
-<div class="progress" id="progress"></div>
-<div class="deck" id="deck">
 
-  <!-- SLIDE 0: Cover -->
-  <div class="slide slide-cover active" data-slide="0">
-    <div style="font-size:2rem;margin-bottom:1rem;">🔗</div>
-    <h1>Your <span class="gradient-text">AI-Powered</span><br>Business Integration</h1>
-    <p class="cover-tagline">M365 · Fathom · Telegram · GitHub · Web Search<br>One platform. One dashboard. All connected.</p>
-    <p style="font-size:.7rem;color:var(--text-muted);margin-top:2rem;opacity:.6">Trusted Networx × Kyra AI</p>
-    <div class="swipe-hint">Swipe or tap arrow to continue →</div>
+<div class="sticky-nav" id="stickyNav">
+  <div class="logo">Kyra <span>×</span> Trusted Networx</div>
+  <a href="#cta">Get Started →</a>
+</div>
+
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-badge">🔍 SOW Assessment</div>
+    <h1>OpenClaw Deployment<br>& Integration <span class="gradient-text">Analysis</span></h1>
+    <p class="subtitle">Complete assessment of the MIX Networks SOW — what it covers,<br>what it misses, and how Kyra delivers it better.</p>
+    <p style="font-size:.72rem;color:#4a4a5e;margin-top:1.25rem">Prepared for Trusted Networx · March 2026</p>
   </div>
 
-  <!-- SLIDE 1: The SOW Problem -->
-  <div class="slide" data-slide="1">
-    <div class="slide-scroll">
-      <div class="eyebrow">⚠️ The Traditional Approach</div>
-      <h2>Custom dev projects <span class="gradient-text">break down</span></h2>
-      <p class="subtitle">Hiring a freelancer to build integrations from scratch means weeks of development, fragile code, and no ongoing support.</p>
-      <div class="card" style="margin-top:1rem;">
-        <div style="display:flex;align-items:center;gap:.6rem;padding:.5rem 0;border-bottom:1px solid rgba(255,255,255,.04)">
-          <span class="cross">✕</span><span style="font-size:.8rem;color:var(--text-muted)">4-8 weeks of custom development</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:.6rem;padding:.5rem 0;border-bottom:1px solid rgba(255,255,255,.04)">
-          <span class="cross">✕</span><span style="font-size:.8rem;color:var(--text-muted)">$8,000-13,000+ for a one-time build</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:.6rem;padding:.5rem 0;border-bottom:1px solid rgba(255,255,255,.04)">
-          <span class="cross">✕</span><span style="font-size:.8rem;color:var(--text-muted)">No ongoing maintenance — tokens expire, integrations break</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:.6rem;padding:.5rem 0;border-bottom:1px solid rgba(255,255,255,.04)">
-          <span class="cross">✕</span><span style="font-size:.8rem;color:var(--text-muted)">Contractor owns the IP — not you</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:.6rem;padding:.5rem 0">
-          <span class="cross">✕</span><span style="font-size:.8rem;color:var(--text-muted)">If something changes, you pay again to rebuild</span>
-        </div>
+  <!-- TABLE OF CONTENTS -->
+  <div class="toc">
+    <div class="toc-title">Contents</div>
+    <a href="#overview"><span>01</span> SOW Overview & Grade</a>
+    <a href="#line-by-line"><span>02</span> Line-by-Line Assessment</a>
+    <a href="#gaps"><span>03</span> What the SOW Misses</a>
+    <a href="#kyra"><span>04</span> How Kyra Delivers Each Item</a>
+    <a href="#security"><span>05</span> Security Assessment</a>
+    <a href="#comparison"><span>06</span> Custom Dev vs. Kyra Platform</a>
+    <a href="#timeline"><span>07</span> Timeline & Delivery</a>
+    <a href="#risks"><span>08</span> Risk Analysis</a>
+    <a href="#recommendation"><span>09</span> Recommendation</a>
+  </div>
+
+  <!-- 01: OVERVIEW -->
+  <div class="section" id="overview">
+    <div class="section-label">01</div>
+    <h2>SOW Overview & Grade</h2>
+    <p>The Statement of Work proposes deploying OpenClaw and integrating it with Microsoft 365 (Outlook, OneDrive, Teams), Fathom, Telegram, Brave Search, and GitHub. The contractor (Mani via MIX Networks) structures it as 3 milestones with blank timelines and pricing.</p>
+
+    <div class="card">
+      <div class="mini-label">Overall Assessment</div>
+      <table class="grade-table">
+        <tr><th>Category</th><th>Grade</th><th>Notes</th></tr>
+        <tr><td style="color:#f1f1f4;font-weight:500">Technical Scope</td><td><span class="badge badge-amber">C+</span></td><td>Mixes trivial tasks with genuinely hard work — treats them as equal</td></tr>
+        <tr><td style="color:#f1f1f4;font-weight:500">Architecture Understanding</td><td><span class="badge badge-red">D</span></td><td>Treats OpenClaw like a custom build; doesn't understand it's a product</td></tr>
+        <tr><td style="color:#f1f1f4;font-weight:500">Security Requirements</td><td><span class="badge badge-green">B+</span></td><td>OAuth, encryption, rate limiting, logging — solid list</td></tr>
+        <tr><td style="color:#f1f1f4;font-weight:500">Milestone Structure</td><td><span class="badge badge-amber">C</span></td><td>3 milestones is reasonable, but timelines and pricing are blank</td></tr>
+        <tr><td style="color:#f1f1f4;font-weight:500">Acceptance Criteria</td><td><span class="badge badge-green">B</span></td><td>9 testable criteria — specific and measurable</td></tr>
+        <tr><td style="color:#f1f1f4;font-weight:500">IP & Legal</td><td><span class="badge badge-red">D</span></td><td>IP belongs to MIX Networks, not the client — major red flag</td></tr>
+        <tr><td style="color:#f1f1f4;font-weight:500">Maintenance</td><td><span class="badge badge-red">F</span></td><td>"Not included" — integrations will break within months</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- 02: LINE BY LINE -->
+  <div class="section" id="line-by-line">
+    <div class="section-label">02</div>
+    <h2>Line-by-Line Assessment</h2>
+    <p>Each SOW deliverable graded on complexity, accuracy, and whether it's being over- or under-scoped.</p>
+
+    <div class="sow-item">
+      <h4>A. OpenClaw Deployment <span class="badge badge-green">Easy</span></h4>
+      <p>"Install or rebuild OpenClaw. Fix all configuration issues. Confirm API and gateway connections work."</p>
+      <div class="detail">
+        <strong style="color:#4ade80">Reality:</strong> OpenClaw installs in one command (<code style="color:#60a5fa">npm install -g openclaw</code> or Docker). Configuration is a single JSON file. Gateway auto-starts. This is 30 minutes of work being billed as an entire milestone.
+        <br><br><strong style="color:#60a5fa">On Kyra:</strong> Auto-provisioned container at account creation. Zero setup required.
       </div>
-      <div class="highlight-box-blue" style="margin-top:.75rem;">
-        <p style="font-size:.75rem;color:var(--text-muted);line-height:1.5;">
-          <strong style="color:var(--accent-light);">The real question:</strong> Why build custom code when a <strong style="color:var(--text)">managed AI platform</strong> can connect everything in days, not months?
-        </p>
+    </div>
+
+    <div class="sow-item">
+      <h4>B. Microsoft 365 Integration <span class="badge badge-red">Hard</span></h4>
+      <p>"Connect OpenClaw to Microsoft 365 using Graph API: Outlook Email, OneDrive, Teams."</p>
+      <div class="detail">
+        <strong style="color:#f87171">Reality:</strong> This is the hardest item in the entire SOW. OpenClaw has no native M365 plugin. Building full Graph API integration requires: Azure AD app registration, OAuth2 flows, token refresh logic, permission scoping, and custom code for each service.
+        <br><br><strong style="color:#f87171">Estimated effort:</strong> 40-80 hours of custom development.
+        <br><br>The SOW gives this ONE LINE — "M365 integration complete" — for what is realistically weeks of work. If the contractor prices this cheaply, corners will be cut.
+        <br><br><strong style="color:#60a5fa">On Kyra:</strong> 3 dedicated AI workers (Outlook, OneDrive, Teams) sharing one Azure AD app. Each worker has specific behaviors — email triage, file management, channel monitoring. Token refresh handled automatically by the platform.
+      </div>
+    </div>
+
+    <div class="sow-item">
+      <h4>C. Fathom Integration <span class="badge badge-amber">Medium</span></h4>
+      <p>"Connect to Fathom to pull meeting transcripts, summaries, and action items."</p>
+      <div class="detail">
+        <strong style="color:#fbbf24">Reality:</strong> Fathom's API is limited/in beta. Most reliable method is webhook or email-based — Fathom sends summary after each meeting, integration parses it. "Structured data (JSON)" output requires custom AI parsing since Fathom outputs prose, not JSON.
+        <br><br><strong style="color:#fbbf24">Estimated effort:</strong> 15-25 hours.
+        <br><br><strong style="color:#60a5fa">On Kyra:</strong> AI worker receives meeting data via webhook, email forward, or API. Extracts attendees, decisions, action items with owners and deadlines. Outputs structured JSON. Cross-posts summaries to Teams. Follows up on overdue action items.
+      </div>
+    </div>
+
+    <div class="sow-item">
+      <h4>D. Telegram Bot <span class="badge badge-green">Trivial</span></h4>
+      <p>"Set up a secure Telegram bot. Handle inbound and outbound messages. Token rotation, encrypted storage, rate-limit protection."</p>
+      <div class="detail">
+        <strong style="color:#4ade80">Reality:</strong> Telegram is a native OpenClaw channel plugin. Setup: create bot via @BotFather → paste token into config. Done. Encrypted storage, rate limiting, and message handling are all built into the platform.
+        <br><br><strong style="color:#4ade80">Actual effort:</strong> 5 minutes.
+        <br><br>The SOW describes this as if it requires custom security work. It doesn't — it's a config entry.
+        <br><br><strong style="color:#60a5fa">On Kyra:</strong> Native channel. Paste bot token in dashboard. Instant.
+      </div>
+    </div>
+
+    <div class="sow-item">
+      <h4>E. Web Search <span class="badge badge-green">Trivial</span></h4>
+      <p>"Integrate Brave Search API (or equivalent) for live search. Content retrieval, safe scraping controls, request throttling."</p>
+      <div class="detail">
+        <strong style="color:#4ade80">Reality:</strong> Web search is a built-in OpenClaw tool. Add Brave or Perplexity API key → search works. Content retrieval, throttling, and safe scraping are all platform features.
+        <br><br><strong style="color:#4ade80">Actual effort:</strong> 2 minutes.
+        <br><br><strong style="color:#60a5fa">On Kyra:</strong> Built-in <code style="color:#60a5fa">web_search</code> tool. Add API key in Secrets Vault. Done.
+      </div>
+    </div>
+
+    <div class="sow-item">
+      <h4>F. GitHub Integration <span class="badge badge-green">Easy</span></h4>
+      <p>"Support branch creation, commits, pull requests, GitHub Actions triggers, and automated deployments."</p>
+      <div class="detail">
+        <strong style="color:#4ade80">Reality:</strong> OpenClaw has <code style="color:#60a5fa">gh</code> CLI pre-installed. Authenticate with a personal access token and every GitHub operation works immediately — branches, commits, PRs, Actions triggers, deployment monitoring.
+        <br><br><strong style="color:#4ade80">Actual effort:</strong> 5 minutes to authenticate.
+        <br><br><strong style="color:#60a5fa">On Kyra:</strong> Add GitHub token to Secrets Vault. AI worker handles all git operations via natural language commands.
       </div>
     </div>
   </div>
 
-  <!-- SLIDE 2: Kyra Solution Overview -->
-  <div class="slide" data-slide="2">
-    <div class="slide-scroll">
-      <div class="eyebrow">💡 The Kyra Approach</div>
-      <h2>6 AI workers.<br><span class="gradient-text">One dashboard.</span></h2>
-      <p class="subtitle">Each worker handles one integration — trained on your business, running autonomously, managed for you.</p>
-      <div style="margin-top:1.25rem;">
-        <div class="worker-card">
-          <div class="icon-circle-sm" style="background:rgba(59,130,246,.15)">📧</div>
-          <div><h4>Outlook Worker</h4><p>Read, triage, draft replies, manage folders — runs every 15 min</p></div>
-        </div>
-        <div class="worker-card">
-          <div class="icon-circle-sm" style="background:rgba(34,197,94,.15)">📁</div>
-          <div><h4>OneDrive Worker</h4><p>Upload, download, share, organize files — via chat or automation</p></div>
-        </div>
-        <div class="worker-card">
-          <div class="icon-circle-sm" style="background:rgba(168,85,247,.15)">💬</div>
-          <div><h4>Teams Worker</h4><p>Monitor channels, post updates, reply to mentions, cross-post</p></div>
-        </div>
-        <div class="worker-card">
-          <div class="icon-circle-sm" style="background:rgba(245,158,11,.15)">🎙️</div>
-          <div><h4>Fathom Worker</h4><p>Parse transcripts → extract action items → structured output</p></div>
-        </div>
-        <div class="worker-card">
-          <div class="icon-circle-sm" style="background:rgba(6,182,212,.15)">✈️</div>
-          <div><h4>Telegram Bot</h4><p>Command center — talk to any worker, get alerts, manage on the go</p></div>
-        </div>
-        <div class="worker-card">
-          <div class="icon-circle-sm" style="background:rgba(239,68,68,.15)">🔧</div>
-          <div><h4>GitHub Worker</h4><p>Commits, PRs, deploy triggers, CI monitoring — all automated</p></div>
-        </div>
+  <div class="divider"></div>
+
+  <!-- 03: GAPS -->
+  <div class="section" id="gaps">
+    <div class="section-label">03</div>
+    <h2>What the SOW Misses</h2>
+    <p>Critical gaps that will cause problems after delivery — things the SOW doesn't mention but the system needs.</p>
+
+    <div class="card card-red">
+      <ul class="check-list">
+        <li><span class="cross">✕</span><strong style="color:#f1f1f4">No ongoing maintenance.</strong> OAuth tokens expire. APIs change. Without maintenance, integrations will break silently within months. The SOW explicitly excludes this.</li>
+        <li><span class="cross">✕</span><strong style="color:#f1f1f4">No token refresh logic.</strong> M365 OAuth tokens expire every 60-90 minutes. The SOW doesn't mention refresh handling. Without it, email/OneDrive/Teams will stop working regularly.</li>
+        <li><span class="cross">✕</span><strong style="color:#f1f1f4">No health monitoring.</strong> If the system goes down at 2am, who knows? No uptime monitoring, no auto-restart, no alerting mentioned anywhere.</li>
+        <li><span class="cross">✕</span><strong style="color:#f1f1f4">No AI behavior configuration.</strong> The SOW connects pipes — it doesn't make the system intelligent. There's no mention of how the AI should triage emails, what to do with meeting transcripts, or how to handle exceptions.</li>
+        <li><span class="cross">✕</span><strong style="color:#f1f1f4">No backup or disaster recovery.</strong> If the VPS dies, everything is lost. No backup strategy mentioned.</li>
+        <li><span class="cross">✕</span><strong style="color:#f1f1f4">IP goes to MIX Networks, not client.</strong> Section 7 states: "All work product belongs to MIX Networks upon payment." The client pays but doesn't own the code. If they want changes later, they need MIX Networks' permission.</li>
+        <li><span class="cross">✕</span><strong style="color:#f1f1f4">No scalability plan.</strong> What happens when you add more integrations? Each one is a new SOW, new negotiation, new development cycle.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- 04: KYRA -->
+  <div class="section" id="kyra">
+    <div class="section-label">04</div>
+    <h2>How Kyra Delivers Each SOW Item</h2>
+
+    <div class="card">
+      <table class="grade-table">
+        <tr><th>SOW Item</th><th>SOW Approach</th><th>Kyra</th></tr>
+        <tr>
+          <td style="color:#f1f1f4;font-weight:500">OpenClaw Deploy</td>
+          <td>Manual install on VPS<br><span class="badge badge-amber">Days</span></td>
+          <td>Auto-provisioned container<br><span class="badge badge-green">Instant</span></td>
+        </tr>
+        <tr>
+          <td style="color:#f1f1f4;font-weight:500">Outlook Email</td>
+          <td>Custom Graph API code<br><span class="badge badge-red">40+ hrs</span></td>
+          <td>AI worker: triage, draft, digest<br><span class="badge badge-blue">Week 1-2</span></td>
+        </tr>
+        <tr>
+          <td style="color:#f1f1f4;font-weight:500">OneDrive</td>
+          <td>Custom file operations<br><span class="badge badge-red">20+ hrs</span></td>
+          <td>Natural language file management<br><span class="badge badge-blue">Week 2</span></td>
+        </tr>
+        <tr>
+          <td style="color:#f1f1f4;font-weight:500">Teams</td>
+          <td>Custom messaging code<br><span class="badge badge-red">25+ hrs</span></td>
+          <td>Channel monitor + auto-reply<br><span class="badge badge-blue">Week 2</span></td>
+        </tr>
+        <tr>
+          <td style="color:#f1f1f4;font-weight:500">Fathom</td>
+          <td>API/webhook integration<br><span class="badge badge-amber">20+ hrs</span></td>
+          <td>AI parsing → JSON + Teams post<br><span class="badge badge-blue">Week 2-3</span></td>
+        </tr>
+        <tr>
+          <td style="color:#f1f1f4;font-weight:500">Telegram</td>
+          <td>Custom bot development<br><span class="badge badge-amber">Billed</span></td>
+          <td>Native channel — paste token<br><span class="badge badge-green">5 min</span></td>
+        </tr>
+        <tr>
+          <td style="color:#f1f1f4;font-weight:500">Web Search</td>
+          <td>Brave API integration<br><span class="badge badge-amber">Billed</span></td>
+          <td>Built-in tool — add API key<br><span class="badge badge-green">2 min</span></td>
+        </tr>
+        <tr>
+          <td style="color:#f1f1f4;font-weight:500">GitHub</td>
+          <td>Custom git operations<br><span class="badge badge-amber">Billed</span></td>
+          <td>Pre-installed gh CLI<br><span class="badge badge-green">5 min</span></td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="card card-green" style="margin-top:1rem">
+      <div class="mini-label" style="color:#4ade80">Key difference</div>
+      <p style="font-size:.82rem;line-height:1.6">The SOW builds <strong style="color:#f1f1f4">pipes</strong> — code that moves data from A to B. Kyra deploys <strong style="color:#f1f1f4">AI workers</strong> — intelligent agents that receive data, think about it (who sent this email? is it urgent? what should we do?), and act. Workers can be reconfigured in minutes without writing code.</p>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- 05: SECURITY -->
+  <div class="section" id="security">
+    <div class="section-label">05</div>
+    <h2>Security Assessment</h2>
+    <p>The SOW's security section is its strongest part. Here's how each requirement maps to Kyra.</p>
+
+    <div class="card">
+      <ul class="check-list">
+        <li><span class="check">✓</span><strong style="color:#f1f1f4">OAuth-based authentication</strong> — Azure AD for M365, token-based for others. Kyra handles OAuth flows and token refresh automatically.</li>
+        <li><span class="check">✓</span><strong style="color:#f1f1f4">Credentials encrypted at rest</strong> — Kyra's Secrets Vault stores all API keys and tokens encrypted. Not in environment variables or plain config files.</li>
+        <li><span class="check">✓</span><strong style="color:#f1f1f4">Minimum necessary permissions</strong> — Each AI worker gets only the Graph API scopes it needs. Outlook worker can't access Teams. Teams worker can't access OneDrive.</li>
+        <li><span class="check">✓</span><strong style="color:#f1f1f4">Rate limiting on all API calls</strong> — Built into the Kyra gateway. Applies to all external requests automatically.</li>
+        <li><span class="check">✓</span><strong style="color:#f1f1f4">Action logging</strong> — Every operation logged with timestamps, actor, and context. Visible in the dashboard's conversation feed and analytics.</li>
+        <li><span class="check">✓</span><strong style="color:#f1f1f4">Isolated containers</strong> — Your instance runs in its own Docker container, not shared with other clients. Network-isolated, resource-limited.</li>
+        <li><span class="check">✓</span><strong style="color:#f1f1f4">Auto token refresh</strong> — <em>Not in the SOW but critical.</em> Kyra handles M365 token refresh before expiry so integrations never silently break.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- 06: COMPARISON -->
+  <div class="section" id="comparison">
+    <div class="section-label">06</div>
+    <h2>Custom Dev Project vs. Kyra Platform</h2>
+
+    <div class="card">
+      <div class="vs-grid">
+        <div class="label" style="font-weight:600;color:#f1f1f4"></div>
+        <div class="col-head" style="color:#f87171">Custom SOW</div>
+        <div class="col-head gradient-text">Kyra</div>
+
+        <div class="label">Deployment</div>
+        <div class="cell" style="color:#fbbf24">Days</div>
+        <div class="cell" style="color:#4ade80">Instant</div>
+
+        <div class="label">Time to first value</div>
+        <div class="cell" style="color:#fbbf24">4-8 weeks</div>
+        <div class="cell" style="color:#4ade80">Day 1</div>
+
+        <div class="label">Token refresh</div>
+        <div class="cell" style="color:#f87171">Not mentioned</div>
+        <div class="cell" style="color:#4ade80">Automatic</div>
+
+        <div class="label">Health monitoring</div>
+        <div class="cell" style="color:#f87171">None</div>
+        <div class="cell" style="color:#4ade80">24/7 + auto-restart</div>
+
+        <div class="label">Updates & patches</div>
+        <div class="cell" style="color:#f87171">Pay again</div>
+        <div class="cell" style="color:#4ade80">Included</div>
+
+        <div class="label">Modify behavior</div>
+        <div class="cell" style="color:#f87171">Code changes</div>
+        <div class="cell" style="color:#4ade80">Edit config</div>
+
+        <div class="label">Add new integrations</div>
+        <div class="cell" style="color:#f87171">New SOW</div>
+        <div class="cell" style="color:#4ade80">Add worker</div>
+
+        <div class="label" style="color:#f1f1f4;font-weight:600;border-top:1px solid rgba(255,255,255,.08);padding-top:.6rem">IP ownership</div>
+        <div class="cell" style="color:#f87171;font-weight:600;border-top:1px solid rgba(255,255,255,.08);padding-top:.6rem">MIX Networks</div>
+        <div class="cell" style="color:#4ade80;font-weight:600;border-top:1px solid rgba(255,255,255,.08);padding-top:.6rem">You</div>
       </div>
     </div>
   </div>
 
-  <!-- SLIDE 3: What's Built-In (Day 1) -->
-  <div class="slide" data-slide="3">
-    <div class="slide-scroll">
-      <div class="eyebrow">⚡ Day 1 — Ready Instantly</div>
-      <h2>Half the SOW is <span class="gradient-text">already built</span></h2>
-      <p class="subtitle">These aren't integrations to develop. They're platform features you turn on.</p>
-      <div class="card" style="margin-top:1rem;">
-        <div style="display:flex;align-items:center;gap:.6rem;padding:.5rem 0;border-bottom:1px solid rgba(255,255,255,.04)">
-          <span class="check">✓</span>
-          <span style="font-size:.8rem;color:var(--text);">OpenClaw Deployment</span>
-          <span class="badge badge-green" style="margin-left:auto">Auto</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:.6rem;padding:.5rem 0;border-bottom:1px solid rgba(255,255,255,.04)">
-          <span class="check">✓</span>
-          <span style="font-size:.8rem;color:var(--text);">Telegram Bot</span>
-          <span class="badge badge-green" style="margin-left:auto">5 min</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:.6rem;padding:.5rem 0;border-bottom:1px solid rgba(255,255,255,.04)">
-          <span class="check">✓</span>
-          <span style="font-size:.8rem;color:var(--text);">Web Search (Brave/Perplexity)</span>
-          <span class="badge badge-green" style="margin-left:auto">2 min</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:.6rem;padding:.5rem 0;border-bottom:1px solid rgba(255,255,255,.04)">
-          <span class="check">✓</span>
-          <span style="font-size:.8rem;color:var(--text);">GitHub Integration</span>
-          <span class="badge badge-green" style="margin-left:auto">5 min</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:.6rem;padding:.5rem 0;border-bottom:1px solid rgba(255,255,255,.04)">
-          <span class="check">✓</span>
-          <span style="font-size:.8rem;color:var(--text);">Encrypted Secrets Vault</span>
-          <span class="badge badge-green" style="margin-left:auto">Built in</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:.6rem;padding:.5rem 0;border-bottom:1px solid rgba(255,255,255,.04)">
-          <span class="check">✓</span>
-          <span style="font-size:.8rem;color:var(--text);">Rate Limiting & Action Logging</span>
-          <span class="badge badge-green" style="margin-left:auto">Built in</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:.6rem;padding:.5rem 0">
-          <span class="check">✓</span>
-          <span style="font-size:.8rem;color:var(--text);">Health Monitoring & Auto-Restart</span>
-          <span class="badge badge-green" style="margin-left:auto">Built in</span>
+  <div class="divider"></div>
+
+  <!-- 07: TIMELINE -->
+  <div class="section" id="timeline">
+    <div class="section-label">07</div>
+    <h2>Timeline & Delivery</h2>
+
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:.6rem;padding:.6rem 0;border-bottom:1px solid rgba(255,255,255,.06)">
+        <span class="badge badge-green">Week 1</span>
+        <div>
+          <div style="font-size:.82rem;font-weight:600;color:#f1f1f4">Platform live + Telegram + Search + GitHub</div>
+          <div style="font-size:.7rem;color:#8b8b9e">All platform-native features. Day 1 operational.</div>
         </div>
       </div>
-      <div class="highlight-box-green" style="margin-top:.75rem;">
-        <p style="font-size:.8rem;font-weight:600;color:var(--green)">6 of 8 SOW deliverables — live in under 15 minutes</p>
+      <div style="display:flex;align-items:center;gap:.6rem;padding:.6rem 0;border-bottom:1px solid rgba(255,255,255,.06)">
+        <span class="badge badge-blue">Week 1-2</span>
+        <div>
+          <div style="font-size:.82rem;font-weight:600;color:#f1f1f4">Outlook AI Worker</div>
+          <div style="font-size:.7rem;color:#8b8b9e">Azure AD registration + email triage + daily digest + draft replies</div>
+        </div>
       </div>
+      <div style="display:flex;align-items:center;gap:.6rem;padding:.6rem 0;border-bottom:1px solid rgba(255,255,255,.06)">
+        <span class="badge badge-blue">Week 2</span>
+        <div>
+          <div style="font-size:.82rem;font-weight:600;color:#f1f1f4">OneDrive + Teams Workers</div>
+          <div style="font-size:.7rem;color:#8b8b9e">Same Azure AD app, additional scopes. File ops + channel monitoring.</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:.6rem;padding:.6rem 0;border-bottom:1px solid rgba(255,255,255,.06)">
+        <span class="badge badge-blue">Week 2-3</span>
+        <div>
+          <div style="font-size:.82rem;font-weight:600;color:#f1f1f4">Fathom Integration</div>
+          <div style="font-size:.7rem;color:#8b8b9e">Webhook/email → AI parsing → structured JSON → Teams cross-post</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:.6rem;padding:.6rem 0">
+        <span class="badge badge-green">Week 3</span>
+        <div>
+          <div style="font-size:.82rem;font-weight:600;color:#f1f1f4">Testing + Documentation + Handover</div>
+          <div style="font-size:.7rem;color:#8b8b9e">End-to-end QA across all integrations</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card card-green" style="margin-top:.75rem">
+      <p style="font-size:.82rem;color:#a0a0b8;line-height:1.6"><strong style="color:#4ade80">Day 1:</strong> Working AI system with Telegram, web search, and GitHub. The M365 and Fathom workers follow in weeks — <strong style="color:#f1f1f4">not months</strong>.</p>
     </div>
   </div>
 
-  <!-- SLIDE 4: Outlook Worker -->
-  <div class="slide" data-slide="4">
-    <div class="slide-scroll">
-      <div class="eyebrow">📧 Worker 1</div>
-      <h2>Outlook <span class="gradient-text">Email Intelligence</span></h2>
-      <p class="subtitle">Not just "read and send." An AI worker that triages your inbox, drafts replies, and delivers a daily digest.</p>
-      <div class="card">
-        <p class="mini-label">Every 15 minutes, automatically</p>
-        <div class="flow-step">
-          <div class="flow-num">1</div>
-          <div class="flow-content"><h4>Scan unread emails</h4><p>Filters by sender, subject, urgency keywords</p></div>
-        </div>
-        <div class="flow-step">
-          <div class="flow-num">2</div>
-          <div class="flow-content"><h4>Categorize</h4><p>Urgent → Action needed → Informational → Spam</p></div>
-        </div>
-        <div class="flow-step">
-          <div class="flow-num">3</div>
-          <div class="flow-content"><h4>Draft replies</h4><p>"Action needed" emails get AI-drafted responses → queued for your approval</p></div>
-        </div>
-        <div class="flow-step">
-          <div class="flow-num">4</div>
-          <div class="flow-content"><h4>Organize</h4><p>Moves processed emails to appropriate folders automatically</p></div>
-        </div>
-        <div class="flow-step">
-          <div class="flow-num">5</div>
-          <div class="flow-content"><h4>Daily digest</h4><p>End-of-day summary to Telegram: "12 emails today. 3 need your attention."</p></div>
-        </div>
-      </div>
+  <div class="divider"></div>
+
+  <!-- 08: RISKS -->
+  <div class="section" id="risks">
+    <div class="section-label">08</div>
+    <h2>Risk Analysis</h2>
+    <p>Risks of proceeding with the SOW as written vs. using Kyra.</p>
+
+    <div class="card card-red">
+      <div class="mini-label" style="color:#f87171">SOW Risks</div>
+      <ul class="check-list">
+        <li><span class="cross">✕</span><strong style="color:#f1f1f4">Blank pricing + timeline.</strong> No way to evaluate cost or schedule. The contractor could stretch delivery indefinitely.</li>
+        <li><span class="cross">✕</span><strong style="color:#f1f1f4">Single point of failure.</strong> One contractor builds everything. If they leave, no one can maintain it.</li>
+        <li><span class="cross">✕</span><strong style="color:#f1f1f4">No maintenance = silent failures.</strong> OAuth tokens expire. APIs change. Without ongoing support, you'll discover things are broken when you need them most.</li>
+        <li><span class="cross">✕</span><strong style="color:#f1f1f4">IP lock-in.</strong> MIX Networks owns the code. Switching contractors or making changes requires their permission.</li>
+        <li><span class="cross">✕</span><strong style="color:#f1f1f4">Under-scoped M365.</strong> The hardest integration (40-80 hrs) gets one line in the SOW. This will either be delivered half-baked or blow the timeline.</li>
+      </ul>
+    </div>
+
+    <div class="card card-green" style="margin-top:.75rem">
+      <div class="mini-label" style="color:#4ade80">Kyra Mitigations</div>
+      <ul class="check-list">
+        <li><span class="check">✓</span><strong style="color:#f1f1f4">Managed infrastructure.</strong> Kyra handles uptime, updates, token refresh, and monitoring. Not dependent on a single contractor.</li>
+        <li><span class="check">✓</span><strong style="color:#f1f1f4">You own everything.</strong> Your data, your configuration, your workers. No IP lock-in.</li>
+        <li><span class="check">✓</span><strong style="color:#f1f1f4">Workers adapt without code.</strong> Change AI behavior by editing configuration — no developer needed.</li>
+        <li><span class="check">✓</span><strong style="color:#f1f1f4">Platform evolves.</strong> New features, new integrations, security patches — all included. Not a static one-time build.</li>
+      </ul>
     </div>
   </div>
 
-  <!-- SLIDE 5: OneDrive + Teams -->
-  <div class="slide" data-slide="5">
-    <div class="slide-scroll">
-      <div class="eyebrow">📁💬 Workers 2 & 3</div>
-      <h2>OneDrive + Teams<br><span class="gradient-text">via natural language</span></h2>
-      <p class="subtitle">Talk to your files and channels like you'd talk to an assistant.</p>
-      <div class="card-grid card-grid-2">
-        <div class="card-sm">
-          <p style="font-size:1.15rem;margin-bottom:.35rem">📁</p>
-          <h4 style="font-size:.8rem">OneDrive</h4>
-          <ul style="font-size:.68rem;color:var(--text-muted);margin-top:.3rem;padding-left:.8rem;line-height:1.6">
-            <li>"Upload this to Q1 Reports"</li>
-            <li>"Find the latest proposal"</li>
-            <li>"Share the March deck"</li>
-            <li>"Create a folder for Project X"</li>
-          </ul>
-        </div>
-        <div class="card-sm">
-          <p style="font-size:1.15rem;margin-bottom:.35rem">💬</p>
-          <h4 style="font-size:.8rem">Teams</h4>
-          <ul style="font-size:.68rem;color:var(--text-muted);margin-top:.3rem;padding-left:.8rem;line-height:1.6">
-            <li>Monitors channels for mentions</li>
-            <li>Posts meeting summaries</li>
-            <li>Replies to questions</li>
-            <li>Escalates urgent messages</li>
-          </ul>
-        </div>
-      </div>
-      <div class="highlight-box-blue" style="margin-top:.75rem;">
-        <p style="font-size:.75rem;color:var(--text-muted);line-height:1.5;">
-          <strong style="color:var(--accent-light);">One Azure AD app</strong> powers all three M365 workers. Register once, connect everything. Kyra handles token refresh automatically.
-        </p>
-      </div>
+  <div class="divider"></div>
+
+  <!-- 09: RECOMMENDATION -->
+  <div class="section" id="recommendation">
+    <div class="section-label">09</div>
+    <h2>Recommendation</h2>
+
+    <div class="card card-blue">
+      <p style="font-size:.88rem;color:#d0d0e0;line-height:1.7">The SOW covers the right integrations but approaches them as a custom development project. 5 of 8 deliverables (OpenClaw deployment, Telegram, web search, GitHub, security) are already built into the platform — they're configuration, not code.</p>
+      <p style="font-size:.88rem;color:#d0d0e0;line-height:1.7;margin-top:.75rem">The real work is Microsoft 365 and Fathom. On Kyra, these become AI workers with specific behaviors — not just API connections, but intelligent agents that triage emails, parse meetings, and manage files through natural language.</p>
+      <p style="font-size:.88rem;color:#d0d0e0;line-height:1.7;margin-top:.75rem">The critical gap in the SOW is maintenance. Without ongoing token refresh, health monitoring, and platform updates, the system will degrade. Kyra includes all of this as part of the platform — not as a separate contract negotiation.</p>
     </div>
   </div>
 
-  <!-- SLIDE 6: Fathom -->
-  <div class="slide" data-slide="6">
-    <div class="slide-scroll">
-      <div class="eyebrow">🎙️ Worker 4</div>
-      <h2>Fathom <span class="gradient-text">Meeting Intelligence</span></h2>
-      <p class="subtitle">Every meeting becomes structured data — decisions, action items, owners, deadlines. Automatically.</p>
-      <div class="card">
-        <p class="mini-label">After every meeting</p>
-        <div class="flow-step">
-          <div class="flow-num">1</div>
-          <div class="flow-content"><h4>Receive transcript</h4><p>Via Fathom webhook, email forward, or API — whichever works for your setup</p></div>
-        </div>
-        <div class="flow-step">
-          <div class="flow-num">2</div>
-          <div class="flow-content"><h4>AI extracts structured data</h4><p>Attendees, key topics, decisions made, action items with owners & deadlines</p></div>
-        </div>
-        <div class="flow-step">
-          <div class="flow-num">3</div>
-          <div class="flow-content"><h4>Cross-post to Teams</h4><p>Summary posted to the relevant channel — team stays in the loop without attending</p></div>
-        </div>
-        <div class="flow-step">
-          <div class="flow-num">4</div>
-          <div class="flow-content"><h4>Track action items</h4><p>Follow up with owners if tasks aren't completed by deadline</p></div>
-        </div>
-      </div>
-      <div class="card" style="margin-top:.75rem;">
-        <p class="mini-label">Example output</p>
-        <div style="background:rgba(59,130,246,.05);border-radius:8px;padding:.75rem;font-family:monospace;font-size:.65rem;color:var(--text-muted);line-height:1.6">
-          <span style="color:var(--accent-light)">Meeting:</span> Q1 Review — Client X<br>
-          <span style="color:var(--accent-light)">Decisions:</span> Approved new budget, delayed launch to April<br>
-          <span style="color:var(--accent-light)">Action:</span> John → Update timeline (due Mar 22)<br>
-          <span style="color:var(--accent-light)">Action:</span> Sarah → Send revised proposal (due Mar 20)
-        </div>
-      </div>
-    </div>
+  <!-- CTA -->
+  <div class="cta-section" id="cta">
+    <h2 style="font-size:clamp(1.2rem,3.5vw,1.5rem);font-weight:700;margin-bottom:.5rem">Ready to <span class="gradient-text">get started</span>?</h2>
+    <p style="font-size:.85rem;color:#8b8b9e;margin-bottom:1.5rem;max-width:400px;margin-left:auto;margin-right:auto">All 8 SOW deliverables. Managed infrastructure. AI workers that think, not just connect. Live in 2-3 weeks.</p>
+    <a href="https://kyra.conversionsystem.com/build" class="cta-button">Get Started →</a>
   </div>
 
-  <!-- SLIDE 7: Telegram Command Center -->
-  <div class="slide" data-slide="7">
-    <div class="slide-scroll">
-      <div class="eyebrow">✈️ Worker 5</div>
-      <h2>Telegram as your <span class="gradient-text">command center</span></h2>
-      <p class="subtitle">Talk to all your workers from one Telegram chat. Get alerts. Manage everything on the go.</p>
-      <div class="card">
-        <p class="mini-label">What you can do from Telegram</p>
-        <ul class="feature-list">
-          <li><span class="check">✓</span> "Check my unread emails" → Outlook worker responds</li>
-          <li><span class="check">✓</span> "Upload this file to OneDrive" → attach + send</li>
-          <li><span class="check">✓</span> "What happened in the 2pm meeting?" → Fathom worker responds</li>
-          <li><span class="check">✓</span> "Post the meeting summary to Teams #general" → done</li>
-          <li><span class="check">✓</span> "Search for competitors doing X" → web search results</li>
-          <li><span class="check">✓</span> "Create a PR for the homepage fix" → GitHub worker handles it</li>
-          <li><span class="check">✓</span> Real-time alerts: urgent emails, failed deploys, @mentions</li>
-        </ul>
-      </div>
-      <div class="highlight-box-green" style="margin-top:.75rem;">
-        <p style="font-size:.75rem;color:var(--text-muted);line-height:1.5;">
-          <strong style="color:var(--green);">Native integration.</strong> Telegram is a built-in Kyra channel — not a custom bot. Secure, rate-limited, encrypted. <strong style="color:var(--text)">5 minutes to set up.</strong>
-        </p>
-      </div>
-    </div>
-  </div>
-
-  <!-- SLIDE 8: GitHub + Web Search -->
-  <div class="slide" data-slide="8">
-    <div class="slide-scroll">
-      <div class="eyebrow">🔧🔍 Workers 6 & Built-in</div>
-      <h2>GitHub + Web Search<br><span class="gradient-text">out of the box</span></h2>
-      <div class="card-grid card-grid-2" style="margin-top:1.25rem;">
-        <div class="card-sm">
-          <p style="font-size:1.15rem;margin-bottom:.35rem">🔧</p>
-          <h4 style="font-size:.8rem">GitHub Worker</h4>
-          <ul style="font-size:.68rem;color:var(--text-muted);margin-top:.3rem;padding-left:.8rem;line-height:1.6">
-            <li>Create branches & commits</li>
-            <li>Open & review pull requests</li>
-            <li>Trigger GitHub Actions</li>
-            <li>Monitor CI/CD status</li>
-            <li>Automated deployments</li>
-          </ul>
-          <span class="badge badge-green" style="margin-top:.5rem">5 min setup</span>
-        </div>
-        <div class="card-sm">
-          <p style="font-size:1.15rem;margin-bottom:.35rem">🔍</p>
-          <h4 style="font-size:.8rem">Web Search</h4>
-          <ul style="font-size:.68rem;color:var(--text-muted);margin-top:.3rem;padding-left:.8rem;line-height:1.6">
-            <li>Live search via Brave or Perplexity</li>
-            <li>Content retrieval & summarization</li>
-            <li>Safe scraping controls</li>
-            <li>Request throttling built in</li>
-            <li>Research on demand from any channel</li>
-          </ul>
-          <span class="badge badge-green" style="margin-top:.5rem">2 min setup</span>
-        </div>
-      </div>
-      <div class="highlight-box-blue" style="margin-top:1rem;">
-        <p style="font-size:.75rem;color:var(--text-muted);line-height:1.5;">
-          Both are <strong style="color:var(--accent-light)">platform-native tools</strong> — no custom code, no API wrappers, no maintenance. Add your API key and they work.
-        </p>
-      </div>
-    </div>
-  </div>
-
-  <!-- SLIDE 9: Security -->
-  <div class="slide" data-slide="9">
-    <div class="slide-scroll">
-      <div class="eyebrow">🔒 Security Built In</div>
-      <h2>Enterprise security.<br><span class="gradient-text">Zero configuration.</span></h2>
-      <div class="card" style="margin-top:1rem;">
-        <ul class="feature-list">
-          <li><span class="check">✓</span> <strong style="color:var(--text)">OAuth-based auth</strong> — for all M365 integrations via Azure AD</li>
-          <li><span class="check">✓</span> <strong style="color:var(--text)">Encrypted secrets vault</strong> — all API keys & tokens encrypted at rest</li>
-          <li><span class="check">✓</span> <strong style="color:var(--text)">Minimum permissions</strong> — each worker only gets the scopes it needs</li>
-          <li><span class="check">✓</span> <strong style="color:var(--text)">Rate limiting</strong> — built into the gateway for all external API calls</li>
-          <li><span class="check">✓</span> <strong style="color:var(--text)">Action logging</strong> — every operation logged with timestamps and context</li>
-          <li><span class="check">✓</span> <strong style="color:var(--text)">Token auto-refresh</strong> — OAuth tokens renewed before they expire</li>
-          <li><span class="check">✓</span> <strong style="color:var(--text)">Isolated containers</strong> — your instance runs in its own container, not shared</li>
-        </ul>
-      </div>
-      <p style="font-size:.72rem;color:var(--text-muted);margin-top:.75rem;line-height:1.5;opacity:.7;">
-        Every item in the SOW's "Security Requirements" section is a built-in platform feature — not something a contractor needs to build.
-      </p>
-    </div>
-  </div>
-
-  <!-- SLIDE 10: Timeline -->
-  <div class="slide" data-slide="10">
-    <div class="slide-scroll">
-      <div class="eyebrow">📅 Delivery</div>
-      <h2>2-3 weeks.<br><span class="gradient-text">Not 2-3 months.</span></h2>
-      <div class="card" style="margin-top:1rem;">
-        <div style="display:flex;align-items:center;gap:.6rem;padding:.6rem 0;border-bottom:1px solid rgba(255,255,255,.06)">
-          <span class="badge badge-green">Week 1</span>
-          <span style="font-size:.8rem;color:var(--text)">Platform live + Telegram + Search + GitHub + Secrets</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:.6rem;padding:.6rem 0;border-bottom:1px solid rgba(255,255,255,.06)">
-          <span class="badge badge-blue">Week 1-2</span>
-          <span style="font-size:.8rem;color:var(--text)">Outlook worker (read, send, triage, digest)</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:.6rem;padding:.6rem 0;border-bottom:1px solid rgba(255,255,255,.06)">
-          <span class="badge badge-blue">Week 2</span>
-          <span style="font-size:.8rem;color:var(--text)">OneDrive + Teams workers (same Azure AD app)</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:.6rem;padding:.6rem 0;border-bottom:1px solid rgba(255,255,255,.06)">
-          <span class="badge badge-blue">Week 2-3</span>
-          <span style="font-size:.8rem;color:var(--text)">Fathom integration + structured output + Teams cross-post</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:.6rem;padding:.6rem 0">
-          <span class="badge badge-green">Week 3</span>
-          <span style="font-size:.8rem;color:var(--text)">End-to-end testing, documentation, handover</span>
-        </div>
-      </div>
-      <div class="highlight-box-green" style="margin-top:.75rem;">
-        <p style="font-size:.75rem;color:var(--text-muted);line-height:1.5;">
-          <strong style="color:var(--green)">Day 1:</strong> You have a working AI system with Telegram, web search, and GitHub. <strong style="color:var(--text)">The M365 and Fathom workers follow in weeks, not months.</strong>
-        </p>
-      </div>
-    </div>
-  </div>
-
-  <!-- SLIDE 11: Platform vs Custom -->
-  <div class="slide" data-slide="11">
-    <div class="slide-scroll">
-      <div class="eyebrow">⚡ Why a Platform</div>
-      <h2>Managed platform vs.<br><span class="gradient-text">custom dev project</span></h2>
-      <div class="card" style="margin-top:1rem;">
-        <div style="display:grid;grid-template-columns:1fr auto auto;gap:.35rem;font-size:.72rem">
-          <div style="color:var(--text-muted);font-weight:600"></div>
-          <div style="text-align:center;color:var(--text-muted);font-weight:600;min-width:55px">Custom</div>
-          <div style="text-align:center;font-weight:600;min-width:45px" class="gradient-text">Kyra</div>
-
-          <div style="color:var(--text-muted);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">Deployment</div>
-          <div style="text-align:center;color:var(--amber);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">Days</div>
-          <div style="text-align:center;color:var(--green);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">Instant</div>
-
-          <div style="color:var(--text-muted);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">Time to value</div>
-          <div style="text-align:center;color:var(--amber);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">4-8 wks</div>
-          <div style="text-align:center;color:var(--green);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">Day 1</div>
-
-          <div style="color:var(--text-muted);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">Token refresh</div>
-          <div style="text-align:center;color:var(--red);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">Manual</div>
-          <div style="text-align:center;color:var(--green);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">Auto</div>
-
-          <div style="color:var(--text-muted);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">Health monitoring</div>
-          <div style="text-align:center;color:var(--red);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">None</div>
-          <div style="text-align:center;color:var(--green);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">24/7</div>
-
-          <div style="color:var(--text-muted);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">Updates & patches</div>
-          <div style="text-align:center;color:var(--red);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">Pay again</div>
-          <div style="text-align:center;color:var(--green);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">Included</div>
-
-          <div style="color:var(--text-muted);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">Modify behavior</div>
-          <div style="text-align:center;color:var(--red);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">Code change</div>
-          <div style="text-align:center;color:var(--green);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">Edit config</div>
-
-          <div style="color:var(--text-muted);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">Add new integrations</div>
-          <div style="text-align:center;color:var(--red);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">New SOW</div>
-          <div style="text-align:center;color:var(--green);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">Add worker</div>
-
-          <div style="color:var(--text);font-weight:600;padding:.5rem 0;border-top:1px solid rgba(255,255,255,.08)">IP ownership</div>
-          <div style="text-align:center;color:var(--red);font-weight:600;padding:.5rem 0;border-top:1px solid rgba(255,255,255,.08)">Contractor</div>
-          <div style="text-align:center;color:var(--green);font-weight:600;padding:.5rem 0;border-top:1px solid rgba(255,255,255,.08)">You</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- SLIDE 12: CTA -->
-  <div class="slide slide-cover" data-slide="12">
-    <div>
-      <div style="font-size:2.5rem;margin-bottom:1rem">🔗</div>
-      <h2>Connect your entire stack<br><span class="gradient-text">in weeks, not months</span></h2>
-      <p class="subtitle" style="max-width:400px;margin:.75rem auto 0;">M365, Fathom, Telegram, GitHub, and web search — managed, monitored, and always running.</p>
-      <a href="https://kyra.conversionsystem.com/build" class="cta-button">Get Started →</a>
-      <p style="font-size:.7rem;color:var(--text-muted);margin-top:1rem;opacity:.6">Powered by Kyra — AI Workforce Platform</p>
-    </div>
+  <div class="footer">
+    Prepared by Kyra AI — AI Workforce Platform · kyra.conversionsystem.com
   </div>
 
 </div>
 
-<div class="nav-dots" id="dots"></div>
-<div class="slide-counter" id="counter"></div>
-<button class="nav-arrow left" onclick="navigate(-1)">‹</button>
-<button class="nav-arrow right" onclick="navigate(1)">›</button>
-
 <script>
-  const slides=document.querySelectorAll('.slide'),totalSlides=slides.length;let current=0,startX=0,isDragging=false;
-  const dotsC=document.getElementById('dots');for(let i=0;i<totalSlides;i++){const d=document.createElement('button');d.className='nav-dot'+(i===0?' active':'');d.onclick=()=>goTo(i);dotsC.appendChild(d)}
-  function updateUI(){slides.forEach((s,i)=>{s.classList.remove('active','prev');if(i===current)s.classList.add('active');else if(i<current)s.classList.add('prev')});document.querySelectorAll('.nav-dot').forEach((d,i)=>d.classList.toggle('active',i===current));document.getElementById('progress').style.width=((current/(totalSlides-1))*100)+'%';document.getElementById('counter').textContent=(current+1)+' / '+totalSlides;const h=document.querySelector('.swipe-hint');if(h)h.style.display=current>0?'none':''}
-  function goTo(i){if(i>=0&&i<totalSlides){current=i;updateUI()}}function navigate(dir){goTo(current+dir)}
-  const deck=document.getElementById('deck');deck.addEventListener('touchstart',e=>{startX=e.touches[0].clientX;isDragging=true},{passive:true});deck.addEventListener('touchend',e=>{if(!isDragging)return;const d=startX-e.changedTouches[0].clientX;if(Math.abs(d)>50)navigate(d>0?1:-1);isDragging=false},{passive:true});
-  document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();navigate(1)}if(e.key==='ArrowLeft'){e.preventDefault();navigate(-1)}});
-  deck.addEventListener('click',e=>{const w=window.innerWidth;if(e.clientX>w*.75)navigate(1);else if(e.clientX<w*.25)navigate(-1)});
-  updateUI();
+  // Sticky nav on scroll
+  const nav = document.getElementById('stickyNav');
+  let lastScroll = 0;
+  window.addEventListener('scroll', () => {
+    const st = window.scrollY;
+    nav.classList.toggle('visible', st > 300);
+    lastScroll = st;
+  });
 </script>
 </body>
 </html>
