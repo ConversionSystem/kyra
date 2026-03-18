@@ -210,7 +210,7 @@ export function SEOSetupWizard({ clientId, clientName, onComplete, onCancel }: S
                     onClick={() => toggleService(service.value)}
                     className={`px-3 py-2 rounded-md text-sm text-left transition-colors border ${
                       data.services.includes(service.value)
-                        ? 'border-blue-500 bg-blue-50 text-blue-700'
+                        ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
                         : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
                     }`}
                   >

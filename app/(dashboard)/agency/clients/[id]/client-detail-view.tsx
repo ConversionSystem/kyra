@@ -128,7 +128,7 @@ function SetupNudgeBanner({
 const statusColors: Record<string, string> = {
   active: 'border-green-200 bg-green-50 text-green-600',
   paused: 'border-yellow-200 bg-yellow-50 text-yellow-600',
-  setup: 'border-blue-200 bg-blue-50 text-blue-600',
+  setup: 'border-amber-200 bg-amber-50 text-amber-600',
 };
 
 interface ChatMessage {

@@ -137,8 +137,8 @@ export function PublishingPlatformsPanel({ clientId, enabledPlatforms, onPlatfor
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ field: 'publishing_platforms', value: Array.from(next) }),
       });
-    } catch {
-      // Non-fatal — UI already updated optimistically
+    } catch (err) {
+      console.error('[publishing-platforms] Failed to persist:', err);
     } finally {
       setSaving(null);
     }
