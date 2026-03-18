@@ -282,6 +282,7 @@ function ContactsSection({ client, clientId }: { client: AgencyClient; clientId:
   const [bulkAction, setBulkAction] = useState('');
   const [bulkValue, setBulkValue] = useState('');
   const [importing, setImporting] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const limit = 50;
 
@@ -306,12 +307,12 @@ function ContactsSection({ client, clientId }: { client: AgencyClient; clientId:
   const handleExport = async () => {
     try {
       const res = await fetch('/api/agency/crm/export');
-      if (!res.ok) { alert('Export failed. Please try again.'); return; }
+      if (!res.ok) { setActionError('Export failed. Please try again.'); return; }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a'); a.href = url; a.download = 'crm-contacts.csv'; a.click();
       URL.revokeObjectURL(url);
-    } catch { alert('Export failed. Please try again.'); }
+    } catch { setActionError('Export failed. Please try again.'); }
   };
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -322,7 +323,7 @@ function ContactsSection({ client, clientId }: { client: AgencyClient; clientId:
       // Parse CSV client-side then send as JSON (server expects { source: 'csv', rows: [...] })
       const text = await file.text();
       const lines = text.trim().split('\n');
-      if (lines.length < 2) { alert('CSV must have a header row and at least one data row.'); return; }
+      if (lines.length < 2) { setActionError('CSV must have a header row and at least one data row.'); return; }
       const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
       const rows = lines.slice(1).map(line => {
         const values = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
@@ -334,10 +335,11 @@ function ContactsSection({ client, clientId }: { client: AgencyClient; clientId:
         body: JSON.stringify({ source: 'csv', rows }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) { alert((data as { error?: string }).error || 'Import failed.'); return; }
+      if (!res.ok) { setActionError((data as { error?: string }).error || 'Import failed.'); return; }
+      setActionError(null);
       loadContacts();
-    } catch (err) {
-      alert('Import failed. Please check your CSV format.');
+    } catch {
+      setActionError('Import failed. Please check your CSV format.');
     } finally { setImporting(false); if (fileInputRef.current) fileInputRef.current.value = ''; }
   };
 
@@ -353,10 +355,10 @@ function ContactsSection({ client, clientId }: { client: AgencyClient; clientId:
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        alert((data as { error?: string }).error || 'Bulk action failed.');
+        setActionError((data as { error?: string }).error || 'Bulk action failed.');
         return;
       }
-    } catch { alert('Bulk action failed. Please try again.'); }
+    } catch { setActionError('Bulk action failed. Please try again.'); }
     setSelected(new Set());
     setBulkAction('');
     setBulkValue('');

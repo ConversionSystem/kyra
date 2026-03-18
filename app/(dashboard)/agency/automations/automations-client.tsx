@@ -257,7 +257,7 @@ export default function AutomationsClient() {
       setNewTask('');
       fetchJobs();
     } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : 'Failed to create automation');
+      setError(e instanceof Error ? e.message : 'Failed to create automation');
     } finally {
       setSaving(false);
     }

@@ -283,6 +283,7 @@ export default function WidgetBuilderPage() {
           saveConfig={saveConfig}
           saving={saving}
           saved={saved}
+          saveError={saveError}
           embedPlatform={embedPlatform}
           setEmbedPlatform={setEmbedPlatform}
           getEmbedCode={getEmbedCode}
@@ -315,6 +316,7 @@ function WidgetBuilder({
   saveConfig,
   saving,
   saved,
+  saveError,
   embedPlatform,
   setEmbedPlatform,
   getEmbedCode,
@@ -329,6 +331,7 @@ function WidgetBuilder({
   saveConfig: () => void;
   saving: boolean;
   saved: boolean;
+  saveError: string | null;
   embedPlatform: string;
   setEmbedPlatform: (p: 'html' | 'wordpress' | 'shopify' | 'react') => void;
   getEmbedCode: () => string;
@@ -517,6 +520,9 @@ function WidgetBuilder({
         >
           {saved ? '✓ Saved!' : saving ? 'Saving...' : 'Save Widget Settings'}
         </button>
+        {saveError && (
+          <p className="text-sm text-red-600 text-center">{saveError}</p>
+        )}
 
         {/* Embed Code */}
         <div className="bg-white rounded-xl border p-5">
