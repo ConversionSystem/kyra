@@ -6,7 +6,7 @@ import {
   Inbox, Users, TrendingUp, Flame, Search, Bell, Bot, Send, Loader2,
   CheckCircle2, Clock, Mail, MessageSquare, Phone, ArrowRight,
   ChevronDown, ChevronRight, AlertCircle, Eye, X, Sparkles,
-  Building2, Calendar, FileText,
+  Building2, Calendar, FileText, RefreshCw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { CrmFeedResponse, CommandFeedItem, CrmActivity } from '@/lib/crm/types';
@@ -16,6 +16,7 @@ export function CrmCommandFeed() {
   const router = useRouter();
   const [feed, setFeed] = useState<CrmFeedResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [aiHandledOpen, setAiHandledOpen] = useState(false);
   const [sending, setSending] = useState<string | null>(null);
@@ -26,9 +27,13 @@ export function CrmCommandFeed() {
       if (res.ok) {
         const data = await res.json();
         setFeed(data);
+        setError(null);
+      } else {
+        setError('Failed to load CRM feed');
       }
-    } catch {
-      // Ignore
+    } catch (err) {
+      console.error('[crm-feed] fetch failed:', err);
+      setError('Failed to load CRM feed');
     } finally {
       setLoading(false);
     }
@@ -89,6 +94,21 @@ export function CrmCommandFeed() {
         <div className="animate-pulse text-gray-400 flex items-center gap-2">
           <Inbox className="h-5 w-5" /> Loading CRM...
         </div>
+      </div>
+    );
+  }
+
+  if (error && !feed) {
+    return (
+      <div className="p-4 sm:p-6 lg:p-8 flex flex-col items-center justify-center min-h-[400px] text-center gap-4">
+        <AlertCircle className="h-10 w-10 text-red-300" />
+        <div>
+          <p className="font-semibold text-gray-700">Failed to load CRM</p>
+          <p className="text-sm text-gray-400 mt-1">{error}</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => { setError(null); fetchFeed(); }} className="gap-2">
+          <RefreshCw className="h-4 w-4" /> Retry
+        </Button>
       </div>
     );
   }

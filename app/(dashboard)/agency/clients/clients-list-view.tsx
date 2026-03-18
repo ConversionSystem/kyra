@@ -102,6 +102,7 @@ export function ClientsListView({ clients, plan = 'free', clientLimit = 1 }: Cli
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isBulkActing, setIsBulkActing] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [bulkError, setBulkError] = useState<string | null>(null);
 
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {
@@ -122,6 +123,7 @@ export function ClientsListView({ clients, plan = 'free', clientLimit = 1 }: Cli
 
   const handleBulkStatus = async (status: 'active' | 'paused') => {
     setIsBulkActing(true);
+    setBulkError(null);
     try {
       const results = await Promise.all(
         [...selectedIds].map((id) =>
@@ -133,11 +135,14 @@ export function ClientsListView({ clients, plan = 'free', clientLimit = 1 }: Cli
         )
       );
       const failed = results.filter((r) => !r.ok).length;
-      if (failed > 0) console.error(`Bulk status: ${failed} of ${results.length} failed`);
+      if (failed > 0) {
+        setBulkError(`Failed to update ${failed} of ${results.length} clients`);
+      }
       setSelectedIds(new Set());
       router.refresh();
     } catch (err) {
       console.error('Bulk status error:', err);
+      setBulkError('Bulk status update failed. Please try again.');
     } finally {
       setIsBulkActing(false);
     }
@@ -147,6 +152,7 @@ export function ClientsListView({ clients, plan = 'free', clientLimit = 1 }: Cli
     if (!confirmingDelete) { setConfirmingDelete(true); return; }
     setIsBulkActing(true);
     setConfirmingDelete(false);
+    setBulkError(null);
     try {
       const results = await Promise.all(
         [...selectedIds].map((id) =>
@@ -154,11 +160,14 @@ export function ClientsListView({ clients, plan = 'free', clientLimit = 1 }: Cli
         )
       );
       const failed = results.filter((r) => !r.ok).length;
-      if (failed > 0) console.error(`Bulk delete: ${failed} of ${results.length} failed`);
+      if (failed > 0) {
+        setBulkError(`Failed to delete ${failed} of ${results.length} clients`);
+      }
       setSelectedIds(new Set());
       router.refresh();
     } catch (err) {
       console.error('Bulk delete error:', err);
+      setBulkError('Bulk delete failed. Please try again.');
     } finally {
       setIsBulkActing(false);
     }
@@ -252,6 +261,14 @@ export function ClientsListView({ clients, plan = 'free', clientLimit = 1 }: Cli
           )}
         </div>
       </div>
+
+      {/* Bulk action error */}
+      {bulkError && (
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 flex items-center justify-between">
+          <p className="text-sm text-red-700">{bulkError}</p>
+          <button onClick={() => setBulkError(null)} className="text-red-400 hover:text-red-600 text-xs font-medium">Dismiss</button>
+        </div>
+      )}
 
       {/* Plan usage bar */}
       <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 flex items-center gap-3">

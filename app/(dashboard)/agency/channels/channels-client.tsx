@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { SectionNav } from '@/components/dashboard/section-nav';
 import {
   CheckCircle2,
   ExternalLink,
@@ -482,7 +481,6 @@ export function ChannelsClient({ clientId, embedded }: { clientId?: string; embe
 
   return (
     <div className="space-y-0">
-    {!embedded && <SectionNav currentHref="/agency/channels" />}
     <div className="p-4 sm:p-6 md:p-8 space-y-8 max-w-5xl">
 
       {/* ── Header ──────────────────────────────────────────────────────── */}

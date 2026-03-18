@@ -359,7 +359,7 @@ Worth checking out 🤙`,
 
           {/* Link row */}
           <div className="flex items-center gap-2">
-            <div className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 font-mono text-xs text-gray-700 truncate min-w-0">
+            <div className={`flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 font-mono text-xs text-gray-700 truncate min-w-0${loadingInvite ? ' animate-pulse' : ''}`}>
               {loadingInvite ? '⏳  Generating your link...' : (inviteUrl || '—')}
             </div>
             <Button
