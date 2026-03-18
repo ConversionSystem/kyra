@@ -156,6 +156,9 @@ export interface SitePage {
   edited: boolean;
   edited_at: string | null;
 
+  // Visibility
+  hidden: boolean;
+
   // Growth Engine
   source: PageSource;
   search_volume: number | null;
