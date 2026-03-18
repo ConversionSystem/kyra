@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>AvalonKing × Kyra — AI Workforce Proposal</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0a0f;
+    --card: #12121a;
+    --card-border: rgba(99, 102, 241, 0.15);
+    --card-hover: #16162a;
+    --text: #f1f1f4;
+    --text-muted: #8b8b9e;
+    --accent: #6366f1;
+    --accent-light: #818cf8;
+    --accent-glow: rgba(99, 102, 241, 0.25);
+    --green: #22c55e;
+    --red: #ef4444;
+    --amber: #f59e0b;
+    --gradient-1: linear-gradient(135deg, #6366f1, #8b5cf6);
+    --gradient-2: linear-gradient(135deg, #6366f1 0%, #06b6d4 100%);
+  }
+
+  html, body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    height: 100%;
+    width: 100%;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .deck {
+    height: 100%;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 2rem 1.5rem;
+    opacity: 0;
+    transform: translateX(100%);
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .slide.active {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .slide.prev {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+
+  /* Progress bar */
+  .progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    background: var(--gradient-1);
+    transition: width 0.4s ease;
+    z-index: 100;
+    border-radius: 0 2px 2px 0;
+  }
+
+  /* Navigation dots */
+  .nav-dots {
+    position: fixed;
+    bottom: 1.25rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 6px;
+    z-index: 100;
+  }
+
+  .nav-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    transition: all 0.3s;
+    cursor: pointer;
+    border: none;
+  }
+
+  .nav-dot.active {
+    background: var(--accent);
+    width: 20px;
+    border-radius: 3px;
+  }
+
+  /* Slide counter */
+  .slide-counter {
+    position: fixed;
+    bottom: 1.25rem;
+    right: 1.5rem;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    z-index: 100;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Arrow nav (desktop) */
+  .nav-arrow {
+    position: fixed;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--text-muted);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 100;
+    transition: all 0.2s;
+    font-size: 1rem;
+  }
+
+  .nav-arrow:hover {
+    background: rgba(99, 102, 241, 0.15);
+    color: var(--accent-light);
+    border-color: var(--accent);
+  }
+
+  .nav-arrow.left { left: 0.75rem; }
+  .nav-arrow.right { right: 0.75rem; }
+
+  @media (max-width: 768px) {
+    .nav-arrow { display: none; }
+    .slide { padding: 1.5rem 1.25rem; }
+  }
+
+  /* Typography */
+  .eyebrow {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent-light);
+    margin-bottom: 0.75rem;
+  }
+
+  h1 {
+    font-size: clamp(1.75rem, 6vw, 3rem);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+  }
+
+  h2 {
+    font-size: clamp(1.4rem, 4.5vw, 2.25rem);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+  }
+
+  h3 {
+    font-size: clamp(1rem, 3vw, 1.35rem);
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  .subtitle {
+    font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin-top: 0.75rem;
+    font-weight: 400;
+  }
+
+  .gradient-text {
+    background: var(--gradient-1);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .gradient-text-2 {
+    background: var(--gradient-2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 1.25rem;
+    margin-top: 1rem;
+  }
+
+  .card-sm {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 1rem;
+  }
+
+  .card-grid {
+    display: grid;
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+  }
+
+  .card-grid-2 { grid-template-columns: 1fr 1fr; }
+  .card-grid-3 { grid-template-columns: 1fr; }
+
+  @media (min-width: 500px) {
+    .card-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+  }
+
+  /* Icon circles */
+  .icon-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    margin-bottom: 0.75rem;
+    flex-shrink: 0;
+  }
+
+  .icon-circle-sm {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+  }
+
+  .icon-indigo { background: rgba(99, 102, 241, 0.15); }
+  .icon-green { background: rgba(34, 197, 94, 0.15); }
+  .icon-amber { background: rgba(245, 158, 11, 0.15); }
+  .icon-red { background: rgba(239, 68, 68, 0.15); }
+  .icon-cyan { background: rgba(6, 182, 212, 0.15); }
+  .icon-purple { background: rgba(168, 85, 247, 0.15); }
+
+  /* Stat blocks */
+  .stat {
+    text-align: center;
+    padding: 1rem;
+  }
+
+  .stat-value {
+    font-size: clamp(1.5rem, 5vw, 2.5rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+
+  .stat-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* Badges */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .badge-red { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+  .badge-green { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
+  .badge-amber { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+  .badge-indigo { background: rgba(99, 102, 241, 0.15); color: #a5b4fc; }
+
+  /* Lists */
+  .feature-list {
+    list-style: none;
+    margin-top: 1rem;
+  }
+
+  .feature-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    padding: 0.6rem 0;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .feature-list li:last-child { border-bottom: none; }
+
+  .check { color: var(--green); font-size: 0.8rem; margin-top: 2px; flex-shrink: 0; }
+  .cross { color: var(--red); font-size: 0.8rem; margin-top: 2px; flex-shrink: 0; }
+
+  /* Comparison bar */
+  .comparison-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .comparison-row:last-child { border-bottom: none; }
+
+  .comparison-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    width: 80px;
+    flex-shrink: 0;
+  }
+
+  .comparison-bar {
+    flex: 1;
+    height: 6px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .comparison-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 1s ease;
+  }
+
+  /* Quote */
+  .quote {
+    border-left: 3px solid var(--accent);
+    padding-left: 1rem;
+    margin: 1rem 0;
+    font-style: italic;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+
+  /* Divider */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--card-border), transparent);
+    margin: 1.25rem 0;
+  }
+
+  /* Slide-specific */
+  .slide-cover {
+    text-align: center;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .cover-logo {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+    margin-bottom: 2rem;
+  }
+
+  .cover-tagline {
+    font-size: clamp(0.8rem, 2vw, 1rem);
+    color: var(--text-muted);
+    margin-top: 1.5rem;
+    font-weight: 400;
+  }
+
+  .swipe-hint {
+    position: fixed;
+    bottom: 3rem;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    opacity: 0.5;
+    z-index: 100;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.7; }
+  }
+
+  /* Flow steps */
+  .flow-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem 0;
+  }
+
+  .flow-num {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--gradient-1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .flow-content h4 {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 0.15rem;
+  }
+
+  .flow-content p {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+
+  /* Worker card */
+  .worker-card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: 1rem;
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+    margin-bottom: 0.6rem;
+  }
+
+  .worker-card h4 {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 0.2rem;
+  }
+
+  .worker-card p {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+
+  /* Scrollable slide content */
+  .slide-scroll {
+    max-height: calc(100vh - 6rem);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 3rem;
+  }
+
+  .slide-scroll::-webkit-scrollbar { display: none; }
+
+  /* CTA */
+  .cta-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.85rem 1.75rem;
+    background: var(--gradient-1);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    margin-top: 1.5rem;
+  }
+
+  .cta-button:hover { transform: translateY(-1px); box-shadow: 0 8px 24px var(--accent-glow); }
+
+  .mini-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.35rem;
+  }
+
+  .highlight-box {
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-top: 1rem;
+  }
+
+  .highlight-box-green {
+    background: rgba(34, 197, 94, 0.08);
+    border: 1px solid rgba(34, 197, 94, 0.2);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-top: 1rem;
+  }
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<div class="deck" id="deck">
+
+  <!-- SLIDE 0: Cover -->
+  <div class="slide slide-cover active" data-slide="0">
+    <div class="cover-logo">KYRA × AVALONKING</div>
+    <h1>Your <span class="gradient-text">AI Workforce</span><br>for E-Commerce Growth</h1>
+    <p class="cover-tagline">5 autonomous AI workers. One dashboard.<br>Running 24/7 for Armor Shield IX.</p>
+    <div class="swipe-hint">Swipe or tap arrow to continue →</div>
+  </div>
+
+  <!-- SLIDE 1: The Problem -->
+  <div class="slide" data-slide="1">
+    <div class="slide-scroll">
+      <div class="eyebrow">⚠️ The Problem</div>
+      <h2>Armor Shield IX is <span class="gradient-text">invisible</span> to AI</h2>
+      <p class="subtitle">When consumers ask AI "what's the best DIY ceramic coating?" — your brand doesn't exist.</p>
+
+      <div class="highlight-box">
+        <p class="mini-label">🔍 Live test — March 2026</p>
+        <p style="font-size:0.8rem; color: var(--text-muted); margin-top: 0.35rem; line-height: 1.5;">
+          We queried <strong style="color: var(--text);">"best DIY ceramic coating"</strong> across ChatGPT, Perplexity, and Gemini. Here's who AI recommends:
+        </p>
+      </div>
+
+      <div class="card" style="margin-top: 0.75rem;">
+        <div class="comparison-row">
+          <span class="comparison-label" style="color: var(--text);">Chemical Guys</span>
+          <div class="comparison-bar"><div class="comparison-fill" style="width:95%; background: var(--green);"></div></div>
+          <span class="badge badge-green">Cited #1</span>
+        </div>
+        <div class="comparison-row">
+          <span class="comparison-label" style="color: var(--text);">Cerakote</span>
+          <div class="comparison-bar"><div class="comparison-fill" style="width:85%; background: var(--green);"></div></div>
+          <span class="badge badge-green">Cited #2</span>
+        </div>
+        <div class="comparison-row">
+          <span class="comparison-label" style="color: var(--text);">Turtle Wax</span>
+          <div class="comparison-bar"><div class="comparison-fill" style="width:75%; background: var(--amber);"></div></div>
+          <span class="badge badge-amber">Cited #3</span>
+        </div>
+        <div class="comparison-row">
+          <span class="comparison-label" style="color: var(--text);">Adam's</span>
+          <div class="comparison-bar"><div class="comparison-fill" style="width:65%; background: var(--amber);"></div></div>
+          <span class="badge badge-amber">Cited #4</span>
+        </div>
+        <div class="comparison-row">
+          <span class="comparison-label" style="color: var(--text); font-weight: 600;">Armor Shield IX</span>
+          <div class="comparison-bar"><div class="comparison-fill" style="width:0%; background: var(--red);"></div></div>
+          <span class="badge badge-red">Not cited</span>
+        </div>
+      </div>
+
+      <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.75rem; line-height: 1.5;">
+        Sources cited by AI: Road & Track, Car and Driver, Autoweek. AvalonKing is absent from every 2025–2026 roundup these engines pull from.
+      </p>
+    </div>
+  </div>
+
+  <!-- SLIDE 2: The Solution Overview -->
+  <div class="slide" data-slide="2">
+    <div class="slide-scroll">
+      <div class="eyebrow">💡 The Solution</div>
+      <h2>5 AI workers.<br><span class="gradient-text">One team.</span></h2>
+      <p class="subtitle">Each trained on Armor Shield IX's voice, products, and competitive landscape. Running autonomously with human approval gates.</p>
+
+      <div style="margin-top: 1.25rem;">
+        <div class="worker-card">
+          <div class="icon-circle-sm icon-cyan">🔍</div>
+          <div>
+            <h4>GEO Monitor</h4>
+            <p>Tracks your visibility across ChatGPT, Perplexity & Gemini weekly</p>
+          </div>
+        </div>
+        <div class="worker-card">
+          <div class="icon-circle-sm icon-amber">📦</div>
+          <div>
+            <h4>Amazon Rufus Optimizer</h4>
+            <p>Makes your listings the answer when shoppers ask Rufus</p>
+          </div>
+        </div>
+        <div class="worker-card">
+          <div class="icon-circle-sm icon-purple">💬</div>
+          <div>
+            <h4>Comment Marketer</h4>
+            <p>Drafts relevant, topical comments across YouTube, TikTok & IG daily</p>
+          </div>
+        </div>
+        <div class="worker-card">
+          <div class="icon-circle-sm icon-green">✉️</div>
+          <div>
+            <h4>Email Strategist</h4>
+            <p>Writes campaigns, designs sequences, analyzes performance weekly</p>
+          </div>
+        </div>
+        <div class="worker-card">
+          <div class="icon-circle-sm icon-indigo">🤝</div>
+          <div>
+            <h4>B2B Outreach Agent</h4>
+            <p>Prospects detailing shops, dealerships & creators — personalizes every email</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 3: GEO Deep Dive -->
+  <div class="slide" data-slide="3">
+    <div class="slide-scroll">
+      <div class="eyebrow">🔍 Worker 1</div>
+      <h2>GEO <span class="gradient-text">Monitor</span></h2>
+      <p class="subtitle">Get Armor Shield IX cited when AI answers "what's the best ceramic coating?"</p>
+
+      <div class="card">
+        <p class="mini-label">Weekly automated scan</p>
+        <ul class="feature-list">
+          <li><span class="check">✓</span> Queries 20+ target prompts across ChatGPT, Perplexity & Gemini</li>
+          <li><span class="check">✓</span> Tracks whether Armor Shield IX appears in each response</li>
+          <li><span class="check">✓</span> Screenshots every result for proof</li>
+          <li><span class="check">✓</span> Week-over-week position tracking</li>
+        </ul>
+      </div>
+
+      <div class="card" style="margin-top: 0.75rem;">
+        <p class="mini-label">Monthly content gap analysis</p>
+        <ul class="feature-list">
+          <li><span class="check">✓</span> Identifies which competitor content AI engines are citing</li>
+          <li><span class="check">✓</span> Generates specific blog post briefs for avalonking.com</li>
+          <li><span class="check">✓</span> Recommends FAQ structures that AI engines can parse</li>
+          <li><span class="check">✓</span> Flags PR opportunities (roundup submissions to Road & Track, Car and Driver)</li>
+        </ul>
+      </div>
+
+      <div class="highlight-box-green" style="margin-top: 0.75rem;">
+        <p style="font-size: 0.8rem; font-weight: 600; color: var(--green);">📊 GEO Scorecard Example</p>
+        <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.35rem;">
+          "Cited in 4/20 queries (20%) — up from 0/20 last month. New blog post 'Armor Shield IX vs Chemical Guys' now appearing in 3 AI engines."
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 4: Amazon Rufus -->
+  <div class="slide" data-slide="4">
+    <div class="slide-scroll">
+      <div class="eyebrow">📦 Worker 2</div>
+      <h2>Amazon <span class="gradient-text">Rufus</span> Optimizer</h2>
+      <p class="subtitle">Amazon's AI shopping assistant answers questions using your listing data. Make sure it sells for you.</p>
+
+      <div class="card">
+        <p class="mini-label">What the agent does</p>
+        <ul class="feature-list">
+          <li><span class="check">✓</span> Rewrites titles & bullet points for conversational queries — how Rufus actually reads them</li>
+          <li><span class="check">✓</span> Generates 20+ Q&A seeds for your listing (Rufus pulls directly from Q&A)</li>
+          <li><span class="check">✓</span> Creates A+ Content layout optimized for comparison queries</li>
+          <li><span class="check">✓</span> Builds backend search terms using intent-based keywords</li>
+          <li><span class="check">✓</span> Monthly re-audit after changes are applied</li>
+        </ul>
+      </div>
+
+      <div class="card" style="margin-top: 0.75rem;">
+        <p class="mini-label">Before vs After</p>
+        <div style="margin-top: 0.5rem;">
+          <p class="mini-label" style="color: var(--red);">❌ Generic</p>
+          <p style="font-size: 0.75rem; color: var(--text-muted); font-style: italic;">"Advanced 9H hardness ceramic coating with SiO2"</p>
+        </div>
+        <div style="margin-top: 0.75rem;">
+          <p class="mini-label" style="color: var(--green);">✅ Rufus-optimized</p>
+          <p style="font-size: 0.75rem; color: var(--text-muted); font-style: italic;">"Scratch-resistant 9H hardness that protects your paint from swirl marks, bird droppings, tree sap, and UV damage for 2+ years — no professional detailer needed"</p>
+        </div>
+        <p style="font-size: 0.65rem; color: var(--text-muted); margin-top: 0.75rem; opacity: 0.7;">When a shopper asks Rufus "will this protect against bird droppings?" — the optimized version gets cited.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 5: Comment Marketing -->
+  <div class="slide" data-slide="5">
+    <div class="slide-scroll">
+      <div class="eyebrow">💬 Worker 3</div>
+      <h2>Comment <span class="gradient-text">Marketing</span></h2>
+      <p class="subtitle">Relevant, topical comments across YouTube, TikTok & Instagram — not spam.</p>
+
+      <div class="card">
+        <p class="mini-label">Daily workflow</p>
+        <div class="flow-step">
+          <div class="flow-num">1</div>
+          <div class="flow-content">
+            <h4>Scan</h4>
+            <p>Finds new ceramic coating & car detailing content posted in the last 48 hours (1K+ views)</p>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num">2</div>
+          <div class="flow-content">
+            <h4>Read & Understand</h4>
+            <p>Reads the actual video/post content — not just the title. Understands the specific topic being discussed.</p>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num">3</div>
+          <div class="flow-content">
+            <h4>Draft</h4>
+            <p>Writes 10–15 comments daily that add genuine value, then naturally connect to Armor Shield IX</p>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num">4</div>
+          <div class="flow-content">
+            <h4>Review & Approve</h4>
+            <p>Every comment goes through your Review Queue. Nothing posts without your sign-off.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 0.75rem;">
+        <p class="mini-label">Example comment (on a "Testing 5 Ceramic Coatings" video)</p>
+        <div class="quote">
+          "Great comparison! Would love to see Armor Shield IX in the next round — the 84% SiO2 content performs differently than spray ceramics in long-term water beading tests. The lotus effect after 6 months is pretty wild. Be interesting to see it against Carbon Force."
+        </div>
+        <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+          <span class="badge badge-green">✓ Topical</span>
+          <span class="badge badge-green">✓ Adds value</span>
+          <span class="badge badge-green">✓ Natural mention</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 6: Email -->
+  <div class="slide" data-slide="6">
+    <div class="slide-scroll">
+      <div class="eyebrow">✉️ Worker 4</div>
+      <h2>Email <span class="gradient-text">Strategist</span></h2>
+      <p class="subtitle">Campaign writing, sequence design, and performance analysis — all in your brand voice.</p>
+
+      <div class="card-grid card-grid-2">
+        <div class="card-sm">
+          <p style="font-size: 1.25rem; margin-bottom: 0.35rem;">✍️</p>
+          <h4 style="font-size: 0.8rem;">Campaign Writing</h4>
+          <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.2rem;">Full emails from a one-line brief: subject lines, body, CTAs — ready to paste into your ESP</p>
+        </div>
+        <div class="card-sm">
+          <p style="font-size: 1.25rem; margin-bottom: 0.35rem;">🔄</p>
+          <h4 style="font-size: 0.8rem;">Automated Sequences</h4>
+          <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.2rem;">Post-purchase nurture, abandoned cart, win-back (coating reapplication), review follow-ups</p>
+        </div>
+        <div class="card-sm">
+          <p style="font-size: 1.25rem; margin-bottom: 0.35rem;">📊</p>
+          <h4 style="font-size: 0.8rem;">Weekly Analysis</h4>
+          <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.2rem;">Open/click/conversion rates vs. DTC automotive benchmarks — not generic averages</p>
+        </div>
+        <div class="card-sm">
+          <p style="font-size: 1.25rem; margin-bottom: 0.35rem;">🎯</p>
+          <h4 style="font-size: 0.8rem;">A/B Recommendations</h4>
+          <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.2rem;">Identifies underperforming sequences and rewrites them with specific improvements</p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 0.75rem;">
+        <p class="mini-label">Smart sequence: Post-Purchase Nurture</p>
+        <div style="display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.5rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="badge badge-indigo">Day 1</span>
+            <span style="font-size: 0.72rem; color: var(--text-muted);">Prep checklist — everything before you coat</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="badge badge-indigo">Day 3</span>
+            <span style="font-size: 0.72rem; color: var(--text-muted);">Application tips + video link</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="badge badge-indigo">Day 14</span>
+            <span style="font-size: 0.72rem; color: var(--text-muted);">How'd it turn out? Leave a review → UGC</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="badge badge-indigo">Day 90</span>
+            <span style="font-size: 0.72rem; color: var(--text-muted);">Maintenance wash tips — keep the coating fresh</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="badge badge-amber">Day 365</span>
+            <span style="font-size: 0.72rem; color: var(--text-muted);">Time for a recoat — 15% off return buyer</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 7: B2B Outreach -->
+  <div class="slide" data-slide="7">
+    <div class="slide-scroll">
+      <div class="eyebrow">🤝 Worker 5</div>
+      <h2>B2B <span class="gradient-text">Outreach</span></h2>
+      <p class="subtitle">Automated prospecting for detailing shops, dealerships, and content creators — every email personalized.</p>
+
+      <div class="card-grid card-grid-3">
+        <div class="card-sm" style="text-align: center;">
+          <p style="font-size: 1.5rem;">🚗</p>
+          <h4 style="font-size: 0.75rem; margin-top: 0.35rem;">Mobile Detailers</h4>
+          <p style="font-size: 0.65rem; color: var(--text-muted); margin-top: 0.15rem;">Upsell ceramic as a service using your kits</p>
+        </div>
+        <div class="card-sm" style="text-align: center;">
+          <p style="font-size: 1.5rem;">🏪</p>
+          <h4 style="font-size: 0.75rem; margin-top: 0.35rem;">Auto Dealers</h4>
+          <p style="font-size: 0.65rem; color: var(--text-muted); margin-top: 0.15rem;">Pre-sale value add on used inventory</p>
+        </div>
+        <div class="card-sm" style="text-align: center;">
+          <p style="font-size: 1.5rem;">🎬</p>
+          <h4 style="font-size: 0.75rem; margin-top: 0.35rem;">Content Creators</h4>
+          <p style="font-size: 0.65rem; color: var(--text-muted); margin-top: 0.15rem;">5K–50K followers + Ambassador program</p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 0.75rem;">
+        <p class="mini-label">Automated outreach sequence</p>
+        <div class="flow-step">
+          <div class="flow-num">1</div>
+          <div class="flow-content">
+            <h4>Research</h4>
+            <p>Agent visits prospect's site & socials, finds personalization hooks — what coatings they use, recent projects</p>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num">2</div>
+          <div class="flow-content">
+            <h4>Personalized email</h4>
+            <p>"Saw your paint correction on the GT3 — next level work. Are you offering ceramic as an upsell? Could add $300-500 per job."</p>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num">3</div>
+          <div class="flow-content">
+            <h4>Smart follow-up</h4>
+            <p>Revenue calculator, sample kit offer, Ambassador program fallback — all automated with approval gates</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="highlight-box-green">
+        <p style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.5;">
+          <strong style="color: var(--green);">Revenue math:</strong> A detailer coats 5 cars/month at $400 each (material cost: ~$35/car) = <strong style="color: var(--text);">$1,825/month extra profit</strong>. That's the pitch.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 8: How It Works -->
+  <div class="slide" data-slide="8">
+    <div class="slide-scroll">
+      <div class="eyebrow">⚙️ How It Works</div>
+      <h2>One dashboard.<br><span class="gradient-text">Total control.</span></h2>
+      <p class="subtitle">All 5 AI workers run from a single Kyra dashboard. You see everything, approve everything.</p>
+
+      <div class="card">
+        <div class="flow-step">
+          <div class="flow-num">1</div>
+          <div class="flow-content">
+            <h4>We train the AI on your brand</h4>
+            <p>Products, voice, competitors, goals — the AI learns Armor Shield IX inside and out</p>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num">2</div>
+          <div class="flow-content">
+            <h4>Workers run autonomously 24/7</h4>
+            <p>Scanning, drafting, analyzing, prospecting — while you sleep</p>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num">3</div>
+          <div class="flow-content">
+            <h4>You approve before anything goes live</h4>
+            <p>Review Queue shows every draft comment, email, and outreach message. One click to approve or edit.</p>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num">4</div>
+          <div class="flow-content">
+            <h4>AI learns your preferences over time</h4>
+            <p>The more you approve and edit, the better it gets. Your voice. Your standards.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 0.75rem;">
+        <p class="mini-label">What you DON'T need to do</p>
+        <ul class="feature-list">
+          <li><span class="cross">✕</span> Manually search for content to comment on</li>
+          <li><span class="cross">✕</span> Write emails from scratch every week</li>
+          <li><span class="cross">✕</span> Research prospects one by one</li>
+          <li><span class="cross">✕</span> Check if AI engines are citing your brand</li>
+          <li><span class="cross">✕</span> Manage multiple tools and logins</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 9: vs Traditional -->
+  <div class="slide" data-slide="9">
+    <div class="slide-scroll">
+      <div class="eyebrow">⚡ Why AI Workers</div>
+      <h2>Freelancers vs. <span class="gradient-text">AI Workforce</span></h2>
+
+      <div class="card" style="margin-top: 1rem;">
+        <div style="display: grid; grid-template-columns: 1fr auto auto; gap: 0.35rem; font-size: 0.72rem;">
+          <div style="color: var(--text-muted); font-weight: 600;"></div>
+          <div style="text-align: center; color: var(--text-muted); font-weight: 600; min-width: 65px;">Traditional</div>
+          <div style="text-align: center; font-weight: 600; min-width: 50px;" class="gradient-text">Kyra</div>
+
+          <div style="color: var(--text-muted); padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.04);">GEO monitoring</div>
+          <div style="text-align: center; color: var(--red); padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.04);">Manual</div>
+          <div style="text-align: center; color: var(--green); padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.04);">Auto</div>
+
+          <div style="color: var(--text-muted); padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.04);">Comments/day</div>
+          <div style="text-align: center; color: var(--amber); padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.04);">3–5</div>
+          <div style="text-align: center; color: var(--green); padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.04);">10–15</div>
+
+          <div style="color: var(--text-muted); padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.04);">Email campaigns/wk</div>
+          <div style="text-align: center; color: var(--amber); padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.04);">1–2</div>
+          <div style="text-align: center; color: var(--green); padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.04);">Daily</div>
+
+          <div style="color: var(--text-muted); padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.04);">Prospects researched</div>
+          <div style="text-align: center; color: var(--amber); padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.04);">~20/wk</div>
+          <div style="text-align: center; color: var(--green); padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.04);">50+/wk</div>
+
+          <div style="color: var(--text-muted); padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.04);">Hours of operation</div>
+          <div style="text-align: center; color: var(--amber); padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.04);">9–5</div>
+          <div style="text-align: center; color: var(--green); padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.04);">24/7</div>
+
+          <div style="color: var(--text-muted); padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.04);">Brand voice consistency</div>
+          <div style="text-align: center; color: var(--amber); padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.04);">Varies</div>
+          <div style="text-align: center; color: var(--green); padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.04);">Locked in</div>
+
+          <div style="color: var(--text); font-weight: 600; padding: 0.5rem 0; border-top: 1px solid rgba(255,255,255,0.08);">Typical cost</div>
+          <div style="text-align: center; color: var(--red); font-weight: 600; padding: 0.5rem 0; border-top: 1px solid rgba(255,255,255,0.08);">$8–15K/mo</div>
+          <div style="text-align: center; font-weight: 600; padding: 0.5rem 0; border-top: 1px solid rgba(255,255,255,0.08);"><span class="gradient-text">Fraction</span></div>
+        </div>
+      </div>
+
+      <div class="highlight-box-green" style="margin-top: 1rem;">
+        <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.5;">
+          <strong style="color: var(--green);">Key difference:</strong> AI workers don't just execute tasks — they <strong style="color: var(--text);">learn your approval patterns</strong>. Month 1 you edit 60% of drafts. Month 3 you approve 90% as-is.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 10: CTA -->
+  <div class="slide slide-cover" data-slide="10">
+    <div>
+      <div class="eyebrow">🚀 Next Step</div>
+      <h2>Let's get Armor Shield IX<br><span class="gradient-text">into the AI conversation</span></h2>
+      <p class="subtitle" style="max-width: 400px; margin: 0.75rem auto 0;">30-minute demo call. We'll show you the live GEO audit for your brand and walk through each worker in action.</p>
+      <a href="#" class="cta-button" onclick="return false;">Book a Demo →</a>
+      <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 1rem; opacity: 0.6;">Powered by Kyra — AI Workforce Platform</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- Nav Dots -->
+<div class="nav-dots" id="dots"></div>
+<div class="slide-counter" id="counter"></div>
+<button class="nav-arrow left" id="prevBtn" onclick="navigate(-1)">‹</button>
+<button class="nav-arrow right" id="nextBtn" onclick="navigate(1)">›</button>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const totalSlides = slides.length;
+  let current = 0;
+  let startX = 0;
+  let isDragging = false;
+
+  // Build dots
+  const dotsContainer = document.getElementById('dots');
+  for (let i = 0; i < totalSlides; i++) {
+    const dot = document.createElement('button');
+    dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
+    dot.onclick = () => goTo(i);
+    dotsContainer.appendChild(dot);
+  }
+
+  function updateUI() {
+    slides.forEach((s, i) => {
+      s.classList.remove('active', 'prev');
+      if (i === current) s.classList.add('active');
+      else if (i < current) s.classList.add('prev');
+    });
+
+    document.querySelectorAll('.nav-dot').forEach((d, i) => {
+      d.classList.toggle('active', i === current);
+    });
+
+    document.getElementById('progress').style.width = ((current / (totalSlides - 1)) * 100) + '%';
+    document.getElementById('counter').textContent = (current + 1) + ' / ' + totalSlides;
+
+    document.getElementById('prevBtn').style.opacity = current === 0 ? '0.2' : '1';
+    document.getElementById('nextBtn').style.opacity = current === totalSlides - 1 ? '0.2' : '1';
+
+    // Hide swipe hint after first slide
+    const hint = document.querySelector('.swipe-hint');
+    if (hint) hint.style.display = current > 0 ? 'none' : '';
+  }
+
+  function goTo(i) {
+    if (i < 0 || i >= totalSlides) return;
+    current = i;
+    updateUI();
+  }
+
+  function navigate(dir) {
+    goTo(current + dir);
+  }
+
+  // Touch events
+  const deck = document.getElementById('deck');
+
+  deck.addEventListener('touchstart', (e) => {
+    startX = e.touches[0].clientX;
+    isDragging = true;
+  }, { passive: true });
+
+  deck.addEventListener('touchend', (e) => {
+    if (!isDragging) return;
+    const endX = e.changedTouches[0].clientX;
+    const diff = startX - endX;
+    if (Math.abs(diff) > 50) {
+      navigate(diff > 0 ? 1 : -1);
+    }
+    isDragging = false;
+  }, { passive: true });
+
+  // Keyboard
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); navigate(1); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); navigate(-1); }
+  });
+
+  // Click sides (desktop)
+  deck.addEventListener('click', (e) => {
+    const w = window.innerWidth;
+    if (e.clientX > w * 0.75) navigate(1);
+    else if (e.clientX < w * 0.25) navigate(-1);
+  });
+
+  updateUI();
+</script>
+
+</body>
+</html>
