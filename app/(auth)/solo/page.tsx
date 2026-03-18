@@ -4,6 +4,7 @@ import { useState, Suspense } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { KyraLogo } from '@/components/brand/kyra-logo';
 import {
   Loader2,
   Rocket,
@@ -336,10 +337,7 @@ function SoloSignupPageInner() {
       {/* Nav */}
       <nav className="border-b border-white/10 px-4 py-4">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-emerald-600 flex items-center justify-center font-black text-xs">K</div>
-            <span className="font-bold">Kyra Solo</span>
-          </Link>
+          <KyraLogo variant="dark" size="md" />
           <div className="flex items-center gap-4">
             <Link href="/signup/agency" className="text-sm text-slate-400 hover:text-white transition hidden sm:block">
               Agency? <span className="text-indigo-400 font-medium">Sign up here</span>

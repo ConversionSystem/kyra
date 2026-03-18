@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2, ArrowRight, ArrowLeft, Check, Rocket, CheckCircle, Zap } from 'lucide-react';
 import { pixel } from '@/components/analytics/MetaPixel';
+import { KyraLogo } from '@/components/brand/kyra-logo';
 
 export function AgencySignupWrapper() {
   return (
@@ -198,10 +199,7 @@ function AgencySignupPage() {
       {/* Nav */}
       <nav className="border-b border-white/10 px-4 py-4">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center font-black text-xs">K</div>
-            <span className="font-bold">Kyra AI</span>
-          </Link>
+          <KyraLogo variant="dark" size="md" />
           <Link href="/login" className="text-sm text-slate-400 hover:text-white transition">
             Already have an account? <span className="text-indigo-400 font-medium">Sign in</span>
           </Link>
