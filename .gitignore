@@ -11,7 +11,7 @@ node_modules/
 .next/
 out/
 dist/
-build/
+/build/
 
 # Debug
 npm-debug.log*
