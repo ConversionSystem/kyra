@@ -95,7 +95,7 @@ function StatusBadge({ status }: { status: SiteData['status'] }) {
     draft: 'bg-gray-100 text-gray-600 border-gray-200',
     generating: 'bg-indigo-100 text-indigo-700 border-indigo-200',
     building: 'bg-amber-100 text-amber-700 border-amber-200',
-    deploying: 'bg-blue-100 text-blue-700 border-blue-200',
+    deploying: 'bg-indigo-100 text-indigo-700 border-indigo-200',
     error: 'bg-red-100 text-red-700 border-red-200',
   };
 
@@ -1828,15 +1828,15 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
     <div className="space-y-6">
       {/* Deploying/building banner with self-heal button */}
       {['deploying', 'building', 'generating'].includes(site.status) && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center gap-3">
-          <Loader2 className="h-5 w-5 text-blue-500 shrink-0 animate-spin" />
+        <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 flex items-center gap-3">
+          <Loader2 className="h-5 w-5 text-indigo-500 shrink-0 animate-spin" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-blue-800">
+            <p className="text-sm font-medium text-indigo-800">
               {site.status === 'generating' ? 'AI is generating content…' :
                site.status === 'building' ? 'Compiling your site…' :
                'Deploying to the web…'}
             </p>
-            <p className="text-xs text-blue-600 mt-0.5">
+            <p className="text-xs text-indigo-600 mt-0.5">
               This takes 4–8 minutes. If it&apos;s been longer, click &ldquo;Check if Live&rdquo;.
             </p>
           </div>

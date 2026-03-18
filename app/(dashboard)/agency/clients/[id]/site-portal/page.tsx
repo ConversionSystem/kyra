@@ -59,6 +59,8 @@ export default function SitePortalPage() {
             setConvStats({ total: convsJson.total ?? convs.length, today: todayCount, leads });
           }
         }
+      } catch (err) {
+        console.error('[site-portal] Failed to load:', err);
       } finally {
         setLoading(false);
       }

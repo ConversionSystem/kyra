@@ -203,8 +203,8 @@ function AdminControlPanel({
       if (res.ok) {
         onStatusChange();
       }
-    } catch {
-      // silent
+    } catch (err) {
+      console.error('[seo-admin] Action failed:', err);
     } finally {
       setSaving(false);
       setConfirming(null);
