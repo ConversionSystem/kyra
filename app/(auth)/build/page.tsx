@@ -16,6 +16,16 @@ import {
   BarChart3,
   CheckCircle2,
   Sparkles,
+  CalendarCheck,
+  Users,
+  Phone,
+  Instagram,
+  FileText,
+  Shield,
+  Package,
+  Megaphone,
+  ClipboardList,
+  Bot,
 } from 'lucide-react';
 import { KyraLogo } from '@/components/brand/kyra-logo';
 import { PixelEvent } from '@/components/analytics/PixelEvent';
@@ -23,30 +33,82 @@ import { PixelEvent } from '@/components/analytics/PixelEvent';
 // ── Worker Types ──────────────────────────────────────────────────────────────
 
 const WORKER_TYPES = [
+  // ── Sales & Revenue ──
   {
-    id: 'geo-optimization',
-    icon: Search,
-    label: 'GEO Optimization',
-    desc: 'Get your brand cited by ChatGPT, Perplexity & Gemini',
-  },
-  {
-    id: 'comment-marketing',
-    icon: MessageSquare,
-    label: 'Comment Marketing',
-    desc: 'Relevant comments across YouTube, TikTok & Instagram',
-  },
-  {
-    id: 'email-marketing',
-    icon: Mail,
-    label: 'Email Strategist',
-    desc: 'Campaign writing, sequences & performance analysis',
+    id: 'lead-generation',
+    icon: Users,
+    label: 'Lead Generation',
+    desc: 'Find, score & qualify prospects from web, social & directories',
   },
   {
     id: 'b2b-outreach',
     icon: Handshake,
     label: 'B2B Outreach',
-    desc: 'Automated prospecting with personalized emails',
+    desc: 'Personalized cold email sequences with research & follow-ups',
   },
+  {
+    id: 'appointment-booking',
+    icon: CalendarCheck,
+    label: 'Appointment Booking',
+    desc: 'AI receptionist that books, confirms & reminds — 24/7',
+  },
+  {
+    id: 'sales-assistant',
+    icon: Phone,
+    label: 'Sales Assistant',
+    desc: 'Qualify inbound leads, answer questions & route to your team',
+  },
+  // ── Marketing ──
+  {
+    id: 'geo-optimization',
+    icon: Search,
+    label: 'GEO Optimization',
+    desc: 'Get cited by ChatGPT, Perplexity & Gemini for your keywords',
+  },
+  {
+    id: 'social-media',
+    icon: Instagram,
+    label: 'Social Media Manager',
+    desc: 'Draft posts, schedule content & engage across platforms',
+  },
+  {
+    id: 'comment-marketing',
+    icon: MessageSquare,
+    label: 'Comment Marketing',
+    desc: 'Topical comments on YouTube, TikTok & Instagram daily',
+  },
+  {
+    id: 'email-marketing',
+    icon: Mail,
+    label: 'Email Strategist',
+    desc: 'Campaigns, sequences, A/B tests & performance analysis',
+  },
+  {
+    id: 'content-writer',
+    icon: PenTool,
+    label: 'Content Writer',
+    desc: 'Blog posts, landing pages, ad copy & social content',
+  },
+  {
+    id: 'ad-manager',
+    icon: Megaphone,
+    label: 'Ad Campaign Manager',
+    desc: 'Write ads, analyze performance & optimize spend across platforms',
+  },
+  // ── Customer Operations ──
+  {
+    id: 'customer-support',
+    icon: Headphones,
+    label: 'Customer Support',
+    desc: '24/7 AI support across chat, email, SMS & social',
+  },
+  {
+    id: 'review-manager',
+    icon: ClipboardList,
+    label: 'Review & Reputation Manager',
+    desc: 'Monitor reviews, draft responses & request new reviews',
+  },
+  // ── E-Commerce ──
   {
     id: 'ecommerce-optimizer',
     icon: ShoppingCart,
@@ -54,22 +116,36 @@ const WORKER_TYPES = [
     desc: 'Amazon Rufus, listing optimization & product SEO',
   },
   {
-    id: 'customer-support',
-    icon: Headphones,
-    label: 'Customer Support',
-    desc: '24/7 AI support across chat, SMS & social',
+    id: 'inventory-ops',
+    icon: Package,
+    label: 'Inventory & Operations',
+    desc: 'Demand forecasting, stock alerts & reorder automation',
   },
-  {
-    id: 'content-writer',
-    icon: PenTool,
-    label: 'Content Writer',
-    desc: 'Blog posts, landing pages & social media copy',
-  },
+  // ── Intelligence ──
   {
     id: 'analytics-reporter',
     icon: BarChart3,
     label: 'Analytics & Reporting',
-    desc: 'Weekly insights, competitor tracking & dashboards',
+    desc: 'Weekly dashboards, competitor tracking & trend alerts',
+  },
+  {
+    id: 'research-analyst',
+    icon: FileText,
+    label: 'Research Analyst',
+    desc: 'Market research, competitor intel & strategic briefs',
+  },
+  // ── Technical ──
+  {
+    id: 'workflow-automation',
+    icon: Bot,
+    label: 'Workflow Automation',
+    desc: 'Connect your tools — CRM, email, calendar, Slack & more',
+  },
+  {
+    id: 'data-security',
+    icon: Shield,
+    label: 'Data & Compliance Monitor',
+    desc: 'Track data privacy, flag risks & generate compliance reports',
   },
 ] as const;
 
