@@ -36,16 +36,66 @@ export async function POST(
     const supabase = getSupabase();
 
     // Look up client — table is agency_clients (not 'clients')
-    const { data: client } = await supabase
+    let { data: client } = await supabase
       .from('agency_clients')
       .select('id, name, agency_id')
       .eq('id', clientId)
       .maybeSingle();
 
+    // Fallback: if clientId is not in agency_clients, it might be the site's
+    // client_id that was orphaned. Try looking up the site instead.
     if (!client) {
-      // Client not found — still return 200 to not break the form
-      console.error('[LEAD] Client not found in agency_clients:', clientId);
-      return NextResponse.json({ ok: true, debug: 'client_not_found' }, { headers: CORS });
+      console.warn('[LEAD] Client not found in agency_clients, trying client_sites fallback:', clientId);
+
+      // Try: clientId might be stored as client_id on a site row
+      const { data: site } = await supabase
+        .from('client_sites')
+        .select('id, client_id, agency_id, business_name')
+        .eq('client_id', clientId)
+        .maybeSingle();
+
+      if (site?.agency_id) {
+        // Auto-create the missing agency_clients row so future leads work
+        const slug = (site.business_name || 'client')
+          .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
+
+        const { data: newClient } = await supabase
+          .from('agency_clients')
+          .insert({
+            id: clientId, // preserve the same ID so the widget doesn't need rebuild
+            agency_id: site.agency_id,
+            name: site.business_name || 'Website Client',
+            slug: `${slug}-${Date.now().toString(36)}`,
+            industry: '',
+            status: 'active',
+          })
+          .select('id, name, agency_id')
+          .single();
+
+        if (newClient) {
+          client = newClient;
+          console.log('[LEAD] Auto-created agency_clients row for orphaned site:', clientId);
+        } else {
+          // Still create the lead using site's agency_id directly
+          client = { id: clientId, name: site.business_name || 'Unknown', agency_id: site.agency_id };
+          console.warn('[LEAD] Could not auto-create client, using site agency_id:', site.agency_id);
+        }
+      } else {
+        // Last resort: check if clientId is actually a site ID
+        const { data: siteById } = await supabase
+          .from('client_sites')
+          .select('id, client_id, agency_id, business_name')
+          .eq('id', clientId)
+          .maybeSingle();
+
+        if (siteById?.agency_id) {
+          client = { id: siteById.client_id || clientId, name: siteById.business_name || 'Unknown', agency_id: siteById.agency_id };
+          console.warn('[LEAD] Matched by site ID instead of client ID:', clientId);
+        } else {
+          console.error('[LEAD] Client not found anywhere:', clientId);
+          return NextResponse.json({ ok: true }, { headers: CORS });
+        }
+      }
     }
 
     const agencyId = client.agency_id;
