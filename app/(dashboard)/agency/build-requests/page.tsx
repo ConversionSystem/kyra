@@ -39,14 +39,24 @@ const STATUS_COLORS: Record<string, string> = {
 const STATUS_OPTIONS = ['new', 'contacted', 'in_progress', 'completed', 'declined'];
 
 const WORKER_LABELS: Record<string, string> = {
+  'lead-generation': 'Lead Generation',
+  'b2b-outreach': 'B2B Outreach',
+  'appointment-booking': 'Appointment Booking',
+  'sales-assistant': 'Sales Assistant',
   'geo-optimization': 'GEO Optimization',
+  'social-media': 'Social Media Manager',
   'comment-marketing': 'Comment Marketing',
   'email-marketing': 'Email Strategist',
-  'b2b-outreach': 'B2B Outreach',
-  'ecommerce-optimizer': 'E-Commerce Optimizer',
-  'customer-support': 'Customer Support',
   'content-writer': 'Content Writer',
+  'ad-manager': 'Ad Campaign Manager',
+  'customer-support': 'Customer Support',
+  'review-manager': 'Review & Reputation Manager',
+  'ecommerce-optimizer': 'E-Commerce Optimizer',
+  'inventory-ops': 'Inventory & Operations',
   'analytics-reporter': 'Analytics & Reporting',
+  'research-analyst': 'Research Analyst',
+  'workflow-automation': 'Workflow Automation',
+  'data-security': 'Data & Compliance Monitor',
 };
 
 export default function BuildRequestsPage() {
