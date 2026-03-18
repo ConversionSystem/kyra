@@ -6,6 +6,7 @@
 // ============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAgencyMember } from '@/lib/agency/middleware';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 
 export async function GET(
@@ -13,11 +14,30 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id: clientId } = await params;
+
+  const auth = await requireAgencyMember();
+  if (auth.error) {
+    return NextResponse.json({ error: auth.error.message }, { status: auth.error.status });
+  }
+
+  const { agency } = auth.data;
   const { searchParams } = new URL(request.url);
   const limit = Math.min(parseInt(searchParams.get('limit') || '50', 10), 100);
   const offset = parseInt(searchParams.get('offset') || '0', 10);
 
   const supabase = createServiceClientWithoutCookies();
+
+  // Verify client belongs to this agency
+  const { data: client } = await supabase
+    .from('agency_clients')
+    .select('id')
+    .eq('id', clientId)
+    .eq('agency_id', agency.id)
+    .single();
+
+  if (!client) {
+    return NextResponse.json({ error: 'Client not found' }, { status: 404 });
+  }
 
   const { data: messages, error, count } = await supabase
     .from('ghl_message_log')

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAgencyAdmin } from '@/lib/agency/middleware';
 import { createClient } from '@/lib/supabase/server';
 import {
   createClientSubscription,
@@ -22,34 +23,20 @@ export async function POST(
   try {
     const { id: clientId } = await params;
 
-    // Auth check
+    const auth = await requireAgencyAdmin();
+    if (auth.error) {
+      return NextResponse.json({ error: auth.error.message }, { status: auth.error.status });
+    }
+
+    const { agency } = auth.data;
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Get agency membership
-    const { data: membership } = await supabase
-      .from('agency_members')
-      .select('agency_id, role')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!membership) {
-      return NextResponse.json({ error: 'No agency found' }, { status: 403 });
-    }
-
-    if (membership.role !== 'owner' && membership.role !== 'admin') {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
-    }
 
     // Verify client belongs to this agency
     const { data: client } = await supabase
       .from('agency_clients')
       .select('id, name, agency_id, billing_amount_cents, stripe_subscription_id')
       .eq('id', clientId)
-      .eq('agency_id', membership.agency_id)
+      .eq('agency_id', agency.id)
       .single();
 
     if (!client) {
@@ -88,7 +75,7 @@ export async function POST(
         }
 
         const result = await createClientSubscription(
-          membership.agency_id,
+          agency.id,
           clientId,
           amountCents,
           clientRow.name,
@@ -103,7 +90,7 @@ export async function POST(
       }
 
       case 'cancel': {
-        await cancelClientSubscription(membership.agency_id, clientId);
+        await cancelClientSubscription(agency.id, clientId);
         return NextResponse.json({ success: true });
       }
 
@@ -116,7 +103,7 @@ export async function POST(
         }
 
         await updateClientBillingAmount(
-          membership.agency_id,
+          agency.id,
           clientId,
           body.amount_cents
         );

@@ -10,7 +10,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { requireAgencyMember } from '@/lib/agency/middleware';
-import { patchGatewayConfig } from '@/lib/ovh/provisioner';
+// NOTE: Do NOT import patchGatewayConfig here — OpenClaw rejects skills.* keys as invalid.
+// Capabilities are stored in Supabase only (agency_clients.settings.capabilities).
+// The gateway uses tools via its own skill system, not config keys.
 
 // Skill IDs that map to openai-compatible skills in OpenClaw config
 const SKILL_MAP: Record<string, string[]> = {
@@ -86,11 +88,6 @@ export async function PATCH(
     .eq('id', id);
 
   if (dbErr) return NextResponse.json({ error: dbErr.message }, { status: 500 });
-
-  // NOTE: Do NOT write skills.* keys to gateway config — OpenClaw rejects them as invalid.
-  // Capabilities are stored in Supabase only (agency_clients.settings.capabilities).
-  // The gateway uses tools via its own skill system, not config keys.
-  void patchGatewayConfig; // imported but intentionally unused for capabilities
 
   return NextResponse.json({ ok: true, capabilities });
 }
