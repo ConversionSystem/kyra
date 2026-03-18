@@ -60,7 +60,7 @@ export async function POST(
     ].filter(Boolean).join('\n');
 
     // 1. Save to client_conversations (shows in Conversations inbox)
-    await supabase.from('client_conversations').insert({
+    const { error: convError } = await supabase.from('client_conversations').insert({
       client_id: clientId,
       agency_id: agencyId,
       channel: 'website',
@@ -69,6 +69,10 @@ export async function POST(
       session_id: `form:${clientId}:${Date.now()}`,
       source_url: source || 'website-form',
     });
+
+    if (convError) {
+      console.error('[LEAD] Conversation insert error:', convError.message, convError.details);
+    }
 
     // 2. Upsert CRM contact (creates or updates by phone/email)
     let crmContactId: string | null = null;
@@ -92,7 +96,7 @@ export async function POST(
       } else {
         // Create new CRM contact — only use columns that exist in schema
         const nameParts = name.trim().split(' ');
-        const { data: newContact } = await supabase
+        const { data: newContact, error: insertError } = await supabase
           .from('crm_contacts')
           .insert({
             agency_id: agencyId,
@@ -110,6 +114,9 @@ export async function POST(
           .select('id')
           .single();
 
+        if (insertError) {
+          console.error('[LEAD] CRM insert error:', insertError.message, insertError.details, insertError.hint);
+        }
         if (newContact) {
           crmContactId = newContact.id;
           // Log CRM activity — use correct schema columns
