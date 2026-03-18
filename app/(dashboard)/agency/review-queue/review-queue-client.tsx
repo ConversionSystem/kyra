@@ -32,37 +32,53 @@ export function ReviewQueueClient() {
   const [showSettings, setShowSettings] = useState(false);
 
   const fetchQueue = useCallback(async () => {
-    const res = await fetch('/api/agency/review-queue');
-    if (res.ok) {
-      const data = await res.json();
-      setItems(data.items || []);
-      setSettings(data.settings || { enabled: false, client_ids: [] });
+    try {
+      const res = await fetch('/api/agency/review-queue');
+      if (res.ok) {
+        const data = await res.json();
+        setItems(data.items || []);
+        setSettings(data.settings || { enabled: false, client_ids: [] });
+      }
+    } catch (err) {
+      console.error('[review-queue] fetch error:', err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => { fetchQueue(); }, [fetchQueue]);
 
   const handleAction = async (id: string, action: string, extra?: Record<string, string>) => {
     setProcessing(id);
-    await fetch('/api/agency/review-queue', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action, id, ...extra }),
-    });
-    setItems(prev => prev.filter(i => i.id !== id));
-    setEditing(null);
-    setProcessing(null);
+    try {
+      const res = await fetch('/api/agency/review-queue', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, id, ...extra }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setItems(prev => prev.filter(i => i.id !== id));
+      setEditing(null);
+    } catch (err) {
+      console.error('[review-queue] action failed:', err);
+    } finally {
+      setProcessing(null);
+    }
   };
 
   const toggleGate = async () => {
     const newEnabled = !settings.enabled;
-    await fetch('/api/agency/review-queue', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'update_settings', enabled: newEnabled }),
-    });
-    setSettings(s => ({ ...s, enabled: newEnabled }));
+    try {
+      const res = await fetch('/api/agency/review-queue', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'update_settings', enabled: newEnabled }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setSettings(s => ({ ...s, enabled: newEnabled }));
+    } catch (err) {
+      console.error('[review-queue] toggle failed:', err);
+    }
   };
 
   if (loading) {

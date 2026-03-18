@@ -611,7 +611,7 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
               <select
                 value={language}
                 onChange={(e) => setLanguage(e.target.value)}
-                className="w-full bg-white border border-gray-200 text-gray-900 rounded-md p-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                className="w-full bg-white border border-gray-200 text-gray-900 rounded-md p-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
               >
                 <option value="en">English</option>
                 <option value="es">Spanish</option>
@@ -679,7 +679,7 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
         <Button
           onClick={handleSetup}
           disabled={saving || (selectedProvider !== 'openclaw' && !apiKey.trim())}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 text-lg"
+          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-6 text-lg"
         >
           {saving ? (
             <>
@@ -874,7 +874,7 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
               name="testNumber"
               placeholder="+1 (555) 123-4567"
             />
-            <Button type="submit" disabled={testingCall} className="shrink-0 bg-blue-600 hover:bg-blue-700 text-white">
+            <Button type="submit" disabled={testingCall} className="shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white">
               {testingCall ? <Loader2 className="w-4 h-4 animate-spin" /> : <PhoneCall className="w-4 h-4 mr-1" />}
               Call
             </Button>

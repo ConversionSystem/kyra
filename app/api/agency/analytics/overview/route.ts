@@ -5,13 +5,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 
 export async function GET(_req: NextRequest) {
+  try {
   const sb = await createClient();
   const sbService = await createServiceClient();
 
-  const { data: { session } } = await sb.auth.getSession();
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { data: agency } = await sbService.from('agencies').select('id').eq('owner_id', session.user.id).single();
+  const { data: agency } = await sbService.from('agency_members').select('agency_id').eq('user_id', user.id).single();
   if (!agency) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   const todayStart = new Date();
@@ -22,32 +23,32 @@ export async function GET(_req: NextRequest) {
     // Conversations today
     sbService.from('client_conversations')
       .select('id', { count: 'exact', head: true })
-      .eq('agency_id', agency.id)
+      .eq('agency_id', agency.agency_id)
       .gte('created_at', todayStart.toISOString()),
 
     // Conversations this week
     sbService.from('client_conversations')
       .select('id', { count: 'exact', head: true })
-      .eq('agency_id', agency.id)
+      .eq('agency_id', agency.agency_id)
       .gte('created_at', weekStart.toISOString()),
 
     // Escalations this week
     sbService.from('client_conversations')
       .select('id', { count: 'exact', head: true })
-      .eq('agency_id', agency.id)
+      .eq('agency_id', agency.agency_id)
       .gte('created_at', weekStart.toISOString())
       .ilike('ai_response', '%flag this for our team%'),
 
     // Active clients count
     sbService.from('agency_clients')
       .select('id', { count: 'exact', head: true })
-      .eq('agency_id', agency.id)
+      .eq('agency_id', agency.agency_id)
       .eq('status', 'active'),
 
     // Busiest client this week (by conversation count)
     sbService.from('client_conversations')
       .select('client_id, agency_clients(name)')
-      .eq('agency_id', agency.id)
+      .eq('agency_id', agency.agency_id)
       .gte('created_at', weekStart.toISOString()),
   ]);
 
@@ -77,4 +78,8 @@ export async function GET(_req: NextRequest) {
       return total > 0 ? Math.round(((total - esc) / total) * 100) : 100;
     })(),
   });
+  } catch (err) {
+    console.error('[analytics/overview]', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 }

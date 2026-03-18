@@ -27,6 +27,7 @@ export function AiModelClient({ initialModel, availableProviders }: AiModelClien
       });
       if (!res.ok) throw new Error('Failed to save');
       setSaveMsg({ type: 'success', text: 'AI model updated. Takes effect on next conversation.' });
+      setTimeout(() => setSaveMsg(null), 3000);
     } catch {
       setSaveMsg({ type: 'error', text: 'Failed to update model. Please try again.' });
     } finally {

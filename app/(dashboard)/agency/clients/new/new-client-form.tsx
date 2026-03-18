@@ -211,7 +211,6 @@ const industries = [
   'Sales & Consulting',
   'Market Intelligence',
   'Media & Content',
-  'Education',
   'Other',
 ];
 

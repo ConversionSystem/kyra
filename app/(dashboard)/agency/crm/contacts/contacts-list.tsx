@@ -91,39 +91,49 @@ export function ContactsList() {
   // ─── Data Fetching ──────────────────────────────────────────────────────
   const fetchContacts = useCallback(async () => {
     setLoading(true);
-    const params = new URLSearchParams();
-    if (search) params.set('search', search);
-    if (stage) params.set('stage', stage);
-    if (scoreLabel) params.set('score_label', scoreLabel);
-    if (source) params.set('source', source);
-    if (sort) params.set('sort', sort);
-    params.set('page', String(page));
-    params.set('limit', String(pageSize));
-    params.set('order', sortOrder);
+    try {
+      const params = new URLSearchParams();
+      if (search) params.set('search', search);
+      if (stage) params.set('stage', stage);
+      if (scoreLabel) params.set('score_label', scoreLabel);
+      if (source) params.set('source', source);
+      if (sort) params.set('sort', sort);
+      params.set('page', String(page));
+      params.set('limit', String(pageSize));
+      params.set('order', sortOrder);
 
-    const res = await fetch(`/api/agency/crm/contacts?${params}`);
-    if (res.ok) {
-      const data = await res.json();
-      setContacts(data.contacts || []);
-      setTotal(data.total || 0);
+      const res = await fetch(`/api/agency/crm/contacts?${params}`);
+      if (res.ok) {
+        const data = await res.json();
+        setContacts(data.contacts || []);
+        setTotal(data.total || 0);
+      }
+    } catch (err) {
+      console.error('[contacts] fetch error:', err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [search, stage, scoreLabel, source, sort, sortOrder, page, pageSize]);
 
   useEffect(() => { fetchContacts(); }, [fetchContacts]);
 
   const fetchCompanies = useCallback(async () => {
     setCompanyLoading(true);
-    const params = new URLSearchParams();
-    if (companySearch) params.set('search', companySearch);
-    params.set('page', String(companyPage));
-    const res = await fetch(`/api/agency/crm/companies?${params}`);
-    if (res.ok) {
-      const data = await res.json();
-      setCompanies(data.companies || []);
-      setCompanyTotal(data.total || 0);
+    try {
+      const params = new URLSearchParams();
+      if (companySearch) params.set('search', companySearch);
+      params.set('page', String(companyPage));
+      const res = await fetch(`/api/agency/crm/companies?${params}`);
+      if (res.ok) {
+        const data = await res.json();
+        setCompanies(data.companies || []);
+        setCompanyTotal(data.total || 0);
+      }
+    } catch (err) {
+      console.error('[companies] fetch error:', err);
+    } finally {
+      setCompanyLoading(false);
     }
-    setCompanyLoading(false);
   }, [companySearch, companyPage]);
 
   useEffect(() => { if (topTab === 'companies') fetchCompanies(); }, [topTab, fetchCompanies]);

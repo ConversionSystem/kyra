@@ -342,7 +342,7 @@ function AdminControlPanel({
                       value={editFields[field.key]}
                       onChange={(e) => setEditFields(prev => ({ ...prev, [field.key]: e.target.value }))}
                       placeholder={field.placeholder}
-                      className="mt-1 w-full text-sm border border-gray-200 rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="mt-1 w-full text-sm border border-gray-200 rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     />
                   </div>
                 ))}
@@ -353,13 +353,13 @@ function AdminControlPanel({
                     value={editFields.services}
                     onChange={(e) => setEditFields(prev => ({ ...prev, services: e.target.value }))}
                     placeholder="wellness exams, dental care, surgery, vaccinations"
-                    className="mt-1 w-full text-sm border border-gray-200 rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="mt-1 w-full text-sm border border-gray-200 rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   />
                 </div>
               </div>
               <div className="flex justify-end gap-2 pt-1">
                 <Button size="sm" variant="outline" onClick={() => setEditing(false)}>Cancel</Button>
-                <Button size="sm" disabled={saving} onClick={handleSaveEdit} className="bg-blue-600 hover:bg-blue-700 text-white">
+                <Button size="sm" disabled={saving} onClick={handleSaveEdit} className="bg-indigo-600 hover:bg-indigo-700 text-white">
                   {saving ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
                   Save Changes
                 </Button>
