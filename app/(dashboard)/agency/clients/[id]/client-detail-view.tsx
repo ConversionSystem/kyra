@@ -91,7 +91,6 @@ function SetupNudgeBanner({
   const missing: { label: string; tab: Tab; desc: string }[] = [];
   if (!hasPersonality) missing.push({ label: 'Add Personality', tab: 'personality', desc: 'Train the AI with persona, greeting, and instructions' });
   // GHL nudge removed from global banner — shown only inside the GHL tab
-  if ((client.usage_this_month ?? 0) === 0) missing.push({ label: 'Test the AI', tab: 'terminal', desc: 'Open the terminal and send a test message' });
 
   if (missing.length === 0) return null;
 
@@ -385,8 +384,10 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
           {/* Status banners — gateway errors, GHL disconnect, missing API key */}
           <ClientStatusBanner client={initialClient} />
 
-          {/* Setup nudge — shown when AI has no personality or GHL configured */}
-          <SetupNudgeBanner client={initialClient} onTabChange={handleTabChange} />
+          {/* Setup nudge — only shown on setup-relevant tabs (not usage/analytics/etc) */}
+          {['terminal', 'personality', 'settings', 'ghl', 'channels', 'templates'].includes(activeTab) && (
+            <SetupNudgeBanner client={initialClient} onTabChange={handleTabChange} />
+          )}
 
           {/* Premium upgrade prompt for locked tabs */}
           {isPremiumLocked(activeTab) && (
