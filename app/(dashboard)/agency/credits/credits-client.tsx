@@ -425,17 +425,18 @@ export function CreditsClient({
 
       {/* ── Balance Card ── */}
       <div className="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-600 to-indigo-700 text-white p-5 sm:p-6">
-        <div className="flex flex-wrap items-start gap-6">
+        {/* Balance + Stats — stack on mobile, row on desktop */}
+        <div className="flex flex-col sm:flex-row sm:items-start gap-5">
 
           {/* Left: balance */}
           <div className="flex items-start gap-4 flex-1 min-w-0">
-            <div className="h-14 w-14 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
-              <Coins className="h-7 w-7 text-white" />
+            <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+              <Coins className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
             </div>
             <div>
               <p className="text-xs font-semibold text-indigo-200 uppercase tracking-wide mb-1">Current Balance</p>
-              <div className="flex items-baseline gap-3 flex-wrap">
-                <p className="text-5xl font-black leading-none">{balance.toLocaleString()}</p>
+              <div className="flex items-baseline gap-2">
+                <p className="text-4xl sm:text-5xl font-black leading-none">{balance.toLocaleString()}</p>
                 <span className="text-indigo-200 text-sm font-medium">credits</span>
               </div>
               <div className="mt-2">
@@ -444,9 +445,9 @@ export function CreditsClient({
             </div>
           </div>
 
-          {/* Right: lifetime stats */}
-          <div className="flex items-center gap-6 flex-wrap sm:flex-nowrap">
-            <div className="bg-white/10 rounded-xl px-4 py-3 text-center min-w-[100px]">
+          {/* Right: lifetime stats — side by side on all sizes */}
+          <div className="flex items-center gap-3 sm:gap-6">
+            <div className="bg-white/10 rounded-xl px-4 py-3 text-center flex-1 sm:flex-none sm:min-w-[100px]">
               <div className="flex items-center justify-center gap-1 text-indigo-200 mb-1">
                 <TrendingUp className="h-3.5 w-3.5" />
                 <span className="text-[10px] font-semibold uppercase tracking-wide">Purchased</span>
@@ -454,7 +455,7 @@ export function CreditsClient({
               <p className="text-2xl font-black">{lifetimePurchased.toLocaleString()}</p>
               <p className="text-[10px] text-indigo-300 mt-0.5">lifetime</p>
             </div>
-            <div className="bg-white/10 rounded-xl px-4 py-3 text-center min-w-[100px]">
+            <div className="bg-white/10 rounded-xl px-4 py-3 text-center flex-1 sm:flex-none sm:min-w-[100px]">
               <div className="flex items-center justify-center gap-1 text-indigo-200 mb-1">
                 <Zap className="h-3.5 w-3.5" />
                 <span className="text-[10px] font-semibold uppercase tracking-wide">Used</span>
