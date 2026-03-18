@@ -570,6 +570,7 @@ function ContactsView({ clientId }: { clientId: string }) {
   const [showAdd, setShowAdd] = useState(false);
   const [addForm, setAddForm] = useState({ email: '', first_name: '', last_name: '', phone: '', tags: '' });
   const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
@@ -608,7 +609,7 @@ function ContactsView({ clientId }: { clientId: string }) {
 
     const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
     const emailIdx = headers.indexOf('email');
-    if (emailIdx === -1) { setImporting(false); alert('CSV must have an "email" column'); return; }
+    if (emailIdx === -1) { setImporting(false); setImportError('CSV must have an "email" column'); return; }
 
     const fnIdx = headers.indexOf('first_name');
     const lnIdx = headers.indexOf('last_name');
@@ -682,6 +683,12 @@ function ContactsView({ clientId }: { clientId: string }) {
           </button>
         </div>
       </div>
+      {importError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-2 text-sm text-red-700 flex items-center justify-between">
+          {importError}
+          <button onClick={() => setImportError(null)} className="text-red-500 hover:text-red-700 ml-2">&times;</button>
+        </div>
+      )}
 
       {/* Add contact modal */}
       {showAdd && (

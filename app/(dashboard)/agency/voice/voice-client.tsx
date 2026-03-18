@@ -611,7 +611,7 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
               <select
                 value={language}
                 onChange={(e) => setLanguage(e.target.value)}
-                className="w-full bg-white border border-gray-200 text-gray-900 rounded-md p-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                className="w-full bg-white border border-gray-200 text-gray-900 rounded-md p-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
               >
                 <option value="en">English</option>
                 <option value="es">Spanish</option>

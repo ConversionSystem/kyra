@@ -289,7 +289,7 @@ export function AutopilotClient() {
                                 value={editMessage}
                                 onChange={e => setEditMessage(e.target.value)}
                                 rows={4}
-                                className="w-full bg-white border border-gray-200 text-gray-900 rounded-md p-2 text-sm resize-y focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                className="w-full bg-white border border-gray-200 text-gray-900 rounded-md p-2 text-sm resize-y focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
                               />
                               <div className="flex gap-2 justify-end">
                                 <Button size="sm" variant="outline" onClick={() => setEditingId(null)}>

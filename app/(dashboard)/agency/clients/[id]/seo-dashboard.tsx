@@ -342,7 +342,7 @@ function AdminControlPanel({
                       value={editFields[field.key]}
                       onChange={(e) => setEditFields(prev => ({ ...prev, [field.key]: e.target.value }))}
                       placeholder={field.placeholder}
-                      className="mt-1 w-full text-sm border border-gray-200 rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="mt-1 w-full text-sm border border-gray-200 rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     />
                   </div>
                 ))}
@@ -353,7 +353,7 @@ function AdminControlPanel({
                     value={editFields.services}
                     onChange={(e) => setEditFields(prev => ({ ...prev, services: e.target.value }))}
                     placeholder="wellness exams, dental care, surgery, vaccinations"
-                    className="mt-1 w-full text-sm border border-gray-200 rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="mt-1 w-full text-sm border border-gray-200 rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   />
                 </div>
               </div>

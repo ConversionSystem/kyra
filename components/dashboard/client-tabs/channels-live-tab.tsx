@@ -41,7 +41,7 @@ export default function ChannelsLiveTab({
     navigator.clipboard.writeText(text).then(() => {
       setCopied(key);
       setTimeout(() => setCopied(null), 2000);
-    });
+    }).catch(() => { /* clipboard not available */ });
   };
 
   const saveWidgetAppearance = async () => {

@@ -424,6 +424,13 @@ function ContactsSection({ client, clientId }: { client: AgencyClient; clientId:
         <button onClick={() => setShowAdd(true)} className={btnPrimary}><Plus className="w-4 h-4 mr-1 inline" />Add Contact</button>
       </div>
 
+      {actionError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-2 text-sm text-red-700 flex items-center justify-between">
+          {actionError}
+          <button onClick={() => setActionError(null)} className="text-red-500 hover:text-red-700 ml-2">&times;</button>
+        </div>
+      )}
+
       {/* Bulk action bar */}
       {selected.size > 0 && (
         <div className="flex items-center gap-3 bg-indigo-50 rounded-lg px-4 py-2 text-sm">
@@ -593,6 +600,7 @@ function ContactDetailPanel({ contact: initial, onBack, client }: { contact: Con
   const [loadingDeals, setLoadingDeals] = useState(true);
   const [activityFilter, setActivityFilter] = useState('all');
   const [newTag, setNewTag] = useState('');
+  const [panelError, setPanelError] = useState<string | null>(null);
 
   const loadDetail = useCallback(async () => {
     try {
@@ -671,7 +679,7 @@ function ContactDetailPanel({ contact: initial, onBack, client }: { contact: Con
   const handleDelete = async () => {
     if (!window.confirm(`Delete ${contactName(contact)}? This cannot be undone.`)) return;
     const res = await fetch(`/api/agency/crm/contacts/${contact.id}`, { method: 'DELETE' });
-    if (!res.ok) { alert('Failed to delete contact. Please try again.'); return; }
+    if (!res.ok) { setPanelError('Failed to delete contact. Please try again.'); return; }
     onBack();
   };
 
@@ -681,6 +689,13 @@ function ContactDetailPanel({ contact: initial, onBack, client }: { contact: Con
       <button onClick={onBack} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
         <ArrowLeft className="w-4 h-4" /> Back to contacts
       </button>
+
+      {panelError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-2 text-sm text-red-700 flex items-center justify-between">
+          {panelError}
+          <button onClick={() => setPanelError(null)} className="text-red-500 hover:text-red-700 ml-2">&times;</button>
+        </div>
+      )}
 
       {/* Header */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
