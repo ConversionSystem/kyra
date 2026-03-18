@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Purple Lotus × Kyra — Intelligent Notification System</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0a0f;
+    --card: #12121a;
+    --card-border: rgba(147, 51, 234, 0.15);
+    --card-hover: #16162a;
+    --text: #f1f1f4;
+    --text-muted: #8b8b9e;
+    --accent: #9333ea;
+    --accent-light: #a855f7;
+    --accent-glow: rgba(147, 51, 234, 0.25);
+    --green: #22c55e;
+    --red: #ef4444;
+    --amber: #f59e0b;
+    --purple: #9333ea;
+    --gradient-1: linear-gradient(135deg, #7c3aed, #9333ea);
+    --gradient-2: linear-gradient(135deg, #9333ea 0%, #ec4899 100%);
+  }
+
+  html, body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    height: 100%;
+    width: 100%;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .deck { height: 100%; width: 100%; position: relative; overflow: hidden; }
+
+  .slide {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 2rem 1.5rem;
+    opacity: 0; transform: translateX(100%);
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
+  }
+  .slide.active { opacity: 1; transform: translateX(0); }
+  .slide.prev { opacity: 0; transform: translateX(-100%); }
+
+  .progress { position: fixed; top: 0; left: 0; height: 3px; background: var(--gradient-1); transition: width 0.4s ease; z-index: 100; border-radius: 0 2px 2px 0; }
+
+  .nav-dots { position: fixed; bottom: 1.25rem; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; z-index: 100; }
+  .nav-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.2); transition: all 0.3s; cursor: pointer; border: none; }
+  .nav-dot.active { background: var(--accent); width: 20px; border-radius: 3px; }
+
+  .slide-counter { position: fixed; bottom: 1.25rem; right: 1.5rem; font-size: 0.7rem; color: var(--text-muted); z-index: 100; font-variant-numeric: tabular-nums; }
+
+  .nav-arrow { position: fixed; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); color: var(--text-muted); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 100; transition: all 0.2s; font-size: 1rem; }
+  .nav-arrow:hover { background: rgba(147, 51, 234, 0.15); color: var(--accent-light); border-color: var(--accent); }
+  .nav-arrow.left { left: 0.75rem; }
+  .nav-arrow.right { right: 0.75rem; }
+  @media (max-width: 768px) { .nav-arrow { display: none; } .slide { padding: 1.5rem 1.25rem; } }
+
+  .eyebrow { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent-light); margin-bottom: 0.75rem; }
+  h1 { font-size: clamp(1.75rem, 6vw, 3rem); font-weight: 800; line-height: 1.1; letter-spacing: -0.03em; }
+  h2 { font-size: clamp(1.4rem, 4.5vw, 2.25rem); font-weight: 700; line-height: 1.15; letter-spacing: -0.02em; }
+  .subtitle { font-size: clamp(0.9rem, 2.5vw, 1.1rem); color: var(--text-muted); line-height: 1.5; margin-top: 0.75rem; font-weight: 400; }
+  .gradient-text { background: var(--gradient-1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .gradient-text-2 { background: var(--gradient-2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+
+  .card { background: var(--card); border: 1px solid var(--card-border); border-radius: 16px; padding: 1.25rem; margin-top: 1rem; }
+  .card-sm { background: var(--card); border: 1px solid var(--card-border); border-radius: 12px; padding: 1rem; }
+  .card-grid { display: grid; gap: 0.75rem; margin-top: 1.25rem; }
+  .card-grid-2 { grid-template-columns: 1fr 1fr; }
+  .card-grid-3 { grid-template-columns: 1fr; }
+  @media (min-width: 500px) { .card-grid-3 { grid-template-columns: 1fr 1fr 1fr; } }
+
+  .icon-circle { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.15rem; margin-bottom: 0.75rem; flex-shrink: 0; }
+  .icon-circle-sm { width: 32px; height: 32px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; flex-shrink: 0; }
+
+  .badge { display: inline-flex; align-items: center; gap: 4px; font-size: 0.65rem; font-weight: 600; padding: 3px 8px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .badge-red { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+  .badge-green { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
+  .badge-amber { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+  .badge-purple { background: rgba(147, 51, 234, 0.15); color: #c084fc; }
+
+  .feature-list { list-style: none; margin-top: 1rem; }
+  .feature-list li { display: flex; align-items: flex-start; gap: 0.6rem; padding: 0.6rem 0; font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .feature-list li:last-child { border-bottom: none; }
+  .check { color: var(--green); font-size: 0.8rem; margin-top: 2px; flex-shrink: 0; }
+  .cross { color: var(--red); font-size: 0.8rem; margin-top: 2px; flex-shrink: 0; }
+
+  .comparison-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .comparison-row:last-child { border-bottom: none; }
+  .comparison-label { font-size: 0.75rem; color: var(--text-muted); width: 100px; flex-shrink: 0; }
+  .comparison-bar { flex: 1; height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; }
+  .comparison-fill { height: 100%; border-radius: 3px; }
+
+  .flow-step { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.6rem 0; }
+  .flow-num { width: 28px; height: 28px; border-radius: 50%; background: var(--gradient-1); display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; flex-shrink: 0; }
+  .flow-content h4 { font-size: 0.85rem; font-weight: 600; margin-bottom: 0.15rem; }
+  .flow-content p { font-size: 0.75rem; color: var(--text-muted); line-height: 1.4; }
+
+  .msg-bubble { background: rgba(147, 51, 234, 0.1); border: 1px solid rgba(147, 51, 234, 0.2); border-radius: 12px; padding: 0.75rem 1rem; margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-muted); line-height: 1.5; font-style: italic; }
+  .msg-bubble-bad { background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); }
+  .msg-label { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.25rem; }
+  .msg-label-bad { color: var(--red); }
+  .msg-label-good { color: var(--green); }
+
+  .slide-cover { text-align: center; justify-content: center; align-items: center; }
+  .cover-tagline { font-size: clamp(0.8rem, 2vw, 1rem); color: var(--text-muted); margin-top: 1.5rem; font-weight: 400; }
+  .swipe-hint { position: fixed; bottom: 3rem; left: 50%; transform: translateX(-50%); font-size: 0.65rem; color: var(--text-muted); opacity: 0.5; z-index: 100; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.7; } }
+
+  .slide-scroll { max-height: calc(100vh - 6rem); overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 3rem; }
+  .slide-scroll::-webkit-scrollbar { display: none; }
+
+  .cta-button { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.85rem 1.75rem; background: var(--gradient-1); color: white; border: none; border-radius: 12px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s; text-decoration: none; margin-top: 1.5rem; }
+  .cta-button:hover { transform: translateY(-1px); box-shadow: 0 8px 24px var(--accent-glow); }
+
+  .mini-label { font-size: 0.65rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.35rem; }
+
+  .highlight-box { background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 12px; padding: 1rem; margin-top: 1rem; }
+  .highlight-box-green { background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.2); border-radius: 12px; padding: 1rem; margin-top: 1rem; }
+  .highlight-box-purple { background: rgba(147, 51, 234, 0.08); border: 1px solid rgba(147, 51, 234, 0.2); border-radius: 12px; padding: 1rem; margin-top: 1rem; }
+
+  .timeline { position: relative; padding-left: 1.5rem; margin-top: 0.75rem; }
+  .timeline::before { content: ''; position: absolute; left: 0.5rem; top: 0.5rem; bottom: 0.5rem; width: 2px; background: linear-gradient(180deg, var(--accent), rgba(147,51,234,0.1)); border-radius: 1px; }
+  .tl-item { position: relative; padding: 0.4rem 0; }
+  .tl-dot { position: absolute; left: -1.25rem; top: 0.65rem; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); border: 2px solid var(--bg); }
+  .tl-time { font-size: 0.6rem; color: var(--accent-light); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+  .tl-msg { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.1rem; line-height: 1.4; }
+  .tl-msg strong { color: var(--text); font-weight: 500; }
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<div class="deck" id="deck">
+
+  <!-- SLIDE 0: Cover -->
+  <div class="slide slide-cover active" data-slide="0">
+    <div style="font-size: 2rem; margin-bottom: 1rem;">💜</div>
+    <h1><span class="gradient-text">Intelligent Notifications</span><br>for Purple Lotus</h1>
+    <p class="cover-tagline">One brain. One voice. Every text a brand moment.<br>Powered by Kyra AI.</p>
+    <div class="swipe-hint">Swipe or tap arrow to continue →</div>
+  </div>
+
+  <!-- SLIDE 1: The Problem -->
+  <div class="slide" data-slide="1">
+    <div class="slide-scroll">
+      <div class="eyebrow">⚠️ The Problem</div>
+      <h2>3 systems.<br><span class="gradient-text">Zero coordination.</span></h2>
+      <p class="subtitle">Customers get 5-6 messages from 3 different platforms that don't talk to each other.</p>
+
+      <div class="card" style="margin-top: 1rem;">
+        <div class="comparison-row">
+          <span class="comparison-label" style="color: var(--text);">Weedmaps</span>
+          <div style="flex: 1; font-size: 0.72rem; color: var(--text-muted);">Manual texts. Every agent writes differently.</div>
+          <span class="badge badge-red">D</span>
+        </div>
+        <div class="comparison-row">
+          <span class="comparison-label" style="color: var(--text);">Onfleet</span>
+          <div style="flex: 1; font-size: 0.72rem; color: var(--text-muted);">Generic auto-texts. No driver name. No brand.</div>
+          <span class="badge badge-amber">C</span>
+        </div>
+        <div class="comparison-row">
+          <span class="comparison-label" style="color: var(--text);">Treez</span>
+          <div style="flex: 1; font-size: 0.72rem; color: var(--text-muted);">Payment texts that compete with confirmations.</div>
+          <span class="badge badge-amber">C</span>
+        </div>
+      </div>
+
+      <div class="highlight-box">
+        <p style="font-size: 0.8rem; font-weight: 600; color: var(--red);">7 Critical Gaps Found</p>
+        <ul style="font-size: 0.72rem; color: var(--text-muted); margin-top: 0.4rem; padding-left: 1rem; line-height: 1.6;">
+          <li>No "packed" notification — biggest silence gap</li>
+          <li>No driver name in any message</li>
+          <li>Delay texts give ranges, not real ETAs</li>
+          <li>Driver arrival text is <em>threatening</em></li>
+          <li>Zero post-delivery relationship</li>
+          <li>No review request system</li>
+          <li>Lotus Now gets zero differentiation</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 2: The Solution -->
+  <div class="slide" data-slide="2">
+    <div class="slide-scroll">
+      <div class="eyebrow">💡 The Solution</div>
+      <h2>Kyra: <span class="gradient-text">One brain</span> for every notification</h2>
+      <p class="subtitle">Onfleet triggers the event. Kyra composes the perfect message. Every text sounds like Purple Lotus.</p>
+
+      <div class="card">
+        <div class="flow-step">
+          <div class="flow-num">1</div>
+          <div class="flow-content">
+            <h4>Onfleet fires an event</h4>
+            <p>Driver assigned, route started, arriving, delivered, delayed — Kyra listens to all of them via webhook</p>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num">2</div>
+          <div class="flow-content">
+            <h4>Kyra enriches + personalizes</h4>
+            <p>Pulls driver name, customer history, Lotus Now status, calculates real ETA, checks if first order</p>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num">3</div>
+          <div class="flow-content">
+            <h4>Customer gets the Lotus Way</h4>
+            <p>One branded message with the right info at the right time. Driver named. Lotus Now branded. Human.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="highlight-box-purple" style="margin-top: 0.75rem;">
+        <p style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.5;">
+          <strong style="color: var(--accent-light);">Key insight:</strong> Zapier is a pipe — it moves data from A to B. <strong style="color: var(--text);">Kyra is a brain</strong> — it receives data, thinks about it, and acts intelligently.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 3: The 8-Touch Journey -->
+  <div class="slide" data-slide="3">
+    <div class="slide-scroll">
+      <div class="eyebrow">💜 The Lotus Now Journey</div>
+      <h2>8 touches. <span class="gradient-text">21 days.</span></h2>
+      <p class="subtitle">From order confirmed to Visit 2 — a coordinated experience no cannabis delivery offers.</p>
+
+      <div class="timeline" style="margin-top: 1rem;">
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-time">Touch 1 · Instant</div>
+          <div class="tl-msg"><strong>Order Confirmed</strong> — Lotus Now branded, specific ETA, first-timer welcome variant</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-time">Touch 2 · +5-15 min</div>
+          <div class="tl-msg"><strong>Packed + Driver Assigned</strong> — "Peter has your order — departing in 8 minutes"</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-time">Touch 3 · At departure</div>
+          <div class="tl-msg"><strong>Driver Departed</strong> — Driver name, ETA, tracking link. Replaces 2 overlapping messages with 1.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-time">Touch 4 · 3-5 min before</div>
+          <div class="tl-msg"><strong>Arriving Soon</strong> — ID reminder, gate code variant for gated communities</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-time">Touch 5 · At delivery</div>
+          <div class="tl-msg"><strong>Delivered</strong> — Actual delivery time shown ("38 minutes"), 1-5 rating, under-SLA flex</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-time">Touch 6 · +24 hours</div>
+          <div class="tl-msg"><strong>Follow-Up</strong> — "How was everything?" Catches problems before they become reviews.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-time">Touch 7 · +72 hours</div>
+          <div class="tl-msg"><strong>Review Request</strong> — Gated: only sent to customers who rated 4 or 5</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-time">Touch 8 · +7-21 days</div>
+          <div class="tl-msg"><strong>Visit 2 Nudge</strong> — Retention incentive, only if no repeat order placed</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 4: Before vs After Messages -->
+  <div class="slide" data-slide="4">
+    <div class="slide-scroll">
+      <div class="eyebrow">📱 Before vs After</div>
+      <h2>Same moment.<br><span class="gradient-text">Different experience.</span></h2>
+
+      <div class="card" style="margin-top: 1rem;">
+        <p class="mini-label" style="margin-bottom: 0.5rem;">Order Confirmed</p>
+        <div class="msg-label msg-label-bad">❌ Current</div>
+        <div class="msg-bubble msg-bubble-bad">"Thank you for placing an order with Purple Lotus! We're processing your order now. We can accept Cash, Debit, and Treez Pay..."</div>
+        <div class="msg-label msg-label-good" style="margin-top: 0.75rem;">✅ Lotus Way</div>
+        <div class="msg-bubble">"Lotus Now confirmed! 💜 Your order departs on our next loop. Est. arrival: 2:45 PM. We'll text you at every step. — Purple Lotus"</div>
+      </div>
+
+      <div class="card" style="margin-top: 0.75rem;">
+        <p class="mini-label" style="margin-bottom: 0.5rem;">Driver Waiting</p>
+        <div class="msg-label msg-label-bad">❌ Current</div>
+        <div class="msg-bubble msg-bubble-bad">"We are going to set a five minute timer before our driver has to move on to the next guest..."</div>
+        <div class="msg-label msg-label-good" style="margin-top: 0.75rem;">✅ Lotus Way</div>
+        <div class="msg-bubble">"Peter is at your door! Please come out with your ID in the next few minutes. Need to reschedule? Reply here or call (408) 456-0420. — Purple Lotus"</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 5: The Silence Gap -->
+  <div class="slide" data-slide="5">
+    <div class="slide-scroll">
+      <div class="eyebrow">🔇 The Biggest Gap</div>
+      <h2>"Order confirmed"...<br><span class="gradient-text">then silence.</span></h2>
+      <p class="subtitle">Right now, customers go from "order confirmed" to "driver on the way" with nothing in between. This is where WISMO calls come from.</p>
+
+      <div class="card-grid card-grid-2" style="margin-top: 1.25rem;">
+        <div class="card-sm" style="text-align: center; border-color: rgba(239,68,68,0.2);">
+          <p style="font-size: 1.25rem; margin-bottom: 0.35rem;">😶</p>
+          <h4 style="font-size: 0.8rem;">Today</h4>
+          <p style="font-size: 0.65rem; color: var(--text-muted); margin-top: 0.2rem;">10-25 min silence after confirmation. Customer wonders: did they get my order?</p>
+          <span class="badge badge-red" style="margin-top: 0.5rem;">WISMO calls</span>
+        </div>
+        <div class="card-sm" style="text-align: center; border-color: rgba(147,51,234,0.3);">
+          <p style="font-size: 1.25rem; margin-bottom: 0.35rem;">💜</p>
+          <h4 style="font-size: 0.8rem;">With Kyra</h4>
+          <p style="font-size: 0.65rem; color: var(--text-muted); margin-top: 0.2rem;">"Your order is packed! Peter has it — departing in 8 minutes."</p>
+          <span class="badge badge-green" style="margin-top: 0.5rem;">Zero silence</span>
+        </div>
+      </div>
+
+      <div class="highlight-box-green" style="margin-top: 1rem;">
+        <p style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.5;">
+          <strong style="color: var(--green);">Why Kyra can do this:</strong> Onfleet fires a task-assignment webhook. Kyra catches it, pulls the driver's name, calculates departure time, and sends the packed notification — <strong style="color: var(--text);">automatically</strong>.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 6: Smart Exceptions -->
+  <div class="slide" data-slide="6">
+    <div class="slide-scroll">
+      <div class="eyebrow">🧠 Smart Exception Handling</div>
+      <h2>Delays become <span class="gradient-text">brand moments</span></h2>
+      <p class="subtitle">When things go wrong, Kyra doesn't just notify — it compensates, resolves, and rebuilds trust.</p>
+
+      <div class="card" style="margin-top: 1rem;">
+        <p class="mini-label">Delay Detected</p>
+        <div class="flow-step">
+          <div class="flow-num" style="font-size: 0.8rem;">⏱️</div>
+          <div class="flow-content">
+            <h4>Kyra calculates a REAL new ETA</h4>
+            <p>Not "30-60 minutes" — an actual time: "3:05 PM"</p>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num" style="font-size: 0.8rem;">💰</div>
+          <div class="flow-content">
+            <h4>Auto-credits $5 via Treez API</h4>
+            <p>No human intervention. Credit appears instantly on the customer's account.</p>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num" style="font-size: 0.8rem;">💬</div>
+          <div class="flow-content">
+            <h4>Sends one clean message</h4>
+            <p>"Peter is on the way. Updated arrival: 3:05 PM. We've added $5 to your account for the wait."</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 0.75rem;">
+        <p class="mini-label">Ahead of Schedule (Delight Moment)</p>
+        <div class="msg-bubble">"Good news — Peter is ahead of schedule! Your Lotus Now order is arriving earlier than expected. Updated arrival: 2:32 PM. 💜 — Purple Lotus"</div>
+        <p style="font-size: 0.65rem; color: var(--text-muted); margin-top: 0.5rem; opacity: 0.7;">You deliver early often. Right now, nobody knows. Kyra turns early deliveries into brand wins.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 7: Post-Delivery (The Missing Relationship) -->
+  <div class="slide" data-slide="7">
+    <div class="slide-scroll">
+      <div class="eyebrow">💜 After Delivery</div>
+      <h2>The relationship <span class="gradient-text">doesn't end at the door</span></h2>
+      <p class="subtitle">Currently: "Your order has been delivered!" then silence forever. With Kyra: 21 days of relationship building.</p>
+
+      <div class="card" style="margin-top: 1rem;">
+        <div class="flow-step">
+          <div class="flow-num">6</div>
+          <div class="flow-content">
+            <h4>24-Hour Follow-Up</h4>
+            <p>"How was everything? If anything wasn't perfect, reply here and we'll make it right." Catches problems before they become 1-star reviews.</p>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num">7</div>
+          <div class="flow-content">
+            <h4>Gated Review Request (72 hrs)</h4>
+            <p>Only asks customers who rated 4 or 5 for a public review. Unhappy ones were already caught by the follow-up. This is how you go from 4.8 → 4.9.</p>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-num">8</div>
+          <div class="flow-content">
+            <h4>Visit 2 Retention Nudge (7-21 days)</h4>
+            <p>Only sent if no repeat order. "Ready for another Lotus Now run? Your next order gets $10 off." Visit 2 is the most critical retention inflection.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="highlight-box-purple" style="margin-top: 0.75rem;">
+        <p style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.5;">
+          <strong style="color: var(--accent-light);">Why Kyra, not Zapier:</strong> Zapier can schedule a delayed message. Zapier <strong style="color: var(--text);">cannot gate it based on a reply</strong> to a previous message. Kyra has memory — it knows what the customer rated and decides whether to ask for a review.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 8: Why Not Zapier -->
+  <div class="slide" data-slide="8">
+    <div class="slide-scroll">
+      <div class="eyebrow">⚡ Kyra vs. Everything Else</div>
+      <h2>Not a better Zapier.<br>A <span class="gradient-text">fundamentally different</span> thing.</h2>
+
+      <div class="card" style="margin-top: 1rem;">
+        <div style="display: grid; grid-template-columns: 1fr auto auto; gap: 0.35rem; font-size: 0.72rem;">
+          <div style="color: var(--text-muted); font-weight: 600;"></div>
+          <div style="text-align: center; color: var(--text-muted); font-weight: 600; min-width: 55px;">Zapier</div>
+          <div style="text-align: center; font-weight: 600; min-width: 45px;" class="gradient-text">Kyra</div>
+
+          <div style="color: var(--text-muted); padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.04);">Driver name in messages</div>
+          <div style="text-align: center; color: var(--red); padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.04);">❌</div>
+          <div style="text-align: center; color: var(--green); padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.04);">✅</div>
+
+          <div style="color: var(--text-muted); padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.04);">Calculate real ETA</div>
+          <div style="text-align: center; color: var(--red); padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.04);">❌</div>
+          <div style="text-align: center; color: var(--green); padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.04);">✅</div>
+
+          <div style="color: var(--text-muted); padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.04);">Gate by previous reply</div>
+          <div style="text-align: center; color: var(--red); padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.04);">❌</div>
+          <div style="text-align: center; color: var(--green); padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.04);">✅</div>
+
+          <div style="color: var(--text-muted); padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.04);">Auto-credit accounts</div>
+          <div style="text-align: center; color: var(--red); padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.04);">❌</div>
+          <div style="text-align: center; color: var(--green); padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.04);">✅</div>
+
+          <div style="color: var(--text-muted); padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.04);">Conditional variants</div>
+          <div style="text-align: center; color: var(--red); padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.04);">❌</div>
+          <div style="text-align: center; color: var(--green); padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.04);">✅</div>
+
+          <div style="color: var(--text-muted); padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.04);">Handle customer replies</div>
+          <div style="text-align: center; color: var(--red); padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.04);">❌</div>
+          <div style="text-align: center; color: var(--green); padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.04);">✅</div>
+
+          <div style="color: var(--text-muted); padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.04);">Cross-platform coordination</div>
+          <div style="text-align: center; color: var(--red); padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.04);">❌</div>
+          <div style="text-align: center; color: var(--green); padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.04);">✅</div>
+
+          <div style="color: var(--text-muted); padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.04);">Learn + adapt over time</div>
+          <div style="text-align: center; color: var(--red); padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.04);">❌</div>
+          <div style="text-align: center; color: var(--green); padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.04);">✅</div>
+        </div>
+      </div>
+
+      <div class="highlight-box-green" style="margin-top: 0.75rem;">
+        <p style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.5;">
+          <strong style="color: var(--green);">Spring Big, Alpine IQ</strong> = batch marketing tools. Great for "20% off this weekend" to 10K customers. <strong style="color: var(--text);">Can't</strong> send "Peter is 3 minutes away with your Lotus Now order" to one customer at exactly the right moment.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 9: What Kyra Needs -->
+  <div class="slide" data-slide="9">
+    <div class="slide-scroll">
+      <div class="eyebrow">⚙️ What Kyra Needs</div>
+      <h2>Simple setup.<br><span class="gradient-text">Powerful output.</span></h2>
+
+      <div style="margin-top: 1.25rem;">
+        <div class="card-sm" style="margin-bottom: 0.6rem; display: flex; gap: 0.75rem; align-items: flex-start;">
+          <div class="icon-circle-sm" style="background: rgba(147,51,234,0.15);">🔗</div>
+          <div>
+            <h4 style="font-size: 0.85rem; font-weight: 600;">Onfleet Webhooks</h4>
+            <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.1rem;">Task assignment, route start, proximity, complete, delay — 30 min setup in Onfleet settings</p>
+          </div>
+        </div>
+        <div class="card-sm" style="margin-bottom: 0.6rem; display: flex; gap: 0.75rem; align-items: flex-start;">
+          <div class="icon-circle-sm" style="background: rgba(34,197,94,0.15);">🔑</div>
+          <div>
+            <h4 style="font-size: 0.85rem; font-weight: 600;">Treez API Access</h4>
+            <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.1rem;">Read customer history, write loyalty credits for auto-compensation</p>
+          </div>
+        </div>
+        <div class="card-sm" style="margin-bottom: 0.6rem; display: flex; gap: 0.75rem; align-items: flex-start;">
+          <div class="icon-circle-sm" style="background: rgba(245,158,11,0.15);">📱</div>
+          <div>
+            <h4 style="font-size: 0.85rem; font-weight: 600;">SMS Provider</h4>
+            <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.1rem;">Twilio or existing — Kyra composes, provider delivers</p>
+          </div>
+        </div>
+        <div class="card-sm" style="margin-bottom: 0.6rem; display: flex; gap: 0.75rem; align-items: flex-start;">
+          <div class="icon-circle-sm" style="background: rgba(99,102,241,0.15);">💜</div>
+          <div>
+            <h4 style="font-size: 0.85rem; font-weight: 600;">Lotus Way Brand Guide</h4>
+            <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.1rem;">Already done — your notification playbook is the voice guide</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="highlight-box-green" style="margin-top: 0.5rem;">
+        <p style="font-size: 0.8rem; font-weight: 600; color: var(--green);">⏱️ Timeline: 1-2 weeks</p>
+        <p style="font-size: 0.72rem; color: var(--text-muted); margin-top: 0.2rem;">Full 8-touch sequence + all exception handling, tested end-to-end.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 10: The Experience Side by Side -->
+  <div class="slide" data-slide="10">
+    <div class="slide-scroll">
+      <div class="eyebrow">📊 The Transformation</div>
+      <h2>Today vs. <span class="gradient-text">Lotus Way</span></h2>
+
+      <div class="card-grid card-grid-2" style="margin-top: 1rem;">
+        <div class="card-sm" style="border-color: rgba(239,68,68,0.2);">
+          <p class="mini-label" style="color: var(--red);">Today</p>
+          <div style="font-size: 2rem; font-weight: 800; color: var(--red); margin: 0.25rem 0;">5-6</div>
+          <p style="font-size: 0.65rem; color: var(--text-muted);">messages from 3 systems</p>
+        </div>
+        <div class="card-sm" style="border-color: rgba(147,51,234,0.3);">
+          <p class="mini-label" style="color: var(--accent-light);">Lotus Way</p>
+          <div style="font-size: 2rem; font-weight: 800; color: var(--accent-light); margin: 0.25rem 0;">8</div>
+          <p style="font-size: 0.65rem; color: var(--text-muted);">coordinated touches over 21 days</p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 0.75rem;">
+        <div style="display: grid; grid-template-columns: 1fr auto auto; gap: 0.35rem; font-size: 0.72rem;">
+          <div style="color: var(--text-muted); font-weight: 600;"></div>
+          <div style="text-align: center; color: var(--red); font-weight: 600; min-width: 45px;">Today</div>
+          <div style="text-align: center; font-weight: 600; min-width: 45px;" class="gradient-text">Kyra</div>
+
+          <div style="color: var(--text-muted); padding: 0.35rem 0; border-top: 1px solid rgba(255,255,255,0.04);">Driver name used</div>
+          <div style="text-align: center; padding: 0.35rem 0; border-top: 1px solid rgba(255,255,255,0.04);">0×</div>
+          <div style="text-align: center; color: var(--green); padding: 0.35rem 0; border-top: 1px solid rgba(255,255,255,0.04);">4×</div>
+
+          <div style="color: var(--text-muted); padding: 0.35rem 0; border-top: 1px solid rgba(255,255,255,0.04);">Lotus Now branded</div>
+          <div style="text-align: center; padding: 0.35rem 0; border-top: 1px solid rgba(255,255,255,0.04);">0×</div>
+          <div style="text-align: center; color: var(--green); padding: 0.35rem 0; border-top: 1px solid rgba(255,255,255,0.04);">8×</div>
+
+          <div style="color: var(--text-muted); padding: 0.35rem 0; border-top: 1px solid rgba(255,255,255,0.04);">Post-delivery touches</div>
+          <div style="text-align: center; padding: 0.35rem 0; border-top: 1px solid rgba(255,255,255,0.04);">0</div>
+          <div style="text-align: center; color: var(--green); padding: 0.35rem 0; border-top: 1px solid rgba(255,255,255,0.04);">3</div>
+
+          <div style="color: var(--text-muted); padding: 0.35rem 0; border-top: 1px solid rgba(255,255,255,0.04);">Review requests</div>
+          <div style="text-align: center; padding: 0.35rem 0; border-top: 1px solid rgba(255,255,255,0.04);">0</div>
+          <div style="text-align: center; color: var(--green); padding: 0.35rem 0; border-top: 1px solid rgba(255,255,255,0.04);">Gated</div>
+
+          <div style="color: var(--text-muted); padding: 0.35rem 0; border-top: 1px solid rgba(255,255,255,0.04);">Auto delay compensation</div>
+          <div style="text-align: center; padding: 0.35rem 0; border-top: 1px solid rgba(255,255,255,0.04);">No</div>
+          <div style="text-align: center; color: var(--green); padding: 0.35rem 0; border-top: 1px solid rgba(255,255,255,0.04);">$5 auto</div>
+
+          <div style="color: var(--text); font-weight: 600; padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.08);">Relationship duration</div>
+          <div style="text-align: center; color: var(--red); font-weight: 600; padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.08);">0 days</div>
+          <div style="text-align: center; font-weight: 600; padding: 0.4rem 0; border-top: 1px solid rgba(255,255,255,0.08);"><span class="gradient-text">21 days</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 11: CTA -->
+  <div class="slide slide-cover" data-slide="11">
+    <div>
+      <div style="font-size: 2.5rem; margin-bottom: 1rem;">💜</div>
+      <h2>Every text is a<br><span class="gradient-text">brand moment</span></h2>
+      <p class="subtitle" style="max-width: 400px; margin: 0.75rem auto 0;">Let's make every notification sound like Purple Lotus — warm, specific, human, confident.</p>
+      <a href="https://kyra.conversionsystem.com/build" class="cta-button">Get Started →</a>
+      <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 1rem; opacity: 0.6;">Powered by Kyra — AI Workforce Platform</p>
+    </div>
+  </div>
+
+</div>
+
+<div class="nav-dots" id="dots"></div>
+<div class="slide-counter" id="counter"></div>
+<button class="nav-arrow left" onclick="navigate(-1)">‹</button>
+<button class="nav-arrow right" onclick="navigate(1)">›</button>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const totalSlides = slides.length;
+  let current = 0;
+  let startX = 0;
+  let isDragging = false;
+
+  const dotsContainer = document.getElementById('dots');
+  for (let i = 0; i < totalSlides; i++) {
+    const dot = document.createElement('button');
+    dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
+    dot.onclick = () => goTo(i);
+    dotsContainer.appendChild(dot);
+  }
+
+  function updateUI() {
+    slides.forEach((s, i) => {
+      s.classList.remove('active', 'prev');
+      if (i === current) s.classList.add('active');
+      else if (i < current) s.classList.add('prev');
+    });
+    document.querySelectorAll('.nav-dot').forEach((d, i) => d.classList.toggle('active', i === current));
+    document.getElementById('progress').style.width = ((current / (totalSlides - 1)) * 100) + '%';
+    document.getElementById('counter').textContent = (current + 1) + ' / ' + totalSlides;
+    const hint = document.querySelector('.swipe-hint');
+    if (hint) hint.style.display = current > 0 ? 'none' : '';
+  }
+
+  function goTo(i) { if (i >= 0 && i < totalSlides) { current = i; updateUI(); } }
+  function navigate(dir) { goTo(current + dir); }
+
+  const deck = document.getElementById('deck');
+  deck.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; isDragging = true; }, { passive: true });
+  deck.addEventListener('touchend', (e) => {
+    if (!isDragging) return;
+    const diff = startX - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 50) navigate(diff > 0 ? 1 : -1);
+    isDragging = false;
+  }, { passive: true });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); navigate(1); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); navigate(-1); }
+  });
+
+  deck.addEventListener('click', (e) => {
+    const w = window.innerWidth;
+    if (e.clientX > w * 0.75) navigate(1);
+    else if (e.clientX < w * 0.25) navigate(-1);
+  });
+
+  updateUI();
+</script>
+</body>
+</html>
