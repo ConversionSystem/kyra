@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Trusted Network × Kyra — OpenClaw Deployment & Integration</title>
+<title>Trusted Network × Kyra — Your AI-Powered Business Stack</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
   *{margin:0;padding:0;box-sizing:border-box}
-  :root{--bg:#0a0a0f;--card:#12121a;--card-border:rgba(59,130,246,.15);--text:#f1f1f4;--text-muted:#8b8b9e;--accent:#3b82f6;--accent-light:#60a5fa;--accent-glow:rgba(59,130,246,.25);--green:#22c55e;--red:#ef4444;--amber:#f59e0b;--gradient-1:linear-gradient(135deg,#2563eb,#3b82f6);--gradient-2:linear-gradient(135deg,#3b82f6 0%,#06b6d4 100%)}
+  :root{--bg:#0a0a0f;--card:#12121a;--card-border:rgba(59,130,246,.15);--text:#f1f1f4;--text-muted:#8b8b9e;--accent:#3b82f6;--accent-light:#60a5fa;--green:#22c55e;--amber:#f59e0b;--gradient-1:linear-gradient(135deg,#2563eb,#3b82f6)}
   html,body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--text);overflow:hidden;height:100%;width:100%;-webkit-font-smoothing:antialiased}
   .deck{height:100%;width:100%;position:relative;overflow:hidden}
   .slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:2rem 1.5rem;opacity:0;transform:translateX(100%);transition:all .5s cubic-bezier(.4,0,.2,1);overflow-y:auto;-webkit-overflow-scrolling:touch}
@@ -24,36 +24,33 @@
   .eyebrow{font-size:.65rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--accent-light);margin-bottom:.75rem}
   h1{font-size:clamp(1.75rem,6vw,3rem);font-weight:800;line-height:1.1;letter-spacing:-.03em}
   h2{font-size:clamp(1.4rem,4.5vw,2.25rem);font-weight:700;line-height:1.15;letter-spacing:-.02em}
-  .subtitle{font-size:clamp(.9rem,2.5vw,1.1rem);color:var(--text-muted);line-height:1.5;margin-top:.75rem;font-weight:400}
+  .subtitle{font-size:clamp(.9rem,2.5vw,1.1rem);color:var(--text-muted);line-height:1.5;margin-top:.75rem}
   .gradient-text{background:var(--gradient-1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
   .card{background:var(--card);border:1px solid var(--card-border);border-radius:16px;padding:1.25rem;margin-top:1rem}
   .card-sm{background:var(--card);border:1px solid var(--card-border);border-radius:12px;padding:1rem}
-  .card-grid{display:grid;gap:.75rem;margin-top:1.25rem}
-  .card-grid-2{grid-template-columns:1fr 1fr}
-  .badge{display:inline-flex;align-items:center;gap:4px;font-size:.65rem;font-weight:600;padding:3px 8px;border-radius:6px;text-transform:uppercase;letter-spacing:.05em}
-  .badge-red{background:rgba(239,68,68,.15);color:#f87171}.badge-green{background:rgba(34,197,94,.15);color:#4ade80}.badge-amber{background:rgba(245,158,11,.15);color:#fbbf24}.badge-blue{background:rgba(59,130,246,.15);color:#93c5fd}
+  .card-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-top:1rem}
+  .badge{display:inline-flex;align-items:center;font-size:.65rem;font-weight:600;padding:3px 8px;border-radius:6px;text-transform:uppercase;letter-spacing:.05em}
+  .badge-green{background:rgba(34,197,94,.15);color:#4ade80}.badge-blue{background:rgba(59,130,246,.15);color:#93c5fd}
   .feature-list{list-style:none;margin-top:.75rem}
   .feature-list li{display:flex;align-items:flex-start;gap:.6rem;padding:.5rem 0;font-size:.82rem;color:var(--text-muted);line-height:1.4;border-bottom:1px solid rgba(255,255,255,.04)}
   .feature-list li:last-child{border-bottom:none}
-  .check{color:var(--green);font-size:.8rem;margin-top:2px;flex-shrink:0}.cross{color:var(--red);font-size:.8rem;margin-top:2px;flex-shrink:0}
+  .check{color:var(--green);font-size:.8rem;margin-top:2px;flex-shrink:0}
   .flow-step{display:flex;align-items:flex-start;gap:.75rem;padding:.55rem 0}
   .flow-num{width:28px;height:28px;border-radius:50%;background:var(--gradient-1);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0}
   .flow-content h4{font-size:.82rem;font-weight:600;margin-bottom:.1rem}
   .flow-content p{font-size:.72rem;color:var(--text-muted);line-height:1.4}
   .slide-cover{text-align:center;justify-content:center;align-items:center}
-  .cover-tagline{font-size:clamp(.8rem,2vw,1rem);color:var(--text-muted);margin-top:1.5rem;font-weight:400}
   .swipe-hint{position:fixed;bottom:3rem;left:50%;transform:translateX(-50%);font-size:.65rem;color:var(--text-muted);opacity:.5;z-index:100;animation:pulse 2s infinite}
   @keyframes pulse{0%,100%{opacity:.3}50%{opacity:.7}}
   .slide-scroll{max-height:calc(100vh - 6rem);overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:3rem}
   .slide-scroll::-webkit-scrollbar{display:none}
   .cta-button{display:inline-flex;align-items:center;gap:.5rem;padding:.85rem 1.75rem;background:var(--gradient-1);color:white;border:none;border-radius:12px;font-size:.9rem;font-weight:600;cursor:pointer;transition:all .2s;text-decoration:none;margin-top:1.5rem}
-  .cta-button:hover{transform:translateY(-1px);box-shadow:0 8px 24px var(--accent-glow)}
+  .cta-button:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(59,130,246,.25)}
   .mini-label{font-size:.65rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.35rem}
   .highlight-box-green{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:12px;padding:1rem;margin-top:1rem}
   .highlight-box-blue{background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:12px;padding:1rem;margin-top:1rem}
-  .highlight-box-red{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:12px;padding:1rem;margin-top:1rem}
-  .icon-circle-sm{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0}
   .skill-tag{display:inline-flex;align-items:center;gap:4px;font-size:.68rem;font-weight:600;padding:4px 10px;border-radius:8px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);color:#93c5fd;margin:2px}
+  .icon-circle-sm{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0}
 </style>
 </head>
 <body>
@@ -63,207 +60,179 @@
   <!-- SLIDE 0: Cover -->
   <div class="slide slide-cover active" data-slide="0">
     <div style="font-size:2rem;margin-bottom:1rem">🔗</div>
-    <h1>OpenClaw Deployment<br>& Integration <span class="gradient-text">Analysis</span></h1>
-    <p class="cover-tagline">SOW Assessment · 1 AI Worker · 6 Skills<br>How Kyra delivers it in weeks, not months.</p>
-    <p style="font-size:.7rem;color:var(--text-muted);margin-top:2rem;opacity:.6">Prepared for Trusted Network · March 2026</p>
+    <h1>Your Entire Stack<br><span class="gradient-text">Connected by AI</span></h1>
+    <p style="font-size:clamp(.85rem,2.5vw,1.05rem);color:var(--text-muted);margin-top:1.25rem;line-height:1.5">M365 · Fathom · Telegram · GitHub · Web Search<br>One AI worker that manages it all.</p>
+    <p style="font-size:.7rem;color:var(--text-muted);margin-top:2rem;opacity:.5">Trusted Network × Kyra AI</p>
     <div class="swipe-hint">Swipe or tap arrow to continue →</div>
   </div>
 
-  <!-- SLIDE 1: SOW Grade -->
+  <!-- SLIDE 1: What You Need -->
   <div class="slide" data-slide="1">
     <div class="slide-scroll">
-      <div class="eyebrow">📊 SOW Assessment</div>
-      <h2>Overall Grade: <span class="gradient-text">C+</span></h2>
-      <p class="subtitle">The right integrations, the wrong approach. Here's why.</p>
+      <div class="eyebrow">🎯 Your Requirements</div>
+      <h2>Everything in your SOW.<br><span class="gradient-text">Delivered smarter.</span></h2>
       <div class="card">
-        <div style="font-size:.75rem">
-          <div style="display:flex;justify-content:space-between;padding:.45rem 0;border-bottom:1px solid rgba(255,255,255,.04)"><span style="color:var(--text)">Technical Scope</span><span class="badge badge-amber">C+</span></div>
-          <div style="display:flex;justify-content:space-between;padding:.45rem 0;border-bottom:1px solid rgba(255,255,255,.04)"><span style="color:var(--text)">Architecture Understanding</span><span class="badge badge-red">D</span></div>
-          <div style="display:flex;justify-content:space-between;padding:.45rem 0;border-bottom:1px solid rgba(255,255,255,.04)"><span style="color:var(--text)">Security Requirements</span><span class="badge badge-green">B+</span></div>
-          <div style="display:flex;justify-content:space-between;padding:.45rem 0;border-bottom:1px solid rgba(255,255,255,.04)"><span style="color:var(--text)">Milestone Structure</span><span class="badge badge-amber">C</span></div>
-          <div style="display:flex;justify-content:space-between;padding:.45rem 0;border-bottom:1px solid rgba(255,255,255,.04)"><span style="color:var(--text)">Acceptance Criteria</span><span class="badge badge-green">B</span></div>
-          <div style="display:flex;justify-content:space-between;padding:.45rem 0;border-bottom:1px solid rgba(255,255,255,.04)"><span style="color:var(--text)">IP & Legal</span><span class="badge badge-red">D</span></div>
-          <div style="display:flex;justify-content:space-between;padding:.45rem 0"><span style="color:var(--text)">Maintenance Plan</span><span class="badge badge-red">F</span></div>
-        </div>
-      </div>
-      <div class="highlight-box-red">
-        <p style="font-size:.75rem;color:var(--text-muted);line-height:1.5"><strong style="color:#f87171">Biggest issue:</strong> Treats OpenClaw like a custom build. Mixes 5-minute configs (Telegram, Search) with 80-hour projects (M365) as if they're equal. No maintenance plan — integrations <strong style="color:var(--text)">will break</strong> when tokens expire.</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- SLIDE 2: What's Actually Easy -->
-  <div class="slide" data-slide="2">
-    <div class="slide-scroll">
-      <div class="eyebrow">⚡ Reality Check</div>
-      <h2>5 of 8 items are <span class="gradient-text">already built</span></h2>
-      <p class="subtitle">The SOW bills platform features as development work.</p>
-      <div class="card">
-        <div style="display:flex;align-items:center;gap:.6rem;padding:.5rem 0;border-bottom:1px solid rgba(255,255,255,.04)">
-          <span class="check">✓</span><span style="font-size:.8rem;color:var(--text)">OpenClaw Deployment</span><span class="badge badge-green" style="margin-left:auto">Instant</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:.6rem;padding:.5rem 0;border-bottom:1px solid rgba(255,255,255,.04)">
-          <span class="check">✓</span><span style="font-size:.8rem;color:var(--text)">Telegram Bot</span><span class="badge badge-green" style="margin-left:auto">5 min</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:.6rem;padding:.5rem 0;border-bottom:1px solid rgba(255,255,255,.04)">
-          <span class="check">✓</span><span style="font-size:.8rem;color:var(--text)">Web Search (Brave)</span><span class="badge badge-green" style="margin-left:auto">2 min</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:.6rem;padding:.5rem 0;border-bottom:1px solid rgba(255,255,255,.04)">
-          <span class="check">✓</span><span style="font-size:.8rem;color:var(--text)">GitHub Integration</span><span class="badge badge-green" style="margin-left:auto">5 min</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:.6rem;padding:.5rem 0">
-          <span class="check">✓</span><span style="font-size:.8rem;color:var(--text)">Security (OAuth, encryption, logging)</span><span class="badge badge-green" style="margin-left:auto">Built in</span>
-        </div>
-      </div>
-      <div class="highlight-box-blue">
-        <p style="font-size:.75rem;color:var(--text-muted);line-height:1.5"><strong style="color:var(--accent-light)">The real work</strong> is Microsoft 365 and Fathom. Everything else is configuration, not code.</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- SLIDE 3: What the SOW Misses -->
-  <div class="slide" data-slide="3">
-    <div class="slide-scroll">
-      <div class="eyebrow">⚠️ Critical Gaps</div>
-      <h2>What the SOW <span class="gradient-text">doesn't mention</span></h2>
-      <div class="card" style="margin-top:1rem">
         <ul class="feature-list">
-          <li><span class="cross">✕</span><strong style="color:var(--text)">No maintenance.</strong> OAuth tokens expire every 60-90 min. Without refresh logic, M365 breaks silently.</li>
-          <li><span class="cross">✕</span><strong style="color:var(--text)">No health monitoring.</strong> System goes down at 2am — nobody knows until you need it.</li>
-          <li><span class="cross">✕</span><strong style="color:var(--text)">No AI behavior.</strong> The SOW connects pipes. It doesn't make the system intelligent — no email triage, no meeting parsing, no decision-making.</li>
-          <li><span class="cross">✕</span><strong style="color:var(--text)">IP belongs to contractor.</strong> MIX Networks owns the code, not you. Changes require their permission.</li>
-          <li><span class="cross">✕</span><strong style="color:var(--text)">Blank pricing & timeline.</strong> No way to evaluate cost or hold the contractor accountable.</li>
-          <li><span class="cross">✕</span><strong style="color:var(--text)">No scalability.</strong> Adding new integrations = new SOW, new negotiation, new dev cycle.</li>
+          <li><span class="check">✓</span><strong style="color:var(--text)">Outlook</strong> — read, write, send, folder management</li>
+          <li><span class="check">✓</span><strong style="color:var(--text)">OneDrive</strong> — upload, download, share, organize</li>
+          <li><span class="check">✓</span><strong style="color:var(--text)">Teams</strong> — read, post, reply in channels and chats</li>
+          <li><span class="check">✓</span><strong style="color:var(--text)">Fathom</strong> — meeting transcripts, summaries, action items</li>
+          <li><span class="check">✓</span><strong style="color:var(--text)">Telegram</strong> — secure bot, inbound/outbound messaging</li>
+          <li><span class="check">✓</span><strong style="color:var(--text)">Web Search</strong> — live search, content retrieval</li>
+          <li><span class="check">✓</span><strong style="color:var(--text)">GitHub</strong> — branches, commits, PRs, deployments</li>
         </ul>
       </div>
+      <div class="highlight-box-blue">
+        <p style="font-size:.78rem;color:var(--text-muted);line-height:1.5">Everything in your SOW, plus things it doesn't cover: <strong style="color:var(--text)">24/7 monitoring, automatic token refresh, health checks, and ongoing updates</strong> — all included.</p>
+      </div>
     </div>
   </div>
 
-  <!-- SLIDE 4: The Kyra Architecture -->
-  <div class="slide" data-slide="4">
+  <!-- SLIDE 2: How We Build It -->
+  <div class="slide" data-slide="2">
     <div class="slide-scroll">
-      <div class="eyebrow">💡 The Kyra Approach</div>
+      <div class="eyebrow">💡 How We Build It</div>
       <h2>1 AI worker.<br><span class="gradient-text">6 skills.</span></h2>
-      <p class="subtitle">One intelligent brain with shared context across every tool — not 6 separate pipes.</p>
-      <div class="card" style="margin-top:1rem;text-align:center">
+      <p class="subtitle">Not 6 separate integrations — one intelligent worker that understands your entire stack.</p>
+      <div class="card" style="text-align:center">
         <div style="font-size:2rem;margin-bottom:.75rem">🤖</div>
         <h4 style="font-size:1rem;font-weight:700">Your AI Worker</h4>
-        <p style="font-size:.75rem;color:var(--text-muted);margin:.5rem 0 1rem">One brain. Shared context. Talks to you via Telegram.</p>
+        <p style="font-size:.75rem;color:var(--text-muted);margin:.5rem 0 1rem">One brain. Shared context across every tool.</p>
         <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:4px">
-          <span class="skill-tag">📧 M365 Email</span>
-          <span class="skill-tag">📁 M365 Files</span>
-          <span class="skill-tag">💬 M365 Teams</span>
+          <span class="skill-tag">📧 Outlook</span>
+          <span class="skill-tag">📁 OneDrive</span>
+          <span class="skill-tag">💬 Teams</span>
           <span class="skill-tag">🎙️ Fathom</span>
           <span class="skill-tag">🔧 GitHub</span>
-          <span class="skill-tag">🔍 Web Search</span>
+          <span class="skill-tag">🔍 Search</span>
         </div>
       </div>
       <div class="highlight-box-green">
-        <p style="font-size:.75rem;color:var(--text-muted);line-height:1.5"><strong style="color:var(--green)">Why this matters:</strong> One worker can read an email, find the related file on OneDrive, pull the last meeting summary from Fathom, and post an update to Teams — <strong style="color:var(--text)">in one step</strong>. 6 separate integrations can't do that.</p>
+        <p style="font-size:.78rem;color:var(--text-muted);line-height:1.5"><strong style="color:var(--green)">Why this matters:</strong> Your worker can read an email, find the related file on OneDrive, pull the meeting notes from Fathom, and post an update to Teams — <strong style="color:var(--text)">all in one step</strong>. Separate integrations can't do that.</p>
       </div>
     </div>
   </div>
 
-  <!-- SLIDE 5: M365 Skill -->
-  <div class="slide" data-slide="5">
+  <!-- SLIDE 3: Outlook -->
+  <div class="slide" data-slide="3">
     <div class="slide-scroll">
-      <div class="eyebrow">📧📁💬 M365 Skill</div>
-      <h2>Outlook + OneDrive + Teams<br><span class="gradient-text">one skill, one Azure AD app</span></h2>
-      <div class="card-grid card-grid-2" style="margin-top:1rem">
+      <div class="eyebrow">📧 Outlook Skill</div>
+      <h2>Email that <span class="gradient-text">works for you</span></h2>
+      <p class="subtitle">Not just read and send — your worker triages, drafts, and digests automatically.</p>
+      <div class="card">
+        <div class="flow-step"><div class="flow-num">1</div><div class="flow-content"><h4>Scans inbox every 15 min</h4><p>Filters by sender, subject, urgency — catches what matters</p></div></div>
+        <div class="flow-step"><div class="flow-num">2</div><div class="flow-content"><h4>Categorizes automatically</h4><p>Urgent → Action needed → Informational → Spam</p></div></div>
+        <div class="flow-step"><div class="flow-num">3</div><div class="flow-content"><h4>Drafts replies for approval</h4><p>"Action needed" emails get AI-drafted responses — you approve before sending</p></div></div>
+        <div class="flow-step"><div class="flow-num">4</div><div class="flow-content"><h4>Organizes your folders</h4><p>Moves processed emails to the right place automatically</p></div></div>
+        <div class="flow-step"><div class="flow-num">5</div><div class="flow-content"><h4>Daily digest to Telegram</h4><p>"You got 12 emails today. 3 need your attention." — every evening</p></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 4: OneDrive + Teams -->
+  <div class="slide" data-slide="4">
+    <div class="slide-scroll">
+      <div class="eyebrow">📁💬 OneDrive + Teams Skills</div>
+      <h2>Files and channels<br><span class="gradient-text">through natural language</span></h2>
+      <div class="card-grid-2">
         <div class="card-sm">
-          <p style="font-size:1rem;margin-bottom:.3rem">📧</p>
-          <h4 style="font-size:.78rem;font-weight:600">Outlook</h4>
-          <ul style="font-size:.65rem;color:var(--text-muted);margin-top:.25rem;padding-left:.7rem;line-height:1.6">
-            <li>Read & triage inbox every 15 min</li>
-            <li>Categorize: urgent / action / info</li>
-            <li>Draft replies for approval</li>
-            <li>Daily digest to Telegram</li>
-          </ul>
-        </div>
-        <div class="card-sm">
-          <p style="font-size:1rem;margin-bottom:.3rem">📁</p>
-          <h4 style="font-size:.78rem;font-weight:600">OneDrive</h4>
-          <ul style="font-size:.65rem;color:var(--text-muted);margin-top:.25rem;padding-left:.7rem;line-height:1.6">
+          <p style="font-size:1.1rem;margin-bottom:.35rem">📁</p>
+          <h4 style="font-size:.8rem;font-weight:600">OneDrive</h4>
+          <ul style="font-size:.66rem;color:var(--text-muted);margin-top:.25rem;padding-left:.7rem;line-height:1.7">
             <li>"Upload this to Q1 Reports"</li>
             <li>"Find the latest proposal"</li>
-            <li>"Share the March deck"</li>
-            <li>Create folders, organize files</li>
+            <li>"Share the March deck with the team"</li>
+            <li>Create folders, move, organize</li>
           </ul>
         </div>
         <div class="card-sm">
-          <p style="font-size:1rem;margin-bottom:.3rem">💬</p>
-          <h4 style="font-size:.78rem;font-weight:600">Teams</h4>
-          <ul style="font-size:.65rem;color:var(--text-muted);margin-top:.25rem;padding-left:.7rem;line-height:1.6">
-            <li>Monitor channels for mentions</li>
-            <li>Post meeting summaries</li>
-            <li>Reply to questions</li>
-            <li>Escalate urgent messages</li>
+          <p style="font-size:1.1rem;margin-bottom:.35rem">💬</p>
+          <h4 style="font-size:.8rem;font-weight:600">Teams</h4>
+          <ul style="font-size:.66rem;color:var(--text-muted);margin-top:.25rem;padding-left:.7rem;line-height:1.7">
+            <li>Monitor channels for @mentions</li>
+            <li>Post meeting summaries automatically</li>
+            <li>Reply to questions in threads</li>
+            <li>Escalate urgent messages to Telegram</li>
           </ul>
         </div>
-        <div class="card-sm" style="display:flex;align-items:center;justify-content:center;flex-direction:column">
-          <p style="font-size:1rem;margin-bottom:.3rem">🔑</p>
-          <h4 style="font-size:.78rem;font-weight:600">One Azure AD App</h4>
-          <p style="font-size:.62rem;color:var(--text-muted);margin-top:.2rem;text-align:center">Register once. Token refresh automatic. All three services connected.</p>
-        </div>
+      </div>
+      <div class="highlight-box-blue" style="margin-top:.75rem">
+        <p style="font-size:.75rem;color:var(--text-muted);line-height:1.5"><strong style="color:var(--accent-light)">One Azure AD app</strong> powers Outlook, OneDrive, and Teams. Register once — token refresh is automatic. No manual maintenance.</p>
       </div>
     </div>
   </div>
 
-  <!-- SLIDE 6: Fathom Skill -->
-  <div class="slide" data-slide="6">
+  <!-- SLIDE 5: Fathom -->
+  <div class="slide" data-slide="5">
     <div class="slide-scroll">
       <div class="eyebrow">🎙️ Fathom Skill</div>
-      <h2>Meetings become <span class="gradient-text">structured data</span></h2>
-      <p class="subtitle">Every meeting → attendees, decisions, action items with owners and deadlines.</p>
-      <div class="card">
-        <div class="flow-step">
-          <div class="flow-num">1</div>
-          <div class="flow-content"><h4>Receive transcript</h4><p>Via webhook, email forward, or API — whichever Fathom supports</p></div>
-        </div>
-        <div class="flow-step">
-          <div class="flow-num">2</div>
-          <div class="flow-content"><h4>AI extracts structured data</h4><p>Attendees, decisions, action items → JSON with owners & deadlines</p></div>
-        </div>
-        <div class="flow-step">
-          <div class="flow-num">3</div>
-          <div class="flow-content"><h4>Cross-post to Teams</h4><p>Summary posted to the relevant channel automatically</p></div>
-        </div>
-        <div class="flow-step">
-          <div class="flow-num">4</div>
-          <div class="flow-content"><h4>Follow up on action items</h4><p>Worker tracks deadlines — nudges owners if tasks aren't done</p></div>
-        </div>
+      <h2>Every meeting becomes<br><span class="gradient-text">structured data</span></h2>
+      <div class="card" style="margin-top:1rem">
+        <div class="flow-step"><div class="flow-num">1</div><div class="flow-content"><h4>Receives transcript</h4><p>Via Fathom webhook, email forward, or API</p></div></div>
+        <div class="flow-step"><div class="flow-num">2</div><div class="flow-content"><h4>Extracts what matters</h4><p>Attendees, decisions, action items with owners and deadlines</p></div></div>
+        <div class="flow-step"><div class="flow-num">3</div><div class="flow-content"><h4>Posts to Teams</h4><p>Summary goes to the relevant channel — team stays in the loop</p></div></div>
+        <div class="flow-step"><div class="flow-num">4</div><div class="flow-content"><h4>Tracks follow-ups</h4><p>Nudges owners when action items hit their deadline</p></div></div>
       </div>
       <div class="card" style="margin-top:.75rem">
         <p class="mini-label">Example output</p>
         <div style="background:rgba(59,130,246,.05);border-radius:8px;padding:.75rem;font-family:monospace;font-size:.62rem;color:var(--text-muted);line-height:1.7">
           <span style="color:var(--accent-light)">Meeting:</span> Q1 Review — Client X<br>
-          <span style="color:var(--accent-light)">Decisions:</span> Approved budget, delayed launch<br>
-          <span style="color:var(--accent-light)">Action:</span> John → Update timeline (Mar 22)<br>
-          <span style="color:var(--accent-light)">Action:</span> Sarah → Revised proposal (Mar 20)
+          <span style="color:var(--accent-light)">Decisions:</span> Approved budget, delayed launch to April<br>
+          <span style="color:var(--accent-light)">Action:</span> John → Update timeline (due Mar 22)<br>
+          <span style="color:var(--accent-light)">Action:</span> Sarah → Send revised proposal (due Mar 20)
         </div>
       </div>
     </div>
   </div>
 
-  <!-- SLIDE 7: Telegram Command Center -->
-  <div class="slide" data-slide="7">
+  <!-- SLIDE 6: Telegram -->
+  <div class="slide" data-slide="6">
     <div class="slide-scroll">
-      <div class="eyebrow">✈️ Your Command Center</div>
-      <h2>Talk to <span class="gradient-text">all skills</span> from Telegram</h2>
-      <p class="subtitle">One conversation. Every capability. On your phone.</p>
+      <div class="eyebrow">✈️ Telegram</div>
+      <h2>Your <span class="gradient-text">command center</span></h2>
+      <p class="subtitle">Talk to every skill from one Telegram chat. On your phone, anywhere.</p>
       <div class="card">
         <ul class="feature-list">
-          <li><span class="check">✓</span>"Check my unread emails" → M365 skill responds</li>
-          <li><span class="check">✓</span>"Upload this to OneDrive" → attach file + send</li>
-          <li><span class="check">✓</span>"What happened in the 2pm meeting?" → Fathom skill responds</li>
-          <li><span class="check">✓</span>"Post the summary to Teams #general" → done</li>
-          <li><span class="check">✓</span>"Search for competitors doing X" → web search results</li>
-          <li><span class="check">✓</span>"Create a PR for the homepage fix" → GitHub skill handles it</li>
-          <li><span class="check">✓</span>Real-time alerts: urgent emails, failed deploys, @mentions</li>
+          <li><span class="check">✓</span>"Check my unread emails" → inbox summary</li>
+          <li><span class="check">✓</span>"Upload this to OneDrive" → attach + done</li>
+          <li><span class="check">✓</span>"What happened in the 2pm meeting?" → Fathom summary</li>
+          <li><span class="check">✓</span>"Post that summary to Teams #general" → posted</li>
+          <li><span class="check">✓</span>"Search for competitors doing X" → results</li>
+          <li><span class="check">✓</span>"Create a PR for the homepage fix" → done</li>
+          <li><span class="check">✓</span>Automatic alerts: urgent emails, failed deploys, @mentions</li>
         </ul>
       </div>
-      <div class="highlight-box-green">
-        <p style="font-size:.75rem;color:var(--text-muted);line-height:1.5"><strong style="color:var(--green)">Native integration.</strong> Telegram is a built-in Kyra channel. Secure, rate-limited, encrypted. <strong style="color:var(--text)">5 minutes to set up.</strong></p>
+    </div>
+  </div>
+
+  <!-- SLIDE 7: GitHub + Search -->
+  <div class="slide" data-slide="7">
+    <div class="slide-scroll">
+      <div class="eyebrow">🔧🔍 GitHub + Web Search</div>
+      <h2>Development &<br><span class="gradient-text">research built in</span></h2>
+      <div class="card-grid-2">
+        <div class="card-sm">
+          <p style="font-size:1.1rem;margin-bottom:.35rem">🔧</p>
+          <h4 style="font-size:.8rem;font-weight:600">GitHub</h4>
+          <ul style="font-size:.66rem;color:var(--text-muted);margin-top:.25rem;padding-left:.7rem;line-height:1.7">
+            <li>Create branches & commits</li>
+            <li>Open pull requests</li>
+            <li>Trigger GitHub Actions</li>
+            <li>Monitor CI/CD status</li>
+            <li>Automated deployments</li>
+          </ul>
+        </div>
+        <div class="card-sm">
+          <p style="font-size:1.1rem;margin-bottom:.35rem">🔍</p>
+          <h4 style="font-size:.8rem;font-weight:600">Web Search</h4>
+          <ul style="font-size:.66rem;color:var(--text-muted);margin-top:.25rem;padding-left:.7rem;line-height:1.7">
+            <li>Live search via Brave API</li>
+            <li>Content retrieval & summaries</li>
+            <li>Competitor research on demand</li>
+            <li>Safe scraping controls</li>
+            <li>Request throttling built in</li>
+          </ul>
+        </div>
       </div>
     </div>
   </div>
@@ -272,123 +241,65 @@
   <div class="slide" data-slide="8">
     <div class="slide-scroll">
       <div class="eyebrow">🔒 Security</div>
-      <h2>Every SOW requirement <span class="gradient-text">built in</span></h2>
+      <h2>Enterprise-grade.<br><span class="gradient-text">Built in.</span></h2>
       <div class="card" style="margin-top:1rem">
         <ul class="feature-list">
-          <li><span class="check">✓</span><strong style="color:var(--text)">OAuth authentication</strong> — Azure AD for M365, token-based for others</li>
-          <li><span class="check">✓</span><strong style="color:var(--text)">Encrypted secrets vault</strong> — all API keys stored encrypted at rest</li>
-          <li><span class="check">✓</span><strong style="color:var(--text)">Minimum permissions</strong> — each skill gets only the scopes it needs</li>
-          <li><span class="check">✓</span><strong style="color:var(--text)">Rate limiting</strong> — built into the gateway for all API calls</li>
+          <li><span class="check">✓</span><strong style="color:var(--text)">OAuth authentication</strong> — Azure AD for M365</li>
+          <li><span class="check">✓</span><strong style="color:var(--text)">Encrypted secrets vault</strong> — all credentials encrypted at rest</li>
+          <li><span class="check">✓</span><strong style="color:var(--text)">Minimum permissions</strong> — only the scopes each skill needs</li>
+          <li><span class="check">✓</span><strong style="color:var(--text)">Rate limiting</strong> — on all external API calls</li>
           <li><span class="check">✓</span><strong style="color:var(--text)">Action logging</strong> — every operation logged with context</li>
           <li><span class="check">✓</span><strong style="color:var(--text)">Auto token refresh</strong> — M365 tokens renewed before expiry</li>
           <li><span class="check">✓</span><strong style="color:var(--text)">Isolated container</strong> — your own instance, not shared</li>
+          <li><span class="check">✓</span><strong style="color:var(--text)">24/7 health monitoring</strong> — auto-restart if anything fails</li>
         </ul>
       </div>
-      <p style="font-size:.68rem;color:var(--text-muted);margin-top:.75rem;opacity:.7">Every security item in the SOW is a platform feature — not something to build.</p>
     </div>
   </div>
 
-  <!-- SLIDE 9: SOW Item Comparison -->
+  <!-- SLIDE 9: Timeline -->
   <div class="slide" data-slide="9">
     <div class="slide-scroll">
-      <div class="eyebrow">📋 SOW vs. Kyra</div>
-      <h2>Every deliverable <span class="gradient-text">compared</span></h2>
-      <div class="card" style="margin-top:1rem">
-        <div style="display:grid;grid-template-columns:1fr auto auto;gap:.3rem;font-size:.7rem">
-          <div style="color:var(--text-muted);font-weight:600"></div>
-          <div style="text-align:center;color:var(--text-muted);font-weight:600;min-width:50px">SOW</div>
-          <div style="text-align:center;font-weight:600;min-width:50px" class="gradient-text">Kyra</div>
-
-          <div style="color:var(--text-muted);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">Deploy</div>
-          <div style="text-align:center;color:var(--amber);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">Days</div>
-          <div style="text-align:center;color:var(--green);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">Instant</div>
-
-          <div style="color:var(--text-muted);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">Outlook</div>
-          <div style="text-align:center;color:var(--red);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">40+ hrs</div>
-          <div style="text-align:center;color:var(--accent-light);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">M365 Skill</div>
-
-          <div style="color:var(--text-muted);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">OneDrive</div>
-          <div style="text-align:center;color:var(--red);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">20+ hrs</div>
-          <div style="text-align:center;color:var(--accent-light);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">M365 Skill</div>
-
-          <div style="color:var(--text-muted);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">Teams</div>
-          <div style="text-align:center;color:var(--red);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">25+ hrs</div>
-          <div style="text-align:center;color:var(--accent-light);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">M365 Skill</div>
-
-          <div style="color:var(--text-muted);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">Fathom</div>
-          <div style="text-align:center;color:var(--amber);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">20+ hrs</div>
-          <div style="text-align:center;color:var(--accent-light);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">Fathom Skill</div>
-
-          <div style="color:var(--text-muted);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">Telegram</div>
-          <div style="text-align:center;color:var(--amber);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">Billed</div>
-          <div style="text-align:center;color:var(--green);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">5 min</div>
-
-          <div style="color:var(--text-muted);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">Search</div>
-          <div style="text-align:center;color:var(--amber);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">Billed</div>
-          <div style="text-align:center;color:var(--green);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">2 min</div>
-
-          <div style="color:var(--text-muted);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">GitHub</div>
-          <div style="text-align:center;color:var(--amber);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">Billed</div>
-          <div style="text-align:center;color:var(--green);padding:.4rem 0;border-top:1px solid rgba(255,255,255,.04)">5 min</div>
-
-          <div style="color:var(--text);font-weight:600;padding:.5rem 0;border-top:1px solid rgba(255,255,255,.08)">Maintenance</div>
-          <div style="text-align:center;color:var(--red);font-weight:600;padding:.5rem 0;border-top:1px solid rgba(255,255,255,.08)">None</div>
-          <div style="text-align:center;color:var(--green);font-weight:600;padding:.5rem 0;border-top:1px solid rgba(255,255,255,.08)">24/7</div>
-
-          <div style="color:var(--text);font-weight:600;padding:.5rem 0;border-top:1px solid rgba(255,255,255,.08)">IP Owner</div>
-          <div style="text-align:center;color:var(--red);font-weight:600;padding:.5rem 0;border-top:1px solid rgba(255,255,255,.08)">MIX</div>
-          <div style="text-align:center;color:var(--green);font-weight:600;padding:.5rem 0;border-top:1px solid rgba(255,255,255,.08)">You</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- SLIDE 10: Timeline -->
-  <div class="slide" data-slide="10">
-    <div class="slide-scroll">
-      <div class="eyebrow">📅 Delivery</div>
-      <h2>2-3 weeks.<br><span class="gradient-text">Not 2-3 months.</span></h2>
+      <div class="eyebrow">📅 Timeline</div>
+      <h2>Live in <span class="gradient-text">2-3 weeks</span></h2>
       <div class="card" style="margin-top:1rem">
         <div style="display:flex;align-items:center;gap:.6rem;padding:.6rem 0;border-bottom:1px solid rgba(255,255,255,.06)">
-          <span class="badge badge-green">Week 1</span>
-          <div><div style="font-size:.8rem;font-weight:600;color:var(--text)">Platform + Telegram + Search + GitHub</div><div style="font-size:.68rem;color:var(--text-muted)">All native features. Operational Day 1.</div></div>
+          <span class="badge badge-green" style="min-width:58px">Week 1</span>
+          <div><div style="font-size:.82rem;font-weight:600;color:var(--text)">Platform + Telegram + Search + GitHub</div><div style="font-size:.68rem;color:var(--text-muted)">Your AI worker is operational on Day 1</div></div>
         </div>
         <div style="display:flex;align-items:center;gap:.6rem;padding:.6rem 0;border-bottom:1px solid rgba(255,255,255,.06)">
-          <span class="badge badge-blue">Week 1-2</span>
-          <div><div style="font-size:.8rem;font-weight:600;color:var(--text)">M365 Skill — Email</div><div style="font-size:.68rem;color:var(--text-muted)">Azure AD registration + triage + digest + drafts</div></div>
+          <span class="badge badge-blue" style="min-width:58px">Week 1-2</span>
+          <div><div style="font-size:.82rem;font-weight:600;color:var(--text)">Outlook — email triage + digest</div><div style="font-size:.68rem;color:var(--text-muted)">Azure AD registration + full email intelligence</div></div>
         </div>
         <div style="display:flex;align-items:center;gap:.6rem;padding:.6rem 0;border-bottom:1px solid rgba(255,255,255,.06)">
-          <span class="badge badge-blue">Week 2</span>
-          <div><div style="font-size:.8rem;font-weight:600;color:var(--text)">M365 Skill — OneDrive + Teams</div><div style="font-size:.68rem;color:var(--text-muted)">Same Azure AD app, additional scopes</div></div>
+          <span class="badge badge-blue" style="min-width:58px">Week 2</span>
+          <div><div style="font-size:.82rem;font-weight:600;color:var(--text)">OneDrive + Teams</div><div style="font-size:.68rem;color:var(--text-muted)">Same Azure AD app, additional capabilities</div></div>
         </div>
         <div style="display:flex;align-items:center;gap:.6rem;padding:.6rem 0;border-bottom:1px solid rgba(255,255,255,.06)">
-          <span class="badge badge-blue">Week 2-3</span>
-          <div><div style="font-size:.8rem;font-weight:600;color:var(--text)">Fathom Skill</div><div style="font-size:.68rem;color:var(--text-muted)">Webhook/email → AI parsing → JSON → Teams</div></div>
+          <span class="badge badge-blue" style="min-width:58px">Week 2-3</span>
+          <div><div style="font-size:.82rem;font-weight:600;color:var(--text)">Fathom — meeting intelligence</div><div style="font-size:.68rem;color:var(--text-muted)">Transcripts → structured data → Teams</div></div>
         </div>
         <div style="display:flex;align-items:center;gap:.6rem;padding:.6rem 0">
-          <span class="badge badge-green">Week 3</span>
-          <div><div style="font-size:.8rem;font-weight:600;color:var(--text)">Testing + Handover</div><div style="font-size:.68rem;color:var(--text-muted)">End-to-end QA across all skills</div></div>
+          <span class="badge badge-green" style="min-width:58px">Week 3</span>
+          <div><div style="font-size:.82rem;font-weight:600;color:var(--text)">Testing + handover</div><div style="font-size:.68rem;color:var(--text-muted)">End-to-end QA across every skill</div></div>
         </div>
-      </div>
-      <div class="highlight-box-green">
-        <p style="font-size:.75rem;color:var(--text-muted);line-height:1.5"><strong style="color:var(--green)">Day 1:</strong> Working AI worker with Telegram, web search, and GitHub. M365 and Fathom skills follow in weeks — <strong style="color:var(--text)">not months</strong>.</p>
       </div>
     </div>
   </div>
 
-  <!-- SLIDE 11: What You Provide -->
-  <div class="slide" data-slide="11">
+  <!-- SLIDE 10: What We Need -->
+  <div class="slide" data-slide="10">
     <div class="slide-scroll">
-      <div class="eyebrow">⚙️ What We Need From You</div>
-      <h2>Simple setup.<br><span class="gradient-text">Powerful output.</span></h2>
+      <div class="eyebrow">⚙️ To Get Started</div>
+      <h2>What we need<br><span class="gradient-text">from you</span></h2>
       <div style="margin-top:1.25rem">
         <div class="card-sm" style="margin-bottom:.6rem;display:flex;gap:.75rem;align-items:flex-start">
           <div class="icon-circle-sm" style="background:rgba(59,130,246,.15)">🔑</div>
-          <div><h4 style="font-size:.82rem;font-weight:600">Azure AD Admin Access</h4><p style="font-size:.68rem;color:var(--text-muted);margin-top:.1rem">To register the app + grant permissions — 20 min, one-time</p></div>
+          <div><h4 style="font-size:.82rem;font-weight:600">Azure AD Admin Access</h4><p style="font-size:.68rem;color:var(--text-muted);margin-top:.1rem">Register the app + grant permissions — one-time, 20 minutes</p></div>
         </div>
         <div class="card-sm" style="margin-bottom:.6rem;display:flex;gap:.75rem;align-items:flex-start">
           <div class="icon-circle-sm" style="background:rgba(245,158,11,.15)">🎙️</div>
-          <div><h4 style="font-size:.82rem;font-weight:600">Fathom Account Access</h4><p style="font-size:.68rem;color:var(--text-muted);margin-top:.1rem">API key, webhook URL, or email forwarding setup</p></div>
+          <div><h4 style="font-size:.82rem;font-weight:600">Fathom Access</h4><p style="font-size:.68rem;color:var(--text-muted);margin-top:.1rem">API key, webhook URL, or email forwarding</p></div>
         </div>
         <div class="card-sm" style="margin-bottom:.6rem;display:flex;gap:.75rem;align-items:flex-start">
           <div class="icon-circle-sm" style="background:rgba(6,182,212,.15)">✈️</div>
@@ -396,10 +307,31 @@
         </div>
         <div class="card-sm" style="margin-bottom:.6rem;display:flex;gap:.75rem;align-items:flex-start">
           <div class="icon-circle-sm" style="background:rgba(34,197,94,.15)">🔧</div>
-          <div><h4 style="font-size:.82rem;font-weight:600">GitHub Token</h4><p style="font-size:.68rem;color:var(--text-muted);margin-top:.1rem">Personal access token — github.com/settings/tokens</p></div>
+          <div><h4 style="font-size:.82rem;font-weight:600">GitHub Token</h4><p style="font-size:.68rem;color:var(--text-muted);margin-top:.1rem">Personal access token — 2 minutes</p></div>
         </div>
       </div>
-      <p style="font-size:.7rem;color:var(--text-muted);margin-top:.75rem;opacity:.7">We handle everything else — infrastructure, configuration, monitoring, updates.</p>
+      <div class="highlight-box-green" style="margin-top:.5rem">
+        <p style="font-size:.78rem;color:var(--text-muted);line-height:1.5">We handle <strong style="color:var(--text)">everything else</strong> — infrastructure, deployment, configuration, monitoring, updates, and ongoing maintenance.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 11: What's Included -->
+  <div class="slide" data-slide="11">
+    <div class="slide-scroll">
+      <div class="eyebrow">📦 What's Included</div>
+      <h2>Not just integrations.<br><span class="gradient-text">A managed platform.</span></h2>
+      <div class="card" style="margin-top:1rem">
+        <ul class="feature-list">
+          <li><span class="check">✓</span><strong style="color:var(--text)">Managed hosting</strong> — your worker runs on our infrastructure, always on</li>
+          <li><span class="check">✓</span><strong style="color:var(--text)">Automatic updates</strong> — platform improvements, security patches</li>
+          <li><span class="check">✓</span><strong style="color:var(--text)">Token refresh</strong> — OAuth tokens renewed automatically, never expires</li>
+          <li><span class="check">✓</span><strong style="color:var(--text)">Health monitoring</strong> — 24/7, auto-restart if anything fails</li>
+          <li><span class="check">✓</span><strong style="color:var(--text)">New skills anytime</strong> — need Slack? CRM? Calendar? Add a skill, same worker</li>
+          <li><span class="check">✓</span><strong style="color:var(--text)">You own everything</strong> — your data, your config, no lock-in</li>
+          <li><span class="check">✓</span><strong style="color:var(--text)">Dashboard</strong> — see conversations, analytics, and manage from one place</li>
+        </ul>
+      </div>
     </div>
   </div>
 
@@ -407,9 +339,9 @@
   <div class="slide slide-cover" data-slide="12">
     <div>
       <div style="font-size:2.5rem;margin-bottom:1rem">🔗</div>
-      <h2>1 worker. 6 skills.<br><span class="gradient-text">Everything connected.</span></h2>
-      <p class="subtitle" style="max-width:400px;margin:.75rem auto 0;">M365, Fathom, Telegram, GitHub, and web search — managed, monitored, and always running.</p>
-      <a href="https://kyra.conversionsystem.com/build" class="cta-button">Get Started →</a>
+      <h2>1 worker. 6 skills.<br><span class="gradient-text">Your entire stack connected.</span></h2>
+      <p style="font-size:clamp(.85rem,2.5vw,1rem);color:var(--text-muted);margin-top:.75rem;max-width:400px;margin-left:auto;margin-right:auto">Outlook, OneDrive, Teams, Fathom, Telegram, GitHub, and web search — managed, monitored, always running.</p>
+      <a href="https://kyra.conversionsystem.com/build" class="cta-button">Let's Build It →</a>
       <p style="font-size:.7rem;color:var(--text-muted);margin-top:1rem;opacity:.6">Powered by Kyra — AI Workforce Platform</p>
     </div>
   </div>
