@@ -29,8 +29,11 @@ import {
   Mail,
   User,
   MessageSquare,
+  Plus,
+  EyeOff,
+  HelpCircle,
 } from 'lucide-react';
-import type { SitePage, ContentSection, DesignStyle } from '@/lib/sites/types';
+import type { SitePage, ContentSection, FaqItem, DesignStyle, PageType } from '@/lib/sites/types';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -259,9 +262,22 @@ function PagesView({ siteId, onGenerate }: { siteId: string; onGenerate?: () => 
   const [pages, setPages] = useState<SitePage[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedSlug, setExpandedSlug] = useState<string | null>(null);
-  const [editValues, setEditValues] = useState<{ hero_h1: string; content_sections: ContentSection[] }>({
+  const [editValues, setEditValues] = useState<{
+    hero_h1: string;
+    hero_subtitle: string;
+    meta_title: string;
+    meta_description: string;
+    content_sections: ContentSection[];
+    faq: FaqItem[];
+    hidden: boolean;
+  }>({
     hero_h1: '',
+    hero_subtitle: '',
+    meta_title: '',
+    meta_description: '',
     content_sections: [],
+    faq: [],
+    hidden: false,
   });
   const [saving, setSaving] = useState(false);
   const [savedSlug, setSavedSlug] = useState<string | null>(null);
@@ -269,23 +285,28 @@ function PagesView({ siteId, onGenerate }: { siteId: string; onGenerate?: () => 
   const [published, setPublished] = useState(false);
   const [regenerating, setRegenerating] = useState<string | null>(null);
   const [feedback, setFeedback] = useState('');
+  const [showNewPageForm, setShowNewPageForm] = useState(false);
+  const [newPage, setNewPage] = useState({ title: '', slug: '', page_type: 'utility' as string });
+  const [creatingPage, setCreatingPage] = useState(false);
+  const [deletingSlug, setDeletingSlug] = useState<string | null>(null);
+  const [confirmDeleteSlug, setConfirmDeleteSlug] = useState<string | null>(null);
+  const [faqOpen, setFaqOpen] = useState(false);
 
-  useEffect(() => {
-    async function fetchPages() {
-      try {
-        const res = await fetch(`/api/agency/sites/${siteId}/pages`);
-        if (res.ok) {
-          const result = await res.json();
-          setPages(result.data || []);
-        }
-      } catch {
-        // silent
-      } finally {
-        setLoading(false);
+  const fetchPages = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/agency/sites/${siteId}/pages`);
+      if (res.ok) {
+        const result = await res.json();
+        setPages(result.data || []);
       }
+    } catch {
+      // silent
+    } finally {
+      setLoading(false);
     }
-    fetchPages();
   }, [siteId]);
+
+  useEffect(() => { fetchPages(); }, [fetchPages]);
 
   const expandPage = (page: SitePage) => {
     if (expandedSlug === page.slug) {
@@ -295,9 +316,16 @@ function PagesView({ siteId, onGenerate }: { siteId: string; onGenerate?: () => 
     setExpandedSlug(page.slug);
     setEditValues({
       hero_h1: page.hero_h1 || '',
+      hero_subtitle: page.hero_subtitle || '',
+      meta_title: page.meta_title || '',
+      meta_description: page.meta_description || '',
       content_sections: page.content_sections || [],
+      faq: page.faq || [],
+      hidden: !!(page as SitePage & { hidden?: boolean }).hidden,
     });
     setFeedback('');
+    setFaqOpen(false);
+    setConfirmDeleteSlug(null);
   };
 
   const savePage = async (slug: string) => {
@@ -310,13 +338,18 @@ function PagesView({ siteId, onGenerate }: { siteId: string; onGenerate?: () => 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           hero_h1: editValues.hero_h1,
+          hero_subtitle: editValues.hero_subtitle || null,
+          meta_title: editValues.meta_title || null,
+          meta_description: editValues.meta_description || null,
           content_sections: editValues.content_sections,
+          faq: editValues.faq.length > 0 ? editValues.faq : null,
+          hidden: editValues.hidden,
         }),
       });
       if (res.ok) {
         const result = await res.json();
         setPages((prev) => prev.map((p) => (p.slug === slug ? { ...p, ...result.data } : p)));
-        setSavedSlug(slug); // Show "Publish" button
+        setSavedSlug(slug);
       }
     } catch {
       // silent
@@ -342,7 +375,7 @@ function PagesView({ siteId, onGenerate }: { siteId: string; onGenerate?: () => 
     }
   };
 
-  const regeneratePage = async (slug: string) => {
+  const regeneratePageContent = async (slug: string) => {
     setRegenerating(slug);
     try {
       await fetch(`/api/agency/sites/${siteId}/pages/${encodeURIComponent(slug)}`, {
@@ -350,20 +383,23 @@ function PagesView({ siteId, onGenerate }: { siteId: string; onGenerate?: () => 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'regenerate', feedback: feedback || undefined }),
       });
-      // Refetch after a short delay to show new content
       setTimeout(async () => {
         const res = await fetch(`/api/agency/sites/${siteId}/pages`);
         if (res.ok) {
           const result = await res.json();
           const newPages: SitePage[] = result.data || [];
           setPages(newPages);
-          // Sync edit form if the regenerated page is currently expanded
           if (expandedSlug) {
             const updated = newPages.find((p) => p.slug === expandedSlug);
             if (updated) {
               setEditValues({
                 hero_h1: updated.hero_h1 || '',
+                hero_subtitle: updated.hero_subtitle || '',
+                meta_title: updated.meta_title || '',
+                meta_description: updated.meta_description || '',
                 content_sections: updated.content_sections || [],
+                faq: updated.faq || [],
+                hidden: !!(updated as SitePage & { hidden?: boolean }).hidden,
               });
             }
           }
@@ -375,6 +411,72 @@ function PagesView({ siteId, onGenerate }: { siteId: string; onGenerate?: () => 
     }
   };
 
+  const createPage = async () => {
+    if (!newPage.title || !newPage.slug) return;
+    setCreatingPage(true);
+    try {
+      const res = await fetch(`/api/agency/sites/${siteId}/pages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newPage),
+      });
+      if (res.ok) {
+        const result = await res.json();
+        await fetchPages();
+        setShowNewPageForm(false);
+        setNewPage({ title: '', slug: '', page_type: 'utility' });
+        if (result.data?.slug) {
+          const created = result.data as SitePage;
+          expandPage(created);
+        }
+      }
+    } catch {
+      // silent
+    } finally {
+      setCreatingPage(false);
+    }
+  };
+
+  const deletePage = async (slug: string) => {
+    setDeletingSlug(slug);
+    try {
+      const res = await fetch(`/api/agency/sites/${siteId}/pages/${encodeURIComponent(slug)}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        setPages((prev) => prev.filter((p) => p.slug !== slug));
+        if (expandedSlug === slug) setExpandedSlug(null);
+        setConfirmDeleteSlug(null);
+      }
+    } catch {
+      // silent
+    } finally {
+      setDeletingSlug(null);
+    }
+  };
+
+  const toggleHidden = async (slug: string, hidden: boolean) => {
+    setEditValues((prev) => ({ ...prev, hidden }));
+    try {
+      const res = await fetch(`/api/agency/sites/${siteId}/pages/${encodeURIComponent(slug)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hidden }),
+      });
+      if (res.ok) {
+        const result = await res.json();
+        setPages((prev) => prev.map((p) => (p.slug === slug ? { ...p, ...result.data } : p)));
+      }
+    } catch {
+      // silent
+    }
+  };
+
+  const slugify = (text: string) =>
+    text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+  const inputClass = 'w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none';
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -383,22 +485,31 @@ function PagesView({ siteId, onGenerate }: { siteId: string; onGenerate?: () => 
     );
   }
 
-  if (pages.length === 0) {
+  if (pages.length === 0 && !showNewPageForm) {
     return (
       <div className="text-center py-12">
         <div className="h-12 w-12 rounded-2xl bg-indigo-50 flex items-center justify-center mx-auto mb-3">
           <FileText className="h-5 w-5 text-indigo-400" />
         </div>
         <p className="text-sm text-gray-500 mb-4">No pages generated yet.</p>
-        {onGenerate && (
+        <div className="flex items-center justify-center gap-3">
+          {onGenerate && (
+            <button
+              onClick={onGenerate}
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+            >
+              <Sparkles className="h-4 w-4" />
+              Generate Content
+            </button>
+          )}
           <button
-            onClick={onGenerate}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+            onClick={() => setShowNewPageForm(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 transition"
           >
-            <Sparkles className="h-4 w-4" />
-            Generate Content
+            <Plus className="h-4 w-4" />
+            New Page
           </button>
-        )}
+        </div>
       </div>
     );
   }
@@ -407,126 +518,390 @@ function PagesView({ siteId, onGenerate }: { siteId: string; onGenerate?: () => 
     <div className="space-y-2">
       <div className="flex items-center justify-between mb-4">
         <h4 className="text-sm font-semibold text-gray-900">{pages.length} Pages</h4>
+        <button
+          onClick={() => setShowNewPageForm(!showNewPageForm)}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+        >
+          <Plus className="h-3 w-3" />
+          New Page
+        </button>
       </div>
-      {pages.map((page) => (
-        <div key={page.slug} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          <button
-            onClick={() => expandPage(page)}
-            className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 transition-colors"
-          >
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-900 truncate">{page.title}</span>
-                <span className="text-[10px] font-medium uppercase px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 shrink-0">
-                  {page.page_type}
-                </span>
-                {page.edited && (
-                  <span className="text-[10px] font-medium uppercase px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 shrink-0">
-                    edited
+
+      {/* New Page Form (inline) */}
+      {showNewPageForm && (
+        <div className="bg-white rounded-xl border border-indigo-200 shadow-sm p-4 space-y-3">
+          <h5 className="text-sm font-semibold text-gray-900">Create New Page</h5>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Title</label>
+            <input
+              type="text"
+              value={newPage.title}
+              onChange={(e) => {
+                const title = e.target.value;
+                setNewPage((prev) => ({
+                  ...prev,
+                  title,
+                  slug: prev.slug === slugify(prev.title) || !prev.slug ? slugify(title) : prev.slug,
+                }));
+              }}
+              placeholder="e.g. About Us"
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Slug</label>
+            <input
+              type="text"
+              value={newPage.slug}
+              onChange={(e) => setNewPage((prev) => ({ ...prev, slug: e.target.value }))}
+              placeholder="about-us"
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Page Type</label>
+            <select
+              value={newPage.page_type}
+              onChange={(e) => setNewPage((prev) => ({ ...prev, page_type: e.target.value }))}
+              className={inputClass}
+            >
+              <option value="homepage">Homepage</option>
+              <option value="service">Service</option>
+              <option value="city">City</option>
+              <option value="city_service">City + Service</option>
+              <option value="utility">Utility</option>
+              <option value="blog">Blog</option>
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={createPage}
+              disabled={creatingPage || !newPage.title || !newPage.slug}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition"
+            >
+              {creatingPage ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+              Create Page
+            </button>
+            <button
+              onClick={() => { setShowNewPageForm(false); setNewPage({ title: '', slug: '', page_type: 'utility' }); }}
+              className="px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-800 transition"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {pages.map((page) => {
+        const isHidden = !!(page as SitePage & { hidden?: boolean }).hidden;
+        return (
+          <div key={page.slug} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <button
+              onClick={() => expandPage(page)}
+              className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+            >
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-900 truncate">{page.title}</span>
+                  <span className="text-[10px] font-medium uppercase px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 shrink-0">
+                    {page.page_type}
                   </span>
-                )}
+                  {page.edited && (
+                    <span className="text-[10px] font-medium uppercase px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 shrink-0">
+                      edited
+                    </span>
+                  )}
+                  {isHidden && (
+                    <span className="text-[10px] font-medium uppercase px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 shrink-0 flex items-center gap-0.5">
+                      <EyeOff className="h-2.5 w-2.5" /> hidden
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-gray-400 mt-0.5 truncate">/{page.slug}</p>
               </div>
-              <p className="text-xs text-gray-400 mt-0.5 truncate">/{page.slug}</p>
-            </div>
-            {expandedSlug === page.slug ? (
-              <ChevronDown className="h-4 w-4 text-gray-400 shrink-0" />
-            ) : (
-              <ChevronRight className="h-4 w-4 text-gray-400 shrink-0" />
-            )}
-          </button>
+              {expandedSlug === page.slug ? (
+                <ChevronDown className="h-4 w-4 text-gray-400 shrink-0" />
+              ) : (
+                <ChevronRight className="h-4 w-4 text-gray-400 shrink-0" />
+              )}
+            </button>
 
-          {expandedSlug === page.slug && (
-            <div className="px-4 pb-4 border-t border-gray-100 space-y-3 pt-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Hero H1</label>
-                <input
-                  type="text"
-                  value={editValues.hero_h1}
-                  onChange={(e) => setEditValues((prev) => ({ ...prev, hero_h1: e.target.value }))}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                />
-              </div>
+            {expandedSlug === page.slug && (
+              <div className="px-4 pb-4 border-t border-gray-100 space-y-3 pt-3">
+                {/* Published toggle */}
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-medium text-gray-600 flex items-center gap-1.5">
+                    Published
+                  </label>
+                  <button
+                    onClick={() => toggleHidden(page.slug, !editValues.hidden)}
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                      !editValues.hidden ? 'bg-indigo-600' : 'bg-gray-300'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                        !editValues.hidden ? 'translate-x-4.5' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
 
-              {editValues.content_sections.map((section, i) => (
-                <div key={i} className="bg-gray-50 rounded-lg p-3 space-y-2">
+                {/* SEO Fields */}
+                <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+                  <p className="text-[10px] font-medium uppercase text-gray-400 tracking-wide">SEO</p>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Meta Title</label>
+                    <input
+                      type="text"
+                      value={editValues.meta_title}
+                      onChange={(e) => setEditValues((prev) => ({ ...prev, meta_title: e.target.value }))}
+                      placeholder="Auto-generated if empty"
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Meta Description</label>
+                    <textarea
+                      value={editValues.meta_description}
+                      onChange={(e) => setEditValues((prev) => ({ ...prev, meta_description: e.target.value }))}
+                      rows={2}
+                      placeholder="Auto-generated if empty"
+                      className={inputClass + ' resize-y'}
+                    />
+                  </div>
+                </div>
+
+                {/* Hero H1 */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Hero H1</label>
                   <input
                     type="text"
-                    value={section.heading}
-                    onChange={(e) => {
-                      const updated = [...editValues.content_sections];
-                      updated[i] = { ...updated[i], heading: e.target.value };
-                      setEditValues((prev) => ({ ...prev, content_sections: updated }));
-                    }}
-                    className="w-full px-2 py-1.5 text-sm font-medium border border-gray-200 rounded bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
-                    placeholder="Section heading"
-                  />
-                  <textarea
-                    value={section.body}
-                    onChange={(e) => {
-                      const updated = [...editValues.content_sections];
-                      updated[i] = { ...updated[i], body: e.target.value };
-                      setEditValues((prev) => ({ ...prev, content_sections: updated }));
-                    }}
-                    rows={4}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded bg-white focus:ring-2 focus:ring-indigo-500 outline-none resize-y"
-                    placeholder="Section body"
+                    value={editValues.hero_h1}
+                    onChange={(e) => setEditValues((prev) => ({ ...prev, hero_h1: e.target.value }))}
+                    className={inputClass}
                   />
                 </div>
-              ))}
 
-              <div className="flex items-center gap-2 pt-2 flex-wrap">
+                {/* Hero Subtitle */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Hero Subtitle</label>
+                  <input
+                    type="text"
+                    value={editValues.hero_subtitle}
+                    onChange={(e) => setEditValues((prev) => ({ ...prev, hero_subtitle: e.target.value }))}
+                    placeholder="Subheading below the main heading"
+                    className={inputClass}
+                  />
+                </div>
+
+                {/* Content Sections */}
+                {editValues.content_sections.map((section, i) => (
+                  <div key={i} className="bg-gray-50 rounded-lg p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-medium uppercase text-gray-400 tracking-wide">Section {i + 1}</span>
+                      <button
+                        onClick={() => {
+                          const updated = editValues.content_sections.filter((_, idx) => idx !== i);
+                          setEditValues((prev) => ({ ...prev, content_sections: updated }));
+                        }}
+                        className="text-red-400 hover:text-red-600 transition p-0.5"
+                        title="Remove section"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                    <input
+                      type="text"
+                      value={section.heading}
+                      onChange={(e) => {
+                        const updated = [...editValues.content_sections];
+                        updated[i] = { ...updated[i], heading: e.target.value };
+                        setEditValues((prev) => ({ ...prev, content_sections: updated }));
+                      }}
+                      className="w-full px-2 py-1.5 text-sm font-medium border border-gray-200 rounded bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                      placeholder="Section heading"
+                    />
+                    <textarea
+                      value={section.body}
+                      onChange={(e) => {
+                        const updated = [...editValues.content_sections];
+                        updated[i] = { ...updated[i], body: e.target.value };
+                        setEditValues((prev) => ({ ...prev, content_sections: updated }));
+                      }}
+                      rows={4}
+                      className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded bg-white focus:ring-2 focus:ring-indigo-500 outline-none resize-y"
+                      placeholder="Section body"
+                    />
+                  </div>
+                ))}
+
                 <button
-                  onClick={() => savePage(page.slug)}
-                  disabled={saving}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition"
+                  onClick={() => {
+                    setEditValues((prev) => ({
+                      ...prev,
+                      content_sections: [...prev.content_sections, { heading: '', body: '' }],
+                    }));
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 transition"
                 >
-                  {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
-                  Save
+                  <Plus className="h-3 w-3" />
+                  Add Section
                 </button>
 
-                {savedSlug === page.slug && !published && (
+                {/* FAQ Editor */}
+                <div className="border border-gray-200 rounded-lg overflow-hidden">
                   <button
-                    onClick={publishSite}
-                    disabled={publishing}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition animate-pulse"
+                    onClick={() => setFaqOpen(!faqOpen)}
+                    className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-gray-50 transition-colors"
                   >
-                    {publishing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Rocket className="h-3 w-3" />}
-                    {publishing ? 'Publishing…' : 'Publish to Live Site'}
+                    <span className="text-xs font-medium text-gray-700 flex items-center gap-1.5">
+                      <HelpCircle className="h-3.5 w-3.5 text-gray-400" />
+                      FAQ ({editValues.faq.length})
+                    </span>
+                    {faqOpen ? <ChevronDown className="h-3 w-3 text-gray-400" /> : <ChevronRight className="h-3 w-3 text-gray-400" />}
                   </button>
-                )}
+                  {faqOpen && (
+                    <div className="px-3 pb-3 space-y-2 border-t border-gray-100 pt-2">
+                      {editValues.faq.map((item, i) => (
+                        <div key={i} className="bg-gray-50 rounded-lg p-2 space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-medium uppercase text-gray-400">Q{i + 1}</span>
+                            <button
+                              onClick={() => {
+                                const updated = editValues.faq.filter((_, idx) => idx !== i);
+                                setEditValues((prev) => ({ ...prev, faq: updated }));
+                              }}
+                              className="text-red-400 hover:text-red-600 transition p-0.5"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </div>
+                          <input
+                            type="text"
+                            value={item.question}
+                            onChange={(e) => {
+                              const updated = [...editValues.faq];
+                              updated[i] = { ...updated[i], question: e.target.value };
+                              setEditValues((prev) => ({ ...prev, faq: updated }));
+                            }}
+                            className="w-full px-2 py-1 text-xs font-medium border border-gray-200 rounded bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                            placeholder="Question"
+                          />
+                          <textarea
+                            value={item.answer}
+                            onChange={(e) => {
+                              const updated = [...editValues.faq];
+                              updated[i] = { ...updated[i], answer: e.target.value };
+                              setEditValues((prev) => ({ ...prev, faq: updated }));
+                            }}
+                            rows={2}
+                            className="w-full px-2 py-1 text-xs border border-gray-200 rounded bg-white focus:ring-2 focus:ring-indigo-500 outline-none resize-y"
+                            placeholder="Answer"
+                          />
+                        </div>
+                      ))}
+                      <button
+                        onClick={() => {
+                          setEditValues((prev) => ({
+                            ...prev,
+                            faq: [...prev.faq, { question: '', answer: '' }],
+                          }));
+                        }}
+                        className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 transition"
+                      >
+                        <Plus className="h-2.5 w-2.5" />
+                        Add FAQ
+                      </button>
+                    </div>
+                  )}
+                </div>
 
-                {published && (
-                  <span className="text-xs text-green-600 flex items-center gap-1 font-medium">
-                    <CheckCircle2 className="h-3 w-3" /> Publishing — live in ~5 min
-                  </span>
-                )}
-
-                <div className="flex-1 flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={feedback}
-                    onChange={(e) => setFeedback(e.target.value)}
-                    placeholder="Optional feedback for AI..."
-                    className="flex-1 px-2 py-1.5 text-xs border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                  />
+                {/* Actions row */}
+                <div className="flex items-center gap-2 pt-2 flex-wrap">
                   <button
-                    onClick={() => regeneratePage(page.slug)}
-                    disabled={regenerating === page.slug}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 disabled:opacity-50 transition"
+                    onClick={() => savePage(page.slug)}
+                    disabled={saving}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition"
                   >
-                    {regenerating === page.slug ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      <Sparkles className="h-3 w-3" />
-                    )}
-                    AI Regenerate
+                    {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
+                    Save
                   </button>
+
+                  {savedSlug === page.slug && !published && (
+                    <button
+                      onClick={publishSite}
+                      disabled={publishing}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition animate-pulse"
+                    >
+                      {publishing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Rocket className="h-3 w-3" />}
+                      {publishing ? 'Publishing\u2026' : 'Publish to Live Site'}
+                    </button>
+                  )}
+
+                  {published && (
+                    <span className="text-xs text-green-600 flex items-center gap-1 font-medium">
+                      <CheckCircle2 className="h-3 w-3" /> Publishing — live in ~5 min
+                    </span>
+                  )}
+
+                  <div className="flex-1 flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={feedback}
+                      onChange={(e) => setFeedback(e.target.value)}
+                      placeholder="Optional feedback for AI..."
+                      className="flex-1 px-2 py-1.5 text-xs border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                    />
+                    <button
+                      onClick={() => regeneratePageContent(page.slug)}
+                      disabled={regenerating === page.slug}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 disabled:opacity-50 transition"
+                    >
+                      {regenerating === page.slug ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-3 w-3" />
+                      )}
+                      AI Regenerate
+                    </button>
+                  </div>
+                </div>
+
+                {/* Delete button */}
+                <div className="flex justify-end pt-1">
+                  {confirmDeleteSlug === page.slug ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-red-600">Are you sure?</span>
+                      <button
+                        onClick={() => deletePage(page.slug)}
+                        disabled={deletingSlug === page.slug}
+                        className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-red-50 text-red-600 rounded hover:bg-red-100 disabled:opacity-50 transition"
+                      >
+                        {deletingSlug === page.slug ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                        Delete
+                      </button>
+                      <button
+                        onClick={() => setConfirmDeleteSlug(null)}
+                        className="px-2 py-1 text-xs text-gray-500 hover:text-gray-700 transition"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmDeleteSlug(page.slug)}
+                      className="text-xs text-red-500 hover:text-red-700 transition"
+                    >
+                      Delete page
+                    </button>
+                  )}
                 </div>
               </div>
-            </div>
-          )}
-        </div>
-      ))}
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
