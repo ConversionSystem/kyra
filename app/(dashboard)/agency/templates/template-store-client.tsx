@@ -115,7 +115,8 @@ export function TemplateStoreClient({ agencyId, businessName }: Props) {
         setVariables(vars);
         setApplied(false);
         setGeneratedSoul(null);
-      });
+      })
+      .catch((err) => console.error('[template-store] load detail:', err));
   }, [selectedId, businessName]);
 
   const handleApply = async () => {
