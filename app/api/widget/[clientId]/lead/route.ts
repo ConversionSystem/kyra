@@ -192,11 +192,11 @@ export async function POST(
     // 3. No separate leads table needed — crm_contacts + crm_activities covers it
     // (web_chat_leads doesn't exist; pipeline_leads is for outbound campaigns)
 
-    console.log(`[LEAD] Saved: ${name} (${phone}) → client ${clientId}, agency ${agencyId}, CRM: ${crmContactId}`);
-    return NextResponse.json({ ok: true, crmContactId, agencyId, clientResolved: !!client }, { headers: CORS });
+    console.log(`[LEAD] Saved: ${name} (${phone}) → client ${client.id}, agency ${agencyId}, CRM: ${crmContactId}`);
+    return NextResponse.json({ ok: true, crmContactId }, { headers: CORS });
 
   } catch (err) {
-    console.error('[LEAD] Uncaught error:', err instanceof Error ? err.message : err);
-    return NextResponse.json({ ok: true, error: 'internal' }, { headers: CORS });
+    console.error('[LEAD] Uncaught error:', err instanceof Error ? `${err.message}\n${err.stack}` : err);
+    return NextResponse.json({ ok: true }, { headers: CORS });
   }
 }
