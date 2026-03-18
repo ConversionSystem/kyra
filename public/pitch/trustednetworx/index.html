@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SOW Assessment — Trusted Networx × Kyra AI</title>
+<title>SOW Assessment — Trusted Network × Kyra AI</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
   *{margin:0;padding:0;box-sizing:border-box}
@@ -98,7 +98,7 @@
 <body>
 
 <div class="sticky-nav" id="stickyNav">
-  <div class="logo">Kyra <span>×</span> Trusted Networx</div>
+  <div class="logo">Kyra <span>×</span> Trusted Network</div>
   <a href="#cta">Get Started →</a>
 </div>
 
@@ -109,7 +109,7 @@
     <div class="header-badge">🔍 SOW Assessment</div>
     <h1>OpenClaw Deployment<br>& Integration <span class="gradient-text">Analysis</span></h1>
     <p class="subtitle">Complete assessment of the MIX Networks SOW — what it covers,<br>what it misses, and how Kyra delivers it better.</p>
-    <p style="font-size:.72rem;color:#4a4a5e;margin-top:1.25rem">Prepared for Trusted Networx · March 2026</p>
+    <p style="font-size:.72rem;color:#4a4a5e;margin-top:1.25rem">Prepared for Trusted Network · March 2026</p>
   </div>
 
   <!-- TABLE OF CONTENTS -->
@@ -118,7 +118,7 @@
     <a href="#overview"><span>01</span> SOW Overview & Grade</a>
     <a href="#line-by-line"><span>02</span> Line-by-Line Assessment</a>
     <a href="#gaps"><span>03</span> What the SOW Misses</a>
-    <a href="#kyra"><span>04</span> How Kyra Delivers Each Item</a>
+    <a href="#kyra"><span>04</span> How Kyra Delivers It — 1 Worker, 6 Skills</a>
     <a href="#security"><span>05</span> Security Assessment</a>
     <a href="#comparison"><span>06</span> Custom Dev vs. Kyra Platform</a>
     <a href="#timeline"><span>07</span> Timeline & Delivery</a>
@@ -230,7 +230,7 @@
         <li><span class="cross">✕</span><strong style="color:#f1f1f4">No ongoing maintenance.</strong> OAuth tokens expire. APIs change. Without maintenance, integrations will break silently within months. The SOW explicitly excludes this.</li>
         <li><span class="cross">✕</span><strong style="color:#f1f1f4">No token refresh logic.</strong> M365 OAuth tokens expire every 60-90 minutes. The SOW doesn't mention refresh handling. Without it, email/OneDrive/Teams will stop working regularly.</li>
         <li><span class="cross">✕</span><strong style="color:#f1f1f4">No health monitoring.</strong> If the system goes down at 2am, who knows? No uptime monitoring, no auto-restart, no alerting mentioned anywhere.</li>
-        <li><span class="cross">✕</span><strong style="color:#f1f1f4">No AI behavior configuration.</strong> The SOW connects pipes — it doesn't make the system intelligent. There's no mention of how the AI should triage emails, what to do with meeting transcripts, or how to handle exceptions.</li>
+        <li><span class="cross">✕</span><strong style="color:#f1f1f4">No AI behavior configuration.</strong> The SOW connects pipes — it doesn't make the system intelligent. There's no mention of how the AI worker should triage emails, what to do with meeting transcripts, or how to handle exceptions.</li>
         <li><span class="cross">✕</span><strong style="color:#f1f1f4">No backup or disaster recovery.</strong> If the VPS dies, everything is lost. No backup strategy mentioned.</li>
         <li><span class="cross">✕</span><strong style="color:#f1f1f4">IP goes to MIX Networks, not client.</strong> Section 7 states: "All work product belongs to MIX Networks upon payment." The client pays but doesn't own the code. If they want changes later, they need MIX Networks' permission.</li>
         <li><span class="cross">✕</span><strong style="color:#f1f1f4">No scalability plan.</strong> What happens when you add more integrations? Each one is a new SOW, new negotiation, new development cycle.</li>
@@ -243,11 +243,17 @@
   <!-- 04: KYRA -->
   <div class="section" id="kyra">
     <div class="section-label">04</div>
-    <h2>How Kyra Delivers Each SOW Item</h2>
+    <h2>How Kyra Delivers It — 1 Worker, 6 Skills</h2>
 
-    <div class="card">
+    <div class="card card-blue">
+      <div class="mini-label" style="color:#60a5fa">Architecture</div>
+      <p style="font-size:.88rem;color:#d0d0e0;line-height:1.7">The SOW proposes building 6 separate integrations. Kyra deploys <strong style="color:#f1f1f4">one AI worker</strong> with <strong style="color:#f1f1f4">6 skills</strong>. One brain that can do everything — email, files, Teams, meetings, search, and code — all accessible from one Telegram conversation.</p>
+      <p style="font-size:.82rem;color:#8b8b9e;line-height:1.6;margin-top:.5rem">Skills are modular capabilities the worker can use. Adding a skill is like giving an employee a new tool — same person, new ability. No new infrastructure, no new containers, no added complexity.</p>
+    </div>
+
+    <div class="card" style="margin-top:1rem">
       <table class="grade-table">
-        <tr><th>SOW Item</th><th>SOW Approach</th><th>Kyra</th></tr>
+        <tr><th>SOW Item</th><th>SOW Approach</th><th>Kyra (1 Worker)</th></tr>
         <tr>
           <td style="color:#f1f1f4;font-weight:500">OpenClaw Deploy</td>
           <td>Manual install on VPS<br><span class="badge badge-amber">Days</span></td>
@@ -256,44 +262,44 @@
         <tr>
           <td style="color:#f1f1f4;font-weight:500">Outlook Email</td>
           <td>Custom Graph API code<br><span class="badge badge-red">40+ hrs</span></td>
-          <td>AI worker: triage, draft, digest<br><span class="badge badge-blue">Week 1-2</span></td>
+          <td><strong style="color:#60a5fa">M365 Skill</strong> → triage, draft, digest<br><span class="badge badge-blue">Week 1-2</span></td>
         </tr>
         <tr>
           <td style="color:#f1f1f4;font-weight:500">OneDrive</td>
           <td>Custom file operations<br><span class="badge badge-red">20+ hrs</span></td>
-          <td>Natural language file management<br><span class="badge badge-blue">Week 2</span></td>
+          <td><strong style="color:#60a5fa">M365 Skill</strong> → file management<br><span class="badge badge-blue">Week 2</span></td>
         </tr>
         <tr>
           <td style="color:#f1f1f4;font-weight:500">Teams</td>
           <td>Custom messaging code<br><span class="badge badge-red">25+ hrs</span></td>
-          <td>Channel monitor + auto-reply<br><span class="badge badge-blue">Week 2</span></td>
+          <td><strong style="color:#60a5fa">M365 Skill</strong> → monitor + post<br><span class="badge badge-blue">Week 2</span></td>
         </tr>
         <tr>
           <td style="color:#f1f1f4;font-weight:500">Fathom</td>
           <td>API/webhook integration<br><span class="badge badge-amber">20+ hrs</span></td>
-          <td>AI parsing → JSON + Teams post<br><span class="badge badge-blue">Week 2-3</span></td>
+          <td><strong style="color:#60a5fa">Fathom Skill</strong> → parse + extract<br><span class="badge badge-blue">Week 2-3</span></td>
         </tr>
         <tr>
           <td style="color:#f1f1f4;font-weight:500">Telegram</td>
           <td>Custom bot development<br><span class="badge badge-amber">Billed</span></td>
-          <td>Native channel — paste token<br><span class="badge badge-green">5 min</span></td>
+          <td><strong style="color:#4ade80">Native channel</strong> — paste token<br><span class="badge badge-green">5 min</span></td>
         </tr>
         <tr>
           <td style="color:#f1f1f4;font-weight:500">Web Search</td>
           <td>Brave API integration<br><span class="badge badge-amber">Billed</span></td>
-          <td>Built-in tool — add API key<br><span class="badge badge-green">2 min</span></td>
+          <td><strong style="color:#4ade80">Built-in tool</strong> — add API key<br><span class="badge badge-green">2 min</span></td>
         </tr>
         <tr>
           <td style="color:#f1f1f4;font-weight:500">GitHub</td>
           <td>Custom git operations<br><span class="badge badge-amber">Billed</span></td>
-          <td>Pre-installed gh CLI<br><span class="badge badge-green">5 min</span></td>
+          <td><strong style="color:#4ade80">GitHub Skill</strong> — pre-installed<br><span class="badge badge-green">5 min</span></td>
         </tr>
       </table>
     </div>
 
     <div class="card card-green" style="margin-top:1rem">
-      <div class="mini-label" style="color:#4ade80">Key difference</div>
-      <p style="font-size:.82rem;line-height:1.6">The SOW builds <strong style="color:#f1f1f4">pipes</strong> — code that moves data from A to B. Kyra deploys <strong style="color:#f1f1f4">AI workers</strong> — intelligent agents that receive data, think about it (who sent this email? is it urgent? what should we do?), and act. Workers can be reconfigured in minutes without writing code.</p>
+      <div class="mini-label" style="color:#4ade80">Why 1 worker beats 6 integrations</div>
+      <p style="font-size:.82rem;line-height:1.6">The SOW builds <strong style="color:#f1f1f4">separate pipes</strong> — isolated code that moves data from A to B. Kyra gives you <strong style="color:#f1f1f4">one intelligent worker</strong> that understands context across all your tools. It can read an email, find the related file on OneDrive, summarize the last meeting about it from Fathom, and post an update to Teams — in one step, because it's one brain with shared context.</p>
     </div>
   </div>
 
@@ -309,7 +315,7 @@
       <ul class="check-list">
         <li><span class="check">✓</span><strong style="color:#f1f1f4">OAuth-based authentication</strong> — Azure AD for M365, token-based for others. Kyra handles OAuth flows and token refresh automatically.</li>
         <li><span class="check">✓</span><strong style="color:#f1f1f4">Credentials encrypted at rest</strong> — Kyra's Secrets Vault stores all API keys and tokens encrypted. Not in environment variables or plain config files.</li>
-        <li><span class="check">✓</span><strong style="color:#f1f1f4">Minimum necessary permissions</strong> — Each AI worker gets only the Graph API scopes it needs. Outlook worker can't access Teams. Teams worker can't access OneDrive.</li>
+        <li><span class="check">✓</span><strong style="color:#f1f1f4">Minimum necessary permissions</strong> — Each skill gets only the Graph API scopes it needs. M365 skill uses delegated permissions, scoped to the specific operations required.</li>
         <li><span class="check">✓</span><strong style="color:#f1f1f4">Rate limiting on all API calls</strong> — Built into the Kyra gateway. Applies to all external requests automatically.</li>
         <li><span class="check">✓</span><strong style="color:#f1f1f4">Action logging</strong> — Every operation logged with timestamps, actor, and context. Visible in the dashboard's conversation feed and analytics.</li>
         <li><span class="check">✓</span><strong style="color:#f1f1f4">Isolated containers</strong> — Your instance runs in its own Docker container, not shared with other clients. Network-isolated, resource-limited.</li>
@@ -357,7 +363,7 @@
 
         <div class="label">Add new integrations</div>
         <div class="cell" style="color:#f87171">New SOW</div>
-        <div class="cell" style="color:#4ade80">Add worker</div>
+        <div class="cell" style="color:#4ade80">Add skill</div>
 
         <div class="label" style="color:#f1f1f4;font-weight:600;border-top:1px solid rgba(255,255,255,.08);padding-top:.6rem">IP ownership</div>
         <div class="cell" style="color:#f87171;font-weight:600;border-top:1px solid rgba(255,255,255,.08);padding-top:.6rem">MIX Networks</div>
@@ -440,7 +446,7 @@
       <ul class="check-list">
         <li><span class="check">✓</span><strong style="color:#f1f1f4">Managed infrastructure.</strong> Kyra handles uptime, updates, token refresh, and monitoring. Not dependent on a single contractor.</li>
         <li><span class="check">✓</span><strong style="color:#f1f1f4">You own everything.</strong> Your data, your configuration, your workers. No IP lock-in.</li>
-        <li><span class="check">✓</span><strong style="color:#f1f1f4">Workers adapt without code.</strong> Change AI behavior by editing configuration — no developer needed.</li>
+        <li><span class="check">✓</span><strong style="color:#f1f1f4">Skills adapt without code.</strong> Change AI behavior by editing configuration — no developer needed. Add new skills to the same worker instantly.</li>
         <li><span class="check">✓</span><strong style="color:#f1f1f4">Platform evolves.</strong> New features, new integrations, security patches — all included. Not a static one-time build.</li>
       </ul>
     </div>
@@ -455,7 +461,7 @@
 
     <div class="card card-blue">
       <p style="font-size:.88rem;color:#d0d0e0;line-height:1.7">The SOW covers the right integrations but approaches them as a custom development project. 5 of 8 deliverables (OpenClaw deployment, Telegram, web search, GitHub, security) are already built into the platform — they're configuration, not code.</p>
-      <p style="font-size:.88rem;color:#d0d0e0;line-height:1.7;margin-top:.75rem">The real work is Microsoft 365 and Fathom. On Kyra, these become AI workers with specific behaviors — not just API connections, but intelligent agents that triage emails, parse meetings, and manage files through natural language.</p>
+      <p style="font-size:.88rem;color:#d0d0e0;line-height:1.7;margin-top:.75rem">The real work is Microsoft 365 and Fathom. On Kyra, these become skills on a single AI worker — not just API connections, but intelligent capabilities that let one worker triage emails, parse meetings, manage files, and post to Teams through natural language. One brain, shared context across every tool.</p>
       <p style="font-size:.88rem;color:#d0d0e0;line-height:1.7;margin-top:.75rem">The critical gap in the SOW is maintenance. Without ongoing token refresh, health monitoring, and platform updates, the system will degrade. Kyra includes all of this as part of the platform — not as a separate contract negotiation.</p>
     </div>
   </div>
