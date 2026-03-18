@@ -282,6 +282,7 @@ function ContactsSection({ client, clientId }: { client: AgencyClient; clientId:
   const [bulkAction, setBulkAction] = useState('');
   const [bulkValue, setBulkValue] = useState('');
   const [importing, setImporting] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const limit = 50;
 
@@ -306,12 +307,12 @@ function ContactsSection({ client, clientId }: { client: AgencyClient; clientId:
   const handleExport = async () => {
     try {
       const res = await fetch('/api/agency/crm/export');
-      if (!res.ok) { alert('Export failed. Please try again.'); return; }
+      if (!res.ok) { setActionError('Export failed. Please try again.'); return; }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a'); a.href = url; a.download = 'crm-contacts.csv'; a.click();
       URL.revokeObjectURL(url);
-    } catch { alert('Export failed. Please try again.'); }
+    } catch { setActionError('Export failed. Please try again.'); }
   };
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -322,7 +323,7 @@ function ContactsSection({ client, clientId }: { client: AgencyClient; clientId:
       // Parse CSV client-side then send as JSON (server expects { source: 'csv', rows: [...] })
       const text = await file.text();
       const lines = text.trim().split('\n');
-      if (lines.length < 2) { alert('CSV must have a header row and at least one data row.'); return; }
+      if (lines.length < 2) { setActionError('CSV must have a header row and at least one data row.'); return; }
       const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
       const rows = lines.slice(1).map(line => {
         const values = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
@@ -334,10 +335,11 @@ function ContactsSection({ client, clientId }: { client: AgencyClient; clientId:
         body: JSON.stringify({ source: 'csv', rows }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) { alert((data as { error?: string }).error || 'Import failed.'); return; }
+      if (!res.ok) { setActionError((data as { error?: string }).error || 'Import failed.'); return; }
+      setActionError(null);
       loadContacts();
-    } catch (err) {
-      alert('Import failed. Please check your CSV format.');
+    } catch {
+      setActionError('Import failed. Please check your CSV format.');
     } finally { setImporting(false); if (fileInputRef.current) fileInputRef.current.value = ''; }
   };
 
@@ -353,10 +355,10 @@ function ContactsSection({ client, clientId }: { client: AgencyClient; clientId:
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        alert((data as { error?: string }).error || 'Bulk action failed.');
+        setActionError((data as { error?: string }).error || 'Bulk action failed.');
         return;
       }
-    } catch { alert('Bulk action failed. Please try again.'); }
+    } catch { setActionError('Bulk action failed. Please try again.'); }
     setSelected(new Set());
     setBulkAction('');
     setBulkValue('');
@@ -421,6 +423,13 @@ function ContactsSection({ client, clientId }: { client: AgencyClient; clientId:
         <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={handleImport} />
         <button onClick={() => setShowAdd(true)} className={btnPrimary}><Plus className="w-4 h-4 mr-1 inline" />Add Contact</button>
       </div>
+
+      {actionError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-2 text-sm text-red-700 flex items-center justify-between">
+          {actionError}
+          <button onClick={() => setActionError(null)} className="text-red-500 hover:text-red-700 ml-2">&times;</button>
+        </div>
+      )}
 
       {/* Bulk action bar */}
       {selected.size > 0 && (
@@ -591,6 +600,7 @@ function ContactDetailPanel({ contact: initial, onBack, client }: { contact: Con
   const [loadingDeals, setLoadingDeals] = useState(true);
   const [activityFilter, setActivityFilter] = useState('all');
   const [newTag, setNewTag] = useState('');
+  const [panelError, setPanelError] = useState<string | null>(null);
 
   const loadDetail = useCallback(async () => {
     try {
@@ -601,7 +611,7 @@ function ContactDetailPanel({ contact: initial, onBack, client }: { contact: Con
         if (data.activities) setActivities(data.activities);
         if (data.deals) setDeals(data.deals);
       }
-    } catch { /* ignore */ }
+    } catch (err) { console.error('[crm-tab]', err); }
   }, [contact.id]);
 
   const loadActivities = useCallback(async () => {
@@ -611,7 +621,7 @@ function ContactDetailPanel({ contact: initial, onBack, client }: { contact: Con
       if (activityFilter !== 'all') params.set('type', activityFilter);
       const res = await fetch(`/api/agency/crm/activities?${params}`);
       if (res.ok) { const data = await res.json(); setActivities(Array.isArray(data) ? data : data.activities || []); }
-    } catch { /* ignore */ } finally { setLoadingActivities(false); }
+    } catch (err) { console.error('[crm-tab]', err); } finally { setLoadingActivities(false); }
   }, [contact.id, activityFilter]);
 
   const loadTasks = useCallback(async () => {
@@ -619,7 +629,7 @@ function ContactDetailPanel({ contact: initial, onBack, client }: { contact: Con
     try {
       const res = await fetch(`/api/agency/crm/tasks?contact_id=${contact.id}`);
       if (res.ok) { const data = await res.json(); setTasks(Array.isArray(data) ? data : data.tasks || []); }
-    } catch { /* ignore */ } finally { setLoadingTasks(false); }
+    } catch (err) { console.error('[crm-tab]', err); } finally { setLoadingTasks(false); }
   }, [contact.id]);
 
   const loadDeals = useCallback(async () => {
@@ -627,7 +637,7 @@ function ContactDetailPanel({ contact: initial, onBack, client }: { contact: Con
     try {
       const res = await fetch(`/api/agency/crm/deals?contact_id=${contact.id}`);
       if (res.ok) { const data = await res.json(); setDeals(Array.isArray(data) ? data : data.deals || []); }
-    } catch { /* ignore */ } finally { setLoadingDeals(false); }
+    } catch (err) { console.error('[crm-tab]', err); } finally { setLoadingDeals(false); }
   }, [contact.id]);
 
   useEffect(() => { loadDetail(); }, [loadDetail]);
@@ -669,7 +679,7 @@ function ContactDetailPanel({ contact: initial, onBack, client }: { contact: Con
   const handleDelete = async () => {
     if (!window.confirm(`Delete ${contactName(contact)}? This cannot be undone.`)) return;
     const res = await fetch(`/api/agency/crm/contacts/${contact.id}`, { method: 'DELETE' });
-    if (!res.ok) { alert('Failed to delete contact. Please try again.'); return; }
+    if (!res.ok) { setPanelError('Failed to delete contact. Please try again.'); return; }
     onBack();
   };
 
@@ -679,6 +689,13 @@ function ContactDetailPanel({ contact: initial, onBack, client }: { contact: Con
       <button onClick={onBack} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
         <ArrowLeft className="w-4 h-4" /> Back to contacts
       </button>
+
+      {panelError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-2 text-sm text-red-700 flex items-center justify-between">
+          {panelError}
+          <button onClick={() => setPanelError(null)} className="text-red-500 hover:text-red-700 ml-2">&times;</button>
+        </div>
+      )}
 
       {/* Header */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
@@ -1043,14 +1060,14 @@ function DealsSection() {
     try {
       const res = await fetch('/api/agency/crm/deals?sort=value&order=desc');
       if (res.ok) { const data = await res.json(); setDeals(Array.isArray(data) ? data : data.deals || []); }
-    } catch { /* ignore */ } finally { setLoading(false); }
+    } catch (err) { console.error('[crm-tab]', err); } finally { setLoading(false); }
   }, []);
 
   const loadContacts = useCallback(async () => {
     try {
       const res = await fetch('/api/agency/crm/contacts?limit=200');
       if (res.ok) { const data = await res.json(); setContacts(Array.isArray(data) ? data : data.contacts || []); }
-    } catch { /* ignore */ }
+    } catch (err) { console.error('[crm-tab]', err); }
   }, []);
 
   useEffect(() => { loadDeals(); loadContacts(); }, [loadDeals, loadContacts]);
@@ -1211,14 +1228,14 @@ function CampaignsSection({ client }: { client: AgencyClient }) {
     try {
       const res = await fetch(`/api/agency/clients/${client.id}/email/campaigns`);
       if (res.ok) { const data = await res.json(); setCampaigns(Array.isArray(data) ? data : data.campaigns || []); }
-    } catch { /* ignore */ } finally { setLoading(false); }
+    } catch (err) { console.error('[crm-tab]', err); } finally { setLoading(false); }
   }, [client.id]);
 
   const loadTemplates = useCallback(async () => {
     try {
       const res = await fetch(`/api/agency/clients/${client.id}/email/templates`);
       if (res.ok) { const data = await res.json(); setTemplates(Array.isArray(data) ? data : data.templates || []); }
-    } catch { /* ignore */ }
+    } catch (err) { console.error('[crm-tab]', err); }
   }, [client.id]);
 
   useEffect(() => { loadCampaigns(); loadTemplates(); }, [loadCampaigns, loadTemplates]);
@@ -1471,7 +1488,7 @@ function TasksSection() {
       else if (filter !== 'all') params.set('status', 'pending');
       const res = await fetch(`/api/agency/crm/tasks?${params}`);
       if (res.ok) { const data = await res.json(); setTasks(Array.isArray(data) ? data : data.tasks || []); }
-    } catch { /* ignore */ } finally { setLoading(false); }
+    } catch (err) { console.error('[crm-tab]', err); } finally { setLoading(false); }
   }, [filter]);
 
   useEffect(() => { loadTasks(); }, [loadTasks]);
@@ -1664,7 +1681,7 @@ function AnalyticsSection() {
         ]);
         if (mounted && aRes.ok) setAnalytics(await aRes.json());
         if (mounted && fRes.ok) setFeed(await fRes.json());
-      } catch { /* ignore */ } finally { if (mounted) setLoading(false); }
+      } catch (err) { console.error('[crm-tab]', err); } finally { if (mounted) setLoading(false); }
     })();
     return () => { mounted = false; };
   }, []);
@@ -1773,7 +1790,7 @@ function ActivitySection() {
     try {
       const res = await fetch('/api/agency/crm/feed');
       if (res.ok) setFeed(await res.json());
-    } catch { /* ignore */ } finally { setLoading(false); }
+    } catch (err) { console.error('[crm-tab]', err); } finally { setLoading(false); }
   }, []);
 
   useEffect(() => { loadFeed(); }, [loadFeed]);

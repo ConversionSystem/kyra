@@ -146,11 +146,12 @@ export function TriggersClient() {
   const load = useCallback(async () => {
     try {
       const res = await fetch('/api/agency/automations/triggers');
-      if (res.ok) {
-        const d = await res.json();
-        setTriggers(d.triggers || {});
-      }
-    } catch { /* ignore */ }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const d = await res.json();
+      setTriggers(d.triggers || {});
+    } catch (err) {
+      console.error('[triggers] load failed:', err);
+    }
     setLoading(false);
   }, []);
 
@@ -186,7 +187,11 @@ export function TriggersClient() {
           delay: current?.delay ?? def.delayOptions[0].value,
         }),
       });
-    } catch { /* rollback on error */ }
+    } catch (err) {
+      // Rollback on error
+      console.error('[triggers] toggle failed:', err);
+      setTriggers(prev => ({ ...prev, [def.id]: current ?? prev[def.id] }));
+    }
     setSaving(null);
   };
 
@@ -195,7 +200,7 @@ export function TriggersClient() {
     const action = editing[def.id] ?? current?.action ?? def.defaultAction;
     setSaving(def.id + '-action');
     try {
-      await fetch('/api/agency/automations/triggers', {
+      const res = await fetch('/api/agency/automations/triggers', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -206,26 +211,34 @@ export function TriggersClient() {
           delay: current?.delay ?? def.delayOptions[0].value,
         }),
       });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setTriggers(prev => ({ ...prev, [def.id]: { ...prev[def.id], action } }));
       setEditing(prev => { const n = { ...prev }; delete n[def.id]; return n; });
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.error('[triggers] save action failed:', err);
+    }
     setSaving(null);
   };
 
   const setDelay = async (def: TriggerDef, delay: number) => {
     const current = triggers[def.id];
     setTriggers(prev => ({ ...prev, [def.id]: { ...prev[def.id], delay } }));
-    await fetch('/api/agency/automations/triggers', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        id: def.id,
-        event: def.event,
-        enabled: current?.enabled ?? false,
-        action: current?.action ?? def.defaultAction,
-        delay,
-      }),
-    });
+    try {
+      const res = await fetch('/api/agency/automations/triggers', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: def.id,
+          event: def.event,
+          enabled: current?.enabled ?? false,
+          action: current?.action ?? def.defaultAction,
+          delay,
+        }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    } catch (err) {
+      console.error('[triggers] set delay failed:', err);
+    }
   };
 
   const activeCount = Object.values(triggers).filter(t => t.enabled).length;

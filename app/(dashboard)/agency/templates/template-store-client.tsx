@@ -71,6 +71,7 @@ export function TemplateStoreClient({ agencyId, businessName }: Props) {
   });
   const [publishing, setPublishing] = useState(false);
   const [publishSuccess, setPublishSuccess] = useState(false);
+  const [storeError, setStoreError] = useState<string | null>(null);
 
   const fetchCommunity = useCallback(async () => {
     setCommunityLoading(true);
@@ -114,7 +115,8 @@ export function TemplateStoreClient({ agencyId, businessName }: Props) {
         setVariables(vars);
         setApplied(false);
         setGeneratedSoul(null);
-      });
+      })
+      .catch((err) => console.error('[template-store] load detail:', err));
   }, [selectedId, businessName]);
 
   const handleApply = async () => {
@@ -208,7 +210,7 @@ export function TemplateStoreClient({ agencyId, businessName }: Props) {
                     value={variables[v.key] ?? ''}
                     onChange={(e) => setVariables(prev => ({ ...prev, [v.key]: e.target.value }))}
                     rows={4}
-                    className="w-full bg-white border border-gray-200 text-gray-900 rounded-md p-2 text-sm resize-y focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    className="w-full bg-white border border-gray-200 text-gray-900 rounded-md p-2 text-sm resize-y focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
                   />
                 ) : (
                   <Input
@@ -281,7 +283,7 @@ export function TemplateStoreClient({ agencyId, businessName }: Props) {
         <Button
           onClick={handleApply}
           disabled={applying || applied}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 text-lg"
+          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-6 text-lg"
         >
           {applying ? (
             <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Applying template...</>
@@ -311,7 +313,7 @@ export function TemplateStoreClient({ agencyId, businessName }: Props) {
         ));
       } else {
         const data = await res.json().catch(() => ({}));
-        alert((data as { error?: string }).error || 'Install failed');
+        setStoreError((data as { error?: string }).error || 'Install failed');
       }
     } catch { /* silent */ }
     setInstallingId(null);
@@ -334,7 +336,7 @@ export function TemplateStoreClient({ agencyId, businessName }: Props) {
         setPublishForm({ name: '', industry: '', description: '', icon: '🤖', tags: '', soul_template: '', suggested_tools: [] });
       } else {
         const data = await res.json().catch(() => ({}));
-        alert((data as { error?: string }).error || 'Publish failed');
+        setStoreError((data as { error?: string }).error || 'Publish failed');
       }
     } catch { /* silent */ }
     setPublishing(false);
@@ -348,6 +350,13 @@ export function TemplateStoreClient({ agencyId, businessName }: Props) {
           Pick a template for your industry, browse community templates, or publish your own.
         </p>
       </div>
+
+      {storeError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-2 text-sm text-red-700 flex items-center justify-between">
+          {storeError}
+          <button onClick={() => setStoreError(null)} className="text-red-500 hover:text-red-700 ml-2">&times;</button>
+        </div>
+      )}
 
       {/* Store tabs */}
       <div className="flex gap-2">

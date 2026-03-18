@@ -3,7 +3,7 @@
  * GET /api/agency/conversations — all conversations across all clients for the agency
  * Query params: ?limit=50&page=0&clientId=xxx&channel=telegram&q=keyword
  */
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
 
 export async function GET(request: NextRequest) {
@@ -75,6 +75,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (err) {
     console.error('[agency/conversations]', err);
-    return new Response('Internal server error', { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

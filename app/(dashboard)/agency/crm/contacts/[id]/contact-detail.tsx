@@ -51,16 +51,25 @@ export function ContactDetailView() {
   const [copied, setCopied] = useState(false);
 
   const fetchContact = useCallback(async () => {
-    const res = await fetch(`/api/agency/crm/contacts/${contactId}`);
-    if (res.ok) setContact(await res.json());
-    setLoading(false);
+    try {
+      const res = await fetch(`/api/agency/crm/contacts/${contactId}`);
+      if (res.ok) setContact(await res.json());
+    } catch (err) {
+      console.error('[contact-detail] fetch error:', err);
+    } finally {
+      setLoading(false);
+    }
   }, [contactId]);
 
   const fetchTasks = useCallback(async () => {
-    const res = await fetch(`/api/agency/crm/tasks?contact_id=${contactId}`);
-    if (res.ok) {
-      const data = await res.json();
-      setTasks(data.tasks || []);
+    try {
+      const res = await fetch(`/api/agency/crm/tasks?contact_id=${contactId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setTasks(data.tasks || []);
+      }
+    } catch (err) {
+      console.error('[contact-detail] tasks fetch error:', err);
     }
   }, [contactId]);
 
@@ -70,32 +79,46 @@ export function ContactDetailView() {
 
   const handleSave = async () => {
     setSaving(true);
-    const res = await fetch(`/api/agency/crm/contacts/${contactId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(editForm),
-    });
-    if (res.ok) { setEditing(false); fetchContact(); }
-    setSaving(false);
+    try {
+      const res = await fetch(`/api/agency/crm/contacts/${contactId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editForm),
+      });
+      if (res.ok) { setEditing(false); fetchContact(); }
+    } catch (err) {
+      console.error('[contact-detail] save error:', err);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDelete = async () => {
     if (!confirm('Delete this contact and all their data? This cannot be undone.')) return;
-    const res = await fetch(`/api/agency/crm/contacts/${contactId}`, { method: 'DELETE' });
-    if (res.ok) router.push('/agency/crm/contacts');
+    try {
+      const res = await fetch(`/api/agency/crm/contacts/${contactId}`, { method: 'DELETE' });
+      if (res.ok) router.push('/agency/crm/contacts');
+    } catch (err) {
+      console.error('[contact-detail] delete error:', err);
+    }
   };
 
   const handleAddNote = async () => {
     if (!noteText.trim()) return;
     setAddingNote(true);
-    await fetch('/api/agency/crm/activities', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contact_id: contactId, type: 'note', subject: 'Note added', body: noteText.trim(), actor: 'human' }),
-    });
-    setNoteText('');
-    setAddingNote(false);
-    fetchContact();
+    try {
+      await fetch('/api/agency/crm/activities', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contact_id: contactId, type: 'note', subject: 'Note added', body: noteText.trim(), actor: 'human' }),
+      });
+      setNoteText('');
+      fetchContact();
+    } catch (err) {
+      console.error('[contact-detail] add note error:', err);
+    } finally {
+      setAddingNote(false);
+    }
   };
 
   const handleSend = async () => {
@@ -131,24 +154,32 @@ export function ContactDetailView() {
   const handleAddTag = async () => {
     if (!tagInput.trim() || !contact) return;
     const newTags = [...(contact.tags || []), tagInput.trim()];
-    await fetch(`/api/agency/crm/contacts/${contactId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tags: newTags }),
-    });
-    setTagInput('');
-    fetchContact();
+    try {
+      await fetch(`/api/agency/crm/contacts/${contactId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tags: newTags }),
+      });
+      setTagInput('');
+      fetchContact();
+    } catch (err) {
+      console.error('[contact-detail] add tag error:', err);
+    }
   };
 
   const handleRemoveTag = async (tag: string) => {
     if (!contact) return;
     const newTags = (contact.tags || []).filter(t => t !== tag);
-    await fetch(`/api/agency/crm/contacts/${contactId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tags: newTags }),
-    });
-    fetchContact();
+    try {
+      await fetch(`/api/agency/crm/contacts/${contactId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tags: newTags }),
+      });
+      fetchContact();
+    } catch (err) {
+      console.error('[contact-detail] remove tag error:', err);
+    }
   };
 
   const handleStageChange = async (stage: string) => {

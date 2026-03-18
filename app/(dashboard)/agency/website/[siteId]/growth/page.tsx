@@ -141,7 +141,7 @@ function DeployHistory({ siteId }: { siteId: string }) {
       .then((result) => {
         if (Array.isArray(result.data)) setDeploys(result.data);
       })
-      .catch(() => {})
+      .catch((err) => console.error('[growth] load deploys:', err))
       .finally(() => setLoading(false));
   }, [siteId]);
 

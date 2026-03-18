@@ -10,6 +10,7 @@ export const dynamic = 'force-dynamic';
 
 // GET — current autopilot schedule + stats
 export async function GET() {
+  try {
   const sb = await createClient();
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -49,10 +50,15 @@ export async function GET() {
       totalCount: schedule.length,
     },
   });
+  } catch (err) {
+    console.error('[autopilot GET]', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 }
 
 // POST — update schedule or toggle autopilot
 export async function POST(req: NextRequest) {
+  try {
   const sb = await createClient();
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -134,4 +140,8 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
+  } catch (err) {
+    console.error('[autopilot POST]', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 }

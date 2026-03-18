@@ -115,7 +115,7 @@ export function SEOSetupWizard({ clientId, clientName, onComplete, onCancel }: S
     }
   };
 
-  const inputClass = 'w-full px-3 py-2 bg-white border border-gray-200 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm';
+  const inputClass = 'w-full px-3 py-2 bg-white border border-gray-200 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm';
   const labelClass = 'block text-sm font-medium text-gray-700 mb-1';
 
   return (
@@ -126,7 +126,7 @@ export function SEOSetupWizard({ clientId, clientName, onComplete, onCancel }: S
           <div key={s.id} className="flex items-center">
             <div className={`flex items-center justify-center w-8 h-8 rounded-full text-xs font-semibold transition-colors ${
               step > s.id ? 'bg-emerald-500 text-white' :
-              step === s.id ? 'bg-blue-600 text-white' :
+              step === s.id ? 'bg-indigo-600 text-white' :
               'bg-gray-100 text-gray-400'
             }`}>
               {step > s.id ? <Check className="w-4 h-4" /> : s.id}
