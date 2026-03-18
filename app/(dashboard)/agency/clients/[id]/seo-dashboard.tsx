@@ -359,7 +359,7 @@ function AdminControlPanel({
               </div>
               <div className="flex justify-end gap-2 pt-1">
                 <Button size="sm" variant="outline" onClick={() => setEditing(false)}>Cancel</Button>
-                <Button size="sm" disabled={saving} onClick={handleSaveEdit} className="bg-blue-600 hover:bg-blue-700 text-white">
+                <Button size="sm" disabled={saving} onClick={handleSaveEdit} className="bg-indigo-600 hover:bg-indigo-700 text-white">
                   {saving ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : null}
                   Save Changes
                 </Button>

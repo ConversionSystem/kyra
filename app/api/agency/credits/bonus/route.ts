@@ -25,10 +25,10 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { reason, amount: customAmount } = await req.json();
+  const { reason } = await req.json();
   if (!reason) return NextResponse.json({ error: 'Missing reason' }, { status: 400 });
 
-  const amount = customAmount ?? BONUS_AMOUNTS[reason];
+  const amount = BONUS_AMOUNTS[reason];
   if (!amount) return NextResponse.json({ error: 'Unknown bonus reason' }, { status: 400 });
 
   const { data: member } = await supabase

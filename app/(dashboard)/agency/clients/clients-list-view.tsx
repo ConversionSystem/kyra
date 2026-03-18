@@ -122,32 +122,46 @@ export function ClientsListView({ clients, plan = 'free', clientLimit = 1 }: Cli
 
   const handleBulkStatus = async (status: 'active' | 'paused') => {
     setIsBulkActing(true);
-    await Promise.all(
-      [...selectedIds].map((id) =>
-        fetch(`/api/agency/clients/${id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status }),
-        })
-      )
-    );
-    setSelectedIds(new Set());
-    setIsBulkActing(false);
-    router.refresh();
+    try {
+      const results = await Promise.all(
+        [...selectedIds].map((id) =>
+          fetch(`/api/agency/clients/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status }),
+          })
+        )
+      );
+      const failed = results.filter((r) => !r.ok).length;
+      if (failed > 0) console.error(`Bulk status: ${failed} of ${results.length} failed`);
+      setSelectedIds(new Set());
+      router.refresh();
+    } catch (err) {
+      console.error('Bulk status error:', err);
+    } finally {
+      setIsBulkActing(false);
+    }
   };
 
   const handleBulkDelete = async () => {
     if (!confirmingDelete) { setConfirmingDelete(true); return; }
     setIsBulkActing(true);
     setConfirmingDelete(false);
-    await Promise.all(
-      [...selectedIds].map((id) =>
-        fetch(`/api/agency/clients/${id}`, { method: 'DELETE' })
-      )
-    );
-    setSelectedIds(new Set());
-    setIsBulkActing(false);
-    router.refresh();
+    try {
+      const results = await Promise.all(
+        [...selectedIds].map((id) =>
+          fetch(`/api/agency/clients/${id}`, { method: 'DELETE' })
+        )
+      );
+      const failed = results.filter((r) => !r.ok).length;
+      if (failed > 0) console.error(`Bulk delete: ${failed} of ${results.length} failed`);
+      setSelectedIds(new Set());
+      router.refresh();
+    } catch (err) {
+      console.error('Bulk delete error:', err);
+    } finally {
+      setIsBulkActing(false);
+    }
   };
 
   const handleCreateDemo = async () => {

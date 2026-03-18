@@ -126,7 +126,7 @@ export function SEOSetupWizard({ clientId, clientName, onComplete, onCancel }: S
           <div key={s.id} className="flex items-center">
             <div className={`flex items-center justify-center w-8 h-8 rounded-full text-xs font-semibold transition-colors ${
               step > s.id ? 'bg-emerald-500 text-white' :
-              step === s.id ? 'bg-blue-600 text-white' :
+              step === s.id ? 'bg-indigo-600 text-white' :
               'bg-gray-100 text-gray-400'
             }`}>
               {step > s.id ? <Check className="w-4 h-4" /> : s.id}

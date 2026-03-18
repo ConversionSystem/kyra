@@ -306,7 +306,7 @@ export function ApiKeysClient({ agencyId: _agencyId }: ApiKeysClientProps) {
             {/* Active model pill */}
             <div className="mt-3 flex items-center gap-2 flex-wrap">
               <div className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold ${
-                activeProvider ? 'bg-indigo-600 text-white' : 'bg-blue-600 text-white'
+                activeProvider ? 'bg-indigo-600 text-white' : 'bg-indigo-600 text-white'
               }`}>
                 <Crown className="h-3.5 w-3.5" />
                 {activeProvider ? activeProvider.model : 'GPT-4o mini (Kyra default)'}

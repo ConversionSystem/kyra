@@ -264,7 +264,7 @@ export function AgentsClient({ clientId, embedded }: AgentsClientProps = {}) {
                 onKeyDown={e => e.key === 'Enter' && testRouting()}
                 className="bg-gray-50 border-gray-200 text-gray-900"
               />
-              <Button onClick={testRouting} disabled={testing || !testMessage.trim()} className="bg-blue-600 hover:bg-blue-700 shrink-0">
+              <Button onClick={testRouting} disabled={testing || !testMessage.trim()} className="bg-indigo-600 hover:bg-indigo-700 text-white shrink-0">
                 {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               </Button>
             </div>

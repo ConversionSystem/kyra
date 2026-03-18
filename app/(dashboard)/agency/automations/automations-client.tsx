@@ -270,18 +270,27 @@ export default function AutomationsClient() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ jobId: job.id, enabled: !job.enabled }),
       });
-      if (res.ok) setJobs(prev => prev.map(j => j.id === job.id ? { ...j, enabled: !j.enabled } : j));
-    } catch { /* ignore */ }
+      if (!res.ok) { setError('Failed to toggle automation'); return; }
+      setJobs(prev => prev.map(j => j.id === job.id ? { ...j, enabled: !j.enabled } : j));
+    } catch (err) {
+      console.error('[automations] toggle failed:', err);
+      setError('Failed to toggle automation');
+    }
   };
 
   const handleDelete = async (jobId: string) => {
     if (!confirm('Delete this automation?')) return;
     setDeleting(jobId);
     try {
-      await fetch(`/api/agency/automations?jobId=${jobId}`, { method: 'DELETE' });
+      const res = await fetch(`/api/agency/automations?jobId=${jobId}`, { method: 'DELETE' });
+      if (!res.ok) { setError('Failed to delete automation'); return; }
       setJobs(prev => prev.filter(j => j.id !== jobId));
-    } catch { /* ignore */ }
-    setDeleting(null);
+    } catch (err) {
+      console.error('[automations] delete failed:', err);
+      setError('Failed to delete automation');
+    } finally {
+      setDeleting(null);
+    }
   };
 
   if (loading) {
