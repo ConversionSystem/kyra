@@ -51,20 +51,6 @@ export interface CreditPack {
 
 export const CREDIT_PACKS: CreditPack[] = [
   {
-    id: 'starter',
-    name: 'Starter',
-    price: 10,
-    credits: 1000,
-    bonusCredits: 0,
-    totalCredits: 1000,
-    bonusPct: 0,
-    pricePerCredit: 0.01,
-    badge: null,
-    badgeColor: '',
-    highlighted: false,
-    description: 'Perfect for getting started.',
-  },
-  {
     id: 'growth',
     name: 'Growth',
     price: 25,
