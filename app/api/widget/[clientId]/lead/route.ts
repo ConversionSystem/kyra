@@ -111,7 +111,7 @@ export async function POST(
 
     // 1. Save to client_conversations (shows in Conversations inbox)
     const { error: convError } = await supabase.from('client_conversations').insert({
-      client_id: clientId,
+      client_id: client.id,
       agency_id: agencyId,
       channel: 'website',
       user_message: summary,
@@ -150,7 +150,7 @@ export async function POST(
           .from('crm_contacts')
           .insert({
             agency_id: agencyId,
-            client_id: clientId,  // links to the Leads tab in the website dashboard
+            client_id: client.id,  // links to the Leads tab in the website dashboard
             first_name: nameParts[0] || name,
             last_name: nameParts.slice(1).join(' ') || '',
             email: email || null,
@@ -196,7 +196,7 @@ export async function POST(
     return NextResponse.json({ ok: true, crmContactId, agencyId, clientResolved: !!client }, { headers: CORS });
 
   } catch (err) {
-    console.error('[LEAD]', err);
-    return NextResponse.json({ ok: true }, { headers: CORS });
+    console.error('[LEAD] Uncaught error:', err instanceof Error ? err.message : err);
+    return NextResponse.json({ ok: true, error: 'internal' }, { headers: CORS });
   }
 }
