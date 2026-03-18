@@ -11,6 +11,7 @@ import {
   Brain, Headphones, Mail, BarChart3, CheckCircle2, Copy,
   Share2, X,
 } from 'lucide-react';
+import { KyraLogo } from '@/components/brand/kyra-logo';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -724,12 +725,7 @@ function BuildPageInner() {
       {/* Header */}
       <header className="border-b border-white/5">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
-              <Bot className="h-5 w-5 text-white" />
-            </div>
-            <span className="text-lg font-bold text-white">Kyra</span>
-          </Link>
+          <KyraLogo variant="dark" size="lg" />
           <Link href="/login" className="text-sm text-slate-400 hover:text-white transition">
             Already have an account? <span className="text-indigo-400 font-medium">Log in</span>
           </Link>

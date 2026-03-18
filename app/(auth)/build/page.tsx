@@ -14,10 +14,10 @@ import {
   Headphones,
   PenTool,
   BarChart3,
-  Globe,
   CheckCircle2,
   Sparkles,
 } from 'lucide-react';
+import { KyraLogo } from '@/components/brand/kyra-logo';
 import { PixelEvent } from '@/components/analytics/PixelEvent';
 
 // ── Worker Types ──────────────────────────────────────────────────────────────
@@ -138,10 +138,7 @@ export default function BuildPage() {
       {/* Header */}
       <header className="fixed top-0 inset-x-0 z-50 backdrop-blur-md bg-slate-900/80 border-b border-white/5">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <Globe className="h-5 w-5 text-emerald-400" />
-            <span className="font-bold text-sm">Kyra</span>
-          </Link>
+          <KyraLogo variant="dark" size="sm" />
           <div className="flex items-center gap-3">
             <Link
               href="/solo"
