@@ -56,7 +56,9 @@ function SetupWizard({ clientId, clientName, defaultNorthStar, agentRole, onDone
       });
 
       router.push(`/agency/clients/${clientId}`);
-    } catch {
+    } catch (err) {
+      console.error('[setup-wizard] Failed to save settings:', err);
+      // Navigate anyway — client was already created, settings are non-critical
       router.push(`/agency/clients/${clientId}`);
     }
   };

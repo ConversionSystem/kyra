@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { requireAgencyMember } from '@/lib/agency/middleware';
+import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { DEFAULT_TEMPLATES, getSmsStats, getRecentLog } from '@/lib/sms';
 import type { ClientSmsConfig } from '@/lib/sms';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 /**
  * Delivery SMS Management API
@@ -18,15 +16,19 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id: clientId } = await params;
-  if (!supabaseUrl || !supabaseServiceKey) {
-    return NextResponse.json({ error: 'Supabase not configured' }, { status: 503 });
+
+  const auth = await requireAgencyMember();
+  if (auth.error) {
+    return NextResponse.json({ error: auth.error.message }, { status: auth.error.status });
   }
 
-  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+  const { agency } = auth.data;
+  const supabase = createServiceClientWithoutCookies();
   const { data, error } = await supabase
     .from('agency_clients')
     .select('settings')
     .eq('id', clientId)
+    .eq('agency_id', agency.id)
     .single();
 
   if (error || !data) {
@@ -65,18 +67,22 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id: clientId } = await params;
-  if (!supabaseUrl || !supabaseServiceKey) {
-    return NextResponse.json({ error: 'Supabase not configured' }, { status: 503 });
+
+  const auth = await requireAgencyMember();
+  if (auth.error) {
+    return NextResponse.json({ error: auth.error.message }, { status: auth.error.status });
   }
 
+  const { agency } = auth.data;
   const body = await req.json();
-  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+  const supabase = createServiceClientWithoutCookies();
 
   // Load existing settings
   const { data: existing, error: fetchError } = await supabase
     .from('agency_clients')
     .select('settings')
     .eq('id', clientId)
+    .eq('agency_id', agency.id)
     .single();
 
   if (fetchError || !existing) {
@@ -106,7 +112,8 @@ export async function PUT(
     .update({
       settings: { ...settings, sms: updatedSms },
     })
-    .eq('id', clientId);
+    .eq('id', clientId)
+    .eq('agency_id', agency.id);
 
   if (updateError) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });
@@ -120,6 +127,12 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id: clientId } = await params;
+
+  const auth = await requireAgencyMember();
+  if (auth.error) {
+    return NextResponse.json({ error: auth.error.message }, { status: auth.error.status });
+  }
+
   const body = await req.json();
 
   if (body.action !== 'test') {

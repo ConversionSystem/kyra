@@ -112,7 +112,9 @@ export function AICapabilities({ clientId }: { clientId: string }) {
         const d = await res.json();
         setEnabled(d.capabilities || {});
       }
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.error('[ai-capabilities] Failed to load:', err);
+    }
     setLoading(false);
   }, [clientId]);
 

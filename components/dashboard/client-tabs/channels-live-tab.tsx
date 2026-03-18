@@ -33,7 +33,7 @@ export default function ChannelsLiveTab({
   const [widgetSaved, setWidgetSaved] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
 
-  const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://kyra.conversionsystem.com';
+  const appUrl = window.location.origin;
   // Correct path: /api/widget/[clientId]/script (served dynamically per-client)
   const scriptTag = `<script src="${appUrl}/api/widget/${client.id}/script" defer></script>`;
 
@@ -47,7 +47,7 @@ export default function ChannelsLiveTab({
   const saveWidgetAppearance = async () => {
     setSavingWidget(true);
     try {
-      await fetch(`/api/agency/clients/${client.id}`, {
+      const res = await fetch(`/api/agency/clients/${client.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -59,6 +59,7 @@ export default function ChannelsLiveTab({
           },
         }),
       });
+      if (!res.ok) throw new Error('Save failed');
       setWidgetSaved(true);
       setTimeout(() => setWidgetSaved(false), 2000);
     } catch (err) {

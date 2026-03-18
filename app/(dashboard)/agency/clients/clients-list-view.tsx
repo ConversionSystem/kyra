@@ -80,7 +80,7 @@ function GatewayDot({ status }: { status: string | null }) {
 const statusColors: Record<string, string> = {
   active: 'border-green-200 bg-green-50 text-green-600',
   paused: 'border-yellow-200 bg-yellow-50 text-yellow-600',
-  setup: 'border-blue-200 bg-blue-50 text-blue-600',
+  setup: 'border-amber-200 bg-amber-50 text-amber-600',
 };
 
 const statusFilters = ['all', 'active', 'paused', 'setup'] as const;
@@ -180,8 +180,13 @@ export function ClientsListView({ clients, plan = 'free', clientLimit = 1 }: Cli
       const d = await res.json();
       if (d.clientId) {
         router.push(`/agency/clients/${d.clientId}`);
+      } else {
+        setBulkError(d.error || 'Failed to create demo client.');
+        setDemoCreating(false);
       }
-    } catch {
+    } catch (err) {
+      console.error('Demo client creation failed:', err);
+      setBulkError('Failed to create demo client. Please try again.');
       setDemoCreating(false);
     }
   };
@@ -222,7 +227,10 @@ export function ClientsListView({ clients, plan = 'free', clientLimit = 1 }: Cli
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-    } catch { /* silent */ }
+    } catch (err) {
+      console.error('Bulk export failed:', err);
+      setBulkError('Bulk export failed. Please try again.');
+    }
     setIsBulkExporting(false);
   };
 

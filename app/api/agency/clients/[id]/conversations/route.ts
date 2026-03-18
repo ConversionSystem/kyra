@@ -101,7 +101,7 @@ export async function POST(
       aiResponse: ai_response,
     });
 
-    return Response.json({ ok: true });
+    return Response.json({ ok: true }, { status: 201 });
   } catch (err) {
     console.error('[conversations POST]', err);
     return new Response('Internal server error', { status: 500 });
