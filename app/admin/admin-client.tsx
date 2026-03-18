@@ -213,7 +213,7 @@ export default function AdminDashboardClient() {
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2 mb-0.5">
-              <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-black text-sm">K</div>
+              <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-black text-xs">K</div>
               <h1 className="text-xl font-black text-gray-900">Kyra Admin</h1>
             </div>
             <p className="text-xs text-gray-400">
