@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
+import { KyraLogo } from '@/components/brand/kyra-logo';
 
 const NAV_LINKS = [
   { href: '/website-builder', label: 'Website Builder' },
@@ -22,12 +23,7 @@ export default function PublicNav() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 shrink-0">
-            <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center font-black text-sm text-white">
-              K
-            </div>
-            <span className="font-bold text-lg text-indigo-600 tracking-tight">Kyra</span>
-          </Link>
+          <KyraLogo variant="light" size="lg" />
 
           {/* Desktop links */}
           <div className="hidden md:flex items-center gap-8">
