@@ -33,7 +33,7 @@ import {
   EyeOff,
   HelpCircle,
 } from 'lucide-react';
-import type { SitePage, ContentSection, FaqItem, DesignStyle, PageType } from '@/lib/sites/types';
+import type { SitePage, ContentSection, FaqItem, DesignStyle } from '@/lib/sites/types';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -291,6 +291,7 @@ function PagesView({ siteId, onGenerate }: { siteId: string; onGenerate?: () => 
   const [deletingSlug, setDeletingSlug] = useState<string | null>(null);
   const [confirmDeleteSlug, setConfirmDeleteSlug] = useState<string | null>(null);
   const [faqOpen, setFaqOpen] = useState(false);
+  const [pageError, setPageError] = useState<string | null>(null);
 
   const fetchPages = useCallback(async () => {
     try {
@@ -321,7 +322,7 @@ function PagesView({ siteId, onGenerate }: { siteId: string; onGenerate?: () => 
       meta_description: page.meta_description || '',
       content_sections: page.content_sections || [],
       faq: page.faq || [],
-      hidden: !!(page as SitePage & { hidden?: boolean }).hidden,
+      hidden: !!page.hidden,
     });
     setFeedback('');
     setFaqOpen(false);
@@ -399,7 +400,7 @@ function PagesView({ siteId, onGenerate }: { siteId: string; onGenerate?: () => 
                 meta_description: updated.meta_description || '',
                 content_sections: updated.content_sections || [],
                 faq: updated.faq || [],
-                hidden: !!(updated as SitePage & { hidden?: boolean }).hidden,
+                hidden: !!updated.hidden,
               });
             }
           }
@@ -414,6 +415,7 @@ function PagesView({ siteId, onGenerate }: { siteId: string; onGenerate?: () => 
   const createPage = async () => {
     if (!newPage.title || !newPage.slug) return;
     setCreatingPage(true);
+    setPageError(null);
     try {
       const res = await fetch(`/api/agency/sites/${siteId}/pages`, {
         method: 'POST',
@@ -429,9 +431,12 @@ function PagesView({ siteId, onGenerate }: { siteId: string; onGenerate?: () => 
           const created = result.data as SitePage;
           expandPage(created);
         }
+      } else {
+        const d = await res.json().catch(() => ({}));
+        setPageError(d.error || 'Failed to create page');
       }
     } catch {
-      // silent
+      setPageError('Network error — please try again');
     } finally {
       setCreatingPage(false);
     }
@@ -573,6 +578,12 @@ function PagesView({ siteId, onGenerate }: { siteId: string; onGenerate?: () => 
               <option value="blog">Blog</option>
             </select>
           </div>
+          {pageError && (
+            <p className="text-xs text-red-600 flex items-center gap-1">
+              <AlertTriangle className="h-3 w-3" />
+              {pageError}
+            </p>
+          )}
           <div className="flex items-center gap-2">
             <button
               onClick={createPage}
@@ -583,7 +594,7 @@ function PagesView({ siteId, onGenerate }: { siteId: string; onGenerate?: () => 
               Create Page
             </button>
             <button
-              onClick={() => { setShowNewPageForm(false); setNewPage({ title: '', slug: '', page_type: 'utility' }); }}
+              onClick={() => { setShowNewPageForm(false); setNewPage({ title: '', slug: '', page_type: 'utility' }); setPageError(null); }}
               className="px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-800 transition"
             >
               Cancel
@@ -593,7 +604,7 @@ function PagesView({ siteId, onGenerate }: { siteId: string; onGenerate?: () => 
       )}
 
       {pages.map((page) => {
-        const isHidden = !!(page as SitePage & { hidden?: boolean }).hidden;
+        const isHidden = !!page.hidden;
         return (
           <div key={page.slug} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
             <button
@@ -641,7 +652,7 @@ function PagesView({ siteId, onGenerate }: { siteId: string; onGenerate?: () => 
                   >
                     <span
                       className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-                        !editValues.hidden ? 'translate-x-4.5' : 'translate-x-1'
+                        !editValues.hidden ? 'translate-x-4' : 'translate-x-0.5'
                       }`}
                     />
                   </button>
