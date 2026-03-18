@@ -39,7 +39,6 @@ import {
   ChevronRight,
   Star,
   Gift,
-  Cpu,
   Globe,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -86,42 +85,12 @@ const navSections: NavSection[] = [
 ];
 
 const planColors: Record<string, string> = {
-  free:    'border-gray-200 bg-gray-50 text-gray-500',
-  starter: 'border-blue-200 bg-blue-50 text-blue-600',
-  pro:     'border-indigo-200 bg-indigo-50 text-indigo-600',
-  scale:   'border-amber-200 bg-amber-50 text-amber-600',
-  beta:    'border-amber-200 bg-amber-50 text-amber-700',
+  free:     'border-gray-200 bg-gray-50 text-gray-500',
+  solo_pro: 'border-violet-200 bg-violet-50 text-violet-600',
+  starter:  'border-blue-200 bg-blue-50 text-blue-600',
+  pro:      'border-indigo-200 bg-indigo-50 text-indigo-600',
+  scale:    'border-amber-200 bg-amber-50 text-amber-600',
 };
-
-// ─── Solo Mode Nav ─────────────────────────────────────────────────────────
-const soloNavSections: NavSection[] = [
-  {
-    items: [
-      { label: 'Mission Control', href: '/agency', icon: Activity },
-      { label: 'Websites', href: '/agency/sites', icon: Globe },
-    ],
-  },
-  {
-    label: 'AI Worker',
-    collapsible: true,
-    items: [
-      { label: 'AI Model', href: '/agency/ai-model', icon: Cpu },
-      { label: 'AI Templates', href: '/agency/ai-setup', icon: Sparkles },
-      { label: 'Channels', href: '/agency/channels', icon: Radio },
-      // Voice AI, Automation, GHL, Delivery SMS, SEO — Lite+ only
-    ],
-  },
-  {
-    label: 'Account',
-    collapsible: true,
-    items: [
-      { label: 'Billing', href: '/agency/billing', icon: CreditCard },
-      { label: 'Credits', href: '/agency/credits', icon: Coins },
-      { label: 'Referrals', href: '/agency/referrals', icon: Gift },
-      { label: 'Settings', href: '/agency/settings', icon: Settings },
-    ],
-  },
-];
 
 // ─── Collapsible Section ───────────────────────────────────────────────────
 function CollapsibleSection({
@@ -218,7 +187,6 @@ interface AgencySidebarProps {
 }
 
 export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySidebarProps) {
-  const isSolo = (settings as Record<string, unknown> | undefined)?.account_type === 'solo';
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [agencyGatewayUrl, setAgencyGatewayUrl] = useState<string | null>(null);
@@ -260,8 +228,6 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
   const logoUrl = settings?.logo_url;
   const companyName = settings?.company_name || agencyName;
   const hasBranding = !!(logoUrl || settings?.primary_color || settings?.company_name);
-  const brandBg = hasBranding && settings?.primary_color ? settings.primary_color : undefined;
-
   const sidebarContent = (
     <>
       {/* Header */}
@@ -417,7 +383,7 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
   return (
     <>
       {/* Mobile top bar */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-gray-900 border-b border-gray-800 flex items-center px-4 gap-3" style={brandBg ? { backgroundColor: brandBg } : undefined}>
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-gray-900 border-b border-gray-800 flex items-center px-4 gap-3">
         <button
           onClick={() => setMobileOpen(true)}
           className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
@@ -445,7 +411,6 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
           'lg:hidden fixed top-0 left-0 bottom-0 z-50 w-60 flex flex-col transition-transform duration-200 ease-in-out bg-gray-900',
           mobileOpen ? 'translate-x-0' : '-translate-x-full',
         )}
-        style={brandBg ? { backgroundColor: brandBg } : undefined}
       >
         {sidebarContent}
       </aside>
@@ -453,7 +418,6 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
       {/* Desktop sidebar — collapsed (icons only), expands on hover */}
       <aside
         className="hidden lg:flex border-r border-gray-800 bg-gray-900 flex-col shrink-0 w-14 hover:w-52 transition-all duration-200 ease-in-out group/sidebar overflow-hidden scrollbar-hide"
-        style={brandBg ? { backgroundColor: brandBg } : undefined}
       >
         {sidebarContent}
       </aside>

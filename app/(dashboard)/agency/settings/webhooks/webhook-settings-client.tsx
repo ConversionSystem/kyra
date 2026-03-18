@@ -105,25 +105,22 @@ export function WebhookSettingsClient({ agencyId, initialConfig }: WebhookSettin
     setStatus(null);
 
     try {
-      const res = await fetch(webhook.url, {
+      const res = await fetch('/api/agency/settings/test-webhook', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(webhook.secret ? { 'X-Webhook-Secret': webhook.secret } : {}),
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          url: webhook.url,
           event: webhook.event,
-          agency_id: agencyId,
-          timestamp: new Date().toISOString(),
-          data: { test: true, message: 'This is a test webhook from Kyra' },
+          secret: webhook.secret || undefined,
         }),
-        signal: AbortSignal.timeout(5_000),
+        signal: AbortSignal.timeout(10_000),
       });
 
       if (res.ok) {
-        setStatus({ type: 'success', message: `Test webhook sent successfully (${res.status})` });
+        setStatus({ type: 'success', message: 'Test webhook sent successfully' });
       } else {
-        setStatus({ type: 'error', message: `Webhook returned ${res.status}` });
+        const data = await res.json().catch(() => ({}));
+        setStatus({ type: 'error', message: data.error || `Test failed (${res.status})` });
       }
     } catch (err) {
       setStatus({

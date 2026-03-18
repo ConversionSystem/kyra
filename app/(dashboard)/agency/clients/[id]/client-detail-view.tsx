@@ -37,7 +37,6 @@ import {
   Globe,
   Phone,
   Radio,
-  MessageCircle,
   X,
   Plus,
   Users,
@@ -92,6 +91,7 @@ function SetupNudgeBanner({
   const missing: { label: string; tab: Tab; desc: string }[] = [];
   if (!hasPersonality) missing.push({ label: 'Add Personality', tab: 'personality', desc: 'Train the AI with persona, greeting, and instructions' });
   // GHL nudge removed from global banner — shown only inside the GHL tab
+  if ((client.usage_this_month ?? 0) === 0) missing.push({ label: 'Test the AI', tab: 'terminal', desc: 'Open the terminal and send a test message' });
 
   if (missing.length === 0) return null;
 
@@ -275,7 +275,6 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialTab = (searchParams.get('tab') as Tab) || 'terminal';
-  const justActivated = searchParams.get('activated') === 'true';
   const [activeTab, setActiveTab] = useState<Tab>(
     TABS.some(t => t.id === initialTab) ? initialTab : 'terminal'
   );
@@ -917,19 +916,6 @@ function GHLTab({ client, onRefresh }: { client: AgencyClient; onRefresh: () => 
   );
 }
 
-// ── Permissions Tab ───────────────────────────────────────────────────────────
-
-function PermissionsTab({ client }: { client: AgencyClient }) {
-  return (
-    <div className="space-y-6">
-      <p className="text-sm text-gray-500">
-        Control what this client&apos;s AI can do. Start in read-only mode and expand capabilities as you build confidence.
-      </p>
-      <PermissionsCard clientId={client.id} />
-    </div>
-  );
-}
-
 // ── Usage Tab ─────────────────────────────────────────────────────────────────
 
 function UsageTab({ client }: { client: AgencyClient }) {
@@ -973,13 +959,13 @@ function ConversationsTab({ client }: { client: AgencyClient }) {
 
   const loadConversations = useCallback(() => {
     fetch(`/api/agency/clients/${client.id}/conversations`)
-      .then(r => r.json())
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
       .then(d => {
         if (d.migrationRequired) { setMigrationRequired(true); return; }
         setConversations(d.conversations || []);
         setTotal(d.total ?? (d.conversations || []).length);
       })
-      .catch(() => {})
+      .catch((err) => console.error('[conversations] load failed:', err))
       .finally(() => setLoading(false));
   }, [client.id]);
 
@@ -1218,341 +1204,6 @@ function ZapierChannelCard({
   );
 }
 
-// ── Channels Tab ──────────────────────────────────────────────────────────────
-// Shows client-facing channels: web chat embed, GHL, WhatsApp, Telegram, voice.
-
-function ChannelsTab({ client, onTabChange }: { client: AgencyClient; onTabChange?: (tab: Tab) => void }) {
-  const [copied, setCopied] = useState<string | null>(null);
-  const cfg = (client.container_config ?? {}) as Record<string, unknown>;
-  const [widgetTitle, setWidgetTitle] = useState((cfg.widget_title as string) || '');
-  const [widgetColor, setWidgetColor] = useState((cfg.widget_color as string) || '#6366f1');
-  const [widgetGreeting, setWidgetGreeting] = useState((cfg.widget_greeting as string) || '');
-  const [savingWidget, setSavingWidget] = useState(false);
-  const [widgetSaved, setWidgetSaved] = useState(false);
-  const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://kyra.conversionsystem.com';
-  const scriptTag = `<script src="${appUrl}/api/widget/${client.id}/script" defer></script>`;
-
-  const saveWidgetAppearance = async () => {
-    setSavingWidget(true);
-    try {
-      await fetch(`/api/agency/clients/${client.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          container_config: {
-            ...cfg,
-            widget_title: widgetTitle.trim() || undefined,
-            widget_color: widgetColor || '#6366f1',
-            widget_greeting: widgetGreeting.trim() || undefined,
-          },
-        }),
-      });
-      setWidgetSaved(true);
-      setTimeout(() => setWidgetSaved(false), 2000);
-    } catch { /* ignore */ }
-    setSavingWidget(false);
-  };
-
-  const copy = (text: string, key: string) => {
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(key);
-      setTimeout(() => setCopied(null), 2000);
-    });
-  };
-
-  return (
-    <div className="space-y-6 pb-8">
-      {/* Header */}
-      <div>
-        <h2 className="text-lg font-semibold text-gray-900">Channels</h2>
-        <p className="text-sm text-gray-500 mt-1">
-          Connect your client AI to every surface customers use — from your website to WhatsApp to voice calls.
-        </p>
-      </div>
-
-      {/* ── Web Chat Widget ─────────────────────────────────────────────── */}
-      <Card className="border-indigo-100">
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-indigo-50 flex items-center justify-center">
-              <Globe className="h-5 w-5 text-indigo-600" />
-            </div>
-            <div>
-              <CardTitle className="text-base">Web Chat Widget</CardTitle>
-              <CardDescription className="text-xs">Embed a live chat bubble on any website — no GHL required</CardDescription>
-            </div>
-            <span className="ml-auto text-[10px] bg-green-100 text-green-700 font-medium px-2 py-0.5 rounded-full">✅ Ready</span>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-sm text-gray-600">
-            Drop one line of code on any webpage. A floating chat bubble appears — customers type, your AI responds instantly.
-            Sessions persist per browser via <code className="text-xs bg-gray-100 px-1 rounded">localStorage</code>.
-          </p>
-
-          <div>
-            <p className="text-xs font-medium text-gray-700 mb-2">Embed snippet — paste before <code className="bg-gray-100 px-1 rounded">&lt;/body&gt;</code></p>
-            <div className="flex items-start gap-2">
-              <div className="flex-1 bg-gray-900 rounded-lg p-3 font-mono text-xs text-green-400 overflow-x-auto">
-                {scriptTag}
-              </div>
-              <Button
-                size="sm"
-                variant="outline"
-                className="shrink-0"
-                onClick={() => copy(scriptTag, 'script')}
-              >
-                {copied === 'script' ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
-              </Button>
-            </div>
-          </div>
-
-          {/* ── Widget Appearance ── */}
-          <div className="border-t border-gray-100 pt-4">
-            <p className="text-xs font-medium text-gray-700 mb-3">Customize appearance</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div className="space-y-3">
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-gray-600">Widget Title</label>
-                  <Input value={widgetTitle} onChange={(e) => setWidgetTitle(e.target.value)} placeholder={`Chat with ${client.name}`} className="bg-gray-50 text-sm" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-gray-600">Brand Colour</label>
-                  <div className="flex items-center gap-2">
-                    <input type="color" value={widgetColor} onChange={(e) => setWidgetColor(e.target.value)} className="h-8 w-10 rounded border border-gray-200 cursor-pointer bg-white p-0.5" />
-                    <Input value={widgetColor} onChange={(e) => setWidgetColor(e.target.value)} placeholder="#6366f1" className="bg-gray-50 font-mono text-sm flex-1" maxLength={7} />
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-gray-600">Opening Greeting</label>
-                  <Textarea value={widgetGreeting} onChange={(e) => setWidgetGreeting(e.target.value)} placeholder="Hi! 👋 How can I help you today?" rows={2} className="bg-gray-50 text-sm" />
-                </div>
-                <Button size="sm" onClick={saveWidgetAppearance} disabled={savingWidget} className="mt-1">
-                  {savingWidget ? 'Saving...' : widgetSaved ? '✅ Saved' : 'Save Appearance'}
-                </Button>
-              </div>
-              {/* Live preview */}
-              <div className="flex flex-col items-center gap-2">
-                <p className="text-xs font-medium text-gray-500 self-start">Preview</p>
-                <div className="w-full rounded-xl overflow-hidden border border-gray-200 shadow-lg text-[11px]">
-                  <div className="flex items-center gap-2 px-3 py-2" style={{ background: widgetColor }}>
-                    <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-white text-[9px]">🤖</div>
-                    <div className="text-white font-semibold text-xs">{widgetTitle || `Chat with ${client.name}`}</div>
-                  </div>
-                  <div className="bg-gray-50 px-3 py-2.5 space-y-1.5 min-h-[60px]">
-                    <div className="flex items-end gap-1">
-                      <div className="w-4 h-4 rounded-full flex items-center justify-center text-white text-[8px] shrink-0" style={{ background: widgetColor }}>🤖</div>
-                      <div className="bg-white rounded-lg rounded-bl-sm px-2 py-1 shadow-sm text-gray-800 max-w-[80%] text-[10px]">{widgetGreeting || 'Hi! 👋 How can I help you today?'}</div>
-                    </div>
-                  </div>
-                  <div className="bg-white border-t border-gray-100 px-2 py-1.5 flex items-center gap-1.5">
-                    <div className="flex-1 rounded border border-gray-200 bg-gray-50 px-2 py-1 text-gray-400 text-[10px]">Type a message...</div>
-                    <div className="w-5 h-5 rounded-full flex items-center justify-center text-white shrink-0" style={{ background: widgetColor }}>
-                      <svg viewBox="0 0 24 24" width="8" height="8" fill="white"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              className="text-xs"
-              onClick={() => window.open(`${appUrl}/api/widget/${client.id}/script`, '_blank')}
-            >
-              <ExternalLink className="h-3.5 w-3.5 mr-1.5" /> Preview script
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="text-xs"
-              onClick={() => copy(`${appUrl}/api/widget/chat`, 'api')}
-            >
-              {copied === 'api' ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500 mr-1.5" /> : <Copy className="h-3.5 w-3.5 mr-1.5" />}
-              Copy API endpoint
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* ── GHL (existing) ──────────────────────────────────────────────── */}
-      <Card className="border-green-100">
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-green-50 flex items-center justify-center">
-              <MessageCircle className="h-5 w-5 text-green-600" />
-            </div>
-            <div>
-              <CardTitle className="text-base">GHL (SMS + Multi-channel)</CardTitle>
-              <CardDescription className="text-xs">SMS, WhatsApp, Instagram, FB Messenger, Live Chat, Google Business — all via GHL</CardDescription>
-            </div>
-            <span className="ml-auto text-[10px] bg-green-100 text-green-700 font-medium px-2 py-0.5 rounded-full">✅ Active</span>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-gray-600">
-            Connect GHL in the <strong>GHL tab</strong> and the AI automatically handles all channels your client has connected — SMS, WhatsApp, Instagram DMs, Facebook Messenger, Live Chat, and Google My Business. No extra setup needed per channel.
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {['SMS', 'WhatsApp (via GHL)', 'Instagram DMs', 'FB Messenger', 'Live Chat', 'Google Business'].map(ch => (
-              <span key={ch} className="text-[11px] bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full">{ch}</span>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* ── Zapier / Make / n8n ─────────────────────────────────────────── */}
-      <ZapierChannelCard client={client} appUrl={appUrl} copy={copy} copied={copied} />
-
-      {/* ── WhatsApp Direct ─────────────────────────────────────────────── */}
-      <Card className="border-gray-200">
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-              <MessageSquare className="h-5 w-5 text-gray-500" />
-            </div>
-            <div>
-              <CardTitle className="text-base text-gray-700">WhatsApp Business API (Direct)</CardTitle>
-              <CardDescription className="text-xs">Meta Cloud API — no GHL dependency</CardDescription>
-            </div>
-            <span className="ml-auto text-[10px] bg-amber-100 text-amber-700 font-medium px-2 py-0.5 rounded-full">⚙️ Setup Required</span>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-sm text-gray-600">
-            Use this if your client wants WhatsApp without GHL. Requires a Meta Business account and phone number approval.
-          </p>
-          <div className="bg-amber-50 rounded-lg p-3 text-xs text-amber-800 space-y-1">
-            <p className="font-semibold">Setup steps:</p>
-            <ol className="list-decimal ml-4 space-y-1">
-              <li>Go to <a href="https://developers.facebook.com" target="_blank" rel="noopener noreferrer" className="underline">developers.facebook.com</a> → create app → add WhatsApp</li>
-              <li>Get a <strong>System User Access Token</strong> (permanent) + <strong>Phone Number ID</strong></li>
-              <li>Add to Vercel env: <code className="bg-amber-100 px-1 rounded">WHATSAPP_ACCESS_TOKEN</code>, <code className="bg-amber-100 px-1 rounded">WHATSAPP_PHONE_NUMBER_ID</code>, <code className="bg-amber-100 px-1 rounded">WHATSAPP_VERIFY_TOKEN</code> (any string), <code className="bg-amber-100 px-1 rounded">WHATSAPP_DEFAULT_CLIENT_ID={client.id}</code></li>
-              <li>Set webhook URL in Meta: <code className="bg-amber-100 px-1 rounded break-all">{appUrl}/api/channels/whatsapp-direct</code></li>
-              <li>Subscribe to: <strong>messages</strong></li>
-            </ol>
-          </div>
-          <Button
-            size="sm"
-            variant="outline"
-            className="text-xs"
-            onClick={() => copy(`${appUrl}/api/channels/whatsapp-direct`, 'wa')}
-          >
-            {copied === 'wa' ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500 mr-1.5" /> : <Copy className="h-3.5 w-3.5 mr-1.5" />}
-            Copy webhook URL
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* ── Telegram ───────────────────────────────────────────────────── */}
-      <Card className="border-sky-100">
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-sky-50 flex items-center justify-center">
-              <MessageSquare className="h-5 w-5 text-sky-600" />
-            </div>
-            <div>
-              <CardTitle className="text-base">Telegram</CardTitle>
-              <CardDescription className="text-xs">The fastest setup — get your AI worker live on Telegram in under 5 minutes</CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="text-sm text-gray-600 space-y-2">
-          <p>Create a bot via <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" className="text-sky-600 hover:underline">@BotFather</a>, paste the token in the Terminal config, and your AI is live.</p>
-          <p className="text-xs text-gray-400">Configure via the <strong>Terminal</strong> → OpenClaw config → channels.telegram</p>
-        </CardContent>
-      </Card>
-
-      {/* ── Discord ─────────────────────────────────────────────────────── */}
-      <Card className="border-violet-100">
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-violet-50 flex items-center justify-center">
-              <MessageCircle className="h-5 w-5 text-violet-600" />
-            </div>
-            <div>
-              <CardTitle className="text-base">Discord</CardTitle>
-              <CardDescription className="text-xs">Deploy your AI across Discord servers — great for community businesses</CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="text-sm text-gray-600 space-y-2">
-          <p>Create a bot at the <a href="https://discord.com/developers/applications" target="_blank" rel="noopener noreferrer" className="text-violet-600 hover:underline">Discord Developer Portal</a>, add it to your server, and paste the token.</p>
-          <p className="text-xs text-gray-400">Configure via the <strong>Terminal</strong> → OpenClaw config → channels.discord</p>
-        </CardContent>
-      </Card>
-
-      {/* ── Slack ───────────────────────────────────────────────────────── */}
-      <Card className="border-orange-100">
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-orange-50 flex items-center justify-center">
-              <MessageSquare className="h-5 w-5 text-orange-600" />
-            </div>
-            <div>
-              <CardTitle className="text-base">Slack</CardTitle>
-              <CardDescription className="text-xs">Add your AI worker to any Slack workspace</CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="text-sm text-gray-600">
-          <p>Create a Slack App at <a href="https://api.slack.com/apps" target="_blank" rel="noopener noreferrer" className="text-orange-600 hover:underline">api.slack.com</a>, enable Socket Mode, and add the bot token.</p>
-          <p className="text-xs text-gray-400 mt-2">Configure via the <strong>Terminal</strong> → OpenClaw config → channels.slack</p>
-        </CardContent>
-      </Card>
-
-      {/* ── Signal / iMessage / Google Chat ──────────────────────────── */}
-      <Card className="border-gray-100">
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-gray-50 flex items-center justify-center">
-              <Radio className="h-5 w-5 text-gray-600" />
-            </div>
-            <div>
-              <CardTitle className="text-base">More Channels</CardTitle>
-              <CardDescription className="text-xs">Signal, iMessage, Google Chat, IRC, Line — 20+ channels supported</CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="text-sm text-gray-600">
-          <p>OpenClaw supports 20+ messaging channels. Configure any channel through the Terminal → OpenClaw gateway config.</p>
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {['Signal', 'iMessage', 'Google Chat', 'IRC', 'Line'].map(ch => (
-              <span key={ch} className="text-[11px] bg-gray-100 text-gray-600 border border-gray-200 px-2 py-0.5 rounded-full">{ch}</span>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* ── Voice AI — managed in dedicated tab ──────────────────────── */}
-      <Card className="rounded-2xl border border-gray-200 shadow-sm">
-        <CardContent className="pt-6">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shrink-0">
-                <Phone className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900 text-sm">Voice AI</h3>
-                <p className="text-xs text-gray-500 mt-0.5">Inbound & outbound phone calls powered by Kyra Native</p>
-              </div>
-            </div>
-            <button
-              onClick={() => onTabChange?.('voice')}
-              className="shrink-0 text-xs font-medium text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors"
-            >
-              Configure →
-            </button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
 // ── Client Portal Tab ─────────────────────────────────────────────────────────
 
 function PortalTab({ client }: { client: AgencyClient }) {
@@ -1701,7 +1352,7 @@ function PortalTab({ client }: { client: AgencyClient }) {
                 </code>
                 <button
                   onClick={() => copyUrl(inviteResult.portalUrl)}
-                  className="shrink-0 px-3 py-2 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="shrink-0 px-3 py-2 text-xs font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
                 >
                   Copy
                 </button>

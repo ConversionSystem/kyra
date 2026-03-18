@@ -14,7 +14,7 @@ interface AgencyClient {
   container_config?: Record<string, unknown> | null;
 }
 
-type Tab = 'terminal' | 'personality' | 'templates' | 'skills' | 'crm' | 'secrets' | 'settings' | 'ghl' | 'usage' | 'conversations' | 'channels' | 'portal' | 'memory' | 'voice' | 'seo' | 'automation' | 'ai-teams' | 'delivery-sms';
+type Tab = 'terminal' | 'personality' | 'templates' | 'skills' | 'crm' | 'secrets' | 'settings' | 'ghl' | 'usage' | 'conversations' | 'channels' | 'portal' | 'memory' | 'voice' | 'seo' | 'automation' | 'ai-teams' | 'delivery-sms' | 'website';
 
 export default function ChannelsLiveTab({
   clientId,
@@ -41,7 +41,7 @@ export default function ChannelsLiveTab({
     navigator.clipboard.writeText(text).then(() => {
       setCopied(key);
       setTimeout(() => setCopied(null), 2000);
-    });
+    }).catch(() => { /* clipboard not available */ });
   };
 
   const saveWidgetAppearance = async () => {
@@ -61,7 +61,9 @@ export default function ChannelsLiveTab({
       });
       setWidgetSaved(true);
       setTimeout(() => setWidgetSaved(false), 2000);
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.error('[channels] widget save failed:', err);
+    }
     setSavingWidget(false);
   };
 

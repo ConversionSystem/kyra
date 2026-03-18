@@ -30,11 +30,13 @@ function ClientPickerModal({
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
+  const [loadError, setLoadError] = useState(false);
+
   useEffect(() => {
     fetch('/api/agency/clients')
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
       .then((data) => setClients(data.clients ?? data ?? []))
-      .catch(() => {})
+      .catch((err) => { console.error('[templates] load clients:', err); setLoadError(true); })
       .finally(() => setLoading(false));
   }, []);
 
@@ -60,7 +62,7 @@ function ClientPickerModal({
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
-              className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-md text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-md text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
               placeholder="Search clients..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -74,6 +76,10 @@ function ClientPickerModal({
           {loading ? (
             <div className="flex items-center justify-center py-10 text-gray-400">
               <Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading clients...
+            </div>
+          ) : loadError ? (
+            <div className="py-10 text-center">
+              <p className="text-sm text-red-500">Failed to load clients. Please try again.</p>
             </div>
           ) : filtered.length === 0 ? (
             <div className="py-10 text-center">

@@ -202,7 +202,7 @@ export function AutopilotClient() {
                 className={cn(
                   'flex-1 rounded-lg py-2 px-1 text-center transition-all',
                   selectedDay === i
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-indigo-600 text-white'
                     : day.count > 0
                       ? 'bg-gray-50 text-gray-700 hover:bg-gray-100'
                       : 'bg-gray-50/50 text-gray-400',
@@ -289,13 +289,13 @@ export function AutopilotClient() {
                                 value={editMessage}
                                 onChange={e => setEditMessage(e.target.value)}
                                 rows={4}
-                                className="w-full bg-white border border-gray-200 text-gray-900 rounded-md p-2 text-sm resize-y focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                className="w-full bg-white border border-gray-200 text-gray-900 rounded-md p-2 text-sm resize-y focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
                               />
                               <div className="flex gap-2 justify-end">
                                 <Button size="sm" variant="outline" onClick={() => setEditingId(null)}>
                                   Cancel
                                 </Button>
-                                <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => saveMessage(act.id)} disabled={saving}>
+                                <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white" onClick={() => saveMessage(act.id)} disabled={saving}>
                                   {saving ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
                                   Save
                                 </Button>

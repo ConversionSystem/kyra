@@ -63,6 +63,7 @@ export function AISetupClient({ agencyId, businessName, dbTemplates }: AISetupPr
   const [search, setSearch] = useState('');
   const [activating, setActivating] = useState<string | null>(null);
   const [activated, setActivated] = useState<Set<string>>(new Set());
+  const [activateError, setActivateError] = useState<string | null>(null);
 
   useEffect(() => {
     if (activeTab === 'industry' && templates.length === 0) {
@@ -84,13 +85,14 @@ export function AISetupClient({ agencyId, businessName, dbTemplates }: AISetupPr
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        alert((data as { error?: string }).error || 'Failed to activate package.');
+        setActivateError((data as { error?: string }).error || 'Failed to activate package.');
         setActivating(null);
         return;
       }
+      setActivateError(null);
       setActivated(prev => new Set([...prev, pkgId]));
     } catch {
-      alert('Failed to activate package. Please try again.');
+      setActivateError('Failed to activate package. Please try again.');
     }
     setActivating(null);
   };
@@ -110,6 +112,13 @@ export function AISetupClient({ agencyId, businessName, dbTemplates }: AISetupPr
           Configure your AI worker — pick a role, choose an industry template, or deploy a ready-made package
         </p>
       </div>
+
+      {activateError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-2 text-sm text-red-700 flex items-center justify-between">
+          {activateError}
+          <button onClick={() => setActivateError(null)} className="text-red-500 hover:text-red-700 ml-2">&times;</button>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex gap-1 bg-gray-100 p-1 rounded-xl overflow-x-auto">

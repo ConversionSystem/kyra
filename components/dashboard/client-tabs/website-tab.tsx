@@ -1359,7 +1359,7 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
             return true;
           }
         }
-      } catch { /* silent */ }
+      } catch (err) { console.error('[website-tab]', err); }
       return false;
     };
 
@@ -1464,9 +1464,9 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
                 } else {
                   await refreshSite();
                 }
-              } catch { /* silent */ }
+              } catch (err) { console.error('[website-tab]', err); }
             }}
-            className="shrink-0 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg transition whitespace-nowrap"
+            className="shrink-0 text-xs font-medium bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg transition whitespace-nowrap"
           >
             Check if Live
           </button>

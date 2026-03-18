@@ -43,14 +43,20 @@ function ActualMrrCard({ clients }: { clients: ClientRate[] }) {
   const handleSave = async (clientId: string) => {
     setSaving((s) => ({ ...s, [clientId]: true }));
     const rate = parseFloat(rates[clientId] || '0');
-    await fetch(`/api/agency/clients/${clientId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ settings: { monthly_rate: isNaN(rate) ? 0 : rate } }),
-    });
-    setSaving((s) => ({ ...s, [clientId]: false }));
-    setSaved((s) => ({ ...s, [clientId]: true }));
-    setTimeout(() => setSaved((s) => ({ ...s, [clientId]: false })), 2000);
+    try {
+      const res = await fetch(`/api/agency/clients/${clientId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ settings: { monthly_rate: isNaN(rate) ? 0 : rate } }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setSaved((s) => ({ ...s, [clientId]: true }));
+      setTimeout(() => setSaved((s) => ({ ...s, [clientId]: false })), 2000);
+    } catch (err) {
+      console.error('Failed to save rate:', err);
+    } finally {
+      setSaving((s) => ({ ...s, [clientId]: false }));
+    }
   };
 
   if (clients.length === 0) return null;

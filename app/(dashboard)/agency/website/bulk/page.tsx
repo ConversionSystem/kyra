@@ -58,7 +58,7 @@ export default function BulkSiteGeneration() {
       .then((result) => {
         if (Array.isArray(result.data)) setClients(result.data);
       })
-      .catch(() => {})
+      .catch((err) => console.error('[bulk] load clients:', err))
       .finally(() => setLoadingClients(false));
   }, []);
 
