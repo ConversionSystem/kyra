@@ -50,6 +50,7 @@ interface NavItem {
   label: string;
   href: string;
   icon: LucideIcon;
+  iconClassName?: string;
   masterOnly?: boolean;
   badge?: string;
 }
@@ -68,7 +69,7 @@ const navSections: NavSection[] = [
       { label: 'Mission Control', href: '/agency', icon: Activity },
       { label: 'Clients', href: '/agency/clients', icon: Users },
       { label: 'Websites', href: '/agency/sites', icon: Globe },
-      { label: 'Build Requests', href: '/agency/build-requests', icon: Sparkles },
+      { label: 'Build Requests', href: '/agency/build-requests', icon: Sparkles, iconClassName: 'text-amber-400' },
     ],
   },
   // CRM now lives inside each client's dashboard (CRM tab)
@@ -318,7 +319,7 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
                           : 'text-gray-400 hover:bg-gray-800 hover:text-white'
                     )}
                   >
-                    <item.icon className="h-4 w-4 shrink-0" />
+                    <item.icon className={cn('h-4 w-4 shrink-0', item.iconClassName)} />
                     <span className="opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200 truncate">{item.label}</span>
                     {item.href === '/agency' && escalationCount > 0 && (
                       <span className="ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 leading-none opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200">
