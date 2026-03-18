@@ -12,15 +12,15 @@ export async function GET(_req: NextRequest, ctx: Context) {
   const sb = await createClient();
   const sbService = await createServiceClient();
 
-  const { data: { session } } = await sb.auth.getSession();
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { data: agency } = await sbService.from('agencies').select('id').eq('owner_id', session.user.id).single();
+  const { data: agency } = await sbService.from('agency_members').select('agency_id').eq('user_id', user.id).single();
   if (!agency) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   const { data: client } = await sbService.from('agency_clients')
     .select('id, name, industry, container_config')
-    .eq('id', clientId).eq('agency_id', agency.id).single();
+    .eq('id', clientId).eq('agency_id', agency.agency_id).single();
   if (!client) return NextResponse.json({ error: 'Client not found' }, { status: 404 });
 
   // Fetch last 20 conversations for analysis

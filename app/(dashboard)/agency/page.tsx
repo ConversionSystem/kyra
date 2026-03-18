@@ -37,7 +37,7 @@ export default async function AgencyOverviewPage() {
   const showWelcomeCredits = agencyCredits.lifetimePurchased === 0 && agencyCredits.balance > 0;
 
   // Plan limits for "Add Client" button visibility
-  const planLimits: Record<string, number> = { free: 1, starter: 3, lite: 3, pro: 10, scale: 30 };
+  const planLimits: Record<string, number> = { free: 1, solo_pro: 1, starter: 3, pro: 10, scale: 30 };
   const limit = planLimits[agency.plan || 'free'] ?? 1;
   const canAddClient = totalCount < limit;
 

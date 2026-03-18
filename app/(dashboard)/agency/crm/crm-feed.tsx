@@ -41,12 +41,17 @@ export function CrmCommandFeed() {
   }, [fetchFeed]);
 
   const resolveItem = async (activityId: string) => {
-    await fetch('/api/agency/crm/activities', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ activity_id: activityId }),
-    });
-    fetchFeed();
+    try {
+      const res = await fetch('/api/agency/crm/activities', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ activity_id: activityId }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      fetchFeed();
+    } catch (err) {
+      console.error('[crm-feed] resolve failed:', err);
+    }
   };
 
   const approveAndSend = async (item: CommandFeedItem) => {

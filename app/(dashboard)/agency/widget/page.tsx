@@ -106,11 +106,12 @@ export default function WidgetBuilderPage() {
   const [selectedClient, setSelectedClient] = useState<string>('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Load clients
   useEffect(() => {
     fetch('/api/agency/clients')
-      .then(r => r.json())
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
       .then(data => {
         const list = (data.clients || data || []).filter((c: Record<string, unknown>) => c.status === 'active' || c.status === 'setup');
         setClients(list);
@@ -118,14 +119,14 @@ export default function WidgetBuilderPage() {
           setSelectedClient(list[0].id);
         }
       })
-      .catch(() => {});
+      .catch((err) => { console.error('[widget] load clients:', err); setLoadError('Failed to load clients'); });
   }, []);
 
   // Load client widget config
   useEffect(() => {
     if (!selectedClient) return;
     fetch(`/api/agency/clients/${selectedClient}`)
-      .then(r => r.json())
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
       .then(data => {
         const cfg = data.client?.container_config || data.container_config || {};
         setConfig(prev => ({
@@ -139,8 +140,9 @@ export default function WidgetBuilderPage() {
           autoOpenDelay: cfg.widget_auto_open_delay || 5,
           poweredBy: cfg.widget_powered_by !== undefined ? Boolean(cfg.widget_powered_by) : true,
         }));
+        setLoadError(null);
       })
-      .catch(() => {});
+      .catch((err) => { console.error('[widget] load config:', err); setLoadError('Failed to load widget config'); });
   }, [selectedClient]);
 
   // Load analytics
@@ -174,7 +176,7 @@ export default function WidgetBuilderPage() {
     if (!selectedClient) return;
     setSaving(true);
     try {
-      await fetch(`/api/agency/clients/${selectedClient}`, {
+      const res = await fetch(`/api/agency/clients/${selectedClient}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -190,6 +192,7 @@ export default function WidgetBuilderPage() {
           },
         }),
       });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch {
@@ -238,7 +241,7 @@ export default function WidgetBuilderPage() {
         </div>
 
         {/* Client Selector */}
-        {clients.length > 0 && (
+        {clients.length > 0 ? (
           <select
             value={selectedClient}
             onChange={e => setSelectedClient(e.target.value)}
@@ -248,7 +251,9 @@ export default function WidgetBuilderPage() {
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
-        )}
+        ) : loadError ? (
+          <p className="text-sm text-red-500">{loadError}</p>
+        ) : null}
       </div>
 
       {/* Single tab — Builder only. Conversations live in the Conversations inbox. */}

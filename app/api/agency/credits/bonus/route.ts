@@ -20,6 +20,7 @@ const BONUS_DESCRIPTIONS: Record<string, string> = {
 };
 
 export async function POST(req: NextRequest) {
+  try {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -73,4 +74,8 @@ export async function POST(req: NextRequest) {
     .eq('id', member.agency_id);
 
   return NextResponse.json({ ok: true, creditsGranted: amount });
+  } catch (err) {
+    console.error('[credits/bonus]', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 }
