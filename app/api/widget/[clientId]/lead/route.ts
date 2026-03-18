@@ -44,8 +44,8 @@ export async function POST(
 
     if (!client) {
       // Client not found — still return 200 to not break the form
-      console.warn('[LEAD] Client not found:', clientId);
-      return NextResponse.json({ ok: true }, { headers: CORS });
+      console.error('[LEAD] Client not found in agency_clients:', clientId);
+      return NextResponse.json({ ok: true, debug: 'client_not_found' }, { headers: CORS });
     }
 
     const agencyId = client.agency_id;
