@@ -106,6 +106,7 @@ export default function WidgetBuilderPage() {
   const [selectedClient, setSelectedClient] = useState<string>('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   // Load clients
@@ -194,9 +195,10 @@ export default function WidgetBuilderPage() {
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setSaved(true);
+      setSaveError(null);
       setTimeout(() => setSaved(false), 2000);
     } catch {
-      alert('Failed to save widget config');
+      setSaveError('Failed to save widget config');
     } finally {
       setSaving(false);
     }
@@ -274,7 +276,7 @@ export default function WidgetBuilderPage() {
         </a>
       </div>
 
-      {true ? (
+      {activeTab === 'builder' ? (
         <WidgetBuilder
           config={config}
           setConfig={setConfig}
