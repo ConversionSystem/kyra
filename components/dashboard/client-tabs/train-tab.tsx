@@ -3,16 +3,14 @@
 import { useState } from 'react';
 import type { AgencyClient } from '@/lib/agency/queries';
 import AIPersonalityTab from './ai-personality-tab';
-import WebsiteTab from './website-tab';
 import SkillsTab from './skills-tab';
 import { AISetupClient } from '@/app/(dashboard)/agency/ai-setup/ai-setup-client';
 
-const SUB_TABS = ['personality', 'knowledge', 'templates', 'skills'] as const;
+const SUB_TABS = ['personality', 'templates', 'skills'] as const;
 type SubTab = typeof SUB_TABS[number];
 
 const SUB_TAB_LABELS: Record<SubTab, string> = {
   personality: 'Personality',
-  knowledge: 'Knowledge',
   templates: 'Templates',
   skills: 'Skills',
 };
@@ -47,9 +45,6 @@ export default function TrainTab({ client, defaultSubTab = 'personality' }: Trai
       {/* Sub-tab content */}
       {activeSubTab === 'personality' && (
         <AIPersonalityTab client={client} />
-      )}
-      {activeSubTab === 'knowledge' && (
-        <WebsiteTab clientId={client.id} clientName={client.name} />
       )}
       {activeSubTab === 'templates' && (
         <AISetupClient
