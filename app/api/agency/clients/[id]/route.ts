@@ -60,6 +60,48 @@ function buildSoulMd(
   return lines.join('\n');
 }
 
+/**
+ * Build a USER.md from business info fields in container_config.
+ * OpenClaw reads this for accurate business details in conversations.
+ */
+function buildUserMd(
+  clientName: string,
+  cfg: Record<string, unknown>,
+  industry?: string
+): string {
+  const lines: string[] = [];
+  lines.push(`# USER.md — ${clientName}`);
+  lines.push('');
+  lines.push('## Business Information');
+  lines.push('');
+  lines.push(`**Business Name:** ${clientName}`);
+  if (industry || cfg.industry) lines.push(`**Industry:** ${industry || cfg.industry}`);
+  if (cfg.business_phone) lines.push(`**Phone:** ${cfg.business_phone}`);
+  if (cfg.business_address) lines.push(`**Address:** ${cfg.business_address}`);
+  if (cfg.website_url) lines.push(`**Website:** ${cfg.website_url}`);
+  if (cfg.services) lines.push(`\n**Services:**\n${cfg.services}`);
+
+  const bh = cfg.business_hours as { enabled?: boolean; start?: string; end?: string; timezone?: string } | string | undefined;
+  if (bh) {
+    if (typeof bh === 'string') {
+      lines.push(`**Business Hours:** ${bh}`);
+    } else if (bh.enabled && bh.start && bh.end) {
+      lines.push(`**Business Hours:** ${bh.start} – ${bh.end}${bh.timezone ? ` (${bh.timezone})` : ''}`);
+    }
+  }
+
+  if (cfg.calendar_url || cfg.booking_url) {
+    lines.push(`**Booking Link:** ${cfg.calendar_url || cfg.booking_url}`);
+  }
+
+  lines.push('');
+  lines.push('## Instructions');
+  lines.push('Always refer to this file for accurate business details when answering customer questions.');
+  lines.push('Use the exact phone number, address, and hours listed above — never guess or make up details.');
+
+  return lines.join('\n');
+}
+
 type RouteContext = { params: Promise<{ id: string }> };
 
 /**
@@ -195,7 +237,8 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     void (async () => {
       try {
         const soulMd = buildSoulMd(client.name, persona, greeting, instructions, responseLanguage);
-        const result = await updateClientConfig(client.id, { soulMd });
+        const userMd = buildUserMd(client.name, cfg, client.industry);
+        const result = await updateClientConfig(client.id, { soulMd, userMd });
         if (result.success) {
           console.log(`[personality] SOUL.md pushed to container for client ${client.id}`);
         } else {

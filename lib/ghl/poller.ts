@@ -896,14 +896,21 @@ function buildPersonaSystemPrompt(
   const pricing = (cc.pricing as string)?.trim();
   const location = (cc.location as string)?.trim();
 
-  const hasBusinessContext = instructions || services || businessHours || calendarUrl || pricing || location;
+  const businessPhone = (cc.business_phone as string)?.trim() || '';
+  const businessAddress = (cc.business_address as string)?.trim() || '';
+  const websiteUrl = (cc.website_url as string)?.trim() || '';
+
+  const hasBusinessContext = instructions || services || businessHours || calendarUrl || pricing || location || businessPhone || businessAddress || websiteUrl;
   if (hasBusinessContext) {
     lines.push('--- Business Context ---');
     if (instructions) lines.push(`Instructions: ${instructions}`);
     if (services) lines.push(`Services offered: ${services}`);
     if (pricing) lines.push(`Pricing: ${pricing}`);
     if (businessHours) lines.push(`Business hours: ${businessHours}`);
+    if (businessPhone) lines.push(`Business phone: ${businessPhone}`);
+    if (businessAddress) lines.push(`Business address: ${businessAddress}`);
     if (location) lines.push(`Location: ${location}`);
+    if (websiteUrl) lines.push(`Website: ${websiteUrl}`);
     if (calendarUrl) lines.push(`Booking link: ${calendarUrl}`);
     lines.push('');
   }
