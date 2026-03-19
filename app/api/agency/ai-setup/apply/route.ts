@@ -561,6 +561,7 @@ export async function POST(request: NextRequest) {
 
     // Build container config with all role-specific variables
     containerConfigPatch = {
+      active_worker_id: templateId,
       persona: interpolatedPersona,
       greeting: interpolatedGreeting,
       role_type: templateId,
@@ -620,6 +621,7 @@ export async function POST(request: NextRequest) {
     }
 
     const cfgPatch: Record<string, unknown> = {
+      active_worker_id: templateId,
       persona: `AI assistant for ${variables.business_name || client.name} — ${template.industry} specialist`,
       business_name: variables.business_name || client.name,
       industry: template.industry,
