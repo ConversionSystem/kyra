@@ -68,6 +68,13 @@ export default function InsightsTab({ client, defaultSubTab = 'usage', isSeoLock
 
       {activeSubTab === 'memory' && (
         <div className="space-y-0">
+          <div className="rounded-xl bg-indigo-50 border border-indigo-100 px-4 py-3 mb-4">
+            <p className="text-sm font-semibold text-indigo-700 mb-1">AI Memory</p>
+            <p className="text-xs text-indigo-600">
+              Your AI worker builds a memory of each customer over time — facts, preferences, history.
+              This memory is injected into every conversation so the AI feels like it knows them.
+            </p>
+          </div>
           <CustomerIntelligence clientId={client.id} />
           <div className="border-t border-gray-200 mt-6 pt-6 px-4 sm:px-6">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
