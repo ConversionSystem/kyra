@@ -183,19 +183,23 @@ export default function AIWorkersTab({ client, agencyId }: AIWorkersTabProps) {
 
       {/* Category filter pills */}
       <div className="flex flex-wrap gap-2">
-        {WORKER_CATEGORIES.map(cat => (
-          <button
-            key={cat.key}
-            onClick={() => setActiveCategory(cat.key)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-              activeCategory === cat.key
-                ? 'bg-indigo-600 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            {cat.label}
-          </button>
-        ))}
+        {WORKER_CATEGORIES.map(cat => {
+          const count = cat.key === 'all' ? ROLE_WORKERS.length : ROLE_WORKERS.filter(w => matchesCategory(w, cat.key)).length;
+          return (
+            <button
+              key={cat.key}
+              onClick={() => setActiveCategory(cat.key)}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                activeCategory === cat.key ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              {cat.label}
+              <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${
+                activeCategory === cat.key ? 'bg-indigo-700 text-white' : 'bg-gray-200 text-gray-500'
+              }`}>{count}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Worker cards grid */}
