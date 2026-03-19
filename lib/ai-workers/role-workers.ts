@@ -22,8 +22,9 @@ export interface RoleWorker {
   whatItDoes: string[];
   channels: ('sms' | 'voice' | 'chat' | 'telegram')[];
   tools: string[];
+  useCase: 'customer-facing' | 'internal';  // customer-facing = talks to end customers; internal = agency/operator use
   variables?: TemplateVariable[];
-  soulMd?: string;  // The actual SOUL.md content pushed to container
+  soulMd?: string;
 }
 
 export const ROLE_WORKERS: RoleWorker[] = [
@@ -40,6 +41,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
     channels: ['sms', 'chat', 'voice'],
     tools: ['Books Appointments', 'Tags Contacts', 'Creates Deals', 'Escalates to Human'],
+    useCase: 'customer-facing',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
       { key: 'qualification_criteria', label: 'Qualification Criteria', placeholder: 'Budget over $5k, decision maker, timeline within 90 days...', required: false, type: 'textarea' },
@@ -61,6 +63,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
     channels: ['sms', 'chat', 'voice'],
     tools: ['Books Appointments', 'Tags Contacts', 'Escalates to Human'],
+    useCase: 'customer-facing',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
       { key: 'appointment_types', label: 'Appointment Types', placeholder: 'Free consultation - 30min\nStrategy session - 60min\nQuick check-in - 15min', required: false, type: 'textarea' },
@@ -82,6 +85,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
     channels: ['sms', 'chat'],
     tools: ['Tags Contacts', 'Escalates to Human'],
+    useCase: 'customer-facing',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
       { key: 'required_fields', label: 'Required Fields', placeholder: 'Full name\nDate of birth\nInsurance provider\nReason for visit', required: false, type: 'textarea' },
@@ -102,6 +106,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
     channels: ['sms', 'chat', 'telegram'],
     tools: ['Tags Contacts', 'Escalates to Human'],
+    useCase: 'customer-facing',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
       { key: 'faq_topics', label: 'Common FAQ Topics & Answers', placeholder: 'What are your hours? → Mon-Fri 9am-5pm EST\nDo you offer refunds? → Yes, within 30 days...', required: false, type: 'textarea' },
@@ -122,6 +127,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
     channels: ['chat'],
     tools: ['Web Search', 'Creates Reports'],
+    useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
       { key: 'research_topics', label: 'Default Research Topics', placeholder: 'AI adoption in healthcare\nCompetitor pricing changes\nRegulatory updates', required: false, type: 'textarea' },
@@ -142,6 +148,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
     channels: ['chat', 'telegram'],
     tools: ['Reads Analytics', 'Sends Reports'],
+    useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
       { key: 'report_metrics', label: 'Metrics to Track', placeholder: 'New leads\nCalls made\nAppointments booked\nRevenue closed\nCustomer satisfaction', required: false, type: 'textarea' },
@@ -162,6 +169,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
     channels: ['chat'],
     tools: ['Web Search', 'Tags Contacts', 'Escalates to Human'],
+    useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
       { key: 'platforms', label: 'Platforms to Monitor', placeholder: 'Instagram\nTwitter/X\nLinkedIn\nTikTok', required: false, type: 'textarea' },
@@ -183,6 +191,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
     channels: ['chat'],
     tools: ['Reviews Content'],
+    useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
       { key: 'brand_tone', label: 'Brand Tone', placeholder: 'Professional but approachable. Never use slang. Always use inclusive language.', required: false, type: 'textarea' },
@@ -207,6 +216,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
     channels: ['sms', 'chat', 'telegram'],
     tools: ['Books Appointments', 'Tags Contacts', 'Escalates to Human'],
+    useCase: 'customer-facing',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
       { key: 'business_hours', label: 'Business Hours', placeholder: 'Mon-Fri 9am-5pm EST', required: false },
@@ -229,6 +239,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
     channels: ['voice', 'sms'],
     tools: ['Books Appointments', 'Escalates to Human'],
+    useCase: 'customer-facing',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
       { key: 'business_phone', label: 'Business Phone', placeholder: '+1 (555) 123-4567', required: false },
@@ -250,6 +261,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
     channels: ['chat', 'sms'],
     tools: ['Tags Contacts', 'Creates Deals', 'Web Search'],
+    useCase: 'customer-facing',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
       { key: 'target_persona', label: 'Target Persona', placeholder: 'VP of Marketing at B2B SaaS companies, 50-200 employees', required: false, type: 'textarea' },
@@ -270,6 +282,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
     channels: ['chat'],
     tools: ['Reviews Content'],
+    useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
       { key: 'product_name', label: 'Product Name', placeholder: 'Acme CRM Pro', required: false },
@@ -290,6 +303,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
     channels: ['sms', 'chat', 'telegram'],
     tools: ['Tags Contacts', 'Escalates to Human'],
+    useCase: 'customer-facing',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
       { key: 'owner_name', label: 'Owner Name', placeholder: 'John Smith', required: false },
@@ -310,6 +324,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
     channels: ['sms', 'chat'],
     tools: ['Tags Contacts', 'Sends Messages'],
+    useCase: 'customer-facing',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
       { key: 'discount_code', label: 'Discount Code', placeholder: 'COMEBACK10', required: false },
@@ -330,6 +345,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
     channels: ['chat', 'telegram'],
     tools: ['Tags Contacts', 'Escalates to Human'],
+    useCase: 'customer-facing',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
       { key: 'brand_tone', label: 'Brand Tone', placeholder: 'Warm, professional, empathetic. Never defensive.', required: false, type: 'textarea' },
@@ -350,6 +366,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
     channels: ['chat'],
     tools: ['Web Search', 'Tags Contacts', 'Creates Deals'],
+    useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
       { key: 'icp_title', label: 'ICP Job Titles', placeholder: 'CEO, Founder, VP of Marketing at agencies with 5-50 employees', required: false, type: 'textarea' },
@@ -374,6 +391,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
     channels: ['chat'],
     tools: ['Web Search', 'Creates Reports'],
+    useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
       { key: 'brand_tone', label: 'Brand Tone', placeholder: 'Professional but witty. Educational over promotional.', required: false, type: 'textarea' },
@@ -394,6 +412,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
     channels: ['chat', 'telegram'],
     tools: ['Web Search', 'Sends Alerts'],
+    useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
       { key: 'brand_keywords', label: 'Brand Keywords', placeholder: 'Acme Corp\nacmecorp\n@acmecorp\n#acme', required: false, type: 'textarea' },
@@ -414,6 +433,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
     channels: ['chat'],
     tools: ['Creates Reports'],
+    useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
       { key: 'sequence_goal', label: 'Sequence Goal', placeholder: 'Convert free trial users to paid plans', required: false },
@@ -434,6 +454,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
     channels: ['chat'],
     tools: ['Creates Reports'],
+    useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
       { key: 'brand_voice', label: 'Brand Voice', placeholder: 'Authoritative but approachable. Data-driven. No jargon.', required: false, type: 'textarea' },
@@ -454,6 +475,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
     channels: ['chat', 'telegram'],
     tools: ['Web Search', 'Creates Reports'],
+    useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
       { key: 'competitors', label: 'Competitors', placeholder: 'Competitor A — https://competitor-a.com\nCompetitor B — https://competitor-b.com', required: false, type: 'textarea' },
@@ -474,6 +496,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
     channels: ['chat'],
     tools: ['Web Search', 'Creates Reports'],
+    useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
       { key: 'target_industry', label: 'Target Industry', placeholder: 'Digital marketing', required: false },
@@ -494,6 +517,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
     channels: ['chat'],
     tools: ['Web Search', 'Creates Reports'],
+    useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
       { key: 'newsletter_niche', label: 'Newsletter Niche', placeholder: 'AI and automation for small business', required: false },
@@ -517,6 +541,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
     channels: ['sms', 'chat', 'voice'],
     tools: ['Books Appointments', 'Tags Contacts', 'Creates Deals', 'Escalates to Human'],
+    useCase: 'customer-facing',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Realty', required: false },
       { key: 'agent_name', label: 'Agent Name', placeholder: 'Sarah Johnson', required: false },
@@ -537,6 +562,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
     channels: ['sms', 'chat', 'voice'],
     tools: ['Books Appointments', 'Tags Contacts', 'Escalates to Human'],
+    useCase: 'customer-facing',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Serenity Wellness Center', required: false },
       { key: 'services', label: 'Services Offered', placeholder: 'Deep tissue massage — 60min\nSwedish massage — 90min\nAcupuncture — 45min', required: false, type: 'textarea' },
@@ -558,6 +584,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
     channels: ['sms', 'chat', 'voice'],
     tools: ['Books Appointments', 'Tags Contacts'],
+    useCase: 'customer-facing',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Bella Cucina', required: false },
       { key: 'restaurant_name', label: 'Restaurant Name', placeholder: 'Bella Cucina Italian Kitchen', required: false },
@@ -580,6 +607,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
     channels: ['sms', 'chat', 'telegram'],
     tools: ['Tags Contacts', 'Escalates to Human'],
+    useCase: 'customer-facing',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Store', required: false },
       { key: 'return_policy', label: 'Return Policy', placeholder: '30-day returns, free shipping on exchanges, refund within 5-7 business days', required: false, type: 'textarea' },
@@ -601,6 +629,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
     channels: ['sms', 'chat', 'voice'],
     tools: ['Books Appointments', 'Tags Contacts', 'Escalates to Human'],
+    useCase: 'customer-facing',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Smith & Associates Law', required: false },
       { key: 'firm_name', label: 'Firm Name', placeholder: 'Smith & Associates', required: false },
@@ -625,6 +654,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
     channels: ['chat', 'telegram'],
     tools: ['Creates Deals', 'Tags Contacts', 'Creates Reports'],
+    useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
       { key: 'crm_platform', label: 'CRM Platform', placeholder: 'GoHighLevel', required: false },
@@ -645,6 +675,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
     channels: ['chat', 'telegram'],
     tools: ['Tags Contacts', 'Sends Alerts', 'Creates Reports'],
+    useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
       { key: 'risk_threshold', label: 'Risk Threshold', placeholder: 'Score 7+ out of 10 triggers intervention', required: false },
@@ -665,6 +696,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
     channels: ['chat', 'telegram'],
     tools: ['Creates Reports', 'Web Search'],
+    useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
       { key: 'reporting_frequency', label: 'Reporting Frequency', placeholder: 'Weekly', required: false },
@@ -685,6 +717,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
     channels: ['chat', 'sms'],
     tools: ['Books Appointments', 'Sends Messages'],
+    useCase: 'customer-facing',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
       { key: 'owner_name', label: 'Owner Name', placeholder: 'John Smith', required: false },
@@ -706,6 +739,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
     channels: ['chat', 'telegram'],
     tools: ['Creates Reports', 'Sends Messages'],
+    useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Agency', required: false },
       { key: 'client_name', label: 'Client Name', placeholder: 'Widget Co', required: false },
@@ -727,6 +761,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
     channels: ['chat'],
     tools: ['Web Search', 'Creates Reports'],
+    useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
       { key: 'product_name', label: 'Product Name', placeholder: 'Acme CRM', required: false },
@@ -747,6 +782,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
     channels: ['chat'],
     tools: ['Web Search', 'Tags Contacts', 'Creates Reports'],
+    useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
       { key: 'target_niche', label: 'Target Niche', placeholder: 'SaaS productivity tools', required: false },
@@ -768,6 +804,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
     channels: ['chat'],
     tools: ['Creates Reports', 'Web Search'],
+    useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
       { key: 'primary_metrics', label: 'Primary Metrics', placeholder: 'Revenue\nConversion rate\nUser signups\nChurn\nNPS score', required: false, type: 'textarea' },
@@ -787,6 +824,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
     channels: ['sms', 'chat', 'telegram'],
     tools: ['Tags Contacts', 'Sends Messages', 'Escalates to Human'],
+    useCase: 'customer-facing',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
       { key: 'product_name', label: 'Product Name', placeholder: 'Acme CRM', required: false },
@@ -808,6 +846,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
     channels: ['chat'],
     tools: ['Creates Reports'],
+    useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
       { key: 'test_platform', label: 'Test Platform', placeholder: 'Optimizely', required: false },

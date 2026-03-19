@@ -47,7 +47,7 @@ const INDUSTRY_BADGES = ['Real Estate', 'Healthcare & Wellness', 'Food & Beverag
 function matchesCategory(worker: RoleWorker, category: WorkerCategory): boolean {
   if (category === 'all') return true;
   if (category === 'customer-facing') {
-    return worker.channels.some(ch => ch === 'sms' || ch === 'voice' || ch === 'telegram');
+    return worker.useCase === 'customer-facing';
   }
   if (category === 'sales') {
     return worker.tags.some(t => ['leads', 'qualification', 'outreach', 'prospecting'].includes(t));
@@ -328,10 +328,19 @@ function WorkerCard({
         </ul>
       </div>
 
-      {/* Channels */}
+      {/* Use Case + Channels */}
       <div className="mb-3">
         <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Works on</p>
         <div className="flex flex-wrap gap-1.5">
+          {/* Use case badge — most important signal */}
+          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+            worker.useCase === 'customer-facing'
+              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+              : 'bg-violet-50 text-violet-700 border-violet-200'
+          }`}>
+            {worker.useCase === 'customer-facing' ? '👥 Customer-Facing' : '🏢 Internal Use'}
+          </span>
+          {/* Channel badges */}
           {worker.channels.map(ch => (
             <span key={ch} className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${CHANNEL_STYLES[ch]}`}>
               {CHANNEL_LABELS[ch]}
