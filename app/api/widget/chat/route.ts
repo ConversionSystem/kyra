@@ -217,6 +217,8 @@ export async function POST(request: NextRequest) {
     cfg.business_phone ? `Business phone: ${cfg.business_phone}` : '',
     siteData?.phone ? `Phone: ${siteData.phone}` : '',
     cfg.business_address ? `Business address: ${cfg.business_address}` : '',
+    cfg.services ? `Services offered: ${cfg.services}` : '',
+    cfg.website_url ? `Website: ${cfg.website_url}` : '',
     `If you can't resolve something, say: "Let me connect you with our team — they'll follow up shortly."`,
     knowledgeSection,
     leadCapturePrompt,
