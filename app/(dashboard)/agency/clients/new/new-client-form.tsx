@@ -11,6 +11,8 @@ import Link from 'next/link';
 // Client creation now uses /api/agency/clients (handles provisioning + plan limits)
 import type { AgencyTemplate, SampleResponse, SuggestedSkill } from '@/lib/agency/queries';
 import { agentRoles } from '@/lib/data/roles-data';
+import { ROLE_WORKERS } from '@/lib/ai-workers/role-workers';
+import type { RoleWorker } from '@/lib/ai-workers/role-workers';
 
 // ============================================================================
 // Role Template Data
@@ -481,6 +483,56 @@ function TemplateCard({
 }
 
 // ============================================================================
+// Worker Select Card
+// ============================================================================
+function WorkerSelectCard({ worker, isSelected, onSelect }: {
+  worker: RoleWorker;
+  isSelected: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={`w-full text-left rounded-xl border p-3.5 transition-all ${
+        isSelected
+          ? 'border-indigo-500 bg-indigo-50 ring-1 ring-indigo-500/20'
+          : 'border-gray-200 bg-white hover:border-indigo-200 hover:bg-indigo-50/30'
+      }`}
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="text-2xl shrink-0">{worker.emoji}</span>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="font-semibold text-gray-900 text-sm">{worker.name}</p>
+              <span className="text-[10px] bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded-full font-medium border border-indigo-100 shrink-0">
+                {worker.roleBadge}
+              </span>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0 ${
+                worker.useCase === 'customer-facing'
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                  : 'bg-violet-50 text-violet-700 border border-violet-100'
+              }`}>
+                {worker.useCase === 'customer-facing' ? '👥 Customer' : '🏢 Internal'}
+              </span>
+            </div>
+            <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{worker.description}</p>
+          </div>
+        </div>
+        {isSelected && (
+          <div className="shrink-0 ml-2 rounded-full bg-indigo-100 p-1">
+            <svg className="h-3.5 w-3.5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+        )}
+      </div>
+    </button>
+  );
+}
+
+// ============================================================================
 // Main Form
 // ============================================================================
 interface NewClientFormProps {
@@ -505,7 +557,10 @@ export function NewClientForm({ agencyId, templates, defaultTemplateId, defaultR
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [previewTemplate, setPreviewTemplate] = useState<AgencyTemplate | null>(null);
-  const [createdClient, setCreatedClient] = useState<{ id: string; name: string } | null>(null);
+  const [createdClient, setCreatedClient] = useState<{ id: string; name: string; workerId?: string } | null>(null);
+  const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null);
+  const [workerFilter, setWorkerFilter] = useState<'all' | 'customer-facing' | 'internal'>('all');
+  const [showLegacyTemplates, setShowLegacyTemplates] = useState(false);
 
   const builtInTemplates = templates.filter((t) => t.agency_id === null);
   const customTemplates = templates.filter((t) => t.agency_id !== null);
@@ -533,6 +588,19 @@ export function NewClientForm({ agencyId, templates, defaultTemplateId, defaultR
     }
   };
 
+  const handleWorkerSelect = (worker: RoleWorker | null) => {
+    if (worker) {
+      setSelectedWorkerId(worker.id);
+      setTemplateId(null);
+    } else {
+      setSelectedWorkerId(null);
+    }
+  };
+
+  const filteredWorkers = workerFilter === 'all'
+    ? ROLE_WORKERS
+    : ROLE_WORKERS.filter(w => w.useCase === workerFilter);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !slug.trim()) {
@@ -552,6 +620,7 @@ export function NewClientForm({ agencyId, templates, defaultTemplateId, defaultR
           slug: slug.trim(),
           industry,
           template_id: templateId,
+          worker_id: selectedWorkerId,
         }),
       });
 
@@ -580,7 +649,21 @@ export function NewClientForm({ agencyId, templates, defaultTemplateId, defaultR
         }).catch(() => {}); // best-effort, don't block client creation
       }
 
-      setCreatedClient({ id: client.id, name: client.name });
+      // Fire-and-forget apply AI worker if one was selected
+      if (selectedWorkerId) {
+        fetch('/api/agency/ai-setup/apply', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            clientId: client.id,
+            type: 'role',
+            templateId: selectedWorkerId,
+            variables: { business_name: name.trim() },
+          }),
+        }).catch(() => {}); // best-effort, don't block
+      }
+
+      setCreatedClient({ id: client.id, name: client.name, workerId: selectedWorkerId || undefined });
     } catch {
       setError('Failed to create client. Please try again.');
       setIsSubmitting(false);
@@ -708,22 +791,22 @@ export function NewClientForm({ agencyId, templates, defaultTemplateId, defaultR
           </CardContent>
         </Card>
 
-        {/* Template Picker */}
+        {/* AI Worker Picker */}
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>AI Template</CardTitle>
+            <CardTitle>AI Worker</CardTitle>
             <CardDescription>
-              Choose an industry template to pre-configure your client&apos;s AI with personality, skills, and knowledge
+              Choose an AI Worker to deploy for this client. The worker defines the AI&apos;s personality, skills, and behavior.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {/* No template option */}
+              {/* Blank option */}
               <button
                 type="button"
-                onClick={() => handleTemplateSelect(null)}
+                onClick={() => { handleWorkerSelect(null); handleTemplateSelect(null); }}
                 className={`w-full text-left rounded-xl border p-4 transition-all ${
-                  templateId === null
+                  templateId === null && selectedWorkerId === null
                     ? 'border-indigo-200 bg-indigo-50 ring-1 ring-indigo-500/20'
                     : 'border-gray-200/80 bg-gray-100 hover:bg-gray-100/70 hover:border-gray-300'
                 }`}
@@ -734,11 +817,11 @@ export function NewClientForm({ agencyId, templates, defaultTemplateId, defaultR
                     <div>
                       <p className="font-semibold text-gray-900">Blank — Start from scratch</p>
                       <p className="text-xs text-gray-400 mt-0.5">
-                        Configure everything manually after creation
+                        Configure manually after creation
                       </p>
                     </div>
                   </div>
-                  {templateId === null && (
+                  {templateId === null && selectedWorkerId === null && (
                     <div className="shrink-0 rounded-full bg-indigo-50 p-1">
                       <Check className="h-4 w-4 text-indigo-600" />
                     </div>
@@ -746,43 +829,96 @@ export function NewClientForm({ agencyId, templates, defaultTemplateId, defaultR
                 </div>
               </button>
 
-              {/* Built-in templates */}
-              {builtInTemplates.length > 0 && (
-                <div>
-                  <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2 mt-4">
-                    Industry Templates
-                  </p>
-                  <div className="space-y-2">
-                    {builtInTemplates.map((t) => (
-                      <TemplateCard
-                        key={t.id}
-                        template={t}
-                        isSelected={templateId === t.id}
-                        onSelect={() => handleTemplateSelect(t)}
-                        onPreview={() => setPreviewTemplate(t)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
+              {/* AI Workers */}
+              <div>
+                <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2 mt-4">
+                  AI Workers
+                </p>
 
-              {/* Custom agency templates */}
-              {customTemplates.length > 0 && (
-                <div>
-                  <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2 mt-4">
-                    Your Templates
-                  </p>
-                  <div className="space-y-2">
-                    {customTemplates.map((t) => (
-                      <TemplateCard
-                        key={t.id}
-                        template={t}
-                        isSelected={templateId === t.id}
-                        onSelect={() => handleTemplateSelect(t)}
-                        onPreview={() => setPreviewTemplate(t)}
-                      />
-                    ))}
-                  </div>
+                {/* Filter pills */}
+                <div className="flex gap-2 mb-3">
+                  {(['all', 'customer-facing', 'internal'] as const).map(f => (
+                    <button
+                      key={f}
+                      type="button"
+                      onClick={() => setWorkerFilter(f)}
+                      className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                        workerFilter === f
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {f === 'all' ? `All (${ROLE_WORKERS.length})`
+                       : f === 'customer-facing' ? `👥 Customer (${ROLE_WORKERS.filter(w => w.useCase === 'customer-facing').length})`
+                       : `🏢 Internal (${ROLE_WORKERS.filter(w => w.useCase === 'internal').length})`}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Worker list */}
+                <div className="max-h-[400px] overflow-y-auto space-y-2">
+                  {filteredWorkers.map((worker) => (
+                    <WorkerSelectCard
+                      key={worker.id}
+                      worker={worker}
+                      isSelected={selectedWorkerId === worker.id}
+                      onSelect={() => handleWorkerSelect(worker)}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Legacy industry templates (collapsible) */}
+              {(builtInTemplates.length > 0 || customTemplates.length > 0) && (
+                <div className="mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowLegacyTemplates(!showLegacyTemplates)}
+                    className="text-xs font-medium text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1"
+                  >
+                    Browse legacy industry templates {showLegacyTemplates ? '↑' : '↓'}
+                  </button>
+
+                  {showLegacyTemplates && (
+                    <div className="mt-3 space-y-4">
+                      {builtInTemplates.length > 0 && (
+                        <div>
+                          <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">
+                            Industry Templates
+                          </p>
+                          <div className="space-y-2">
+                            {builtInTemplates.map((t) => (
+                              <TemplateCard
+                                key={t.id}
+                                template={t}
+                                isSelected={templateId === t.id}
+                                onSelect={() => { handleTemplateSelect(t); setSelectedWorkerId(null); }}
+                                onPreview={() => setPreviewTemplate(t)}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {customTemplates.length > 0 && (
+                        <div>
+                          <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">
+                            Your Templates
+                          </p>
+                          <div className="space-y-2">
+                            {customTemplates.map((t) => (
+                              <TemplateCard
+                                key={t.id}
+                                template={t}
+                                isSelected={templateId === t.id}
+                                onSelect={() => { handleTemplateSelect(t); setSelectedWorkerId(null); }}
+                                onPreview={() => setPreviewTemplate(t)}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
