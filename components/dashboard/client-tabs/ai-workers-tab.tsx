@@ -31,36 +31,28 @@ interface AIWorkersTabProps {
   agencyId: string;
 }
 
-type WorkerCategory = 'all' | 'customer-facing' | 'sales' | 'marketing' | 'operations' | 'industry';
+type WorkerCategory = 'all' | 'customer-facing' | 'internal' | 'sales' | 'marketing' | 'operations' | 'industry';
 
-const WORKER_CATEGORIES: { key: WorkerCategory; label: string }[] = [
-  { key: 'all', label: 'All' },
-  { key: 'customer-facing', label: 'Customer Facing' },
-  { key: 'sales', label: 'Sales & Outreach' },
-  { key: 'marketing', label: 'Marketing' },
-  { key: 'operations', label: 'Operations' },
-  { key: 'industry', label: 'Industry' },
+const WORKER_CATEGORIES: { key: WorkerCategory; label: string; emoji: string }[] = [
+  { key: 'all',              label: 'All',               emoji: '⚡' },
+  { key: 'customer-facing',  label: 'Customer Facing',   emoji: '👥' },
+  { key: 'internal',         label: 'Internal Use',      emoji: '🏢' },
+  { key: 'sales',            label: 'Sales & Outreach',  emoji: '🎯' },
+  { key: 'marketing',        label: 'Marketing',         emoji: '📣' },
+  { key: 'operations',       label: 'Operations',        emoji: '📊' },
+  { key: 'industry',         label: 'Industry',          emoji: '🏭' },
 ];
 
 const INDUSTRY_BADGES = ['Real Estate', 'Healthcare & Wellness', 'Food & Beverage', 'Retail & E-Commerce', 'Legal Services'];
 
 function matchesCategory(worker: RoleWorker, category: WorkerCategory): boolean {
   if (category === 'all') return true;
-  if (category === 'customer-facing') {
-    return worker.useCase === 'customer-facing';
-  }
-  if (category === 'sales') {
-    return worker.tags.some(t => ['leads', 'qualification', 'outreach', 'prospecting'].includes(t));
-  }
-  if (category === 'marketing') {
-    return worker.tags.some(t => ['content', 'social', 'seo', 'newsletter', 'email'].includes(t));
-  }
-  if (category === 'operations') {
-    return worker.tags.some(t => ['reports', 'analytics', 'scheduling', 'crm'].includes(t));
-  }
-  if (category === 'industry') {
-    return INDUSTRY_BADGES.includes(worker.roleBadge);
-  }
+  if (category === 'customer-facing') return worker.useCase === 'customer-facing';
+  if (category === 'internal') return worker.useCase === 'internal';
+  if (category === 'sales') return worker.tags.some(t => ['leads', 'qualification', 'outreach', 'prospecting', 'booking'].includes(t));
+  if (category === 'marketing') return worker.tags.some(t => ['content', 'social', 'seo', 'newsletter', 'email', 'branding'].includes(t));
+  if (category === 'operations') return worker.tags.some(t => ['reports', 'analytics', 'scheduling', 'crm', 'pipeline', 'retention'].includes(t));
+  if (category === 'industry') return INDUSTRY_BADGES.includes(worker.roleBadge);
   return true;
 }
 
@@ -181,21 +173,27 @@ export default function AIWorkersTab({ client, agencyId }: AIWorkersTabProps) {
         </p>
       </div>
 
-      {/* Category filter pills */}
-      <div className="flex flex-wrap gap-2">
+      {/* Category filter bar */}
+      <div className="bg-gray-50 border border-gray-100 rounded-2xl p-2 flex flex-wrap gap-1.5">
         {WORKER_CATEGORIES.map(cat => {
-          const count = cat.key === 'all' ? ROLE_WORKERS.length : ROLE_WORKERS.filter(w => matchesCategory(w, cat.key)).length;
+          const count = cat.key === 'all'
+            ? ROLE_WORKERS.length
+            : ROLE_WORKERS.filter(w => matchesCategory(w, cat.key)).length;
+          const isActive = activeCategory === cat.key;
           return (
             <button
               key={cat.key}
               onClick={() => setActiveCategory(cat.key)}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                activeCategory === cat.key ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all ${
+                isActive
+                  ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-200'
+                  : 'text-gray-600 hover:bg-white hover:text-gray-900 hover:shadow-sm'
               }`}
             >
-              {cat.label}
-              <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${
-                activeCategory === cat.key ? 'bg-indigo-700 text-white' : 'bg-gray-200 text-gray-500'
+              <span className="text-base leading-none">{cat.emoji}</span>
+              <span>{cat.label}</span>
+              <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold min-w-[20px] text-center ${
+                isActive ? 'bg-indigo-500 text-white' : 'bg-gray-200 text-gray-500'
               }`}>{count}</span>
             </button>
           );
