@@ -18,6 +18,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createSupabase } from '@supabase/supabase-js';
 import { getKnowledgeContext } from '@/lib/knowledge/rag';
+import { defend, scanOutput } from '@/lib/security/prompt-injection';
 import {
   extractLeadFromConversation,
   saveWebChatLead,
@@ -101,6 +102,18 @@ export async function POST(request: NextRequest) {
   if (message.length > 2000) {
     return NextResponse.json({ error: 'Message too long (max 2000 chars)' }, { status: 400, headers: CORS });
   }
+
+  // ── Prompt injection defense ───────────────────────────────────────────────
+  const widgetContactId = `widget:${sessionId || clientId}`;
+  const rawMessage = message.trim();
+  const defense = defend(rawMessage, widgetContactId);
+  if (!defense.proceed) {
+    return NextResponse.json(
+      { response: defense.deflectReply || "I'm sorry, I can't help with that request.", sessionId: sessionId || 'new' },
+      { status: 200, headers: CORS }
+    );
+  }
+  const safeMessage = defense.safeInput;
 
   const supabase = getSupabase();
 
@@ -236,10 +249,17 @@ export async function POST(request: NextRequest) {
         { role: 'system', content: systemPrompt },
         // Inject conversation history so AI has context (last 10 turns)
         ...(Array.isArray(history) ? (history as Array<{role: 'user'|'assistant', content: string}>).slice(-10) : []),
-        { role: 'user', content: message.trim() },
+        { role: 'user', content: safeMessage },
       ],
     });
     aiResponse = chatRes.choices[0]?.message?.content || '';
+
+    // ── Output scan — catch prompt leaks ──────────────────────────────────
+    const outputScan = scanOutput(aiResponse);
+    if (!outputScan.safe) {
+      console.warn(`[widget/chat] Output flagged for client ${clientId}: ${outputScan.leaks.join(', ')}`);
+      aiResponse = outputScan.sanitizedOutput;
+    }
   } catch (err: unknown) {
     const errMsg = err instanceof Error ? err.message : String(err);
     console.error(`[widget/chat] LLM error: ${errMsg}`);
