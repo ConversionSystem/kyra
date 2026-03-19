@@ -867,7 +867,8 @@ function buildPersonaSystemPrompt(
   // ── Language instruction ──────────────────────────────────────────────
   const responseLanguage = (cc.response_language as string) || 'auto';
   if (responseLanguage && responseLanguage !== 'auto' && responseLanguage !== 'English') {
-    lines.push(`Always respond in ${responseLanguage}. Do not switch languages even if the customer writes in a different language.`);
+    const cleanLang = responseLanguage.replace(/ \(.*\)/, '');
+    lines.push(`Always respond in ${cleanLang}. Do not switch languages even if the customer writes in a different language.`);
   } else {
     lines.push("Detect the customer's language from their message and always respond in that same language.");
   }
