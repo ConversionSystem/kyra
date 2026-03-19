@@ -35,8 +35,9 @@ interface PriceConfig {
 
 export const STRIPE_PRICES: Record<StripePriceKey, PriceConfig> = {
   // Monthly plans
+  // NOTE: STRIPE_LITE_PRICE_ID is an alias for STRIPE_STARTER_PRICE_ID (same plan, legacy env var name)
   solo_pro:           { priceId: process.env.STRIPE_SOLO_PRO_PRICE_ID ?? '' },
-  starter:            { priceId: process.env.STRIPE_STARTER_PRICE_ID ?? '' },
+  starter:            { priceId: process.env.STRIPE_STARTER_PRICE_ID ?? process.env.STRIPE_LITE_PRICE_ID ?? '' },
   pro:                { priceId: process.env.STRIPE_PRO_PRICE_ID ?? '' },
   scale:              { priceId: process.env.STRIPE_SCALE_PRICE_ID ?? '' },
   // Annual plans
