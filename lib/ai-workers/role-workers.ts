@@ -195,7 +195,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
   // ── GROUP A: Customer-Facing ──────────────────────────────────────────────
 
   {
-    id: 'whatsapp-support', type: 'role', emoji: '💬', name: 'WhatsApp Support',
+    id: 'whatsapp-support', type: 'role', emoji: '💚', name: 'WhatsApp Support',
     roleBadge: 'Multi-Channel Support',
     description: 'Handles WhatsApp and SMS inquiries, qualifies leads, books appointments, and escalates complex issues — so you never miss a customer message.',
     tags: ['support', 'leads', 'qualification', 'booking', 'multi-channel'],
@@ -217,7 +217,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
   },
   {
-    id: 'phone-receptionist', type: 'role', emoji: '📞', name: 'Phone Receptionist',
+    id: 'phone-receptionist', type: 'role', emoji: '🏢', name: 'Phone Receptionist',
     roleBadge: 'Voice Call Handling',
     description: 'Answers inbound calls professionally, routes to the right person, books appointments, and handles FAQs — 24/7 without putting callers on hold.',
     tags: ['voice', 'scheduling', 'FAQ', 'reception'],
@@ -238,7 +238,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
   },
   {
-    id: 'sdr-outbound', type: 'role', emoji: '🎯', name: 'SDR Outbound',
+    id: 'sdr-outbound', type: 'role', emoji: '📤', name: 'SDR Outbound',
     roleBadge: 'Sales Prospecting',
     description: 'Researches target accounts, drafts personalized cold outreach, and builds multi-touch sequences that turn cold contacts into warm conversations.',
     tags: ['leads', 'outreach', 'prospecting', 'sales', 'email'],
@@ -318,7 +318,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
   },
   {
-    id: 'review-responder', type: 'role', emoji: '⭐', name: 'Review Responder',
+    id: 'review-responder', type: 'role', emoji: '💬', name: 'Review Responder',
     roleBadge: 'Reputation Management',
     description: 'Drafts personalized responses to 1-5 star reviews, escalates safety issues, and delivers weekly sentiment summaries to catch recurring problems early.',
     tags: ['reviews', 'reputation', 'content', 'support'],
@@ -462,7 +462,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
   },
   {
-    id: 'seo-writer', type: 'role', emoji: '🔍', name: 'SEO Content Writer',
+    id: 'seo-writer', type: 'role', emoji: '🏆', name: 'SEO Content Writer',
     roleBadge: 'Organic Growth',
     description: 'Writes SEO-optimized content based on real keyword data, structures it for featured snippets, and optimizes existing content for rankings.',
     tags: ['seo', 'content', 'marketing', 'writing'],
@@ -694,7 +694,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
   },
   {
-    id: 'client-reporter', type: 'role', emoji: '📊', name: 'Client Reporter',
+    id: 'client-reporter', type: 'role', emoji: '📋', name: 'Client Reporter',
     roleBadge: 'Agency Reporting',
     description: "Generates professional client performance reports with metrics, wins, and next steps — so agencies can send value-packed updates without hours of work.",
     tags: ['reports', 'analytics', 'agency', 'clients'],
@@ -756,7 +756,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
   },
   {
-    id: 'data-analyst', type: 'role', emoji: '📊', name: 'Data Analyst',
+    id: 'data-analyst', type: 'role', emoji: '🔢', name: 'Data Analyst',
     roleBadge: 'Business Intelligence',
     description: "Turns raw data into business insights — analyzes trends, spots anomalies, answers 'why did X happen' questions, and delivers clear summaries.",
     tags: ['analytics', 'reports', 'data', 'intelligence'],
