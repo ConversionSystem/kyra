@@ -863,6 +863,15 @@ function buildPersonaSystemPrompt(
   lines.push(`You are ${aiName}, an AI worker for ${businessName}.`);
   lines.push(`Today is ${dateStr} at ${timeStr}.`);
   lines.push(`You are responding via ${ctx.messageType}.`);
+
+  // ── Language instruction ──────────────────────────────────────────────
+  const responseLanguage = (cc.response_language as string) || 'auto';
+  if (responseLanguage && responseLanguage !== 'auto' && responseLanguage !== 'English') {
+    lines.push(`Always respond in ${responseLanguage}. Do not switch languages even if the customer writes in a different language.`);
+  } else {
+    lines.push("Detect the customer's language from their message and always respond in that same language.");
+  }
+
   lines.push('');
 
   // ── Persona (agency-written) — highest priority ───────────────────────
