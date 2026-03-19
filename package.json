@@ -9,7 +9,9 @@
     "lint": "next lint",
     "cf:build": "npx opennextjs-cloudflare build",
     "preview": "npx opennextjs-cloudflare preview",
-    "deploy": "npx opennextjs-cloudflare deploy"
+    "deploy": "npx opennextjs-cloudflare deploy",
+    "deploy:prod": "bash scripts/deploy.sh",
+    "deploy:force": "FORCE=1 bash scripts/deploy.sh"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.72.1",
