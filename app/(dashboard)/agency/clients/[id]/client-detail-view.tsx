@@ -276,11 +276,11 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
       <div className="flex flex-col md:flex-row flex-1 min-h-0">
 
         {/* Left sidebar nav — desktop only */}
-        <aside className="hidden md:flex flex-col w-48 shrink-0 bg-gray-900 pt-2 pb-6 px-2 sticky top-0 self-start max-h-screen overflow-y-auto">
+        <aside className="hidden md:flex flex-col w-48 shrink-0 bg-white border-r border-gray-100 pt-2 pb-6 px-2 sticky top-0 self-start max-h-screen overflow-y-auto">
           {TAB_GROUPS.map((group, gi) => (
             <div key={group.label ?? gi} className={gi > 0 ? 'mt-5' : ''}>
               {group.label && (
-                <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest px-3 mb-1">
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest px-3 mb-1">
                   {group.label}
                 </p>
               )}
@@ -294,10 +294,10 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
                     className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors mb-0.5 ${
                       isActive
                         ? 'bg-indigo-600 text-white'
-                        : 'text-gray-400 hover:bg-gray-800 hover:text-gray-200'
+                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                     }`}
                   >
-                    <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-white' : 'text-gray-500'}`} />
+                    <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-white' : 'text-gray-400'}`} />
                     {tab.label}
                   </button>
                 );
