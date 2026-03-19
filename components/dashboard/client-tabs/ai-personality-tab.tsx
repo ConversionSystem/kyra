@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import type { AgencyClient } from '@/lib/agency/queries';
 import AISuggestionsCard from '@/components/dashboard/ai-suggestions-card';
+import { ROLE_WORKERS } from '@/lib/ai-workers/role-workers';
 
 // ── Knowledge source helpers ─────────────────────────────────────────────────
 
@@ -278,7 +279,7 @@ export default function AIPersonalityTab({ client }: { client: AgencyClient }) {
         const payload = await res.json().catch(() => ({})) as { error?: string };
         throw new Error(payload.error || 'Failed to save');
       }
-      setMessage({ type: 'success', text: 'AI personality saved and pushed to container.' });
+      setMessage({ type: 'success', text: 'Personality saved. Changes are being pushed to your AI worker.' });
     } catch {
       setMessage({ type: 'error', text: 'Failed to save. Try again.' });
     } finally {
@@ -293,10 +294,24 @@ export default function AIPersonalityTab({ client }: { client: AgencyClient }) {
 
   // ── Render ───────────────────────────────────────────────────────────────
 
+  // Active worker detection
+  const activeWorkerId = cfg.active_worker_id as string | undefined;
+  const activeWorkerDef = activeWorkerId ? ROLE_WORKERS.find(w => w.id === activeWorkerId) : undefined;
+
   return (
     <div className="space-y-8">
       {/* AI Suggestions */}
       <AISuggestionsCard clientId={client.id} />
+
+      {/* Active worker banner */}
+      {activeWorkerDef && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 flex items-center gap-2">
+          <span>{activeWorkerDef.emoji}</span>
+          <span>
+            <strong>Active Worker: {activeWorkerDef.name}</strong> — editing personality may override the worker template.
+          </span>
+        </div>
+      )}
 
       {/* Status message */}
       {message && (

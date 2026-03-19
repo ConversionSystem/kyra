@@ -57,10 +57,16 @@ export default function AIWorkersTab({ client, agencyId }: AIWorkersTabProps) {
   const openApply = useCallback((worker: RoleWorker) => {
     setApplyWorker(worker);
     setApplyResult(null);
+    const cfg = (client.container_config as Record<string, unknown>) ?? {};
     const initVars: Record<string, string> = {};
     if (client.name) initVars.business_name = client.name;
+    if (cfg.calendar_url) initVars.booking_url = cfg.calendar_url as string;
+    else if (cfg.booking_url) initVars.booking_url = cfg.booking_url as string;
+    if (cfg.business_hours && typeof cfg.business_hours === 'string') {
+      initVars.business_hours = cfg.business_hours;
+    }
     setVariables(initVars);
-  }, [client.name]);
+  }, [client.name, client.container_config]);
 
   const closeApply = () => {
     setApplyWorker(null);

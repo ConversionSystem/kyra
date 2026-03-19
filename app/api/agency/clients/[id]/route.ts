@@ -46,10 +46,15 @@ function buildSoulMd(
   lines.push('- Never reveal you are an AI unless directly asked');
 
   // Language instruction
-  if (responseLanguage && responseLanguage !== 'English') {
+  if (responseLanguage && responseLanguage !== 'auto' && responseLanguage !== 'English') {
+    const cleanLang = responseLanguage.replace(/ \(.*\)/, '');
     lines.push('');
     lines.push('## Language');
-    lines.push(`ALWAYS respond in ${responseLanguage}, regardless of the language the customer uses. Every single message must be in ${responseLanguage}.`);
+    lines.push(`ALWAYS respond in ${cleanLang}, regardless of the language the customer uses. Every single message must be in ${cleanLang}.`);
+  } else if (!responseLanguage || responseLanguage === 'auto') {
+    lines.push('');
+    lines.push('## Language');
+    lines.push('Detect the language the customer is writing in and always respond in that same language.');
   }
 
   return lines.join('\n');
@@ -184,7 +189,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     const persona = (cfg.persona as string) || '';
     const greeting = (cfg.greeting as string) || '';
     const instructions = (cfg.instructions as string) || '';
-    const responseLanguage = (cfg.response_language as string) || 'English';
+    const responseLanguage = (cfg.response_language as string) || 'auto';
 
     // Always push SOUL.md when container_config changes (even if fields cleared)
     void (async () => {
