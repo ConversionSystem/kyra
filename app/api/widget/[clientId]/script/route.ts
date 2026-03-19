@@ -112,7 +112,9 @@ export async function GET(
     '.kyra-msg.user { margin-left:auto; flex-direction:row-reverse; }',
     '.kyra-msg-bubble { padding:11px 15px; border-radius:18px; font-size:14px; line-height:1.55; font-family:system-ui,sans-serif; word-wrap:break-word; word-break:break-word; }',
     '.kyra-msg.bot .kyra-msg-bubble { background:#fff; color:#1a1a1a; border-bottom-left-radius:4px; box-shadow:0 1px 3px rgba(0,0,0,0.1); }',
+    '.kyra-msg.bot .kyra-msg-bubble a { color:#4f46e5; text-decoration:underline; word-break:break-all; }',
     '.kyra-msg.user .kyra-msg-bubble { background:' + COLOR + '; color:#fff; border-bottom-right-radius:4px; }',
+    '.kyra-msg.user .kyra-msg-bubble a { color:#fff; text-decoration:underline; }',
     '.kyra-msg-avatar { width:30px; height:30px; border-radius:50%; background:' + COLOR + '; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; box-shadow:0 1px 3px rgba(0,0,0,0.12); }',
     '.kyra-typing { display:flex; align-items:center; gap:4px; padding:11px 15px; }',
     '.kyra-typing span { width:7px; height:7px; border-radius:50%; background:#9ca3af; animation:kyra-bounce 1.2s infinite; }',
@@ -189,9 +191,11 @@ export async function GET(
     var msgEl = document.createElement('div');
     msgEl.className = 'kyra-msg ' + role;
     if (role === 'bot') {
-      msgEl.innerHTML = '<div class="kyra-msg-avatar">' + AVATAR + '</div><div class="kyra-msg-bubble">' + escHtml(text) + '</div>';
+      // formatMsg handles markdown stripping + safe HTML + link rendering
+      msgEl.innerHTML = '<div class="kyra-msg-avatar">' + AVATAR + '</div><div class="kyra-msg-bubble">' + formatMsg(text) + '</div>';
     } else {
-      msgEl.innerHTML = '<div class="kyra-msg-bubble">' + escHtml(text) + '</div>';
+      // User messages: escape only, preserve newlines as <br>
+      msgEl.innerHTML = '<div class="kyra-msg-bubble">' + escHtml(text).replace(/\\n/g,'<br>') + '</div>';
     }
     messagesEl.appendChild(msgEl);
     scrollToBottom();
@@ -213,7 +217,49 @@ export async function GET(
   }
 
   function escHtml(str) {
-    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/\\n/g,'<br>');
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // Convert AI response to safe HTML — strips markdown, renders links and newlines cleanly
+  function formatMsg(raw) {
+    var s = raw || '';
+
+    // 1. Strip markdown links [text](url) → just show the text (URL is noise in chat)
+    s = s.replace(/\\[([^\\]]+)\\]\\(([^)]+)\\)/g, function(_, txt, url) {
+      // If the text IS the URL or looks like a link label, just show the URL as plain text
+      if (txt.toLowerCase().indexOf('http') === 0 || txt === url) return escHtml(url);
+      // Otherwise show "text (url)"
+      return escHtml(txt) + ' (' + escHtml(url) + ')';
+    });
+
+    // 2. Auto-link bare URLs so they're clickable
+    s = s.replace(/(https?:\\/\\/[^\\s<>"]+[^\\s<>.,!?;:"'\\)])/g, function(url) {
+      return '<a href="' + url + '" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;">' + url + '</a>';
+    });
+
+    // 3. Strip bold/italic markers (**text** → text, *text* → text, __text__ → text)
+    s = s.replace(/\\*\\*([^*]+)\\*\\*/g, '$1');
+    s = s.replace(/__([^_]+)__/g, '$1');
+    s = s.replace(/\\*([^*]+)\\*/g, '$1');
+    s = s.replace(/_([^_]+)_/g, '$1');
+
+    // 4. Strip markdown headers (# ## ###)
+    s = s.replace(/^#{1,6}\\s+/gm, '');
+
+    // 5. Strip leading bullet dashes/asterisks (- item or * item or • item)
+    //    Replace with a soft indent so the list still reads naturally
+    s = s.replace(/^[\\-\\*•]\\s+/gm, '');
+
+    // 6. Strip numbered list markers (1. 2. 3.)
+    s = s.replace(/^\\d+\\.\\s+/gm, '');
+
+    // 7. Collapse 3+ consecutive newlines to 2
+    s = s.replace(/\\n{3,}/g, '\\n\\n');
+
+    // 8. Convert newlines to <br>
+    s = s.replace(/\\n/g, '<br>');
+
+    return s;
   }
 
   // ── Toggle ───────────────────────────────────────────────────────────────────
