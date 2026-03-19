@@ -970,7 +970,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
 
   // ── GROUP G — SaaS Operations ───────────────────────────────────────────────
   {
-    id: 'saas-churn-prevention', type: 'role', emoji: '🛡️', name: 'Churn Prevention',
+    id: 'saas-churn-prevention', type: 'role', emoji: '🔒', name: 'Churn Prevention',
     roleBadge: 'SaaS Retention',
     description: 'Identifies at-risk SaaS users from behavioral signals, sends personalized re-engagement messages, and tracks recovery rate.',
     tags: ['saas', 'retention', 'churn', 'reengagement', 'customer-success'],
@@ -1013,7 +1013,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
   },
   {
-    id: 'usage-analytics-agent', type: 'role', emoji: '📈', name: 'Usage Analytics',
+    id: 'usage-analytics-agent', type: 'role', emoji: '🔬', name: 'Usage Analytics',
     roleBadge: 'Product Intelligence',
     description: 'Analyzes feature adoption and usage patterns, identifies power users and inactive accounts, and delivers weekly product health reports.',
     tags: ['saas', 'analytics', 'product', 'usage', 'adoption'],
@@ -1102,7 +1102,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
   },
   {
-    id: 'client-success-manager', type: 'role', emoji: '🤝', name: 'Client Success Manager',
+    id: 'client-success-manager', type: 'role', emoji: '💎', name: 'Client Success Manager',
     roleBadge: 'Client Relations',
     description: 'Checks in with clients at key milestones, collects feedback proactively, handles scope questions, and requests referrals after project completion.',
     tags: ['client', 'retention', 'satisfaction', 'freelance', 'agency'],
@@ -1171,7 +1171,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
 
   // ── GROUP K — Supply Chain ──────────────────────────────────────────────────
   {
-    id: 'inventory-manager', type: 'role', emoji: '📦', name: 'Inventory Manager',
+    id: 'inventory-manager', type: 'role', emoji: '🗃️', name: 'Inventory Manager',
     roleBadge: 'Supply Chain',
     description: 'Tracks stock levels, sends low-inventory alerts, forecasts reorder timing based on sales velocity, and delivers weekly inventory health reports.',
     tags: ['inventory', 'supply-chain', 'logistics', 'stock', 'reorder'],
