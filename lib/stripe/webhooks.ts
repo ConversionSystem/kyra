@@ -145,46 +145,83 @@ export async function handleSubscriptionDeleted(
 }
 
 /**
- * Handle `checkout.session.completed` — activate voice addon if applicable.
+ * Handle `checkout.session.completed` — upgrade plan OR activate voice addon.
+ *
+ * This is the critical safety net: if customer.subscription.updated fires
+ * before the agency row is found (race condition), or if planFromPriceId()
+ * returns null due to a misconfigured env var, the plan upgrade still happens
+ * here because we store the plan name directly in session metadata.
  */
 export async function handleCheckoutSessionCompleted(
   session: Stripe.Checkout.Session
 ): Promise<void> {
-  const addon = session.metadata?.addon;
-  if (addon !== 'voice') return; // only handle voice addon checkout
-
   const agencyId = session.metadata?.agency_id;
   if (!agencyId) return;
 
+  const addon = session.metadata?.addon;
+  const plan = session.metadata?.plan as string | undefined;
+
   const supabase = createServiceClientWithoutCookies();
 
-  // Enable voice addon in agency settings
-  const { data: agency } = await supabase
-    .from('agencies')
-    .select('settings')
-    .eq('id', agencyId)
-    .single();
+  // ── Plan upgrade ──────────────────────────────────────────────────────────
+  if (plan && plan !== 'voice' && session.payment_status === 'paid') {
+    // Validate it's a known plan before writing
+    const validPlans = ['solo_pro', 'starter', 'pro', 'scale'];
+    if (validPlans.includes(plan)) {
+      const { data: current } = await supabase
+        .from('agencies')
+        .select('plan')
+        .eq('id', agencyId)
+        .single();
 
-  const settings = ((agency as { settings: Record<string, unknown> } | null)?.settings ?? {}) as Record<string, unknown>;
-  settings.voice_addon = true;
+      const currentPlan = (current as { plan: string } | null)?.plan ?? 'free';
 
-  await supabase
-    .from('agencies')
-    .update({ settings, updated_at: new Date().toISOString() })
-    .eq('id', agencyId);
+      // Only upgrade, never downgrade via checkout
+      const planRank: Record<string, number> = { free: 0, solo_pro: 1, starter: 2, pro: 3, scale: 4 };
+      if ((planRank[plan] ?? 0) > (planRank[currentPlan] ?? 0)) {
+        await supabase
+          .from('agencies')
+          .update({ plan, updated_at: new Date().toISOString() })
+          .eq('id', agencyId);
 
-  // Ensure voice_usage row exists with 300 min limit for current month
-  const now = new Date();
-  const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        console.log(`[stripe webhook] Plan upgraded: ${currentPlan} → ${plan} for agency ${agencyId}`);
+      } else {
+        console.log(`[stripe webhook] Checkout plan (${plan}) not higher than current (${currentPlan}) — skipping`);
+      }
+    } else {
+      console.warn(`[stripe webhook] Unknown plan in checkout metadata: ${plan}`);
+    }
+  }
 
-  await supabase
-    .from('voice_usage')
-    .upsert(
-      { agency_id: agencyId, month, minute_limit: 300 },
-      { onConflict: 'agency_id,month' },
-    );
+  // ── Voice add-on ──────────────────────────────────────────────────────────
+  if (addon === 'voice') {
+    const { data: agency } = await supabase
+      .from('agencies')
+      .select('settings')
+      .eq('id', agencyId)
+      .single();
 
-  console.log(`[stripe webhook] Voice addon activated for agency ${agencyId}`);
+    const settings = ((agency as { settings: Record<string, unknown> } | null)?.settings ?? {}) as Record<string, unknown>;
+    settings.voice_addon = true;
+
+    await supabase
+      .from('agencies')
+      .update({ settings, updated_at: new Date().toISOString() })
+      .eq('id', agencyId);
+
+    // Ensure voice_usage row exists with 300 min limit for current month
+    const now = new Date();
+    const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+    await supabase
+      .from('voice_usage')
+      .upsert(
+        { agency_id: agencyId, month, minute_limit: 300 },
+        { onConflict: 'agency_id,month' },
+      );
+
+    console.log(`[stripe webhook] Voice addon activated for agency ${agencyId}`);
+  }
 }
 
 /**
