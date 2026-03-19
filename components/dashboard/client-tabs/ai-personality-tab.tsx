@@ -64,10 +64,22 @@ interface WakeWord { keyword: string; action: WakeWordAction; response: string }
 // ── Languages ────────────────────────────────────────────────────────────────
 
 const LANGUAGES = [
-  'English', 'Spanish (Español)', 'Portuguese (Português)', 'French (Français)',
-  'German (Deutsch)', 'Italian (Italiano)', 'Chinese (中文)', 'Japanese (日本語)',
-  'Korean (한국어)', 'Arabic (العربية)', 'Hindi (हिन्दी)', 'Russian (Русский)',
-  'Dutch (Nederlands)', 'Polish (Polski)', 'Turkish (Türkçe)',
+  { code: 'auto', label: '🌐 Auto-detect (follows customer)' },
+  { code: 'English', label: '🇺🇸 English' },
+  { code: 'Spanish (Español)', label: '🇪🇸 Español (Spanish)' },
+  { code: 'Portuguese (Português)', label: '🇧🇷 Português (Portuguese)' },
+  { code: 'French (Français)', label: '🇫🇷 Français (French)' },
+  { code: 'German (Deutsch)', label: '🇩🇪 Deutsch (German)' },
+  { code: 'Italian (Italiano)', label: '🇮🇹 Italiano (Italian)' },
+  { code: 'Dutch (Nederlands)', label: '🇳🇱 Nederlands (Dutch)' },
+  { code: 'Polish (Polski)', label: '🇵🇱 Polski (Polish)' },
+  { code: 'Arabic (العربية)', label: '🇸🇦 العربية (Arabic)' },
+  { code: 'Chinese (中文)', label: '🇨🇳 中文 (Chinese)' },
+  { code: 'Japanese (日本語)', label: '🇯🇵 日本語 (Japanese)' },
+  { code: 'Korean (한국어)', label: '🇰🇷 한국어 (Korean)' },
+  { code: 'Hindi (हिन्दी)', label: '🇮🇳 हिन्दी (Hindi)' },
+  { code: 'Russian (Русский)', label: '🇷🇺 Русский (Russian)' },
+  { code: 'Turkish (Türkçe)', label: '🇹🇷 Türkçe (Turkish)' },
 ];
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -90,7 +102,7 @@ export default function AIPersonalityTab({ client }: { client: AgencyClient }) {
   // AI Identity
   const [persona, setPersona] = useState(cfg.persona as string || '');
   const [greeting, setGreeting] = useState(cfg.greeting as string || '');
-  const [responseLanguage, setResponseLanguage] = useState((cfg.response_language as string) || 'English');
+  const [responseLanguage, setResponseLanguage] = useState((cfg.response_language as string) || 'auto');
 
   // Business Info
   const [industry, setIndustry] = useState((cfg.industry as string) || client.industry || '');
@@ -250,7 +262,7 @@ export default function AIPersonalityTab({ client }: { client: AgencyClient }) {
             persona,
             business_hours: { enabled: bhEnabled, start: bhStart, end: bhEnd, timezone: bhTimezone },
             calendar_url: calendarUrl.trim() || undefined,
-            response_language: responseLanguage || 'English',
+            response_language: responseLanguage || 'auto',
             proactive_enabled: proactiveEnabled,
             proactive_greeting: proactiveGreeting.trim() || undefined,
             wake_words: wakeWords.filter((w) => w.keyword.trim()),
@@ -377,14 +389,14 @@ export default function AIPersonalityTab({ client }: { client: AgencyClient }) {
           {/* Response Language */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-900">Response Language</label>
-            <p className="text-xs text-gray-400">The AI will always respond in this language.</p>
+            <p className="text-xs text-gray-400">The language your AI worker responds in to customers. Auto-detect follows the customer&apos;s language automatically.</p>
             <select
               value={responseLanguage}
               onChange={(e) => setResponseLanguage(e.target.value)}
-              className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm"
+              className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             >
               {LANGUAGES.map((lang) => (
-                <option key={lang} value={lang}>{lang}</option>
+                <option key={lang.code} value={lang.code}>{lang.label}</option>
               ))}
             </select>
           </div>
