@@ -14,16 +14,12 @@ interface AgencyClient {
   container_config?: Record<string, unknown> | null;
 }
 
-type Tab = 'terminal' | 'personality' | 'templates' | 'skills' | 'crm' | 'secrets' | 'settings' | 'ghl' | 'usage' | 'conversations' | 'channels' | 'portal' | 'memory' | 'voice' | 'seo' | 'automation' | 'ai-teams' | 'delivery-sms' | 'website';
-
 export default function ChannelsLiveTab({
   clientId,
   client,
-  onTabChange,
 }: {
   clientId: string;
   client: AgencyClient;
-  onTabChange?: (tab: Tab) => void;
 }) {
   const cfg = (client.container_config ?? {}) as Record<string, unknown>;
   const [widgetTitle, setWidgetTitle] = useState((cfg.widget_title as string) || '');
