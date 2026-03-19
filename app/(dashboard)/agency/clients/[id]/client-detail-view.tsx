@@ -5,13 +5,11 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import {
   ArrowLeft,
   Loader2,
-  Send,
   Zap,
   Trash2,
   Save,
@@ -19,8 +17,6 @@ import {
   ChevronDown,
   MessageSquare,
   Settings,
-  Link2,
-  Shield,
   BarChart3,
   Brain,
   RefreshCw,
@@ -34,42 +30,24 @@ import {
   Clock,
   User,
   Bot,
-  Globe,
-  Phone,
-  Radio,
   X,
   Plus,
   Users,
-  Database,
-  Sparkles,
-  GitBranch,
 } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
 import type { AgencyClient, AgencyMember } from '@/lib/agency/queries';
 import GHLConnection from './ghl-connection';
-import { UsageAnalytics } from './usage-analytics';
 import PermissionsCard from './permissions-card';
-import HealthScoreBadge from '@/components/dashboard/health-score-badge';
 import ClientStatusBanner from '@/components/dashboard/client-status-banner';
-import ClientActivityHeatmap from '@/components/dashboard/client-activity-heatmap';
 import { VoiceClient } from '@/app/(dashboard)/agency/voice/voice-client';
-import RoiSummaryCard from '@/components/dashboard/roi-summary-card';
 import { ModelSelector } from '@/components/dashboard/model-selector';
 import QuickAnswersEditor from '@/components/dashboard/quick-answers-editor';
-import { MemoryBrowser } from './memory-browser';
-import { CustomerIntelligence } from './customer-intelligence';
-import { AICapabilities } from './ai-capabilities';
-import { SEODashboard } from './seo-dashboard';
-import SkillsTab from '@/components/dashboard/client-tabs/skills-tab';
-import AIPersonalityTab from '@/components/dashboard/client-tabs/ai-personality-tab';
 import DeliverySmsTab from '@/components/dashboard/client-tabs/delivery-sms-tab';
 import CrmTab from '@/components/dashboard/client-tabs/crm-tab';
 import SecretsTab from '@/components/dashboard/client-tabs/secrets-tab';
 import ChannelsLiveTab from '@/components/dashboard/client-tabs/channels-live-tab';
-import { AISetupClient } from '@/app/(dashboard)/agency/ai-setup/ai-setup-client';
-import { AgentsClient } from '@/app/(dashboard)/agency/agents/agents-client';
 import { AutopilotClient } from '@/app/(dashboard)/agency/autopilot/autopilot-client';
-import WebsiteTab from '@/components/dashboard/client-tabs/website-tab';
+import TrainTab from '@/components/dashboard/client-tabs/train-tab';
+import InsightsTab from '@/components/dashboard/client-tabs/insights-tab';
 
 // ── Setup Nudge Banner ────────────────────────────────────────────────────────
 
@@ -89,7 +67,7 @@ function SetupNudgeBanner({
   );
 
   const missing: { label: string; tab: Tab; desc: string }[] = [];
-  if (!hasPersonality) missing.push({ label: 'Add Personality', tab: 'personality', desc: 'Train the AI with persona, greeting, and instructions' });
+  if (!hasPersonality) missing.push({ label: 'Add Personality', tab: 'train', desc: 'Train the AI with persona, greeting, and instructions' });
   // GHL nudge removed from global banner — shown only inside the GHL tab
 
   if (missing.length === 0) return null;
@@ -136,64 +114,49 @@ interface ChatMessage {
   content: string;
 }
 
-type Tab = 'terminal' | 'personality' | 'templates' | 'skills' | 'crm' | 'secrets' | 'settings' | 'ghl' | 'usage' | 'conversations' | 'channels' | 'portal' | 'memory' | 'voice' | 'seo' | 'automation' | 'ai-teams' | 'delivery-sms' | 'website';
+type Tab = 'inbox' | 'chat' | 'train' | 'crm' | 'settings' | 'insights' | 'share';
 
-function LockTabIcon({ className }: { className?: string }) {
-  return <span className={`inline-flex items-center justify-center ${className || ''}`}>🔒</span>;
-}
+// Map legacy ?tab= values to new tab IDs
+const LEGACY_TAB_MAP: Record<string, Tab> = {
+  conversations: 'inbox',
+  terminal: 'chat',
+  personality: 'train',
+  templates: 'train',
+  skills: 'train',
+  website: 'train',
+  ghl: 'settings',
+  channels: 'settings',
+  secrets: 'settings',
+  voice: 'settings',
+  'delivery-sms': 'settings',
+  automation: 'settings',
+  usage: 'insights',
+  memory: 'insights',
+  seo: 'insights',
+  portal: 'share',
+  'ai-teams': 'chat',
+};
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
-  { id: 'terminal', label: 'Terminal', icon: Terminal },
-  { id: 'personality', label: 'AI Personality', icon: Brain },
-  { id: 'templates', label: 'Templates', icon: Sparkles },
-  { id: 'skills', label: 'Skills', icon: Zap },
-  { id: 'website', label: 'Website', icon: Globe },
-  { id: 'ai-teams', label: 'AI Teams', icon: Bot },
-  { id: 'delivery-sms', label: 'Delivery SMS', icon: MessageSquare },
+  { id: 'inbox', label: 'Inbox', icon: Inbox },
+  { id: 'chat', label: 'Chat', icon: MessageSquare },
+  { id: 'train', label: 'Train', icon: Brain },
   { id: 'crm', label: 'CRM', icon: Users },
-  { id: 'secrets', label: 'Secrets', icon: LockTabIcon },
   { id: 'settings', label: 'Settings', icon: Settings },
-  { id: 'ghl', label: 'GHL', icon: Link2 },
-  { id: 'automation', label: 'Automation', icon: GitBranch },
-  { id: 'usage', label: 'Usage', icon: BarChart3 },
-  { id: 'conversations', label: 'Conversations', icon: Inbox },
-  { id: 'channels', label: 'Channels', icon: Radio },
-  { id: 'portal', label: 'Client Portal', icon: Users },
-  { id: 'memory', label: 'AI Memory', icon: Database },
-  { id: 'voice', label: 'Voice AI', icon: Phone },
-  { id: 'seo', label: 'SEO', icon: BarChart3 },
+  { id: 'insights', label: 'Insights', icon: BarChart3 },
+  { id: 'share', label: 'Share', icon: Share2 },
 ];
 
 // Grouped sidebar navigation — desktop only
-const TAB_GROUPS: { label: string; tabs: typeof TABS }[] = [
+const TAB_GROUPS: { label?: string; tabs: typeof TABS }[] = [
   {
-    label: 'Core',
-    tabs: TABS.filter(t => ['terminal', 'personality', 'crm', 'secrets', 'templates', 'skills', 'website'].includes(t.id)),
-  },
-  {
-    label: 'Communicate',
-    tabs: TABS.filter(t => ['conversations', 'channels'].includes(t.id)),
+    tabs: TABS.filter(t => ['inbox', 'chat', 'train', 'crm'].includes(t.id)),
   },
   {
     label: 'Configure',
-    tabs: TABS.filter(t => ['ai-teams', 'voice', 'settings'].includes(t.id)),
-  },
-  {
-    label: 'Integrate',
-    tabs: TABS.filter(t => ['ghl', 'automation', 'delivery-sms'].includes(t.id)),
-  },
-  {
-    label: 'Analyze',
-    tabs: TABS.filter(t => ['usage', 'memory', 'seo'].includes(t.id)),
-  },
-  {
-    label: 'Portal',
-    tabs: TABS.filter(t => ['portal'].includes(t.id)),
+    tabs: TABS.filter(t => ['settings', 'insights', 'share'].includes(t.id)),
   },
 ];
-
-// Tabs locked behind Lite+ plans (hidden for free & solo_pro)
-const PREMIUM_TABS: Tab[] = ['delivery-sms', 'seo'];
 
 interface ClientDetailViewProps {
   client: AgencyClient;
@@ -266,17 +229,13 @@ function ReprovisionButton({ clientId }: { clientId: string }) {
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export function ClientDetailView({ client: initialClient, role, plan, accountType }: ClientDetailViewProps) {
-  // All tabs visible for all plans — premium tabs show 🔒 for free/solo
   const isFreeOrSolo = !plan || plan === 'free' || plan === 'solo_pro' || (plan === 'free' && accountType === 'solo');
-  const visibleTabs = TABS;
-  const visibleTabGroups = TAB_GROUPS.filter(g => g.tabs.length > 0);
-  const isPremiumLocked = (tabId: Tab) => isFreeOrSolo && PREMIUM_TABS.includes(tabId);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialTab = (searchParams.get('tab') as Tab) || 'terminal';
-  const [activeTab, setActiveTab] = useState<Tab>(
-    TABS.some(t => t.id === initialTab) ? initialTab : 'terminal'
-  );
+  const rawTab = searchParams.get('tab') || 'inbox';
+  const resolvedTab = (LEGACY_TAB_MAP[rawTab] ?? rawTab) as Tab;
+  const initialTab = TABS.some(t => t.id === resolvedTab) ? resolvedTab : 'inbox';
+  const [activeTab, setActiveTab] = useState<Tab>(initialTab);
 
   // Update URL when tab changes (without full reload)
   const handleTabChange = useCallback((tab: Tab) => {
@@ -317,31 +276,29 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
       <div className="flex flex-col md:flex-row flex-1 min-h-0">
 
         {/* Left sidebar nav — desktop only */}
-        <aside className="hidden md:flex flex-col w-48 shrink-0 bg-white pt-2 pb-6 px-2 sticky top-0 self-start max-h-screen overflow-y-auto">
-          {visibleTabGroups.map((group, gi) => (
-            <div key={group.label} className={gi > 0 ? 'mt-5' : ''}>
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest px-3 mb-1">
-                {group.label}
-              </p>
+        <aside className="hidden md:flex flex-col w-48 shrink-0 bg-gray-900 pt-2 pb-6 px-2 sticky top-0 self-start max-h-screen overflow-y-auto">
+          {TAB_GROUPS.map((group, gi) => (
+            <div key={group.label ?? gi} className={gi > 0 ? 'mt-5' : ''}>
+              {group.label && (
+                <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest px-3 mb-1">
+                  {group.label}
+                </p>
+              )}
               {group.tabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
-                const locked = isPremiumLocked(tab.id);
                 return (
                   <button
                     key={tab.id}
                     onClick={() => handleTabChange(tab.id)}
                     className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors mb-0.5 ${
                       isActive
-                        ? 'bg-indigo-50 text-indigo-700'
-                        : locked
-                          ? 'text-gray-400 hover:bg-gray-50'
-                          : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
+                        ? 'bg-indigo-600 text-white'
+                        : 'text-gray-400 hover:bg-gray-800 hover:text-gray-200'
                     }`}
                   >
-                    <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-indigo-600' : locked ? 'text-gray-300' : 'text-gray-400'}`} />
-                    <span className={locked ? 'text-gray-400' : ''}>{tab.label}</span>
-                    {locked && <span className="ml-auto text-xs">🔒</span>}
+                    <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-white' : 'text-gray-500'}`} />
+                    {tab.label}
                   </button>
                 );
               })}
@@ -353,10 +310,9 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
         <div className="md:hidden w-full">
           <div className="border-b border-gray-200 overflow-x-auto scrollbar-hide bg-white">
             <nav className="flex gap-0.5 px-4 -mb-px">
-              {visibleTabs.map((tab) => {
+              {TABS.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
-                const locked = isPremiumLocked(tab.id);
                 return (
                   <button
                     key={tab.id}
@@ -364,14 +320,11 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
                     className={`flex items-center gap-1.5 px-3 py-3 text-xs font-medium border-b-2 transition-colors whitespace-nowrap shrink-0 ${
                       isActive
                         ? 'border-indigo-600 text-indigo-600'
-                        : locked
-                          ? 'border-transparent text-gray-300'
-                          : 'border-transparent text-gray-500'
+                        : 'border-transparent text-gray-500'
                     }`}
                   >
                     <Icon className="h-3.5 w-3.5" />
                     {tab.label}
-                    {locked && <span className="text-[10px]">🔒</span>}
                   </button>
                 );
               })}
@@ -384,110 +337,32 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
           {/* Status banners — gateway errors, GHL disconnect, missing API key */}
           <ClientStatusBanner client={initialClient} />
 
-          {/* Setup nudge — only shown on setup-relevant tabs (not usage/analytics/etc) */}
-          {['terminal', 'personality', 'settings', 'ghl', 'channels', 'templates'].includes(activeTab) && (
+          {/* Setup nudge — only shown on setup-relevant tabs */}
+          {['chat', 'train', 'settings'].includes(activeTab) && (
             <SetupNudgeBanner client={initialClient} onTabChange={handleTabChange} />
           )}
 
-          {/* Premium upgrade prompt for locked tabs */}
-          {isPremiumLocked(activeTab) && (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-              <div className="h-16 w-16 rounded-2xl bg-indigo-50 flex items-center justify-center mb-4">
-                <span className="text-3xl">🔒</span>
-              </div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">Premium Feature</h2>
-              <p className="text-gray-500 mb-6 max-w-md">
-                <span className="font-medium">{TABS.find(t => t.id === activeTab)?.label}</span> is available on Agency plans. Upgrade to unlock all features.
-              </p>
-              <a
-                href="/agency/billing"
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
-              >
-                Upgrade Plan
-              </a>
-            </div>
-          )}
-
           {/* Tab content */}
-          {!isPremiumLocked(activeTab) && activeTab === 'terminal' && (
-            <TerminalTab client={initialClient} />
-          )}
-          {activeTab === 'personality' && (
-            <AIPersonalityTab client={initialClient} />
-          )}
-          {activeTab === 'skills' && (
-            <SkillsTab client={initialClient} />
-          )}
-          {activeTab === 'settings' && (
-            <SettingsTab client={initialClient} role={role} onRefresh={() => router.refresh()} />
-          )}
-          {!isPremiumLocked(activeTab) && activeTab === 'ghl' && (
-            <GHLTab client={initialClient} onRefresh={() => router.refresh()} />
-          )}
-          {activeTab === 'usage' && (
-            <UsageTab client={initialClient} />
-          )}
-          {activeTab === 'conversations' && (
+          {activeTab === 'inbox' && (
             <ConversationsTab client={initialClient} />
           )}
-          {activeTab === 'channels' && (
-            <ChannelsLiveTab clientId={initialClient.id} client={initialClient} onTabChange={handleTabChange} />
+          {activeTab === 'chat' && (
+            <TerminalTab client={initialClient} />
           )}
-          {activeTab === 'portal' && (
-            <PortalTab client={initialClient} />
-          )}
-
-                {activeTab === 'memory' && (
-            <div className="space-y-0">
-              <CustomerIntelligence clientId={initialClient.id} />
-              <div className="border-t border-gray-200 mt-6 pt-6 px-4 sm:px-6">
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
-                  AI Context Files (Advanced)
-                </p>
-                <MemoryBrowser clientId={initialClient.id} clientName={initialClient.name || 'Client'} />
-              </div>
-            </div>
-          )}
-
-          {!isPremiumLocked(activeTab) && activeTab === 'voice' && (
-            <VoiceClient
-              agencyId={initialClient.agency_id}
-              clientId={initialClient.id}
-              clientName={initialClient.name ?? 'Client'}
-              voiceConfig={(initialClient.container_config as Record<string, unknown>)?.voice_config as Record<string, string> | null ?? null}
-              isSolo={false}
-            />
-          )}
-
-          {!isPremiumLocked(activeTab) && activeTab === 'seo' && (
-            <SEODashboard clientId={initialClient.id} clientName={initialClient.name || 'Client'} />
-          )}
-          {activeTab === 'templates' && (
-            <AISetupClient
-              agencyId={initialClient.agency_id}
-              businessName={initialClient.name ?? 'Client'}
-              clientId={initialClient.id}
-              isSolo={false}
-            />
-          )}
-          {!isPremiumLocked(activeTab) && activeTab === 'ai-teams' && (
-            <AgentsClient clientId={initialClient.id} embedded />
-          )}
-          {!isPremiumLocked(activeTab) && activeTab === 'automation' && (
-            <AutopilotClient />
-          )}
-          {!isPremiumLocked(activeTab) && activeTab === 'delivery-sms' && (
-            <DeliverySmsTab clientId={initialClient.id} />
+          {activeTab === 'train' && (
+            <TrainTab client={initialClient} />
           )}
           {activeTab === 'crm' && (
             <CrmTab client={initialClient} clientId={initialClient.id} />
           )}
-          {activeTab === 'secrets' && (
-            <SecretsTab clientId={initialClient.id} />
+          {activeTab === 'settings' && (
+            <SettingsTabMerged client={initialClient} role={role} plan={plan} accountType={accountType} onRefresh={() => router.refresh()} />
           )}
-
-          {activeTab === 'website' && (
-            <WebsiteTab clientId={initialClient.id} clientName={initialClient.name} />
+          {activeTab === 'insights' && (
+            <InsightsTab client={initialClient} isSeoLocked={isFreeOrSolo} />
+          )}
+          {activeTab === 'share' && (
+            <PortalTab client={initialClient} />
           )}
 
         </main>
@@ -917,26 +792,104 @@ function GHLTab({ client, onRefresh }: { client: AgencyClient; onRefresh: () => 
   );
 }
 
-// ── Usage Tab ─────────────────────────────────────────────────────────────────
+// ── Settings Tab Merged (General + Channels + Integrations + Security + Voice + SMS + Workflows) ──
 
-function UsageTab({ client }: { client: AgencyClient }) {
+type SettingsSubTab = 'general' | 'channels' | 'integrations' | 'security' | 'voice' | 'sms' | 'workflows';
+
+const SETTINGS_SUB_TABS: { id: SettingsSubTab; label: string }[] = [
+  { id: 'general', label: 'General' },
+  { id: 'channels', label: 'Channels' },
+  { id: 'integrations', label: 'Integrations' },
+  { id: 'security', label: 'Security' },
+  { id: 'voice', label: 'Voice' },
+  { id: 'sms', label: 'SMS' },
+  { id: 'workflows', label: 'Workflows' },
+];
+
+function SettingsTabMerged({
+  client,
+  role,
+  plan,
+  accountType,
+  onRefresh,
+}: {
+  client: AgencyClient;
+  role: AgencyMember['role'];
+  plan?: string;
+  accountType?: string;
+  onRefresh: () => void;
+}) {
+  const [activeSubTab, setActiveSubTab] = useState<SettingsSubTab>('general');
+  const isFreeOrSolo = !plan || plan === 'free' || plan === 'solo_pro' || (plan === 'free' && accountType === 'solo');
+
   return (
     <div className="space-y-6">
-      <p className="text-sm text-gray-500">
-        Messages handled, response times, and costs for this client&apos;s AI worker.
-      </p>
+      {/* Sub-nav pills */}
+      <div className="flex flex-wrap gap-2">
+        {SETTINGS_SUB_TABS.map((tab) => {
+          const locked = tab.id === 'sms' && isFreeOrSolo;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveSubTab(tab.id)}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                activeSubTab === tab.id
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              {tab.label}
+              {locked && <span className="ml-1">🔒</span>}
+            </button>
+          );
+        })}
+      </div>
 
-      {/* ROI card — shows what this AI worker is worth vs. hiring staff */}
-      <RoiSummaryCard
-        totalConversations={client.usage_this_month ?? 0}
-        plan="pro"
-        billingCents={client.billing_amount_cents ?? 0}
-        showLink={false}
-      />
-
-      <HealthScoreBadge clientId={client.id} showDetails />
-      <ClientActivityHeatmap clientId={client.id} />
-      <UsageAnalytics clientId={client.id} />
+      {activeSubTab === 'general' && (
+        <SettingsTab client={client} role={role} onRefresh={onRefresh} />
+      )}
+      {activeSubTab === 'channels' && (
+        <ChannelsLiveTab clientId={client.id} client={client} />
+      )}
+      {activeSubTab === 'integrations' && (
+        <GHLTab client={client} onRefresh={onRefresh} />
+      )}
+      {activeSubTab === 'security' && (
+        <SecretsTab clientId={client.id} />
+      )}
+      {activeSubTab === 'voice' && (
+        <VoiceClient
+          agencyId={client.agency_id}
+          clientId={client.id}
+          clientName={client.name ?? 'Client'}
+          voiceConfig={(client.container_config as Record<string, unknown>)?.voice_config as Record<string, string> | null ?? null}
+          isSolo={false}
+        />
+      )}
+      {activeSubTab === 'sms' && (
+        isFreeOrSolo ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="h-16 w-16 rounded-2xl bg-indigo-50 flex items-center justify-center mb-4">
+              <span className="text-3xl">🔒</span>
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Premium Feature</h2>
+            <p className="text-gray-500 mb-6 max-w-md">
+              <span className="font-medium">Delivery SMS</span> is available on Agency plans. Upgrade to unlock all features.
+            </p>
+            <a
+              href="/agency/billing"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+            >
+              Upgrade Plan
+            </a>
+          </div>
+        ) : (
+          <DeliverySmsTab clientId={client.id} />
+        )
+      )}
+      {activeSubTab === 'workflows' && (
+        <AutopilotClient />
+      )}
     </div>
   );
 }
