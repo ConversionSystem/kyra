@@ -494,8 +494,19 @@ export async function getVpsHealth(): Promise<VpsHealth | null> {
 // ============ Chat via Gateway ============
 
 /**
- * Send a chat message to a client's gateway.
- * Used for routing customer messages through the per-client AI.
+ * Chat via client's OpenClaw gateway using the OpenAI-compatible endpoint.
+ *
+ * SESSION PERSISTENCE: Pass options.sessionId for conversation continuity.
+ * The sessionId is sent as X-OpenClaw-Session-Key header — OpenClaw stores
+ * transcripts at workspace/agents/main/sessions/{sessionId}.jsonl
+ *
+ * AGENT ROUTING: Pass options.model as "openclaw/{agentId}" to route to a
+ * specific agent defined in openclaw.json agents.list, e.g.:
+ *   model: "openclaw/front-desk"  → routes to front-desk agent
+ *   model: "openclaw/main"        → routes to main (default) agent
+ *
+ * SYSTEM PROMPT: The systemPrompt is added as extraSystemPrompt ON TOP of
+ * the agent's SOUL.md — both are used by OpenClaw for every request.
  */
 export async function chatViaGateway(
   clientId: string,
@@ -559,6 +570,7 @@ export async function chatViaGateway(
       model: options.model || 'openai/gpt-4o-mini',
       messages,
       stream: false,
+      ...(options.sessionId ? { user: options.sessionId } : {}),
     };
 
     // Add tools if provided (function calling)
@@ -572,6 +584,7 @@ export async function chatViaGateway(
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${client.gateway_token}`,
+        ...(options.sessionId ? { 'X-OpenClaw-Session-Key': options.sessionId } : {}),
       },
       body: JSON.stringify(requestBody),
       signal: AbortSignal.timeout(30_000),
