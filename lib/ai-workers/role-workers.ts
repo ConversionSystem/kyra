@@ -125,7 +125,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Tracks competitors, trends, and industry news',
       'Delivers findings in your preferred format',
     ],
-    channels: ['chat'],
+    channels: ['sms', 'voice', 'chat', 'telegram'],
     tools: ['Web Search', 'Creates Reports'],
     useCase: 'internal',
     variables: [
@@ -146,7 +146,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Delivers clear summaries your team actually reads',
       'Tracks custom KPIs you define',
     ],
-    channels: ['chat', 'telegram'],
+    channels: ['sms', 'voice', 'chat', 'telegram'],
     tools: ['Reads Analytics', 'Sends Reports'],
     useCase: 'internal',
     variables: [
@@ -167,7 +167,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Surfaces engagement opportunities before they\'re missed',
       'Flags anything requiring urgent human response',
     ],
-    channels: ['chat'],
+    channels: ['sms', 'voice', 'chat', 'telegram'],
     tools: ['Web Search', 'Tags Contacts', 'Escalates to Human'],
     useCase: 'internal',
     variables: [
@@ -189,7 +189,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Enforces vocabulary rules and messaging pillars',
       'Provides specific line-by-line fixes with explanations',
     ],
-    channels: ['chat'],
+    channels: ['sms', 'voice', 'chat', 'telegram'],
     tools: ['Reviews Content'],
     useCase: 'internal',
     variables: [
@@ -280,7 +280,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Always includes a discovery question to keep the conversation going',
       'Coaches tone: never dismiss the objection, always acknowledge first',
     ],
-    channels: ['chat'],
+    channels: ['sms', 'voice', 'chat', 'telegram'],
     tools: ['Reviews Content'],
     useCase: 'internal',
     variables: [
@@ -364,7 +364,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Manages multi-step sequences with value-add follow-ups (never just "bumping this")',
       'Tracks sent, opened, replied metrics and optimizes messaging weekly',
     ],
-    channels: ['chat'],
+    channels: ['sms', 'voice', 'chat', 'telegram'],
     tools: ['Web Search', 'Tags Contacts', 'Creates Deals'],
     useCase: 'internal',
     variables: [
@@ -389,7 +389,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Drafts replies to comments and identifies conversations worth joining',
       'Generates weekly performance report: impressions, engagement, top content',
     ],
-    channels: ['chat'],
+    channels: ['sms', 'voice', 'chat', 'telegram'],
     tools: ['Web Search', 'Creates Reports'],
     useCase: 'internal',
     variables: [
@@ -410,7 +410,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Surfaces positive mentions worth amplifying or engaging with',
       'Delivers daily digest: total mentions, sentiment breakdown, top posts',
     ],
-    channels: ['chat', 'telegram'],
+    channels: ['sms', 'voice', 'chat', 'telegram'],
     tools: ['Web Search', 'Sends Alerts'],
     useCase: 'internal',
     variables: [
@@ -431,7 +431,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Adapts tone from educational to conversion-focused as sequence progresses',
       'Generates A/B variants for subject lines and CTAs',
     ],
-    channels: ['chat'],
+    channels: ['sms', 'voice', 'chat', 'telegram'],
     tools: ['Creates Reports'],
     useCase: 'internal',
     variables: [
@@ -452,7 +452,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Generates short-form video scripts from long-form articles',
       'Extracts 5-10 quotable moments per piece for social sharing',
     ],
-    channels: ['chat'],
+    channels: ['sms', 'voice', 'chat', 'telegram'],
     tools: ['Creates Reports'],
     useCase: 'internal',
     variables: [
@@ -473,7 +473,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Monitors competitor social and content for positioning shifts',
       'Delivers weekly brief: changes detected, so-what analysis, recommended responses',
     ],
-    channels: ['chat', 'telegram'],
+    channels: ['sms', 'voice', 'chat', 'telegram'],
     tools: ['Web Search', 'Creates Reports'],
     useCase: 'internal',
     variables: [
@@ -494,7 +494,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Optimizes existing content for featured snippets and People Also Ask',
       'Generates meta titles and descriptions under character limits',
     ],
-    channels: ['chat'],
+    channels: ['sms', 'voice', 'chat', 'telegram'],
     tools: ['Web Search', 'Creates Reports'],
     useCase: 'internal',
     variables: [
@@ -515,7 +515,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Generates 3 subject line options per edition with predicted open rates',
       'Tracks performance and adjusts content mix based on click data',
     ],
-    channels: ['chat'],
+    channels: ['sms', 'voice', 'chat', 'telegram'],
     tools: ['Web Search', 'Creates Reports'],
     useCase: 'internal',
     variables: [
@@ -652,7 +652,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Flags deals going cold with suggested re-engagement messages',
       'Delivers weekly pipeline report: new leads, active deals, closed, forecast',
     ],
-    channels: ['chat', 'telegram'],
+    channels: ['sms', 'voice', 'chat', 'telegram'],
     tools: ['Creates Deals', 'Tags Contacts', 'Creates Reports'],
     useCase: 'internal',
     variables: [
@@ -673,7 +673,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Triggers personalized retention outreach at 7-day warning',
       'Reports weekly: at-risk accounts, churn probability, recommended actions',
     ],
-    channels: ['chat', 'telegram'],
+    channels: ['sms', 'voice', 'chat', 'telegram'],
     tools: ['Tags Contacts', 'Sends Alerts', 'Creates Reports'],
     useCase: 'internal',
     variables: [
@@ -694,7 +694,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Benchmarks metrics against industry standards for context',
       'Delivers weekly report: numbers first, insights second, recommendations third',
     ],
-    channels: ['chat', 'telegram'],
+    channels: ['sms', 'voice', 'chat', 'telegram'],
     tools: ['Creates Reports', 'Web Search'],
     useCase: 'internal',
     variables: [
@@ -737,7 +737,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
       "Generates client-ready language that's clear, not jargon-heavy",
       'Sends weekly report to client via email or Telegram automatically',
     ],
-    channels: ['chat', 'telegram'],
+    channels: ['sms', 'voice', 'chat', 'telegram'],
     tools: ['Creates Reports', 'Sends Messages'],
     useCase: 'internal',
     variables: [
@@ -759,7 +759,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Flags competitor mentions and comparison threads for response',
       'Tracks which subreddits and comment styles drive the most traffic',
     ],
-    channels: ['chat'],
+    channels: ['sms', 'voice', 'chat', 'telegram'],
     tools: ['Web Search', 'Creates Reports'],
     useCase: 'internal',
     variables: [
@@ -780,7 +780,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Drafts personalized partnership pitches referencing their content',
       'Tracks outreach status and follows up with 3-touch sequence',
     ],
-    channels: ['chat'],
+    channels: ['sms', 'voice', 'chat', 'telegram'],
     tools: ['Web Search', 'Tags Contacts', 'Creates Reports'],
     useCase: 'internal',
     variables: [
@@ -802,7 +802,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Flags anomalies and provides root cause hypotheses',
       'Summarizes findings in plain language with recommended actions',
     ],
-    channels: ['chat'],
+    channels: ['sms', 'voice', 'chat', 'telegram'],
     tools: ['Creates Reports', 'Web Search'],
     useCase: 'internal',
     variables: [
@@ -844,7 +844,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Identifies which variant wins and explains the likely mechanism',
       'Recommends whether to ship, iterate, or abandon the experiment',
     ],
-    channels: ['chat'],
+    channels: ['sms', 'voice', 'chat', 'telegram'],
     tools: ['Creates Reports'],
     useCase: 'internal',
     variables: [
