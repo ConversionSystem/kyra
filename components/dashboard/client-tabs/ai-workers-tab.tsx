@@ -31,7 +31,41 @@ interface AIWorkersTabProps {
   agencyId: string;
 }
 
+type WorkerCategory = 'all' | 'customer-facing' | 'sales' | 'marketing' | 'operations' | 'industry';
+
+const WORKER_CATEGORIES: { key: WorkerCategory; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'customer-facing', label: 'Customer Facing' },
+  { key: 'sales', label: 'Sales & Outreach' },
+  { key: 'marketing', label: 'Marketing' },
+  { key: 'operations', label: 'Operations' },
+  { key: 'industry', label: 'Industry' },
+];
+
+const INDUSTRY_BADGES = ['Real Estate', 'Healthcare & Wellness', 'Food & Beverage', 'Retail & E-Commerce', 'Legal Services'];
+
+function matchesCategory(worker: RoleWorker, category: WorkerCategory): boolean {
+  if (category === 'all') return true;
+  if (category === 'customer-facing') {
+    return worker.channels.some(ch => ch === 'sms' || ch === 'voice' || ch === 'telegram');
+  }
+  if (category === 'sales') {
+    return worker.tags.some(t => ['leads', 'qualification', 'outreach', 'prospecting'].includes(t));
+  }
+  if (category === 'marketing') {
+    return worker.tags.some(t => ['content', 'social', 'seo', 'newsletter', 'email'].includes(t));
+  }
+  if (category === 'operations') {
+    return worker.tags.some(t => ['reports', 'analytics', 'scheduling', 'crm'].includes(t));
+  }
+  if (category === 'industry') {
+    return INDUSTRY_BADGES.includes(worker.roleBadge);
+  }
+  return true;
+}
+
 export default function AIWorkersTab({ client, agencyId }: AIWorkersTabProps) {
+  const [activeCategory, setActiveCategory] = useState<WorkerCategory>('all');
   const [applyWorker, setApplyWorker] = useState<RoleWorker | null>(null);
   const [variables, setVariables] = useState<Record<string, string>>({});
   const [applying, setApplying] = useState(false);
@@ -147,9 +181,26 @@ export default function AIWorkersTab({ client, agencyId }: AIWorkersTabProps) {
         </p>
       </div>
 
+      {/* Category filter pills */}
+      <div className="flex flex-wrap gap-2">
+        {WORKER_CATEGORIES.map(cat => (
+          <button
+            key={cat.key}
+            onClick={() => setActiveCategory(cat.key)}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+              activeCategory === cat.key
+                ? 'bg-indigo-600 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            {cat.label}
+          </button>
+        ))}
+      </div>
+
       {/* Worker cards grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {ROLE_WORKERS.map(worker => (
+        {ROLE_WORKERS.filter(w => matchesCategory(w, activeCategory)).map(worker => (
           <WorkerCard
             key={worker.id}
             worker={worker}
