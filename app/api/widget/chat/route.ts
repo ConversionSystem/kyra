@@ -154,6 +154,13 @@ export async function POST(request: NextRequest) {
   const aiCapabilities = (siteData?.ai_capabilities as string[]) || [];
   const aiName = (siteData?.ai_name as string) || (cfg.persona as string)?.split(' ')[0] || 'Alex';
 
+  // ── Language instruction ──────────────────────────────────────────────────
+  const responseLanguage = (cfg.response_language as string) || 'auto';
+  // 'auto' or unset → detect from customer message. Specific language → lock to it.
+  const languageInstruction = (!responseLanguage || responseLanguage === 'auto')
+    ? "Detect the customer's language from their message and always respond in that same language."
+    : `Always respond in ${responseLanguage.replace(/ \(.*\)/, '')}. Do not switch languages even if the customer writes in a different language.`;
+
   const toneInstruction: Record<string, string> = {
     professional: 'Maintain a professional, knowledgeable tone. Be helpful and precise.',
     friendly: 'Be warm, friendly and approachable. Use conversational language like talking to a friend.',
@@ -194,6 +201,7 @@ export async function POST(request: NextRequest) {
   const systemPrompt = [
     `You are ${aiName}, a helpful AI assistant for ${businessName}, responding via a web chat widget on their website.`,
     toneInstruction[aiTone] || toneInstruction.professional,
+    languageInstruction,
     `Keep replies to 2-4 sentences unless more detail is needed.`,
     `CRITICAL FORMATTING RULES — you are in a plain-text chat widget, NOT a document editor:`,
     `- NEVER use markdown: no **bold**, no *italic*, no # headers, no bullet dashes (- or *), no numbered lists (1. 2. 3.)`,
