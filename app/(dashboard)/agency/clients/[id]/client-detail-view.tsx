@@ -33,6 +33,7 @@ import {
   X,
   Plus,
   Users,
+  Globe,
 } from 'lucide-react';
 import type { AgencyClient, AgencyMember } from '@/lib/agency/queries';
 import GHLConnection from './ghl-connection';
@@ -48,6 +49,7 @@ import ChannelsLiveTab from '@/components/dashboard/client-tabs/channels-live-ta
 import { AutopilotClient } from '@/app/(dashboard)/agency/autopilot/autopilot-client';
 import TrainTab from '@/components/dashboard/client-tabs/train-tab';
 import InsightsTab from '@/components/dashboard/client-tabs/insights-tab';
+import WebsiteTab from '@/components/dashboard/client-tabs/website-tab';
 
 // ── Setup Nudge Banner ────────────────────────────────────────────────────────
 
@@ -114,7 +116,7 @@ interface ChatMessage {
   content: string;
 }
 
-type Tab = 'inbox' | 'chat' | 'train' | 'crm' | 'settings' | 'insights' | 'share';
+type Tab = 'inbox' | 'chat' | 'train' | 'crm' | 'website' | 'settings' | 'insights' | 'share';
 
 // Map legacy ?tab= values to new tab IDs
 const LEGACY_TAB_MAP: Record<string, Tab> = {
@@ -123,7 +125,8 @@ const LEGACY_TAB_MAP: Record<string, Tab> = {
   personality: 'train',
   templates: 'train',
   skills: 'train',
-  website: 'train',
+  website: 'website',
+  knowledge: 'website',
   ghl: 'settings',
   channels: 'settings',
   secrets: 'settings',
@@ -142,6 +145,7 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'chat', label: 'Chat', icon: MessageSquare },
   { id: 'train', label: 'Train', icon: Brain },
   { id: 'crm', label: 'CRM', icon: Users },
+  { id: 'website', label: 'Website', icon: Globe },
   { id: 'settings', label: 'Settings', icon: Settings },
   { id: 'insights', label: 'Insights', icon: BarChart3 },
   { id: 'share', label: 'Share', icon: Share2 },
@@ -150,7 +154,7 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
 // Grouped sidebar navigation — desktop only
 const TAB_GROUPS: { label?: string; tabs: typeof TABS }[] = [
   {
-    tabs: TABS.filter(t => ['inbox', 'chat', 'train', 'crm'].includes(t.id)),
+    tabs: TABS.filter(t => ['inbox', 'chat', 'train', 'crm', 'website'].includes(t.id)),
   },
   {
     label: 'Configure',
@@ -354,6 +358,9 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
           )}
           {activeTab === 'crm' && (
             <CrmTab client={initialClient} clientId={initialClient.id} />
+          )}
+          {activeTab === 'website' && (
+            <WebsiteTab clientId={initialClient.id} clientName={initialClient.name} />
           )}
           {activeTab === 'settings' && (
             <SettingsTabMerged client={initialClient} role={role} plan={plan} accountType={accountType} onRefresh={() => router.refresh()} />
