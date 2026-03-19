@@ -70,7 +70,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
   },
   {
-    id: 'intake-specialist', type: 'role', emoji: '📋', name: 'Intake Specialist',
+    id: 'intake-specialist', type: 'role', emoji: '📝', name: 'Intake Specialist',
     roleBadge: 'Client Onboarding',
     description: 'Collects required information from new clients or patients to complete onboarding. Walks through each field patiently and routes to the right department when done.',
     tags: ['intake', 'onboarding', 'forms', 'routing'],
@@ -150,7 +150,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
   },
   {
-    id: 'social-scout', type: 'role', emoji: '📱', name: 'Social Scout',
+    id: 'social-scout', type: 'role', emoji: '🕵️', name: 'Social Scout',
     roleBadge: 'Social Monitoring',
     description: 'Monitors social mentions, competitor activity, and trending topics across platforms. Surfaces engagement opportunities and flags anything that needs a human response.',
     tags: ['social', 'monitoring', 'competitors', 'trends'],
@@ -318,7 +318,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
   },
   {
-    id: 'review-responder', type: 'role', emoji: '💬', name: 'Review Responder',
+    id: 'review-responder', type: 'role', emoji: '🌟', name: 'Review Responder',
     roleBadge: 'Reputation Management',
     description: 'Drafts personalized responses to 1-5 star reviews, escalates safety issues, and delivers weekly sentiment summaries to catch recurring problems early.',
     tags: ['reviews', 'reputation', 'content', 'support'],
