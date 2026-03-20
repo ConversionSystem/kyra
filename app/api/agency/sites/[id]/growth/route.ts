@@ -260,10 +260,11 @@ Return JSON:
     const raw = completion.choices[0]?.message?.content || '{}';
     const content = JSON.parse(raw);
 
-    // Determine page type from slug
+    // Determine page type from slug — must match PageType union ('service', not 'services')
     let pageType = 'utility';
     if (suggestion.type === 'new_city') pageType = 'city';
     else if (suggestion.type === 'new_service') pageType = 'service';
+    else if (suggestion.slug?.startsWith('/services/')) pageType = 'service';
 
     await supabase.from('site_pages').upsert({
       site_id: siteId,

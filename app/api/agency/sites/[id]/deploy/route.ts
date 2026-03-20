@@ -37,10 +37,18 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   }
 
   // Forward to build endpoint (build = deploy for static sites)
+  // SECURITY: Only forward safe headers — avoid forwarding all user-controlled headers
+  // to the internal endpoint, which could enable header injection.
   const buildUrl = new URL(`/api/agency/sites/${siteId}/build`, request.url);
+  const safeHeaders: Record<string, string> = {};
+  const forwardList = ['authorization', 'cookie', 'content-type'];
+  for (const key of forwardList) {
+    const val = request.headers.get(key);
+    if (val) safeHeaders[key] = val;
+  }
   const buildRes = await fetch(buildUrl, {
     method: 'POST',
-    headers: Object.fromEntries(request.headers),
+    headers: safeHeaders,
   });
 
   const data = await buildRes.json();
