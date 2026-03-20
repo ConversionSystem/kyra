@@ -160,6 +160,8 @@ async function runBuild(siteId: string, supabase: ReturnType<typeof createServic
     html: assemblePage({
       recipe,
       colorVars,
+      colorPrimary: site.color_primary || '#dc2626',
+      colorSecondary: site.color_secondary || '#111827',
       pageData: {
         title: p.title,
         metaTitle: p.metaTitle,
