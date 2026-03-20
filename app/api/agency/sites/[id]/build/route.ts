@@ -3,6 +3,9 @@ import { waitUntil } from '@vercel/functions';
 import { requireAgencyMember } from '@/lib/agency/middleware';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { resolvePhotos } from '@/lib/sites/unsplash';
+import { assemblePage } from '@/lib/sites/templates/assembler';
+import { getRecipeForIndustry } from '@/lib/sites/templates/recipes';
+import { getTemplateById } from '@/lib/sites/templates/gallery';
 
 // Build calls VPS provisioner which can take 3-5 min to compile Next.js
 export const maxDuration = 300;
@@ -137,7 +140,71 @@ async function buildAndDeploy(site: any, supabase: any) {
     schema: p.schema_markup,
   }));
 
-  // Call the correct endpoint: /build-and-deploy (full Next.js build)
+  // Resolve the template recipe — prefer user-selected template, fall back to industry default
+  const templatePreview = site.template_id ? getTemplateById(site.template_id) : null;
+  const recipe = templatePreview?.recipe || getRecipeForIndustry(site.industry || '');
+  const resolvedPhotos = resolvePhotos(site.photos, site.industry);
+
+  // Build color CSS variables from theme
+  const colorVars = [
+    `--color-primary: ${theme.colorPrimary};`,
+    `--color-secondary: ${theme.colorSecondary};`,
+    `--color-surface: #ffffff;`,
+    `--color-text: #111827;`,
+    `--color-text-muted: #6b7280;`,
+    `--color-border: #e5e7eb;`,
+    `--color-accent: ${theme.colorPrimary};`,
+  ].join('\n      ');
+
+  // Assemble full HTML for each page
+  const assembledPages = pagesData.map((p: {
+    slug: string; type: string; title: string;
+    metaTitle: string; metaDescription: string;
+    heroH1: string; heroSubtitle: string;
+    sections: unknown; faq: unknown; schema: unknown;
+  }) => ({
+    slug: p.slug,
+    type: p.type,
+    html: assemblePage({
+      recipe,
+      colorVars,
+      pageData: {
+        title: p.title,
+        metaTitle: p.metaTitle,
+        metaDescription: p.metaDescription,
+        hero_h1: p.heroH1 || p.title,
+        hero_subtitle: p.heroSubtitle || '',
+        content_sections: (p.sections || []) as { heading: string; body: string; bullets?: string[] }[],
+        faq: (p.faq || []) as { question: string; answer: string }[],
+        schema_markup: p.schema,
+      },
+      siteData: {
+        business_name: constants.name,
+        phone: constants.phone,
+        phoneHref: constants.phoneHref,
+        email: constants.email,
+        address: constants.address,
+        services,
+        cities: cities.map(c => ({ name: c.name, slug: c.slug })),
+        hours: site.hours || {},
+        photos: resolvedPhotos,
+        booking_url: constants.bookingUrl,
+        widget_client_id: site.client_id,
+        logoUrl: site.logo_url || undefined,
+        rating: constants.rating,
+        reviewCount: constants.reviewCount,
+        yearsInBusiness: constants.yearsInBusiness,
+        license: constants.license,
+        ownerName: site.owner_name || undefined,
+        ownerStory: site.owner_story || undefined,
+        emergencyText: constants.emergencyText,
+        tagline: constants.tagline,
+      },
+      pageType: p.type,
+    }),
+  }));
+
+  // Call provisioner with pre-assembled HTML
   const res = await fetch(`${PROVISIONER_URL}/sites/${site.id}/build-and-deploy`, {
     method: 'POST',
     headers: {
@@ -147,15 +214,17 @@ async function buildAndDeploy(site: any, supabase: any) {
     body: JSON.stringify({
       domain,
       template: 'generic',
+      useNewTemplateSystem: true,
       constants,
       theme,
       pages: pagesData,
+      assembledPages,
+      recipe,
       widgetClientId: site.client_id,
-      // Extra metadata (provisioner may use in future)
       ga4Id: site.ga4_id || null,
       whiteLabel: site.white_label ?? false,
       logoUrl: site.logo_url || null,
-      photos: resolvePhotos(site.photos, site.industry),
+      photos: resolvedPhotos,
     }),
     signal: AbortSignal.timeout(180_000), // 3 min — same as content engine
   });
