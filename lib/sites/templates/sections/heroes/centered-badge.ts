@@ -16,7 +16,12 @@ function phoneIcon(): string {
 }
 
 export function centeredBadgeHero(data: HeroData): string {
-  return `<section class="relative min-h-[70vh] flex items-center overflow-hidden" style="background: linear-gradient(135deg, ${data.colors.primary}, ${data.colors.secondary});" aria-label="${data.businessName || ''} hero">
+  const bg = data.photoUrl
+    ? `background-image: url('${data.photoUrl}'); background-size: cover; background-position: center;`
+    : `background: linear-gradient(135deg, ${data.colors.primary}, ${data.colors.secondary});`;
+
+  return `<section class="relative min-h-[70vh] flex items-center overflow-hidden" style="${bg}" aria-label="${data.businessName || ''} hero">
+  ${data.photoUrl ? '<div class="absolute inset-0 bg-black/50"></div>' : ''}
   <div class="absolute inset-0" style="background: radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.15) 0%, transparent 50%), radial-gradient(ellipse at 70% 80%, rgba(255,255,255,0.1) 0%, transparent 50%);" aria-hidden="true"></div>
   <div class="relative z-10 max-w-4xl mx-auto px-6 py-20 sm:py-28 text-center">
     ${data.businessName ? `<span class="inline-block mb-6 px-6 py-2 rounded-full text-sm font-bold uppercase tracking-widest bg-white/20 text-white backdrop-blur-sm border border-white/30">${data.businessName}</span>` : ''}

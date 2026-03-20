@@ -20,9 +20,13 @@ function playIcon(): string {
 }
 
 export function videoHero(data: HeroData): string {
-  return `<section class="relative min-h-[70vh] flex items-center overflow-hidden" style="background: #111827;" aria-label="${data.businessName || ''} hero">
+  const bgStyle = data.photoUrl
+    ? `background-image: url('${data.photoUrl}'); background-size: cover; background-position: center;`
+    : `background: #111827;`;
+
+  return `<section class="relative min-h-[70vh] flex items-center overflow-hidden" style="${bgStyle}" aria-label="${data.businessName || ''} hero">
   <!-- Cinematic dark gradient background -->
-  <div class="absolute inset-0" style="background: linear-gradient(135deg, #111827 0%, #1f2937 30%, #111827 60%, ${data.colors.primary}20 100%);" aria-hidden="true"></div>
+  <div class="absolute inset-0" style="background: linear-gradient(135deg, #111827 0%, #1f2937 30%, #111827 60%, ${data.colors.primary}20 100%);${data.photoUrl ? ' opacity: 0.7;' : ''}" aria-hidden="true"></div>
   <div class="absolute inset-0" style="background: radial-gradient(ellipse at 50% 50%, ${data.colors.primary}10, transparent 70%);" aria-hidden="true"></div>
   <!-- Film grain overlay -->
   <div class="absolute inset-0 opacity-5" style="background-image: url('data:image/svg+xml,%3Csvg viewBox=%220 0 256 256%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noise%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%224%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noise)%22/%3E%3C/svg%3E');" aria-hidden="true"></div>

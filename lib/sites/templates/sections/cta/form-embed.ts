@@ -13,7 +13,7 @@ export function formEmbedCta(data: CtaData): string {
   const heading = data.heading || 'Get in Touch';
   const phone = data.phone || '';
   const phoneHref = data.phoneHref || `tel:${phone}`;
-  const inputClasses = 'w-full px-4 py-3 rounded-lg text-base outline-none';
+  const inputClasses = 'w-full px-4 py-3.5 rounded-xl text-base outline-none transition-all focus:ring-2';
 
   return `<section class="py-16 sm:py-24 px-4" style="background: #f9fafb;" aria-label="Contact form">
   <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-0 rounded-2xl overflow-hidden shadow-2xl">
@@ -28,21 +28,21 @@ export function formEmbedCta(data: CtaData): string {
       <form action="#" method="POST" class="space-y-4">
         <div>
           <label for="contact-name" class="block text-sm font-medium mb-1" style="color: #1f2937;">Name</label>
-          <input type="text" id="contact-name" name="name" required class="${inputClasses}" style="background: #ffffff; border: 1px solid #e5e7eb; color: #1f2937;" placeholder="Your name" />
+          <input type="text" id="contact-name" name="name" required class="${inputClasses}" style="background: #f9fafb; border: 2px solid #e5e7eb; color: #1f2937;" placeholder="Your name" />
         </div>
         <div>
           <label for="contact-email" class="block text-sm font-medium mb-1" style="color: #1f2937;">Email</label>
-          <input type="email" id="contact-email" name="email" required class="${inputClasses}" style="background: #ffffff; border: 1px solid #e5e7eb; color: #1f2937;" placeholder="your@email.com" />
+          <input type="email" id="contact-email" name="email" required class="${inputClasses}" style="background: #f9fafb; border: 2px solid #e5e7eb; color: #1f2937;" placeholder="your@email.com" />
         </div>
         <div>
           <label for="contact-phone" class="block text-sm font-medium mb-1" style="color: #1f2937;">Phone</label>
-          <input type="tel" id="contact-phone" name="phone" class="${inputClasses}" style="background: #ffffff; border: 1px solid #e5e7eb; color: #1f2937;" placeholder="(555) 123-4567" />
+          <input type="tel" id="contact-phone" name="phone" class="${inputClasses}" style="background: #f9fafb; border: 2px solid #e5e7eb; color: #1f2937;" placeholder="(555) 123-4567" />
         </div>
         <div>
           <label for="contact-message" class="block text-sm font-medium mb-1" style="color: #1f2937;">Message</label>
-          <textarea id="contact-message" name="message" rows="4" required class="${inputClasses} resize-y" style="background: #ffffff; border: 1px solid #e5e7eb; color: #1f2937;" placeholder="How can we help?"></textarea>
+          <textarea id="contact-message" name="message" rows="4" required class="${inputClasses} resize-y" style="background: #f9fafb; border: 2px solid #e5e7eb; color: #1f2937;" placeholder="How can we help?"></textarea>
         </div>
-        <button type="submit" class="w-full py-3 rounded-lg text-lg font-semibold transition-opacity hover:opacity-90" style="background: ${data.colors.primary}; color: #ffffff;">Send Message</button>
+        <button type="submit" class="w-full py-3.5 rounded-xl text-lg font-semibold shadow-lg transition-all hover:shadow-xl hover:opacity-90" style="background: ${data.colors.primary}; color: #ffffff;">Send Message</button>
       </form>
     </div>
   </div>

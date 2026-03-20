@@ -16,15 +16,22 @@ function phoneIcon(): string {
 }
 
 export function gradientOverlayHero(data: HeroData): string {
-  return `<section class="relative min-h-[70vh] flex items-center overflow-hidden" style="background: linear-gradient(160deg, ${data.colors.primary}, ${data.colors.primary}40, #ffffff);" aria-label="${data.businessName || ''} hero">
-  <!-- Decorative blobs -->
+  const hasPhoto = !!data.photoUrl;
+  const bgStyle = hasPhoto
+    ? `background-image: url('${data.photoUrl}'); background-size: cover; background-position: center;`
+    : `background: linear-gradient(160deg, ${data.colors.primary}, ${data.colors.primary}40, #ffffff);`;
+  const textColor = hasPhoto ? '#ffffff' : '#1f2937';
+  const subtitleColor = hasPhoto ? 'rgba(255,255,255,0.8)' : '#6b7280';
+
+  return `<section class="relative min-h-[70vh] flex items-center overflow-hidden" style="${bgStyle}" aria-label="${data.businessName || ''} hero">
+  ${hasPhoto ? '<div class="absolute inset-0 bg-black/50"></div>' : `<!-- Decorative blobs -->
   <div class="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] rounded-full" style="background: ${data.colors.primary}15; filter: blur(80px);" aria-hidden="true"></div>
   <div class="absolute bottom-[-15%] left-[-10%] w-[600px] h-[600px] rounded-full" style="background: ${data.colors.secondary}12; filter: blur(100px);" aria-hidden="true"></div>
-  <div class="absolute top-[40%] left-[60%] w-[300px] h-[300px] rounded-full" style="background: ${data.colors.primary}10; filter: blur(60px);" aria-hidden="true"></div>
+  <div class="absolute top-[40%] left-[60%] w-[300px] h-[300px] rounded-full" style="background: ${data.colors.primary}10; filter: blur(60px);" aria-hidden="true"></div>`}
   <div class="relative z-10 max-w-4xl mx-auto px-6 py-20 sm:py-28 text-center">
     ${data.emergencyText ? `<span class="inline-block mb-6 px-5 py-2 rounded-full text-sm font-bold uppercase tracking-wider text-white" style="background: ${data.colors.primary};">${data.emergencyText}</span>` : ''}
-    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight mb-6" style="color: #1f2937;">${data.h1}</h1>
-    <p class="text-lg sm:text-xl max-w-2xl mx-auto mb-10" style="color: #6b7280;">${data.subtitle}</p>
+    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight mb-6" style="color: ${textColor};">${data.h1}</h1>
+    <p class="text-lg sm:text-xl max-w-2xl mx-auto mb-10" style="color: ${subtitleColor};">${data.subtitle}</p>
     <div class="flex flex-col sm:flex-row gap-4 justify-center">
       ${data.phone ? `<a href="${data.phoneHref || `tel:${data.phone}`}" class="inline-flex items-center gap-2 text-white font-bold px-8 py-4 rounded-xl text-lg shadow-lg hover:shadow-xl transition-all" style="background: ${data.colors.primary};">${phoneIcon()} ${data.phone}</a>` : ''}
       ${data.bookingUrl ? `<a href="${data.bookingUrl}" class="inline-flex items-center gap-2 font-semibold px-8 py-4 rounded-xl text-lg border-2 transition-all hover:shadow-md" style="border-color: ${data.colors.primary}; color: ${data.colors.primary};">Book Now</a>` : ''}

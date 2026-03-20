@@ -4,7 +4,7 @@ interface FooterData {
   phoneHref?: string;
   email?: string;
   address?: string;
-  hours?: Record<string, string>;
+  formattedHours?: string;
   services?: Array<{ name: string; slug: string }>;
   cities?: Array<{ name: string; slug: string }>;
   bookingUrl?: string;
@@ -13,11 +13,11 @@ interface FooterData {
 
 export function fourColumnFooter(data: FooterData): string {
   const serviceLinks = (data.services || [])
-    .map(s => `<li><a href="#${s.slug}" class="hover:opacity-80" style="color: #9ca3af;">${s.name}</a></li>`)
+    .map(s => `<li><a href="/services/${s.slug}" class="hover:opacity-80" style="color: #9ca3af;">${s.name}</a></li>`)
     .join('\n          ');
 
   const cityLinks = (data.cities || [])
-    .map(c => `<li><a href="#${c.slug}" class="hover:opacity-80" style="color: #9ca3af;">${c.name}</a></li>`)
+    .map(c => `<li><a href="/cities/${c.slug}" class="hover:opacity-80" style="color: #9ca3af;">${c.name}</a></li>`)
     .join('\n          ');
 
   const phone = data.phone
@@ -32,10 +32,8 @@ export function fourColumnFooter(data: FooterData): string {
     ? `<p style="color: #9ca3af;">${data.address}</p>`
     : '';
 
-  const hours = data.hours
-    ? `<dl class="space-y-1 text-sm mt-3" style="color: #9ca3af;">
-        ${Object.entries(data.hours).map(([day, time]) => `<div class="flex justify-between gap-4"><dt class="capitalize">${day}</dt><dd>${time}</dd></div>`).join('\n        ')}
-      </dl>`
+  const hours = data.formattedHours
+    ? `<p class="text-sm mt-3 whitespace-pre-line" style="color: #9ca3af;">${data.formattedHours}</p>`
     : '';
 
   return `<footer class="py-12 sm:py-16 px-4 sm:px-6" style="background: #111827;" aria-label="${data.businessName} footer">

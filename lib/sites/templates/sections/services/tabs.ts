@@ -25,12 +25,11 @@ export function tabsServices(data: ServicesData): string {
   }).join('\n        ');
 
   const panels = data.services.map((s) => {
-    const desc = s.description
-      ? `<p style="color: #6b7280; font-size: 1rem; line-height: 1.8; margin: 1rem 0 0 0;">${s.description}</p>`
-      : '';
+    const descText = s.description || `Learn more about our ${s.name} services.`;
+    const desc = `<p style="color: #6b7280; font-size: 1rem; line-height: 1.8; margin: 1rem 0 0 0;">${descText}</p>`;
 
     return `<article class="${uid}-panel" data-tab="${s.slug}" style="display: none;">
-          <h3 style="color: #1f2937; font-size: 1.5rem; font-weight: 700; margin: 0;"><a href="#${s.slug}" style="color: #1f2937; text-decoration: none;">${s.name}</a></h3>
+          <h3 style="color: #1f2937; font-size: 1.5rem; font-weight: 700; margin: 0;"><a href="/services/${s.slug}" style="color: #1f2937; text-decoration: none;">${s.name}</a></h3>
           ${desc}
         </article>`;
   }).join('\n        ');
