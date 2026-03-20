@@ -18,9 +18,8 @@ export function iconListServices(data: ServicesData): string {
 
   const items = data.services.map((s, i) => {
     const icon = s.icon || wrenchSvg;
-    const desc = s.description
-      ? `<p style="color: #6b7280; font-size: 0.938rem; line-height: 1.7; margin: 0.25rem 0 0 0;">${s.description}</p>`
-      : '';
+    const descText = s.description || `Learn more about our ${s.name} services.`;
+    const desc = `<p style="color: #6b7280; font-size: 0.938rem; line-height: 1.7; margin: 0.25rem 0 0 0;">${descText}</p>`;
     const borderBottom = i < data.services.length - 1
       ? `border-bottom: 1px solid #f3f4f6;`
       : '';
@@ -28,7 +27,7 @@ export function iconListServices(data: ServicesData): string {
     return `<li class="flex items-start gap-5" style="padding: 1.5rem 0; ${borderBottom}">
         <div class="flex-shrink-0 flex items-center justify-center rounded-full" style="width: 48px; height: 48px; background: ${primary}1a; margin-top: 2px;">${icon}</div>
         <div class="flex-1">
-          <h3 style="color: #1f2937; font-size: 1.125rem; font-weight: 700; margin: 0;"><a href="#${s.slug}" style="color: #1f2937; text-decoration: none;">${s.name}</a></h3>
+          <h3 style="color: #1f2937; font-size: 1.125rem; font-weight: 700; margin: 0;"><a href="/services/${s.slug}" style="color: #1f2937; text-decoration: none;">${s.name}</a></h3>
           ${desc}
         </div>
       </li>`;

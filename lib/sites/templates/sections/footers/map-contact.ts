@@ -4,7 +4,7 @@ interface FooterData {
   phoneHref?: string;
   email?: string;
   address?: string;
-  hours?: Record<string, string>;
+  formattedHours?: string;
   services?: Array<{ name: string; slug: string }>;
   cities?: Array<{ name: string; slug: string }>;
   bookingUrl?: string;
@@ -33,12 +33,10 @@ export function mapContactFooter(data: FooterData): string {
       </p>`
     : '';
 
-  const hours = data.hours
+  const hours = data.formattedHours
     ? `<div>
         <h3 class="text-xl font-bold mb-3" style="color: #ffffff;">Hours</h3>
-        <dl class="space-y-1 text-sm" style="color: #9ca3af;">
-          ${Object.entries(data.hours).map(([day, time]) => `<div class="flex justify-between gap-4"><dt class="capitalize">${day}</dt><dd>${time}</dd></div>`).join('\n          ')}
-        </dl>
+        <p class="text-sm whitespace-pre-line" style="color: #9ca3af;">${data.formattedHours}</p>
       </div>`
     : '';
 

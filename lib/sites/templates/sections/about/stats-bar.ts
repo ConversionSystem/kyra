@@ -40,12 +40,12 @@ export function statsBarAbout(data: AboutData): string {
 
   const cells = stats.map((s) =>
     `<div class="flex flex-col items-center px-4 py-2">
-      <span class="text-3xl sm:text-4xl font-bold" style="color: #ffffff;">${s.value}</span>
+      <span class="text-4xl sm:text-5xl font-bold" style="color: #ffffff;">${s.value}</span>
       <span class="text-xs sm:text-sm mt-1 uppercase tracking-wide font-medium" style="color: #ffffff; opacity: 0.85;">${s.label}</span>
     </div>`
   ).join('');
 
-  return `<section class="w-full" style="background: linear-gradient(135deg, ${data.colors.primary}, ${data.colors.secondary});" aria-label="Business stats">
+  return `<section class="w-full" style="background: linear-gradient(135deg, ${data.colors.primary}, ${data.colors.primary}cc, ${data.colors.secondary});" aria-label="Business stats">
   <div class="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
     <div class="flex flex-wrap justify-center gap-8 sm:gap-16">
       ${cells}
