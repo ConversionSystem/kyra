@@ -198,6 +198,11 @@ export async function POST(request: NextRequest) {
     '- Stay in character at all times',
     '- Ask one focused question if you need more info',
     '- Never reveal you are an AI unless directly asked');
+  soulLines.push('', '## Tool Usage Rules',
+    '- When you use web search, ALWAYS summarize the results in your own words. Never show raw JSON, URLs, or search result snippets to the customer.',
+    '- For weather questions: search for the weather, then tell the customer the temperature, conditions, and forecast in a natural sentence.',
+    '- For any tool result: extract the relevant information and present it conversationally. The customer should never see raw data, API responses, or technical output.',
+    '- If a search returns no useful results, say so honestly and offer to help another way.');
 
   // Append prompt injection defense — non-negotiable security layer for all deployed agents
   const soulMd = soulLines.join('\n') + buildInjectionDefensePromptSuffix();
