@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAgencyMember } from '@/lib/agency/middleware';
 import OpenAI from "openai";
 
+// SECURITY: Added auth check — this endpoint was previously unauthenticated,
+// allowing anyone to exhaust OpenAI API credits without authorization.
 export async function POST(req: NextRequest) {
+  const auth = await requireAgencyMember();
+  if (auth.error) {
+    return NextResponse.json({ error: auth.error.message }, { status: auth.error.status });
+  }
+
   const { type, industry, city, yearsInBusiness, businessName, license, rating, reviewCount } = await req.json();
   const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 

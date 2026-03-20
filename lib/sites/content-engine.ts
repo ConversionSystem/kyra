@@ -912,31 +912,37 @@ function parseFaqContent(raw: string, fallbackTitle: string): ParsedContent {
 function parseBlogContent(raw: string, fallbackTitle: string): ParsedContent {
   const cleaned = raw.replace(/\u2014/g, ' - ').replace(/\u2013/g, '-').trim();
 
-  // Blog prompts return JSON — try parsing it first
-  if (cleaned.startsWith('{') || cleaned.startsWith('[')) {
-    try {
-      const parsed = JSON.parse(cleaned.startsWith('[') ? cleaned : cleaned);
-      if (parsed.hero_h1) {
-        return {
-          hero_h1: parsed.hero_h1 || fallbackTitle,
-          hero_subtitle: parsed.hero_subtitle || null,
-          content_sections: parsed.content_sections || [],
-          faq: parsed.faq || null,
-          meta_title: parsed.meta_title || null,
-          meta_description: parsed.meta_description || null,
-        };
+  // Strip markdown code fences (```json ... ``` or ``` ... ```)
+  const unwrapped = cleaned.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+
+  // Blog prompts return JSON — try parsing the unwrapped content first
+  const jsonCandidates = [unwrapped, cleaned];
+  for (const candidate of jsonCandidates) {
+    if (candidate.startsWith('{') || candidate.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(candidate);
+        if (parsed.hero_h1 || parsed.content_sections) {
+          return {
+            hero_h1: parsed.hero_h1 || fallbackTitle,
+            hero_subtitle: parsed.hero_subtitle || null,
+            content_sections: parsed.content_sections || [],
+            faq: parsed.faq || null,
+            meta_title: parsed.meta_title || null,
+            meta_description: parsed.meta_description || null,
+          };
+        }
+      } catch {
+        // Fall through
       }
-    } catch {
-      // Fall through to markdown parsing
     }
   }
 
-  // Also try extracting JSON from markdown-wrapped response
+  // Also try extracting JSON object from within markdown text
   const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
   if (jsonMatch) {
     try {
       const parsed = JSON.parse(jsonMatch[0]);
-      if (parsed.hero_h1) {
+      if (parsed.hero_h1 || parsed.content_sections) {
         return {
           hero_h1: parsed.hero_h1 || fallbackTitle,
           hero_subtitle: parsed.hero_subtitle || null,
@@ -1038,6 +1044,11 @@ async function triggerBuildAndDeploy(siteId: string, supabase: any): Promise<voi
     designStyle: site.design_style || 'modern-dark',
     bookingUrl: site.booking_url || null,
   };
+
+  // Ensure bookingUrl is also in constants (provisioner uses it for CTA links)
+  if (site.booking_url && !('bookingUrl' in constants)) {
+    (constants as Record<string, unknown>).bookingUrl = site.booking_url;
+  }
 
   // 4. Format page content for template
   const pagesData = pages.map((p: { slug: string; page_type: string; title: string; meta_title: string; meta_description: string; hero_h1: string; hero_subtitle: string; content_sections: unknown; faq: unknown; schema_markup: unknown }) => ({

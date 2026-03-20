@@ -44,14 +44,42 @@ function formatHours(site: ClientSite): string {
   if (!site.hours) return 'Not specified';
   const h = site.hours as Record<string, unknown>;
   if (typeof h === 'string') return h;
+
   // Wizard format: { days: "Mon-Fri", start: "8:00 AM", end: "6:00 PM" }
   if (h.days && h.start && h.end) {
     return `${h.days}: ${h.start} - ${h.end}`;
   }
+
   // Day-keyed format: { mon: "8am-6pm", tue: "8am-6pm" }
-  const entries = Object.entries(h).filter(([, v]) => v);
+  const dayOrder = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+  const dayLabels: Record<string, string> = {
+    mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat', sun: 'Sun',
+  };
+  const entries = dayOrder
+    .filter((d) => h[d])
+    .map((d) => ({ day: dayLabels[d] || d, hours: String(h[d]) }));
+
   if (!entries.length) return 'Not specified';
-  return entries.map(([day, val]) => `${day}: ${val}`).join(', ');
+
+  // Group consecutive days with same hours (e.g. Mon-Fri: 8am-6pm)
+  const groups: Array<{ days: string[]; hours: string }> = [];
+  for (const entry of entries) {
+    const last = groups[groups.length - 1];
+    if (last && last.hours === entry.hours) {
+      last.days.push(entry.day);
+    } else {
+      groups.push({ days: [entry.day], hours: entry.hours });
+    }
+  }
+
+  return groups
+    .map((g) => {
+      const dayRange = g.days.length > 2
+        ? `${g.days[0]}-${g.days[g.days.length - 1]}`
+        : g.days.join(', ');
+      return `${dayRange}: ${g.hours}`;
+    })
+    .join('; ');
 }
 
 function city(site: ClientSite): string {
