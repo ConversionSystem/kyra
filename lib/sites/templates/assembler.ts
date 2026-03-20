@@ -101,11 +101,24 @@ const NAVBARS: Record<string, typeof stickyWhiteNavbar> = {
   'hamburger': hamburgerNavbar,
 };
 
+// ---------- Helpers ----------
+
+/** Convert markdown bold (**text**) to <strong> and strip other markdown syntax */
+function mdToHtml(text: string): string {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/~~(.+?)~~/g, '<del>$1</del>')
+    .replace(/`(.+?)`/g, '<code>$1</code>');
+}
+
 // ---------- Assembler ----------
 
 export interface AssemblePageOptions {
   recipe: SectionRecipe;
-  colorVars: string;       // CSS custom properties block
+  colorVars: string;       // CSS custom properties block (kept for backwards compat)
+  colorPrimary: string;    // e.g. '#dc2626'
+  colorSecondary: string;  // e.g. '#111827'
   pageData: {
     title: string;
     metaTitle?: string;
@@ -142,7 +155,8 @@ export interface AssemblePageOptions {
 }
 
 export function assemblePage(options: AssemblePageOptions): string {
-  const { recipe, colorVars, pageData, siteData, pageType } = options;
+  const { recipe, colorVars, colorPrimary, colorSecondary, pageData, siteData, pageType } = options;
+  const colors = { primary: colorPrimary, secondary: colorSecondary };
 
   const heroFn = HEROES[recipe.hero] || HEROES['gradient-overlay'];
   const servicesFn = SERVICES[recipe.services] || SERVICES['grid-3col'];
@@ -167,11 +181,12 @@ export function assemblePage(options: AssemblePageOptions): string {
       { label: 'Reviews', href: '#testimonials' },
       { label: 'Contact', href: '#contact' },
     ],
+    colors,
   });
 
   const heroHtml = heroFn({
-    h1: pageData.hero_h1,
-    subtitle: pageData.hero_subtitle,
+    h1: mdToHtml(pageData.hero_h1),
+    subtitle: mdToHtml(pageData.hero_subtitle),
     phone: siteData.phone,
     phoneHref: siteData.phoneHref,
     bookingUrl: siteData.booking_url,
@@ -179,6 +194,7 @@ export function assemblePage(options: AssemblePageOptions): string {
     emergencyText: siteData.emergencyText,
     photoUrl: siteData.photos?.[0]?.url,
     logoUrl: siteData.logoUrl,
+    colors,
   });
 
   const servicesHtml = servicesFn({
@@ -186,26 +202,28 @@ export function assemblePage(options: AssemblePageOptions): string {
     services: (siteData.services || []).map(s => ({
       name: s.name,
       slug: s.slug,
-      description: s.description || '',
+      description: mdToHtml(s.description || ''),
     })),
     businessName: siteData.business_name,
+    colors,
   });
 
   // Build about section from content_sections if available
   const aboutBody = pageData.content_sections
-    ?.map(s => `<h3>${s.heading}</h3><p>${s.body}</p>`)
+    ?.map(s => `<h3>${mdToHtml(s.heading)}</h3><p>${mdToHtml(s.body)}</p>`)
     .join('') || '';
 
   const aboutHtml = aboutFn({
     heading: `About ${siteData.business_name}`,
     body: aboutBody,
     ownerName: siteData.ownerName,
-    ownerStory: siteData.ownerStory,
+    ownerStory: siteData.ownerStory ? mdToHtml(siteData.ownerStory) : undefined,
     photoUrl: siteData.photos?.[1]?.url,
     yearsInBusiness: siteData.yearsInBusiness,
     rating: siteData.rating,
     reviewCount: siteData.reviewCount,
     license: siteData.license,
+    colors,
   });
 
   // Placeholder testimonials (real ones come from reviews page data)
@@ -216,6 +234,7 @@ export function assemblePage(options: AssemblePageOptions): string {
       { name: 'Satisfied Client', text: 'Professional, on-time, and great quality work.', rating: 5, location: 'Nearby' },
       { name: 'Loyal Customer', text: 'Been using their services for years. Never disappointed.', rating: 5, location: 'Local' },
     ],
+    colors,
   });
 
   const ctaHtml = ctaFn({
@@ -226,12 +245,17 @@ export function assemblePage(options: AssemblePageOptions): string {
     bookingUrl: siteData.booking_url,
     businessName: siteData.business_name,
     emergencyText: siteData.emergencyText,
+    colors,
   });
 
   const faqHtml = pageData.faq?.length
     ? faqFn({
         heading: 'Frequently Asked Questions',
-        faqs: pageData.faq,
+        faqs: pageData.faq.map(f => ({
+          question: mdToHtml(f.question),
+          answer: mdToHtml(f.answer),
+        })),
+        colors,
       })
     : '';
 
@@ -245,6 +269,7 @@ export function assemblePage(options: AssemblePageOptions): string {
     services: siteData.services,
     cities: siteData.cities,
     bookingUrl: siteData.booking_url,
+    colors,
   });
 
   // Schema markup
@@ -267,14 +292,18 @@ export function assemblePage(options: AssemblePageOptions): string {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(metaTitle)}</title>
   <meta name="description" content="${escapeHtml(metaDesc)}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   ${schemaScript}
   <style>
     :root {
       ${colorVars}
     }
-    body { font-family: system-ui, -apple-system, sans-serif; color: var(--color-text); }
+    body { font-family: 'Inter', system-ui, -apple-system, sans-serif; color: #1f2937; }
     a { color: inherit; }
+    html { scroll-behavior: smooth; }
   </style>
 </head>
 <body>

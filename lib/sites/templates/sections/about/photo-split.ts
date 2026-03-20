@@ -10,6 +10,7 @@ interface AboutData {
   license?: string;
   teamMembers?: Array<{ name: string; role: string; photoUrl?: string }>;
   milestones?: Array<{ year: string; text: string }>;
+  colors: { primary: string; secondary: string };
 }
 
 export function photoSplitAbout(data: AboutData): string {
@@ -19,37 +20,51 @@ export function photoSplitAbout(data: AboutData): string {
 
   const photo = data.photoUrl
     ? `<img src="${data.photoUrl}" alt="${ownerName}" class="w-full h-full object-cover" />`
-    : `<div class="w-full h-full flex items-center justify-center" style="background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));">
-        <svg class="w-24 h-24 opacity-30" style="color: var(--color-surface);" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+    : `<div class="w-full h-full flex items-center justify-center" style="background: linear-gradient(135deg, ${data.colors.primary}, ${data.colors.secondary});">
+        <svg class="w-24 h-24 opacity-30" fill="#ffffff" viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
       </div>`;
 
-  const stats: string[] = [];
+  const statBoxes: string[] = [];
   if (data.yearsInBusiness) {
-    stats.push(`<div class="text-center"><span class="block text-2xl font-bold" style="color: var(--color-primary);">${data.yearsInBusiness}+</span><span class="text-sm" style="color: var(--color-text-muted);">Years Experience</span></div>`);
+    statBoxes.push(`<div class="rounded-xl p-4 text-center" style="background: #f9fafb;">
+      <span class="block text-2xl font-bold" style="color: ${data.colors.primary};">${data.yearsInBusiness}+</span>
+      <span class="text-sm" style="color: #6b7280;">Years Experience</span>
+    </div>`);
   }
   if (data.rating) {
-    stats.push(`<div class="text-center"><span class="block text-2xl font-bold" style="color: var(--color-primary);">${data.rating}</span><span class="text-sm" style="color: var(--color-text-muted);">Star Rating</span></div>`);
+    statBoxes.push(`<div class="rounded-xl p-4 text-center" style="background: #f9fafb;">
+      <span class="block text-2xl font-bold" style="color: ${data.colors.primary};">${data.rating}</span>
+      <span class="text-sm" style="color: #6b7280;">Star Rating</span>
+    </div>`);
   }
   if (data.reviewCount) {
-    stats.push(`<div class="text-center"><span class="block text-2xl font-bold" style="color: var(--color-primary);">${data.reviewCount}+</span><span class="text-sm" style="color: var(--color-text-muted);">Reviews</span></div>`);
+    statBoxes.push(`<div class="rounded-xl p-4 text-center" style="background: #f9fafb;">
+      <span class="block text-2xl font-bold" style="color: ${data.colors.primary};">${data.reviewCount}+</span>
+      <span class="text-sm" style="color: #6b7280;">Reviews</span>
+    </div>`);
+  }
+  if (data.license) {
+    statBoxes.push(`<div class="rounded-xl p-4 text-center" style="background: #f9fafb;">
+      <span class="block text-2xl font-bold" style="color: ${data.colors.primary};">${data.license}</span>
+      <span class="text-sm" style="color: #6b7280;">Licensed</span>
+    </div>`);
   }
 
-  const statsHtml = stats.length
-    ? `<div class="flex gap-8 mt-6">${stats.join('')}</div>`
+  const statsGrid = statBoxes.length
+    ? `<div class="grid grid-cols-2 gap-3 mt-6">${statBoxes.join('')}</div>`
     : '';
 
-  return `<section class="py-16 sm:py-24" style="background: var(--color-surface);" aria-label="About">
+  return `<section class="py-16 sm:py-24" style="background: #ffffff;" aria-label="About">
   <div class="max-w-6xl mx-auto px-4 sm:px-6">
     <div class="flex flex-col md:flex-row gap-8 md:gap-12 items-center">
-      <div class="w-full md:w-1/2 aspect-[4/5] rounded-2xl overflow-hidden" style="border: 2px solid var(--color-border);">
+      <div class="w-full md:w-1/2 aspect-[4/5] rounded-2xl overflow-hidden shadow-lg">
         ${photo}
       </div>
       <div class="w-full md:w-1/2">
-        <h2 class="text-3xl sm:text-4xl font-bold mb-4" style="color: var(--color-text);">${heading}</h2>
-        <p class="text-lg font-semibold mb-2" style="color: var(--color-primary);">${ownerName}</p>
-        <p class="text-base sm:text-lg leading-relaxed mb-6" style="color: var(--color-text-muted);">${story}</p>
-        ${data.license ? `<p class="text-sm mb-4" style="color: var(--color-text-muted);">License: ${data.license}</p>` : ''}
-        ${statsHtml}
+        <h2 class="text-3xl sm:text-4xl font-bold mb-4" style="color: #1f2937;">${heading}</h2>
+        <p class="text-lg font-semibold mb-2" style="color: ${data.colors.primary};">${ownerName}</p>
+        <p class="text-base sm:text-lg leading-relaxed mb-6" style="color: #6b7280;">${story}</p>
+        ${statsGrid}
       </div>
     </div>
   </div>
