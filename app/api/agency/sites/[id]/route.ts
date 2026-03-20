@@ -141,7 +141,9 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
   const subdomain = (existing as { id: string; site_subdomain?: string | null }).site_subdomain;
   if (subdomain) {
     const provisionerUrl = process.env.PROVISIONER_URL || 'http://15.204.91.157:9090';
-    const provisionerSecret = process.env.PROVISIONER_SECRET || 'kyra-provisioner-2026';
+    // SECURITY: Removed hardcoded secret fallback — must be set via env var.
+    // Previously had 'kyra-provisioner-2026' as fallback which leaks in source control.
+    const provisionerSecret = process.env.PROVISIONER_SECRET || '';
     fetch(`${provisionerUrl}/sites/${encodeURIComponent(subdomain)}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${provisionerSecret}` },

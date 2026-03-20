@@ -3,6 +3,12 @@ import { waitUntil } from '@vercel/functions';
 import { requireAgencyMember } from '@/lib/agency/middleware';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { resolvePhotos } from '@/lib/sites/unsplash';
+import { assemblePage } from '@/lib/sites/templates/assembler';
+import { getRecipeForIndustry } from '@/lib/sites/templates/recipes';
+import { getTemplateById } from '@/lib/sites/templates/gallery';
+import { generateSiteHTML } from '@/lib/sites/content-engine';
+import { sanitizeGeneratedHTML } from '@/lib/sites/html-sanitizer';
+import { validateGeneratedHTML } from '@/lib/sites/html-quality-checker';
 
 // Build calls VPS provisioner which can take 3-5 min to compile Next.js
 export const maxDuration = 300;
@@ -82,6 +88,94 @@ async function buildAndDeploy(site: any, supabase: any) {
     throw new Error('No pages generated yet. Run content generation first.');
   }
 
+  // ---------- AI-Custom HTML mode ----------
+  const isAICustom = site.template_id === 'ai-custom' || site.generation_mode === 'ai-custom';
+
+  if (isAICustom) {
+    // Generate full HTML pages via AI if not already generated
+    const hasHTML = pages.some((p: Record<string, unknown>) => p.html_content);
+    let htmlPages: Array<{ slug: string; html: string }>;
+
+    if (hasHTML) {
+      // Use existing HTML from database
+      htmlPages = pages
+        .filter((p: Record<string, unknown>) => p.html_content)
+        .map((p: Record<string, unknown>) => ({ slug: p.slug as string, html: p.html_content as string }));
+    } else {
+      // Generate HTML for all pages
+      const result = await generateSiteHTML(site.id);
+      if (!result.success || !result.pages.length) {
+        throw new Error(result.error || 'AI HTML generation failed');
+      }
+      htmlPages = result.pages;
+    }
+
+    // Sanitize and validate all pages
+    const sanitizedPages = htmlPages.map((p) => {
+      const sanitized = sanitizeGeneratedHTML(p.html);
+      const quality = validateGeneratedHTML(sanitized);
+      if (quality.issues.length > 0) {
+        console.warn(`[sites/build] Page ${p.slug} quality: ${quality.score}/100`, quality.issues.join('; '));
+      }
+      return { slug: p.slug, html: sanitized };
+    });
+
+    // Send pre-assembled HTML to provisioner
+    const res = await fetch(`${PROVISIONER_URL}/sites/${site.id}/build-and-deploy`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${PROVISIONER_SECRET}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        domain,
+        template: 'ai-custom',
+        htmlPages: sanitizedPages,
+        widgetClientId: site.client_id,
+        ga4Id: site.ga4_id || null,
+        whiteLabel: site.white_label ?? false,
+        logoUrl: site.logo_url || null,
+      }),
+      signal: AbortSignal.timeout(180_000),
+    });
+
+    const now = new Date().toISOString();
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Build failed' }));
+      await supabase.from('site_deploys').insert({
+        site_id: site.id,
+        triggered_by: 'rebuild',
+        status: 'failed',
+        pages_deployed: 0,
+        notes: (err as { error: string }).error || 'AI-custom build failed',
+      });
+      throw new Error((err as { error: string }).error || 'AI-custom build failed');
+    }
+
+    await supabase.from('site_deploys').insert({
+      site_id: site.id,
+      triggered_by: 'rebuild',
+      status: 'success',
+      pages_deployed: sanitizedPages.length,
+      deployed_at: now,
+    });
+
+    await supabase
+      .from('client_sites')
+      .update({
+        status: 'live',
+        last_deployed_at: now,
+        nginx_configured: true,
+        ssl_active: true,
+        updated_at: now,
+      })
+      .eq('id', site.id);
+
+    return;
+  }
+
+  // ---------- Template-based mode (existing flow) ----------
   const address = site.address || {};
   const services = (site.services || []) as Array<{ name: string; slug: string; description?: string }>;
   const cities = (site.cities || []) as Array<{ name: string; slug: string; state?: string }>;
@@ -137,7 +231,71 @@ async function buildAndDeploy(site: any, supabase: any) {
     schema: p.schema_markup,
   }));
 
-  // Call the correct endpoint: /build-and-deploy (full Next.js build)
+  // Resolve the template recipe — prefer user-selected template, fall back to industry default
+  const templatePreview = site.template_id ? getTemplateById(site.template_id) : null;
+  const recipe = templatePreview?.recipe || getRecipeForIndustry(site.industry || '');
+  const resolvedPhotos = resolvePhotos(site.photos, site.industry);
+
+  // Build color CSS variables from theme
+  const colorVars = [
+    `--color-primary: ${theme.colorPrimary};`,
+    `--color-secondary: ${theme.colorSecondary};`,
+    `--color-surface: #ffffff;`,
+    `--color-text: #111827;`,
+    `--color-text-muted: #6b7280;`,
+    `--color-border: #e5e7eb;`,
+    `--color-accent: ${theme.colorPrimary};`,
+  ].join('\n      ');
+
+  // Assemble full HTML for each page
+  const assembledPages = pagesData.map((p: {
+    slug: string; type: string; title: string;
+    metaTitle: string; metaDescription: string;
+    heroH1: string; heroSubtitle: string;
+    sections: unknown; faq: unknown; schema: unknown;
+  }) => ({
+    slug: p.slug,
+    type: p.type,
+    html: assemblePage({
+      recipe,
+      colorVars,
+      pageData: {
+        title: p.title,
+        metaTitle: p.metaTitle,
+        metaDescription: p.metaDescription,
+        hero_h1: p.heroH1 || p.title,
+        hero_subtitle: p.heroSubtitle || '',
+        content_sections: (p.sections || []) as { heading: string; body: string; bullets?: string[] }[],
+        faq: (p.faq || []) as { question: string; answer: string }[],
+        schema_markup: p.schema,
+      },
+      siteData: {
+        business_name: constants.name,
+        phone: constants.phone,
+        phoneHref: constants.phoneHref,
+        email: constants.email,
+        address: constants.address,
+        services,
+        cities: cities.map(c => ({ name: c.name, slug: c.slug })),
+        hours: site.hours || {},
+        photos: resolvedPhotos,
+        booking_url: constants.bookingUrl,
+        widget_client_id: site.client_id,
+        logoUrl: site.logo_url || undefined,
+        rating: constants.rating,
+        reviewCount: constants.reviewCount,
+        yearsInBusiness: constants.yearsInBusiness,
+        license: constants.license,
+        ownerName: site.owner_name || undefined,
+        ownerStory: site.owner_story || undefined,
+        emergencyText: constants.emergencyText,
+        tagline: constants.tagline,
+      },
+      pageType: p.type,
+    }),
+  }));
+
+  // Call provisioner with pre-assembled HTML
   const res = await fetch(`${PROVISIONER_URL}/sites/${site.id}/build-and-deploy`, {
     method: 'POST',
     headers: {
@@ -147,15 +305,17 @@ async function buildAndDeploy(site: any, supabase: any) {
     body: JSON.stringify({
       domain,
       template: 'generic',
+      useNewTemplateSystem: true,
       constants,
       theme,
       pages: pagesData,
+      assembledPages,
+      recipe,
       widgetClientId: site.client_id,
-      // Extra metadata (provisioner may use in future)
       ga4Id: site.ga4_id || null,
       whiteLabel: site.white_label ?? false,
       logoUrl: site.logo_url || null,
-      photos: resolvePhotos(site.photos, site.industry),
+      photos: resolvedPhotos,
     }),
     signal: AbortSignal.timeout(180_000), // 3 min — same as content engine
   });

@@ -37,6 +37,10 @@ import {
 } from './schema-generator';
 import { syncSiteToKnowledgeBase } from './knowledge-sync';
 import { checkContentSimilarity } from './content-checker';
+import { generatePageHTML } from './ai-html-engine';
+import { resolvePhotos } from './unsplash';
+import type { SitePhoto, DesignStyle } from './types';
+import type { StockPhoto } from './unsplash';
 
 // ---------- Constants ----------
 
@@ -339,6 +343,133 @@ export async function regeneratePage(
 
   const result = await executeTask(task, siteId);
   return { success: result.success, error: result.error };
+}
+
+// ---------- AI HTML Generation (Premium) ----------
+
+const HTML_BATCH_SIZE = 4; // Fewer concurrent since HTML generation is heavier
+
+export async function generateSiteHTML(
+  siteId: string,
+): Promise<{
+  success: boolean;
+  pages: Array<{ slug: string; html: string }>;
+  totalCost: number;
+  error?: string;
+}> {
+  const supabase = createServiceClientWithoutCookies();
+
+  // 1. Load site config
+  const { data: site, error: siteErr } = await supabase
+    .from('client_sites')
+    .select('*')
+    .eq('id', siteId)
+    .single();
+
+  if (siteErr || !site) {
+    return { success: false, pages: [], totalCost: 0, error: `Site not found: ${siteErr?.message}` };
+  }
+
+  const clientSite = site as unknown as ClientSite;
+
+  // 2. Load all generated page content (must run content generation first)
+  const { data: pageRows, error: pagesErr } = await supabase
+    .from('site_pages')
+    .select('*')
+    .eq('site_id', siteId)
+    .order('page_type');
+
+  if (pagesErr || !pageRows?.length) {
+    return { success: false, pages: [], totalCost: 0, error: 'No pages found. Run content generation first.' };
+  }
+
+  const designStyle = (clientSite.design_style || 'modern-dark') as DesignStyle;
+  const colorPrimary = clientSite.color_primary || '#6366f1';
+  const colorSecondary = clientSite.color_secondary || '#111827';
+  const photos = resolvePhotos(
+    (clientSite.photos || []).map(p => ({ ...p, alt: (p as { alt?: string }).alt || '' })) as StockPhoto[],
+    clientSite.industry,
+  );
+
+  // 3. Generate HTML for each page in batches of 4
+  const results: Array<{ slug: string; html: string; cost: number; error?: string }> = [];
+
+  for (let i = 0; i < pageRows.length; i += HTML_BATCH_SIZE) {
+    const batch = pageRows.slice(i, i + HTML_BATCH_SIZE);
+    const batchNum = Math.floor(i / HTML_BATCH_SIZE) + 1;
+    const totalBatches = Math.ceil(pageRows.length / HTML_BATCH_SIZE);
+
+    console.log(`[ai-html-engine] Batch ${batchNum}/${totalBatches}: ${batch.length} pages`);
+
+    const settled = await Promise.allSettled(
+      batch.map(async (page: Record<string, unknown>) => {
+        try {
+          const result = await generatePageHTML({
+            site: clientSite,
+            page: {
+              slug: page.slug as string,
+              pageType: page.page_type as string,
+              title: page.title as string,
+              hero_h1: (page.hero_h1 as string) || (page.title as string),
+              hero_subtitle: (page.hero_subtitle as string) || '',
+              content_sections: (page.content_sections as ContentSection[]) || [],
+              faq: (page.faq as FaqItem[]) || [],
+              schema_markup: page.schema_markup,
+            },
+            designStyle,
+            colorPrimary,
+            colorSecondary,
+            photos,
+          });
+
+          // Store HTML in the html_content column
+          await supabase
+            .from('site_pages')
+            .update({ html_content: result.html })
+            .eq('id', page.id as string);
+
+          return { slug: page.slug as string, html: result.html, cost: result.cost };
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          console.error(`[ai-html-engine] Failed to generate HTML for ${page.slug}:`, message);
+          return { slug: page.slug as string, html: '', cost: 0, error: message };
+        }
+      }),
+    );
+
+    for (const result of settled) {
+      if (result.status === 'fulfilled') {
+        results.push(result.value);
+      } else {
+        results.push({ slug: 'unknown', html: '', cost: 0, error: result.reason?.message });
+      }
+    }
+  }
+
+  // 4. Update generation mode on the site
+  await supabase
+    .from('client_sites')
+    .update({ generation_mode: 'ai-custom' })
+    .eq('id', siteId);
+
+  const successfulPages = results.filter((r) => r.html);
+  const totalCost = results.reduce((sum, r) => sum + r.cost, 0);
+  const failedCount = results.filter((r) => r.error).length;
+
+  if (failedCount > 0) {
+    console.warn(`[ai-html-engine] ${failedCount}/${results.length} pages failed HTML generation`);
+  }
+
+  console.log(
+    `[ai-html-engine] Site ${siteId}: ${successfulPages.length}/${results.length} HTML pages generated, cost: $${totalCost.toFixed(4)}`,
+  );
+
+  return {
+    success: successfulPages.length > 0,
+    pages: successfulPages.map((r) => ({ slug: r.slug, html: r.html })),
+    totalCost,
+    error: failedCount > 0 ? `${failedCount} page(s) failed HTML generation` : undefined,
+  };
 }
 
 // ---------- Task Building ----------
@@ -912,31 +1043,37 @@ function parseFaqContent(raw: string, fallbackTitle: string): ParsedContent {
 function parseBlogContent(raw: string, fallbackTitle: string): ParsedContent {
   const cleaned = raw.replace(/\u2014/g, ' - ').replace(/\u2013/g, '-').trim();
 
-  // Blog prompts return JSON — try parsing it first
-  if (cleaned.startsWith('{') || cleaned.startsWith('[')) {
-    try {
-      const parsed = JSON.parse(cleaned.startsWith('[') ? cleaned : cleaned);
-      if (parsed.hero_h1) {
-        return {
-          hero_h1: parsed.hero_h1 || fallbackTitle,
-          hero_subtitle: parsed.hero_subtitle || null,
-          content_sections: parsed.content_sections || [],
-          faq: parsed.faq || null,
-          meta_title: parsed.meta_title || null,
-          meta_description: parsed.meta_description || null,
-        };
+  // Strip markdown code fences (```json ... ``` or ``` ... ```)
+  const unwrapped = cleaned.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+
+  // Blog prompts return JSON — try parsing the unwrapped content first
+  const jsonCandidates = [unwrapped, cleaned];
+  for (const candidate of jsonCandidates) {
+    if (candidate.startsWith('{') || candidate.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(candidate);
+        if (parsed.hero_h1 || parsed.content_sections) {
+          return {
+            hero_h1: parsed.hero_h1 || fallbackTitle,
+            hero_subtitle: parsed.hero_subtitle || null,
+            content_sections: parsed.content_sections || [],
+            faq: parsed.faq || null,
+            meta_title: parsed.meta_title || null,
+            meta_description: parsed.meta_description || null,
+          };
+        }
+      } catch {
+        // Fall through
       }
-    } catch {
-      // Fall through to markdown parsing
     }
   }
 
-  // Also try extracting JSON from markdown-wrapped response
+  // Also try extracting JSON object from within markdown text
   const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
   if (jsonMatch) {
     try {
       const parsed = JSON.parse(jsonMatch[0]);
-      if (parsed.hero_h1) {
+      if (parsed.hero_h1 || parsed.content_sections) {
         return {
           hero_h1: parsed.hero_h1 || fallbackTitle,
           hero_subtitle: parsed.hero_subtitle || null,
@@ -1038,6 +1175,11 @@ async function triggerBuildAndDeploy(siteId: string, supabase: any): Promise<voi
     designStyle: site.design_style || 'modern-dark',
     bookingUrl: site.booking_url || null,
   };
+
+  // Ensure bookingUrl is also in constants (provisioner uses it for CTA links)
+  if (site.booking_url && !('bookingUrl' in constants)) {
+    (constants as Record<string, unknown>).bookingUrl = site.booking_url;
+  }
 
   // 4. Format page content for template
   const pagesData = pages.map((p: { slug: string; page_type: string; title: string; meta_title: string; meta_description: string; hero_h1: string; hero_subtitle: string; content_sections: unknown; faq: unknown; schema_markup: unknown }) => ({
