@@ -26,6 +26,8 @@ import {
   TONE_OPTIONS,
   AI_CAPABILITIES,
 } from '@/lib/sites/industry-defaults';
+import { getTemplatesForIndustry, TEMPLATE_GALLERY } from '@/lib/sites/templates/gallery';
+import type { TemplatePreview } from '@/lib/sites/templates/gallery';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -70,7 +72,10 @@ interface WizardData {
   designStyle: string;
   tagline: string;
 
-  // Step 5: AI Personality
+  // Step 5: Choose Design — template ID ('generic', gallery preset ID, or 'ai-custom')
+  templateId: string;
+
+  // Step 6: AI Personality
   aiName: string;
   aiTone: string;
   aiCapabilities: string[];
@@ -110,6 +115,7 @@ const initialWizardData: WizardData = {
   colorSecondary: '#111827',
   designStyle: 'modern-dark',
   tagline: '',
+  templateId: '',
   aiName: '',
   aiTone: 'professional',
   aiCapabilities: ['answer_questions', 'capture_leads'],
@@ -990,9 +996,9 @@ function StepPhotosBrand({
             {DESIGN_STYLES.map((style) => (
               <button
                 key={style.id}
-                onClick={() => onChange({ designStyle: style.id })}
+                onClick={() => onChange({ designStyle: style.id, templateId: 'generic' })}
                 className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                  data.designStyle === style.id
+                  data.designStyle === style.id && data.templateId !== 'ai-custom'
                     ? 'border-indigo-600 bg-indigo-50 shadow-md'
                     : 'border-gray-200 hover:border-gray-300 bg-white'
                 }`}
@@ -1002,6 +1008,29 @@ function StepPhotosBrand({
                 <span className="text-[10px] text-gray-500 text-center leading-tight">{style.description}</span>
               </button>
             ))}
+          </div>
+
+          {/* AI Custom Design (Premium) */}
+          <div className="mt-4">
+            <button
+              onClick={() => onChange({ templateId: 'ai-custom' })}
+              className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left ${
+                data.templateId === 'ai-custom'
+                  ? 'border-indigo-600 bg-indigo-50 shadow-md'
+                  : 'border-gray-200 hover:border-gray-300 bg-white'
+              }`}
+            >
+              <span className="text-3xl">
+                <Sparkles className="h-8 w-8 text-indigo-600" />
+              </span>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-gray-900">AI Custom Design</span>
+                  <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-indigo-600 text-white">Premium</span>
+                </div>
+                <span className="text-xs text-gray-500 mt-0.5 block">Every page uniquely designed by AI for your business. Not a template - a custom creation.</span>
+              </div>
+            </button>
           </div>
         </div>
 
@@ -1044,7 +1073,79 @@ function StepPhotosBrand({
   );
 }
 
-// ── Step 5: AI Personality ────────────────────────────────────────────────────
+// ── Step 5: Choose Design ─────────────────────────────────────────────────────
+
+function StepChooseDesign({
+  data,
+  onChange,
+}: {
+  data: WizardData;
+  onChange: (updates: Partial<WizardData>) => void;
+}) {
+  const templates = data.industry
+    ? getTemplatesForIndustry(data.industry)
+    : TEMPLATE_GALLERY;
+  const isMatch = (t: TemplatePreview) => t.industries.includes(data.industry);
+
+  return (
+    <div className="max-w-2xl mx-auto">
+      <div className="text-center mb-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Choose Your Design</h2>
+        <p className="text-gray-500">Pick a template layout. Colors and content will be customized to your brand.</p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {templates.map((t) => {
+          const selected = data.templateId === t.id;
+          const recommended = isMatch(t);
+          return (
+            <button
+              key={t.id}
+              onClick={() => onChange({ templateId: t.id })}
+              className={`relative text-left p-4 rounded-2xl border-2 transition-all ${
+                selected
+                  ? 'border-indigo-600 bg-indigo-50 shadow-md shadow-indigo-100'
+                  : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
+              }`}
+            >
+              {recommended && !selected && (
+                <span className="absolute top-2 right-2 text-[10px] font-semibold uppercase tracking-wider bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">
+                  Recommended
+                </span>
+              )}
+              {selected && (
+                <span className="absolute top-2 right-2 w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center">
+                  <Check className="h-3.5 w-3.5 text-white" />
+                </span>
+              )}
+              {/* Color preview blocks */}
+              <div className="flex gap-1.5 mb-3">
+                <div
+                  className="h-16 flex-1 rounded-lg"
+                  style={{ background: `linear-gradient(135deg, ${t.previewColors.primary}, ${t.previewColors.secondary})` }}
+                />
+                <div className="flex flex-col gap-1.5 w-8">
+                  <div className="flex-1 rounded" style={{ backgroundColor: t.previewColors.primary }} />
+                  <div className="flex-1 rounded" style={{ backgroundColor: t.previewColors.secondary }} />
+                </div>
+              </div>
+              <h3 className="font-semibold text-gray-900 text-sm mb-1">{t.name}</h3>
+              <p className="text-xs text-gray-500 leading-relaxed">{t.description}</p>
+            </button>
+          );
+        })}
+      </div>
+
+      {!data.templateId && (
+        <p className="text-center text-xs text-gray-400 mt-4">
+          Tip: We&apos;ll auto-select the best match for your industry if you skip this step.
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ── Step 6: AI Personality ────────────────────────────────────────────────────
 
 function StepAIPersonality({
   data,
@@ -1891,17 +1992,19 @@ export default function WebsiteBuilderWizard() {
         { number: 2, label: 'Services' },
         { number: 3, label: 'Area' },
         { number: 4, label: 'Brand' },
-        { number: 5, label: 'AI' },
-        { number: 6, label: 'Build' },
-        { number: 7, label: 'Launch' },
+        { number: 5, label: 'Design' },
+        { number: 6, label: 'AI' },
+        { number: 7, label: 'Build' },
+        { number: 8, label: 'Launch' },
       ]
     : [
         { number: 1, label: 'Business' },
         { number: 2, label: 'Services' },
         { number: 4, label: 'Brand' },
-        { number: 5, label: 'AI' },
-        { number: 6, label: 'Build' },
-        { number: 7, label: 'Launch' },
+        { number: 5, label: 'Design' },
+        { number: 6, label: 'AI' },
+        { number: 7, label: 'Build' },
+        { number: 8, label: 'Launch' },
       ];
 
   const handleChange = (updates: Partial<WizardData>) => {
@@ -1996,6 +2099,11 @@ export default function WebsiteBuilderWizard() {
           body.color_secondary = data.colorSecondary;
           body.design_style = data.designStyle;
           body.tagline = data.tagline;
+          body.template_id = data.templateId;
+          if (data.templateId === 'ai-custom') {
+            body.generation_mode = 'ai-custom';
+            body.template_preset = 'ai-custom';
+          }
 
           // Upload photos via FormData
           if (data.photos.length > 0) {
@@ -2034,6 +2142,8 @@ export default function WebsiteBuilderWizard() {
             }
           }
         } else if (currentStep === 5) {
+          body.template_id = data.templateId || null;
+        } else if (currentStep === 6) {
           body.ai_name = data.aiName.trim() || data.businessName || 'Your AI Assistant';
           body.ai_tone = data.aiTone;
           body.ai_capabilities = data.aiCapabilities;
@@ -2074,7 +2184,7 @@ export default function WebsiteBuilderWizard() {
   const goNext = async () => {
     await saveToApi(step);
     const next = getNextStep(step);
-    if (next === 6 && data.siteId) {
+    if (next === 7 && data.siteId) {
       // Generate auto-subdomain from business name
       const slug = data.businessName
         .toLowerCase()
@@ -2119,6 +2229,8 @@ export default function WebsiteBuilderWizard() {
       case 4:
         return true; // All brand settings have defaults
       case 5:
+        return true; // Template selection optional — auto-selects based on industry
+      case 6:
         return true; // aiName optional
       default:
         return true;
@@ -2271,10 +2383,10 @@ export default function WebsiteBuilderWizard() {
 
       {/* Wizard content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-8 py-8">
-        {/* Step indicator (hide on step 6 and 7) */}
-        {step <= 5 && (
+        {/* Step indicator (hide on build and launch steps) */}
+        {step <= 6 && (
           <StepIndicator
-            steps={effectiveSteps.filter((s) => s.number <= 5)}
+            steps={effectiveSteps.filter((s) => s.number <= 6)}
             currentStep={step}
             onStepClick={(s) => setStep(s)}
           />
@@ -2285,22 +2397,23 @@ export default function WebsiteBuilderWizard() {
         {step === 2 && <StepServices data={data} onChange={handleChange} />}
         {step === 3 && <StepServiceArea data={data} onChange={handleChange} />}
         {step === 4 && <StepPhotosBrand data={data} onChange={handleChange} />}
-        {step === 5 && <StepAIPersonality data={data} onChange={handleChange} />}
-        {step === 6 && (
+        {step === 5 && <StepChooseDesign data={data} onChange={handleChange} />}
+        {step === 6 && <StepAIPersonality data={data} onChange={handleChange} />}
+        {step === 7 && (
           <StepGenerating
             siteId={data.siteId}
-            onComplete={(info) => { setBuildResult(info); setStep(7); }}
+            onComplete={(info) => { setBuildResult(info); setStep(8); }}
           />
         )}
-        {step === 7 && (
+        {step === 8 && (
           <StepReviewLaunch
             data={data}
             clientId={clientIdParam}
           />
         )}
 
-        {/* Navigation buttons (hide on step 6 and 7) */}
-        {step <= 5 && (
+        {/* Navigation buttons (hide on build and launch steps) */}
+        {step <= 6 && (
           <div className="flex items-center justify-between mt-10 max-w-2xl mx-auto">
             <button
               onClick={goPrev}
@@ -2320,7 +2433,7 @@ export default function WebsiteBuilderWizard() {
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Saving...
                 </>
-              ) : step === 5 ? (
+              ) : step === 6 ? (
                 <>
                   Generate Website
                   <Sparkles className="h-4 w-4" />
