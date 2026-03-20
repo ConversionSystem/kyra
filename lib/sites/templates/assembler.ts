@@ -106,10 +106,14 @@ const NAVBARS: Record<string, typeof stickyWhiteNavbar> = {
 /** Convert markdown bold (**text**) to <strong> and strip other markdown syntax */
 function mdToHtml(text: string): string {
   return text
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/~~(.+?)~~/g, '<del>$1</del>')
-    .replace(/`(.+?)`/g, '<code>$1</code>');
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')  // **bold**
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')               // *italic*
+    .replace(/~~(.+?)~~/g, '<del>$1</del>')              // ~~strikethrough~~
+    .replace(/`(.+?)`/g, '<code>$1</code>')              // `code`
+    .replace(/\*{2,}/g, '')                               // strip orphaned ** or ***
+    .replace(/#{1,6}\s/g, '')                             // strip markdown headers (# ## ###)
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')             // [link text](url) → link text
+    .trim();
 }
 
 // ---------- Assembler ----------
