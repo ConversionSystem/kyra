@@ -77,12 +77,12 @@ export const PLANS: Record<Plan, PlanConfig> = {
   starter: {
     name: 'Lite',
     price: 99,
-    maxClients: 3,
+    maxClients: 4,       // 3 plan workers + 1 free worker they bring from Free tier
     monthlyCredits: 10000,
     trialDays: 0,
-    description: 'Launch your AI agency with your first 3 clients.',
+    description: 'Launch your AI agency with your first 3 clients + 1 free.',
     features: [
-      '3 client AI workers',
+      '4 AI workers (3 + 1 free)',
       '10,000 platform credits / month',
       'Client management dashboard',
       '21 industry templates',
@@ -102,12 +102,12 @@ export const PLANS: Record<Plan, PlanConfig> = {
   pro: {
     name: 'Pro',
     price: 299,
-    maxClients: 10,
+    maxClients: 11,      // 10 plan workers + 1 free worker they bring from Free tier
     monthlyCredits: 25000,
     trialDays: 0,
     description: 'For growing agencies managing multiple clients.',
     features: [
-      '10 client AI workers',
+      '11 AI workers (10 + 1 free)',
       '25,000 platform credits / month',
       'Everything in Lite',
       'White-label branding',
@@ -128,12 +128,12 @@ export const PLANS: Record<Plan, PlanConfig> = {
   scale: {
     name: 'Scale',
     price: 499,
-    maxClients: 20,
+    maxClients: 21,      // 20 plan workers + 1 free worker they bring from Free tier
     monthlyCredits: 50000,
     trialDays: 0,
-    description: 'Built for high-volume agencies — up to 20 clients, full Business in a Box.',
+    description: 'Built for high-volume agencies — up to 20 clients + 1 free, full Business in a Box.',
     features: [
-      '20 client AI workers',
+      '21 AI workers (20 + 1 free)',
       '50,000 platform credits / month',
       'Everything in Pro',
       'Dedicated infrastructure',
