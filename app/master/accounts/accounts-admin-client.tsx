@@ -464,7 +464,7 @@ export default function AccountsAdminClient() {
 
   const impersonate = async (account: Account, e: React.MouseEvent) => {
     e.stopPropagation();
-    setImpersonateMsg({ type: 'ok', text: `Opening login as ${account.name}…` });
+    setImpersonateMsg({ type: 'ok', text: `Preparing login as ${account.name}…` });
     try {
       const res = await fetch('/api/master/impersonate', {
         method: 'POST',
@@ -476,8 +476,30 @@ export default function AccountsAdminClient() {
         setImpersonateMsg({ type: 'err', text: data.error ?? `Failed (HTTP ${res.status})` });
         return;
       }
-      window.open(data.url, '_blank');
-      setTimeout(() => setImpersonateMsg(null), 3000);
+      // Auto-login: sign in with the temp credentials in a new tab
+      // Create a form that auto-submits to login
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = '/login';
+      form.target = '_blank';
+      const emailInput = document.createElement('input');
+      emailInput.name = 'email';
+      emailInput.value = data.email;
+      form.appendChild(emailInput);
+      const pwInput = document.createElement('input');
+      pwInput.name = 'password';
+      pwInput.value = data.password;
+      form.appendChild(pwInput);
+      document.body.appendChild(form);
+      // Instead of form submit (login page doesn't accept POST), open login with prefilled params
+      document.body.removeChild(form);
+      
+      // Copy credentials to clipboard and open login page
+      const loginUrl = `/login?email=${encodeURIComponent(data.email)}&impersonate=true`;
+      await navigator.clipboard.writeText(data.password).catch(() => {});
+      window.open(loginUrl, '_blank');
+      setImpersonateMsg({ type: 'ok', text: `Login as ${account.name} — password copied to clipboard. Paste it on the login page.` });
+      setTimeout(() => setImpersonateMsg(null), 10000);
     } catch (err) {
       setImpersonateMsg({ type: 'err', text: `Network error: ${String(err)}` });
     }

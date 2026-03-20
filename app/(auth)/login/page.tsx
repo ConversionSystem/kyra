@@ -22,7 +22,10 @@ function LoginContent() {
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect') || '/agency';
   
-  const [email, setEmail] = useState('');
+  const prefillEmail = searchParams.get('email') || '';
+  const isImpersonate = searchParams.get('impersonate') === 'true';
+  
+  const [email, setEmail] = useState(prefillEmail);
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
