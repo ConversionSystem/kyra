@@ -14,6 +14,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { waitUntil } from '@vercel/functions';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { resolvePhotos } from '@/lib/sites/unsplash';
+import { assemblePage } from '@/lib/sites/templates/assembler';
+import { getRecipeForIndustry } from '@/lib/sites/templates/recipes';
+import { getTemplateById } from '@/lib/sites/templates/gallery';
+import { generateColorVariables } from '@/lib/sites/design-system';
 
 export const maxDuration = 300;
 
@@ -135,9 +139,65 @@ async function runBuild(siteId: string, supabase: ReturnType<typeof createServic
     .update({ status: 'deploying', updated_at: new Date().toISOString() })
     .eq('id', siteId);
 
-  console.log(`[build-internal] Calling VPS for site ${siteId} (${domain}), ${pages.length} pages`);
+  // Assemble HTML pages using the template system
+  const templatePreview = site.template_id ? getTemplateById(site.template_id) : null;
+  const recipe = templatePreview?.recipe || getRecipeForIndustry(site.industry || '');
+  const colorVars = generateColorVariables(
+    site.color_primary || '#dc2626',
+    site.color_secondary || '#111827',
+    site.design_style || 'modern-dark',
+  );
+  const resolvedPhotos = resolvePhotos(site.photos, site.industry);
 
-  // Call VPS provisioner — up to 4 min for Next.js build
+  const assembledPages = pagesData.map((p: {
+    slug: string; type: string; title: string;
+    metaTitle: string; metaDescription: string;
+    heroH1: string; heroSubtitle: string;
+    sections: unknown; faq: unknown; schema: unknown;
+  }) => ({
+    slug: p.slug,
+    type: p.type,
+    html: assemblePage({
+      recipe,
+      colorVars,
+      pageData: {
+        title: p.title,
+        metaTitle: p.metaTitle,
+        metaDescription: p.metaDescription,
+        hero_h1: p.heroH1 || p.title,
+        hero_subtitle: p.heroSubtitle || '',
+        content_sections: (p.sections || []) as { heading: string; body: string; bullets?: string[] }[],
+        faq: (p.faq || []) as { question: string; answer: string }[],
+        schema_markup: p.schema,
+      },
+      siteData: {
+        business_name: constants.name,
+        phone: constants.phone,
+        phoneHref: constants.phoneHref,
+        email: constants.email,
+        address: constants.address,
+        services,
+        cities: cities.map(c => ({ name: c.name, slug: c.slug })),
+        hours: site.hours || {},
+        photos: resolvedPhotos,
+        booking_url: constants.bookingUrl,
+        widget_client_id: site.client_id,
+        logoUrl: site.logo_url || undefined,
+        rating: constants.rating,
+        reviewCount: constants.reviewCount,
+        yearsInBusiness: constants.yearsInBusiness,
+        ownerName: site.owner_name || undefined,
+        ownerStory: site.owner_story || undefined,
+        emergencyText: constants.emergencyText,
+        tagline: constants.tagline,
+      },
+      pageType: p.type,
+    }),
+  }));
+
+  console.log(`[build-internal] Assembled ${assembledPages.length} HTML pages for ${domain}`);
+
+  // Call VPS provisioner with pre-assembled HTML (skips Next.js build on VPS)
   const res = await fetch(`${PROVISIONER_URL}/sites/${siteId}/build-and-deploy`, {
     method: 'POST',
     headers: {
@@ -150,13 +210,14 @@ async function runBuild(siteId: string, supabase: ReturnType<typeof createServic
       constants,
       theme,
       pages: pagesData,
+      assembledPages,
       widgetClientId: site.client_id,
       ga4Id: site.ga4_id || null,
       whiteLabel: site.white_label ?? false,
       logoUrl: site.logo_url || null,
-      photos: resolvePhotos(site.photos, site.industry),
+      photos: resolvedPhotos,
     }),
-    signal: AbortSignal.timeout(240_000), // 4 min max for VPS build
+    signal: AbortSignal.timeout(240_000),
   });
 
   if (!res.ok) {

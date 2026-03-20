@@ -295,9 +295,9 @@ async function buildAndDeploy(site: any, supabase: any) {
     }),
   }));
 
-  // Call provisioner — send standard payload format (backward compatible with VPS provisioner).
-  // The template assembly (assembledPages) is done server-side for future use,
-  // but the provisioner still renders from constants + theme + pages using its own template.
+  // Call provisioner with assembled HTML pages.
+  // The provisioner detects assembledPages and deploys them as static HTML (no Next.js build needed).
+  // Falls back to old template-based build if assembledPages is empty/missing.
   const res = await fetch(`${PROVISIONER_URL}/sites/${site.id}/build-and-deploy`, {
     method: 'POST',
     headers: {
@@ -310,6 +310,7 @@ async function buildAndDeploy(site: any, supabase: any) {
       constants,
       theme,
       pages: pagesData,
+      assembledPages,
       widgetClientId: site.client_id,
       ga4Id: site.ga4_id || null,
       whiteLabel: site.white_label ?? false,
