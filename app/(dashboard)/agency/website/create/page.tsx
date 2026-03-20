@@ -84,6 +84,9 @@ interface WizardData {
   businessDays: string;
   bookingUrl: string;
 
+  // Template
+  templateId: string; // 'generic' or 'ai-custom'
+
   // Meta
   siteId: string | null;
 }
@@ -123,6 +126,7 @@ const initialWizardData: WizardData = {
   businessHoursEnd: '6:00 PM',
   businessDays: 'Mon-Fri',
   bookingUrl: '',
+  templateId: 'generic',
   siteId: null,
 };
 
@@ -996,9 +1000,9 @@ function StepPhotosBrand({
             {DESIGN_STYLES.map((style) => (
               <button
                 key={style.id}
-                onClick={() => onChange({ designStyle: style.id })}
+                onClick={() => onChange({ designStyle: style.id, templateId: 'generic' })}
                 className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                  data.designStyle === style.id
+                  data.designStyle === style.id && data.templateId !== 'ai-custom'
                     ? 'border-indigo-600 bg-indigo-50 shadow-md'
                     : 'border-gray-200 hover:border-gray-300 bg-white'
                 }`}
@@ -1008,6 +1012,29 @@ function StepPhotosBrand({
                 <span className="text-[10px] text-gray-500 text-center leading-tight">{style.description}</span>
               </button>
             ))}
+          </div>
+
+          {/* AI Custom Design (Premium) */}
+          <div className="mt-4">
+            <button
+              onClick={() => onChange({ templateId: 'ai-custom' })}
+              className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left ${
+                data.templateId === 'ai-custom'
+                  ? 'border-indigo-600 bg-indigo-50 shadow-md'
+                  : 'border-gray-200 hover:border-gray-300 bg-white'
+              }`}
+            >
+              <span className="text-3xl">
+                <Sparkles className="h-8 w-8 text-indigo-600" />
+              </span>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-gray-900">AI Custom Design</span>
+                  <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-indigo-600 text-white">Premium</span>
+                </div>
+                <span className="text-xs text-gray-500 mt-0.5 block">Every page uniquely designed by AI for your business. Not a template - a custom creation.</span>
+              </div>
+            </button>
           </div>
         </div>
 
@@ -2076,6 +2103,11 @@ export default function WebsiteBuilderWizard() {
           body.color_secondary = data.colorSecondary;
           body.design_style = data.designStyle;
           body.tagline = data.tagline;
+          body.template_id = data.templateId;
+          if (data.templateId === 'ai-custom') {
+            body.generation_mode = 'ai-custom';
+            body.template_preset = 'ai-custom';
+          }
 
           // Upload photos via FormData
           if (data.photos.length > 0) {

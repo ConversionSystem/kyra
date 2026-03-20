@@ -6,6 +6,9 @@ import { resolvePhotos } from '@/lib/sites/unsplash';
 import { assemblePage } from '@/lib/sites/templates/assembler';
 import { getRecipeForIndustry } from '@/lib/sites/templates/recipes';
 import { getTemplateById } from '@/lib/sites/templates/gallery';
+import { generateSiteHTML } from '@/lib/sites/content-engine';
+import { sanitizeGeneratedHTML } from '@/lib/sites/html-sanitizer';
+import { validateGeneratedHTML } from '@/lib/sites/html-quality-checker';
 
 // Build calls VPS provisioner which can take 3-5 min to compile Next.js
 export const maxDuration = 300;
@@ -85,6 +88,94 @@ async function buildAndDeploy(site: any, supabase: any) {
     throw new Error('No pages generated yet. Run content generation first.');
   }
 
+  // ---------- AI-Custom HTML mode ----------
+  const isAICustom = site.template_id === 'ai-custom' || site.generation_mode === 'ai-custom';
+
+  if (isAICustom) {
+    // Generate full HTML pages via AI if not already generated
+    const hasHTML = pages.some((p: Record<string, unknown>) => p.html_content);
+    let htmlPages: Array<{ slug: string; html: string }>;
+
+    if (hasHTML) {
+      // Use existing HTML from database
+      htmlPages = pages
+        .filter((p: Record<string, unknown>) => p.html_content)
+        .map((p: Record<string, unknown>) => ({ slug: p.slug as string, html: p.html_content as string }));
+    } else {
+      // Generate HTML for all pages
+      const result = await generateSiteHTML(site.id);
+      if (!result.success || !result.pages.length) {
+        throw new Error(result.error || 'AI HTML generation failed');
+      }
+      htmlPages = result.pages;
+    }
+
+    // Sanitize and validate all pages
+    const sanitizedPages = htmlPages.map((p) => {
+      const sanitized = sanitizeGeneratedHTML(p.html);
+      const quality = validateGeneratedHTML(sanitized);
+      if (quality.issues.length > 0) {
+        console.warn(`[sites/build] Page ${p.slug} quality: ${quality.score}/100`, quality.issues.join('; '));
+      }
+      return { slug: p.slug, html: sanitized };
+    });
+
+    // Send pre-assembled HTML to provisioner
+    const res = await fetch(`${PROVISIONER_URL}/sites/${site.id}/build-and-deploy`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${PROVISIONER_SECRET}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        domain,
+        template: 'ai-custom',
+        htmlPages: sanitizedPages,
+        widgetClientId: site.client_id,
+        ga4Id: site.ga4_id || null,
+        whiteLabel: site.white_label ?? false,
+        logoUrl: site.logo_url || null,
+      }),
+      signal: AbortSignal.timeout(180_000),
+    });
+
+    const now = new Date().toISOString();
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Build failed' }));
+      await supabase.from('site_deploys').insert({
+        site_id: site.id,
+        triggered_by: 'rebuild',
+        status: 'failed',
+        pages_deployed: 0,
+        notes: (err as { error: string }).error || 'AI-custom build failed',
+      });
+      throw new Error((err as { error: string }).error || 'AI-custom build failed');
+    }
+
+    await supabase.from('site_deploys').insert({
+      site_id: site.id,
+      triggered_by: 'rebuild',
+      status: 'success',
+      pages_deployed: sanitizedPages.length,
+      deployed_at: now,
+    });
+
+    await supabase
+      .from('client_sites')
+      .update({
+        status: 'live',
+        last_deployed_at: now,
+        nginx_configured: true,
+        ssl_active: true,
+        updated_at: now,
+      })
+      .eq('id', site.id);
+
+    return;
+  }
+
+  // ---------- Template-based mode (existing flow) ----------
   const address = site.address || {};
   const services = (site.services || []) as Array<{ name: string; slug: string; description?: string }>;
   const cities = (site.cities || []) as Array<{ name: string; slug: string; state?: string }>;
