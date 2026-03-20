@@ -10,6 +10,7 @@ interface AboutData {
   license?: string;
   teamMembers?: Array<{ name: string; role: string; photoUrl?: string }>;
   milestones?: Array<{ year: string; text: string }>;
+  colors: { primary: string; secondary: string };
 }
 
 export function statsBarAbout(data: AboutData): string {
@@ -19,7 +20,7 @@ export function statsBarAbout(data: AboutData): string {
     stats.push({ value: `${data.yearsInBusiness}+`, label: 'Years in Business' });
   }
   if (data.rating) {
-    stats.push({ value: String(data.rating), label: 'Star Rating' });
+    stats.push({ value: `${data.rating} ★`, label: 'Star Rating' });
   }
   if (data.reviewCount) {
     stats.push({ value: `${data.reviewCount}+`, label: 'Client Reviews' });
@@ -28,23 +29,23 @@ export function statsBarAbout(data: AboutData): string {
     stats.push({ value: data.license, label: 'Licensed & Insured' });
   }
 
-  // Provide defaults if no stats were supplied
+  // If no stats at all, show a simple trust message
   if (stats.length === 0) {
-    stats.push(
-      { value: '10+', label: 'Years in Business' },
-      { value: '4.9', label: 'Star Rating' },
-      { value: '200+', label: 'Client Reviews' },
-    );
+    return `<section class="w-full" style="background: linear-gradient(135deg, ${data.colors.primary}, ${data.colors.secondary});" aria-label="Business stats">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-14 text-center">
+    <p class="text-2xl sm:text-3xl font-bold" style="color: #ffffff;">Trusted Local Business</p>
+  </div>
+</section>`;
   }
 
   const cells = stats.map((s) =>
     `<div class="flex flex-col items-center px-4 py-2">
-      <span class="text-3xl sm:text-4xl font-bold" style="color: var(--color-surface);">${s.value}</span>
-      <span class="text-xs sm:text-sm mt-1 uppercase tracking-wide font-medium" style="color: var(--color-surface); opacity: 0.8;">${s.label}</span>
+      <span class="text-3xl sm:text-4xl font-bold" style="color: #ffffff;">${s.value}</span>
+      <span class="text-xs sm:text-sm mt-1 uppercase tracking-wide font-medium" style="color: #ffffff; opacity: 0.85;">${s.label}</span>
     </div>`
   ).join('');
 
-  return `<section class="w-full" style="background: var(--color-primary);" aria-label="Business stats">
+  return `<section class="w-full" style="background: linear-gradient(135deg, ${data.colors.primary}, ${data.colors.secondary});" aria-label="Business stats">
   <div class="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
     <div class="flex flex-wrap justify-center gap-8 sm:gap-16">
       ${cells}

@@ -259,6 +259,8 @@ async function buildAndDeploy(site: any, supabase: any) {
     html: assemblePage({
       recipe,
       colorVars,
+      colorPrimary: theme.colorPrimary,
+      colorSecondary: theme.colorSecondary,
       pageData: {
         title: p.title,
         metaTitle: p.metaTitle,
