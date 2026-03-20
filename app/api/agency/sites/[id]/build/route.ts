@@ -295,7 +295,9 @@ async function buildAndDeploy(site: any, supabase: any) {
     }),
   }));
 
-  // Call provisioner with pre-assembled HTML
+  // Call provisioner — send standard payload format (backward compatible with VPS provisioner).
+  // The template assembly (assembledPages) is done server-side for future use,
+  // but the provisioner still renders from constants + theme + pages using its own template.
   const res = await fetch(`${PROVISIONER_URL}/sites/${site.id}/build-and-deploy`, {
     method: 'POST',
     headers: {
@@ -305,12 +307,9 @@ async function buildAndDeploy(site: any, supabase: any) {
     body: JSON.stringify({
       domain,
       template: 'generic',
-      useNewTemplateSystem: true,
       constants,
       theme,
       pages: pagesData,
-      assembledPages,
-      recipe,
       widgetClientId: site.client_id,
       ga4Id: site.ga4_id || null,
       whiteLabel: site.white_label ?? false,
