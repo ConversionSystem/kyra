@@ -5,6 +5,17 @@
 
 export type RiskLevel = 'low' | 'medium' | 'high';
 
+/** Specific actions that are always high-risk regardless of prefix. */
+const HIGH_RISK_EXACT = new Set([
+  'create_invoice',
+  'send_invoice',
+  'create_estimate',
+  'record_payment',
+  'mark_won_lost',
+  'send_email_campaign',
+  'complete_task',
+]);
+
 /** Actions that are always high-risk (destructive / externally visible). */
 const HIGH_RISK_PREFIXES = [
   'delete_',
@@ -43,6 +54,7 @@ const LOW_RISK_PREFIXES = [
 export function classifyRiskLevel(actionType: string): RiskLevel {
   const lower = actionType.toLowerCase();
 
+  if (HIGH_RISK_EXACT.has(lower)) return 'high';
   if (HIGH_RISK_PREFIXES.some(p => lower.startsWith(p))) return 'high';
   if (MEDIUM_RISK_PREFIXES.some(p => lower.startsWith(p))) return 'medium';
   if (LOW_RISK_PREFIXES.some(p => lower.startsWith(p))) return 'low';
