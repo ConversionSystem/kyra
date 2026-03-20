@@ -4,7 +4,7 @@ interface FooterData {
   phoneHref?: string;
   email?: string;
   address?: string;
-  hours?: Record<string, string>;
+  formattedHours?: string;
   services?: Array<{ name: string; slug: string }>;
   cities?: Array<{ name: string; slug: string }>;
   bookingUrl?: string;

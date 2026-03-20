@@ -103,6 +103,18 @@ const NAVBARS: Record<string, typeof stickyWhiteNavbar> = {
 
 // ---------- Helpers ----------
 
+/** Format hours object into displayable string */
+function formatHours(hours: Record<string, string>): string {
+  // Wizard format: { days: 'Mon-Fri', start: '8:00 AM', end: '6:00 PM' }
+  if ('days' in hours && 'start' in hours && 'end' in hours) {
+    return `${hours.days}: ${hours.start} - ${hours.end}`;
+  }
+  // Day-keyed format: { mon: '8am-6pm', tue: '8am-6pm', ... }
+  return Object.entries(hours)
+    .map(([day, time]) => `${day.charAt(0).toUpperCase() + day.slice(1)}: ${time}`)
+    .join('\n');
+}
+
 /** Convert markdown bold (**text**) to <strong> and strip other markdown syntax */
 function mdToHtml(text: string): string {
   return text
@@ -171,6 +183,16 @@ export function assemblePage(options: AssemblePageOptions): string {
   const footerFn = FOOTERS[recipe.footer] || FOOTERS['four-column'];
   const navbarFn = NAVBARS[recipe.navbar] || NAVBARS['sticky-white'];
 
+  // Build navbar links with real page URLs
+  const firstServiceSlug = siteData.services?.[0]?.slug;
+  const navLinks = [
+    { label: 'Home', href: '/' },
+    { label: 'Services', href: firstServiceSlug ? `/services/${firstServiceSlug}` : '/services' },
+    { label: 'About', href: '/about' },
+    { label: 'Reviews', href: '/reviews' },
+    { label: 'Contact', href: '/contact' },
+  ];
+
   // Build section HTML
   const navbarHtml = navbarFn({
     businessName: siteData.business_name,
@@ -178,13 +200,7 @@ export function assemblePage(options: AssemblePageOptions): string {
     phone: siteData.phone,
     phoneHref: siteData.phoneHref,
     bookingUrl: siteData.booking_url,
-    links: [
-      { label: 'Home', href: '/' },
-      { label: 'Services', href: '#services' },
-      { label: 'About', href: '#about' },
-      { label: 'Reviews', href: '#testimonials' },
-      { label: 'Contact', href: '#contact' },
-    ],
+    links: navLinks,
     colors,
   });
 
@@ -263,13 +279,15 @@ export function assemblePage(options: AssemblePageOptions): string {
       })
     : '';
 
+  const formattedHours = siteData.hours ? formatHours(siteData.hours) : undefined;
+
   const footerHtml = footerFn({
     businessName: siteData.business_name,
     phone: siteData.phone,
     phoneHref: siteData.phoneHref,
     email: siteData.email,
     address: siteData.address,
-    hours: siteData.hours,
+    formattedHours,
     services: siteData.services,
     cities: siteData.cities,
     bookingUrl: siteData.booking_url,
@@ -283,11 +301,40 @@ export function assemblePage(options: AssemblePageOptions): string {
 
   // Kyra chat widget
   const widgetScript = siteData.widget_client_id
-    ? `<script src="https://widget.kyra.conversionsystem.com/widget.js" data-client-id="${siteData.widget_client_id}" async></script>`
+    ? `<script src="https://kyra.conversionsystem.com/api/widget/${siteData.widget_client_id}/script" async></script>`
     : '';
 
   const metaTitle = pageData.metaTitle || `${pageData.title} | ${siteData.business_name}`;
   const metaDesc = pageData.metaDescription || pageData.hero_subtitle;
+
+  // Build content sections HTML for subpages
+  const contentSectionsHtml = (pageData.content_sections || [])
+    .map(s => `<section class="py-12 sm:py-16 px-4 sm:px-6"><div class="max-w-4xl mx-auto"><h2 class="text-2xl sm:text-3xl font-bold mb-6" style="color: #1f2937;">${mdToHtml(s.heading)}</h2><div class="prose max-w-none text-lg leading-relaxed" style="color: #4b5563;">${mdToHtml(s.body)}</div></div></section>`)
+    .join('\n    ');
+
+  // Determine section layout based on page type
+  let mainContent = '';
+  switch (pageType) {
+    case 'service':
+      mainContent = `${heroHtml}\n    ${contentSectionsHtml}\n    ${faqHtml}\n    ${ctaHtml}`;
+      break;
+    case 'blog':
+      mainContent = `${contentSectionsHtml}`;
+      break;
+    case 'city':
+      mainContent = `${heroHtml}\n    ${contentSectionsHtml}\n    ${ctaHtml}`;
+      break;
+    case 'about':
+    case 'contact':
+    case 'reviews':
+    case 'faq':
+    case 'utility':
+      mainContent = `${heroHtml}\n    ${contentSectionsHtml}`;
+      break;
+    default: // homepage
+      mainContent = `${heroHtml}\n    ${servicesHtml}\n    ${aboutHtml}\n    ${testimonialsHtml}\n    ${faqHtml}\n    ${ctaHtml}`;
+      break;
+  }
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -313,12 +360,7 @@ export function assemblePage(options: AssemblePageOptions): string {
 <body>
   ${navbarHtml}
   <main>
-    ${heroHtml}
-    ${pageType === 'homepage' ? servicesHtml : ''}
-    ${aboutHtml}
-    ${pageType === 'homepage' ? testimonialsHtml : ''}
-    ${faqHtml}
-    ${ctaHtml}
+    ${mainContent}
   </main>
   ${footerHtml}
   ${widgetScript}
