@@ -37,6 +37,9 @@ import {
 } from './schema-generator';
 import { syncSiteToKnowledgeBase } from './knowledge-sync';
 import { checkContentSimilarity } from './content-checker';
+import { generatePageHTML } from './ai-html-engine';
+import { resolvePhotos } from './unsplash';
+import type { SitePhoto, DesignStyle } from './types';
 
 // ---------- Constants ----------
 
@@ -339,6 +342,130 @@ export async function regeneratePage(
 
   const result = await executeTask(task, siteId);
   return { success: result.success, error: result.error };
+}
+
+// ---------- AI HTML Generation (Premium) ----------
+
+const HTML_BATCH_SIZE = 4; // Fewer concurrent since HTML generation is heavier
+
+export async function generateSiteHTML(
+  siteId: string,
+): Promise<{
+  success: boolean;
+  pages: Array<{ slug: string; html: string }>;
+  totalCost: number;
+  error?: string;
+}> {
+  const supabase = createServiceClientWithoutCookies();
+
+  // 1. Load site config
+  const { data: site, error: siteErr } = await supabase
+    .from('client_sites')
+    .select('*')
+    .eq('id', siteId)
+    .single();
+
+  if (siteErr || !site) {
+    return { success: false, pages: [], totalCost: 0, error: `Site not found: ${siteErr?.message}` };
+  }
+
+  const clientSite = site as unknown as ClientSite;
+
+  // 2. Load all generated page content (must run content generation first)
+  const { data: pageRows, error: pagesErr } = await supabase
+    .from('site_pages')
+    .select('*')
+    .eq('site_id', siteId)
+    .order('page_type');
+
+  if (pagesErr || !pageRows?.length) {
+    return { success: false, pages: [], totalCost: 0, error: 'No pages found. Run content generation first.' };
+  }
+
+  const designStyle = (clientSite.design_style || 'modern-dark') as DesignStyle;
+  const colorPrimary = clientSite.color_primary || '#6366f1';
+  const colorSecondary = clientSite.color_secondary || '#111827';
+  const photos = resolvePhotos(clientSite.photos as SitePhoto[] | null, clientSite.industry);
+
+  // 3. Generate HTML for each page in batches of 4
+  const results: Array<{ slug: string; html: string; cost: number; error?: string }> = [];
+
+  for (let i = 0; i < pageRows.length; i += HTML_BATCH_SIZE) {
+    const batch = pageRows.slice(i, i + HTML_BATCH_SIZE);
+    const batchNum = Math.floor(i / HTML_BATCH_SIZE) + 1;
+    const totalBatches = Math.ceil(pageRows.length / HTML_BATCH_SIZE);
+
+    console.log(`[ai-html-engine] Batch ${batchNum}/${totalBatches}: ${batch.length} pages`);
+
+    const settled = await Promise.allSettled(
+      batch.map(async (page: Record<string, unknown>) => {
+        try {
+          const result = await generatePageHTML({
+            site: clientSite,
+            page: {
+              slug: page.slug as string,
+              pageType: page.page_type as string,
+              title: page.title as string,
+              hero_h1: (page.hero_h1 as string) || (page.title as string),
+              hero_subtitle: (page.hero_subtitle as string) || '',
+              content_sections: (page.content_sections as ContentSection[]) || [],
+              faq: (page.faq as FaqItem[]) || [],
+              schema_markup: page.schema_markup,
+            },
+            designStyle,
+            colorPrimary,
+            colorSecondary,
+            photos,
+          });
+
+          // Store HTML in the html_content column
+          await supabase
+            .from('site_pages')
+            .update({ html_content: result.html })
+            .eq('id', page.id as string);
+
+          return { slug: page.slug as string, html: result.html, cost: result.cost };
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          console.error(`[ai-html-engine] Failed to generate HTML for ${page.slug}:`, message);
+          return { slug: page.slug as string, html: '', cost: 0, error: message };
+        }
+      }),
+    );
+
+    for (const result of settled) {
+      if (result.status === 'fulfilled') {
+        results.push(result.value);
+      } else {
+        results.push({ slug: 'unknown', html: '', cost: 0, error: result.reason?.message });
+      }
+    }
+  }
+
+  // 4. Update generation mode on the site
+  await supabase
+    .from('client_sites')
+    .update({ generation_mode: 'ai-custom' })
+    .eq('id', siteId);
+
+  const successfulPages = results.filter((r) => r.html);
+  const totalCost = results.reduce((sum, r) => sum + r.cost, 0);
+  const failedCount = results.filter((r) => r.error).length;
+
+  if (failedCount > 0) {
+    console.warn(`[ai-html-engine] ${failedCount}/${results.length} pages failed HTML generation`);
+  }
+
+  console.log(
+    `[ai-html-engine] Site ${siteId}: ${successfulPages.length}/${results.length} HTML pages generated, cost: $${totalCost.toFixed(4)}`,
+  );
+
+  return {
+    success: successfulPages.length > 0,
+    pages: successfulPages.map((r) => ({ slug: r.slug, html: r.html })),
+    totalCost,
+    error: failedCount > 0 ? `${failedCount} page(s) failed HTML generation` : undefined,
+  };
 }
 
 // ---------- Task Building ----------
