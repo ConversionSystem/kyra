@@ -40,6 +40,7 @@ import { checkContentSimilarity } from './content-checker';
 import { generatePageHTML } from './ai-html-engine';
 import { resolvePhotos } from './unsplash';
 import type { SitePhoto, DesignStyle } from './types';
+import type { StockPhoto } from './unsplash';
 
 // ---------- Constants ----------
 
@@ -385,7 +386,10 @@ export async function generateSiteHTML(
   const designStyle = (clientSite.design_style || 'modern-dark') as DesignStyle;
   const colorPrimary = clientSite.color_primary || '#6366f1';
   const colorSecondary = clientSite.color_secondary || '#111827';
-  const photos = resolvePhotos(clientSite.photos as SitePhoto[] | null, clientSite.industry);
+  const photos = resolvePhotos(
+    (clientSite.photos || []).map(p => ({ ...p, alt: (p as { alt?: string }).alt || '' })) as StockPhoto[],
+    clientSite.industry,
+  );
 
   // 3. Generate HTML for each page in batches of 4
   const results: Array<{ slug: string; html: string; cost: number; error?: string }> = [];
