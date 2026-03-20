@@ -254,7 +254,7 @@ export function assemblePage(options: AssemblePageOptions): string {
 
   // Kyra chat widget
   const widgetScript = siteData.widget_client_id
-    ? `<script src="https://widget.kyra.com/chat.js" data-client-id="${siteData.widget_client_id}" async></script>`
+    ? `<script src="https://widget.kyra.conversionsystem.com/widget.js" data-client-id="${siteData.widget_client_id}" async></script>`
     : '';
 
   const metaTitle = pageData.metaTitle || `${pageData.title} | ${siteData.business_name}`;
@@ -267,7 +267,7 @@ export function assemblePage(options: AssemblePageOptions): string {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(metaTitle)}</title>
   <meta name="description" content="${escapeHtml(metaDesc)}">
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4/dist/tailwind.min.css" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
   ${schemaScript}
   <style>
     :root {

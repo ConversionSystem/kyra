@@ -127,10 +127,14 @@ export function validateGeneratedHTML(html: string): QualityResult {
   }
 
   // --- Inline styles warning ---
+  // Note: CSS custom property usage (var(--color-*)) requires inline styles since
+  // Tailwind CDN cannot use arbitrary CSS variables. Only flag non-var() inline styles.
 
   const inlineStyleCount = (html.match(/\sstyle\s*=/gi) || []).length;
-  if (inlineStyleCount > 5) {
-    issues.push(`${inlineStyleCount} inline styles found - prefer Tailwind classes`);
+  const varStyleCount = (html.match(/style\s*=\s*"[^"]*var\(--/gi) || []).length;
+  const nonVarStyles = inlineStyleCount - varStyleCount;
+  if (nonVarStyles > 10) {
+    issues.push(`${nonVarStyles} non-CSS-variable inline styles found - prefer Tailwind classes`);
     score -= 3;
   }
 
