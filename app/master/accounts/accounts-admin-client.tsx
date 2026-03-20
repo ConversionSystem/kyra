@@ -410,6 +410,7 @@ export default function AccountsAdminClient() {
   const [onlyLowCredits, setOnlyLowCredits] = useState(false);
   const [onlyNoWorkers, setOnlyNoWorkers] = useState(false);
   const [selected, setSelected] = useState<Account | null>(null);
+  const [impersonateMsg, setImpersonateMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
@@ -460,6 +461,27 @@ export default function AccountsAdminClient() {
     setLastRefresh(new Date());
     setLoading(false);
   }, []);
+
+  const impersonate = async (account: Account, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setImpersonateMsg({ type: 'ok', text: `Opening login as ${account.name}…` });
+    try {
+      const res = await fetch('/api/master/impersonate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: account.owner_id }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setImpersonateMsg({ type: 'err', text: data.error ?? `Failed (HTTP ${res.status})` });
+        return;
+      }
+      window.open(data.url, '_blank');
+      setTimeout(() => setImpersonateMsg(null), 3000);
+    } catch (err) {
+      setImpersonateMsg({ type: 'err', text: `Network error: ${String(err)}` });
+    }
+  };
 
   const syncToCRM = async () => {
     setSyncing(true);
@@ -543,6 +565,15 @@ export default function AccountsAdminClient() {
           {syncMsg.type === 'ok' ? <Check className="h-4 w-4 shrink-0" /> : <AlertTriangle className="h-4 w-4 shrink-0" />}
           <span className="flex-1">{syncMsg.text}</span>
           <button onClick={() => setSyncMsg(null)} className="shrink-0 hover:opacity-70"><X className="h-3.5 w-3.5" /></button>
+        </div>
+      )}
+
+      {/* Impersonate message */}
+      {impersonateMsg && (
+        <div className={`mb-4 flex items-center gap-3 rounded-xl px-4 py-3 text-sm ${impersonateMsg.type === 'ok' ? 'bg-blue-50 border border-blue-200 text-blue-700' : 'bg-red-50 border border-red-200 text-red-700'}`}>
+          {impersonateMsg.type === 'ok' ? <KeyRound className="h-4 w-4 shrink-0" /> : <AlertTriangle className="h-4 w-4 shrink-0" />}
+          <span className="flex-1">{impersonateMsg.text}</span>
+          <button onClick={() => setImpersonateMsg(null)} className="shrink-0 hover:opacity-70"><X className="h-3.5 w-3.5" /></button>
         </div>
       )}
 
@@ -674,7 +705,14 @@ export default function AccountsAdminClient() {
                       {a.clients.running}/{a.clients.total}
                     </td>
                     <td className="px-3 py-3 hidden xl:table-cell text-gray-400 text-xs">{relTime(a.created_at)}</td>
-                    <td className="px-3 py-3 text-right">
+                    <td className="px-3 py-3 text-right space-x-1.5">
+                      <button
+                        onClick={e => impersonate(a, e)}
+                        title="Login as this user"
+                        className="text-xs px-2.5 py-1.5 border border-gray-200 rounded-lg hover:border-amber-300 hover:text-amber-600 transition text-gray-500 inline-flex items-center gap-1"
+                      >
+                        <KeyRound className="h-3.5 w-3.5" /> Login as
+                      </button>
                       <button
                         onClick={e => { e.stopPropagation(); setSelected(a); }}
                         className="text-xs px-3 py-1.5 border border-gray-200 rounded-lg hover:border-indigo-300 hover:text-indigo-600 transition text-gray-500"
