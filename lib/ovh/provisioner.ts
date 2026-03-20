@@ -218,7 +218,7 @@ export async function provisionClientGateway(
         agentModel,
         routerMaxTier,  // passed to provisioner → sets KYRA_MAX_TIER on container
         resources: {
-          memoryMb: resources.memoryMb || 1024,  // OpenClaw needs ~350MB min; 256 causes OOM crash
+          memoryMb: resources.memoryMb || 1536,  // OpenClaw needs ~1GB+; 1024 causes OOM under load
           cpuShares: resources.cpuShares || 256,
         },
       }),
