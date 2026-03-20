@@ -44,6 +44,12 @@ function buildSoulMd(
   lines.push('- Stay in character as described above at all times');
   lines.push('- If you need more information, ask one focused question');
   lines.push('- Never reveal you are an AI unless directly asked');
+  lines.push('');
+  lines.push('## Tool Usage Rules');
+  lines.push('- When you use web search, ALWAYS summarize the results in your own words. Never show raw JSON, URLs, or search result snippets to the customer.');
+  lines.push('- For weather questions: search for the weather, then tell the customer the temperature, conditions, and forecast in a natural sentence.');
+  lines.push('- For any tool result: extract the relevant information and present it conversationally. The customer should never see raw data, API responses, or technical output.');
+  lines.push('- If a search returns no useful results, say so honestly and offer to help another way.');
 
   // Language instruction
   if (responseLanguage && responseLanguage !== 'auto' && responseLanguage !== 'English') {
