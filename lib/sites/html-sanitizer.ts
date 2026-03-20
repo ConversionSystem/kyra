@@ -105,9 +105,9 @@ export function sanitizeGeneratedHTML(
   // 8. Remove <meta http-equiv="refresh"> redirects
   result = result.replace(/<meta\s+http-equiv\s*=\s*["']refresh["'][^>]*>/gi, '<!-- removed meta refresh -->');
 
-  // 9. Remove <object>, <embed>, <applet> tags
+  // 9. Remove <object>, <embed>, <applet> tags (including void/self-closing)
   result = result.replace(/<(?:object|embed|applet)[\s>][^]*?<\/(?:object|embed|applet)>/gi, '<!-- removed -->');
-  result = result.replace(/<(?:object|embed|applet)\s[^>]*\/>/gi, '<!-- removed -->');
+  result = result.replace(/<(?:object|embed|applet)\s[^>]*\/?>/gi, '<!-- removed -->');
 
   return result;
 }
