@@ -466,6 +466,7 @@ export default function AccountsAdminClient() {
     e.stopPropagation();
     setImpersonateMsg({ type: 'ok', text: `Preparing login as ${account.name}…` });
     try {
+      // Get temp credentials while still logged in as admin
       const res = await fetch('/api/master/impersonate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -476,30 +477,18 @@ export default function AccountsAdminClient() {
         setImpersonateMsg({ type: 'err', text: data.error ?? `Failed (HTTP ${res.status})` });
         return;
       }
-      // Auto-login: sign in with the temp credentials in a new tab
-      // Create a form that auto-submits to login
-      const form = document.createElement('form');
-      form.method = 'POST';
-      form.action = '/login';
-      form.target = '_blank';
-      const emailInput = document.createElement('input');
-      emailInput.name = 'email';
-      emailInput.value = data.email;
-      form.appendChild(emailInput);
-      const pwInput = document.createElement('input');
-      pwInput.name = 'password';
-      pwInput.value = data.password;
-      form.appendChild(pwInput);
-      document.body.appendChild(form);
-      // Instead of form submit (login page doesn't accept POST), open login with prefilled params
-      document.body.removeChild(form);
+
+      // Open the auto-login page in a new tab — it signs out there and logs in as the target user
+      // The admin's session in THIS tab remains intact
+      const params = new URLSearchParams({
+        e: data.email,
+        p: data.password,
+        n: data.agencyName || account.name,
+      });
+      window.open(`/login/impersonate?${params.toString()}`, '_blank');
       
-      // Copy credentials to clipboard and open login page
-      const loginUrl = `/login?email=${encodeURIComponent(data.email)}&impersonate=true`;
-      await navigator.clipboard.writeText(data.password).catch(() => {});
-      window.open(loginUrl, '_blank');
-      setImpersonateMsg({ type: 'ok', text: `Login as ${account.name} — password copied to clipboard. Paste it on the login page.` });
-      setTimeout(() => setImpersonateMsg(null), 10000);
+      setImpersonateMsg({ type: 'ok', text: `Opening ${account.name}'s dashboard in new tab...` });
+      setTimeout(() => setImpersonateMsg(null), 5000);
     } catch (err) {
       setImpersonateMsg({ type: 'err', text: `Network error: ${String(err)}` });
     }
