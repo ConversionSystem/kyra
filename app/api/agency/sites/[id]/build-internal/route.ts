@@ -17,6 +17,8 @@ import { resolvePhotos } from '@/lib/sites/unsplash';
 
 export const maxDuration = 300;
 
+// SECURITY: Provisioner IP fallback should be moved to env-only in production.
+// Empty-string fallback for secrets means auth is bypassed if env vars are missing.
 const PROVISIONER_URL = process.env.OVH_PROVISIONER_URL || 'http://15.204.91.157:9090';
 const PROVISIONER_SECRET = process.env.OVH_PROVISIONER_SECRET || '';
 const KYRA_API_SECRET = process.env.KYRA_API_SECRET || '';
