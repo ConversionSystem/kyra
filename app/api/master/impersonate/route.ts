@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { randomBytes } from 'crypto';
 
 const MASTER_EMAILS = ['hello@conversionsystem.com', 'angel@conversionsystem.com'];
 
@@ -37,16 +38,16 @@ export async function POST(request: Request) {
     .eq('owner_id', userId)
     .single();
 
-  // 5. Generate magic link
-  const { data: linkData, error: linkErr } = await db.auth.admin.generateLink({
-    type: 'magiclink',
-    email: targetEmail,
-    options: { redirectTo: '/agency' },
+  // 5. Set a temporary password and return login credentials
+  // This is the most reliable approach — magic links have redirect issues with PKCE
+  const tempPassword = 'KyraAdmin_' + randomBytes(12).toString('hex');
+  const { error: pwErr } = await db.auth.admin.updateUserById(userId, {
+    password: tempPassword,
   });
 
-  if (linkErr || !linkData?.properties?.action_link) {
-    console.error('[IMPERSONATE] Failed to generate link:', linkErr?.message);
-    return NextResponse.json({ error: 'Failed to generate login link' }, { status: 500 });
+  if (pwErr) {
+    console.error('[IMPERSONATE] Failed to set temp password:', pwErr.message);
+    return NextResponse.json({ error: 'Failed to prepare login' }, { status: 500 });
   }
 
   // 6. Log impersonation
@@ -54,5 +55,10 @@ export async function POST(request: Request) {
     `[IMPERSONATE] admin ${user.email} logged in as ${targetEmail} (agency: ${agency?.name ?? 'unknown'}, id: ${agency?.id ?? userId})`
   );
 
-  return NextResponse.json({ url: linkData.properties.action_link });
+  // Return credentials — the frontend will auto-login
+  return NextResponse.json({
+    email: targetEmail,
+    password: tempPassword,
+    agencyName: agency?.name || 'Unknown',
+  });
 }
