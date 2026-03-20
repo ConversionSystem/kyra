@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -30,6 +30,14 @@ function LoginContent() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+
+  // If impersonating, sign out current session first so we can log in as the target user
+  useEffect(() => {
+    if (isImpersonate) {
+      const sb = createClient();
+      sb.auth.signOut().catch(() => {});
+    }
+  }, [isImpersonate]);
 
   const supabase = createClient();
 
