@@ -72,7 +72,7 @@ interface WizardData {
   designStyle: string;
   tagline: string;
 
-  // Step 5: Choose Design
+  // Step 5: Choose Design — template ID ('generic', gallery preset ID, or 'ai-custom')
   templateId: string;
 
   // Step 6: AI Personality
@@ -83,9 +83,6 @@ interface WizardData {
   businessHoursEnd: string;
   businessDays: string;
   bookingUrl: string;
-
-  // Template
-  templateId: string; // 'generic' or 'ai-custom'
 
   // Meta
   siteId: string | null;
@@ -126,7 +123,6 @@ const initialWizardData: WizardData = {
   businessHoursEnd: '6:00 PM',
   businessDays: 'Mon-Fri',
   bookingUrl: '',
-  templateId: 'generic',
   siteId: null,
 };
 
