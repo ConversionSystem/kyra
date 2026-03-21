@@ -22,11 +22,12 @@ const FOOTER_LINKS = {
   Resources: [
     { href: '/blog', label: 'Blog' },
     { href: '/help', label: 'Help & FAQ' },
-    { href: '/ghl', label: 'For GHL Agencies' },
+    { href: '/ghl-marketplace', label: 'For GHL Agencies' },
     { href: '/zapier', label: 'Zapier Integration' },
     { href: '/ghl-snapshot', label: 'Free GHL Snapshot' },
   ],
   Company: [
+    { href: '/partners', label: 'Partner Program' },
     { href: '/privacy', label: 'Privacy Policy' },
     { href: '/terms', label: 'Terms of Service' },
     { href: '/signup/agency', label: 'Sign Up Free' },
