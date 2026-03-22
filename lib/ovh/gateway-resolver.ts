@@ -271,7 +271,7 @@ export async function getDashboardUrlForClient(
 
   // OpenClaw Control UI reads token from ?token= query param (not hash fragment)
   return {
-    url: `${gw.url}/__openclaw__/?token=${encodeURIComponent(gw.token)}`,
+    url: `${gw.url}/__openclaw__/#token=${encodeURIComponent(gw.token)}`,
     baseUrl: `${gw.url}/__openclaw__/`,
     clientId: gw.clientId,
   };
@@ -290,7 +290,7 @@ export async function getDashboardUrl(
 
   // OpenClaw Control UI reads token from ?token= query param (not hash fragment)
   return {
-    url: `${resolved.url}/__openclaw__/?token=${encodeURIComponent(resolved.token)}`,
+    url: `${resolved.url}/__openclaw__/#token=${encodeURIComponent(resolved.token)}`,
     baseUrl: `${resolved.url}/__openclaw__/`,
     clientId: resolved.clientId,
   };
