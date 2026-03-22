@@ -20,9 +20,11 @@ interface Props {
  */
 export default function TerminalRedirect({ dashboardUrl, token, gatewayUrl }: Props) {
   useEffect(() => {
-    const url = `${dashboardUrl}?token=${encodeURIComponent(token)}`;
-    // Use location.href (same tab) — never blocked by iOS Safari
-    // and does not strip params like cross-origin window.open can
+    // OpenClaw Control UI reads the token from the HASH fragment (#token=)
+    // NOT from the query string (?token=). It deletes ?token= when found
+    // but only authenticates using #token=. Hash fragments are never sent
+    // to the server and survive same-tab cross-origin navigation on iOS Safari.
+    const url = `${dashboardUrl}#token=${encodeURIComponent(token)}`;
     window.location.href = url;
   }, [dashboardUrl, token]);
 
