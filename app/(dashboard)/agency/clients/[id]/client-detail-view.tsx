@@ -388,14 +388,33 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
 // ── Terminal Tab ──────────────────────────────────────────────────────────────
 
 function TerminalTab({ client }: { client: AgencyClient }) {
-  const gatewayUrl = (client as any).gateway_url as string | undefined;
-  const gatewayToken = (client as any).gateway_token as string | undefined;
-  // Token must be passed to the /__openclaw__/ control UI path, not the root URL
-  const gatewayUrlWithToken = gatewayUrl && gatewayToken
-    ? `${gatewayUrl.replace(/\/$/, '')}/__openclaw__/?token=${encodeURIComponent(gatewayToken)}`
-    : gatewayUrl || null;
+  const [opening, setOpening] = useState(false);
+  const [terminalError, setTerminalError] = useState<string | null>(null);
 
-  if (!gatewayUrlWithToken) {
+  const hasGateway = !!(client.gateway_url && client.gateway_status === 'running');
+
+  // Always fetch a fresh terminal URL from the server when clicking Open Terminal.
+  // Never use stale client-side data — gateway_token can be null or outdated
+  // due to React state caching or provisioner timing.
+  const handleOpenTerminal = async () => {
+    setOpening(true);
+    setTerminalError(null);
+    try {
+      const res = await fetch(`/api/openclaw/dashboard-url?clientId=${client.id}`, { cache: 'no-store' });
+      const data = await res.json();
+      if (!res.ok || !data.url) {
+        setTerminalError(data.message || 'Terminal not available. Try refreshing the page.');
+        return;
+      }
+      window.open(data.url, '_blank', 'noopener,noreferrer');
+    } catch {
+      setTerminalError('Could not reach the terminal. Check your connection and try again.');
+    } finally {
+      setOpening(false);
+    }
+  };
+
+  if (!hasGateway) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <Terminal className="h-12 w-12 text-gray-300 mb-4" />
@@ -421,15 +440,23 @@ function TerminalTab({ client }: { client: AgencyClient }) {
             </p>
           </div>
         </div>
-        <a
-          href={gatewayUrlWithToken}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 bg-indigo-500 hover:bg-indigo-400 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
+        {terminalError && (
+          <div className="mb-4 rounded-xl bg-red-500/20 border border-red-500/30 px-4 py-3 text-sm text-red-200">
+            {terminalError}
+          </div>
+        )}
+        <button
+          onClick={handleOpenTerminal}
+          disabled={opening}
+          className="inline-flex items-center gap-2 bg-indigo-500 hover:bg-indigo-400 disabled:opacity-60 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
         >
-          <ExternalLink className="h-5 w-5" />
-          Open Terminal
-        </a>
+          {opening ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : (
+            <ExternalLink className="h-5 w-5" />
+          )}
+          {opening ? 'Opening...' : 'Open Terminal'}
+        </button>
       </div>
     </div>
   );
