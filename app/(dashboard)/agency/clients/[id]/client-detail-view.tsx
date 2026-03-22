@@ -388,31 +388,25 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
 // ── Terminal Tab ──────────────────────────────────────────────────────────────
 
 function TerminalTab({ client }: { client: AgencyClient }) {
-  const [opening, setOpening] = useState(false);
+  const [terminalUrl, setTerminalUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [terminalError, setTerminalError] = useState<string | null>(null);
 
   const hasGateway = !!(client.gateway_url && client.gateway_status === 'running');
 
-  // Always fetch a fresh terminal URL from the server when clicking Open Terminal.
-  // Never use stale client-side data — gateway_token can be null or outdated
-  // due to React state caching or provisioner timing.
-  const handleOpenTerminal = async () => {
-    setOpening(true);
-    setTerminalError(null);
-    try {
-      const res = await fetch(`/api/openclaw/dashboard-url?clientId=${client.id}`, { cache: 'no-store' });
-      const data = await res.json();
-      if (!res.ok || !data.url) {
-        setTerminalError(data.message || 'Terminal not available. Try refreshing the page.');
-        return;
-      }
-      window.open(data.url, '_blank', 'noopener,noreferrer');
-    } catch {
-      setTerminalError('Could not reach the terminal. Check your connection and try again.');
-    } finally {
-      setOpening(false);
-    }
-  };
+  // Pre-fetch the terminal URL on mount so the <a href> is ready for a
+  // synchronous click — window.open() after await is blocked by iOS Safari.
+  useEffect(() => {
+    if (!hasGateway) { setLoading(false); return; }
+    fetch(`/api/openclaw/dashboard-url?clientId=${client.id}`, { cache: 'no-store' })
+      .then(r => r.json())
+      .then(data => {
+        if (data.url) setTerminalUrl(data.url);
+        else setTerminalError(data.message || 'Terminal not available.');
+      })
+      .catch(() => setTerminalError('Could not reach the terminal.'))
+      .finally(() => setLoading(false));
+  }, [client.id, hasGateway]);
 
   if (!hasGateway) {
     return (
@@ -445,18 +439,22 @@ function TerminalTab({ client }: { client: AgencyClient }) {
             {terminalError}
           </div>
         )}
-        <button
-          onClick={handleOpenTerminal}
-          disabled={opening}
-          className="inline-flex items-center gap-2 bg-indigo-500 hover:bg-indigo-400 disabled:opacity-60 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
-        >
-          {opening ? (
+        {loading ? (
+          <div className="inline-flex items-center gap-2 bg-indigo-500/50 text-white font-semibold px-6 py-3 rounded-xl">
             <Loader2 className="h-5 w-5 animate-spin" />
-          ) : (
+            Loading terminal...
+          </div>
+        ) : terminalUrl ? (
+          <a
+            href={terminalUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 bg-indigo-500 hover:bg-indigo-400 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
+          >
             <ExternalLink className="h-5 w-5" />
-          )}
-          {opening ? 'Opening...' : 'Open Terminal'}
-        </button>
+            Open Terminal
+          </a>
+        ) : null}
       </div>
     </div>
   );
