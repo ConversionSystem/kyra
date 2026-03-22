@@ -5,8 +5,14 @@ import { checkAndActivateReferral } from '@/lib/billing/referral-activation';
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
-  const rawRedirect = searchParams.get('redirect') || '/agency';
+
+  // Support both ?redirect= (our convention) and ?next= (Supabase default)
+  const rawRedirect = searchParams.get('redirect') || searchParams.get('next') || '/agency';
   const redirect = decodeURIComponent(rawRedirect);
+
+  // Detect password reset flow — Supabase sets type=recovery in the URL
+  const type = searchParams.get('type');
+  const isRecovery = type === 'recovery' || redirect.includes('reset-password');
 
   if (code) {
     const supabase = await createClient();
@@ -14,15 +20,17 @@ export async function GET(request: NextRequest) {
 
     if (!error) {
       // ── Referral activation gate ─────────────────────────────────────────
-      // This fires when a user confirms their email (Supabase redirects here).
-      // If they came via a referral link, this is the moment we grant the referrer credits.
-      // Fire-and-forget — don't block the redirect on this.
-      if (data?.user?.id) {
+      if (data?.user?.id && !isRecovery) {
         void checkAndActivateReferral(data.user.id);
       }
 
-      return NextResponse.redirect(`${origin}${redirect}`);
+      // For password recovery, always go to reset-password page
+      const destination = isRecovery ? '/reset-password' : redirect;
+      return NextResponse.redirect(`${origin}${destination}`);
     }
+
+    // Log the error for debugging
+    console.error('[auth/callback] exchangeCodeForSession error:', error.message, '| code present:', !!code, '| redirect:', redirect);
   }
 
   // Return to login if there was an error
