@@ -33,12 +33,65 @@ function ResetPasswordContent() {
   const supabase = createClient();
 
   useEffect(() => {
-    // The callback route (/api/auth/callback) already exchanged the code
-    // for a session before redirecting here. So we just need to check
-    // if there's an active session.
-    supabase.auth.getSession().then(({ data }) => {
-      setReady(!!data.session);
-    });
+    async function init() {
+      // Step 1: Check for PKCE code in query params (comes from /api/auth/callback redirect)
+      // or handle it directly if Supabase sends the code here instead
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (!error) {
+          // Clean up URL
+          window.history.replaceState(null, '', '/reset-password');
+          setReady(true);
+          return;
+        }
+      }
+
+      // Step 2: Check for legacy hash-based tokens (older Supabase emails)
+      const hash = window.location.hash;
+      if (hash && hash.includes('access_token')) {
+        const params = new URLSearchParams(hash.substring(1));
+        const accessToken = params.get('access_token');
+        const refreshToken = params.get('refresh_token');
+        if (accessToken && refreshToken) {
+          const { error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+          if (!error) {
+            window.history.replaceState(null, '', '/reset-password');
+            setReady(true);
+            return;
+          }
+        }
+      }
+
+      // Step 3: Check if already has a valid session (came via /api/auth/callback)
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setReady(true);
+        return;
+      }
+
+      // Step 4: Listen for PASSWORD_RECOVERY event as last resort
+      let resolved = false;
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        if ((event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') && session && !resolved) {
+          resolved = true;
+          setReady(true);
+          subscription.unsubscribe();
+        }
+      });
+
+      // Give it 3 seconds then give up
+      setTimeout(() => {
+        if (!resolved) {
+          subscription.unsubscribe();
+          setReady(false);
+        }
+      }, 3000);
+    }
+
+    init();
   }, [supabase]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -75,7 +128,7 @@ function ResetPasswordContent() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center space-y-3">
           <Loader2 className="h-8 w-8 animate-spin text-indigo-500 mx-auto" />
-          <p className="text-sm text-gray-500">Loading...</p>
+          <p className="text-sm text-gray-500">Verifying reset link...</p>
         </div>
       </div>
     );
@@ -93,12 +146,11 @@ function ResetPasswordContent() {
         </CardHeader>
         <CardContent className="space-y-4">
 
-          {/* No session — link expired or wasn't processed */}
           {!ready && !done && (
             <div className="text-center space-y-4">
               <div className="rounded-md bg-amber-50 border border-amber-200 px-4 py-4 text-sm text-amber-800 text-left">
                 <p className="font-semibold mb-1">Reset link expired</p>
-                <p className="text-amber-700">Reset links expire after 1 hour. Please request a fresh one — it only takes a few seconds.</p>
+                <p className="text-amber-700">Reset links expire after 1 hour. Request a new one below — it only takes seconds.</p>
               </div>
               <Link href="/forgot-password">
                 <Button className="w-full bg-indigo-600 hover:bg-indigo-700">
@@ -111,7 +163,6 @@ function ResetPasswordContent() {
             </div>
           )}
 
-          {/* Success */}
           {done && (
             <div className="text-center space-y-4">
               <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto" />
@@ -122,7 +173,6 @@ function ResetPasswordContent() {
             </div>
           )}
 
-          {/* Password form */}
           {ready && !done && (
             <>
               {error && (
