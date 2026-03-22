@@ -46,6 +46,10 @@
     {
       "path": "/api/cron/terminal-credits",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/gateway-token-sync",
+      "schedule": "0 4 * * *"
     }
   ]
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Server, RefreshCw, AlertTriangle, ExternalLink, Cpu, HardDrive, MemoryStick, Boxes } from 'lucide-react';
+import { Server, RefreshCw, AlertTriangle, ExternalLink, Cpu, HardDrive, MemoryStick, Boxes, ShieldCheck } from 'lucide-react';
 
 interface VpsHealth {
   status: string;
@@ -46,6 +46,27 @@ export default function MasterVpsHealth() {
   const [loading, setLoading] = useState(true);
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<string | null>(null);
+
+  const syncTokens = useCallback(async () => {
+    setSyncing(true);
+    setSyncResult(null);
+    try {
+      const res = await fetch('/api/cron/gateway-token-sync', { method: 'POST' });
+      const data = await res.json();
+      if (data.ok) {
+        setSyncResult(`✅ Checked ${data.checked} containers — fixed ${data.fixed} token${data.fixed !== 1 ? 's' : ''}`);
+      } else {
+        setSyncResult(`❌ ${data.error || 'Sync failed'}`);
+      }
+    } catch {
+      setSyncResult('❌ Sync failed — check network');
+    } finally {
+      setSyncing(false);
+      setTimeout(() => setSyncResult(null), 6000);
+    }
+  }, []);
 
   const fetchHealth = useCallback(async (showSpinner = true) => {
     if (showSpinner) setLoading(true);
@@ -116,13 +137,28 @@ export default function MasterVpsHealth() {
             <span className={`ml-1 flex h-2 w-2 rounded-full ${isHealthy ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`} />
           )}
         </h3>
-        <button
-          onClick={() => fetchHealth()}
-          title="Refresh now"
-          className="text-gray-600 hover:text-gray-400 transition-colors"
-        >
-          <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin text-gray-400' : ''}`} />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={syncTokens}
+            disabled={syncing}
+            title="Sync gateway tokens — fixes terminals showing login screen"
+            className="text-gray-600 hover:text-indigo-400 transition-colors disabled:opacity-50"
+          >
+            <ShieldCheck className={`h-3.5 w-3.5 ${syncing ? 'animate-pulse text-indigo-400' : ''}`} />
+          </button>
+          <button
+            onClick={() => fetchHealth()}
+            title="Refresh now"
+            className="text-gray-600 hover:text-gray-400 transition-colors"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin text-gray-400' : ''}`} />
+          </button>
+        </div>
+        {syncResult && (
+          <div className="absolute top-10 right-3 z-10 text-[10px] bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-gray-300 shadow-lg">
+            {syncResult}
+          </div>
+        )}
       </div>
 
       {/* ── Scale Alert ── */}
