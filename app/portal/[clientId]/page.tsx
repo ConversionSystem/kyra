@@ -41,9 +41,10 @@ export default async function ClientPortalPage({
 
   // ?terminal=1 → send to raw OpenClaw terminal (power user / agency testing)
   if (sp?.terminal === '1' && client.gateway_status === 'running' && client.gateway_url) {
+    const baseUrl = client.gateway_url.replace(/\/$/, '');
     const dest = client.gateway_token
-      ? `${client.gateway_url}?token=${client.gateway_token}`
-      : client.gateway_url;
+      ? `${baseUrl}/__openclaw__/?token=${encodeURIComponent(client.gateway_token)}`
+      : `${baseUrl}/__openclaw__/`;
     redirect(dest);
   }
 
