@@ -11,7 +11,11 @@ import { Sparkles, Loader2, CheckCircle2 } from 'lucide-react';
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-gray-500" /></div>}>
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
+      </div>
+    }>
       <ResetPasswordContent />
     </Suspense>
   );
@@ -24,34 +28,69 @@ function ResetPasswordContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Start as null (checking), true (recovery session active), false (no session)
+  // null = checking, true = ready to set password, false = invalid/expired
   const [ready, setReady] = useState<boolean | null>(null);
 
   const supabase = createClient();
 
   useEffect(() => {
-    // Listen for PASSWORD_RECOVERY event — fires when Supabase processes
-    // the recovery token from the URL hash. This is the correct approach
-    // because getSession() runs before the hash is parsed.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY' && session) {
-        setReady(true);
-      }
-    });
+    async function processResetToken() {
+      // Strategy 1: Parse tokens directly from the URL hash.
+      // This is the most reliable approach for mobile email clients
+      // (in-app browsers don't always fire onAuthStateChange in time).
+      const hash = window.location.hash;
 
-    // Also check if there's already an active session (e.g. page refresh)
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) {
-        setReady(true);
-      } else {
-        // Give onAuthStateChange 2s to fire before declaring invalid
-        setTimeout(() => {
-          setReady(prev => prev === null ? false : prev);
-        }, 2000);
-      }
-    });
+      if (hash && hash.includes('type=recovery')) {
+        const params = new URLSearchParams(hash.substring(1));
+        const accessToken = params.get('access_token');
+        const refreshToken = params.get('refresh_token');
 
-    return () => subscription.unsubscribe();
+        if (accessToken && refreshToken) {
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          if (!error) {
+            // Clear the hash so tokens aren't visible in the URL
+            window.history.replaceState(null, '', window.location.pathname);
+            setReady(true);
+            return;
+          }
+        }
+        // Hash had recovery type but tokens were invalid/expired
+        setReady(false);
+        return;
+      }
+
+      // Strategy 2: No hash — check if there's already an active recovery session
+      // (e.g. user refreshed the page after strategy 1 already ran)
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setReady(true);
+        return;
+      }
+
+      // Strategy 3: Listen for PASSWORD_RECOVERY event as final fallback
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'PASSWORD_RECOVERY' && session) {
+          setReady(true);
+          subscription.unsubscribe();
+        }
+      });
+
+      // Give it 3 seconds, then give up
+      setTimeout(() => {
+        setReady(prev => {
+          if (prev === null) {
+            subscription.unsubscribe();
+            return false;
+          }
+          return prev;
+        });
+      }, 3000);
+    }
+
+    processResetToken();
   }, [supabase]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -83,7 +122,7 @@ function ResetPasswordContent() {
     }
   };
 
-  // Still waiting for auth state
+  // Checking
   if (ready === null) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -107,12 +146,12 @@ function ResetPasswordContent() {
         </CardHeader>
         <CardContent className="space-y-4">
 
-          {/* Invalid / expired link */}
+          {/* Invalid / expired */}
           {!ready && !done && (
             <div className="text-center space-y-4">
-              <div className="rounded-md bg-amber-50 border border-amber-200 px-4 py-4 text-sm text-amber-800">
-                <p className="font-semibold mb-1">Reset link not detected</p>
-                <p>This can happen if the link expired, was already used, or you opened it in a different browser. Request a fresh link below.</p>
+              <div className="rounded-md bg-amber-50 border border-amber-200 px-4 py-4 text-sm text-amber-800 text-left">
+                <p className="font-semibold mb-1">Reset link not working</p>
+                <p className="text-amber-700">Reset links expire after 1 hour and can only be used once. Please request a new one — it only takes a few seconds.</p>
               </div>
               <Link href="/forgot-password">
                 <Button className="w-full bg-indigo-600 hover:bg-indigo-700">
