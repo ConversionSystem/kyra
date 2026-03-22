@@ -388,25 +388,7 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
 // ── Terminal Tab ──────────────────────────────────────────────────────────────
 
 function TerminalTab({ client }: { client: AgencyClient }) {
-  const [terminalUrl, setTerminalUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [terminalError, setTerminalError] = useState<string | null>(null);
-
   const hasGateway = !!(client.gateway_url && client.gateway_status === 'running');
-
-  // Pre-fetch the terminal URL on mount so the <a href> is ready for a
-  // synchronous click — window.open() after await is blocked by iOS Safari.
-  useEffect(() => {
-    if (!hasGateway) { setLoading(false); return; }
-    fetch(`/api/openclaw/dashboard-url?clientId=${client.id}`, { cache: 'no-store' })
-      .then(r => r.json())
-      .then(data => {
-        if (data.url) setTerminalUrl(data.url);
-        else setTerminalError(data.message || 'Terminal not available.');
-      })
-      .catch(() => setTerminalError('Could not reach the terminal.'))
-      .finally(() => setLoading(false));
-  }, [client.id, hasGateway]);
 
   if (!hasGateway) {
     return (
@@ -419,6 +401,11 @@ function TerminalTab({ client }: { client: AgencyClient }) {
       </div>
     );
   }
+
+  // Use /terminal/[clientId] — a Kyra page that does same-tab navigation
+  // with the token in the URL. This avoids iOS Safari popup blocker and
+  // cross-origin ?token= stripping that happens with window.open / target=_blank.
+  const terminalPageUrl = `/terminal/${client.id}`;
 
   return (
     <div className="space-y-6">
@@ -434,27 +421,13 @@ function TerminalTab({ client }: { client: AgencyClient }) {
             </p>
           </div>
         </div>
-        {terminalError && (
-          <div className="mb-4 rounded-xl bg-red-500/20 border border-red-500/30 px-4 py-3 text-sm text-red-200">
-            {terminalError}
-          </div>
-        )}
-        {loading ? (
-          <div className="inline-flex items-center gap-2 bg-indigo-500/50 text-white font-semibold px-6 py-3 rounded-xl">
-            <Loader2 className="h-5 w-5 animate-spin" />
-            Loading terminal...
-          </div>
-        ) : terminalUrl ? (
-          <a
-            href={terminalUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 bg-indigo-500 hover:bg-indigo-400 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
-          >
-            <ExternalLink className="h-5 w-5" />
-            Open Terminal
-          </a>
-        ) : null}
+        <a
+          href={terminalPageUrl}
+          className="inline-flex items-center gap-2 bg-indigo-500 hover:bg-indigo-400 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
+        >
+          <ExternalLink className="h-5 w-5" />
+          Open Terminal
+        </a>
       </div>
     </div>
   );
