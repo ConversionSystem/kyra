@@ -150,9 +150,17 @@ function LoginContent() {
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium text-gray-800">
-                Password
-              </label>
+              <div className="flex items-center justify-between">
+                <label htmlFor="password" className="text-sm font-medium text-gray-800">
+                  Password
+                </label>
+                <Link
+                  href="/forgot-password"
+                  className="text-xs text-indigo-600 hover:text-indigo-700 hover:underline"
+                >
+                  Forgot password?
+                </Link>
+              </div>
               <Input
                 id="password"
                 type="password"
@@ -165,7 +173,7 @@ function LoginContent() {
             </div>
             <Button
               type="submit"
-              className="w-full"
+              className="w-full bg-indigo-600 hover:bg-indigo-700"
               disabled={isLoading || isGoogleLoading}
             >
               {isLoading ? (
@@ -176,9 +184,9 @@ function LoginContent() {
           </form>
 
           <p className="text-center text-sm text-gray-500">
-            Don't have an account?{' '}
-            <Link href="/solo" className="text-gray-900 hover:underline">
-              Sign up
+            Don&apos;t have an account?{' '}
+            <Link href="/solo" className="text-indigo-600 hover:underline font-medium">
+              Sign up free
             </Link>
           </p>
         </CardContent>
