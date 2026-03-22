@@ -217,3 +217,29 @@ Add image understanding via Claude Vision across web chat and Telegram.
 8. `app/api/channels/telegram/webhook/route.ts` — added `handlePhotoMessage` for Telegram photo messages with caption support
 
 *Last Updated: February 13, 2026*
+
+---
+
+## Stripe Activation Guide (March 22, 2026)
+
+### Plan
+Build a step-by-step checklist page at `/master/stripe-setup` that walks through Stripe activation. Master admin only.
+
+### Tasks
+- [ ] `app/api/stripe/env-check/route.ts` — master-only route returning which Stripe env vars are set
+- [ ] `app/api/stripe/test/route.ts` — master-only route that calls `stripe.accounts.retrieve()` to verify key
+- [ ] `app/master/stripe-setup/page.tsx` — server component with master auth gate
+- [ ] `app/master/stripe-setup/stripe-setup-client.tsx` — client component with 5-step wizard UI
+- [ ] `app/master/master-dashboard.tsx` — add "Billing Setup" link to Quick Links with red dot indicator
+- [ ] Commit and push
+
+### Files to create
+1. `app/api/stripe/env-check/route.ts`
+2. `app/api/stripe/test/route.ts`
+3. `app/master/stripe-setup/page.tsx`
+4. `app/master/stripe-setup/stripe-setup-client.tsx`
+
+### Files to modify
+1. `app/master/master-dashboard.tsx` — add link to Quick Links
+
+*Last Updated: March 22, 2026*
