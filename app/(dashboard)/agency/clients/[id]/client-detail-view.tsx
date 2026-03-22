@@ -390,8 +390,9 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
 function TerminalTab({ client }: { client: AgencyClient }) {
   const gatewayUrl = (client as any).gateway_url as string | undefined;
   const gatewayToken = (client as any).gateway_token as string | undefined;
+  // Token must be passed to the /__openclaw__/ control UI path, not the root URL
   const gatewayUrlWithToken = gatewayUrl && gatewayToken
-    ? `${gatewayUrl}?token=${gatewayToken}`
+    ? `${gatewayUrl.replace(/\/$/, '')}/__openclaw__/?token=${encodeURIComponent(gatewayToken)}`
     : gatewayUrl || null;
 
   if (!gatewayUrlWithToken) {
