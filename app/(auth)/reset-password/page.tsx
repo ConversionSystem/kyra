@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Sparkles, Loader2, CheckCircle2, XCircle } from 'lucide-react';
+import { Sparkles, Loader2, CheckCircle2 } from 'lucide-react';
 
 export default function ResetPasswordPage() {
   return (
@@ -24,15 +24,34 @@ function ResetPasswordContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [validSession, setValidSession] = useState<boolean | null>(null);
+  // Start as null (checking), true (recovery session active), false (no session)
+  const [ready, setReady] = useState<boolean | null>(null);
 
   const supabase = createClient();
 
   useEffect(() => {
-    // Supabase handles the token from the URL hash automatically
-    supabase.auth.getSession().then(({ data }) => {
-      setValidSession(!!data.session);
+    // Listen for PASSWORD_RECOVERY event — fires when Supabase processes
+    // the recovery token from the URL hash. This is the correct approach
+    // because getSession() runs before the hash is parsed.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY' && session) {
+        setReady(true);
+      }
     });
+
+    // Also check if there's already an active session (e.g. page refresh)
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) {
+        setReady(true);
+      } else {
+        // Give onAuthStateChange 2s to fire before declaring invalid
+        setTimeout(() => {
+          setReady(prev => prev === null ? false : prev);
+        }, 2000);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, [supabase]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -49,15 +68,12 @@ function ResetPasswordContent() {
     }
 
     setIsLoading(true);
-
     try {
       const { error } = await supabase.auth.updateUser({ password });
-
       if (error) {
         setError(error.message);
         return;
       }
-
       setDone(true);
       setTimeout(() => router.push('/agency'), 2500);
     } catch {
@@ -67,10 +83,14 @@ function ResetPasswordContent() {
     }
   };
 
-  if (validSession === null) {
+  // Still waiting for auth state
+  if (ready === null) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+        <div className="text-center space-y-3">
+          <Loader2 className="h-8 w-8 animate-spin text-indigo-500 mx-auto" />
+          <p className="text-sm text-gray-500">Verifying your reset link...</p>
+        </div>
       </div>
     );
   }
@@ -86,32 +106,38 @@ function ResetPasswordContent() {
           <CardDescription>Choose a strong password for your account</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {!validSession ? (
+
+          {/* Invalid / expired link */}
+          {!ready && !done && (
             <div className="text-center space-y-4">
-              <XCircle className="h-12 w-12 text-red-400 mx-auto" />
-              <div>
-                <p className="font-semibold text-gray-900">Link expired or invalid</p>
-                <p className="text-sm text-gray-500 mt-1">
-                  This reset link has expired or already been used.
-                </p>
+              <div className="rounded-md bg-amber-50 border border-amber-200 px-4 py-4 text-sm text-amber-800">
+                <p className="font-semibold mb-1">Reset link not detected</p>
+                <p>This can happen if the link expired, was already used, or you opened it in a different browser. Request a fresh link below.</p>
               </div>
               <Link href="/forgot-password">
                 <Button className="w-full bg-indigo-600 hover:bg-indigo-700">
-                  Request a new link
+                  Request a new reset link
                 </Button>
               </Link>
+              <Link href="/login" className="block text-sm text-gray-500 hover:text-gray-700 text-center">
+                Back to sign in
+              </Link>
             </div>
-          ) : done ? (
+          )}
+
+          {/* Success */}
+          {done && (
             <div className="text-center space-y-4">
               <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto" />
               <div>
                 <p className="font-semibold text-gray-900">Password updated!</p>
-                <p className="text-sm text-gray-500 mt-1">
-                  Redirecting you to the dashboard...
-                </p>
+                <p className="text-sm text-gray-500 mt-1">Taking you to the dashboard...</p>
               </div>
             </div>
-          ) : (
+          )}
+
+          {/* Password form */}
+          {ready && !done && (
             <>
               {error && (
                 <div className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-600">
@@ -159,6 +185,7 @@ function ResetPasswordContent() {
               </form>
             </>
           )}
+
         </CardContent>
       </Card>
     </div>
