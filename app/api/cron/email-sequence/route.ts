@@ -11,6 +11,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { sendSequenceEmail, SEQUENCE_DAYS } from '@/lib/email/sequences';
+import { getNurtureEmail, NURTURE_FROM } from '@/lib/email/nurture-sequence';
 
 export const maxDuration = 60;
 
@@ -122,10 +123,86 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // ── Nurture sequence (queue-based) ──────────────────────────────────────
+  const nurtureResults: Array<{ id: string; step: number; result: string }> = [];
+  let nurtureSent = 0;
+
+  const { data: pendingEmails, error: nurtureError } = await supabase
+    .from('email_nurture_queue')
+    .select('id, agency_id, email, sequence_step')
+    .eq('status', 'pending')
+    .lte('send_at', now.toISOString())
+    .order('send_at')
+    .limit(50);
+
+  if (nurtureError) {
+    console.error('[nurture-cron] DB error:', nurtureError.message);
+  }
+
+  const resendKey = process.env.RESEND_API_KEY;
+
+  if (pendingEmails?.length && resendKey) {
+    for (const row of pendingEmails) {
+      const emailContent = getNurtureEmail(row.sequence_step as 1|2|3|4|5|6|7, row.email);
+      if (!emailContent) {
+        await supabase
+          .from('email_nurture_queue')
+          .update({ status: 'skipped', sent_at: now.toISOString() })
+          .eq('id', row.id);
+        nurtureResults.push({ id: row.id, step: row.sequence_step, result: 'skipped' });
+        continue;
+      }
+
+      try {
+        const res = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${resendKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            from: NURTURE_FROM,
+            to: row.email,
+            subject: emailContent.subject,
+            html: emailContent.html,
+            tags: [
+              { name: 'type', value: 'nurture' },
+              { name: 'step', value: String(row.sequence_step) },
+              { name: 'agency_id', value: row.agency_id },
+            ],
+          }),
+          signal: AbortSignal.timeout(10_000),
+        });
+
+        if (!res.ok) {
+          const errText = await res.text().catch(() => '');
+          throw new Error(`Resend ${res.status}: ${errText.slice(0, 100)}`);
+        }
+
+        await supabase
+          .from('email_nurture_queue')
+          .update({ status: 'sent', sent_at: now.toISOString() })
+          .eq('id', row.id);
+
+        console.log(`[nurture-cron] ✅ Step ${row.sequence_step} → ${row.email}`);
+        nurtureResults.push({ id: row.id, step: row.sequence_step, result: 'sent' });
+        nurtureSent++;
+      } catch (err: any) {
+        await supabase
+          .from('email_nurture_queue')
+          .update({ status: 'failed' })
+          .eq('id', row.id);
+        console.error(`[nurture-cron] ❌ Step ${row.sequence_step} → ${row.email}:`, err.message);
+        nurtureResults.push({ id: row.id, step: row.sequence_step, result: `failed: ${err.message}` });
+      }
+    }
+  }
+
   return NextResponse.json({
     ok: true,
     processed: agencies.length,
     sent: results.filter(r => r.result === 'sent').length,
+    nurture: { processed: pendingEmails?.length ?? 0, sent: nurtureSent, results: nurtureResults },
     results,
     timestamp: now.toISOString(),
   });
