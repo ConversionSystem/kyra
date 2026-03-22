@@ -56,11 +56,22 @@ function AgencySignupPage() {
   useEffect(() => {
     async function checkAuth() {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) setStep(2);  // Skip to plan selection
+      if (user) {
+        // If they already have an agency, send them straight to dashboard
+        const res = await fetch('/api/agency').catch(() => null);
+        if (res?.ok) {
+          const data = await res.json().catch(() => null);
+          if (data?.id) {
+            router.replace('/agency');
+            return;
+          }
+        }
+        setStep(2);  // Has auth but no agency yet — go to plan selection
+      }
       setCheckingAuth(false);
     }
     checkAuth();
-  }, [supabase]);
+  }, [supabase, router]);
 
   useEffect(() => {
     if (!slugEdited && agencyName) {
