@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Plus, Activity, Gift, AlertTriangle, Sparkles, ArrowRight, Rocket, Zap } from 'lucide-react';
 import MissionControlLive from '@/components/dashboard/mission-control-live';
 import { StartTourButton } from '@/components/onboarding/guided-tour';
+import { OnboardingProgress } from '@/components/dashboard/onboarding-progress';
+import { ONBOARDING_STEPS, type OnboardingStepsRecord } from '@/lib/onboarding/tracker';
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -32,6 +34,12 @@ export default async function AgencyOverviewPage() {
   ]);
 
   const totalCount = clients.length;
+
+  // Show onboarding widget for agencies created in the last 30 days
+  const agencyAge = Date.now() - new Date(agency.created_at).getTime();
+  const showOnboarding = agencyAge < 30 * 24 * 60 * 60 * 1000;
+  const onboardingSteps = ((agency as unknown as Record<string, unknown>).onboarding_steps ?? {}) as OnboardingStepsRecord;
+
   const showLowCredits = agencyCredits.balance <= 10 && agencyCredits.lifetimePurchased > 0;
   const showOutOfCredits = agencyCredits.balance === 0 && agencyCredits.lifetimePurchased > 0;
   const showWelcomeCredits = agencyCredits.lifetimePurchased === 0 && agencyCredits.balance > 0;
@@ -79,6 +87,11 @@ export default async function AgencyOverviewPage() {
           </Link>
         )}
       </div>
+
+      {/* ── Onboarding checklist (new agencies only) ── */}
+      {showOnboarding && (
+        <OnboardingProgress steps={onboardingSteps} stepsMeta={ONBOARDING_STEPS} />
+      )}
 
       {/* ── Credit alerts (only one shows) ── */}
       {showOutOfCredits && (

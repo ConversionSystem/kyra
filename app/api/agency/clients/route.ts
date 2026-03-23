@@ -6,6 +6,7 @@ import { provisionClientGateway } from '@/lib/ovh/provisioner';
 import { buildInjectionDefensePromptSuffix } from '@/lib/security/prompt-injection';
 import { canAddClient, getPlanClientLimit } from '@/lib/billing/plans';
 import type { CreateClientRequest } from '@/lib/agency/types';
+import { markOnboardingStep } from '@/lib/onboarding/tracker';
 
 /**
  * GET /api/agency/clients
@@ -182,6 +183,9 @@ export async function POST(request: NextRequest) {
     console.error('Failed to create client:', createError);
     return NextResponse.json({ error: 'Failed to create client' }, { status: 500 });
   }
+
+  // Fire-and-forget: mark onboarding step
+  void markOnboardingStep(agency.id, 'first_client_created');
 
   // Auto-provision per-client gateway on OVH (non-blocking)
   // Build SOUL.md from persona + greeting + instructions (same as Personality tab save)
