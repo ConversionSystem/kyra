@@ -23,6 +23,8 @@ export interface RoleWorker {
   channels: ('sms' | 'voice' | 'chat' | 'telegram')[];
   tools: string[];
   useCase: 'customer-facing' | 'internal';  // customer-facing = talks to end customers; internal = agency/operator use
+  visibility?: 'public' | 'private';  // default 'public'
+  allowedAgencies?: string[];          // agency IDs that can see this worker (only when visibility = 'private')
   variables?: TemplateVariable[];
   soulMd?: string;
 }
@@ -1716,5 +1718,108 @@ export const ROLE_WORKERS: RoleWorker[] = [
       { key: 'alert_threshold', label: 'Alert Threshold', placeholder: '$1,000', required: false },
       { key: 'escalation_contact', label: 'Escalation Contact', placeholder: 'finance@acme.com', required: false },
     ],
+  },
+  {
+    id: 'it-operations-specialist',
+    type: 'role',
+    emoji: '🔗',
+    name: 'IT Operations Specialist',
+    roleBadge: 'Business Integration',
+    description: 'Connects and manages your entire business stack — Microsoft 365, Google Workspace, Fathom meeting intelligence, GitHub, and web research. One AI worker that operates across all your tools.',
+    tags: ['integration', 'microsoft-365', 'google-workspace', 'fathom', 'github', 'automation', 'enterprise'],
+    whatItDoes: [
+      'Manages Outlook email — reads inbox, drafts replies, sends, organizes folders',
+      'Handles OneDrive files — uploads, downloads, shares, creates folders',
+      'Posts and reads Microsoft Teams messages across channels and chats',
+      'Manages Gmail — reads, composes, sends, labels, and searches email',
+      'Works with Google Drive — uploads, organizes, shares documents',
+      'Reads Google Calendar — checks availability, lists events',
+      'Pulls Fathom meeting transcripts, summaries, and action items',
+      'Manages GitHub repos — creates branches, commits, PRs, triggers deployments',
+      'Performs live web research using Brave Search',
+      'Sends updates and receives commands via Telegram',
+      'Creates daily email digests and posts summaries to Teams/Telegram',
+      'Cross-tool workflows — reads email, finds file, pulls meeting notes, posts update — all in one step',
+    ],
+    channels: ['sms', 'chat', 'telegram'],
+    tools: [
+      'Outlook Email (Read/Write/Send)',
+      'OneDrive (Upload/Download/Share)',
+      'Teams (Read/Post/Reply)',
+      'Gmail (Read/Write/Send/Label)',
+      'Google Drive (Upload/Organize/Share)',
+      'Google Calendar (Read/Check Availability)',
+      'Fathom (Transcripts/Summaries/Action Items)',
+      'GitHub (Branches/Commits/PRs/Deployments)',
+      'Web Search (Brave API)',
+      'Escalates to Human',
+    ],
+    useCase: 'internal',
+    visibility: 'private',
+    allowedAgencies: ['18e6e562-ec29-4652-a38b-58f6be2e533f', '1511e077-77ef-4c47-81fd-06a3bc9f1dbb'],
+    variables: [
+      { key: 'business_name', label: 'Business Name', placeholder: 'MIX Networks / Trusted Networx', required: true },
+      { key: 'microsoft_tenant_id', label: 'Microsoft 365 Tenant ID', placeholder: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx', required: false },
+      { key: 'microsoft_client_id', label: 'Microsoft App Client ID', placeholder: 'Azure AD App Registration Client ID', required: false },
+      { key: 'google_service_account', label: 'Google Service Account Email', placeholder: 'your-service@project.iam.gserviceaccount.com', required: false },
+      { key: 'fathom_api_key', label: 'Fathom API Key', placeholder: 'fathom_xxxxxxxx', required: false },
+      { key: 'github_token', label: 'GitHub Personal Access Token', placeholder: 'ghp_xxxxxxxxxxxx', required: false },
+      { key: 'github_repos', label: 'GitHub Repositories', placeholder: 'org/repo1\norg/repo2', required: false, type: 'textarea' },
+      { key: 'telegram_updates_chat_id', label: 'Telegram Chat ID for Updates', placeholder: '-100xxxxxxxxxx', required: false },
+      { key: 'email_digest_time', label: 'Daily Email Digest Time', placeholder: '17:00', required: false },
+      { key: 'priority_senders', label: 'Priority Email Senders', placeholder: 'boss@company.com\nclient@important.com', required: false, type: 'textarea' },
+    ],
+    soulMd: `# IT Operations Specialist — Trusted Networx
+
+You are the AI Operations Specialist for {{business_name}}. You manage the entire business technology stack through natural language commands.
+
+## Your Capabilities
+
+### Microsoft 365
+- **Outlook:** Read inbox, draft replies for approval, send emails, organize folders, create daily digests
+- **OneDrive:** Upload, download, share files, create folder structures, find documents
+- **Teams:** Read channel messages, post updates, reply in threads, monitor @mentions
+
+### Google Workspace
+- **Gmail:** Read, compose, send, label, search, and organize emails
+- **Google Drive:** Upload, organize, share documents and folders
+- **Google Calendar:** Check availability, list upcoming events
+
+### Fathom Meeting Intelligence
+- Pull transcripts from recent meetings
+- Extract summaries and action items
+- Post meeting notes to Teams or Telegram automatically
+
+### GitHub
+- Create branches, make commits, open PRs
+- Trigger GitHub Actions for deployments
+- Monitor repo activity and notify on failures
+
+### Web Research
+- Search the web for any topic using Brave Search
+- Retrieve and summarize web page content
+- Research competitors, industry trends, or technical topics
+
+### Telegram
+- Receive commands from the team
+- Send daily email digests and meeting summaries
+- Alert on urgent items (failed deployments, important emails)
+
+## Behavior Rules
+1. Always confirm before sending emails or making commits
+2. Categorize emails: Urgent → Action Needed → Informational → Spam
+3. Draft replies for "Action Needed" emails — present for approval before sending
+4. Post daily digest to Telegram at {{email_digest_time}} every business day
+5. Monitor {{priority_senders}} emails — flag immediately
+6. Never expose API keys, tokens, or credentials in messages
+7. When uncertain, ask for clarification — don't guess on business-critical actions
+
+## Cross-Tool Workflows
+When asked to "prepare for a meeting," you should:
+1. Pull the meeting transcript from Fathom
+2. Find related files on OneDrive/Google Drive
+3. Check the latest email thread with that contact
+4. Compile a brief and post it to Teams or Telegram
+`,
   },
 ];
