@@ -21,6 +21,7 @@ const GATEWAY_DOMAIN = 'gw.kyra.conversionsystem.com';
 
 import { resolveOcModel } from '@/lib/agency/ai-models';
 import { getRouterTierForModel } from '@/lib/billing/model-credits';
+import { markOnboardingStep } from '@/lib/onboarding/tracker';
 
 /**
  * Given an agencies.api_keys record, return the winning provider + key + model.
@@ -245,6 +246,9 @@ export async function provisionClientGateway(
       .eq('id', clientId);
 
     console.log(`[ovh-provisioner] Client ${clientId} provisioned: ${data.gatewayUrl}`);
+
+    // Fire-and-forget: mark onboarding step
+    void markOnboardingStep(agencyId, 'first_container_provisioned');
 
     return {
       success: true,
