@@ -45,15 +45,17 @@ export async function GET(
   // Chat will return a graceful fallback message in that case
   // This ensures the widget always renders on client sites
 
-  // Fetch agency branding settings
+  // Fetch agency branding settings + plan
   let agencySettings: Record<string, unknown> = {};
+  let agencyPlan = 'free';
   if (client?.agency_id) {
     const { data: agency } = await supabase
       .from('agencies')
-      .select('id, name, settings')
+      .select('id, name, settings, plan')
       .eq('id', client.agency_id)
       .single();
     agencySettings = (agency?.settings as Record<string, unknown>) ?? {};
+    agencyPlan = (agency?.plan as string) || 'free';
   }
 
   const agencyPrimaryColor = (agencySettings.primary_color as string) || null;
@@ -65,7 +67,9 @@ export async function GET(
   const widgetColor = (cfg.widget_color as string) || agencyPrimaryColor || agencyAccentColor || '#6366f1';
   const widgetTitle = (cfg.widget_title as string) || (agencyCompanyName ? `Chat with ${agencyCompanyName}` : (client ? `Chat with ${client.name}` : 'Chat with us'));
   const widgetGreeting = (cfg.widget_greeting as string) || `Hi! 👋 How can I help you today?`;
-  const widgetPoweredBy = cfg.widget_powered_by !== false; // default true
+  // Free and Lite plans: badge always on regardless of config
+  const planForcedBadge = ['free', 'starter'].includes(agencyPlan);
+  const widgetPoweredBy = planForcedBadge ? true : (cfg.widget_powered_by !== false);
   const widgetPosition = (cfg.widget_position as string) || 'bottom-right';
   const widgetAvatarEmoji = (cfg.widget_avatar as string) || '🤖';
   const apiBase = (process.env.NEXT_PUBLIC_APP_URL || 'https://kyra.conversionsystem.com').replace(/\/$/, '');
@@ -128,9 +132,9 @@ export async function GET(
     '#kyra-widget-send:hover { transform:scale(1.05); }',
     '#kyra-widget-send:disabled { opacity:0.45; cursor:not-allowed; transform:none; }',
     '#kyra-widget-send svg { width:18px; height:18px; fill:white; }',
-    '#kyra-widget-powered { text-align:center; padding:4px 8px; font-size:8px; color:#c0c0c0; font-family:system-ui,sans-serif; background:#fff; border-top:1px solid #f3f4f6; }',
-    '#kyra-widget-powered a { color:#c0c0c0; text-decoration:none; font-weight:500; }',
-    '#kyra-widget-powered a:hover { color:#9ca3af; text-decoration:underline; }',
+    '#kyra-widget-powered { text-align:center; padding:6px 12px; background:#f8f7ff; border-top:1px solid #e5e3ff; }',
+    '#kyra-widget-powered a { font-size:11px; color:#6366f1; text-decoration:none; font-weight:500; opacity:0.85; transition:opacity 0.2s; }',
+    '#kyra-widget-powered a:hover { opacity:1; text-decoration:underline; }',
   ].join('');
   document.head.appendChild(style);
 
@@ -173,7 +177,7 @@ export async function GET(
     '    <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>',
     '  </button>',
     '</div>',
-    POWERED_BY ? '<div id="kyra-widget-powered"><a href="https://kyra.conversionsystem.com/signup/agency?utm_source=widget&utm_medium=powered_by&utm_campaign=viral" target="_blank" rel="noopener" title="Get your own AI worker — free to start">Powered by Kyra</a></div>' : '',
+    POWERED_BY ? '<div id="kyra-widget-powered"><a href="https://kyra.conversionsystem.com?utm_source=widget&utm_medium=powered_by&utm_campaign=viral" target="_blank" rel="noopener">⚡ Powered by <strong>Kyra</strong></a></div>' : '',
   ].join('');
   document.body.appendChild(panel);
 
