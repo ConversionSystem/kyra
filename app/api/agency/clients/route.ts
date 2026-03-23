@@ -188,28 +188,8 @@ export async function POST(request: NextRequest) {
   // Fire-and-forget: mark onboarding step
   void markOnboardingStep(agency.id, 'first_client_created');
 
-  // Auto-provision GHL sub-account for paid plans (fire-and-forget)
-  const PAID_PLANS = ['starter', 'pro', 'scale'];
-  if (PAID_PLANS.includes(agencyPlan) && process.env.GHL_AGENCY_API_KEY) {
-    void (async () => {
-      try {
-        const subAccount = await createGhlSubAccount({
-          name,
-          email: result.data.user?.email || undefined,
-          country: 'US',
-        });
-
-        await serviceClient
-          .from('agency_clients')
-          .update({ ghl_location_id: subAccount.id })
-          .eq('id', client.id);
-
-        console.log(`[ghl-provision] Created sub-account ${subAccount.id} for client ${client.id} (${name})`);
-      } catch (err) {
-        console.warn('[ghl-provision] Failed to auto-create GHL sub-account:', err);
-      }
-    })();
-  }
+  // GHL sub-account provisioning is now on-demand via the GHL Integration page
+  // (Settings → GHL → "Create Free GHL Sub-Account" button)
 
   // Auto-provision per-client gateway on OVH (non-blocking)
   // Build SOUL.md from persona + greeting + instructions (same as Personality tab save)
