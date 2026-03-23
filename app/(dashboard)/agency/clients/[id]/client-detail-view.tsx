@@ -65,6 +65,11 @@ import { AICapabilities } from './ai-capabilities';
 import { SEODashboard } from './seo-dashboard';
 import SkillsTab from '@/components/dashboard/client-tabs/skills-tab';
 import KnowledgeTab from '@/components/dashboard/client-tabs/knowledge-tab';
+import TrainTab from '@/components/dashboard/client-tabs/train-tab';
+import InsightsTab from '@/components/dashboard/client-tabs/insights-tab';
+import WebsiteTab from '@/components/dashboard/client-tabs/website-tab';
+import CRMTab from '@/components/dashboard/client-tabs/crm-tab';
+import AIWorkersTab from '@/components/dashboard/client-tabs/ai-workers-tab';
 import { AISetupClient } from '@/app/(dashboard)/agency/ai-setup/ai-setup-client';
 import { AgentsClient } from '@/app/(dashboard)/agency/agents/agents-client';
 import { AutopilotClient } from '@/app/(dashboard)/agency/autopilot/autopilot-client';
@@ -87,7 +92,7 @@ function SetupNudgeBanner({
   );
 
   const missing: { label: string; tab: Tab; desc: string }[] = [];
-  if (!hasPersonality) missing.push({ label: 'Add Personality', tab: 'personality', desc: 'Train the AI with persona, greeting, and instructions' });
+  if (!hasPersonality) missing.push({ label: 'Add Personality', tab: 'train', desc: 'Train the AI with persona, greeting, and instructions' });
   // GHL nudge removed from global banner — shown only inside the GHL tab
 
   if (missing.length === 0) return null;
@@ -134,48 +139,52 @@ interface ChatMessage {
   content: string;
 }
 
-type Tab = 'terminal' | 'personality' | 'templates' | 'skills' | 'knowledge' | 'settings' | 'ghl' | 'usage' | 'conversations' | 'channels' | 'portal' | 'memory' | 'voice' | 'seo' | 'automation' | 'ai-teams';
+type Tab = 'inbox' | 'chat' | 'train' | 'workers' | 'crm' | 'website' | 'settings' | 'insights' | 'share';
+
+// Map legacy ?tab= values to new tab IDs so old bookmarks still work
+const LEGACY_TAB_MAP: Record<string, Tab> = {
+  conversations: 'inbox',
+  terminal: 'chat',
+  personality: 'train',
+  templates: 'train',
+  skills: 'train',
+  knowledge: 'train',
+  'ai-workers': 'workers',
+  'ai-teams': 'workers',
+  website: 'website',
+  ghl: 'settings',
+  channels: 'settings',
+  secrets: 'settings',
+  voice: 'settings',
+  'delivery-sms': 'settings',
+  automation: 'settings',
+  usage: 'insights',
+  memory: 'insights',
+  seo: 'insights',
+  portal: 'share',
+};
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
-  { id: 'terminal', label: 'Terminal', icon: Terminal },
-  { id: 'personality', label: 'AI Personality', icon: Brain },
-  { id: 'templates', label: 'Templates', icon: Sparkles },
-  { id: 'skills', label: 'Skills', icon: Zap },
-  { id: 'knowledge', label: 'Knowledge Base', icon: Database },
-  { id: 'ai-teams', label: 'AI Teams', icon: Bot },
-  { id: 'settings', label: 'Settings', icon: Settings },
-  { id: 'ghl', label: 'GHL', icon: Link2 },
-  { id: 'automation', label: 'Automation', icon: GitBranch },
-  { id: 'usage', label: 'Usage', icon: BarChart3 },
-  { id: 'conversations', label: 'Conversations', icon: Inbox },
-  { id: 'channels', label: 'Channels', icon: Radio },
-  { id: 'portal', label: 'Client Portal', icon: Users },
-  { id: 'memory', label: 'AI Memory', icon: Database },
-  { id: 'voice', label: 'Voice AI', icon: Phone },
-  { id: 'seo', label: 'SEO', icon: BarChart3 },
+  { id: 'inbox', label: 'Inbox', icon: Inbox },
+  { id: 'chat', label: 'Chat', icon: MessageSquare },
+  { id: 'train', label: 'Train', icon: Brain },
+  { id: 'workers', label: 'AI Workers', icon: Bot },
+  { id: 'crm', label: 'CRM', icon: Users },
+  { id: 'website', label: 'Website', icon: Globe },
 ];
 
 // Grouped sidebar navigation — desktop only
-const TAB_GROUPS: { label: string; tabs: typeof TABS }[] = [
+const TAB_GROUPS: { label?: string; tabs: { id: Tab; label: string; icon: React.ElementType }[] }[] = [
   {
-    label: 'Communicate',
-    tabs: TABS.filter(t => ['terminal', 'conversations', 'channels'].includes(t.id)),
+    tabs: TABS.filter(t => ['inbox', 'chat', 'train', 'workers', 'crm', 'website'].includes(t.id)),
   },
   {
     label: 'Configure',
-    tabs: TABS.filter(t => ['personality', 'templates', 'skills', 'knowledge', 'ai-teams', 'voice', 'settings'].includes(t.id)),
-  },
-  {
-    label: 'Integrate',
-    tabs: TABS.filter(t => ['ghl', 'automation'].includes(t.id)),
-  },
-  {
-    label: 'Analyze',
-    tabs: TABS.filter(t => ['usage', 'memory', 'seo'].includes(t.id)),
-  },
-  {
-    label: 'Portal',
-    tabs: TABS.filter(t => ['portal'].includes(t.id)),
+    tabs: [
+      { id: 'settings' as Tab, label: 'Settings', icon: Settings },
+      { id: 'insights' as Tab, label: 'Insights', icon: BarChart3 },
+      { id: 'share' as Tab, label: 'Share', icon: Share2 },
+    ],
   },
 ];
 
@@ -251,11 +260,16 @@ function ReprovisionButton({ clientId }: { clientId: string }) {
 export function ClientDetailView({ client: initialClient, role, agencyPlan }: ClientDetailViewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialTab = (searchParams.get('tab') as Tab) || 'terminal';
+  const ALL_TAB_IDS = TAB_GROUPS.flatMap(g => g.tabs.map(t => t.id));
   const justActivated = searchParams.get('activated') === 'true';
-  const [activeTab, setActiveTab] = useState<Tab>(
-    TABS.some(t => t.id === initialTab) ? initialTab : 'terminal'
-  );
+  const [activeTab, setActiveTab] = useState<Tab>(() => {
+    const param = searchParams.get('tab');
+    if (param) {
+      if (ALL_TAB_IDS.includes(param as Tab)) return param as Tab;
+      if (LEGACY_TAB_MAP[param]) return LEGACY_TAB_MAP[param];
+    }
+    return 'inbox';
+  });
 
   // Update URL when tab changes (without full reload)
   const handleTabChange = useCallback((tab: Tab) => {
@@ -316,10 +330,12 @@ export function ClientDetailView({ client: initialClient, role, agencyPlan }: Cl
         {/* Left sidebar nav — desktop only */}
         <aside className="hidden md:flex flex-col w-52 shrink-0 border-r border-gray-100 bg-white pt-4 pb-8 px-3 sticky top-0 self-start max-h-screen overflow-y-auto">
           {TAB_GROUPS.map((group, gi) => (
-            <div key={group.label} className={gi > 0 ? 'mt-5' : ''}>
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest px-3 mb-1">
-                {group.label}
-              </p>
+            <div key={group.label ?? `group-${gi}`} className={gi > 0 ? 'mt-5' : ''}>
+              {group.label && (
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest px-3 mb-1">
+                  {group.label}
+                </p>
+              )}
               {group.tabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
@@ -346,7 +362,7 @@ export function ClientDetailView({ client: initialClient, role, agencyPlan }: Cl
         <div className="md:hidden w-full">
           <div className="border-b border-gray-200 overflow-x-auto scrollbar-hide bg-white">
             <nav className="flex gap-0.5 px-4 -mb-px">
-              {TABS.map((tab) => {
+              {TAB_GROUPS.flatMap(g => g.tabs).map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
                 return (
@@ -377,75 +393,32 @@ export function ClientDetailView({ client: initialClient, role, agencyPlan }: Cl
           <SetupNudgeBanner client={initialClient} onTabChange={handleTabChange} />
 
           {/* Tab content */}
-          {activeTab === 'terminal' && (
-            <TerminalTab client={initialClient} />
-          )}
-          {activeTab === 'personality' && (
-            <AIPersonalityTab client={initialClient} />
-          )}
-          {activeTab === 'skills' && (
-            <SkillsTab client={initialClient} />
-          )}
-          {activeTab === 'knowledge' && (
-            <KnowledgeTab client={initialClient} />
-          )}
-          {activeTab === 'settings' && (
-            <SettingsTab client={initialClient} role={role} onRefresh={() => router.refresh()} />
-          )}
-          {activeTab === 'ghl' && (
-            <GHLTab client={initialClient} onRefresh={() => router.refresh()} />
-          )}
-          {activeTab === 'usage' && (
-            <UsageTab client={initialClient} />
-          )}
-          {activeTab === 'conversations' && (
+          {activeTab === 'inbox' && (
             <ConversationsTab client={initialClient} agencyPlan={agencyPlan} />
           )}
-          {activeTab === 'channels' && (
-            <ChannelsTab client={initialClient} onTabChange={handleTabChange} />
+          {activeTab === 'chat' && (
+            <TerminalTab client={initialClient} />
           )}
-          {activeTab === 'portal' && (
+          {activeTab === 'train' && (
+            <TrainTab client={initialClient} />
+          )}
+          {activeTab === 'workers' && (
+            <AIWorkersTab client={initialClient} agencyId={initialClient.agency_id} />
+          )}
+          {activeTab === 'crm' && (
+            <CRMTab client={initialClient} />
+          )}
+          {activeTab === 'website' && (
+            <WebsiteTab clientId={initialClient.id} clientName={initialClient.name || 'Client'} />
+          )}
+          {activeTab === 'settings' && (
+            <SettingsWrapperTab client={initialClient} role={role} onRefresh={() => router.refresh()} />
+          )}
+          {activeTab === 'insights' && (
+            <InsightsTab client={initialClient} />
+          )}
+          {activeTab === 'share' && (
             <PortalTab client={initialClient} />
-          )}
-
-                {activeTab === 'memory' && (
-            <div className="space-y-0">
-              <CustomerIntelligence clientId={initialClient.id} />
-              <div className="border-t border-gray-200 mt-6 pt-6 px-4 sm:px-6">
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
-                  AI Context Files (Advanced)
-                </p>
-                <MemoryBrowser clientId={initialClient.id} clientName={initialClient.name || 'Client'} />
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'voice' && (
-            <VoiceClient
-              agencyId={initialClient.agency_id}
-              clientId={initialClient.id}
-              clientName={initialClient.name ?? 'Client'}
-              voiceConfig={(initialClient.container_config as Record<string, unknown>)?.voice_config as Record<string, string> | null ?? null}
-              isSolo={false}
-            />
-          )}
-
-          {activeTab === 'seo' && (
-            <SEODashboard clientId={initialClient.id} clientName={initialClient.name || 'Client'} />
-          )}
-          {activeTab === 'templates' && (
-            <AISetupClient
-              agencyId={initialClient.agency_id}
-              businessName={initialClient.name ?? 'Client'}
-              clientId={initialClient.id}
-              isSolo={false}
-            />
-          )}
-          {activeTab === 'ai-teams' && (
-            <AgentsClient />
-          )}
-          {activeTab === 'automation' && (
-            <AutopilotClient />
           )}
 
         </main>
@@ -1632,7 +1605,7 @@ function ZapierChannelCard({
 // ── Channels Tab ──────────────────────────────────────────────────────────────
 // Shows all available channels: web chat embed, email outreach, WhatsApp, voice.
 
-function ChannelsTab({ client, onTabChange }: { client: AgencyClient; onTabChange?: (tab: Tab) => void }) {
+function ChannelsTab({ client }: { client: AgencyClient }) {
   const [copied, setCopied] = useState<string | null>(null);
   const cfg = (client.container_config ?? {}) as Record<string, unknown>;
   const [widgetTitle, setWidgetTitle] = useState((cfg.widget_title as string) || '');
@@ -2004,15 +1977,66 @@ Authorization: Bearer YOUR_KYRA_API_SECRET
                 <p className="text-xs text-gray-500 mt-0.5">Inbound & outbound phone calls powered by Kyra Native</p>
               </div>
             </div>
-            <button
-              onClick={() => onTabChange?.('voice')}
-              className="shrink-0 text-xs font-medium text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors"
-            >
-              Configure →
-            </button>
+            <span className="shrink-0 text-xs font-medium text-gray-500 bg-gray-50 px-3 py-1.5 rounded-lg">
+              See Voice sub-tab above
+            </span>
           </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+// ── Settings Wrapper Tab (merges General, Channels, GHL, Voice, Automation) ──
+
+function SettingsWrapperTab({
+  client,
+  role,
+  onRefresh,
+}: {
+  client: AgencyClient;
+  role: AgencyMember['role'];
+  onRefresh: () => void;
+}) {
+  const [subTab, setSubTab] = useState<'general' | 'channels' | 'ghl' | 'voice' | 'automation'>('general');
+
+  const subTabs = [
+    { id: 'general' as const, label: 'General' },
+    { id: 'channels' as const, label: 'Channels' },
+    { id: 'ghl' as const, label: 'GHL' },
+    { id: 'voice' as const, label: 'Voice' },
+    { id: 'automation' as const, label: 'Automation' },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+        {subTabs.map(t => (
+          <button
+            key={t.id}
+            onClick={() => setSubTab(t.id)}
+            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+              subTab === t.id ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {subTab === 'general' && <SettingsTab client={client} role={role} onRefresh={onRefresh} />}
+      {subTab === 'channels' && <ChannelsTab client={client} />}
+      {subTab === 'ghl' && <GHLTab client={client} onRefresh={onRefresh} />}
+      {subTab === 'voice' && (
+        <VoiceClient
+          agencyId={client.agency_id}
+          clientId={client.id}
+          clientName={client.name ?? 'Client'}
+          voiceConfig={(client.container_config as Record<string, unknown>)?.voice_config as Record<string, string> | null ?? null}
+          isSolo={false}
+        />
+      )}
+      {subTab === 'automation' && <AutopilotClient />}
     </div>
   );
 }
