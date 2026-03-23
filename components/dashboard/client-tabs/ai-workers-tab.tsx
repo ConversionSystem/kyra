@@ -57,6 +57,13 @@ function matchesCategory(worker: RoleWorker, category: WorkerCategory): boolean 
 }
 
 export default function AIWorkersTab({ client, agencyId }: AIWorkersTabProps) {
+  // Filter workers by visibility — private workers only shown to allowed agencies
+  const visibleWorkers = ROLE_WORKERS.filter(w => {
+    if (!w.visibility || w.visibility === 'public') return true;
+    if (w.visibility === 'private' && w.allowedAgencies?.includes(agencyId)) return true;
+    return false;
+  });
+
   const [activeCategory, setActiveCategory] = useState<WorkerCategory>('all');
   const [applyWorker, setApplyWorker] = useState<RoleWorker | null>(null);
   const [variables, setVariables] = useState<Record<string, string>>({});
@@ -177,8 +184,8 @@ export default function AIWorkersTab({ client, agencyId }: AIWorkersTabProps) {
       <div className="bg-gray-50 border border-gray-100 rounded-2xl p-2 flex flex-wrap gap-1.5">
         {WORKER_CATEGORIES.map(cat => {
           const count = cat.key === 'all'
-            ? ROLE_WORKERS.length
-            : ROLE_WORKERS.filter(w => matchesCategory(w, cat.key)).length;
+            ? visibleWorkers.length
+            : visibleWorkers.filter(w => matchesCategory(w, cat.key)).length;
           const isActive = activeCategory === cat.key;
           return (
             <button
@@ -202,7 +209,7 @@ export default function AIWorkersTab({ client, agencyId }: AIWorkersTabProps) {
 
       {/* Worker cards grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {ROLE_WORKERS.filter(w => matchesCategory(w, activeCategory)).map(worker => (
+        {visibleWorkers.filter(w => matchesCategory(w, activeCategory)).map(worker => (
           <WorkerCard
             key={worker.id}
             worker={worker}
