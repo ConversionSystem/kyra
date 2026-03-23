@@ -8,7 +8,7 @@ interface RouteContext {
 
 /**
  * PATCH /api/agency/build-requests/[id]
- * Update status or notes on a build request.
+ * Update status, notes, or followup_date on a build request.
  */
 export async function PATCH(request: NextRequest, { params }: RouteContext) {
   const { id } = await params;
@@ -18,7 +18,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ error: auth.error.message }, { status: auth.error.status });
   }
 
-  let body: { status?: string; notes?: string };
+  let body: { status?: string; notes?: string; followup_date?: string | null };
   try {
     body = await request.json();
   } catch {
@@ -36,7 +36,20 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   }
 
   if (body.notes !== undefined) {
-    updates.notes = body.notes;
+    updates.notes = body.notes || null;
+  }
+
+  if ('followup_date' in body) {
+    // Accept ISO date string (YYYY-MM-DD) or null to clear
+    if (body.followup_date) {
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!dateRegex.test(body.followup_date)) {
+        return NextResponse.json({ error: 'Invalid followup_date format, expected YYYY-MM-DD' }, { status: 400 });
+      }
+      updates.followup_date = body.followup_date;
+    } else {
+      updates.followup_date = null;
+    }
   }
 
   const supabase = createServiceClientWithoutCookies();
