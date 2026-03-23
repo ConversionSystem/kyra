@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { decodeOAuthState, exchangeCodeForTokens } from '@/lib/ghl/oauth';
 import { registerWebhooks, getKyraWebhookUrl } from '@/lib/ghl/webhooks';
+import { markOnboardingStep } from '@/lib/onboarding/tracker';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -98,6 +99,9 @@ export async function GET(request: NextRequest) {
   console.log(
     `[ghl/callback] Successfully connected GHL for client ${clientId} (location: ${tokens.locationId})`,
   );
+
+  // Fire-and-forget: mark onboarding step
+  void markOnboardingStep(agencyId, 'ghl_connected');
 
   // ── Auto-register Kyra webhooks with GHL ─────────────────────────────
   // Fire-and-forget: don't block the redirect if webhook registration fails.
