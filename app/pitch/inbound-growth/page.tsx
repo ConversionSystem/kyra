@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import {
   ChevronLeft, ChevronRight, CheckCircle2, ArrowRight,
   Target, MessageSquare, Search, Fish, BarChart3,
-  Sparkles, Brain, Clock, Send, Eye, Users, Zap,
+  Sparkles, Brain, Clock, Send, Eye, Users, Zap, Wrench,
 } from 'lucide-react';
 
 // ── Types & helpers ─────────────────────────────────────────────────────────────
@@ -50,12 +50,16 @@ const SLIDES: Slide[] = [
             <span className="text-indigo-400">Growth Machine</span>
           </h1>
           <p className="text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
-            5 AI workers. One coordinated system. LinkedIn content, engagement,
-            research, leads — on autopilot.
+            5 specialized routines running in one intelligent system. LinkedIn content, engagement,
+            research, leads — with you in the loop.
           </p>
+          <div className="mt-4 inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-400/20 rounded-full px-4 py-2 text-sm text-emerald-400">
+            <CheckCircle2 className="h-4 w-4" />
+            Built with honesty: We tell you exactly what&apos;s automated and what needs 15 min/day of your time.
+          </div>
         </div>
 
-        {/* 5 agent icons in a network layout */}
+        {/* 5 capability icons in a network layout */}
         <div className="relative w-72 h-72 sm:w-80 sm:h-80 mt-4">
           {/* Center brain */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-indigo-600 flex items-center justify-center z-10 shadow-lg shadow-indigo-500/40">
@@ -63,7 +67,7 @@ const SLIDES: Slide[] = [
           </div>
           {/* Connecting lines (decorative) */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 sm:w-56 sm:h-56 rounded-full border border-white/10" />
-          {/* Agent nodes */}
+          {/* Capability nodes */}
           {[
             { icon: Target, label: 'Content', color: 'bg-red-500/20 text-red-400', angle: -90 },
             { icon: MessageSquare, label: 'Engage', color: 'bg-blue-500/20 text-blue-400', angle: -18 },
@@ -133,19 +137,19 @@ const SLIDES: Slide[] = [
     ),
   },
 
-  // ── Slide 3: The 5-Agent System (overview) ────────────────────────────────
+  // ── Slide 3: The System (overview) ──────────────────────────────────────
   {
     id: 'system-overview',
     bg: 'from-slate-900 via-indigo-950 to-slate-900',
     content: (
       <div className="flex flex-col justify-center px-4 sm:px-8 lg:px-16 min-h-full max-w-5xl mx-auto">
         <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black text-white mb-10 text-center">
-          The <span className="text-indigo-400">5-Agent</span> System
+          <span className="text-indigo-400">5 Capabilities,</span> One System
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
           {[
-            { emoji: '🎯', title: 'Content Strategist', desc: 'Creates daily posts in your voice', color: 'bg-red-500/20 border-red-500/20' },
-            { emoji: '💬', title: 'Engagement Builder', desc: 'Intelligent comments on target accounts', color: 'bg-blue-500/20 border-blue-500/20' },
+            { emoji: '🎯', title: 'Content Strategist', desc: 'Drafts daily posts in your voice', color: 'bg-red-500/20 border-red-500/20' },
+            { emoji: '💬', title: 'Engagement Builder', desc: 'Drafts comments on target accounts', color: 'bg-blue-500/20 border-blue-500/20' },
             { emoji: '🔍', title: 'Research & Trends', desc: 'Scans your industry daily', color: 'bg-emerald-500/20 border-emerald-500/20' },
             { emoji: '🎣', title: 'Lead Identifier', desc: 'Spots buying signals in conversations', color: 'bg-amber-500/20 border-amber-500/20' },
             { emoji: '📊', title: 'Operations & Memory', desc: 'Logs everything, reports weekly', color: 'bg-purple-500/20 border-purple-500/20' },
@@ -186,10 +190,10 @@ const SLIDES: Slide[] = [
         <div className="space-y-4">
           {[
             { icon: Search, text: 'Researches your industry every morning' },
-            { icon: Send, text: 'Drafts 1–2 LinkedIn posts daily' },
+            { icon: Send, text: 'Drafts 1–2 LinkedIn posts daily in your voice' },
             { icon: Sparkles, text: 'Suggests hooks and formats: carousel, story, data post, hot take' },
-            { icon: MessageSquare, text: 'You approve in Telegram → queues for publishing' },
-            { icon: BarChart3, text: 'Adapts based on what gets engagement' },
+            { icon: MessageSquare, text: 'Sends to Telegram for your approval' },
+            { icon: BarChart3, text: 'Post via LinkedIn directly or through Buffer/Hootsuite' },
           ].map(({ icon: Icon, text }) => (
             <div key={text} className="flex items-start gap-4 bg-white/5 border border-white/10 rounded-xl p-4">
               <div className="rounded-xl bg-red-500/20 p-2.5 shrink-0">
@@ -198,6 +202,9 @@ const SLIDES: Slide[] = [
               <p className="text-white leading-relaxed pt-1">{text}</p>
             </div>
           ))}
+        </div>
+        <div className="mt-6 bg-red-500/10 border border-red-400/20 rounded-xl p-4 text-sm text-slate-300">
+          <span className="text-red-400 font-semibold">Tip:</span> Connect Buffer ($6/mo) to schedule approved posts automatically.
         </div>
       </div>
     ),
@@ -218,11 +225,10 @@ const SLIDES: Slide[] = [
         <p className="text-slate-400 text-lg mb-8">Strategic commenting that gets you noticed by the right people.</p>
         <div className="space-y-4">
           {[
-            { icon: Users, text: 'Monitors 20–50 target accounts you define' },
-            { icon: Clock, text: 'Drafts thoughtful comments within 30 minutes of their posts' },
-            { icon: Send, text: 'You approve via Telegram → it comments' },
+            { icon: Users, text: 'Monitors your target accounts daily and drafts thoughtful, relevant comments' },
+            { icon: Clock, text: 'You review in Telegram → copy to LinkedIn in seconds' },
             { icon: Sparkles, text: 'Rotates styles: add data, share experience, ask smart question' },
-            { icon: Eye, text: 'Tracks which comments generate profile visits' },
+            { icon: Eye, text: 'Review your LinkedIn analytics weekly — the AI correlates engagement timing with your activity log' },
           ].map(({ icon: Icon, text }) => (
             <div key={text} className="flex items-start gap-4 bg-white/5 border border-white/10 rounded-xl p-4">
               <div className="rounded-xl bg-blue-500/20 p-2.5 shrink-0">
@@ -231,6 +237,9 @@ const SLIDES: Slide[] = [
               <p className="text-white leading-relaxed pt-1">{text}</p>
             </div>
           ))}
+        </div>
+        <div className="mt-6 bg-blue-500/10 border border-blue-400/20 rounded-xl p-4 text-sm text-slate-300">
+          LinkedIn doesn&apos;t allow automated commenting — your AI does the thinking, you do the clicking (10 seconds per comment).
         </div>
       </div>
     ),
@@ -313,10 +322,10 @@ const SLIDES: Slide[] = [
 
         <div className="space-y-3">
           {[
-            { time: '7:00 AM', event: 'Research agent scans overnight news', color: 'bg-emerald-500/20 text-emerald-400' },
+            { time: '7:00 AM', event: 'Research scans overnight news', color: 'bg-emerald-500/20 text-emerald-400' },
             { time: '8:00 AM', event: 'Content Strategist drafts today\'s post → Telegram', color: 'bg-red-500/20 text-red-400' },
-            { time: '8:30 AM', event: 'You approve → post goes out', color: 'bg-indigo-500/20 text-indigo-400' },
-            { time: 'All day', event: 'Engagement Builder comments (you approve each)', color: 'bg-blue-500/20 text-blue-400' },
+            { time: '8:30 AM', event: 'You approve → you post to LinkedIn (30 seconds)', color: 'bg-indigo-500/20 text-indigo-400' },
+            { time: 'All day', event: 'Engagement Builder sends comment drafts → you post them', color: 'bg-blue-500/20 text-blue-400' },
             { time: 'Real-time', event: 'Lead Identifier flags buying signals', color: 'bg-amber-500/20 text-amber-400' },
             { time: '6:00 PM', event: 'Operations logs the day, sends summary', color: 'bg-purple-500/20 text-purple-400' },
           ].map(({ time, event, color }) => (
@@ -354,8 +363,8 @@ const SLIDES: Slide[] = [
             <span className="text-sm font-bold text-white/60 uppercase tracking-wider text-right">Frequency</span>
           </div>
           {[
-            { item: 'Original LinkedIn posts', freq: '1–2/day' },
-            { item: 'Intelligent comments', freq: '5–10/day' },
+            { item: 'Post drafts (you post or schedule via Buffer)', freq: '1–2/day' },
+            { item: 'Comment drafts (you post)', freq: '3–5/day' },
             { item: 'Trend briefing', freq: 'Weekly' },
             { item: 'Lead alerts with context', freq: 'Real-time' },
             { item: 'Performance report', freq: 'Weekly' },
@@ -380,18 +389,25 @@ const SLIDES: Slide[] = [
         <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black text-white mb-2 text-center">
           Simple <span className="text-indigo-400">pricing.</span>
         </h2>
-        <p className="text-slate-400 text-center mb-8">Everything included. No hidden fees.</p>
+        <p className="text-slate-400 text-center mb-4">Everything included. No hidden fees.</p>
+
+        <div className="flex justify-center mb-6">
+          <div className="inline-flex items-center gap-2 bg-amber-500/20 border border-amber-400/30 rounded-full px-5 py-2.5">
+            <Sparkles className="h-4 w-4 text-amber-400" />
+            <span className="text-amber-400 font-bold text-sm">First month: $497 trial rate</span>
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5 mb-8">
           {/* Growth Engine */}
           <div className="rounded-2xl p-6 flex flex-col bg-white/10 text-white border border-white/20">
             <h3 className="text-xl font-bold text-white">Growth Engine</h3>
             <div className="flex items-baseline gap-1 mt-2">
-              <span className="text-4xl font-black">$1,500</span>
+              <span className="text-4xl font-black">$997</span>
               <span className="text-sm text-white/60">/mo</span>
             </div>
             <ul className="mt-4 space-y-2 flex-1">
-              {['All 5 AI agents', 'Telegram approval workflow', 'CRM integration', 'Weekly performance reports', 'Full activity logs'].map(f => (
+              {['All 5 automation routines', 'Telegram approval workflow', 'CRM integration', 'Weekly performance reports', 'Full activity logs'].map(f => (
                 <li key={f} className="flex items-start gap-2 text-sm">
                   <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5 text-indigo-400" />
                   <span className="text-white/80">{f}</span>
@@ -407,11 +423,11 @@ const SLIDES: Slide[] = [
             </div>
             <h3 className="text-xl font-bold text-gray-900">Growth + Strategy</h3>
             <div className="flex items-baseline gap-1 mt-2">
-              <span className="text-4xl font-black">$2,000</span>
+              <span className="text-4xl font-black">$1,497</span>
               <span className="text-sm text-gray-500">/mo</span>
             </div>
             <ul className="mt-4 space-y-2 flex-1">
-              {['Everything in Growth Engine', 'Monthly strategy call', 'Quarterly content audit', 'Priority support', 'Custom agent tuning'].map(f => (
+              {['Everything in Growth Engine', 'Monthly strategy call', 'Quarterly content audit', 'Priority support', 'Custom routine tuning'].map(f => (
                 <li key={f} className="flex items-start gap-2 text-sm">
                   <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5 text-green-500" />
                   <span className="text-gray-700">{f}</span>
@@ -428,7 +444,7 @@ const SLIDES: Slide[] = [
               <span className="text-sm text-white/60">one-time</span>
             </div>
             <ul className="mt-4 space-y-2 flex-1">
-              {['Configure all 5 agents', 'Define target accounts', 'Set voice & tone', 'CRM connection', 'Telegram bot setup'].map(f => (
+              {['Configure all 5 routines', 'Define target accounts', 'Set voice & tone', 'CRM connection', 'Telegram bot setup'].map(f => (
                 <li key={f} className="flex items-start gap-2 text-sm">
                   <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5 text-indigo-400" />
                   <span className="text-white/80">{f}</span>
@@ -439,13 +455,100 @@ const SLIDES: Slide[] = [
         </div>
 
         <p className="text-slate-400 text-center text-lg">
-          A human doing this costs <span className="text-white font-bold">$4–6K/mo</span>. You pay <span className="text-indigo-400 font-bold">25%</span> of that.
+          A dedicated social media manager costs <span className="text-white font-bold">$3–4K/mo</span>. You pay <span className="text-indigo-400 font-bold">a fraction</span> of that.
         </p>
       </div>
     ),
   },
 
-  // ── Slide 10: How We're Different ─────────────────────────────────────────
+  // ── Slide 10: What You'll Need ────────────────────────────────────────────
+  {
+    id: 'tools-required',
+    bg: 'from-slate-900 via-cyan-950 to-slate-900',
+    content: (
+      <div className="flex flex-col justify-center px-4 sm:px-8 lg:px-16 min-h-full max-w-5xl mx-auto">
+        <div className="flex items-center justify-center gap-3 mb-8">
+          <Wrench className="h-8 w-8 text-cyan-400" />
+          <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black text-white">
+            What you&apos;ll <span className="text-cyan-400">need</span>
+          </h2>
+        </div>
+        <p className="text-slate-400 text-center mb-8">A few simple tools to make the system run smoothly.</p>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Required */}
+          <div className="bg-white/5 border border-white/10 rounded-xl p-5">
+            <h3 className="text-sm font-bold text-emerald-400 uppercase tracking-wider mb-4">Required (you probably have these)</h3>
+            <div className="space-y-3">
+              {[
+                { emoji: '✅', text: 'LinkedIn account (personal or company page)' },
+                { emoji: '✅', text: 'Telegram app (free — for approvals and alerts)' },
+              ].map(({ emoji, text }) => (
+                <div key={text} className="flex items-center gap-3">
+                  <span className="text-lg">{emoji}</span>
+                  <span className="text-white text-sm">{text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Recommended */}
+          <div className="bg-white/5 border border-white/10 rounded-xl p-5">
+            <h3 className="text-sm font-bold text-indigo-400 uppercase tracking-wider mb-4">Recommended (makes it 10x smoother)</h3>
+            <div className="space-y-3">
+              {[
+                { emoji: '📅', text: 'Buffer or Hootsuite ($6–15/mo) — schedule posts from AI drafts' },
+                { emoji: '📊', text: 'LinkedIn Sales Navigator ($99/mo, optional) — better lead identification' },
+                { emoji: '🔗', text: 'Zapier or Make ($20/mo, optional) — connect scheduler to AI workflow' },
+              ].map(({ emoji, text }) => (
+                <div key={text} className="flex items-center gap-3">
+                  <span className="text-lg">{emoji}</span>
+                  <span className="text-white text-sm">{text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* We provide */}
+          <div className="bg-white/5 border border-white/10 rounded-xl p-5">
+            <h3 className="text-sm font-bold text-cyan-400 uppercase tracking-wider mb-4">We provide</h3>
+            <div className="space-y-3">
+              {[
+                { emoji: '🤖', text: 'Kyra platform with OpenClaw AI — content, research, engagement, leads' },
+                { emoji: '💬', text: 'Telegram bot — approval workflows, daily digests, lead alerts' },
+                { emoji: '📝', text: 'Full activity logs and weekly reports' },
+                { emoji: '🧠', text: 'Persistent memory — your AI learns your voice, audience, and what works' },
+              ].map(({ emoji, text }) => (
+                <div key={text} className="flex items-center gap-3">
+                  <span className="text-lg">{emoji}</span>
+                  <span className="text-white text-sm">{text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Not required */}
+          <div className="bg-white/5 border border-white/10 rounded-xl p-5">
+            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Not required</h3>
+            <div className="space-y-3">
+              {[
+                { emoji: '❌', text: 'No coding knowledge' },
+                { emoji: '❌', text: 'No LinkedIn API access (we work through your normal LinkedIn + Buffer)' },
+                { emoji: '❌', text: 'No AI experience' },
+              ].map(({ emoji, text }) => (
+                <div key={text} className="flex items-center gap-3">
+                  <span className="text-lg">{emoji}</span>
+                  <span className="text-white text-sm">{text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    ),
+  },
+
+  // ── Slide 11: How We're Different ─────────────────────────────────────────
   {
     id: 'differentiators',
     bg: 'from-slate-900 via-slate-900 to-purple-950',
@@ -456,11 +559,11 @@ const SLIDES: Slide[] = [
         </h2>
         <div className="space-y-4">
           {[
-            { icon: Users, title: 'Not a chatbot — 5 specialized agents that coordinate', desc: 'Each agent has a distinct role. They share memory and work together as a team.' },
+            { icon: Users, title: 'Not a chatbot — 5 specialized routines that coordinate', desc: 'Each routine has a distinct role. They share memory and work together as a team.' },
             { icon: Send, title: 'Nothing goes out without your approval', desc: 'Every post, every comment flows through Telegram. You\'re always in control.' },
-            { icon: Brain, title: 'Shared memory across all agents', desc: 'Content agent knows what Research found. Lead agent knows what you posted. One brain.' },
+            { icon: Brain, title: 'Shared memory across all routines', desc: 'Content knows what Research found. Leads knows what you posted. One brain.' },
             { icon: Zap, title: 'We manage it — monitoring, fixes, updates included', desc: 'We keep the system running and improving. You focus on your business.' },
-            { icon: Sparkles, title: 'Built on OpenClaw', desc: 'The same framework used by thousands of AI agents worldwide. Enterprise-grade infrastructure.' },
+            { icon: Sparkles, title: 'Built on OpenClaw', desc: 'The same framework used by thousands of AI systems worldwide. Enterprise-grade infrastructure.' },
           ].map(({ icon: Icon, title, desc }) => (
             <div key={title} className="flex items-start gap-4 bg-white/5 border border-white/10 rounded-xl p-5">
               <div className="rounded-xl bg-indigo-500/20 p-3 shrink-0">
@@ -477,7 +580,7 @@ const SLIDES: Slide[] = [
     ),
   },
 
-  // ── Slide 11: Next Steps (CTA) ────────────────────────────────────────────
+  // ── Slide 12: Next Steps (CTA) ────────────────────────────────────────────
   {
     id: 'next-steps',
     bg: 'from-indigo-950 via-indigo-900 to-slate-900',
