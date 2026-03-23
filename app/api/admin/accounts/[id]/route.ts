@@ -109,10 +109,21 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const dbErrors: string[] = [];
 
   // Child tables first (FK → agency_clients or agencies)
-  for (const table of ['client_sites', 'client_conversations', 'pipeline_leads', 'credit_transactions', 'crm_contacts']) {
+  for (const table of [
+    'client_sites', 'client_conversations', 'pipeline_leads', 'credit_transactions',
+    'crm_contacts', 'email_nurture_queue', 'ghl_action_proposals', 'ghl_action_log', 'build_requests',
+  ]) {
     const { error } = await admin.from(table).delete().eq('agency_id', agencyId);
     if (error && !error.message.includes('does not exist')) {
       dbErrors.push(`${table}: ${error.message}`);
+    }
+  }
+
+  // agency_referrals: FK on referrer_agency_id or referred_agency_id
+  for (const col of ['referrer_agency_id', 'referred_agency_id']) {
+    const { error } = await admin.from('agency_referrals').delete().eq(col, agencyId);
+    if (error && !error.message.includes('does not exist')) {
+      dbErrors.push(`agency_referrals(${col}): ${error.message}`);
     }
   }
 
@@ -136,7 +147,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   if (r4.error) dbErrors.push(`agency: ${r4.error.message}`);
 
   if (dbErrors.length > 0) {
-    return NextResponse.json({ error: `DB delete failed: ${dbErrors.join('; ')}` }, { status: 500 });
+    errors.push(...dbErrors.map(e => `DB: ${e}`));
   }
 
   // ── 3. Delete auth user ────────────────────────────────────────────────
@@ -145,11 +156,14 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     if (authErr) errors.push(`Auth user: ${authErr.message}`);
   }
 
-  // Fire all container deletes in parallel with timeouts
+  // ── 4. Delete containers on VPS (always attempt, even if DB had errors) ─
   const containerResults = await Promise.all(uniqueIds.map(deleteContainer));
   for (const err of containerResults) {
     if (err) errors.push(err);
   }
 
-  return NextResponse.json({ ok: true, errors: errors.length > 0 ? errors : undefined });
+  return NextResponse.json({
+    ok: dbErrors.length === 0,
+    errors: errors.length > 0 ? errors : undefined,
+  }, { status: dbErrors.length > 0 ? 207 : 200 });
 }
