@@ -13,7 +13,7 @@
 //   customer.subscription.updated     — Plan upgrade/downgrade
 //   customer.subscription.deleted     — Subscription cancelled → free
 //   invoice.payment_failed            — Flag payment failure in settings
-//   invoice.payment_succeeded         — Clear any payment failure flags
+//   invoice.payment_succeeded         — Clear payment flags + grant monthly renewal credits
 // ============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -68,25 +68,6 @@ async function updateAgencyPlan(
     throw error;
   }
 
-  // ── Grant monthly credits for the new plan ──────────────────────────────
-  // Paid plans include credits/mo. Grant them on activation and renewal.
-  if (plan !== 'free') {
-    const planConfig = PLANS[plan as keyof typeof PLANS];
-    if (planConfig?.monthlyCredits > 0) {
-      try {
-        await addCredits(
-          agencyId,
-          planConfig.monthlyCredits,
-          'bonus',
-          `${planConfig.name} plan — ${planConfig.monthlyCredits} monthly credits`,
-        );
-        console.log(`[stripe/webhook] Granted ${planConfig.monthlyCredits} credits to ${agencyId} for ${plan}`);
-      } catch (creditErr) {
-        console.warn(`[stripe/webhook] Failed to grant credits for ${agencyId}:`, creditErr);
-      }
-    }
-  }
-
   console.log(`[stripe/webhook] Agency ${agencyId} → plan=${plan}`, subscriptionId ? `sub=${subscriptionId}` : '');
 }
 
@@ -106,6 +87,59 @@ async function agencyIdFromSubscription(subscriptionId: string): Promise<string 
     .eq('stripe_subscription_id', subscriptionId)
     .single();
   return data?.id ?? null;
+}
+
+async function getAgencyPlan(agencyId: string): Promise<StripePlan | 'free'> {
+  const { data } = await db()
+    .from('agencies')
+    .select('plan')
+    .eq('id', agencyId)
+    .single();
+
+  const plan = data?.plan;
+  if (plan === 'starter' || plan === 'pro' || plan === 'scale' || plan === 'solo_pro') {
+    return plan;
+  }
+
+  return 'free';
+}
+
+async function grantPlanCreditsOnce(
+  agencyId: string,
+  plan: StripePlan | 'free',
+  idempotencyKey: string,
+  reason: string,
+) {
+  if (plan === 'free') return;
+
+  const planConfig = PLANS[plan as keyof typeof PLANS];
+  if (!planConfig?.monthlyCredits || planConfig.monthlyCredits <= 0) return;
+
+  const { data: existingGrant } = await db()
+    .from('credit_transactions')
+    .select('id')
+    .eq('agency_id', agencyId)
+    .eq('type', 'bonus')
+    .eq('stripe_payment_intent_id', idempotencyKey)
+    .limit(1)
+    .maybeSingle();
+
+  if (existingGrant?.id) {
+    console.log(`[stripe/webhook] Credit grant already applied (${idempotencyKey}) for ${agencyId}`);
+    return;
+  }
+
+  await addCredits(
+    agencyId,
+    planConfig.monthlyCredits,
+    'bonus',
+    `${planConfig.name} plan — ${planConfig.monthlyCredits} monthly credits (${reason})`,
+    idempotencyKey,
+  );
+
+  console.log(
+    `[stripe/webhook] Granted ${planConfig.monthlyCredits} credits to ${agencyId} for ${plan} (${reason})`,
+  );
 }
 
 // ── Event handlers ─────────────────────────────────────────────────────────
@@ -129,6 +163,10 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   }
 
   await updateAgencyPlan(agencyId, plan, subscriptionId, extra);
+
+  // Initial paid activation credits (idempotent on checkout session id)
+  await grantPlanCreditsOnce(agencyId, plan, `checkout:${session.id}`, 'checkout activation');
+
   console.log(`[stripe/webhook] Checkout complete — agency=${agencyId} plan=${plan} sub=${subscriptionId}`);
 }
 
@@ -212,6 +250,13 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
     stripe_last_payment_failure: null,
     stripe_invoice_url: null,
   });
+
+  // Monthly renewal credits should come from successful recurring invoices.
+  // Skip one-off or setup invoices to avoid accidental bonus grants.
+  if (invoice.billing_reason === 'subscription_cycle') {
+    const plan = await getAgencyPlan(agencyId);
+    await grantPlanCreditsOnce(agencyId, plan, `invoice:${invoice.id}`, 'monthly renewal');
+  }
 }
 
 // ── Main handler ───────────────────────────────────────────────────────────
