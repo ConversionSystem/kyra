@@ -8,6 +8,7 @@ import type { CreateAgencyRequest, AgencyWithCounts } from '@/lib/agency/types';
 import { addCredits } from '@/lib/billing/credit-engine';
 import { WELCOME_CREDITS, WELCOME_CREDIT_DESCRIPTION, getPromoCode } from '@/lib/billing/credits';
 import { syncLeadToCRM } from '@/lib/crm/lead-sync';
+import { enrollInNurtureSequence } from '@/lib/email/nurture-enrollment';
 
 /**
  * GET /api/agency
@@ -322,6 +323,11 @@ export async function POST(request: NextRequest) {
 </html>`,
       }),
     }).catch(err => console.warn('[welcome-email] Failed to send:', err));
+  }
+
+  // ── Enroll in nurture email sequence (fire-and-forget) ─────────────────
+  if (user.email) {
+    void enrollInNurtureSequence(agency.id, user.email);
   }
 
   // ── Referral Machine — double-sided rewards + early bird + streak ──────
