@@ -5,11 +5,13 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import {
   ArrowLeft,
   Loader2,
+  Send,
   Zap,
   Trash2,
   Save,
@@ -17,6 +19,8 @@ import {
   ChevronDown,
   MessageSquare,
   Settings,
+  Link2,
+  Shield,
   BarChart3,
   Brain,
   RefreshCw,
@@ -30,27 +34,40 @@ import {
   Clock,
   User,
   Bot,
+  Globe,
+  Mail,
+  Phone,
+  Radio,
+  MessageCircle,
   X,
   Plus,
   Users,
-  Globe,
+  Database,
+  Sparkles,
+  GitBranch,
 } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
 import type { AgencyClient, AgencyMember } from '@/lib/agency/queries';
 import GHLConnection from './ghl-connection';
+import { UsageAnalytics } from './usage-analytics';
 import PermissionsCard from './permissions-card';
+import HealthScoreBadge from '@/components/dashboard/health-score-badge';
+import AISuggestionsCard from '@/components/dashboard/ai-suggestions-card';
 import ClientStatusBanner from '@/components/dashboard/client-status-banner';
+import ClientActivityHeatmap from '@/components/dashboard/client-activity-heatmap';
 import { VoiceClient } from '@/app/(dashboard)/agency/voice/voice-client';
+import RoiSummaryCard from '@/components/dashboard/roi-summary-card';
 import { ModelSelector } from '@/components/dashboard/model-selector';
 import QuickAnswersEditor from '@/components/dashboard/quick-answers-editor';
-import DeliverySmsTab from '@/components/dashboard/client-tabs/delivery-sms-tab';
-import CrmTab from '@/components/dashboard/client-tabs/crm-tab';
-import SecretsTab from '@/components/dashboard/client-tabs/secrets-tab';
-import ChannelsLiveTab from '@/components/dashboard/client-tabs/channels-live-tab';
+import { MemoryBrowser } from './memory-browser';
+import { CustomerIntelligence } from './customer-intelligence';
+import { AICapabilities } from './ai-capabilities';
+import { SEODashboard } from './seo-dashboard';
+import SkillsTab from '@/components/dashboard/client-tabs/skills-tab';
+import KnowledgeTab from '@/components/dashboard/client-tabs/knowledge-tab';
+import { AISetupClient } from '@/app/(dashboard)/agency/ai-setup/ai-setup-client';
+import { AgentsClient } from '@/app/(dashboard)/agency/agents/agents-client';
 import { AutopilotClient } from '@/app/(dashboard)/agency/autopilot/autopilot-client';
-import TrainTab from '@/components/dashboard/client-tabs/train-tab';
-import InsightsTab from '@/components/dashboard/client-tabs/insights-tab';
-import WebsiteTab from '@/components/dashboard/client-tabs/website-tab';
-import AIWorkersTab from '@/components/dashboard/client-tabs/ai-workers-tab';
 
 // ── Setup Nudge Banner ────────────────────────────────────────────────────────
 
@@ -70,7 +87,7 @@ function SetupNudgeBanner({
   );
 
   const missing: { label: string; tab: Tab; desc: string }[] = [];
-  if (!hasPersonality) missing.push({ label: 'Add Personality', tab: 'train', desc: 'Train the AI with persona, greeting, and instructions' });
+  if (!hasPersonality) missing.push({ label: 'Add Personality', tab: 'personality', desc: 'Train the AI with persona, greeting, and instructions' });
   // GHL nudge removed from global banner — shown only inside the GHL tab
 
   if (missing.length === 0) return null;
@@ -109,7 +126,7 @@ function SetupNudgeBanner({
 const statusColors: Record<string, string> = {
   active: 'border-green-200 bg-green-50 text-green-600',
   paused: 'border-yellow-200 bg-yellow-50 text-yellow-600',
-  setup: 'border-amber-200 bg-amber-50 text-amber-600',
+  setup: 'border-blue-200 bg-blue-50 text-blue-600',
 };
 
 interface ChatMessage {
@@ -117,59 +134,55 @@ interface ChatMessage {
   content: string;
 }
 
-type Tab = 'inbox' | 'chat' | 'train' | 'workers' | 'crm' | 'website' | 'settings' | 'insights' | 'share';
-
-// Map legacy ?tab= values to new tab IDs
-const LEGACY_TAB_MAP: Record<string, Tab> = {
-  conversations: 'inbox',
-  terminal: 'chat',
-  personality: 'train',
-  templates: 'workers',
-  'ai-workers': 'workers',
-  skills: 'train',
-  website: 'website',
-  knowledge: 'website',
-  ghl: 'settings',
-  channels: 'settings',
-  secrets: 'settings',
-  voice: 'settings',
-  'delivery-sms': 'settings',
-  automation: 'settings',
-  usage: 'insights',
-  memory: 'insights',
-  seo: 'insights',
-  portal: 'share',
-  'ai-teams': 'chat',
-};
+type Tab = 'terminal' | 'personality' | 'templates' | 'skills' | 'knowledge' | 'settings' | 'ghl' | 'usage' | 'conversations' | 'channels' | 'portal' | 'memory' | 'voice' | 'seo' | 'automation' | 'ai-teams';
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
-  { id: 'inbox', label: 'Inbox', icon: Inbox },
-  { id: 'chat', label: 'Chat', icon: MessageSquare },
-  { id: 'train', label: 'Train', icon: Brain },
-  { id: 'workers', label: 'AI Workers', icon: Bot },
-  { id: 'crm', label: 'CRM', icon: Users },
-  { id: 'website', label: 'Website', icon: Globe },
+  { id: 'terminal', label: 'Terminal', icon: Terminal },
+  { id: 'personality', label: 'AI Personality', icon: Brain },
+  { id: 'templates', label: 'Templates', icon: Sparkles },
+  { id: 'skills', label: 'Skills', icon: Zap },
+  { id: 'knowledge', label: 'Knowledge Base', icon: Database },
+  { id: 'ai-teams', label: 'AI Teams', icon: Bot },
   { id: 'settings', label: 'Settings', icon: Settings },
-  { id: 'insights', label: 'Insights', icon: BarChart3 },
-  { id: 'share', label: 'Share', icon: Share2 },
+  { id: 'ghl', label: 'GHL', icon: Link2 },
+  { id: 'automation', label: 'Automation', icon: GitBranch },
+  { id: 'usage', label: 'Usage', icon: BarChart3 },
+  { id: 'conversations', label: 'Conversations', icon: Inbox },
+  { id: 'channels', label: 'Channels', icon: Radio },
+  { id: 'portal', label: 'Client Portal', icon: Users },
+  { id: 'memory', label: 'AI Memory', icon: Database },
+  { id: 'voice', label: 'Voice AI', icon: Phone },
+  { id: 'seo', label: 'SEO', icon: BarChart3 },
 ];
 
 // Grouped sidebar navigation — desktop only
-const TAB_GROUPS: { label?: string; tabs: typeof TABS }[] = [
+const TAB_GROUPS: { label: string; tabs: typeof TABS }[] = [
   {
-    tabs: TABS.filter(t => ['inbox', 'chat', 'train', 'workers', 'crm', 'website'].includes(t.id)),
+    label: 'Communicate',
+    tabs: TABS.filter(t => ['terminal', 'conversations', 'channels'].includes(t.id)),
   },
   {
     label: 'Configure',
-    tabs: TABS.filter(t => ['settings', 'insights', 'share'].includes(t.id)),
+    tabs: TABS.filter(t => ['personality', 'templates', 'skills', 'knowledge', 'ai-teams', 'voice', 'settings'].includes(t.id)),
+  },
+  {
+    label: 'Integrate',
+    tabs: TABS.filter(t => ['ghl', 'automation'].includes(t.id)),
+  },
+  {
+    label: 'Analyze',
+    tabs: TABS.filter(t => ['usage', 'memory', 'seo'].includes(t.id)),
+  },
+  {
+    label: 'Portal',
+    tabs: TABS.filter(t => ['portal'].includes(t.id)),
   },
 ];
 
 interface ClientDetailViewProps {
   client: AgencyClient;
   role: AgencyMember['role'];
-  plan?: string;
-  accountType?: string;
+  agencyPlan: 'free' | 'solo_pro' | 'starter' | 'pro' | 'scale';
 }
 
 // ── Reprovision Button ────────────────────────────────────────────────────────
@@ -235,14 +248,14 @@ function ReprovisionButton({ clientId }: { clientId: string }) {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
-export function ClientDetailView({ client: initialClient, role, plan, accountType }: ClientDetailViewProps) {
-  const isFreeOrSolo = !plan || plan === 'free' || plan === 'solo_pro' || (plan === 'free' && accountType === 'solo');
+export function ClientDetailView({ client: initialClient, role, agencyPlan }: ClientDetailViewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const rawTab = searchParams.get('tab') || 'inbox';
-  const resolvedTab = (LEGACY_TAB_MAP[rawTab] ?? rawTab) as Tab;
-  const initialTab = TABS.some(t => t.id === resolvedTab) ? resolvedTab : 'inbox';
-  const [activeTab, setActiveTab] = useState<Tab>(initialTab);
+  const initialTab = (searchParams.get('tab') as Tab) || 'terminal';
+  const justActivated = searchParams.get('activated') === 'true';
+  const [activeTab, setActiveTab] = useState<Tab>(
+    TABS.some(t => t.id === initialTab) ? initialTab : 'terminal'
+  );
 
   // Update URL when tab changes (without full reload)
   const handleTabChange = useCallback((tab: Tab) => {
@@ -255,22 +268,40 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
   return (
     <div className="flex flex-col min-h-full">
 
-      {/* ── Top Header (compact) ─────────────────────────────────────── */}
-      <div className="px-4 sm:px-6 md:px-8 py-2.5 border-b border-gray-100 bg-white">
-        <div className="flex items-center gap-3">
-          {/* Back arrow */}
-          <Link
-            href="/agency/clients"
-            className="text-gray-400 hover:text-gray-700 transition-colors shrink-0"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
+      {/* ── Top Header (full-width) ─────────────────────────────────────── */}
+      <div className="px-4 sm:px-6 md:px-8 pt-4 sm:pt-6 pb-4 border-b border-gray-100 bg-white">
+        {/* Back link */}
+        <Link
+          href="/agency/clients"
+          className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-700 transition-colors mb-4"
+        >
+          <ArrowLeft className="h-3 w-3" />
+          Back to Clients
+        </Link>
 
-          {/* Client name */}
-          <div className="min-w-0 flex items-center gap-2.5 flex-1">
-            <h1 className="text-lg font-semibold text-gray-900 truncate">{initialClient.name}</h1>
+
+
+        {/* Client Header */}
+        <div className="flex items-start gap-3 sm:gap-4">
+          <div className="h-11 w-11 sm:h-14 sm:w-14 rounded-2xl bg-gradient-to-br from-indigo-100 to-indigo-200 border border-indigo-200 flex items-center justify-center text-lg sm:text-xl font-bold text-indigo-700 shrink-0">
+            {initialClient.name.charAt(0).toUpperCase()}
           </div>
-
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">{initialClient.name}</h1>
+            <div className="flex flex-wrap items-center gap-2 mt-1">
+              <Badge className={statusColors[initialClient.status]}>
+                {initialClient.status}
+              </Badge>
+              {initialClient.industry && initialClient.industry !== 'General' && (
+                <span className="text-sm text-gray-400">{initialClient.industry}</span>
+              )}
+              {initialClient.template && (
+                <span className="text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full hidden sm:inline">
+                  {initialClient.template.name}
+                </span>
+              )}
+            </div>
+          </div>
           {(!initialClient.gateway_status || initialClient.gateway_status === 'error') && (
             <div className="shrink-0">
               <ReprovisionButton clientId={initialClient.id} />
@@ -283,14 +314,12 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
       <div className="flex flex-col md:flex-row flex-1 min-h-0">
 
         {/* Left sidebar nav — desktop only */}
-        <aside className="hidden md:flex flex-col w-48 shrink-0 bg-white border-r border-gray-100 pt-2 pb-6 px-2 sticky top-0 self-start max-h-screen overflow-y-auto">
+        <aside className="hidden md:flex flex-col w-52 shrink-0 border-r border-gray-100 bg-white pt-4 pb-8 px-3 sticky top-0 self-start max-h-screen overflow-y-auto">
           {TAB_GROUPS.map((group, gi) => (
-            <div key={group.label ?? gi} className={gi > 0 ? 'mt-5' : ''}>
-              {group.label && (
-                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest px-3 mb-1">
-                  {group.label}
-                </p>
-              )}
+            <div key={group.label} className={gi > 0 ? 'mt-5' : ''}>
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest px-3 mb-1">
+                {group.label}
+              </p>
               {group.tabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
@@ -300,11 +329,11 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
                     onClick={() => handleTabChange(tab.id)}
                     className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors mb-0.5 ${
                       isActive
-                        ? 'bg-indigo-600 text-white'
-                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                        ? 'bg-indigo-50 text-indigo-700'
+                        : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
                     }`}
                   >
-                    <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-white' : 'text-gray-400'}`} />
+                    <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-indigo-600' : 'text-gray-400'}`} />
                     {tab.label}
                   </button>
                 );
@@ -344,38 +373,79 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
           {/* Status banners — gateway errors, GHL disconnect, missing API key */}
           <ClientStatusBanner client={initialClient} />
 
-          {/* Setup nudge — only shown on setup-relevant tabs */}
-          {['chat', 'train', 'settings'].includes(activeTab) && (
-            <SetupNudgeBanner client={initialClient} onTabChange={handleTabChange} />
-          )}
+          {/* Setup nudge — shown when AI has no personality or GHL configured */}
+          <SetupNudgeBanner client={initialClient} onTabChange={handleTabChange} />
 
           {/* Tab content */}
-          {activeTab === 'inbox' && (
-            <ConversationsTab client={initialClient} />
-          )}
-          {activeTab === 'chat' && (
+          {activeTab === 'terminal' && (
             <TerminalTab client={initialClient} />
           )}
-          {activeTab === 'train' && (
-            <TrainTab client={initialClient} />
+          {activeTab === 'personality' && (
+            <AIPersonalityTab client={initialClient} />
           )}
-          {activeTab === 'workers' && (
-            <AIWorkersTab client={initialClient} agencyId={initialClient.agency_id} />
+          {activeTab === 'skills' && (
+            <SkillsTab client={initialClient} />
           )}
-          {activeTab === 'crm' && (
-            <CrmTab client={initialClient} clientId={initialClient.id} />
-          )}
-          {activeTab === 'website' && (
-            <WebsiteTab clientId={initialClient.id} clientName={initialClient.name} />
+          {activeTab === 'knowledge' && (
+            <KnowledgeTab client={initialClient} />
           )}
           {activeTab === 'settings' && (
-            <SettingsTabMerged client={initialClient} role={role} plan={plan} accountType={accountType} onRefresh={() => router.refresh()} />
+            <SettingsTab client={initialClient} role={role} onRefresh={() => router.refresh()} />
           )}
-          {activeTab === 'insights' && (
-            <InsightsTab client={initialClient} isSeoLocked={isFreeOrSolo} />
+          {activeTab === 'ghl' && (
+            <GHLTab client={initialClient} onRefresh={() => router.refresh()} />
           )}
-          {activeTab === 'share' && (
+          {activeTab === 'usage' && (
+            <UsageTab client={initialClient} />
+          )}
+          {activeTab === 'conversations' && (
+            <ConversationsTab client={initialClient} agencyPlan={agencyPlan} />
+          )}
+          {activeTab === 'channels' && (
+            <ChannelsTab client={initialClient} onTabChange={handleTabChange} />
+          )}
+          {activeTab === 'portal' && (
             <PortalTab client={initialClient} />
+          )}
+
+                {activeTab === 'memory' && (
+            <div className="space-y-0">
+              <CustomerIntelligence clientId={initialClient.id} />
+              <div className="border-t border-gray-200 mt-6 pt-6 px-4 sm:px-6">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
+                  AI Context Files (Advanced)
+                </p>
+                <MemoryBrowser clientId={initialClient.id} clientName={initialClient.name || 'Client'} />
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'voice' && (
+            <VoiceClient
+              agencyId={initialClient.agency_id}
+              clientId={initialClient.id}
+              clientName={initialClient.name ?? 'Client'}
+              voiceConfig={(initialClient.container_config as Record<string, unknown>)?.voice_config as Record<string, string> | null ?? null}
+              isSolo={false}
+            />
+          )}
+
+          {activeTab === 'seo' && (
+            <SEODashboard clientId={initialClient.id} clientName={initialClient.name || 'Client'} />
+          )}
+          {activeTab === 'templates' && (
+            <AISetupClient
+              agencyId={initialClient.agency_id}
+              businessName={initialClient.name ?? 'Client'}
+              clientId={initialClient.id}
+              isSolo={false}
+            />
+          )}
+          {activeTab === 'ai-teams' && (
+            <AgentsClient />
+          )}
+          {activeTab === 'automation' && (
+            <AutopilotClient />
           )}
 
         </main>
@@ -388,9 +458,13 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
 // ── Terminal Tab ──────────────────────────────────────────────────────────────
 
 function TerminalTab({ client }: { client: AgencyClient }) {
-  const hasGateway = !!(client.gateway_url && client.gateway_status === 'running');
+  const gatewayUrl = (client as any).gateway_url as string | undefined;
+  const gatewayToken = (client as any).gateway_token as string | undefined;
+  const gatewayUrlWithToken = gatewayUrl && gatewayToken
+    ? `${gatewayUrl}?token=${gatewayToken}`
+    : gatewayUrl || null;
 
-  if (!hasGateway) {
+  if (!gatewayUrlWithToken) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <Terminal className="h-12 w-12 text-gray-300 mb-4" />
@@ -401,11 +475,6 @@ function TerminalTab({ client }: { client: AgencyClient }) {
       </div>
     );
   }
-
-  // Use /terminal/[clientId] — a Kyra page that does same-tab navigation
-  // with the token in the URL. This avoids iOS Safari popup blocker and
-  // cross-origin ?token= stripping that happens with window.open / target=_blank.
-  const terminalPageUrl = `/terminal/${client.id}`;
 
   return (
     <div className="space-y-6">
@@ -422,13 +491,455 @@ function TerminalTab({ client }: { client: AgencyClient }) {
           </div>
         </div>
         <a
-          href={terminalPageUrl}
+          href={gatewayUrlWithToken}
+          target="_blank"
+          rel="noopener noreferrer"
           className="inline-flex items-center gap-2 bg-indigo-500 hover:bg-indigo-400 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
         >
           <ExternalLink className="h-5 w-5" />
           Open Terminal
         </a>
       </div>
+    </div>
+  );
+}
+
+// ── AI Personality Tab ────────────────────────────────────────────────────────
+
+function AIPersonalityTab({ client }: { client: AgencyClient }) {
+  const cfg = (client.container_config as Record<string, unknown>) || {};
+  const bhCfg = (cfg.business_hours as { enabled?: boolean; start?: string; end?: string; timezone?: string }) || {};
+
+  const [greeting, setGreeting] = useState(cfg.greeting as string || '');
+  const [instructions, setInstructions] = useState(cfg.instructions as string || '');
+  const [persona, setPersona] = useState(cfg.persona as string || '');
+  const [calendarUrl, setCalendarUrl] = useState((cfg.calendar_url as string) || '');
+  const [responseLanguage, setResponseLanguage] = useState((cfg.response_language as string) || 'English');
+  // Widget appearance moved to Channels tab
+  const [bhEnabled, setBhEnabled] = useState(bhCfg.enabled ?? false);
+  const [bhStart, setBhStart] = useState(bhCfg.start ?? '09:00');
+  const [bhEnd, setBhEnd] = useState(bhCfg.end ?? '17:00');
+  const [bhTimezone, setBhTimezone] = useState(bhCfg.timezone ?? 'America/New_York');
+  const [isSaving, setIsSaving] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Proactive greeting
+  const [proactiveEnabled, setProactiveEnabled] = useState((cfg.proactive_enabled as boolean) ?? false);
+  const [proactiveGreeting, setProactiveGreeting] = useState((cfg.proactive_greeting as string) ?? '');
+
+  // Wake words — keyword → action pairs
+  type WakeWordAction = 'pause' | 'escalate' | 'custom';
+  interface WakeWord { keyword: string; action: WakeWordAction; response: string }
+  const [wakeWords, setWakeWords] = useState<WakeWord[]>(
+    (cfg.wake_words as WakeWord[]) ?? []
+  );
+
+  const addWakeWord = () =>
+    setWakeWords((prev) => [...prev, { keyword: '', action: 'escalate', response: '' }]);
+
+  const removeWakeWord = (i: number) =>
+    setWakeWords((prev) => prev.filter((_, idx) => idx !== i));
+
+  const updateWakeWord = (i: number, patch: Partial<WakeWord>) =>
+    setWakeWords((prev) => prev.map((w, idx) => idx === i ? { ...w, ...patch } : w));
+
+  // Auto-train from website
+  const [websiteUrl, setWebsiteUrl] = useState((cfg.website_url as string) || '');
+  const [isAutoTraining, setIsAutoTraining] = useState(false);
+  const [autoTrainResult, setAutoTrainResult] = useState<{
+    documentsCreated: number;
+    documents: string[];
+    pagesScraped: number;
+    persona?: string | null;
+    personaUpdated?: boolean;
+  } | null>(null);
+
+  const handleAutoTrain = async () => {
+    if (!websiteUrl.trim()) return;
+    setIsAutoTraining(true);
+    setMessage(null);
+    setAutoTrainResult(null);
+    try {
+      const res = await fetch('/api/agency/knowledge/auto-train', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId: client.id, websiteUrl: websiteUrl.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Auto-training failed');
+      setAutoTrainResult(data);
+      if (data.personaUpdated && data.persona) {
+        setPersona(data.persona);
+      }
+      setMessage({
+        type: 'success',
+        text: `🧠 Trained from ${data.pagesScraped} pages — created ${data.documentsCreated} knowledge documents!`,
+      });
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err.message });
+    } finally {
+      setIsAutoTraining(false);
+    }
+  };
+
+  const handleGenerate = async () => {
+    setIsGenerating(true);
+    setMessage(null);
+    try {
+      const res = await fetch(`/api/agency/clients/${client.id}/generate-personality`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: client.name, industry: client.industry }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || 'Generation failed');
+      if (d.persona) setPersona(d.persona);
+      if (d.greeting) setGreeting(d.greeting);
+      if (d.instructions) setInstructions(d.instructions);
+      setMessage({ type: 'success', text: '✨ Personality generated! Review the fields below, then click Save.' });
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err.message });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    setMessage(null);
+    try {
+      const res = await fetch(`/api/agency/clients/${client.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          container_config: {
+            ...cfg,
+            greeting,
+            instructions,
+            persona,
+            business_hours: { enabled: bhEnabled, start: bhStart, end: bhEnd, timezone: bhTimezone },
+            calendar_url: calendarUrl.trim() || undefined,
+            response_language: responseLanguage || 'English',
+            proactive_enabled: proactiveEnabled,
+            proactive_greeting: proactiveGreeting.trim() || undefined,
+            wake_words: wakeWords.filter((w) => w.keyword.trim()),
+          },
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to save');
+      setMessage({ type: 'success', text: 'AI personality saved.' });
+    } catch {
+      setMessage({ type: 'error', text: 'Failed to save. Try again.' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-start justify-between gap-4">
+        <p className="text-sm text-gray-500">
+          Define how this client&apos;s AI assistant behaves — its personality, greeting message, and detailed instructions.
+        </p>
+        <Button
+          onClick={handleGenerate}
+          disabled={isGenerating}
+          variant="outline"
+          size="sm"
+          className="shrink-0 gap-1.5 border-indigo-200 text-indigo-600 hover:bg-indigo-50"
+        >
+          {isGenerating ? (
+            <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Generating...</>
+          ) : (
+            <>✨ Generate with AI</>
+          )}
+        </Button>
+      </div>
+
+      <AISuggestionsCard clientId={client.id} />
+
+      {message && (
+        <div className={`rounded-md px-4 py-3 text-sm ${
+          message.type === 'success' ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-red-50 border border-red-200 text-red-700'
+        }`}>
+          {message.text}
+        </div>
+      )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Persona</CardTitle>
+          <CardDescription>
+            A short description of who the AI is. Example: &quot;Friendly dental receptionist named Sarah&quot;
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Input
+            value={persona}
+            onChange={(e) => setPersona(e.target.value)}
+            placeholder="e.g., Professional dental receptionist named Sarah who is warm and helpful"
+            className="bg-gray-50"
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Greeting Message</CardTitle>
+          <CardDescription>
+            The first message sent to new contacts. Leave empty for a contextual auto-greeting.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Textarea
+            value={greeting}
+            onChange={(e) => setGreeting(e.target.value)}
+            placeholder="e.g., Hi! Thanks for reaching out to Smile Dental. How can I help you today?"
+            rows={3}
+            className="bg-gray-50"
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Detailed Instructions</CardTitle>
+          <CardDescription>
+            Business-specific rules, FAQs, pricing, hours, and anything the AI needs to know.
+            The more detail, the better the responses.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Textarea
+            value={instructions}
+            onChange={(e) => setInstructions(e.target.value)}
+            placeholder={`e.g.,\n\nBusiness: Smile Dental Clinic\nHours: Mon-Fri 9am-5pm, Sat 9am-1pm\nAddress: 123 Main St, Springfield\n\nServices & Pricing:\n- Cleaning: $150\n- Whitening: $300\n- Crown: $800-1200\n\nRules:\n- Always offer to schedule an appointment\n- Never discuss competitor pricing\n- For emergencies, direct to call (555) 123-4567`}
+            rows={12}
+            className="bg-gray-50 font-mono text-sm"
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            📅 Calendar Booking Link
+          </CardTitle>
+          <CardDescription>
+            When customers mention booking or scheduling, the AI automatically includes this link. Get it from GHL → Calendars → your calendar → share link.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Input
+            value={calendarUrl}
+            onChange={(e) => setCalendarUrl(e.target.value)}
+            placeholder="https://booking.leadconnectorhq.com/your-calendar-id"
+            className="bg-gray-50 font-mono text-sm"
+          />
+        </CardContent>
+      </Card>
+
+      {/* ── Response Language ──────────────────────────────────────────── */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            🌐 Response Language
+          </CardTitle>
+          <CardDescription>
+            The AI will always respond in this language, regardless of what language the customer uses.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <select
+            value={responseLanguage}
+            onChange={(e) => setResponseLanguage(e.target.value)}
+            className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm"
+          >
+            {[
+              'English', 'Spanish (Español)', 'Portuguese (Português)', 'French (Français)',
+              'German (Deutsch)', 'Italian (Italiano)', 'Chinese (中文)', 'Japanese (日本語)',
+              'Korean (한국어)', 'Arabic (العربية)', 'Hindi (हिन्दी)', 'Russian (Русский)',
+              'Dutch (Nederlands)', 'Polish (Polski)', 'Turkish (Türkçe)',
+            ].map(lang => (
+              <option key={lang} value={lang}>{lang}</option>
+            ))}
+          </select>
+          <p className="text-xs text-gray-400 mt-2">
+            💡 Spanish is the most common choice for US GHL agencies — dental, cannabis, restaurants, and home services all serve large Spanish-speaking customer bases.
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Web Chat Widget Appearance moved to Channels tab */}
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            ⏰ Business Hours
+          </CardTitle>
+          <CardDescription>
+            AI only replies during these hours. Outside hours, messages are ignored until the next business day.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="bh-enabled"
+              checked={bhEnabled}
+              onChange={(e) => setBhEnabled(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-indigo-600"
+            />
+            <label htmlFor="bh-enabled" className="text-sm text-gray-700 font-medium">
+              Enable business hours restriction
+            </label>
+          </div>
+          {bhEnabled && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-500">Open</label>
+                <Input type="time" value={bhStart} onChange={(e) => setBhStart(e.target.value)} className="bg-gray-50" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-500">Close</label>
+                <Input type="time" value={bhEnd} onChange={(e) => setBhEnd(e.target.value)} className="bg-gray-50" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-gray-500">Timezone</label>
+                <select
+                  value={bhTimezone}
+                  onChange={(e) => setBhTimezone(e.target.value)}
+                  className="w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm"
+                >
+                  <option value="America/New_York">Eastern (ET)</option>
+                  <option value="America/Chicago">Central (CT)</option>
+                  <option value="America/Denver">Mountain (MT)</option>
+                  <option value="America/Los_Angeles">Pacific (PT)</option>
+                  <option value="America/Phoenix">Arizona (AZ)</option>
+                  <option value="Europe/London">London (GMT/BST)</option>
+                  <option value="Europe/Bratislava">Bratislava (CET)</option>
+                  <option value="UTC">UTC</option>
+                </select>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Proactive first message + Wake words */}
+      <Card>
+        <CardHeader>
+          <CardTitle>🚀 Proactive Greeting</CardTitle>
+          <CardDescription>
+            When a new GHL contact is added, should the AI reach out first? Enable this and set the opening message.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setProactiveEnabled(!proactiveEnabled)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${proactiveEnabled ? 'bg-indigo-600' : 'bg-gray-200'}`}
+            >
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${proactiveEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+            </button>
+            <label className="text-sm font-medium text-gray-700">
+              {proactiveEnabled ? 'AI reaches out to new contacts' : 'Proactive greeting disabled'}
+            </label>
+          </div>
+          {proactiveEnabled && (
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-gray-700">Opening message</label>
+              <Textarea
+                value={proactiveGreeting}
+                onChange={(e) => setProactiveGreeting(e.target.value)}
+                placeholder={`Hi {{firstName}}, this is ${client.name}'s AI assistant! How can I help you today?`}
+                className="bg-gray-50 min-h-[80px] text-sm"
+              />
+              <p className="text-xs text-gray-400">Use {'{{firstName}}'} and {'{{lastName}}'} to personalize with GHL contact data.</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>⚡ Wake Words</CardTitle>
+          <CardDescription>
+            Keywords that trigger a specific AI behavior. When a customer says one of these words, the AI takes the configured action.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {wakeWords.length === 0 && (
+            <p className="text-sm text-gray-400 italic">No wake words configured. Add one below.</p>
+          )}
+          {wakeWords.map((w, i) => (
+            <div key={i} className="flex items-start gap-2 p-3 rounded-lg border border-gray-100 bg-gray-50">
+              <div className="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <input
+                  type="text"
+                  placeholder="Keyword (e.g. STOP)"
+                  value={w.keyword}
+                  onChange={(e) => updateWakeWord(i, { keyword: e.target.value })}
+                  className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-400 uppercase"
+                />
+                <select
+                  value={w.action}
+                  onChange={(e) => updateWakeWord(i, { action: e.target.value as WakeWordAction })}
+                  className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-400"
+                >
+                  <option value="pause">Pause AI responses</option>
+                  <option value="escalate">Escalate to human</option>
+                  <option value="custom">Reply with custom text</option>
+                </select>
+                {w.action === 'custom' && (
+                  <input
+                    type="text"
+                    placeholder="Custom reply text…"
+                    value={w.response}
+                    onChange={(e) => updateWakeWord(i, { response: e.target.value })}
+                    className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-400"
+                  />
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => removeWakeWord(i)}
+                className="shrink-0 mt-1 text-gray-400 hover:text-red-500 transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={addWakeWord}
+            className="flex items-center gap-1.5 text-sm text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
+          >
+            <Plus className="h-4 w-4" /> Add wake word
+          </button>
+          <p className="text-xs text-gray-400">
+            Common wake words: STOP (pause), UNSUBSCRIBE (pause), HUMAN / AGENT (escalate), PRICE (custom reply).
+          </p>
+        </CardContent>
+      </Card>
+
+      <Button onClick={handleSave} disabled={isSaving} className="gap-2">
+        {isSaving ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Saving...
+          </>
+        ) : (
+          <>
+            <Save className="h-4 w-4" />
+            Save Personality
+          </>
+        )}
+      </Button>
+
+      {/* AI Capabilities removed — replaced by dedicated Skills tab */}
     </div>
   );
 }
@@ -461,12 +972,7 @@ function SettingsTab({
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string; section?: string } | null>(null);
-
-  const showMsg = (type: 'success' | 'error', text: string, section?: string) => {
-    setSaveMessage({ type, text, section });
-    if (type === 'success') setTimeout(() => setSaveMessage(null), 4000);
-  };
+  const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Export state
   const [showExportMenu, setShowExportMenu] = useState(false);
@@ -499,11 +1005,11 @@ function SettingsTab({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, industry, status }),
       });
-      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || 'Failed to save'); }
-      showMsg('success', 'Client updated.', 'general');
+      if (!res.ok) throw new Error('Failed to save');
+      setSaveMessage({ type: 'success', text: 'Client updated.' });
       onRefresh();
-    } catch (e) {
-      showMsg('error', e instanceof Error ? e.message : 'Failed to save.', 'general');
+    } catch {
+      setSaveMessage({ type: 'error', text: 'Failed to save.' });
     } finally {
       setIsSaving(false);
     }
@@ -520,10 +1026,10 @@ function SettingsTab({
         body: JSON.stringify({ ai_model: modelId }),
       });
       if (!res.ok) throw new Error('Failed to save model');
-      showMsg('success', 'AI model updated. Takes effect on next conversation.', 'model');
+      setSaveMessage({ type: 'success', text: 'AI model updated. Takes effect on next conversation.' });
       onRefresh();
     } catch {
-      showMsg('error', 'Failed to update model.', 'model');
+      setSaveMessage({ type: 'error', text: 'Failed to update model.' });
     } finally {
       setIsSavingModel(false);
     }
@@ -539,9 +1045,9 @@ function SettingsTab({
         body: JSON.stringify({ settings: { agency_notes: notes } }),
       });
       if (!res.ok) throw new Error('Failed to save notes');
-      showMsg('success', 'Notes saved.', 'notes');
+      setSaveMessage({ type: 'success', text: 'Notes saved.' });
     } catch {
-      showMsg('error', 'Failed to save notes.', 'notes');
+      setSaveMessage({ type: 'error', text: 'Failed to save notes.' });
     } finally {
       setIsSavingNotes(false);
     }
@@ -554,7 +1060,7 @@ function SettingsTab({
       if (!res.ok) throw new Error('Failed to delete');
       router.push('/agency/clients');
     } catch {
-      showMsg('error', 'Failed to delete client.', 'delete');
+      setSaveMessage({ type: 'error', text: 'Failed to delete.' });
       setIsDeleting(false);
     }
   };
@@ -575,7 +1081,7 @@ function SettingsTab({
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      showMsg('error', 'Export failed.', 'export');
+      setSaveMessage({ type: 'error', text: 'Export failed.' });
     } finally {
       setIsExporting(false);
     }
@@ -597,7 +1103,7 @@ function SettingsTab({
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      showMsg('error', 'Export failed.', 'export');
+      setSaveMessage({ type: 'error', text: 'Export failed.' });
     } finally {
       setIsExporting(false);
     }
@@ -605,6 +1111,14 @@ function SettingsTab({
 
   return (
     <div className="space-y-6">
+      {saveMessage && (
+        <div className={`rounded-md px-4 py-3 text-sm ${
+          saveMessage.type === 'success' ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-red-50 border border-red-200 text-red-700'
+        }`}>
+          {saveMessage.text}
+        </div>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>General</CardTitle>
@@ -645,14 +1159,9 @@ function SettingsTab({
               ))}
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <Button onClick={handleSave} disabled={isSaving} className="gap-2">
-              {isSaving ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving...</> : <><Save className="h-4 w-4" /> Save Changes</>}
-            </Button>
-            {saveMessage?.section === 'general' && (
-              <span className={`text-sm ${saveMessage.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>{saveMessage.text}</span>
-            )}
-          </div>
+          <Button onClick={handleSave} disabled={isSaving} className="gap-2">
+            {isSaving ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving...</> : <><Save className="h-4 w-4" /> Save Changes</>}
+          </Button>
         </CardContent>
       </Card>
 
@@ -804,104 +1313,39 @@ function GHLTab({ client, onRefresh }: { client: AgencyClient; onRefresh: () => 
   );
 }
 
-// ── Settings Tab Merged (General + Channels + Integrations + Security + Voice + SMS + Workflows) ──
+// ── Permissions Tab ───────────────────────────────────────────────────────────
 
-type SettingsSubTab = 'general' | 'channels' | 'integrations' | 'security' | 'voice' | 'sms' | 'workflows';
-
-const SETTINGS_SUB_TABS: { id: SettingsSubTab; label: string }[] = [
-  { id: 'general', label: 'General' },
-  { id: 'channels', label: 'Channels' },
-  { id: 'integrations', label: 'Integrations' },
-  { id: 'security', label: 'Security' },
-  { id: 'voice', label: 'Voice' },
-  { id: 'sms', label: 'SMS' },
-  { id: 'workflows', label: 'Workflows' },
-];
-
-function SettingsTabMerged({
-  client,
-  role,
-  plan,
-  accountType,
-  onRefresh,
-}: {
-  client: AgencyClient;
-  role: AgencyMember['role'];
-  plan?: string;
-  accountType?: string;
-  onRefresh: () => void;
-}) {
-  const [activeSubTab, setActiveSubTab] = useState<SettingsSubTab>('general');
-  const isFreeOrSolo = !plan || plan === 'free' || plan === 'solo_pro' || (plan === 'free' && accountType === 'solo');
-
+function PermissionsTab({ client }: { client: AgencyClient }) {
   return (
     <div className="space-y-6">
-      {/* Sub-nav pills */}
-      <div className="flex flex-wrap gap-2">
-        {SETTINGS_SUB_TABS.map((tab) => {
-          const locked = tab.id === 'sms' && isFreeOrSolo;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveSubTab(tab.id)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                activeSubTab === tab.id
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              {tab.label}
-              {locked && <span className="ml-1">🔒</span>}
-            </button>
-          );
-        })}
-      </div>
+      <p className="text-sm text-gray-500">
+        Control what this client&apos;s AI can do. Start in read-only mode and expand capabilities as you build confidence.
+      </p>
+      <PermissionsCard clientId={client.id} />
+    </div>
+  );
+}
 
-      {activeSubTab === 'general' && (
-        <SettingsTab client={client} role={role} onRefresh={onRefresh} />
-      )}
-      {activeSubTab === 'channels' && (
-        <ChannelsLiveTab clientId={client.id} client={client} />
-      )}
-      {activeSubTab === 'integrations' && (
-        <GHLTab client={client} onRefresh={onRefresh} />
-      )}
-      {activeSubTab === 'security' && (
-        <SecretsTab clientId={client.id} />
-      )}
-      {activeSubTab === 'voice' && (
-        <VoiceClient
-          agencyId={client.agency_id}
-          clientId={client.id}
-          clientName={client.name ?? 'Client'}
-          voiceConfig={(client.container_config as Record<string, unknown>)?.voice_config as Record<string, string> | null ?? null}
-          isSolo={false}
-        />
-      )}
-      {activeSubTab === 'sms' && (
-        isFreeOrSolo ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="h-16 w-16 rounded-2xl bg-indigo-50 flex items-center justify-center mb-4">
-              <span className="text-3xl">🔒</span>
-            </div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Premium Feature</h2>
-            <p className="text-gray-500 mb-6 max-w-md">
-              <span className="font-medium">Delivery SMS</span> is available on Agency plans. Upgrade to unlock all features.
-            </p>
-            <a
-              href="/agency/billing"
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
-            >
-              Upgrade Plan
-            </a>
-          </div>
-        ) : (
-          <DeliverySmsTab clientId={client.id} />
-        )
-      )}
-      {activeSubTab === 'workflows' && (
-        <AutopilotClient />
-      )}
+// ── Usage Tab ─────────────────────────────────────────────────────────────────
+
+function UsageTab({ client }: { client: AgencyClient }) {
+  return (
+    <div className="space-y-6">
+      <p className="text-sm text-gray-500">
+        Messages handled, response times, and costs for this client&apos;s AI worker.
+      </p>
+
+      {/* ROI card — shows what this AI worker is worth vs. hiring staff */}
+      <RoiSummaryCard
+        totalConversations={client.usage_this_month ?? 0}
+        plan="pro"
+        billingCents={client.billing_amount_cents ?? 0}
+        showLink={false}
+      />
+
+      <HealthScoreBadge clientId={client.id} showDetails />
+      <ClientActivityHeatmap clientId={client.id} />
+      <UsageAnalytics clientId={client.id} />
     </div>
   );
 }
@@ -916,31 +1360,28 @@ interface Conversation {
   created_at: string;
 }
 
-function ConversationsTab({ client }: { client: AgencyClient }) {
+function ConversationsTab({
+  client,
+  agencyPlan,
+}: {
+  client: AgencyClient;
+  agencyPlan: 'free' | 'solo_pro' | 'starter' | 'pro' | 'scale';
+}) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [migrationRequired, setMigrationRequired] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  const loadConversations = useCallback(() => {
+  useEffect(() => {
     fetch(`/api/agency/clients/${client.id}/conversations`)
-      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+      .then(r => r.json())
       .then(d => {
         if (d.migrationRequired) { setMigrationRequired(true); return; }
         setConversations(d.conversations || []);
-        setTotal(d.total ?? (d.conversations || []).length);
       })
-      .catch((err) => console.error('[conversations] load failed:', err))
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, [client.id]);
-
-  useEffect(() => {
-    loadConversations();
-    // Auto-refresh every 10 seconds so new conversations appear without manual reload
-    const interval = setInterval(loadConversations, 10_000);
-    return () => clearInterval(interval);
-  }, [loadConversations]);
 
   const channelBadge: Record<string, string> = {
     test_chat: 'bg-blue-50 text-blue-600 border-blue-200',
@@ -957,6 +1398,8 @@ function ConversationsTab({ client }: { client: AgencyClient }) {
     test_chat: 'Test Chat', web_chat: 'Chat Widget', portal: 'Portal', telegram: 'Telegram',
     sms: 'SMS', ghl_sms: 'GHL SMS', ghl_email: 'GHL Email', whatsapp: 'WhatsApp',
   };
+
+  const showUpgradeNudge = agencyPlan === 'free' && conversations.length >= 3;
 
   if (loading) {
     return (
@@ -1005,7 +1448,7 @@ CREATE POLICY "Service insert" ON client_conversations FOR INSERT WITH CHECK (tr
         <Inbox className="h-10 w-10 text-gray-300" />
         <p className="font-medium text-gray-600">No conversations yet</p>
         <p className="text-sm text-gray-400">
-          Open the Terminal tab to test the AI, or share the portal link — conversations will appear here automatically.
+          Use the Test Chat tab or share the portal link — conversations will appear here.
         </p>
       </div>
     );
@@ -1013,7 +1456,23 @@ CREATE POLICY "Service insert" ON client_conversations FOR INSERT WITH CHECK (tr
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-gray-500">{total} conversation{total !== 1 ? 's' : ''} logged{total > conversations.length ? ` (showing ${conversations.length} most recent)` : ''}</p>
+      {showUpgradeNudge && (
+        <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-indigo-900">Your AI is getting real traction</p>
+            <p className="text-xs text-indigo-700 mt-1">
+              {conversations.length} conversations already logged. Upgrade to Lite to add more client AI workers and scale what&apos;s working.
+            </p>
+          </div>
+          <Link href="/agency/billing?upgrade=starter&required=conversations_growth">
+            <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white w-full sm:w-auto">
+              Upgrade to Lite
+            </Button>
+          </Link>
+        </div>
+      )}
+
+      <p className="text-sm text-gray-500">{conversations.length} conversation{conversations.length !== 1 ? 's' : ''} logged</p>
       {conversations.map(conv => {
         const isEscalated = conv.ai_response?.includes("I'll flag this for our team");
         const isProactive = conv.user_message?.includes('[NEW CONTACT]');
@@ -1170,6 +1629,394 @@ function ZapierChannelCard({
   );
 }
 
+// ── Channels Tab ──────────────────────────────────────────────────────────────
+// Shows all available channels: web chat embed, email outreach, WhatsApp, voice.
+
+function ChannelsTab({ client, onTabChange }: { client: AgencyClient; onTabChange?: (tab: Tab) => void }) {
+  const [copied, setCopied] = useState<string | null>(null);
+  const cfg = (client.container_config ?? {}) as Record<string, unknown>;
+  const [widgetTitle, setWidgetTitle] = useState((cfg.widget_title as string) || '');
+  const [widgetColor, setWidgetColor] = useState((cfg.widget_color as string) || '#6366f1');
+  const [widgetGreeting, setWidgetGreeting] = useState((cfg.widget_greeting as string) || '');
+  const [savingWidget, setSavingWidget] = useState(false);
+  const [widgetSaved, setWidgetSaved] = useState(false);
+  const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://kyra.conversionsystem.com';
+  const scriptTag = `<script src="${appUrl}/api/widget/${client.id}/script" defer></script>`;
+
+  const saveWidgetAppearance = async () => {
+    setSavingWidget(true);
+    try {
+      await fetch(`/api/agency/clients/${client.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          container_config: {
+            ...cfg,
+            widget_title: widgetTitle.trim() || undefined,
+            widget_color: widgetColor || '#6366f1',
+            widget_greeting: widgetGreeting.trim() || undefined,
+          },
+        }),
+      });
+      setWidgetSaved(true);
+      setTimeout(() => setWidgetSaved(false), 2000);
+    } catch { /* ignore */ }
+    setSavingWidget(false);
+  };
+
+  const copy = (text: string, key: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(key);
+      setTimeout(() => setCopied(null), 2000);
+    });
+  };
+
+  return (
+    <div className="space-y-6 pb-8">
+      {/* Header */}
+      <div>
+        <h2 className="text-lg font-semibold text-gray-900">Channels</h2>
+        <p className="text-sm text-gray-500 mt-1">
+          Connect your client AI to every surface customers use — from your website to WhatsApp to voice calls.
+        </p>
+      </div>
+
+      {/* ── Web Chat Widget ─────────────────────────────────────────────── */}
+      <Card className="border-indigo-100">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-indigo-50 flex items-center justify-center">
+              <Globe className="h-5 w-5 text-indigo-600" />
+            </div>
+            <div>
+              <CardTitle className="text-base">Web Chat Widget</CardTitle>
+              <CardDescription className="text-xs">Embed a live chat bubble on any website — no GHL required</CardDescription>
+            </div>
+            <span className="ml-auto text-[10px] bg-green-100 text-green-700 font-medium px-2 py-0.5 rounded-full">✅ Ready</span>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-gray-600">
+            Drop one line of code on any webpage. A floating chat bubble appears — customers type, your AI responds instantly.
+            Sessions persist per browser via <code className="text-xs bg-gray-100 px-1 rounded">localStorage</code>.
+          </p>
+
+          <div>
+            <p className="text-xs font-medium text-gray-700 mb-2">Embed snippet — paste before <code className="bg-gray-100 px-1 rounded">&lt;/body&gt;</code></p>
+            <div className="flex items-start gap-2">
+              <div className="flex-1 bg-gray-900 rounded-lg p-3 font-mono text-xs text-green-400 overflow-x-auto">
+                {scriptTag}
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="shrink-0"
+                onClick={() => copy(scriptTag, 'script')}
+              >
+                {copied === 'script' ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+              </Button>
+            </div>
+          </div>
+
+          {/* ── Widget Appearance ── */}
+          <div className="border-t border-gray-100 pt-4">
+            <p className="text-xs font-medium text-gray-700 mb-3">Customize appearance</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-gray-600">Widget Title</label>
+                  <Input value={widgetTitle} onChange={(e) => setWidgetTitle(e.target.value)} placeholder={`Chat with ${client.name}`} className="bg-gray-50 text-sm" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-gray-600">Brand Colour</label>
+                  <div className="flex items-center gap-2">
+                    <input type="color" value={widgetColor} onChange={(e) => setWidgetColor(e.target.value)} className="h-8 w-10 rounded border border-gray-200 cursor-pointer bg-white p-0.5" />
+                    <Input value={widgetColor} onChange={(e) => setWidgetColor(e.target.value)} placeholder="#6366f1" className="bg-gray-50 font-mono text-sm flex-1" maxLength={7} />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-gray-600">Opening Greeting</label>
+                  <Textarea value={widgetGreeting} onChange={(e) => setWidgetGreeting(e.target.value)} placeholder="Hi! 👋 How can I help you today?" rows={2} className="bg-gray-50 text-sm" />
+                </div>
+                <Button size="sm" onClick={saveWidgetAppearance} disabled={savingWidget} className="mt-1">
+                  {savingWidget ? 'Saving...' : widgetSaved ? '✅ Saved' : 'Save Appearance'}
+                </Button>
+              </div>
+              {/* Live preview */}
+              <div className="flex flex-col items-center gap-2">
+                <p className="text-xs font-medium text-gray-500 self-start">Preview</p>
+                <div className="w-full rounded-xl overflow-hidden border border-gray-200 shadow-lg text-[11px]">
+                  <div className="flex items-center gap-2 px-3 py-2" style={{ background: widgetColor }}>
+                    <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-white text-[9px]">🤖</div>
+                    <div className="text-white font-semibold text-xs">{widgetTitle || `Chat with ${client.name}`}</div>
+                  </div>
+                  <div className="bg-gray-50 px-3 py-2.5 space-y-1.5 min-h-[60px]">
+                    <div className="flex items-end gap-1">
+                      <div className="w-4 h-4 rounded-full flex items-center justify-center text-white text-[8px] shrink-0" style={{ background: widgetColor }}>🤖</div>
+                      <div className="bg-white rounded-lg rounded-bl-sm px-2 py-1 shadow-sm text-gray-800 max-w-[80%] text-[10px]">{widgetGreeting || 'Hi! 👋 How can I help you today?'}</div>
+                    </div>
+                  </div>
+                  <div className="bg-white border-t border-gray-100 px-2 py-1.5 flex items-center gap-1.5">
+                    <div className="flex-1 rounded border border-gray-200 bg-gray-50 px-2 py-1 text-gray-400 text-[10px]">Type a message...</div>
+                    <div className="w-5 h-5 rounded-full flex items-center justify-center text-white shrink-0" style={{ background: widgetColor }}>
+                      <svg viewBox="0 0 24 24" width="8" height="8" fill="white"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs"
+              onClick={() => window.open(`${appUrl}/api/widget/${client.id}/script`, '_blank')}
+            >
+              <ExternalLink className="h-3.5 w-3.5 mr-1.5" /> Preview script
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs"
+              onClick={() => copy(`${appUrl}/api/widget/chat`, 'api')}
+            >
+              {copied === 'api' ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500 mr-1.5" /> : <Copy className="h-3.5 w-3.5 mr-1.5" />}
+              Copy API endpoint
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── GHL (existing) ──────────────────────────────────────────────── */}
+      <Card className="border-green-100">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-green-50 flex items-center justify-center">
+              <MessageCircle className="h-5 w-5 text-green-600" />
+            </div>
+            <div>
+              <CardTitle className="text-base">GHL (SMS + Multi-channel)</CardTitle>
+              <CardDescription className="text-xs">SMS, WhatsApp, Instagram, FB Messenger, Live Chat, Google Business — all via GHL</CardDescription>
+            </div>
+            <span className="ml-auto text-[10px] bg-green-100 text-green-700 font-medium px-2 py-0.5 rounded-full">✅ Active</span>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-gray-600">
+            Connect GHL in the <strong>GHL tab</strong> and the AI automatically handles all channels your client has connected — SMS, WhatsApp, Instagram DMs, Facebook Messenger, Live Chat, and Google My Business. No extra setup needed per channel.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {['SMS', 'WhatsApp (via GHL)', 'Instagram DMs', 'FB Messenger', 'Live Chat', 'Google Business'].map(ch => (
+              <span key={ch} className="text-[11px] bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full">{ch}</span>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── Zapier / Make / n8n ─────────────────────────────────────────── */}
+      <ZapierChannelCard client={client} appUrl={appUrl} copy={copy} copied={copied} />
+
+      {/* ── Email Outreach ──────────────────────────────────────────────── */}
+      <Card className="border-blue-100">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center">
+              <Mail className="h-5 w-5 text-blue-600" />
+            </div>
+            <div>
+              <CardTitle className="text-base">Email Outreach</CardTitle>
+              <CardDescription className="text-xs">AI-personalized emails via Resend — follow-ups, welcome emails, nurture sequences</CardDescription>
+            </div>
+            <span className="ml-auto text-[10px] bg-amber-100 text-amber-700 font-medium px-2 py-0.5 rounded-full">⚙️ Needs API Key</span>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5 text-xs text-amber-800">
+            <span className="shrink-0 mt-0.5">⚠️</span>
+            <span>Add <code className="bg-amber-100 px-1 rounded font-mono">RESEND_API_KEY</code> to your <a href="https://vercel.com/dashboard" target="_blank" rel="noopener noreferrer" className="underline font-medium">Vercel env vars</a> to enable email sending. Get a free key at <a href="https://resend.com" target="_blank" rel="noopener noreferrer" className="underline font-medium">resend.com</a>.</span>
+          </div>
+          <p className="text-sm text-gray-600">
+            Trigger AI-written, personalized emails from your GHL workflows or cron jobs. Uses the client AI&apos;s personality to craft each email.
+          </p>
+
+          <div>
+            <p className="text-xs font-medium text-gray-700 mb-1.5">API call (from GHL workflow or cron)</p>
+            <div className="flex items-start gap-2">
+              <pre className="flex-1 bg-gray-900 rounded-lg p-3 font-mono text-xs text-green-400 overflow-x-auto whitespace-pre">{`POST ${appUrl}/api/channels/email
+Authorization: Bearer YOUR_KYRA_API_SECRET
+
+{
+  "clientId": "${client.id}",
+  "to": "customer@email.com",
+  "toName": "John",
+  "templateId": "follow_up",
+  "context": "they just booked a demo call"
+}`}</pre>
+              <Button
+                size="sm"
+                variant="outline"
+                className="shrink-0"
+                onClick={() => copy(`POST ${appUrl}/api/channels/email\nAuthorization: Bearer YOUR_KYRA_API_SECRET\n\n{\n  "clientId": "${client.id}",\n  "to": "customer@email.com",\n  "templateId": "follow_up"\n}`, 'email')}
+              >
+                {copied === 'email' ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+              </Button>
+            </div>
+          </div>
+
+          <div className="text-xs text-gray-500">
+            <span className="font-medium">Templates:</span> <code className="bg-gray-100 px-1 rounded">follow_up</code> · <code className="bg-gray-100 px-1 rounded">welcome</code> · <code className="bg-gray-100 px-1 rounded">nurture</code> · <code className="bg-gray-100 px-1 rounded">custom</code>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── WhatsApp Direct ─────────────────────────────────────────────── */}
+      <Card className="border-gray-200">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
+              <MessageSquare className="h-5 w-5 text-gray-500" />
+            </div>
+            <div>
+              <CardTitle className="text-base text-gray-700">WhatsApp Business API (Direct)</CardTitle>
+              <CardDescription className="text-xs">Meta Cloud API — no GHL dependency</CardDescription>
+            </div>
+            <span className="ml-auto text-[10px] bg-amber-100 text-amber-700 font-medium px-2 py-0.5 rounded-full">⚙️ Setup Required</span>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-gray-600">
+            Use this if your client wants WhatsApp without GHL. Requires a Meta Business account and phone number approval.
+          </p>
+          <div className="bg-amber-50 rounded-lg p-3 text-xs text-amber-800 space-y-1">
+            <p className="font-semibold">Setup steps:</p>
+            <ol className="list-decimal ml-4 space-y-1">
+              <li>Go to <a href="https://developers.facebook.com" target="_blank" rel="noopener noreferrer" className="underline">developers.facebook.com</a> → create app → add WhatsApp</li>
+              <li>Get a <strong>System User Access Token</strong> (permanent) + <strong>Phone Number ID</strong></li>
+              <li>Add to Vercel env: <code className="bg-amber-100 px-1 rounded">WHATSAPP_ACCESS_TOKEN</code>, <code className="bg-amber-100 px-1 rounded">WHATSAPP_PHONE_NUMBER_ID</code>, <code className="bg-amber-100 px-1 rounded">WHATSAPP_VERIFY_TOKEN</code> (any string), <code className="bg-amber-100 px-1 rounded">WHATSAPP_DEFAULT_CLIENT_ID={client.id}</code></li>
+              <li>Set webhook URL in Meta: <code className="bg-amber-100 px-1 rounded break-all">{appUrl}/api/channels/whatsapp-direct</code></li>
+              <li>Subscribe to: <strong>messages</strong></li>
+            </ol>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-xs"
+            onClick={() => copy(`${appUrl}/api/channels/whatsapp-direct`, 'wa')}
+          >
+            {copied === 'wa' ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500 mr-1.5" /> : <Copy className="h-3.5 w-3.5 mr-1.5" />}
+            Copy webhook URL
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* ── Telegram ───────────────────────────────────────────────────── */}
+      <Card className="border-sky-100">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-sky-50 flex items-center justify-center">
+              <MessageSquare className="h-5 w-5 text-sky-600" />
+            </div>
+            <div>
+              <CardTitle className="text-base">Telegram</CardTitle>
+              <CardDescription className="text-xs">The fastest setup — get your AI worker live on Telegram in under 5 minutes</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="text-sm text-gray-600 space-y-2">
+          <p>Create a bot via <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" className="text-sky-600 hover:underline">@BotFather</a>, paste the token in the Terminal config, and your AI is live.</p>
+          <p className="text-xs text-gray-400">Configure via the <strong>Terminal</strong> → OpenClaw config → channels.telegram</p>
+        </CardContent>
+      </Card>
+
+      {/* ── Discord ─────────────────────────────────────────────────────── */}
+      <Card className="border-violet-100">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-violet-50 flex items-center justify-center">
+              <MessageCircle className="h-5 w-5 text-violet-600" />
+            </div>
+            <div>
+              <CardTitle className="text-base">Discord</CardTitle>
+              <CardDescription className="text-xs">Deploy your AI across Discord servers — great for community businesses</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="text-sm text-gray-600 space-y-2">
+          <p>Create a bot at the <a href="https://discord.com/developers/applications" target="_blank" rel="noopener noreferrer" className="text-violet-600 hover:underline">Discord Developer Portal</a>, add it to your server, and paste the token.</p>
+          <p className="text-xs text-gray-400">Configure via the <strong>Terminal</strong> → OpenClaw config → channels.discord</p>
+        </CardContent>
+      </Card>
+
+      {/* ── Slack ───────────────────────────────────────────────────────── */}
+      <Card className="border-orange-100">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-orange-50 flex items-center justify-center">
+              <MessageSquare className="h-5 w-5 text-orange-600" />
+            </div>
+            <div>
+              <CardTitle className="text-base">Slack</CardTitle>
+              <CardDescription className="text-xs">Add your AI worker to any Slack workspace</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="text-sm text-gray-600">
+          <p>Create a Slack App at <a href="https://api.slack.com/apps" target="_blank" rel="noopener noreferrer" className="text-orange-600 hover:underline">api.slack.com</a>, enable Socket Mode, and add the bot token.</p>
+          <p className="text-xs text-gray-400 mt-2">Configure via the <strong>Terminal</strong> → OpenClaw config → channels.slack</p>
+        </CardContent>
+      </Card>
+
+      {/* ── Signal / iMessage / Google Chat ──────────────────────────── */}
+      <Card className="border-gray-100">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-gray-50 flex items-center justify-center">
+              <Radio className="h-5 w-5 text-gray-600" />
+            </div>
+            <div>
+              <CardTitle className="text-base">More Channels</CardTitle>
+              <CardDescription className="text-xs">Signal, iMessage, Google Chat, IRC, Line — 20+ channels supported</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="text-sm text-gray-600">
+          <p>OpenClaw supports 20+ messaging channels. Configure any channel through the Terminal → OpenClaw gateway config.</p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {['Signal', 'iMessage', 'Google Chat', 'IRC', 'Line'].map(ch => (
+              <span key={ch} className="text-[11px] bg-gray-100 text-gray-600 border border-gray-200 px-2 py-0.5 rounded-full">{ch}</span>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── Voice AI — managed in dedicated tab ──────────────────────── */}
+      <Card className="rounded-2xl border border-gray-200 shadow-sm">
+        <CardContent className="pt-6">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shrink-0">
+                <Phone className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 text-sm">Voice AI</h3>
+                <p className="text-xs text-gray-500 mt-0.5">Inbound & outbound phone calls powered by Kyra Native</p>
+              </div>
+            </div>
+            <button
+              onClick={() => onTabChange?.('voice')}
+              className="shrink-0 text-xs font-medium text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors"
+            >
+              Configure →
+            </button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 // ── Client Portal Tab ─────────────────────────────────────────────────────────
 
 function PortalTab({ client }: { client: AgencyClient }) {
@@ -1318,7 +2165,7 @@ function PortalTab({ client }: { client: AgencyClient }) {
                 </code>
                 <button
                   onClick={() => copyUrl(inviteResult.portalUrl)}
-                  className="shrink-0 px-3 py-2 text-xs font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                  className="shrink-0 px-3 py-2 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   Copy
                 </button>
