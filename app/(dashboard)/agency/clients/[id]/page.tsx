@@ -24,7 +24,7 @@ export default async function ClientDetailPage({ params }: ClientDetailPageProps
 
   return (
     <Suspense fallback={<div className="p-4 sm:p-6 lg:p-8 text-gray-400">Loading...</div>}>
-      <ClientDetailView client={client} role={result.role} agencyPlan={result.agency.plan} />
+      <ClientDetailView client={client} role={result.role} plan={result.agency.plan} accountType={(result.agency.settings as Record<string, unknown>)?.account_type as string | undefined} />
     </Suspense>
   );
 }
