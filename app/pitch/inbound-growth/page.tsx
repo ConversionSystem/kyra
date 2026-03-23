@@ -387,27 +387,38 @@ const SLIDES: Slide[] = [
     content: (
       <div className="flex flex-col justify-center px-4 sm:px-8 lg:px-12 min-h-full max-w-5xl mx-auto">
         <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black text-white mb-2 text-center">
-          Simple <span className="text-indigo-400">pricing.</span>
+          Two packages. <span className="text-indigo-400">One-time setup.</span>
         </h2>
-        <p className="text-slate-400 text-center mb-4">Everything included. No hidden fees.</p>
+        <p className="text-slate-400 text-center mb-4">Build fee on top of your Kyra subscription. No recurring agency fees.</p>
 
         <div className="flex justify-center mb-6">
-          <div className="inline-flex items-center gap-2 bg-amber-500/20 border border-amber-400/30 rounded-full px-5 py-2.5">
-            <Sparkles className="h-4 w-4 text-amber-400" />
-            <span className="text-amber-400 font-bold text-sm">First month: $497 trial rate</span>
+          <div className="inline-flex items-center gap-2 bg-indigo-500/20 border border-indigo-400/30 rounded-full px-5 py-2.5">
+            <Sparkles className="h-4 w-4 text-indigo-400" />
+            <span className="text-indigo-300 font-bold text-sm">One-time build + Kyra plan ($99–$499/mo) = you own it forever</span>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5 mb-8">
-          {/* Growth Engine */}
-          <div className="rounded-2xl p-6 flex flex-col bg-white/10 text-white border border-white/20">
-            <h3 className="text-xl font-bold text-white">Growth Engine</h3>
-            <div className="flex items-baseline gap-1 mt-2">
-              <span className="text-4xl font-black">$997</span>
-              <span className="text-sm text-white/60">/mo</span>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-3xl mx-auto mb-8">
+          {/* Standard Build */}
+          <div className="rounded-2xl p-8 flex flex-col bg-white/10 text-white border border-white/20">
+            <h3 className="text-xl font-bold text-white">Standard Build</h3>
+            <div className="flex items-baseline gap-1 mt-2 mb-1">
+              <span className="text-4xl font-black">$1,500</span>
+              <span className="text-sm text-white/60">one-time</span>
             </div>
-            <ul className="mt-4 space-y-2 flex-1">
-              {['All 5 automation routines', 'Telegram approval workflow', 'CRM integration', 'Weekly performance reports', 'Full activity logs'].map(f => (
+            <p className="text-sm text-white/50 mb-4">Perfect for getting started with inbound growth</p>
+            <ul className="mt-2 space-y-2.5 flex-1">
+              {[
+                'Content Strategist routine (1 post/day)',
+                'Research & Trends routine (weekly briefing)',
+                'Lead Identifier (flags buying signals)',
+                'Operations & Memory (daily logs)',
+                'Telegram approval workflow',
+                'CRM integration',
+                'Voice & tone configuration',
+                'Target account setup (up to 20)',
+                '1 week of post-launch tuning',
+              ].map(f => (
                 <li key={f} className="flex items-start gap-2 text-sm">
                   <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5 text-indigo-400" />
                   <span className="text-white/80">{f}</span>
@@ -416,18 +427,30 @@ const SLIDES: Slide[] = [
             </ul>
           </div>
 
-          {/* Growth + Strategy (highlighted) */}
-          <div className="rounded-2xl p-6 flex flex-col bg-white text-gray-900 ring-2 ring-indigo-400 shadow-2xl shadow-indigo-500/20 scale-105">
+          {/* Premium Build (highlighted) */}
+          <div className="rounded-2xl p-8 flex flex-col bg-white text-gray-900 ring-2 ring-indigo-400 shadow-2xl shadow-indigo-500/20">
             <div className="text-center mb-3">
-              <span className="bg-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-full">RECOMMENDED</span>
+              <span className="bg-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-full">FULL SYSTEM</span>
             </div>
-            <h3 className="text-xl font-bold text-gray-900">Growth + Strategy</h3>
-            <div className="flex items-baseline gap-1 mt-2">
-              <span className="text-4xl font-black">$1,497</span>
-              <span className="text-sm text-gray-500">/mo</span>
+            <h3 className="text-xl font-bold text-gray-900">Premium Build</h3>
+            <div className="flex items-baseline gap-1 mt-2 mb-1">
+              <span className="text-4xl font-black">$3,000</span>
+              <span className="text-sm text-gray-500">one-time</span>
             </div>
-            <ul className="mt-4 space-y-2 flex-1">
-              {['Everything in Growth Engine', 'Monthly strategy call', 'Quarterly content audit', 'Priority support', 'Custom routine tuning'].map(f => (
+            <p className="text-sm text-gray-500 mb-4">The complete inbound growth machine</p>
+            <ul className="mt-2 space-y-2.5 flex-1">
+              {[
+                'Everything in Standard Build',
+                'Engagement Builder (3-5 comment drafts/day)',
+                'Target account setup (up to 50)',
+                'Content calendar with post scheduling',
+                'Weekly performance analytics report',
+                'Competitor content monitoring',
+                'Lead scoring & CRM enrichment',
+                'Custom SOUL.md with your exact voice',
+                '30-day post-launch tuning & optimization',
+                'Monthly strategy call (first 3 months)',
+              ].map(f => (
                 <li key={f} className="flex items-start gap-2 text-sm">
                   <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5 text-green-500" />
                   <span className="text-gray-700">{f}</span>
@@ -435,28 +458,12 @@ const SLIDES: Slide[] = [
               ))}
             </ul>
           </div>
-
-          {/* Setup */}
-          <div className="rounded-2xl p-6 flex flex-col bg-white/10 text-white border border-white/20">
-            <h3 className="text-xl font-bold text-white">Setup</h3>
-            <div className="flex items-baseline gap-1 mt-2">
-              <span className="text-4xl font-black">$500</span>
-              <span className="text-sm text-white/60">one-time</span>
-            </div>
-            <ul className="mt-4 space-y-2 flex-1">
-              {['Configure all 5 routines', 'Define target accounts', 'Set voice & tone', 'CRM connection', 'Telegram bot setup'].map(f => (
-                <li key={f} className="flex items-start gap-2 text-sm">
-                  <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5 text-indigo-400" />
-                  <span className="text-white/80">{f}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
         </div>
 
-        <p className="text-slate-400 text-center text-lg">
-          A dedicated social media manager costs <span className="text-white font-bold">$3–4K/mo</span>. You pay <span className="text-indigo-400 font-bold">a fraction</span> of that.
-        </p>
+        <div className="text-center text-sm text-slate-400 max-w-2xl mx-auto">
+          <p>Both packages are <strong className="text-white">one-time build fees</strong>. After setup, you only pay your Kyra subscription ($99–$499/mo depending on plan). You own the system — no recurring agency fees, no lock-in.</p>
+          <p className="mt-2">A human doing this costs $3–4K/mo. You pay once and own it forever.</p>
+        </div>
       </div>
     ),
   },
