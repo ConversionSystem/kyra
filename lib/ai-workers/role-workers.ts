@@ -1756,18 +1756,11 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
     useCase: 'internal',
     visibility: 'private',
-    allowedAgencies: ['18e6e562-ec29-4652-a38b-58f6be2e533f', '1511e077-77ef-4c47-81fd-06a3bc9f1dbb'],
+    allowedAgencies: ['18e6e562-ec29-4652-a38b-58f6be2e533f'],
     variables: [
-      { key: 'business_name', label: 'Business Name', placeholder: 'MIX Networks / Trusted Networx', required: true },
-      { key: 'microsoft_tenant_id', label: 'Microsoft 365 Tenant ID', placeholder: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx', required: false },
-      { key: 'microsoft_client_id', label: 'Microsoft App Client ID', placeholder: 'Azure AD App Registration Client ID', required: false },
-      { key: 'google_service_account', label: 'Google Service Account Email', placeholder: 'your-service@project.iam.gserviceaccount.com', required: false },
-      { key: 'fathom_api_key', label: 'Fathom API Key', placeholder: 'fathom_xxxxxxxx', required: false },
-      { key: 'github_token', label: 'GitHub Personal Access Token', placeholder: 'ghp_xxxxxxxxxxxx', required: false },
-      { key: 'github_repos', label: 'GitHub Repositories', placeholder: 'org/repo1\norg/repo2', required: false, type: 'textarea' },
-      { key: 'telegram_updates_chat_id', label: 'Telegram Chat ID for Updates', placeholder: '-100xxxxxxxxxx', required: false },
-      { key: 'email_digest_time', label: 'Daily Email Digest Time', placeholder: '17:00', required: false },
-      { key: 'priority_senders', label: 'Priority Email Senders', placeholder: 'boss@company.com\nclient@important.com', required: false, type: 'textarea' },
+      { key: 'business_name', label: 'Business Name', placeholder: 'Your company name', required: true },
+      { key: 'email_digest_time', label: 'Daily Email Digest Time', placeholder: '17:00 (leave blank to skip)', required: false },
+      { key: 'priority_senders', label: 'Priority Email Senders', placeholder: 'boss@company.com (one per line)', required: false, type: 'textarea' },
     ],
     soulMd: `# IT Operations Specialist — Trusted Networx
 
