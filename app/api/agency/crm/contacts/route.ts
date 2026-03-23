@@ -29,6 +29,8 @@ export async function GET(req: NextRequest) {
       stage: url.searchParams.get('stage') || undefined,
       score_label: url.searchParams.get('score_label') || undefined,
       tag: url.searchParams.get('tag') || undefined,
+      startDate: url.searchParams.get('startDate') || undefined,
+      endDate: url.searchParams.get('endDate') || undefined,
       sort: (url.searchParams.get('sort') as ContactFilters['sort']) || 'created',
       order: (url.searchParams.get('order') as ContactFilters['order']) || 'desc',
       page: Number(url.searchParams.get('page')) || 1,

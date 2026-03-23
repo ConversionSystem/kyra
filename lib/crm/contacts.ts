@@ -32,6 +32,8 @@ export async function getContacts(
   if (filters.stage) query = query.eq('stage', filters.stage);
   if (filters.score_label) query = query.eq('score_label', filters.score_label);
   if (filters.tag) query = query.contains('tags', [filters.tag]);
+  if (filters.startDate) query = query.gte('created_at', filters.startDate);
+  if (filters.endDate) query = query.lte('created_at', filters.endDate);
 
   const sortMap: Record<string, string> = {
     name: 'first_name',
