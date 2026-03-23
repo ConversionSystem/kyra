@@ -56,11 +56,18 @@ function matchesCategory(worker: RoleWorker, category: WorkerCategory): boolean 
   return true;
 }
 
+const MASTER_AGENCY_IDS = ['1511e077-77ef-4c47-81fd-06a3bc9f1dbb'];
+
 export default function AIWorkersTab({ client, agencyId }: AIWorkersTabProps) {
-  // Filter workers by visibility — private workers only shown to allowed agencies
+  const isMasterAgency = MASTER_AGENCY_IDS.includes(agencyId);
+
+  // Filter workers by visibility — private workers shown to allowed agencies + master admin
   const visibleWorkers = ROLE_WORKERS.filter(w => {
     if (!w.visibility || w.visibility === 'public') return true;
-    if (w.visibility === 'private' && w.allowedAgencies?.includes(agencyId)) return true;
+    if (w.visibility === 'private') {
+      if (w.allowedAgencies?.includes(agencyId)) return true;
+      if (isMasterAgency) return true;
+    }
     return false;
   });
 
