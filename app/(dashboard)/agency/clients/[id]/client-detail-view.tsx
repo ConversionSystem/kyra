@@ -34,6 +34,7 @@ import {
   Plus,
   Users,
   Globe,
+  TrendingUp,
 } from 'lucide-react';
 import type { AgencyClient, AgencyMember } from '@/lib/agency/queries';
 import GHLConnection from './ghl-connection';
@@ -51,6 +52,7 @@ import TrainTab from '@/components/dashboard/client-tabs/train-tab';
 import InsightsTab from '@/components/dashboard/client-tabs/insights-tab';
 import WebsiteTab from '@/components/dashboard/client-tabs/website-tab';
 import AIWorkersTab from '@/components/dashboard/client-tabs/ai-workers-tab';
+import MarketingTab from '@/components/dashboard/client-tabs/marketing-tab';
 
 // ── Setup Nudge Banner ────────────────────────────────────────────────────────
 
@@ -117,7 +119,7 @@ interface ChatMessage {
   content: string;
 }
 
-type Tab = 'inbox' | 'chat' | 'train' | 'workers' | 'crm' | 'website' | 'settings' | 'insights' | 'share';
+type Tab = 'inbox' | 'chat' | 'train' | 'workers' | 'marketing' | 'crm' | 'website' | 'settings' | 'insights' | 'share';
 
 // Map legacy ?tab= values to new tab IDs
 const LEGACY_TAB_MAP: Record<string, Tab> = {
@@ -147,6 +149,7 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'chat', label: 'Chat', icon: MessageSquare },
   { id: 'train', label: 'Train', icon: Brain },
   { id: 'workers', label: 'AI Workers', icon: Bot },
+  { id: 'marketing', label: 'Marketing', icon: TrendingUp },
   { id: 'crm', label: 'CRM', icon: Users },
   { id: 'website', label: 'Website', icon: Globe },
   { id: 'settings', label: 'Settings', icon: Settings },
@@ -157,7 +160,7 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
 // Grouped sidebar navigation — desktop only
 const TAB_GROUPS: { label?: string; tabs: typeof TABS }[] = [
   {
-    tabs: TABS.filter(t => ['inbox', 'chat', 'train', 'workers', 'crm', 'website'].includes(t.id)),
+    tabs: TABS.filter(t => ['inbox', 'chat', 'train', 'workers', 'marketing', 'crm', 'website'].includes(t.id)),
   },
   {
     label: 'Configure',
@@ -361,6 +364,9 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
           )}
           {activeTab === 'workers' && (
             <AIWorkersTab client={initialClient} agencyId={initialClient.agency_id} />
+          )}
+          {activeTab === 'marketing' && (
+            <MarketingTab client={initialClient} />
           )}
           {activeTab === 'crm' && (
             <CrmTab client={initialClient} clientId={initialClient.id} />
