@@ -566,16 +566,16 @@ export default function AIPersonalityTab({ client }: { client: AgencyClient }) {
       {/* Training Documents moved to Knowledge tab — no duplication */}
 
       {/* ================================================================== */}
-      {/* Section 4: Automation                                              */}
+      {/* Section 4: Behavior Triggers                                       */}
       {/* ================================================================== */}
       <Card className="border-gray-200 bg-white rounded-xl">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base text-gray-900">
             <Zap className="h-5 w-5 text-indigo-600" />
-            Automation
+            Behavior Triggers
           </CardTitle>
           <CardDescription className="text-gray-500">
-            Proactive messaging and keyword-triggered actions.
+            Proactive greetings and keyword-triggered actions for your AI worker.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
