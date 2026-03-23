@@ -42,6 +42,7 @@ export async function createGhlSubAccount(params: CreateSubAccountParams): Promi
       'Version': API_VERSION,
     },
     body: JSON.stringify({
+      companyId: process.env.GHL_COMPANY_ID || undefined,
       name: params.name,
       email: params.email,
       phone: params.phone || undefined,
