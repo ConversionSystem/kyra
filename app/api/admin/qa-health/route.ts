@@ -109,6 +109,7 @@ async function fetchStripeWebhooks(): Promise<StripeWebhookEndpoint[]> {
 
 function getTodayDeployCount(): number {
   // This runs on Vercel/server — /tmp is available
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const fs = require('fs') as typeof import('fs');
   const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
   const file = `/tmp/.kyra_deploy_${today}`;
