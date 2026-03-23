@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
   Save, Loader2, Trash2, UserPlus, Crown, Shield, User,
-  ImageIcon, Palette, CheckCircle2, AlertTriangle, X,
+  ImageIcon, Palette, CheckCircle2, AlertTriangle, X, Zap,
 } from 'lucide-react';
 import type { Agency, AgencyMember, AgencyRole, AgencySettings } from '@/lib/agency/types';
 import { BrandingPreview } from './branding-preview';
@@ -73,6 +73,8 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
   const [companyName, setCompanyName] = useState(settings.company_name ?? '');
   const [supportEmail, setSupportEmail] = useState(settings.support_email ?? '');
   const [logoError, setLogoError] = useState(false);
+  const [showPoweredBy, setShowPoweredBy] = useState(settings.show_powered_by !== false);
+  const canTogglePoweredBy = agency.plan === 'pro' || agency.plan === 'scale';
 
   // ── Save state ─────────────────────────────────────────────────────────────
   const [saving, setSaving] = useState(false);
@@ -111,6 +113,7 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
             accent_color: accentColor.trim() || undefined,
             company_name: companyName.trim() || undefined,
             support_email: supportEmail.trim() || undefined,
+            show_powered_by: showPoweredBy,
           },
         }),
       });
@@ -377,6 +380,47 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
           </div>
         </CardContent>
       </Card>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          POWERED BY KYRA BADGE
+          ══════════════════════════════════════════════════════════════════════ */}
+      {canTogglePoweredBy && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Zap className="h-5 w-5 text-indigo-500" />
+              Powered by Kyra Badge
+            </CardTitle>
+            <CardDescription>
+              Control whether the &quot;Powered by Kyra&quot; badge appears on your clients&apos; chat widgets.
+              Keeping it on helps grow the platform and supports other agencies.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-700">Show &quot;Powered by Kyra&quot; badge</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {showPoweredBy ? 'Badge is visible on all chat widgets' : 'Badge is hidden — white-label mode'}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowPoweredBy(!showPoweredBy)}
+                disabled={!isAdmin}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-50 ${
+                  showPoweredBy ? 'bg-indigo-500' : 'bg-gray-300'
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    showPoweredBy ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* ── Save button ───────────────────────────────────────────────────── */}
       {isAdmin && (
