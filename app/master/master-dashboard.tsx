@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
   Crown, Building2, Users, Zap, DollarSign, BarChart3, MessageSquare,
   Server, RefreshCw, ChevronRight, Globe, Activity, Coins,
-  UserPlus, Bot, Clock, TrendingUp, ExternalLink,
+  UserPlus, Bot, Clock, TrendingUp, ExternalLink, CreditCard,
 } from 'lucide-react';
 import GrowthChart from '@/components/master/growth-chart';
 
@@ -120,6 +120,7 @@ export default function MasterDashboard() {
   const [vps, setVps] = useState<VpsHealth | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [loading, setLoading] = useState(true);
+  const [stripeReady, setStripeReady] = useState<boolean | null>(null);
 
   const fetchStats = useCallback(async () => {
     try {
@@ -149,6 +150,9 @@ export default function MasterDashboard() {
   useEffect(() => {
     fetchStats();
     fetchVps();
+    fetch('/api/stripe/env-check').then(r => r.ok ? r.json() : null).then(d => {
+      if (d) setStripeReady(!!d.STRIPE_SECRET_KEY);
+    }).catch(() => {});
     const statsInterval = setInterval(fetchStats, 15_000); // 15s
     const vpsInterval = setInterval(fetchVps, 30_000); // 30s
     return () => { clearInterval(statsInterval); clearInterval(vpsInterval); };
@@ -406,6 +410,7 @@ export default function MasterDashboard() {
               <div className="space-y-1.5">
                 {[
                   { label: '⚙️ Accounts Admin', href: '/master/accounts', icon: Crown },
+                  { label: 'Billing Setup', href: '/master/stripe-setup', icon: CreditCard, dot: stripeReady === false },
                   { label: 'Agency Dashboard', href: '/agency', icon: Building2 },
                   { label: 'Solo Landing', href: '/solo', icon: Users },
                   { label: 'VPS Provisioner', href: 'https://provisioner.gw.kyra.conversionsystem.com/health', icon: Server, ext: true },
@@ -413,10 +418,13 @@ export default function MasterDashboard() {
                   { label: 'Supabase', href: 'https://supabase.com/dashboard', icon: Activity, ext: true },
                   { label: 'Vercel', href: 'https://vercel.com/dashboard', icon: Globe, ext: true },
                   { label: 'GitHub', href: 'https://github.com/ConversionSystem/kyra', icon: Globe, ext: true },
-                ].map(({ label, href, icon: Icon, ext }) => (
+                ].map(({ label, href, icon: Icon, ext, dot }) => (
                   <a key={href} href={href} target={ext ? '_blank' : undefined} rel={ext ? 'noopener noreferrer' : undefined}
                     className="flex items-center gap-2 text-xs text-gray-400 hover:text-white transition py-1">
-                    <Icon className="h-3 w-3" />
+                    <span className="relative">
+                      <Icon className="h-3 w-3" />
+                      {dot && <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-red-500" />}
+                    </span>
                     {label}
                     {ext ? <ExternalLink className="h-2.5 w-2.5 ml-auto opacity-40" /> : <ChevronRight className="h-3 w-3 ml-auto opacity-40" />}
                   </a>
