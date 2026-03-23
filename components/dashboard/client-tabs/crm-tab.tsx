@@ -274,6 +274,8 @@ function ContactsSection({ client, clientId }: { client: AgencyClient; clientId:
   const [scoreFilter, setScoreFilter] = useState('all');
   const [sortBy, setSortBy] = useState('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [tagFilter, setTagFilter] = useState('all');
+  const [dateFilter, setDateFilter] = useState('all');
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -283,8 +285,21 @@ function ContactsSection({ client, clientId }: { client: AgencyClient; clientId:
   const [bulkValue, setBulkValue] = useState('');
   const [importing, setImporting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [allTags, setAllTags] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const limit = 50;
+
+  const getDateRange = useCallback((): { startDate?: string; endDate?: string } => {
+    if (dateFilter === 'all') return {};
+    const now = new Date();
+    const endDate = now.toISOString();
+    const d = new Date(now);
+    if (dateFilter === 'today') d.setHours(0, 0, 0, 0);
+    else if (dateFilter === '7d') d.setDate(d.getDate() - 7);
+    else if (dateFilter === '30d') d.setDate(d.getDate() - 30);
+    else if (dateFilter === '90d') d.setDate(d.getDate() - 90);
+    return { startDate: d.toISOString(), endDate };
+  }, [dateFilter]);
 
   const loadContacts = useCallback(async () => {
     setLoading(true);
@@ -292,17 +307,29 @@ function ContactsSection({ client, clientId }: { client: AgencyClient; clientId:
       const params = new URLSearchParams({ search, sort: sortBy, order: sortOrder, page: String(page), limit: String(limit) });
       if (stageFilter !== 'all') params.set('stage', stageFilter);
       if (scoreFilter !== 'all') params.set('score_label', scoreFilter);
+      if (tagFilter !== 'all') params.set('tag', tagFilter);
+      const { startDate, endDate } = getDateRange();
+      if (startDate) params.set('startDate', startDate);
+      if (endDate) params.set('endDate', endDate);
       params.set('clientId', clientId);
       const res = await fetch(`/api/agency/crm/contacts?${params}`);
       if (!res.ok) throw new Error('Failed to load contacts');
       const data = await res.json();
-      setContacts(Array.isArray(data) ? data : data.contacts || []);
+      const loaded: Contact[] = Array.isArray(data) ? data : data.contacts || [];
+      setContacts(loaded);
       setTotalCount(data.total ?? (Array.isArray(data) ? data.length : 0));
+      // Collect unique tags from loaded contacts for the tag filter
+      const tags = new Set<string>();
+      loaded.forEach(c => c.tags?.forEach(t => tags.add(t)));
+      setAllTags(prev => {
+        const merged = new Set([...prev, ...tags]);
+        return Array.from(merged).sort();
+      });
     } catch { setContacts([]); } finally { setLoading(false); }
-  }, [clientId, search, stageFilter, scoreFilter, sortBy, sortOrder, page]);
+  }, [clientId, search, stageFilter, scoreFilter, tagFilter, sortBy, sortOrder, page, getDateRange]);
 
   useEffect(() => { loadContacts(); }, [loadContacts]);
-  useEffect(() => { setPage(1); }, [search, stageFilter, scoreFilter, sortBy, sortOrder]);
+  useEffect(() => { setPage(1); }, [search, stageFilter, scoreFilter, tagFilter, dateFilter, sortBy, sortOrder]);
 
   const handleExport = async () => {
     try {
@@ -386,42 +413,61 @@ function ContactsSection({ client, clientId }: { client: AgencyClient; clientId:
 
   const totalPages = Math.ceil(totalCount / limit) || 1;
 
+  const compactSelect = 'border border-gray-200 rounded-lg px-2 h-8 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white';
+
   return (
-    <div className="space-y-4">
-      {/* Stage tabs */}
-      <div className="flex items-center gap-1 bg-gray-50 rounded-lg p-1 w-fit">
-        {['all', ...CONTACT_STAGES].map(s => (
-          <button key={s} onClick={() => setStageFilter(s)}
-            className={`px-3 py-1.5 text-sm rounded-md transition-colors ${stageFilter === s ? 'bg-white shadow-sm text-gray-900 font-medium' : 'text-gray-500 hover:text-gray-700'}`}>
-            {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}s
-          </button>
-        ))}
+    <div className="space-y-3">
+      {/* Row 1: Stage tabs + Add Contact */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+          {['all', ...CONTACT_STAGES].map(s => (
+            <button key={s} onClick={() => setStageFilter(s)}
+              className={`px-3 py-1 text-xs rounded-md transition-colors ${stageFilter === s ? 'bg-white shadow-sm text-gray-900 font-medium' : 'text-gray-500 hover:text-gray-700'}`}>
+              {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}s
+            </button>
+          ))}
+        </div>
+        <button onClick={() => setShowAdd(true)} className="bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg px-3 h-8 text-xs font-medium transition-colors flex items-center gap-1">
+          <Plus className="w-3.5 h-3.5" />Add Contact
+        </button>
       </div>
 
-      {/* Toolbar */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input className={`${inputClass} pl-9`} placeholder="Search contacts..." value={search} onChange={e => setSearch(e.target.value)} />
+      {/* Row 2: Search + filters + sort + actions */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="relative min-w-[180px] max-w-[280px] flex-1">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+          <input className="w-full border border-gray-200 rounded-lg pl-8 pr-2 h-8 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Search contacts..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
-        <select className={inputClass + ' w-auto'} value={scoreFilter} onChange={e => setScoreFilter(e.target.value)}>
+        <select className={compactSelect} value={tagFilter} onChange={e => setTagFilter(e.target.value)}>
+          <option value="all">All Tags</option>
+          {allTags.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
+        <select className={compactSelect} value={scoreFilter} onChange={e => setScoreFilter(e.target.value)}>
           <option value="all">All Scores</option>
           <option value="hot">Hot</option><option value="warm">Warm</option>
           <option value="cold">Cold</option><option value="new">New</option>
         </select>
-        <select className={inputClass + ' w-auto'} value={sortBy} onChange={e => setSortBy(e.target.value)}>
-          <option value="name">Name</option><option value="score">Score</option>
-          <option value="last_activity_at">Last Activity</option><option value="created_at">Created</option>
+        <select className={compactSelect} value={dateFilter} onChange={e => setDateFilter(e.target.value)}>
+          <option value="all">All Time</option>
+          <option value="today">Today</option>
+          <option value="7d">Last 7 days</option>
+          <option value="30d">Last 30 days</option>
+          <option value="90d">Last 90 days</option>
         </select>
-        <button onClick={() => setSortOrder(o => o === 'asc' ? 'desc' : 'asc')} className={btnSecondary + ' px-3'}>
+        <select className={compactSelect} value={sortBy} onChange={e => setSortBy(e.target.value)}>
+          <option value="name">Name</option><option value="score">Score</option>
+          <option value="last_activity">Activity</option><option value="created">Created</option>
+        </select>
+        <button onClick={() => setSortOrder(o => o === 'asc' ? 'desc' : 'asc')} className="border border-gray-200 rounded-lg h-8 w-8 flex items-center justify-center text-xs text-gray-600 hover:bg-gray-50">
           {sortOrder === 'asc' ? '↑' : '↓'}
         </button>
-        <button onClick={handleExport} className={btnSecondary}><Download className="w-4 h-4 mr-1 inline" />Export</button>
-        <button onClick={() => fileInputRef.current?.click()} className={btnSecondary} disabled={importing}>
-          {importing ? <Loader2 className="w-4 h-4 animate-spin mr-1 inline" /> : <Upload className="w-4 h-4 mr-1 inline" />}Import
+        <button onClick={handleExport} className="border border-gray-200 rounded-lg h-8 w-8 flex items-center justify-center text-gray-600 hover:bg-gray-50" title="Export CSV">
+          <Download className="w-3.5 h-3.5" />
+        </button>
+        <button onClick={() => fileInputRef.current?.click()} className="border border-gray-200 rounded-lg h-8 w-8 flex items-center justify-center text-gray-600 hover:bg-gray-50" disabled={importing} title="Import CSV">
+          {importing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
         </button>
         <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={handleImport} />
-        <button onClick={() => setShowAdd(true)} className={btnPrimary}><Plus className="w-4 h-4 mr-1 inline" />Add Contact</button>
       </div>
 
       {actionError && (
@@ -469,44 +515,50 @@ function ContactsSection({ client, clientId }: { client: AgencyClient; clientId:
         ) : (
           <>
             {/* Header row */}
-            <div className="grid grid-cols-[40px_1fr_1fr_120px_100px_80px_100px_120px] gap-2 px-4 py-2.5 bg-gray-50 border-b border-gray-100 text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <div className="grid grid-cols-[32px_1fr_1fr_100px_80px_28px_90px_80px] gap-1.5 px-3 py-2 bg-gray-50 border-b border-gray-100 text-xs font-medium text-gray-500 uppercase tracking-wider">
               <div><button onClick={toggleAll} className="text-gray-400 hover:text-gray-600">
-                {selected.size === contacts.length ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+                {selected.size === contacts.length ? <CheckSquare className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />}
               </button></div>
-              <div>Contact</div><div>Email / Phone</div><div>Company</div><div>Stage</div><div>Score</div><div>Tags</div><div>Last Activity</div>
+              <div>Contact</div><div>Email / Phone</div><div>Company</div><div>Stage</div><div></div><div>Tags</div><div>Activity</div>
             </div>
-            {contacts.map(c => (
-              <div key={c.id}
-                className="grid grid-cols-[40px_1fr_1fr_120px_100px_80px_100px_120px] gap-2 px-4 py-3 border-b border-gray-50 hover:bg-gray-50 cursor-pointer items-center text-sm"
-                onClick={() => setSelectedContact(c)}>
-                <div onClick={e => { e.stopPropagation(); toggleSelect(c.id); }}>
-                  {selected.has(c.id) ? <CheckSquare className="w-4 h-4 text-indigo-600" /> : <Square className="w-4 h-4 text-gray-300" />}
-                </div>
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-medium flex-shrink-0 ${getAvatarColor(c.first_name, c.last_name)}`}>
-                    {getInitials(c.first_name, c.last_name)}
+            {contacts.map(c => {
+              const scoreDot: Record<string, string> = { hot: 'bg-green-500', warm: 'bg-yellow-400', cold: 'bg-gray-400', new: 'bg-blue-400' };
+              const scoreTitle: Record<string, string> = { hot: 'Hot', warm: 'Warm', cold: 'Cold', new: 'New' };
+              return (
+                <div key={c.id}
+                  className="grid grid-cols-[32px_1fr_1fr_100px_80px_28px_90px_80px] gap-1.5 px-3 py-2 border-b border-gray-50 hover:bg-gray-50 cursor-pointer items-center text-sm"
+                  onClick={() => setSelectedContact(c)}>
+                  <div onClick={e => { e.stopPropagation(); toggleSelect(c.id); }}>
+                    {selected.has(c.id) ? <CheckSquare className="w-3.5 h-3.5 text-indigo-600" /> : <Square className="w-3.5 h-3.5 text-gray-300" />}
+                  </div>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-medium flex-shrink-0 ${getAvatarColor(c.first_name, c.last_name)}`}>
+                      {getInitials(c.first_name, c.last_name)}
+                    </div>
+                    <div className="min-w-0">
+                      <button className="font-medium text-gray-900 truncate hover:text-indigo-600 text-left block max-w-full" onClick={e => { e.stopPropagation(); setSelectedContact(c); }}>{contactName(c)}</button>
+                      {c.title && <div className="text-[11px] text-gray-500 truncate">{c.title}</div>}
+                    </div>
                   </div>
                   <div className="min-w-0">
-                    <div className="font-medium text-gray-900 truncate">{contactName(c)}</div>
-                    {c.title && <div className="text-xs text-gray-500 truncate">{c.title}</div>}
+                    {c.email && <div className="text-xs text-gray-700 truncate">{c.email}</div>}
+                    {c.phone && <div className="text-[11px] text-gray-500">{c.phone}</div>}
                   </div>
+                  <div className="text-gray-600 truncate text-xs">{c.crm_companies?.name || c.company_name || '—'}</div>
+                  <div><span className={`inline-block px-1.5 py-0.5 rounded-full text-[10px] font-medium ${stageBadge(c.stage)}`}>{c.stage}</span></div>
+                  <div className="flex justify-center" title={scoreTitle[c.score_label] || 'New'}>
+                    <span className={`w-2.5 h-2.5 rounded-full inline-block ${scoreDot[c.score_label] || 'bg-gray-300'}`} />
+                  </div>
+                  <div className="flex gap-0.5 flex-wrap">
+                    {c.tags.slice(0, 2).map(t => (
+                      <span key={t} className="bg-gray-100 text-gray-600 px-1 py-0.5 rounded text-[10px] leading-tight">{t}</span>
+                    ))}
+                    {c.tags.length > 2 && <span className="text-[10px] text-gray-400">+{c.tags.length - 2}</span>}
+                  </div>
+                  <div className="text-[11px] text-gray-500">{c.last_activity_at ? timeAgo(c.last_activity_at) : '—'}</div>
                 </div>
-                <div className="min-w-0">
-                  {c.email && <div className="text-gray-700 truncate">{c.email}</div>}
-                  {c.phone && <div className="text-xs text-gray-500">{c.phone}</div>}
-                </div>
-                <div className="text-gray-600 truncate text-xs">{c.crm_companies?.name || c.company_name || '—'}</div>
-                <div><span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${stageBadge(c.stage)}`}>{c.stage}</span></div>
-                <div><span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${scoreBadge(c.score_label)}`}>{c.score_label}</span></div>
-                <div className="flex gap-1 flex-wrap">
-                  {c.tags.slice(0, 2).map(t => (
-                    <span key={t} className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-xs">{t}</span>
-                  ))}
-                  {c.tags.length > 2 && <span className="text-xs text-gray-400">+{c.tags.length - 2}</span>}
-                </div>
-                <div className="text-xs text-gray-500">{c.last_activity_at ? timeAgo(c.last_activity_at) : '—'}</div>
-              </div>
-            ))}
+              );
+            })}
           </>
         )}
       </div>
