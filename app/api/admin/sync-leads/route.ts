@@ -34,7 +34,8 @@ export async function POST() {
 
   // ── Locate master agency (by admin email owner) ───────────────────────────
   // First check env var, then fall back to finding by owner email.
-  let masterAgencyId = process.env.MASTER_AGENCY_ID ?? '';
+  let masterAgencyId = process.env.MASTER_AGENCY_ID || '1511e077-77ef-4c47-81fd-06a3bc9f1dbb';
+  const masterClientId = process.env.MASTER_CLIENT_ID || '307c9548-2782-4c12-8122-0f0d132bd4dd';
 
   if (!masterAgencyId) {
     // Find the agency owned by the logged-in admin user (earliest-created = master)
@@ -170,6 +171,7 @@ export async function POST() {
 
     batchInserts.push({
       agency_id:        masterAgencyId,
+      client_id:        masterClientId,
       first_name:       firstName,
       last_name:        lastName,
       email,
