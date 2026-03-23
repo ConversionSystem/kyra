@@ -126,7 +126,7 @@ export default function AIPersonalityTab({ client }: { client: AgencyClient }) {
   const [dragging, setDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Automation
+  // Behavior Triggers
   const [proactiveEnabled, setProactiveEnabled] = useState((cfg.proactive_enabled as boolean) ?? false);
   const [proactiveGreeting, setProactiveGreeting] = useState((cfg.proactive_greeting as string) ?? '');
   const [wakeWords, setWakeWords] = useState<WakeWord[]>((cfg.wake_words as WakeWord[]) ?? []);
