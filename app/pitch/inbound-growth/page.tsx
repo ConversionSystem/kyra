@@ -389,12 +389,12 @@ const SLIDES: Slide[] = [
         <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black text-white mb-2 text-center">
           Two packages. <span className="text-indigo-400">One-time setup.</span>
         </h2>
-        <p className="text-slate-400 text-center mb-4">Build fee on top of your Kyra subscription. No recurring agency fees.</p>
+        <p className="text-slate-400 text-center mb-4">One-time build fee. Includes a free AI account. You own it forever.</p>
 
         <div className="flex justify-center mb-6">
           <div className="inline-flex items-center gap-2 bg-indigo-500/20 border border-indigo-400/30 rounded-full px-5 py-2.5">
             <Sparkles className="h-4 w-4 text-indigo-400" />
-            <span className="text-indigo-300 font-bold text-sm">One-time build + Kyra plan ($99–$499/mo) = you own it forever</span>
+            <span className="text-indigo-300 font-bold text-sm">1 free AI account included with every package</span>
           </div>
         </div>
 
@@ -461,8 +461,8 @@ const SLIDES: Slide[] = [
         </div>
 
         <div className="text-center text-sm text-slate-400 max-w-2xl mx-auto">
-          <p>Both packages are <strong className="text-white">one-time build fees</strong>. After setup, you only pay your Kyra subscription ($99–$499/mo depending on plan). You own the system — no recurring agency fees, no lock-in.</p>
-          <p className="mt-2">A human doing this costs $3–4K/mo. You pay once and own it forever.</p>
+          <p>Both packages are <strong className="text-white">one-time build fees</strong>. One free AI account is included — no additional subscriptions required. You own the system forever.</p>
+          <p className="mt-2">A human doing this costs $3–4K/mo. You pay once, get a free AI account, and own it forever.</p>
         </div>
       </div>
     ),
