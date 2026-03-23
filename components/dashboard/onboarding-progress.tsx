@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle2, Circle, X } from 'lucide-react';
+import { CheckCircle2, Circle, X, ArrowRight } from 'lucide-react';
 import type { OnboardingStepMeta, OnboardingStepsRecord } from '@/lib/onboarding/tracker';
 
 interface OnboardingProgressProps {
@@ -31,8 +32,11 @@ export function OnboardingProgress({ steps, stepsMeta }: OnboardingProgressProps
     setDismissed(true);
   };
 
+  // Find the first incomplete step (the "current" step)
+  const currentStepKey = stepsMeta.find(s => !steps[s.key]?.completed)?.key ?? null;
+
   return (
-    <Card className="mb-6 border-blue-200 bg-blue-50/50">
+    <Card className="mb-6 border-indigo-200 bg-indigo-50/50">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base font-semibold text-gray-900">
@@ -47,9 +51,9 @@ export function OnboardingProgress({ steps, stepsMeta }: OnboardingProgressProps
           </button>
         </div>
         <div className="flex items-center gap-3 mt-2">
-          <div className="flex-1 h-2 bg-blue-100 rounded-full overflow-hidden">
+          <div className="flex-1 h-2 bg-indigo-100 rounded-full overflow-hidden">
             <div
-              className="h-full bg-blue-500 rounded-full transition-all duration-500"
+              className="h-full bg-indigo-500 rounded-full transition-all duration-500"
               style={{ width: `${percentComplete}%` }}
             />
           </div>
@@ -59,24 +63,47 @@ export function OnboardingProgress({ steps, stepsMeta }: OnboardingProgressProps
         </div>
       </CardHeader>
       <CardContent className="pt-0">
-        <ul className="space-y-2">
+        <ul className="space-y-1">
           {stepsMeta.map(step => {
             const completed = steps[step.key]?.completed ?? false;
+            const isCurrent = step.key === currentStepKey;
+
+            if (completed) {
+              return (
+                <li key={step.key} className="flex items-center gap-2.5 py-1.5 px-2">
+                  <CheckCircle2 className="h-5 w-5 text-indigo-500 shrink-0" />
+                  <p className="text-sm font-medium text-gray-400 line-through">{step.label}</p>
+                </li>
+              );
+            }
+
             return (
-              <li key={step.key} className="flex items-start gap-2.5">
-                {completed ? (
-                  <CheckCircle2 className="h-5 w-5 text-blue-500 mt-0.5 shrink-0" />
-                ) : (
-                  <Circle className="h-5 w-5 text-gray-300 mt-0.5 shrink-0" />
-                )}
-                <div>
-                  <p className={`text-sm font-medium ${completed ? 'text-gray-400 line-through' : 'text-gray-700'}`}>
-                    {step.label}
-                  </p>
-                  {!completed && (
-                    <p className="text-xs text-gray-400">{step.description}</p>
+              <li key={step.key}>
+                <Link
+                  href={step.href}
+                  className={`flex items-center gap-2.5 py-2 px-2 rounded-lg group transition-colors ${
+                    isCurrent
+                      ? 'bg-indigo-50 border border-indigo-100'
+                      : 'hover:bg-indigo-50/50'
+                  }`}
+                >
+                  <Circle className={`h-5 w-5 shrink-0 ${isCurrent ? 'text-indigo-400' : 'text-gray-300'}`} />
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-medium ${isCurrent ? 'text-gray-900 font-semibold' : 'text-gray-700'}`}>
+                      {step.label}
+                    </p>
+                    {isCurrent && (
+                      <p className="text-xs text-gray-400">{step.description}</p>
+                    )}
+                  </div>
+                  {isCurrent ? (
+                    <span className="text-xs font-semibold text-indigo-600 bg-indigo-100 px-2.5 py-1 rounded-md shrink-0">
+                      Start <ArrowRight className="inline h-3 w-3 ml-0.5" />
+                    </span>
+                  ) : (
+                    <ArrowRight className="h-4 w-4 text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                   )}
-                </div>
+                </Link>
               </li>
             );
           })}

@@ -17,15 +17,15 @@ export interface OnboardingStepMeta {
   label: string;
   description: string;
   order: number;
+  href: string;
 }
 
 export const ONBOARDING_STEPS: OnboardingStepMeta[] = [
-  { key: 'profile_completed', label: 'Set up your profile', description: 'Add your agency name and branding', order: 1 },
-  { key: 'first_client_created', label: 'Create your first client', description: 'Add an AI agent for a client', order: 2 },
-  { key: 'first_container_provisioned', label: 'Agent deployed', description: 'Your first AI agent is live', order: 3 },
-  { key: 'ghl_connected', label: 'Connect GoHighLevel', description: 'Link a GHL sub-account', order: 4 },
-  { key: 'stripe_connected', label: 'Connect Stripe', description: 'Set up billing for your clients', order: 5 },
-  { key: 'first_message_sent', label: 'Send first message', description: 'Test your AI agent with a message', order: 6 },
+  { key: 'profile_completed', label: 'Set up your profile', description: 'Add your agency name and branding', order: 1, href: '/agency/settings' },
+  { key: 'first_client_created', label: 'Create your first client', description: 'Add an AI worker for a client', order: 2, href: '/agency/clients/new' },
+  { key: 'first_container_provisioned', label: 'AI worker deployed', description: 'Your first AI worker is live', order: 3, href: '/agency/clients' },
+  { key: 'ghl_connected', label: 'Connect GoHighLevel', description: 'Link a GHL sub-account for SMS/email', order: 4, href: '/agency/ghl-setup' },
+  { key: 'first_message_sent', label: 'Send first message', description: 'Test your AI worker in the Chat tab', order: 5, href: '/agency/clients' },
 ];
 
 // ============================================================================

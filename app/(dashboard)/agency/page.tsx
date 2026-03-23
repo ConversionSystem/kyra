@@ -8,7 +8,7 @@ import { getAgencyCredits } from '@/lib/billing/credit-engine';
 import { Button } from '@/components/ui/button';
 import { Plus, Activity, Gift, AlertTriangle, Sparkles, ArrowRight, Rocket, Zap } from 'lucide-react';
 import MissionControlLive from '@/components/dashboard/mission-control-live';
-import { StartTourButton } from '@/components/onboarding/guided-tour';
+
 import { OnboardingProgress } from '@/components/dashboard/onboarding-progress';
 import { ONBOARDING_STEPS, type OnboardingStepsRecord } from '@/lib/onboarding/tracker';
 
@@ -75,7 +75,7 @@ export default async function AgencyOverviewPage() {
           </h1>
           <div className="flex items-center gap-3 mt-1">
             <p className="text-sm text-gray-500">{agency.name}</p>
-            <StartTourButton />
+
           </div>
         </div>
         {canAddClient && (

@@ -3,7 +3,6 @@ import { createClient } from '@/lib/supabase/server';
 import { getAgencyForUser } from '@/lib/agency/queries';
 import { AgencySidebar } from './agency-sidebar';
 // VoiceCommandButton removed — not functional, just UI noise
-import { GuidedTour } from '@/components/onboarding/guided-tour';
 
 export default async function AgencyLayout({
   children,
@@ -34,7 +33,7 @@ export default async function AgencyLayout({
       <main className="flex-1 min-h-screen overflow-y-auto overflow-x-hidden bg-gray-50 pt-14 lg:pt-0">
         {children}
       </main>
-      <GuidedTour autoStart />
+
     </div>
   );
 }
