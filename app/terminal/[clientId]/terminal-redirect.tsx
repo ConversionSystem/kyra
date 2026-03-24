@@ -21,11 +21,18 @@ interface Props {
 export default function TerminalRedirect({ dashboardUrl, token, gatewayUrl }: Props) {
   useEffect(() => {
     // OpenClaw Control UI reads the token from the HASH fragment (#token=)
-    // NOT from the query string (?token=). It deletes ?token= when found
-    // but only authenticates using #token=. Hash fragments are never sent
-    // to the server and survive same-tab cross-origin navigation on iOS Safari.
+    // NOT from the query string (?token=). Hash fragments are never sent
+    // to the server and survive cross-origin navigation on iOS Safari.
     const url = `${dashboardUrl}#token=${encodeURIComponent(token)}`;
-    window.location.href = url;
+    // Open in new tab so the Kyra dashboard stays open
+    const newTab = window.open(url, '_blank', 'noopener,noreferrer');
+    // If popup was blocked (iOS Safari), fall back to same-tab navigation
+    if (!newTab) {
+      window.location.href = url;
+    } else {
+      // Go back to the previous page (Kyra dashboard)
+      window.history.back();
+    }
   }, [dashboardUrl, token]);
 
   return (
