@@ -15,12 +15,17 @@ import {
   AlertTriangle,
   ExternalLink,
   Plus,
+  Settings,
+  Eye,
+  EyeOff,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import type { AgencyClient } from '@/lib/agency/queries';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-type SubTab = 'dashboard' | 'email' | 'files' | 'teams' | 'meetings' | 'code' | 'research';
+type SubTab = 'dashboard' | 'email' | 'files' | 'teams' | 'meetings' | 'code' | 'research' | 'setup';
 
 interface Integration {
   name: string;
@@ -280,9 +285,33 @@ function ActionStatusBadge({ status }: { status: 'Pending' | 'Done' | 'Overdue' 
 
 // ── Sub-Tab Views ────────────────────────────────────────────────────────────
 
-function DashboardView({ onNavigate }: { onNavigate: (tab: SubTab) => void }) {
+function DashboardView({ onNavigate, client }: { onNavigate: (tab: SubTab) => void; client: AgencyClient }) {
+  const cfg = (client.container_config || {}) as Record<string, unknown>;
+  const connectedCount = [
+    !!(cfg.microsoft_tenant_id && cfg.microsoft_client_id && cfg.microsoft_client_secret),
+    !!(cfg.google_service_account_email),
+    !!(cfg.fathom_api_key),
+    !!(cfg.github_token),
+    true, // Brave — always connected
+  ].filter(Boolean).length;
+  const totalIntegrations = 6;
+
   return (
     <div className="space-y-6">
+      {connectedCount < 3 && (
+        <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-4 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-semibold text-indigo-900">Connect your tools to get started</p>
+            <p className="text-xs text-indigo-700">{connectedCount} of {totalIntegrations} integrations connected. Go to Setup to connect the rest.</p>
+          </div>
+          <button
+            onClick={() => onNavigate('setup')}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors"
+          >
+            Setup <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+      )}
       <DemoBanner service="Microsoft 365, Google Workspace, Fathom, and GitHub" />
 
       {/* Integration status cards */}
@@ -898,6 +927,306 @@ function ResearchView() {
   );
 }
 
+// ── Setup View ──────────────────────────────────────────────────────────────
+
+interface SetupField {
+  key: string;
+  label: string;
+  placeholder: string;
+  help: string;
+  sensitive?: boolean;
+  multiline?: boolean;
+}
+
+interface SetupIntegration {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  connected: boolean;
+  fields: SetupField[];
+  setupSteps: string[];
+  linkTo?: string;
+  alwaysConnected?: boolean;
+  note?: string;
+}
+
+function SetupView({ client }: { client: AgencyClient }) {
+  const cfg = (client.container_config || {}) as Record<string, unknown>;
+
+  const integrations: SetupIntegration[] = [
+    {
+      id: 'microsoft365',
+      name: 'Microsoft 365',
+      icon: '📧',
+      description: 'Outlook email, OneDrive files, Teams messaging',
+      connected: !!(cfg.microsoft_tenant_id && cfg.microsoft_client_id && cfg.microsoft_client_secret),
+      fields: [
+        { key: 'microsoft_tenant_id', label: 'Tenant ID', placeholder: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx', help: 'Azure Portal → Azure Active Directory → Overview → Tenant ID' },
+        { key: 'microsoft_client_id', label: 'Application (Client) ID', placeholder: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx', help: 'Azure Portal → App Registrations → Your App → Client ID' },
+        { key: 'microsoft_client_secret', label: 'Client Secret', placeholder: 'Your app client secret value', help: 'Azure Portal → App Registrations → Your App → Certificates & Secrets → New Client Secret', sensitive: true },
+      ],
+      setupSteps: [
+        'Go to Azure Portal (portal.azure.com)',
+        'Navigate to Azure Active Directory → App Registrations → New Registration',
+        'Name it "Kyra AI Integration" — set Redirect URI to https://kyra.conversionsystem.com/api/auth/callback',
+        'Grant permissions: Mail.ReadWrite, Files.ReadWrite.All, Chat.ReadWrite, Calendars.ReadWrite',
+        'Create a Client Secret and copy the Value (not the ID)',
+        'Copy Tenant ID, Client ID, and Client Secret below',
+      ],
+    },
+    {
+      id: 'google',
+      name: 'Google Workspace',
+      icon: '✉️',
+      description: 'Gmail, Google Drive, Google Calendar',
+      connected: !!(cfg.google_service_account_email),
+      fields: [
+        { key: 'google_service_account_email', label: 'Service Account Email', placeholder: 'your-bot@project.iam.gserviceaccount.com', help: 'Google Cloud Console → IAM & Admin → Service Accounts' },
+        { key: 'google_service_account_key', label: 'Service Account JSON Key', placeholder: 'Paste the entire JSON key file content', help: 'Create a key for the service account → download JSON', sensitive: true, multiline: true },
+      ],
+      setupSteps: [
+        'Go to Google Cloud Console (console.cloud.google.com)',
+        'Create a new project or select existing',
+        'Enable APIs: Gmail API, Google Drive API, Google Calendar API',
+        'Create a Service Account under IAM & Admin',
+        'Download the JSON key file',
+        'Share your Google Drive folders and Calendar with the service account email',
+        'Paste the service account email and JSON key below',
+      ],
+    },
+    {
+      id: 'fathom',
+      name: 'Fathom',
+      icon: '🎙️',
+      description: 'Meeting transcripts, summaries, action items',
+      connected: !!(cfg.fathom_api_key),
+      fields: [
+        { key: 'fathom_api_key', label: 'API Key', placeholder: 'fathom_xxxxxxxx', help: 'Fathom → Settings → API → Generate Key', sensitive: true },
+      ],
+      setupSteps: [
+        'Log in to Fathom (fathom.video)',
+        'Go to Settings → API',
+        'Generate a new API key',
+        'Paste it below',
+      ],
+    },
+    {
+      id: 'github',
+      name: 'GitHub',
+      icon: '🔧',
+      description: 'Repositories, pull requests, deployments',
+      connected: !!(cfg.github_token),
+      fields: [
+        { key: 'github_token', label: 'Personal Access Token', placeholder: 'ghp_xxxxxxxxxxxx', help: 'GitHub → Settings → Developer Settings → Personal Access Tokens → Tokens (classic) → Generate', sensitive: true },
+        { key: 'github_repos', label: 'Repositories to Monitor', placeholder: 'org/repo1\norg/repo2', help: 'One repository per line (owner/repo format)', multiline: true },
+      ],
+      setupSteps: [
+        'Go to GitHub → Settings → Developer Settings → Personal Access Tokens',
+        'Generate a classic token with scopes: repo, workflow, read:org',
+        'Paste the token and list your repositories below',
+      ],
+    },
+    {
+      id: 'telegram',
+      name: 'Telegram',
+      icon: '💬',
+      description: 'Commands, approvals, daily digests',
+      connected: false,
+      fields: [],
+      setupSteps: [
+        'Open Telegram and search for @BotFather',
+        'Send /newbot and follow the prompts to create your bot',
+        'Copy the bot token',
+        'Go to Settings → Channels in the client dashboard to connect',
+      ],
+      linkTo: 'channels',
+    },
+    {
+      id: 'brave',
+      name: 'Web Search (Brave)',
+      icon: '🔍',
+      description: 'Live web research and content retrieval',
+      connected: true,
+      fields: [],
+      setupSteps: [],
+      alwaysConnected: true,
+      note: 'Built into the platform — no setup required.',
+    },
+  ];
+
+  const [saving, setSaving] = useState<string | null>(null);
+  const [saved, setSaved] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [showSensitive, setShowSensitive] = useState<Record<string, boolean>>({});
+
+  const handleSave = async (integrationId: string, fields: SetupField[]) => {
+    setSaving(integrationId);
+    setError(null);
+    try {
+      const configUpdate: Record<string, string> = {};
+      fields.forEach(f => {
+        if (values[f.key]?.trim()) configUpdate[f.key] = values[f.key].trim();
+      });
+
+      const res = await fetch(`/api/agency/clients/${client.id}/container-config`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(configUpdate),
+      });
+
+      if (!res.ok) throw new Error('Failed to save');
+      setSaved(integrationId);
+      setTimeout(() => setSaved(null), 3000);
+    } catch {
+      setError('Failed to save configuration. Try again.');
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <DemoBanner service="Integration credentials" />
+      <div className="rounded-xl border border-gray-200 bg-white p-5">
+        <h3 className="text-sm font-semibold text-gray-900 mb-1">Connect Your Tools</h3>
+        <p className="text-xs text-gray-500 mb-4">Step-by-step guides to connect each integration. Click an integration to expand.</p>
+
+        <div className="space-y-3">
+          {integrations.map(integration => {
+            const isExpanded = expandedId === integration.id;
+            return (
+              <div
+                key={integration.id}
+                className={`rounded-xl border transition-all ${
+                  isExpanded ? 'border-indigo-300 shadow-md' : 'border-gray-200 hover:border-indigo-200'
+                }`}
+              >
+                {/* Collapsed header */}
+                <button
+                  onClick={() => setExpandedId(isExpanded ? null : integration.id)}
+                  className="w-full flex items-center justify-between p-4 text-left"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-xl">{integration.icon}</span>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">{integration.name}</p>
+                      <p className="text-xs text-gray-500">{integration.description}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {integration.connected || integration.alwaysConnected ? (
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-700">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                        Connected
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-500">
+                        <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
+                        Not Connected
+                      </span>
+                    )}
+                    {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                  </div>
+                </button>
+
+                {/* Expanded content */}
+                {isExpanded && (
+                  <div className="px-4 pb-4 border-t border-gray-100">
+                    {integration.note && (
+                      <p className="text-sm text-green-700 bg-green-50 rounded-lg p-3 mt-3">{integration.note}</p>
+                    )}
+
+                    {integration.setupSteps.length > 0 && (
+                      <div className="mt-3 rounded-lg bg-indigo-50 p-3">
+                        <p className="text-xs font-semibold text-indigo-900 mb-2">Step-by-step guide:</p>
+                        <ol className="space-y-1">
+                          {integration.setupSteps.map((step, i) => (
+                            <li key={i} className="text-xs text-indigo-800 flex gap-2">
+                              <span className="font-semibold text-indigo-600 shrink-0">{i + 1}.</span>
+                              {step}
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+                    )}
+
+                    {integration.fields.length > 0 && (
+                      <div className="mt-4 space-y-3">
+                        {integration.fields.map(field => (
+                          <div key={field.key}>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">{field.label}</label>
+                            <p className="text-[10px] text-gray-400 mb-1">{field.help}</p>
+                            {field.multiline ? (
+                              <textarea
+                                value={values[field.key] || (cfg[field.key] as string) || ''}
+                                onChange={e => setValues(v => ({ ...v, [field.key]: e.target.value }))}
+                                placeholder={field.placeholder}
+                                rows={4}
+                                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono"
+                              />
+                            ) : (
+                              <div className="relative">
+                                <input
+                                  type={field.sensitive && !showSensitive[field.key] ? 'password' : 'text'}
+                                  value={values[field.key] || (cfg[field.key] as string) || ''}
+                                  onChange={e => setValues(v => ({ ...v, [field.key]: e.target.value }))}
+                                  placeholder={field.placeholder}
+                                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono pr-10"
+                                />
+                                {field.sensitive && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setShowSensitive(s => ({ ...s, [field.key]: !s[field.key] }))}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                  >
+                                    {showSensitive[field.key] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+
+                        <div className="flex items-center gap-3 pt-2">
+                          <button
+                            onClick={() => handleSave(integration.id, integration.fields)}
+                            disabled={saving === integration.id}
+                            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                          >
+                            {saving === integration.id ? 'Saving…' : 'Save Configuration'}
+                          </button>
+                          {saved === integration.id && (
+                            <span className="text-xs text-green-600 font-medium flex items-center gap-1">
+                              <CheckCircle2 className="w-3.5 h-3.5" /> Saved
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {integration.linkTo && (
+                      <p className="mt-3 text-xs text-indigo-600">
+                        Complete setup in the <span className="font-semibold">{integration.linkTo}</span> section of client settings.
+                      </p>
+                    )}
+
+                    {error && saving === null && (
+                      <p className="mt-2 text-xs text-red-600">{error}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Sub-Tab Config ───────────────────────────────────────────────────────────
 
 const SUB_TABS: { id: SubTab; label: string; icon: React.ElementType }[] = [
@@ -908,6 +1237,7 @@ const SUB_TABS: { id: SubTab; label: string; icon: React.ElementType }[] = [
   { id: 'meetings', label: 'Meetings', icon: Mic },
   { id: 'code', label: 'Code', icon: GitBranch },
   { id: 'research', label: 'Research', icon: Search },
+  { id: 'setup', label: 'Setup', icon: Settings },
 ];
 
 // ── Main Component ───────────────────────────────────────────────────────────
@@ -941,13 +1271,14 @@ export default function ITOperationsTab({ client }: { client: AgencyClient }) {
       </div>
 
       {/* Sub-tab content */}
-      {subTab === 'dashboard' && <DashboardView onNavigate={setSubTab} />}
+      {subTab === 'dashboard' && <DashboardView onNavigate={setSubTab} client={client} />}
       {subTab === 'email' && <EmailView />}
       {subTab === 'files' && <FilesView />}
       {subTab === 'teams' && <TeamsView />}
       {subTab === 'meetings' && <MeetingsView />}
       {subTab === 'code' && <CodeView />}
       {subTab === 'research' && <ResearchView />}
+      {subTab === 'setup' && <SetupView client={client} />}
     </div>
   );
 }
