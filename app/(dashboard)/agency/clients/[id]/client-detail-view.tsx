@@ -1148,13 +1148,12 @@ function IntegrationsTab({ client, onRefresh }: { client: AgencyClient; onRefres
 
 // ── Settings Tab Merged (General + Channels + Integrations + Security + Voice + SMS + Workflows) ──
 
-type SettingsSubTab = 'general' | 'channels' | 'integrations' | 'security' | 'voice' | 'sms' | 'workflows';
+type SettingsSubTab = 'general' | 'channels' | 'integrations' | 'voice' | 'sms' | 'workflows';
 
 const SETTINGS_SUB_TABS: { id: SettingsSubTab; label: string }[] = [
   { id: 'general', label: 'General' },
   { id: 'channels', label: 'Channels' },
   { id: 'integrations', label: 'Integrations' },
-  { id: 'security', label: 'Security' },
   { id: 'voice', label: 'Voice' },
   { id: 'sms', label: 'SMS' },
   { id: 'workflows', label: 'Workflows' },
@@ -1206,10 +1205,16 @@ function SettingsTabMerged({
         <ChannelsLiveTab clientId={client.id} client={client} />
       )}
       {activeSubTab === 'integrations' && (
-        <IntegrationsTab client={client} onRefresh={onRefresh} />
-      )}
-      {activeSubTab === 'security' && (
-        <SecretsTab clientId={client.id} />
+        <div className="space-y-8">
+          <IntegrationsTab client={client} onRefresh={onRefresh} />
+
+          {/* Secrets Vault */}
+          <div className="border-t border-gray-200 pt-6">
+            <h3 className="text-sm font-semibold text-gray-900 mb-1">Custom Secrets</h3>
+            <p className="text-xs text-gray-500 mb-4">Store additional API keys or credentials not covered by the integrations above.</p>
+            <SecretsTab clientId={client.id} />
+          </div>
+        </div>
       )}
       {activeSubTab === 'voice' && (
         <VoiceClient
