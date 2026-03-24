@@ -250,13 +250,22 @@ function ReprovisionButton({ clientId }: { clientId: string }) {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
+const MASTER_AGENCY_ID = '1511e077-77ef-4c47-81fd-06a3bc9f1dbb';
+
 export function ClientDetailView({ client: initialClient, role, plan, accountType }: ClientDetailViewProps) {
   const isFreeOrSolo = !plan || plan === 'free' || plan === 'solo_pro' || (plan === 'free' && accountType === 'solo');
+  const isMasterAgency = initialClient.agency_id === MASTER_AGENCY_ID;
   const router = useRouter();
   const searchParams = useSearchParams();
   const rawTab = searchParams.get('tab') || 'inbox';
   const resolvedTab = (LEGACY_TAB_MAP[rawTab] ?? rawTab) as Tab;
-  const ALL_TAB_IDS = TAB_GROUPS.flatMap(g => g.tabs.map(t => t.id));
+  // Marketing & Operations tabs only visible to master agency (not ready for clients yet)
+  const HIDDEN_TABS = isMasterAgency ? [] : ['marketing', 'operations'];
+  const filteredGroups = TAB_GROUPS.map(g => ({
+    ...g,
+    tabs: g.tabs.filter(t => !HIDDEN_TABS.includes(t.id)),
+  }));
+  const ALL_TAB_IDS = filteredGroups.flatMap(g => g.tabs.map(t => t.id));
   const initialTab = ALL_TAB_IDS.includes(resolvedTab) ? resolvedTab : 'inbox';
   const [activeTab, setActiveTab] = useState<Tab>(initialTab);
 
@@ -300,7 +309,7 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
 
         {/* Left sidebar nav — desktop only */}
         <aside className="hidden md:flex flex-col w-48 shrink-0 bg-white border-r border-gray-100 pt-2 pb-6 px-2 sticky top-0 self-start max-h-screen overflow-y-auto">
-          {TAB_GROUPS.map((group, gi) => (
+          {filteredGroups.map((group, gi) => (
             <div key={group.label ?? gi} className={gi > 0 ? 'mt-5' : ''}>
               {group.label && (
                 <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest px-3 mb-1">
