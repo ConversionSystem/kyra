@@ -19,6 +19,12 @@ const INTEGRATION_ENV_MAP: Record<string, string> = {
   fathom_api_key: 'FATHOM_API_KEY',
   github_token: 'GH_TOKEN',
   github_repos: 'GITHUB_REPOS',
+  email_address: 'EMAIL_ADDRESS',
+  email_imap_host: 'EMAIL_IMAP_HOST',
+  email_imap_port: 'EMAIL_IMAP_PORT',
+  email_password: 'EMAIL_PASSWORD',
+  email_smtp_host: 'EMAIL_SMTP_HOST',
+  email_smtp_port: 'EMAIL_SMTP_PORT',
 };
 import {
   syncSecretsToContainer,
@@ -219,12 +225,61 @@ export async function syncIntegrationCredentials(
     const allKeyNames = allSecrets.map((s) => s.key).sort();
     await updateToolsMdSecrets(clientId, allKeyNames);
 
-    // 5. Wake the container
+    // 5. If email credentials present, generate himalaya config in workspace
+    await syncHimalayaConfigIfNeeded(clientId, containerConfig);
+
+    // 6. Wake the container
     await wakeContainerIfConfigured(clientId);
   } catch (err) {
     console.error(
       `[integration-sync] Unexpected error for ${clientId}:`,
       err instanceof Error ? err.message : err
     );
+  }
+}
+
+/**
+ * Generate and write himalaya config to the workspace when email credentials are present.
+ * Written to ~/workspace/himalaya-config.toml so the AI worker can use:
+ *   himalaya -c ~/workspace/himalaya-config.toml envelope list
+ */
+async function syncHimalayaConfigIfNeeded(
+  clientId: string,
+  containerConfig: Record<string, unknown>
+): Promise<void> {
+  const email = containerConfig.email_address as string | undefined;
+  const imapHost = containerConfig.email_imap_host as string | undefined;
+  const password = containerConfig.email_password as string | undefined;
+
+  if (!email || !imapHost || !password) return;
+
+  const imapPort = (containerConfig.email_imap_port as string) || '993';
+  const smtpHost = (containerConfig.email_smtp_host as string) || imapHost.replace('imap', 'smtp');
+  const smtpPort = (containerConfig.email_smtp_port as string) || '465';
+  const displayName = email.split('@')[0];
+
+  const config = `[accounts.default]
+email = "${email}"
+display-name = "${displayName}"
+default = true
+
+[accounts.default.imap]
+host = "${imapHost}"
+port = ${imapPort}
+login = "${email}"
+passwd.cmd = "echo '${password}'"
+encryption = "tls"
+
+[accounts.default.smtp]
+host = "${smtpHost}"
+port = ${smtpPort}
+login = "${email}"
+passwd.cmd = "echo '${password}'"
+encryption = "tls"
+`;
+
+  const result = await writeWorkspaceFile(clientId, 'himalaya-config.toml', config);
+  if (!result.ok) {
+    console.error(`[integration-sync] Failed to write himalaya config for ${clientId}:`, result.error);
   }
 }
