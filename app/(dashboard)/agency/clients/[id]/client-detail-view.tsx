@@ -35,6 +35,7 @@ import {
   Users,
   Globe,
   TrendingUp,
+  Settings2,
 } from 'lucide-react';
 import type { AgencyClient, AgencyMember } from '@/lib/agency/queries';
 import GHLConnection from './ghl-connection';
@@ -53,6 +54,7 @@ import InsightsTab from '@/components/dashboard/client-tabs/insights-tab';
 import WebsiteTab from '@/components/dashboard/client-tabs/website-tab';
 import AIWorkersTab from '@/components/dashboard/client-tabs/ai-workers-tab';
 import MarketingTab from '@/components/dashboard/client-tabs/marketing-tab';
+import ITOperationsTab from '@/components/dashboard/client-tabs/it-operations-tab';
 
 // ── Setup Nudge Banner ────────────────────────────────────────────────────────
 
@@ -119,7 +121,7 @@ interface ChatMessage {
   content: string;
 }
 
-type Tab = 'inbox' | 'chat' | 'train' | 'workers' | 'marketing' | 'crm' | 'website' | 'settings' | 'insights' | 'share';
+type Tab = 'inbox' | 'chat' | 'train' | 'workers' | 'marketing' | 'operations' | 'crm' | 'website' | 'settings' | 'insights' | 'share';
 
 // Map legacy ?tab= values to new tab IDs
 const LEGACY_TAB_MAP: Record<string, Tab> = {
@@ -129,6 +131,7 @@ const LEGACY_TAB_MAP: Record<string, Tab> = {
   templates: 'workers',
   'ai-workers': 'workers',
   skills: 'train',
+  'it-operations': 'operations',
   website: 'website',
   knowledge: 'website',
   ghl: 'settings',
@@ -150,6 +153,7 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'train', label: 'Train', icon: Brain },
   { id: 'workers', label: 'AI Workers', icon: Bot },
   { id: 'marketing', label: 'Marketing', icon: TrendingUp },
+  { id: 'operations', label: 'Operations', icon: Settings2 },
   { id: 'crm', label: 'CRM', icon: Users },
   { id: 'website', label: 'Website', icon: Globe },
   { id: 'settings', label: 'Settings', icon: Settings },
@@ -160,7 +164,7 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
 // Grouped sidebar navigation — desktop only
 const TAB_GROUPS: { label?: string; tabs: typeof TABS }[] = [
   {
-    tabs: TABS.filter(t => ['inbox', 'chat', 'train', 'workers', 'marketing', 'crm', 'website'].includes(t.id)),
+    tabs: TABS.filter(t => ['inbox', 'chat', 'train', 'workers', 'marketing', 'operations', 'crm', 'website'].includes(t.id)),
   },
   {
     label: 'Configure',
@@ -367,6 +371,9 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
           )}
           {activeTab === 'marketing' && (
             <MarketingTab client={initialClient} />
+          )}
+          {activeTab === 'operations' && (
+            <ITOperationsTab client={initialClient} />
           )}
           {activeTab === 'crm' && (
             <CrmTab client={initialClient} clientId={initialClient.id} />
