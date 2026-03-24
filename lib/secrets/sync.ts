@@ -8,6 +8,18 @@
 
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { decrypt } from './crypto';
+
+/** Maps container_config keys to environment variable names for the container. */
+const INTEGRATION_ENV_MAP: Record<string, string> = {
+  microsoft_tenant_id: 'MS_TENANT_ID',
+  microsoft_client_id: 'MS_CLIENT_ID',
+  microsoft_client_secret: 'MS_CLIENT_SECRET',
+  google_service_account_email: 'GOOGLE_SERVICE_ACCOUNT_EMAIL',
+  google_service_account_key: 'GOOGLE_SERVICE_ACCOUNT_KEY',
+  fathom_api_key: 'FATHOM_API_KEY',
+  github_token: 'GH_TOKEN',
+  github_repos: 'GITHUB_REPOS',
+};
 import {
   syncSecretsToContainer,
   readWorkspaceFile,
@@ -149,5 +161,70 @@ async function wakeContainerIfConfigured(clientId: string): Promise<void> {
     }
   } catch {
     // Wake is best-effort — don't fail the sync
+  }
+}
+
+/**
+ * Sync integration credentials from container_config to the container's .secrets.env.
+ *
+ * Reads existing client_secrets, merges them with integration env vars extracted
+ * from container_config, and pushes the full set to the container.
+ * This ensures integration credentials and manual secrets coexist in .secrets.env.
+ */
+export async function syncIntegrationCredentials(
+  clientId: string,
+  containerConfig: Record<string, unknown>
+): Promise<void> {
+  try {
+    // 1. Extract integration env vars from container_config
+    const integrationSecrets: Array<{ key: string; value: string }> = [];
+    for (const [configKey, envName] of Object.entries(INTEGRATION_ENV_MAP)) {
+      const val = containerConfig[configKey];
+      if (typeof val === 'string' && val.trim()) {
+        integrationSecrets.push({ key: envName, value: val });
+      }
+    }
+
+    if (integrationSecrets.length === 0) return;
+
+    // 2. Read existing client_secrets so we don't overwrite them
+    const supabase = createServiceClientWithoutCookies();
+    const { data: rows } = await supabase
+      .from('client_secrets')
+      .select('key_name, encrypted_value')
+      .eq('client_id', clientId);
+
+    const allSecrets = [...integrationSecrets];
+    const integrationKeySet = new Set(integrationSecrets.map((s) => s.key));
+
+    for (const row of rows ?? []) {
+      // Don't duplicate keys that integration already provides
+      if (!integrationKeySet.has(row.key_name as string)) {
+        try {
+          allSecrets.push({ key: row.key_name as string, value: decrypt(row.encrypted_value as string) });
+        } catch {
+          // Skip secrets that fail to decrypt
+        }
+      }
+    }
+
+    // 3. Push merged set to container
+    const syncResult = await syncSecretsToContainer(clientId, allSecrets);
+    if (!syncResult.ok) {
+      console.error(`[integration-sync] Failed to sync to container for ${clientId}:`, syncResult.error);
+      return;
+    }
+
+    // 4. Update TOOLS.md with all key names
+    const allKeyNames = allSecrets.map((s) => s.key).sort();
+    await updateToolsMdSecrets(clientId, allKeyNames);
+
+    // 5. Wake the container
+    await wakeContainerIfConfigured(clientId);
+  } catch (err) {
+    console.error(
+      `[integration-sync] Unexpected error for ${clientId}:`,
+      err instanceof Error ? err.message : err
+    );
   }
 }
