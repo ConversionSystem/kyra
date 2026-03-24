@@ -846,6 +846,7 @@ interface IntegrationDef {
   setupSteps: string[];
   alwaysConnected?: boolean;
   note?: string;
+  workerRelevance?: Record<string, 'required' | 'optional'>;
 }
 
 function IntegrationsTab({ client, onRefresh }: { client: AgencyClient; onRefresh: () => void }) {
@@ -868,6 +869,28 @@ function IntegrationsTab({ client, onRefresh }: { client: AgencyClient; onRefres
       setupSteps: [],
     },
     {
+      id: 'email',
+      name: 'Email (IMAP/SMTP)',
+      icon: '📧',
+      description: 'Connect any email account — Outlook, Gmail, Yahoo, or custom IMAP',
+      connected: !!(cfg.email_imap_host),
+      fields: [
+        { key: 'email_imap_host', label: 'IMAP Server', placeholder: 'imap.gmail.com or outlook.office365.com', help: 'Gmail: imap.gmail.com | Outlook: outlook.office365.com | Yahoo: imap.mail.yahoo.com' },
+        { key: 'email_imap_port', label: 'IMAP Port', placeholder: '993', help: 'Usually 993 for SSL' },
+        { key: 'email_address', label: 'Email Address', placeholder: 'you@example.com', help: 'The email address to read and send from' },
+        { key: 'email_password', label: 'App Password', placeholder: 'Your app-specific password', help: 'Gmail: myaccount.google.com → Security → App Passwords | Outlook: account.microsoft.com → Security → App Passwords', sensitive: true },
+        { key: 'email_smtp_host', label: 'SMTP Server', placeholder: 'smtp.gmail.com or smtp.office365.com', help: 'Gmail: smtp.gmail.com | Outlook: smtp.office365.com' },
+        { key: 'email_smtp_port', label: 'SMTP Port', placeholder: '465', help: 'Usually 465 for SSL or 587 for TLS' },
+      ],
+      setupSteps: [
+        'For Gmail: Go to myaccount.google.com → Security → 2-Step Verification → App Passwords → Generate',
+        'For Outlook: Go to account.microsoft.com → Security → Advanced Security → App Passwords',
+        'Enter your IMAP and SMTP server details below',
+        'The AI worker will use these to read and send emails',
+      ],
+      workerRelevance: { 'it-operations-specialist': 'required' },
+    },
+    {
       id: 'microsoft365',
       name: 'Microsoft 365',
       icon: '📧',
@@ -886,6 +909,7 @@ function IntegrationsTab({ client, onRefresh }: { client: AgencyClient; onRefres
         'Create a Client Secret and copy the Value (not the ID)',
         'Copy Tenant ID, Client ID, and Client Secret below',
       ],
+      workerRelevance: { 'it-operations-specialist': 'required' },
     },
     {
       id: 'google',
@@ -906,6 +930,7 @@ function IntegrationsTab({ client, onRefresh }: { client: AgencyClient; onRefres
         'Share your Google Drive folders and Calendar with the service account email',
         'Paste the service account email and JSON key below',
       ],
+      workerRelevance: { 'it-operations-specialist': 'required' },
     },
     {
       id: 'fathom',
@@ -922,6 +947,7 @@ function IntegrationsTab({ client, onRefresh }: { client: AgencyClient; onRefres
         'Generate a new API key',
         'Paste it below',
       ],
+      workerRelevance: { 'it-operations-specialist': 'optional' },
     },
     {
       id: 'github',
@@ -938,6 +964,7 @@ function IntegrationsTab({ client, onRefresh }: { client: AgencyClient; onRefres
         'Generate a classic token with scopes: repo, workflow, read:org',
         'Paste the token and list your repositories below',
       ],
+      workerRelevance: { 'it-operations-specialist': 'required' },
     },
     {
       id: 'wordpress',
@@ -956,6 +983,7 @@ function IntegrationsTab({ client, onRefresh }: { client: AgencyClient; onRefres
         'Create a new application password for "Kyra AI"',
         'Paste the URL, username, and password below',
       ],
+      workerRelevance: { 'seo-writer': 'required' },
     },
     {
       id: 'dataforseo',
@@ -972,6 +1000,7 @@ function IntegrationsTab({ client, onRefresh }: { client: AgencyClient; onRefres
         'Go to your dashboard → API Access',
         'Copy your login and password below',
       ],
+      workerRelevance: { 'seo-writer': 'required' },
     },
     {
       id: 'heygen',
@@ -987,8 +1016,24 @@ function IntegrationsTab({ client, onRefresh }: { client: AgencyClient; onRefres
         'Go to Settings → API',
         'Generate an API key and paste it below',
       ],
+      workerRelevance: { 'seo-writer': 'optional' },
     },
   ];
+
+  // Sort integrations: relevant to active worker first, then others
+  const activeWorkerId = cfg.active_worker_id as string | undefined;
+  const sortedIntegrations = activeWorkerId
+    ? [...integrations].sort((a, b) => {
+        const aRelevance = a.workerRelevance?.[activeWorkerId];
+        const bRelevance = b.workerRelevance?.[activeWorkerId];
+        // GHL always stays first
+        if (a.id === 'ghl') return -1;
+        if (b.id === 'ghl') return 1;
+        // Required before optional before irrelevant
+        const rank = (r: string | undefined) => r === 'required' ? 0 : r === 'optional' ? 1 : 2;
+        return rank(aRelevance) - rank(bRelevance);
+      })
+    : integrations;
 
   const handleSave = async (integrationId: string, fields: IntegrationField[]) => {
     setSaving(integrationId);
@@ -1018,7 +1063,7 @@ function IntegrationsTab({ client, onRefresh }: { client: AgencyClient; onRefres
       <p className="text-sm text-gray-500">Connect your tools and services. All credentials are encrypted.</p>
 
       <div className="space-y-3">
-        {integrations.map(integration => {
+        {sortedIntegrations.map(integration => {
           const isExpanded = expandedId === integration.id;
           return (
             <div
@@ -1039,6 +1084,15 @@ function IntegrationsTab({ client, onRefresh }: { client: AgencyClient; onRefres
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  {activeWorkerId && integration.workerRelevance?.[activeWorkerId] && (
+                    <span className={`inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded-full ${
+                      integration.workerRelevance[activeWorkerId] === 'required'
+                        ? 'bg-amber-100 text-amber-700'
+                        : 'bg-blue-50 text-blue-600'
+                    }`}>
+                      {integration.workerRelevance[activeWorkerId] === 'required' ? 'Required' : 'Optional'}
+                    </span>
+                  )}
                   {integration.connected || integration.alwaysConnected ? (
                     <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-700">
                       <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
