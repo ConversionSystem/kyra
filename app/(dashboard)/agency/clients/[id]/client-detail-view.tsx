@@ -444,6 +444,8 @@ function TerminalTab({ client }: { client: AgencyClient }) {
         </div>
         <a
           href={terminalPageUrl}
+          target="_blank"
+          rel="noopener noreferrer"
           className="inline-flex items-center gap-2 bg-indigo-500 hover:bg-indigo-400 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
         >
           <ExternalLink className="h-5 w-5" />
