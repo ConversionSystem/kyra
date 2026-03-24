@@ -7,8 +7,6 @@ import {
   PenTool,
   Eye,
   Smartphone,
-  Target,
-  TrendingUp,
   ArrowRight,
   Loader2,
   Plus,
@@ -25,7 +23,7 @@ import type { AgencyClient } from '@/lib/agency/queries';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-type SubTab = 'dashboard' | 'seo' | 'content' | 'competitors' | 'social' | 'leads' | 'analytics';
+type SubTab = 'dashboard' | 'seo' | 'content' | 'competitors' | 'social';
 
 interface Keyword {
   keyword: string;
@@ -309,7 +307,6 @@ function DashboardView({ onNavigate }: { onNavigate: (tab: SubTab) => void }) {
             { label: 'Research Keywords', tab: 'seo' as SubTab },
             { label: 'Draft a Post', tab: 'content' as SubTab },
             { label: 'Check Competitors', tab: 'competitors' as SubTab },
-            { label: 'Find Leads', tab: 'leads' as SubTab },
           ].map(a => (
             <button
               key={a.tab}
@@ -1016,8 +1013,6 @@ const SUB_TABS: { id: SubTab; label: string; icon: React.ElementType }[] = [
   { id: 'content', label: 'Content', icon: PenTool },
   { id: 'competitors', label: 'Competitors', icon: Eye },
   { id: 'social', label: 'Social', icon: Smartphone },
-  { id: 'leads', label: 'Leads', icon: Target },
-  { id: 'analytics', label: 'Analytics', icon: TrendingUp },
 ];
 
 export default function MarketingTab({ client }: { client: AgencyClient }) {
@@ -1027,7 +1022,7 @@ export default function MarketingTab({ client }: { client: AgencyClient }) {
     <div className="space-y-6">
       <div>
         <h2 className="text-lg font-semibold text-gray-900">Marketing Command Center</h2>
-        <p className="text-sm text-gray-500 mt-0.5">SEO, content, competitors, social, leads & analytics — all in one place.</p>
+        <p className="text-sm text-gray-500 mt-0.5">SEO, content, competitors & social — all in one place.</p>
       </div>
 
       {/* Sub-tab navigation */}
@@ -1054,8 +1049,6 @@ export default function MarketingTab({ client }: { client: AgencyClient }) {
       {subTab === 'content' && <ContentView clientId={client.id} />}
       {subTab === 'competitors' && <CompetitorsView />}
       {subTab === 'social' && <SocialView />}
-      {subTab === 'leads' && <LeadsView />}
-      {subTab === 'analytics' && <AnalyticsView onNavigate={setSubTab} />}
     </div>
   );
 }
