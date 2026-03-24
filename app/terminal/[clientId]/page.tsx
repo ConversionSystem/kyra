@@ -2,7 +2,6 @@ import { redirect, notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getAgencyForUser } from '@/lib/agency/queries';
 import { getGatewayByClientId } from '@/lib/ovh/gateway-resolver';
-import TerminalRedirect from './terminal-redirect';
 
 interface Props {
   params: Promise<{ clientId: string }>;
@@ -11,10 +10,12 @@ interface Props {
 /**
  * /terminal/[clientId]
  *
- * Server-side terminal launcher. Fetches the correct gateway URL and token,
- * then renders a client component that injects the token into sessionStorage
- * for the gateway domain before navigating. This bypasses iOS Safari stripping
- * ?token= from cross-origin URLs.
+ * Server-side redirect to the OpenClaw terminal.
+ * Fetches the correct gateway URL + token, builds the authenticated URL,
+ * and redirects. Since this is a server component redirect, the browser
+ * follows it natively — no popup blocker, no client-side JavaScript.
+ *
+ * The link in the dashboard uses target="_blank" so this opens in a new tab.
  */
 export default async function TerminalPage({ params }: Props) {
   const { clientId } = await params;
@@ -33,14 +34,7 @@ export default async function TerminalPage({ params }: Props) {
   }
 
   const baseUrl = gateway.url.replace(/\/$/, '');
-  const dashboardUrl = `${baseUrl}/__openclaw__/`;
-  const token = gateway.token;
+  const dashboardUrl = `${baseUrl}/__openclaw__/#token=${encodeURIComponent(gateway.token)}`;
 
-  return (
-    <TerminalRedirect
-      dashboardUrl={dashboardUrl}
-      token={token}
-      gatewayUrl={gateway.url}
-    />
-  );
+  redirect(dashboardUrl);
 }
