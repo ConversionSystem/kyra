@@ -15,7 +15,6 @@ import {
   AlertTriangle,
   ExternalLink,
   Plus,
-  Settings,
   Eye,
   EyeOff,
   ChevronDown,
@@ -25,7 +24,7 @@ import type { AgencyClient } from '@/lib/agency/queries';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-type SubTab = 'dashboard' | 'email' | 'files' | 'teams' | 'meetings' | 'code' | 'research' | 'setup';
+type SubTab = 'dashboard' | 'email' | 'files' | 'teams' | 'meetings' | 'code' | 'research';
 
 interface Integration {
   name: string;
@@ -299,17 +298,9 @@ function DashboardView({ onNavigate, client }: { onNavigate: (tab: SubTab) => vo
   return (
     <div className="space-y-6">
       {connectedCount < 3 && (
-        <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-4 flex items-center justify-between">
-          <div>
-            <p className="text-sm font-semibold text-indigo-900">Connect your tools to get started</p>
-            <p className="text-xs text-indigo-700">{connectedCount} of {totalIntegrations} integrations connected. Go to Setup to connect the rest.</p>
-          </div>
-          <button
-            onClick={() => onNavigate('setup')}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors"
-          >
-            Setup <ArrowRight className="w-4 h-4" />
-          </button>
+        <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-4">
+          <p className="text-sm font-semibold text-indigo-900">Connect your tools to get started</p>
+          <p className="text-xs text-indigo-700">{connectedCount} of {totalIntegrations} integrations connected. Configure integrations in <span className="font-semibold">Settings → Integrations</span>.</p>
         </div>
       )}
       <DemoBanner service="Microsoft 365, Google Workspace, Fathom, and GitHub" />
@@ -1237,7 +1228,6 @@ const SUB_TABS: { id: SubTab; label: string; icon: React.ElementType }[] = [
   { id: 'meetings', label: 'Meetings', icon: Mic },
   { id: 'code', label: 'Code', icon: GitBranch },
   { id: 'research', label: 'Research', icon: Search },
-  { id: 'setup', label: 'Setup', icon: Settings },
 ];
 
 // ── Main Component ───────────────────────────────────────────────────────────
@@ -1278,7 +1268,6 @@ export default function ITOperationsTab({ client }: { client: AgencyClient }) {
       {subTab === 'meetings' && <MeetingsView />}
       {subTab === 'code' && <CodeView />}
       {subTab === 'research' && <ResearchView />}
-      {subTab === 'setup' && <SetupView client={client} />}
     </div>
   );
 }
