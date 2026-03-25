@@ -43,14 +43,16 @@ export async function GET() {
         .single();
 
       const config = (client.container_config as Record<string, unknown>) ?? {};
-      const model = (config.model as string) || 'gpt-4o-mini';
+      const model = (config.model as string) || 'openrouter/anthropic/claude-haiku-4.5';
 
       // Estimate tokens from conversation count (avg ~800 tokens per exchange)
       const estimatedTokens = (convosThisMonth ?? 0) * 800;
-      // Cost estimation based on model
-      const costPer1kTokens = model.includes('gpt-4o-mini') ? 0.00015
-        : model.includes('gpt-4o') ? 0.0025
-        : model.includes('claude') ? 0.003
+      // Cost estimation based on model (per 1k tokens, blended input+output)
+      const costPer1kTokens = model.includes('haiku') ? 0.00025        // claude-haiku-4.5: ~$0.25/1M tokens
+        : model.includes('gpt-4o-mini') ? 0.00015                       // gpt-4o-mini: ~$0.15/1M tokens
+        : model.includes('claude-sonnet') ? 0.003                       // claude-sonnet: ~$3/1M tokens
+        : model.includes('gpt-4o') ? 0.0025                             // gpt-4o: ~$2.5/1M tokens
+        : model.includes('claude') ? 0.003                              // other claude
         : 0.001;
       const estimatedCost = (estimatedTokens / 1000) * costPer1kTokens;
 
