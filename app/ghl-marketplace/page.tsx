@@ -8,7 +8,7 @@ import { TestimonialPlaceholder } from '@/components/marketing/testimonial-place
 export const metadata: Metadata = {
   title: 'Kyra for GHL Agencies — AI Workers That Book, Respond & Close',
   description:
-    'Deploy intelligent AI workers for your GHL clients in 5 minutes. They respond to leads, book appointments, and close deals — 24/7. Start your free 7-day trial.',
+    'Deploy intelligent AI workers for your GHL clients in 5 minutes. They respond to leads, book appointments, and close deals — 24/7. Deploy AI workers for your GHL clients in 5 minutes.',
 };
 
 const FEATURES = [
@@ -143,7 +143,7 @@ export default function GhlMarketplacePage() {
         <div className="max-w-5xl mx-auto">
           <h2 className="text-3xl font-black text-center mb-3">Simple, predictable pricing</h2>
           <p className="text-center text-gray-500 mb-12">
-            Start with a 7-day free trial, no credit card required.
+            Get started in minutes. No long-term contracts.
           </p>
           <div className="grid sm:grid-cols-3 gap-6 max-w-4xl mx-auto">
             {PRICING.map((plan) => (
@@ -216,7 +216,7 @@ export default function GhlMarketplacePage() {
             Ready to add AI workers to your agency?
           </h2>
           <p className="text-indigo-200 text-lg mb-8">
-            Deploy your first AI worker in 5 minutes. Free for 7 days.
+            Deploy your first AI worker in 5 minutes.
           </p>
           <Link
             href="/signup/agency"

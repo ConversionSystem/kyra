@@ -45,7 +45,7 @@ const INDUSTRIES = [
 const FEATURES = [
   { icon: '🌐', title: 'AI Website Builder', desc: '15-25 SEO-optimized pages generated in minutes. Service pages, city pages, blog, FAQ, contact — all written by AI, built for search engines.' },
   { icon: '🤖', title: 'AI Worker', desc: 'Chat widget on every site. Books appointments, captures leads, answers questions 24/7. Trained on the business automatically.' },
-  { icon: '🌍', title: 'Web Intelligence', desc: "AI workers that read the internet — live competitor pricing, company research, lead enrichment, industry news. The only white-label platform where your workers can actually browse the web.", badge: 'New' },
+  { icon: '🌍', title: 'Web Intelligence', desc: "AI workers that can browse the web live — competitor pricing, company research, lead enrichment, industry news. Real-time data, automatically, on every client.", badge: 'New' },
   { icon: '📊', title: 'CRM Built-In', desc: 'Every lead from the website, chat, and GHL flows into one inbox. Nothing falls through the cracks.' },
   { icon: '📈', title: 'Growth Engine', desc: 'AI suggests new pages to grow your search presence. One click to generate and publish. Sites that keep growing with AI-generated content.' },
   { icon: '🏢', title: 'One Dashboard', desc: 'Manage 20 clients from one login. See every site, every lead, every conversation. White-label everything.' },
