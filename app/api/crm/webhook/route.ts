@@ -221,7 +221,7 @@ async function forwardToContainer(
       Authorization: `Bearer ${clientGateway?.token || apiSecret}`,
     },
     body: JSON.stringify({
-      model: 'openai/gpt-4o-mini',
+      model: 'openrouter/anthropic/claude-haiku-4.5',
       messages: chatMessages,
       stream: false,
     }),

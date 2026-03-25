@@ -479,7 +479,7 @@ function SettingsTab({
   const [industry, setIndustry] = useState(client.industry);
   const [status, setStatus] = useState(client.status);
   const [aiModel, setAiModel] = useState<string>(
-    (client as AgencyClient & { ai_model?: string }).ai_model ?? 'gpt-4o-mini'
+    (client as AgencyClient & { ai_model?: string }).ai_model ?? 'openrouter/anthropic/claude-haiku-4.5'
   );
   const [isSavingModel, setIsSavingModel] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
