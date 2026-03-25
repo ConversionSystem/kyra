@@ -181,11 +181,11 @@ export async function provisionClientGateway(
     if (hasByok) {
       // BYOK: use their provider's model directly, pass all their keys, no router
       const byokModel = winningKey?.model ?? 'anthropic/claude-sonnet-4-5';
-      agentModel = { primary: byokModel, fallbacks: ['openai/gpt-4o-mini'] };
+      agentModel = { primary: byokModel, fallbacks: ['openrouter/anthropic/claude-haiku-4.5', 'openai/gpt-4o-mini'] };
       cleanApiKeys = { ...apiKeysForContainer }; // pass all keys
     } else {
-      // Platform key: route through kyra-router, always use openai/gpt-4o-mini
-      agentModel = { primary: 'openai/gpt-4o-mini', fallbacks: ['openai/gpt-4o'] };
+      // Platform key: use claude-haiku-4.5 via openrouter (better tool use than gpt-4o-mini)
+      agentModel = { primary: 'openrouter/anthropic/claude-haiku-4.5', fallbacks: ['openrouter/anthropic/claude-sonnet-4', 'openai/gpt-4o-mini'] };
       cleanApiKeys = undefined; // provisioner injects platform key
     }
 
@@ -571,7 +571,7 @@ export async function chatViaGateway(
     messages.push({ role: 'user', content: message });
 
     const requestBody: Record<string, unknown> = {
-      model: options.model || 'openai/gpt-4o-mini',
+      model: options.model || 'openrouter/anthropic/claude-haiku-4.5',
       messages,
       stream: false,
       ...(options.sessionId ? { user: options.sessionId } : {}),
