@@ -58,6 +58,10 @@ RUN mv /usr/local/bin/himalaya /usr/local/bin/himalaya.real && \
     printf '#!/bin/bash\nCONFIG="/home/node/.openclaw/workspace/himalaya-config.toml"\nSECRETS="/home/node/.openclaw/workspace/.secrets.env"\nif [ -f "$SECRETS" ]; then\n  set -a\n  . "$SECRETS"\n  set +a\nfi\nif [ -f "$CONFIG" ]; then\n  exec /usr/local/bin/himalaya.real -c "$CONFIG" "$@"\nelse\n  exec /usr/local/bin/himalaya.real "$@"\nfi\n' > /usr/local/bin/himalaya && \
     chmod +x /usr/local/bin/himalaya
 
+# send-email helper: AI just calls send-email TO SUBJECT BODY — no syntax to learn
+RUN printf '#!/bin/bash\n# Usage: send-email "to@example.com" "Subject" "Body text"\nTO="$1"\nSUBJECT="$2"\nBODY="$3"\nif [ -z "$TO" ] || [ -z "$SUBJECT" ] || [ -z "$BODY" ]; then\n  echo "Usage: send-email \x27to@example.com\x27 \x27Subject\x27 \x27Body\x27"\n  exit 1\nfi\nSECRETS="/home/node/.openclaw/workspace/.secrets.env"\nif [ -f "$SECRETS" ]; then\n  set -a; . "$SECRETS"; set +a\nfi\nhimalaya template send <<EOF\nFrom: $EMAIL_ADDRESS\nTo: $TO\nSubject: $SUBJECT\n\n$BODY\nEOF\n' > /usr/local/bin/send-email && \
+    chmod +x /usr/local/bin/send-email
+
 # Copy workspace defaults to staging area (volume may override at runtime)
 RUN mkdir -p /root/.openclaw-defaults/workspace/memory
 COPY workspace/ /root/.openclaw-defaults/workspace/

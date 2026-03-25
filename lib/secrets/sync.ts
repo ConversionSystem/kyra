@@ -264,6 +264,15 @@ async function syncHimalayaConfigIfNeeded(
   const smtpEncryption = smtpPort === '587' ? 'start-tls' : 'tls';
 
   // himalaya v1.x config format (inline dotted keys — required by v1.0+)
+    // Detect Gmail — needs folder.aliases for [Gmail]/* folder names
+  const isGmail = imapHost.includes('gmail.com');
+  const folderAliases = isGmail ? `
+folder.aliases.sent = "[Gmail]/Sent Mail"
+folder.aliases.drafts = "[Gmail]/Drafts"
+folder.aliases.trash = "[Gmail]/Trash"
+folder.aliases.spam = "[Gmail]/Spam"
+` : '';
+
   const config = `[accounts.default]
 email = "${email}"
 display-name = "${displayName}"
@@ -276,7 +285,7 @@ backend.encryption.type = "${imapEncryption}"
 backend.login = "${email}"
 backend.auth.type = "password"
 backend.auth.raw = "${password}"
-
+${folderAliases}
 message.send.backend.type = "smtp"
 message.send.backend.host = "${smtpHost}"
 message.send.backend.port = ${smtpPort}
