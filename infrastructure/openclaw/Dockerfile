@@ -33,6 +33,17 @@ RUN apt-get update && apt-get install -y \
 RUN npm install -g openclaw@latest \
     && openclaw --version
 
+# Install himalaya (email CLI) — v1.x binary from GitHub releases
+RUN curl -fsSL https://github.com/pimalaya/himalaya/releases/download/v1.0.0/himalaya-x86_64-unknown-linux-musl.tar.gz \
+    | tar -xz -C /usr/local/bin \
+    && chmod +x /usr/local/bin/himalaya \
+    && himalaya --version
+
+# Install mcporter (MCP client — for google-workspace-mcp skill)
+RUN npm install -g @mcporter/cli 2>/dev/null || \
+    npm install -g mcporter 2>/dev/null || \
+    echo "[INFO] mcporter not available on npm — skipping (google-workspace-mcp will use curl fallback)"
+
 # Copy workspace defaults to staging area (volume may override at runtime)
 RUN mkdir -p /root/.openclaw-defaults/workspace/memory
 COPY workspace/ /root/.openclaw-defaults/workspace/
