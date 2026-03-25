@@ -44,6 +44,20 @@ RUN npm install -g @mcporter/cli 2>/dev/null || \
     npm install -g mcporter 2>/dev/null || \
     echo "[INFO] mcporter not available on npm — skipping (google-workspace-mcp will use curl fallback)"
 
+# ── CLI wrapper scripts ──────────────────────────────────────────────────────
+# These wrappers auto-source .secrets.env so the AI never has to manually
+# source credentials — just call `gh` or `himalaya` directly.
+
+# gh wrapper: auto-sources GH_TOKEN from .secrets.env
+RUN mv /usr/bin/gh /usr/bin/gh.real && \
+    printf '#!/bin/bash\nSECRETS="/home/node/.openclaw/workspace/.secrets.env"\nif [ -f "$SECRETS" ]; then\n  set -a\n  . "$SECRETS"\n  set +a\nfi\nexec /usr/bin/gh.real "$@"\n' > /usr/bin/gh && \
+    chmod +x /usr/bin/gh
+
+# himalaya wrapper: auto-sources .secrets.env + auto-passes -c config flag
+RUN mv /usr/local/bin/himalaya /usr/local/bin/himalaya.real && \
+    printf '#!/bin/bash\nCONFIG="/home/node/.openclaw/workspace/himalaya-config.toml"\nSECRETS="/home/node/.openclaw/workspace/.secrets.env"\nif [ -f "$SECRETS" ]; then\n  set -a\n  . "$SECRETS"\n  set +a\nfi\nif [ -f "$CONFIG" ]; then\n  exec /usr/local/bin/himalaya.real -c "$CONFIG" "$@"\nelse\n  exec /usr/local/bin/himalaya.real "$@"\nfi\n' > /usr/local/bin/himalaya && \
+    chmod +x /usr/local/bin/himalaya
+
 # Copy workspace defaults to staging area (volume may override at runtime)
 RUN mkdir -p /root/.openclaw-defaults/workspace/memory
 COPY workspace/ /root/.openclaw-defaults/workspace/
