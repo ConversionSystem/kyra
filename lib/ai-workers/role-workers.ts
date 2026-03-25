@@ -27,6 +27,8 @@ export interface RoleWorker {
   allowedAgencies?: string[];          // agency IDs that can see this worker (only when visibility = 'private')
   variables?: TemplateVariable[];
   soulMd?: string;
+  /** ClawHub skill slugs to auto-install when this worker is applied */
+  requiredClawHubSkills?: string[];
 }
 
 export const ROLE_WORKERS: RoleWorker[] = [
@@ -1757,6 +1759,12 @@ export const ROLE_WORKERS: RoleWorker[] = [
     useCase: 'internal',
     visibility: 'private',
     allowedAgencies: ['18e6e562-ec29-4652-a38b-58f6be2e533f'],
+    requiredClawHubSkills: [
+      'himalaya-1-0-0',       // Email via IMAP/SMTP (correct v1.x commands)
+      'google-workspace-mcp', // Gmail, Calendar, Drive — no Cloud Console needed
+      'fathom-meetings',      // Meeting transcripts, summaries, action items
+      'github-cli',           // GitHub PRs, branches, commits, deployments
+    ],
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Your company name', required: true },
       { key: 'email_digest_time', label: 'Daily Email Digest Time', placeholder: '17:00 (leave blank to skip)', required: false },

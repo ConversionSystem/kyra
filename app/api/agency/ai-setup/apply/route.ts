@@ -12,6 +12,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAgencyAdmin } from '@/lib/agency/middleware';
 import { createClient } from '@/lib/supabase/server';
 import { INDUSTRY_TEMPLATES, applySoulTemplate } from '@/lib/templates/industry-templates';
+import { ROLE_WORKERS } from '@/lib/ai-workers/role-workers';
 import { updateClientConfig } from '@/lib/ovh/provisioner';
 
 export const dynamic = 'force-dynamic';
@@ -4655,36 +4656,35 @@ You connect and manage the entire business technology stack through natural lang
 
 ## Tools Reference (ALWAYS use these exact commands)
 
-### Email (himalaya) — config at ~/workspace/himalaya-config.toml
-- List inbox: exec \`himalaya -c ~/workspace/himalaya-config.toml envelope list\`
-- Read email: exec \`himalaya -c ~/workspace/himalaya-config.toml message read <id>\`
-- Search emails: exec \`himalaya -c ~/workspace/himalaya-config.toml envelope list from <sender>\`
-- Reply to email: exec \`echo "BODY" | himalaya -c ~/workspace/himalaya-config.toml template reply <id> | himalaya -c ~/workspace/himalaya-config.toml template send\`
-- Send new email: exec \`printf "From: $EMAIL_ADDRESS\nTo: <to>\nSubject: <subject>\n\n<body>" | himalaya -c ~/workspace/himalaya-config.toml template send\`
-- List folders: exec \`himalaya -c ~/workspace/himalaya-config.toml folder list\`
-- **ALWAYS source secrets first**: exec \`. .secrets.env\` then use $EMAIL_ADDRESS for sender
+## Tools Reference
 
-### Microsoft 365 (via helper scripts)
-- Get auth token: exec \`MS_ACCESS_TOKEN=$(m365-helpers/ms-auth.sh)\`
-- Read Outlook: exec \`m365-helpers/outlook-read.sh $MS_ACCESS_TOKEN\`
-- Send email: exec \`m365-helpers/outlook-send.sh $MS_ACCESS_TOKEN <to> <subject> <body>\`
-- List OneDrive: exec \`m365-helpers/onedrive-list.sh $MS_ACCESS_TOKEN\`
-- Read Teams: exec \`m365-helpers/teams-read.sh $MS_ACCESS_TOKEN\`
+Your skills are pre-installed in your workspace. Read each skill's SKILL.md for exact commands.
 
-### Google Workspace (gog CLI)
-- Gmail search: exec \`gog gmail search 'newer_than:7d' --max 10\`
-- Calendar events: exec \`gog calendar events primary --from <date> --to <date>\`
-- Drive list: exec \`gog drive list\`
+### Email (himalaya-1-0-0 skill)
+- Skill file: read \`skills/himalaya-1-0-0/SKILL.md\` for full command reference
+- Config: ~/workspace/himalaya-config.toml (pre-configured with credentials)
+- **ALWAYS pass** \`-c ~/workspace/himalaya-config.toml\` with every himalaya command
+- Quick reference:
+  - List inbox: exec \`himalaya -c ~/workspace/himalaya-config.toml envelope list\`
+  - Read email: exec \`himalaya -c ~/workspace/himalaya-config.toml message read <id>\`
+  - List folders: exec \`himalaya -c ~/workspace/himalaya-config.toml folder list\`
+  - Send: use \`himalaya template send\` with heredoc (see SKILL.md)
 
-### GitHub (gh CLI)
-- List repos: exec \`gh repo list --limit 10\`
-- List PRs: exec \`gh pr list --repo <owner/repo>\`
-- View PR: exec \`gh pr view <number> --repo <owner/repo>\`
-- Create PR: exec \`gh pr create --repo <owner/repo> --title "<title>" --body "<body>"\`
+### Google Workspace (google-workspace-mcp skill)
+- Skill file: read \`skills/google-workspace-mcp/SKILL.md\` for full command reference
+- Uses mcporter MCP — Gmail, Calendar, Drive, Docs, Sheets
+- Quick reference:
+  - Gmail inbox: exec \`mcporter call --server google-workspace --tool "gmail.search" query="is:unread" maxResults=10\`
+  - Calendar today: exec \`mcporter call --server google-workspace --tool "calendar.listEvents" calendarId="primary"\`
+
+### GitHub (github-cli skill)
+- Skill file: read \`skills/github-cli/SKILL.md\` for full command reference
+- Auth via GH_TOKEN env var (pre-configured in .secrets.env)
 - Target repos: {github_repos}
 
-### Fathom
-- List meetings: exec \`m365-helpers/fathom-meetings.sh\`
+### Fathom Meetings (fathom-meetings skill)
+- Skill file: read \`skills/fathom-meetings/SKILL.md\` for full command reference
+- Auth via FATHOM_API_KEY (pre-configured in .secrets.env)
 
 ### Web Search (built-in — no exec needed)
 - Use the web_search tool directly — do NOT use exec for this
@@ -4696,11 +4696,9 @@ You connect and manage the entire business technology stack through natural lang
 
 ### IMPORTANT
 - **YOU ARE ALLOWED TO USE exec** — this is your primary way to run tools
-- Use exec for CLI commands (himalaya, gh, gog, m365-helpers)
-- Use web_search tool for internet research (NOT exec)
-- **ALWAYS run ". .secrets.env" first** before any CLI command to load credentials
-- The himalaya config is at ~/workspace/himalaya-config.toml — ALWAYS pass -c ~/workspace/himalaya-config.toml
-- Never use Python scripts to check email — use himalaya CLI only
+- **ALWAYS run \`. .secrets.env\` first** before any CLI command to load credentials
+- Read the skill SKILL.md files for correct, up-to-date commands — never guess syntax
+- Never use Python scripts — use the installed CLIs only
 - Never prompt for passwords interactively — credentials are in .secrets.env
 
 ## Daily Routines
@@ -5133,6 +5131,56 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to save configuration' }, { status: 500 });
   }
 
+  // ── Auto-install required ClawHub skills for role workers ─────────────────
+  const installedSkillSlugs: string[] = [];
+  if (type === 'role') {
+    const roleWorker = ROLE_WORKERS.find(r => r.id === templateId);
+    const requiredSlugs = roleWorker?.requiredClawHubSkills ?? [];
+
+    if (requiredSlugs.length > 0) {
+      // Read current installed skills
+      const { data: freshClient } = await supabase
+        .from('agency_clients')
+        .select('settings')
+        .eq('id', clientId)
+        .single();
+
+      const freshSettings = (freshClient?.settings as Record<string, unknown>) ?? {};
+      const existingInstalled = (freshSettings.installed_clawhub_skills as Array<Record<string, unknown>>) ?? [];
+      const existingSlugs = new Set(existingInstalled.map(s => s.slug as string));
+
+      const toInstall = requiredSlugs.filter(slug => !existingSlugs.has(slug));
+      if (toInstall.length > 0) {
+        const updated = [
+          ...existingInstalled,
+          ...toInstall.map(slug => ({
+            slug,
+            version: 'latest',
+            installed_at: new Date().toISOString(),
+            status: 'installed',
+            auto_installed_by: templateId,
+          })),
+        ];
+
+        await supabase
+          .from('agency_clients')
+          .update({ settings: { ...freshSettings, installed_clawhub_skills: updated } })
+          .eq('id', clientId);
+
+        installedSkillSlugs.push(...toInstall);
+        console.log(`[ai-setup/apply] Auto-installed ClawHub skills for ${clientId}:`, toInstall);
+      }
+
+      // Sync the updated skills list to the container workspace (SKILLS.md)
+      try {
+        const { syncSkillsToContainer } = await import('@/lib/skills/sync');
+        await syncSkillsToContainer(clientId);
+      } catch (err) {
+        console.warn('[ai-setup/apply] Failed to sync skills to container:', err);
+      }
+    }
+  }
+
   // ── Push SOUL.md to live container (fire-and-forget if container not running) ─
   let containerPushed = false;
   let containerWarning: string | undefined;
@@ -5154,6 +5202,7 @@ export async function POST(request: NextRequest) {
     clientName: client.name,
     containerPushed,
     ...(containerWarning ? { warning: containerWarning } : {}),
+    ...(installedSkillSlugs.length > 0 ? { autoInstalledSkills: installedSkillSlugs } : {}),
     soulPreview: soulMd.slice(0, 400),
   });
 }
