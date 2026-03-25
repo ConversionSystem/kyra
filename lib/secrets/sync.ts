@@ -262,24 +262,27 @@ async function syncHimalayaConfigIfNeeded(
   const imapEncryption = imapPort === '993' ? 'ssl' : 'start-tls';
   const smtpEncryption = smtpPort === '465' ? 'ssl' : 'start-tls';
 
+  // himalaya v1.x config format (inline dotted keys — required by v1.0+)
   const config = `[accounts.default]
 email = "${email}"
 display-name = "${displayName}"
 default = true
 
-[accounts.default.imap]
-host = "${imapHost}"
-port = ${imapPort}
-login = "${email}"
-passwd.cmd = "echo '${password}'"
-encryption = "${imapEncryption}"
+backend.type = "imap"
+backend.host = "${imapHost}"
+backend.port = ${imapPort}
+backend.encryption.type = "${imapEncryption}"
+backend.login = "${email}"
+backend.auth.type = "password"
+backend.auth.raw = "${password}"
 
-[accounts.default.smtp]
-host = "${smtpHost}"
-port = ${smtpPort}
-login = "${email}"
-passwd.cmd = "echo '${password}'"
-encryption = "${smtpEncryption}"
+message.send.backend.type = "smtp"
+message.send.backend.host = "${smtpHost}"
+message.send.backend.port = ${smtpPort}
+message.send.backend.encryption.type = "${smtpEncryption}"
+message.send.backend.login = "${email}"
+message.send.backend.auth.type = "password"
+message.send.backend.auth.raw = "${password}"
 `;
 
   const result = await writeWorkspaceFile(clientId, 'himalaya-config.toml', config);
