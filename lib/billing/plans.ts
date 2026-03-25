@@ -88,6 +88,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     features: [
       '4 AI workers (3 + 1 free)',
       '10,000 platform credits / month',
+      '500 web scrapes/mo — AI workers can read the internet',
       'Client management dashboard',
       '21 industry templates',
       'Multi-channel messaging (SMS, Telegram, web chat)',
@@ -114,6 +115,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     features: [
       '11 AI workers (10 + 1 free)',
       '25,000 platform credits / month',
+      '2,000 web scrapes/mo — full web intelligence',
       'Everything in Lite',
       'White-label branding',
       'Custom AI personalities',
@@ -141,6 +143,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     features: [
       '21 AI workers (20 + 1 free)',
       '50,000 platform credits / month',
+      '5,000 web scrapes/mo — full automation stack',
       'Everything in Pro',
       'Dedicated infrastructure',
       'Custom domain per agency',
