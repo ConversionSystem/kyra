@@ -1758,7 +1758,10 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
     useCase: 'internal',
     visibility: 'private',
-    allowedAgencies: ['18e6e562-ec29-4652-a38b-58f6be2e533f'],
+    allowedAgencies: [
+      '18e6e562-ec29-4652-a38b-58f6be2e533f', // TrustedNetworx
+      '13cc47bc-88bb-4ef8-84e8-f2c0cd97fd3e', // Priv7 (Purple Lotus)
+    ],
     requiredClawHubSkills: [
       'himalaya-1-0-0',       // Email via IMAP/SMTP (correct v1.x commands)
       'google-workspace-mcp', // Gmail, Calendar, Drive — no Cloud Console needed
