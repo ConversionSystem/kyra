@@ -4662,12 +4662,12 @@ Your skills are pre-installed in your workspace. Read each skill's SKILL.md for 
 
 ### Email (himalaya-1-0-0 skill)
 - Skill file: read \`skills/himalaya-1-0-0/SKILL.md\` for full command reference
-- Config: ~/workspace/himalaya-config.toml (pre-configured with credentials)
-- **ALWAYS pass** \`-c ~/workspace/himalaya-config.toml\` with every himalaya command
+- Config: ~/.openclaw/workspace/himalaya-config.toml (pre-configured with credentials)
+- **ALWAYS pass** \`-c ~/.openclaw/workspace/himalaya-config.toml\` with every himalaya command
 - Quick reference:
-  - List inbox: exec \`himalaya -c ~/workspace/himalaya-config.toml envelope list\`
-  - Read email: exec \`himalaya -c ~/workspace/himalaya-config.toml message read <id>\`
-  - List folders: exec \`himalaya -c ~/workspace/himalaya-config.toml folder list\`
+  - List inbox: exec \`himalaya -c ~/.openclaw/workspace/himalaya-config.toml envelope list\`
+  - Read email: exec \`himalaya -c ~/.openclaw/workspace/himalaya-config.toml message read <id>\`
+  - List folders: exec \`himalaya -c ~/.openclaw/workspace/himalaya-config.toml folder list\`
   - Send: use \`himalaya template send\` with heredoc (see SKILL.md)
 
 ### Google Workspace (google-workspace-mcp skill)
