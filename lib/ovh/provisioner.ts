@@ -189,7 +189,7 @@ export async function provisionClientGateway(
       cleanApiKeys = undefined; // provisioner injects platform key
     }
 
-    // Resolve model + tier from DB — if user already set a model preference, use it
+    // Resolve model from DB — check client first, then agency default
     const { data: clientData } = await supabase
       .from('agency_clients')
       .select('ai_model')
@@ -197,14 +197,22 @@ export async function provisionClientGateway(
       .single();
     const routerMaxTier = getRouterTierForModel(clientData?.ai_model);
 
-    // Override agentModel if the client has a saved ai_model in the DB
-    if (clientData?.ai_model && typeof clientData.ai_model === 'string') {
-      const savedModel = clientData.ai_model;
-      // Only override if not already matching (prevents unnecessary changes)
-      if (savedModel !== agentModel.primary) {
-        console.log(`[ovh-provisioner] Using saved ai_model: ${savedModel} (was: ${agentModel.primary})`);
-        agentModel = { primary: savedModel, fallbacks: agentModel.fallbacks };
-      }
+    // Priority: client ai_model > agency default ai_model > platform default
+    let resolvedModel = clientData?.ai_model as string | undefined;
+    if (!resolvedModel) {
+      // Fall back to agency-level default model
+      const { data: agencySettingsData } = await supabase
+        .from('agencies')
+        .select('settings')
+        .eq('id', agencyId)
+        .single();
+      const agencySettings = (agencySettingsData?.settings as Record<string, unknown>) || {};
+      resolvedModel = agencySettings.ai_model as string | undefined;
+    }
+
+    if (resolvedModel && typeof resolvedModel === 'string' && resolvedModel !== agentModel.primary) {
+      console.log(`[ovh-provisioner] Using resolved ai_model: ${resolvedModel} (was: ${agentModel.primary})`);
+      agentModel = { primary: resolvedModel, fallbacks: agentModel.fallbacks };
     }
 
     // Call OVH provisioner
