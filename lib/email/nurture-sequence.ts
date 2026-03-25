@@ -214,7 +214,7 @@ function email6(email: string): { subject: string; preview: string; html: string
         <td style="padding:12px;color:#6b7280;font-size:13px;font-weight:600;">Key Benefit</td>
       </tr>
       <tr style="border-bottom:1px solid #e5e7eb;">
-        <td style="padding:12px;color:#374151;font-size:14px;font-weight:600;">Pro — $249/mo</td>
+        <td style="padding:12px;color:#374151;font-size:14px;font-weight:600;">Pro — $299/mo</td>
         <td style="padding:12px;color:#374151;font-size:14px;">Up to 10 clients</td>
         <td style="padding:12px;color:#374151;font-size:14px;">White-label + custom branding</td>
       </tr>

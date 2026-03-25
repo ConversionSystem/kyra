@@ -54,7 +54,7 @@ They position as "OpenClaw core + HighLevel muscle" — the production-ready bri
 | **Website + AI employee bundle** | ✅ One workflow: build site → train AI → deploy → chat widget live | ❌ Agent only, no website creation |
 | **Lead pipeline** | ✅ AI-powered lead discovery, outreach, follow-up engine | ❌ Not a lead gen platform |
 | **Email campaigns** | ✅ Email campaign builder with templates | ❌ Uses GHL's email only |
-| **Pricing flexibility** | ✅ Lite $99 / Pro $249 / Scale $499 — all-in-one agency plans | ❌ $20/mo per location + token costs (cheap but thin) |
+| **Pricing flexibility** | ✅ Lite $99 / Pro $299 / Scale $499 — all-in-one agency plans | ❌ $20/mo per location + token costs (cheap but thin) |
 
 ---
 

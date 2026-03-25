@@ -150,9 +150,9 @@ function day5Email(agency: Agency): { subject: string; html: string } {
     <table style="width:100%;border-collapse:collapse;margin:0 0 24px;background:#f9fafb;border-radius:8px;">
       ${[
         ['Free', '1 client AI', '—'],
-        ['Lite — $99/mo', '5 client AIs', '🚀'],
-        ['Pro — $249/mo', '15 client AIs', '⚡'],
-        ['Scale — $499/mo', '50 client AIs', '🏆'],
+        ['Lite — $99/mo', '3 client AIs', '🚀'],
+        ['Pro — $299/mo', '10 client AIs', '⚡'],
+        ['Scale — $499/mo', '20 client AIs', '🏆'],
       ].map(([plan, clients, icon]) => `
         <tr style="${plan.includes('Lite') ? 'background:#eef2ff;' : ''}">
           <td style="padding:10px 12px;color:#374151;font-size:14px;font-weight:${plan.includes('Lite') ? '600' : '400'};">${plan}</td>

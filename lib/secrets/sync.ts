@@ -258,6 +258,10 @@ async function syncHimalayaConfigIfNeeded(
   const smtpPort = (containerConfig.email_smtp_port as string) || '465';
   const displayName = email.split('@')[0];
 
+  // Choose correct encryption based on port
+  const imapEncryption = imapPort === '993' ? 'ssl' : 'start-tls';
+  const smtpEncryption = smtpPort === '465' ? 'ssl' : 'start-tls';
+
   const config = `[accounts.default]
 email = "${email}"
 display-name = "${displayName}"
@@ -268,14 +272,14 @@ host = "${imapHost}"
 port = ${imapPort}
 login = "${email}"
 passwd.cmd = "echo '${password}'"
-encryption = "tls"
+encryption = "${imapEncryption}"
 
 [accounts.default.smtp]
 host = "${smtpHost}"
 port = ${smtpPort}
 login = "${email}"
 passwd.cmd = "echo '${password}'"
-encryption = "tls"
+encryption = "${smtpEncryption}"
 `;
 
   const result = await writeWorkspaceFile(clientId, 'himalaya-config.toml', config);
