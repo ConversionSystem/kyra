@@ -59,9 +59,9 @@ export const CREDIT_PACKS: CreditPack[] = [
     totalCredits: 7500,
     bonusPct: 0,
     pricePerCredit: 0.0067,
-    badge: 'Best Value',
-    badgeColor: 'bg-indigo-100 text-indigo-700',
-    highlighted: true,
+    badge: null,
+    badgeColor: '',
+    highlighted: false,
     description: 'Most popular for active agencies.',
   },
   {
