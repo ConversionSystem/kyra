@@ -252,15 +252,22 @@ function ReprovisionButton({ clientId }: { clientId: string }) {
 
 const MASTER_AGENCY_ID = '1511e077-77ef-4c47-81fd-06a3bc9f1dbb';
 
+// Agencies with access to advanced tabs (Marketing + IT Operations Center)
+// Add agency IDs here to unlock these tabs for specific accounts
+const ADVANCED_TABS_AGENCIES = new Set([
+  '1511e077-77ef-4c47-81fd-06a3bc9f1dbb', // Conversion System (Kyra master)
+  '18e6e562-ec29-4652-a38b-58f6be2e533f', // TrustedNetworx
+]);
+
 export function ClientDetailView({ client: initialClient, role, plan, accountType }: ClientDetailViewProps) {
   const isFreeOrSolo = !plan || plan === 'free' || plan === 'solo_pro' || (plan === 'free' && accountType === 'solo');
-  const isMasterAgency = initialClient.agency_id === MASTER_AGENCY_ID;
+  const hasAdvancedTabs = ADVANCED_TABS_AGENCIES.has(initialClient.agency_id ?? '');
   const router = useRouter();
   const searchParams = useSearchParams();
   const rawTab = searchParams.get('tab') || 'inbox';
   const resolvedTab = (LEGACY_TAB_MAP[rawTab] ?? rawTab) as Tab;
-  // Marketing & Operations tabs only visible to master agency (not ready for clients yet)
-  const HIDDEN_TABS = isMasterAgency ? [] : ['marketing', 'operations'];
+  // Marketing & Operations tabs visible to master agency + explicitly allowed agencies
+  const HIDDEN_TABS = hasAdvancedTabs ? [] : ['marketing', 'operations'];
   const filteredGroups = TAB_GROUPS.map(g => ({
     ...g,
     tabs: g.tabs.filter(t => !HIDDEN_TABS.includes(t.id)),
