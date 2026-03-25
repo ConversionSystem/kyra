@@ -6,7 +6,7 @@ import PublicFooter from '@/components/layout/public-footer';
 export const metadata: Metadata = {
   title: 'Web Intelligence — AI Workers That Read the Internet | Kyra',
   description:
-    'The only white-label AI workforce platform where your workers can browse the web in real time. Live competitor pricing, lead enrichment, company research, industry news — all on autopilot.',
+    'A white-label AI workforce platform where your deployed workers can browse the web in real time. Live competitor pricing, lead enrichment, company research, industry news — all on autopilot.',
   openGraph: {
     title: 'Web Intelligence — AI Workers That Read the Internet',
     description:
@@ -81,7 +81,7 @@ export default function WebIntelligencePage() {
         </h1>
 
         <p className="text-xl text-slate-300 max-w-2xl mx-auto mb-10 leading-relaxed">
-          Kyra is the only white-label AI workforce platform where your workers can browse the web in real time.
+          Kyra gives your deployed AI workers live web access — competitor pricing, lead research, industry news, all in real time.
           Live competitor pricing, lead enrichment, company research, industry news — all on autopilot.
         </p>
 
@@ -90,7 +90,7 @@ export default function WebIntelligencePage() {
             href="/signup"
             className="bg-indigo-500 hover:bg-indigo-600 text-white font-bold px-8 py-4 rounded-xl text-lg transition-colors"
           >
-            Start free trial
+            Get started
           </Link>
           <Link
             href="/pricing"
@@ -214,7 +214,7 @@ export default function WebIntelligencePage() {
                     : 'bg-indigo-500 hover:bg-indigo-600 text-white'
                 }`}
               >
-                Start free trial
+                Get started
               </Link>
             </div>
           ))}
@@ -234,7 +234,7 @@ export default function WebIntelligencePage() {
           href="/signup"
           className="inline-block bg-indigo-500 hover:bg-indigo-600 text-white font-bold px-10 py-4 rounded-xl text-lg transition-colors"
         >
-          Start your 7-day free trial →
+          Get started →
         </Link>
       </section>
 
