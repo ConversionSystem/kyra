@@ -217,6 +217,16 @@ if [ -f "$SECRETS_ENV" ]; then
 
     DISPLAY_NAME="$(echo "$EMAIL_ADDRESS" | cut -d@ -f1)"
 
+    # Gmail needs folder.aliases for [Gmail]/* folder names
+    GMAIL_ALIASES=""
+    if echo "$EMAIL_IMAP_HOST" | grep -q "gmail.com"; then
+      GMAIL_ALIASES='
+folder.aliases.sent = "[Gmail]/Sent Mail"
+folder.aliases.drafts = "[Gmail]/Drafts"
+folder.aliases.trash = "[Gmail]/Trash"
+folder.aliases.spam = "[Gmail]/Spam"'
+    fi
+
     # himalaya v1.x format — inline dotted keys (required by v1.0+)
     cat > "$HIMALAYA_CONFIG" << TOML_EOF
 [accounts.default]
@@ -231,6 +241,7 @@ backend.encryption.type = "${IMAP_ENC}"
 backend.login = "${EMAIL_ADDRESS}"
 backend.auth.type = "password"
 backend.auth.raw = "${EMAIL_PASSWORD}"
+${GMAIL_ALIASES}
 
 message.send.backend.type = "smtp"
 message.send.backend.host = "${SMTP_HOST}"
