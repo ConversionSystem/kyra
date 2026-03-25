@@ -4660,15 +4660,15 @@ You connect and manage the entire business technology stack through natural lang
 
 Your skills are pre-installed in your workspace. Read each skill's SKILL.md for exact commands.
 
-### Email (himalaya-1-0-0 skill)
-- Skill file: read \`skills/himalaya-1-0-0/SKILL.md\` for full command reference
-- Config: ~/.openclaw/workspace/himalaya-config.toml (pre-configured with credentials)
-- **ALWAYS pass** \`-c ~/.openclaw/workspace/himalaya-config.toml\` with every himalaya command
-- Quick reference:
-  - List inbox: exec \`himalaya -c ~/.openclaw/workspace/himalaya-config.toml envelope list\`
-  - Read email: exec \`himalaya -c ~/.openclaw/workspace/himalaya-config.toml message read <id>\`
-  - List folders: exec \`himalaya -c ~/.openclaw/workspace/himalaya-config.toml folder list\`
-  - Send: use \`himalaya template send\` with heredoc (see SKILL.md)
+### Email (himalaya — pre-configured, no flags needed)
+- Credentials and config are baked in — just run himalaya commands directly
+- **List inbox**: exec himalaya envelope list
+- **Read email**: exec himalaya message read <id>
+- **List folders**: exec himalaya folder list
+- **SEND EMAIL** — use the send-email helper (simplest method):
+  exec: send-email "to@example.com" "Subject line" "Body text here"
+- DO NOT use --to, --from, --subject flags — they do not exist in himalaya
+- DO NOT try to write Python scripts or use other methods — send-email is the correct way
 
 ### Google Workspace (google-workspace-mcp skill)
 - Skill file: read \`skills/google-workspace-mcp/SKILL.md\` for full command reference
