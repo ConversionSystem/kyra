@@ -21,7 +21,7 @@ export async function GET() {
   if (!result) return NextResponse.json({ error: 'Agency not found' }, { status: 404 });
 
   const settings = (result.agency.settings as Record<string, unknown>) ?? {};
-  const model = (settings.ai_model as string) ?? 'gpt-4o-mini';
+  const model = (settings.ai_model as string) ?? 'openrouter/anthropic/claude-haiku-4.5';
 
   return NextResponse.json({ model });
 }
