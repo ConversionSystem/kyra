@@ -188,8 +188,11 @@ fi
 # .secrets.env is written by Kyra dashboard when email credentials are saved.
 # We regenerate himalaya-config.toml on every boot so it always reflects
 # the current credentials and survives container restarts.
-SECRETS_ENV="/root/.openclaw/workspace/.secrets.env"
-HIMALAYA_CONFIG="/root/.openclaw/workspace/himalaya-config.toml"
+# The workspace is mounted at /home/node/.openclaw by the OVH provisioner.
+# Detect user home dynamically to support both root (legacy) and node (current) containers.
+OPENCLAW_HOME="${HOME:-/home/node}/.openclaw"
+SECRETS_ENV="${OPENCLAW_HOME}/workspace/.secrets.env"
+HIMALAYA_CONFIG="${OPENCLAW_HOME}/workspace/himalaya-config.toml"
 
 if [ -f "$SECRETS_ENV" ]; then
   # Source secrets to get email vars
