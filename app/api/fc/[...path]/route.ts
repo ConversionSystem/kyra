@@ -4,8 +4,13 @@
  * All OpenClaw containers call this endpoint as their FIRECRAWL_API_URL.
  * Kyra owns one Firecrawl account. Agencies never touch the real API key.
  *
+ * Agency identification — two methods (checked in order):
+ *   1. Bearer token format: "kyra-agency-{agencyId}"  ← firecrawl-cli uses this (FIRECRAWL_API_KEY)
+ *   2. X-Kyra-Agency-ID header                        ← fallback for direct API calls
+ *
  * Flow:
- *   Container → /api/fc/v1/scrape (with X-Kyra-Agency-ID header)
+ *   Container → /api/fc/v1/scrape (Authorization: Bearer kyra-agency-{agencyId})
+ *   → Extract agencyId from token
  *   → Check agency plan limit
  *   → Hard block if over limit (429)
  *   → Forward to api.firecrawl.dev with Kyra's master key
@@ -107,7 +112,17 @@ async function handleProxy(
   }
 
   // All other calls require agency context
-  const agencyId = req.headers.get('x-kyra-agency-id');
+  // Method 1: extract from Bearer token "kyra-agency-{agencyId}" (used by firecrawl-cli)
+  // Method 2: X-Kyra-Agency-ID header (fallback for direct API calls)
+  let agencyId: string | null = null;
+  const authHeader = req.headers.get('authorization') || '';
+  const bearerToken = authHeader.replace(/^Bearer\s+/i, '');
+  if (bearerToken.startsWith('kyra-agency-')) {
+    agencyId = bearerToken.replace('kyra-agency-', '');
+  }
+  if (!agencyId) {
+    agencyId = req.headers.get('x-kyra-agency-id');
+  }
   if (!agencyId) {
     return NextResponse.json(
       { error: 'Missing agency context. Web Intelligence requires a properly provisioned Kyra container.' },

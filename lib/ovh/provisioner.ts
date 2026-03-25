@@ -231,10 +231,11 @@ export async function provisionClientGateway(
           cpuShares: resources.cpuShares || 256,
         },
         // Firecrawl Web Intelligence — routed through Kyra proxy for usage tracking + limits
+        // FIRECRAWL_API_KEY encodes the agencyId so firecrawl-cli sends it as Bearer token
+        // Proxy extracts it from "Authorization: Bearer kyra-agency-{agencyId}"
         firecrawlEnv: {
           FIRECRAWL_API_URL: `${process.env.NEXT_PUBLIC_APP_URL || 'https://kyra.conversionsystem.com'}/api/fc`,
-          FIRECRAWL_API_KEY: 'kyra-managed',
-          X_KYRA_AGENCY_ID: agencyId,
+          FIRECRAWL_API_KEY: `kyra-agency-${agencyId}`,
         },
       }),
     });
@@ -869,8 +870,7 @@ Be direct, strategic, and action-oriented. The agency owner is busy building a b
         // Firecrawl Web Intelligence — routed through Kyra proxy for usage tracking + limits
         firecrawlEnv: {
           FIRECRAWL_API_URL: `${process.env.NEXT_PUBLIC_APP_URL || 'https://kyra.conversionsystem.com'}/api/fc`,
-          FIRECRAWL_API_KEY: 'kyra-managed',
-          X_KYRA_AGENCY_ID: agencyId,
+          FIRECRAWL_API_KEY: `kyra-agency-${agencyId}`,
         },
       }),
     });
