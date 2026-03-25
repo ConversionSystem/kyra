@@ -65,7 +65,7 @@ export async function gatewayChat(opts: GatewayChatOptions): Promise<string> {
     method: 'POST',
     headers,
     body: JSON.stringify({
-      model: opts.model || 'openai/gpt-4o-mini',
+      model: opts.model || 'openrouter/anthropic/claude-haiku-4.5',
       messages,
       stream: false,
     }),
@@ -115,7 +115,7 @@ export async function gatewayChatStream(opts: GatewayChatOptions): Promise<Respo
     method: 'POST',
     headers,
     body: JSON.stringify({
-      model: opts.model || 'openai/gpt-4o-mini',
+      model: opts.model || 'openrouter/anthropic/claude-haiku-4.5',
       messages,
       stream: true,
     }),

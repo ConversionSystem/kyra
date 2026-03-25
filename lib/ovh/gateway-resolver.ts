@@ -116,7 +116,7 @@ export async function chatWithClient(
       'Authorization': `Bearer ${gateway.token}`,
     },
     body: JSON.stringify({
-      model: options.model || 'openai/gpt-4o-mini',
+      model: options.model || 'openrouter/anthropic/claude-haiku-4.5',
       messages,
       stream: false,
     }),

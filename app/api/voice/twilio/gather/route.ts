@@ -141,7 +141,7 @@ export async function POST(req: NextRequest) {
       const agKeys = (agRow?.api_keys as Record<string, string>) ?? {};
       const llmKey = process.env.OPENROUTER_API_KEY || agKeys.openrouter || agKeys.openai || '';
       const llmUrl = (process.env.OPENROUTER_API_KEY || agKeys.openrouter) ? OPENROUTER_URL : 'https://api.openai.com/v1/chat/completions';
-      const llmModel = llmUrl.includes('openrouter') ? 'openai/gpt-4o-mini' : 'gpt-4o-mini';
+      const llmModel = llmUrl.includes('openrouter') ? 'openrouter/anthropic/claude-haiku-4.5' : 'openrouter/anthropic/claude-haiku-4.5';
       persona = (cfg.persona as string) ?? '';
       vcfg = { ts: Date.now(), data: {
         name, clientId, agency_id, persona, voiceCfg, llmKey, llmUrl, llmModel,
@@ -168,7 +168,7 @@ export async function POST(req: NextRequest) {
       voiceCfg = (s.voice_config as Record<string, unknown>) ?? {};
       const llmKey = process.env.OPENROUTER_API_KEY || agKeys.openrouter || agKeys.openai || '';
       const llmUrl = (process.env.OPENROUTER_API_KEY || agKeys.openrouter) ? OPENROUTER_URL : 'https://api.openai.com/v1/chat/completions';
-      const llmModel = llmUrl.includes('openrouter') ? 'openai/gpt-4o-mini' : 'gpt-4o-mini';
+      const llmModel = llmUrl.includes('openrouter') ? 'openrouter/anthropic/claude-haiku-4.5' : 'openrouter/anthropic/claude-haiku-4.5';
       const agSettings = (agencyRow.settings as Record<string, unknown>) ?? {};
       vcfg = { ts: Date.now(), data: {
         name: agencyRow.name, clientId, agency_id: agencyRow.id, persona: '', voiceCfg, llmKey, llmUrl, llmModel,

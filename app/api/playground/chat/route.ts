@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'openrouter/anthropic/claude-haiku-4.5',
         messages: [
           { role: 'system', content: systemPrompt },
           ...recentMessages.map((m: { role: string; content: string }) => ({

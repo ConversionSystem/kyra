@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
             Authorization: `Bearer ${client.gateway_token}`,
           },
           body: JSON.stringify({
-            model: 'openai/gpt-4o-mini',
+            model: 'openrouter/anthropic/claude-haiku-4.5',
             messages: [
               {
                 role: 'system',

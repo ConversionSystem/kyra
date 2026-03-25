@@ -83,7 +83,7 @@ export default function PortalChat({
           Authorization: `Bearer ${gatewayToken}`,
         },
         body: JSON.stringify({
-          model: 'openai/gpt-4o-mini',
+          model: 'openrouter/anthropic/claude-haiku-4.5',
           messages: history,
           stream: true,
         }),
@@ -131,7 +131,7 @@ export default function PortalChat({
             Authorization: `Bearer ${gatewayToken}`,
           },
           body: JSON.stringify({
-            model: 'openai/gpt-4o-mini',
+            model: 'openrouter/anthropic/claude-haiku-4.5',
             messages: history,
             stream: false,
           }),
