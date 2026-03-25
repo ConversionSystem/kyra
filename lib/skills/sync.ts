@@ -91,6 +91,20 @@ const BUILTIN_SKILLS: BuiltinSkill[] = [
     description: 'Execute code, scripts, and shell commands in a sandboxed environment.',
     usage: 'Use the `exec` tool to run shell commands, scripts, or code snippets.',
   },
+  {
+    id: 'web-intelligence',
+    name: 'Web Intelligence (Firecrawl)',
+    description: 'Scrape, crawl, search, and autonomously research any website. Powered by Firecrawl.',
+    usage: `Use the firecrawl-cli tool to access the internet:
+- firecrawl scrape <url> --only-main-content — read a webpage cleanly
+- firecrawl search "<query>" --limit 10 — web search with full content
+- firecrawl map <url> — discover all URLs on a site
+- firecrawl crawl <url> --limit 50 --wait — crawl an entire website
+- firecrawl agent "<prompt>" --wait — autonomous web research (AI finds and extracts data)
+
+Auth is pre-configured via FIRECRAWL_API_KEY and FIRECRAWL_API_URL environment variables.
+Use this tool whenever you need live web data: competitor pricing, company research, lead enrichment, industry news, product details.`,
+  },
 ];
 
 const BUILTIN_SKILLS_MAP = new Map(BUILTIN_SKILLS.map(s => [s.id, s]));

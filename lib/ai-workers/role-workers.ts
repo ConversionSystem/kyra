@@ -44,7 +44,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Gracefully disqualifies bad fits without burning the relationship',
     ],
     channels: ['sms', 'chat', 'voice'],
-    tools: ['Books Appointments', 'Tags Contacts', 'Creates Deals', 'Escalates to Human'],
+    tools: ['Books Appointments', 'Tags Contacts', 'Creates Deals', 'Escalates to Human', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'customer-facing',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -66,7 +67,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Manages reschedule requests without human intervention',
     ],
     channels: ['sms', 'chat', 'voice'],
-    tools: ['Books Appointments', 'Tags Contacts', 'Escalates to Human'],
+    tools: ['Books Appointments', 'Tags Contacts', 'Escalates to Human', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'customer-facing',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -88,7 +90,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Handles partial info gracefully with follow-up',
     ],
     channels: ['sms', 'chat'],
-    tools: ['Tags Contacts', 'Escalates to Human'],
+    tools: ['Tags Contacts', 'Escalates to Human', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'customer-facing',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -109,7 +112,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Handles support tickets, complaints, and general inquiries',
     ],
     channels: ['sms', 'chat', 'telegram'],
-    tools: ['Tags Contacts', 'Escalates to Human'],
+    tools: ['Tags Contacts', 'Escalates to Human', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'customer-facing',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -130,7 +134,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Delivers findings in your preferred format',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Web Search', 'Creates Reports'],
+    tools: ['Web Search', 'Creates Reports', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -151,7 +156,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Tracks custom KPIs you define',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Reads Analytics', 'Sends Reports'],
+    tools: ['Reads Analytics', 'Sends Reports', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -172,7 +178,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Flags anything requiring urgent human response',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Web Search', 'Tags Contacts', 'Escalates to Human'],
+    tools: ['Web Search', 'Tags Contacts', 'Escalates to Human', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -194,7 +201,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Provides specific line-by-line fixes with explanations',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Reviews Content'],
+    tools: ['Reviews Content', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -219,7 +227,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Escalates complex issues to the owner with full conversation context',
     ],
     channels: ['sms', 'chat', 'telegram'],
-    tools: ['Books Appointments', 'Tags Contacts', 'Escalates to Human'],
+    tools: ['Books Appointments', 'Tags Contacts', 'Escalates to Human', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'customer-facing',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -242,7 +251,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Escalates billing disputes and complaints to a human immediately',
     ],
     channels: ['voice', 'sms'],
-    tools: ['Books Appointments', 'Escalates to Human'],
+    tools: ['Books Appointments', 'Escalates to Human', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'customer-facing',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -264,7 +274,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Tracks reply rates and adjusts messaging based on what works',
     ],
     channels: ['chat', 'sms'],
-    tools: ['Tags Contacts', 'Creates Deals', 'Web Search'],
+    tools: ['Tags Contacts', 'Creates Deals', 'Web Search', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'customer-facing',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -285,7 +296,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Coaches tone: never dismiss the objection, always acknowledge first',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Reviews Content'],
+    tools: ['Reviews Content', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -306,7 +318,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Tracks recovery rate and feeds systemic issues to leadership',
     ],
     channels: ['sms', 'chat', 'telegram'],
-    tools: ['Tags Contacts', 'Escalates to Human'],
+    tools: ['Tags Contacts', 'Escalates to Human', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'customer-facing',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -327,7 +340,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Tracks recovery rate and revenue recaptured per campaign',
     ],
     channels: ['sms', 'chat'],
-    tools: ['Tags Contacts', 'Sends Messages'],
+    tools: ['Tags Contacts', 'Sends Messages', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'customer-facing',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -348,7 +362,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Delivers weekly review digest: volume, average rating, top issues',
     ],
     channels: ['chat', 'telegram'],
-    tools: ['Tags Contacts', 'Escalates to Human'],
+    tools: ['Tags Contacts', 'Escalates to Human', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'customer-facing',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -369,7 +384,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Tracks sent, opened, replied metrics and optimizes messaging weekly',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Web Search', 'Tags Contacts', 'Creates Deals'],
+    tools: ['Web Search', 'Tags Contacts', 'Creates Deals', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -394,7 +410,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Generates weekly performance report: impressions, engagement, top content',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Web Search', 'Creates Reports'],
+    tools: ['Web Search', 'Creates Reports', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -415,7 +432,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Delivers daily digest: total mentions, sentiment breakdown, top posts',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Web Search', 'Sends Alerts'],
+    tools: ['Web Search', 'Sends Alerts', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -436,7 +454,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Generates A/B variants for subject lines and CTAs',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Creates Reports'],
+    tools: ['Creates Reports', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -457,7 +476,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Extracts 5-10 quotable moments per piece for social sharing',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Creates Reports'],
+    tools: ['Creates Reports', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -478,7 +498,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Delivers weekly brief: changes detected, so-what analysis, recommended responses',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Web Search', 'Creates Reports'],
+    tools: ['Web Search', 'Creates Reports', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -499,7 +520,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Generates meta titles and descriptions under character limits',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Web Search', 'Creates Reports'],
+    tools: ['Web Search', 'Creates Reports', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -520,7 +542,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Tracks performance and adjusts content mix based on click data',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Web Search', 'Creates Reports'],
+    tools: ['Web Search', 'Creates Reports', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -544,7 +567,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Routes hot leads to agent immediately with full qualification summary',
     ],
     channels: ['sms', 'chat', 'voice'],
-    tools: ['Books Appointments', 'Tags Contacts', 'Creates Deals', 'Escalates to Human'],
+    tools: ['Books Appointments', 'Tags Contacts', 'Creates Deals', 'Escalates to Human', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'customer-facing',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Realty', required: false },
@@ -565,7 +589,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Never provides medical diagnoses — always recommends professional consultation',
     ],
     channels: ['sms', 'chat', 'voice'],
-    tools: ['Books Appointments', 'Tags Contacts', 'Escalates to Human'],
+    tools: ['Books Appointments', 'Tags Contacts', 'Escalates to Human', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'customer-facing',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Serenity Wellness Center', required: false },
@@ -587,7 +612,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Handles special occasions: birthdays, anniversaries, private dining',
     ],
     channels: ['sms', 'chat', 'voice'],
-    tools: ['Books Appointments', 'Tags Contacts'],
+    tools: ['Books Appointments', 'Tags Contacts', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'customer-facing',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Bella Cucina', required: false },
@@ -610,7 +636,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Escalates damaged/lost orders and complaints to human support',
     ],
     channels: ['sms', 'chat', 'telegram'],
-    tools: ['Tags Contacts', 'Escalates to Human'],
+    tools: ['Tags Contacts', 'Escalates to Human', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'customer-facing',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Store', required: false },
@@ -632,7 +659,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Always clarifies: AI is not providing legal advice, attorney consultation required',
     ],
     channels: ['sms', 'chat', 'voice'],
-    tools: ['Books Appointments', 'Tags Contacts', 'Escalates to Human'],
+    tools: ['Books Appointments', 'Tags Contacts', 'Escalates to Human', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'customer-facing',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Smith & Associates Law', required: false },
@@ -657,7 +685,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Delivers weekly pipeline report: new leads, active deals, closed, forecast',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Creates Deals', 'Tags Contacts', 'Creates Reports'],
+    tools: ['Creates Deals', 'Tags Contacts', 'Creates Reports', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -678,7 +707,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Reports weekly: at-risk accounts, churn probability, recommended actions',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Tags Contacts', 'Sends Alerts', 'Creates Reports'],
+    tools: ['Tags Contacts', 'Sends Alerts', 'Creates Reports', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -699,7 +729,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Delivers weekly report: numbers first, insights second, recommendations third',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Creates Reports', 'Web Search'],
+    tools: ['Creates Reports', 'Web Search', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -720,7 +751,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Sends 24-hour reminders and meeting prep notes',
     ],
     channels: ['chat', 'sms'],
-    tools: ['Books Appointments', 'Sends Messages'],
+    tools: ['Books Appointments', 'Sends Messages', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'customer-facing',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -742,7 +774,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Sends weekly report to client via email or Telegram automatically',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Creates Reports', 'Sends Messages'],
+    tools: ['Creates Reports', 'Sends Messages', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Agency', required: false },
@@ -764,7 +797,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Tracks which subreddits and comment styles drive the most traffic',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Web Search', 'Creates Reports'],
+    tools: ['Web Search', 'Creates Reports', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -785,7 +819,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Tracks outreach status and follows up with 3-touch sequence',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Web Search', 'Tags Contacts', 'Creates Reports'],
+    tools: ['Web Search', 'Tags Contacts', 'Creates Reports', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -807,7 +842,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Summarizes findings in plain language with recommended actions',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Creates Reports', 'Web Search'],
+    tools: ['Creates Reports', 'Web Search', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -827,7 +863,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Escalates high-touch accounts to CSM when churn risk is detected',
     ],
     channels: ['sms', 'chat', 'telegram'],
-    tools: ['Tags Contacts', 'Sends Messages', 'Escalates to Human'],
+    tools: ['Tags Contacts', 'Sends Messages', 'Escalates to Human', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'customer-facing',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -849,7 +886,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Recommends whether to ship, iterate, or abandon the experiment',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Creates Reports'],
+    tools: ['Creates Reports', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -872,7 +910,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Tracks pipeline: applied → screened → interviewed → offered',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Books Appointments', 'Tags Contacts', 'Creates Reports'],
+    tools: ['Books Appointments', 'Tags Contacts', 'Creates Reports', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -893,7 +932,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Checks in at day 7, day 30, and day 90',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Books Appointments', 'Tags Contacts', 'Sends Messages'],
+    tools: ['Books Appointments', 'Tags Contacts', 'Sends Messages', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -917,7 +957,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Generates A/B variants for headlines and CTAs',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Creates Reports', 'Web Search'],
+    tools: ['Creates Reports', 'Web Search', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -939,7 +980,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Writes voiceover scripts with timing and visual direction notes',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Creates Reports'],
+    tools: ['Creates Reports', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -961,7 +1003,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Suggests episode topics based on audience trends',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Web Search', 'Creates Reports'],
+    tools: ['Web Search', 'Creates Reports', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -985,7 +1028,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Tracks recovery rate: how many at-risk users became active again',
     ],
     channels: ['sms', 'chat', 'telegram'],
-    tools: ['Tags Contacts', 'Sends Messages', 'Escalates to Human'],
+    tools: ['Tags Contacts', 'Sends Messages', 'Escalates to Human', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'customer-facing',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -1007,7 +1051,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Routes high-impact requests to product team with context',
     ],
     channels: ['sms', 'chat', 'telegram'],
-    tools: ['Tags Contacts', 'Escalates to Human', 'Creates Reports'],
+    tools: ['Tags Contacts', 'Escalates to Human', 'Creates Reports', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'customer-facing',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -1028,7 +1073,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Weekly product health report with retention and engagement metrics',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Creates Reports', 'Web Search'],
+    tools: ['Creates Reports', 'Web Search', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -1051,7 +1097,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Flags invoices past 30/60/90 days for human follow-up',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Tags Contacts', 'Sends Messages', 'Creates Reports'],
+    tools: ['Tags Contacts', 'Sends Messages', 'Creates Reports', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -1072,7 +1119,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Flags unusual transactions for review',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Creates Reports', 'Sends Messages'],
+    tools: ['Creates Reports', 'Sends Messages', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -1095,7 +1143,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Creates follow-up sequences for proposals sent but not replied',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Creates Reports'],
+    tools: ['Creates Reports', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -1117,7 +1166,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Sends project completion summaries and requests referrals',
     ],
     channels: ['sms', 'chat', 'telegram'],
-    tools: ['Tags Contacts', 'Sends Messages', 'Escalates to Human'],
+    tools: ['Tags Contacts', 'Sends Messages', 'Escalates to Human', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'customer-facing',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -1140,7 +1190,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Tracks progress and adjusts difficulty over time',
     ],
     channels: ['sms', 'chat', 'telegram'],
-    tools: ['Tags Contacts', 'Sends Messages'],
+    tools: ['Tags Contacts', 'Sends Messages', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'customer-facing',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Language School', required: false },
@@ -1162,7 +1213,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Adapts teaching style to student questions and confusion',
     ],
     channels: ['sms', 'chat', 'telegram'],
-    tools: ['Tags Contacts', 'Sends Messages'],
+    tools: ['Tags Contacts', 'Sends Messages', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'customer-facing',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Tutoring', required: false },
@@ -1186,7 +1238,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Weekly inventory health report with reorder recommendations',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Sends Messages', 'Creates Reports'],
+    tools: ['Sends Messages', 'Creates Reports', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Supply', required: false },
@@ -1209,7 +1262,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Identifies which deals to prioritize this week',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Creates Deals', 'Tags Contacts', 'Creates Reports'],
+    tools: ['Creates Deals', 'Tags Contacts', 'Creates Reports', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -1230,7 +1284,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Surfaces who to reconnect with based on deal stage',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Tags Contacts', 'Creates Deals', 'Sends Messages'],
+    tools: ['Tags Contacts', 'Creates Deals', 'Sends Messages', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -1250,7 +1305,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Weekly pricing landscape report with recommendations',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Web Search', 'Creates Reports', 'Sends Alerts'],
+    tools: ['Web Search', 'Creates Reports', 'Sends Alerts', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -1273,7 +1329,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Forecasts reorder dates based on sales velocity',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Sends Alerts', 'Creates Reports'],
+    tools: ['Sends Alerts', 'Creates Reports', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Store', required: false },
@@ -1294,7 +1351,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Tests pricing hypotheses and measures impact',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Web Search', 'Creates Reports'],
+    tools: ['Web Search', 'Creates Reports', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Store', required: false },
@@ -1315,7 +1373,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Generates alt text and meta descriptions for product images',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Creates Reports', 'Web Search'],
+    tools: ['Creates Reports', 'Web Search', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Store', required: false },
@@ -1339,7 +1398,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Documents queries with clear comments',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Creates Reports'],
+    tools: ['Creates Reports', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -1360,7 +1420,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Sends automated reports on schedule',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Creates Reports', 'Sends Messages'],
+    tools: ['Creates Reports', 'Sends Messages', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -1382,7 +1443,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Identifies which metrics matter most for each stakeholder',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Creates Reports'],
+    tools: ['Creates Reports', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -1403,7 +1465,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Creates data validation rules to prevent future issues',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Creates Reports'],
+    tools: ['Creates Reports', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -1426,7 +1489,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Creates email announcements and in-app notifications',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Creates Reports'],
+    tools: ['Creates Reports', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme SaaS', required: false },
@@ -1448,7 +1512,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Escalates high-value accounts to success team',
     ],
     channels: ['sms', 'chat', 'telegram'],
-    tools: ['Tags Contacts', 'Sends Messages', 'Escalates to Human'],
+    tools: ['Tags Contacts', 'Sends Messages', 'Escalates to Human', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'customer-facing',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme SaaS', required: false },
@@ -1472,7 +1537,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Alerts buyer clients when a match comes to market',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Web Search', 'Tags Contacts', 'Sends Messages'],
+    tools: ['Web Search', 'Tags Contacts', 'Sends Messages', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Realty', required: false },
@@ -1493,7 +1559,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Generates market reports for client presentations',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Web Search', 'Creates Reports'],
+    tools: ['Web Search', 'Creates Reports', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Realty', required: false },
@@ -1516,7 +1583,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Summarizes team performance trends for leadership',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Creates Reports', 'Tags Contacts'],
+    tools: ['Creates Reports', 'Tags Contacts', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -1539,7 +1607,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Logs all voicemails with transcripts in CRM',
     ],
     channels: ['voice', 'sms', 'chat'],
-    tools: ['Tags Contacts', 'Escalates to Human', 'Creates Reports'],
+    tools: ['Tags Contacts', 'Escalates to Human', 'Creates Reports', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'customer-facing',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -1560,7 +1629,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Schedules next-round interviews for qualified candidates',
     ],
     channels: ['voice', 'sms', 'chat'],
-    tools: ['Books Appointments', 'Tags Contacts', 'Creates Reports'],
+    tools: ['Books Appointments', 'Tags Contacts', 'Creates Reports', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'customer-facing',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -1584,7 +1654,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Creates GDPR compliance checklists and audit trails',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Creates Reports'],
+    tools: ['Creates Reports', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -1605,7 +1676,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Reviews existing policies for gaps and updates',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Creates Reports', 'Web Search'],
+    tools: ['Creates Reports', 'Web Search', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -1626,7 +1698,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Creates incident reports for detected phishing attempts',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Creates Reports', 'Sends Alerts'],
+    tools: ['Creates Reports', 'Sends Alerts', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -1649,7 +1722,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Monthly financial health report with variance analysis',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Creates Reports'],
+    tools: ['Creates Reports', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -1670,7 +1744,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Tracks tax deadlines and required filings',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Creates Reports', 'Sends Alerts'],
+    tools: ['Creates Reports', 'Sends Alerts', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -1691,7 +1766,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Generates AP aging reports and cash flow projections',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Creates Reports', 'Sends Alerts', 'Tags Contacts'],
+    tools: ['Creates Reports', 'Sends Alerts', 'Tags Contacts', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -1712,7 +1788,8 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'Builds fraud detection rules from historical patterns',
     ],
     channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Creates Reports', 'Sends Alerts', 'Escalates to Human'],
+    tools: ['Creates Reports', 'Sends Alerts', 'Escalates to Human', 'Web Intelligence'],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
@@ -1755,6 +1832,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'GitHub (Branches/Commits/PRs/Deployments)',
       'Web Search (Brave API)',
       'Escalates to Human',
+      'Web Intelligence',
     ],
     useCase: 'internal',
     visibility: 'private',
@@ -1767,6 +1845,7 @@ export const ROLE_WORKERS: RoleWorker[] = [
       'google-workspace-mcp', // Gmail, Calendar, Drive — no Cloud Console needed
       'fathom-meetings',      // Meeting transcripts, summaries, action items
       'github-cli',           // GitHub PRs, branches, commits, deployments
+      'firecrawl-cli',        // Web intelligence — scrape, search, research
     ],
     variables: [
       { key: 'business_name', label: 'Business Name', placeholder: 'Your company name', required: true },
@@ -1855,7 +1934,9 @@ When asked to "prepare for a meeting," you should:
       'Blog Monitor (RSS feeds, industry news)',
       'PDF Analysis (document research)',
       'Escalates to Human',
+      'Web Intelligence',
     ],
+    requiredClawHubSkills: ['firecrawl-cli'],
     useCase: 'internal',
     visibility: 'public',
     variables: [
