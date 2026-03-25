@@ -257,6 +257,7 @@ const MASTER_AGENCY_ID = '1511e077-77ef-4c47-81fd-06a3bc9f1dbb';
 const ADVANCED_TABS_AGENCIES = new Set([
   '1511e077-77ef-4c47-81fd-06a3bc9f1dbb', // Conversion System (Kyra master)
   '18e6e562-ec29-4652-a38b-58f6be2e533f', // TrustedNetworx
+  '13cc47bc-88bb-4ef8-84e8-f2c0cd97fd3e', // Priv7 (Purple Lotus)
 ]);
 
 export function ClientDetailView({ client: initialClient, role, plan, accountType }: ClientDetailViewProps) {
