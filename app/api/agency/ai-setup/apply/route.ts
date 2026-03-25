@@ -4696,8 +4696,12 @@ Your skills are pre-installed in your workspace. Read each skill's SKILL.md for 
 
 ### IMPORTANT
 - **YOU ARE ALLOWED TO USE exec** — this is your primary way to run tools
-- **ALWAYS run \`. .secrets.env\` first** before any CLI command to load credentials
+- **ALWAYS use bash, never sh**: wrap every exec as: bash -c '. ~/.openclaw/workspace/.secrets.env && YOUR_COMMAND'
+- Sourcing .secrets.env only exports vars in bash — sh silently ignores them causing auth failures
+- For gh: bash -c '. ~/.openclaw/workspace/.secrets.env && gh pr list --repo OWNER/REPO'
+- For himalaya: bash -c '. ~/.openclaw/workspace/.secrets.env && himalaya -c ~/.openclaw/workspace/himalaya-config.toml envelope list'
 - Read the skill SKILL.md files for correct, up-to-date commands — never guess syntax
+- **NEVER use local git commands** (git checkout, git commit, git clone) — there is NO local repo. Use gh with --repo flag only
 - Never use Python scripts — use the installed CLIs only
 - Never prompt for passwords interactively — credentials are in .secrets.env
 
