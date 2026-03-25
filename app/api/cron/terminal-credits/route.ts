@@ -23,8 +23,11 @@ const CRON_SECRET = process.env.CRON_SECRET || '';
 // Model credit rates — must match lib/billing/model-credits.ts
 // (duplicated here to avoid next/headers transitive import)
 const MODEL_CREDITS_PER_TURN: Record<string, number> = {
-  'gpt-4o-mini':       1,
-  'claude-haiku-3-5':  1,
+  'gpt-4o-mini':                          1,
+  'openai/gpt-4o-mini':                   1,
+  'claude-haiku-3-5':                     1,
+  'claude-haiku-4.5':                     1,
+  'openrouter/anthropic/claude-haiku-4.5': 1,
   'gemini-2.0-flash':  1,
   'gpt-4o':            5,
   'claude-sonnet-3-7': 5,
@@ -176,7 +179,7 @@ export async function GET(request: Request) {
       gateway_token: c.gateway_token as string,
       table: 'agency_clients' as const,
       client_id: c.id as string,
-      ai_model: (c.ai_model as string | null) ?? 'gpt-4o-mini',
+      ai_model: (c.ai_model as string | null) ?? 'openrouter/anthropic/claude-haiku-4.5',
     })),
     ...(agencyRows ?? []).map(a => ({
       id: a.id as string,
@@ -316,7 +319,7 @@ export async function GET(request: Request) {
           container.agency_id,
           container.client_id,
           credits,
-          `Terminal: ${newTurns} turn${newTurns !== 1 ? 's' : ''} × ${creditsPerTurn} credit${creditsPerTurn !== 1 ? 's' : ''} (${container.ai_model ?? 'gpt-4o-mini'}) · ${container.name}`,
+          `Terminal: ${newTurns} turn${newTurns !== 1 ? 's' : ''} × ${creditsPerTurn} credit${creditsPerTurn !== 1 ? 's' : ''} (${container.ai_model ?? 'claude-haiku-4.5'}) · ${container.name}`,
         );
         if (ok) {
           results.deducted++;

@@ -207,7 +207,7 @@ async function extractCRMUpdate(
         Authorization: `Bearer ${gatewayToken}`,
       },
       body: JSON.stringify({
-        model: 'openai/gpt-4o-mini',
+        model: 'openrouter/anthropic/claude-haiku-4.5',
         messages: [
           {
             role: 'system',
@@ -760,7 +760,7 @@ export async function GET(request: NextRequest) {
             'Authorization': `Bearer ${gateway?.gateway_token || ''}`,
           },
           body: JSON.stringify({
-            model: 'openai/gpt-4o-mini',
+            model: 'openrouter/anthropic/claude-haiku-4.5',
             messages: chatMessages,
             stream: false,
             max_tokens: 400,

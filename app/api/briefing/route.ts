@@ -118,7 +118,7 @@ export async function POST(req: NextRequest) {
               'Authorization': `Bearer ${agency.gateway_token}`,
             },
             body: JSON.stringify({
-              model: 'openai/gpt-4o-mini',
+              model: 'openrouter/anthropic/claude-haiku-4.5',
               messages: [
                 { role: 'system', content: 'You are a business briefing assistant. Deliver the following briefing to the user exactly as formatted. Do not add commentary or change the content.' },
                 { role: 'user', content: `Please deliver this morning briefing:\n\n${briefingText}` },

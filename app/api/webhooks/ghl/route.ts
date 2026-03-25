@@ -495,7 +495,7 @@ async function forwardToContainer(
         Authorization: `Bearer ${clientGateway?.token || API_SECRET}`,
       },
       body: JSON.stringify({
-        model: 'openai/gpt-4o-mini',
+        model: 'openrouter/anthropic/claude-haiku-4.5',
         messages: chatMessages,
         stream: false,
         tool_choice: 'none',  // Disable tool/function calls — GHL responses must be plain text
