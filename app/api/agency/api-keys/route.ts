@@ -243,7 +243,7 @@ async function clearByokFromContainers(
     console.log(`[api-keys] Clearing BYOK from ${containerIds.length} containers → platform routing`);
 
     for (const cId of containerIds) {
-      const result = await updateContainerTier(cId, 2, 'gpt-4o-mini', true /* clearByok */);
+      const result = await updateContainerTier(cId, 2, 'openrouter/anthropic/claude-haiku-4.5', true /* clearByok */);
       if (!result.ok) {
         console.warn(`[api-keys] clearByok failed for container ${cId}:`, result.error);
       }
