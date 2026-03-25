@@ -127,7 +127,7 @@ IMPORTANT: You are running as a live interactive demo. Keep ALL responses under 
 
   try {
     const stream = await client.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: 'openrouter/anthropic/claude-haiku-4.5',
       messages,
       max_tokens: 150,
       temperature: 0.7,

@@ -72,14 +72,19 @@ function SetupWizard({ clientId, clientName, defaultNorthStar, agentRole, onDone
       description: 'Kyra picks the right model per conversation.',
     },
     {
-      value: 'gpt-4o-mini',
-      label: '⚡ Fast & Affordable',
-      description: 'Best for high-volume. Handles most conversations with ease.',
+      value: 'openrouter/anthropic/claude-haiku-4.5',
+      label: '⚡ Claude Haiku (Default)',
+      description: 'Best balance of speed, intelligence, and tool use. Handles all conversations.',
     },
     {
-      value: 'gpt-4o',
-      label: '🧠 Smart & Capable',
-      description: 'Better reasoning for complex questions.',
+      value: 'openrouter/anthropic/claude-sonnet-4',
+      label: '🧠 Claude Sonnet',
+      description: 'More powerful reasoning for complex multi-step tasks.',
+    },
+    {
+      value: 'openai/gpt-4o-mini',
+      label: '💡 GPT-4o Mini',
+      description: 'OpenAI alternative. Good for high-volume, straightforward conversations.',
     },
   ];
 
