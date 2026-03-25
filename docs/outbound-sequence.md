@@ -110,7 +110,7 @@ The OpenClaw agency math nobody's talking about:
 10 clients × $300/mo = $3,000 new MRR
 20 clients × $300/mo = $6,000 new MRR
 
-Your cost: $249/mo (Kyra Pro, up to 15 clients)
+Your cost: $299/mo (Kyra Pro, up to 10 clients)
 
 The AI workers do the work. You collect the margin.
 
@@ -163,7 +163,7 @@ Because if they are (and they will be), there's now a dead-simple answer: deploy
 
 We've built a platform called Kyra specifically for GHL agencies. You connect a sub-account, pick an industry template, and the AI worker is live in under 5 minutes. Powered by OpenClaw.
 
-Your clients pay you $200-500/mo for it. You pay us $249/mo flat for up to 15 clients.
+Your clients pay you $200-500/mo for it. You pay us $299/mo flat for up to 10 clients.
 
 Free 30-day trial: kyra.conversionsystem.com
 

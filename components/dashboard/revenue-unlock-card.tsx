@@ -11,7 +11,7 @@ interface Props {
 
 const PLAN_NEXT: Record<string, { name: string; key: string; price: number; max: number }> = {
   free:    { name: 'Lite',  key: 'starter', price: 99,  max: 5  },
-  starter: { name: 'Pro',   key: 'pro',     price: 249, max: 15 },
+  starter: { name: 'Pro',   key: 'pro',     price: 299, max: 10 },
   pro:     { name: 'Scale', key: 'scale',   price: 499, max: 50 },
 };
 

@@ -18,18 +18,18 @@ const PLANS = [
   },
   {
     name: 'Pro',
-    price: '$249',
+    price: '$299',
     period: '/mo',
     clients: 'Up to 10 clients',
     highlight: true,
-    features: ['10 AI worker deployments', '1,500 credits/mo included', 'White-label dashboard', 'Priority support', 'All channels'],
+    features: ['10 AI worker deployments', 'White-label dashboard', 'Priority support', 'All channels'],
   },
   {
     name: 'Scale',
     price: '$499',
     period: '/mo',
-    clients: 'Up to 30 clients',
-    features: ['30 AI worker deployments', '2,500 credits/mo included', 'Custom onboarding', 'Dedicated success manager', 'SLA guarantee'],
+    clients: 'Up to 20 clients',
+    features: ['20 AI worker deployments', 'Custom onboarding', 'Dedicated success manager', 'SLA guarantee'],
   },
 ];
 

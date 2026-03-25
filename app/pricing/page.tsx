@@ -43,7 +43,7 @@ const PLANS = [
     href: '/website-builder?plan=pro',
     featured: true,
     badge: 'Best for growing agencies',
-    revenueCallout: 'Charge $800–1,200/mo per client = $8,000–12,000/mo revenue on $249 cost',
+    revenueCallout: 'Charge $800–1,200/mo per client = $8,000–12,000/mo revenue on $299 cost',
     features: [
       '10 client AI workers',
       'AI Website Builder — 15-25 SEO-optimized pages per client',
@@ -272,7 +272,7 @@ export default function PricingPage() {
         {/* Credits callout */}
         <div className="mt-6 rounded-2xl border border-indigo-500/30 bg-indigo-950/40 p-5 text-center">
           <p className="text-indigo-200 text-sm font-semibold">
-            Platform credits are included — no API keys needed to start. Lite: 500 · Pro: 1,500 · Scale: 2,500. BYOK available on Lite+.
+            Platform credits are included — no API keys needed to start. BYOK available on Lite+.
           </p>
         </div>
 
@@ -294,9 +294,9 @@ export default function PricingPage() {
 
         {/* ROI callout */}
         <div className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-6 sm:p-8 text-center">
-          <p className="text-slate-400 text-sm mb-1">At Pro plan {annual ? '($199/mo annual)' : '($249/mo)'} with just 5 clients billed at $1,000/mo each:</p>
+          <p className="text-slate-400 text-sm mb-1">At Pro plan {annual ? '($239/mo annual)' : '($299/mo)'} with just 5 clients billed at $1,000/mo each:</p>
           <p className="text-2xl font-black text-green-400">
-            $5,000/mo revenue · ${annual ? '4,801' : '4,751'}/mo margin
+            $5,000/mo revenue · ${annual ? '4,761' : '4,701'}/mo margin
           </p>
           <p className="text-slate-500 text-xs mt-1">Each client gets: 15-25 page SEO-optimized website + AI worker + CRM + lead capture</p>
         </div>

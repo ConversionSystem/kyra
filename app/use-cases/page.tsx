@@ -311,10 +311,10 @@ export default function UseCasesPage() {
       <section className="py-16 px-4 bg-gray-50">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl font-black mb-4">The agency math</h2>
-          <p className="text-gray-500 mb-10">Pro plan: $249/mo for 10 clients. Each client gets the full Business in a Box.</p>
+          <p className="text-gray-500 mb-10">Pro plan: $299/mo for 10 clients. Each client gets the full Business in a Box.</p>
           <div className="grid sm:grid-cols-3 gap-6">
             {[
-              { label: 'Your Kyra cost', value: '$249/mo', sub: 'Pro plan — 10 clients' },
+              { label: 'Your Kyra cost', value: '$299/mo', sub: 'Pro plan — 10 clients' },
               { label: 'Avg client billing', value: '$800–1,200/mo', sub: 'Website + AI worker + CRM' },
               { label: 'Your monthly revenue', value: '$8,000–12,000', sub: '10 clients on Pro plan' },
             ].map((s) => (
