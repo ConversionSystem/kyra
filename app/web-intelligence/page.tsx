@@ -119,7 +119,7 @@ export default function WebIntelligencePage() {
             </p>
           </div>
           <div className="bg-white/5 border border-white/10 rounded-2xl p-6 font-mono text-sm">
-            <div className="text-slate-500 mb-3">// Example conversation</div>
+            <div className="text-slate-500 mb-3">{`// Example conversation`}</div>
             <div className="mb-3">
               <span className="text-slate-400">You:</span>
               <span className="text-white ml-2">&quot;Research our top 3 competitors and tell me their pricing.&quot;</span>
