@@ -14,6 +14,7 @@ import { createClient } from '@/lib/supabase/server';
 import { INDUSTRY_TEMPLATES, applySoulTemplate } from '@/lib/templates/industry-templates';
 import { ROLE_WORKERS } from '@/lib/ai-workers/role-workers';
 import { updateClientConfig } from '@/lib/ovh/provisioner';
+import { PLANS } from '@/lib/billing/plans';
 
 export const dynamic = 'force-dynamic';
 
@@ -5183,6 +5184,15 @@ export async function POST(request: NextRequest) {
       } catch (err) {
         console.warn('[ai-setup/apply] Failed to sync skills to container:', err);
       }
+    }
+  }
+
+  // ── Inject Web Intelligence section if plan supports it ──────────────────
+  if (soulMd) {
+    const agencyPlan = (agency.plan as string) ?? 'free';
+    const webScrapes = PLANS[agencyPlan as keyof typeof PLANS]?.monthlyWebScrapes ?? 0;
+    if (webScrapes > 0) {
+      soulMd += `\n\n## Web Intelligence\n\nYou have access to the internet via the firecrawl CLI. Auth is pre-configured — just run the commands directly.\n\nKey commands:\n- \`firecrawl scrape <url> --only-main-content\` — read a webpage\n- \`firecrawl search "<query>"\` — search the web\n- \`firecrawl agent "<prompt>" --wait\` — autonomous research (AI finds the data)\n- \`firecrawl crawl <url> --limit 50 --wait\` — crawl an entire site\n\nUse this for: competitor pricing, company research, lead enrichment, industry news, product details, live web data.\nYour agency plan includes **${webScrapes} web scrapes/month**. Usage resets on the 1st of each month.`;
     }
   }
 

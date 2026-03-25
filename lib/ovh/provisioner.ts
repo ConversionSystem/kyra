@@ -230,6 +230,12 @@ export async function provisionClientGateway(
           memoryMb: resources.memoryMb || 1536,  // OpenClaw needs ~1GB+; 1024 causes OOM under load
           cpuShares: resources.cpuShares || 256,
         },
+        // Firecrawl Web Intelligence — routed through Kyra proxy for usage tracking + limits
+        firecrawlEnv: {
+          FIRECRAWL_API_URL: `${process.env.NEXT_PUBLIC_APP_URL || 'https://kyra.conversionsystem.com'}/api/fc`,
+          FIRECRAWL_API_KEY: 'kyra-managed',
+          X_KYRA_AGENCY_ID: agencyId,
+        },
       }),
     });
 
@@ -860,6 +866,12 @@ Be direct, strategic, and action-oriented. The agency owner is busy building a b
           ? { primary: winningKey.model, fallbacks: ['openai/gpt-4o-mini'] }
           : { primary: 'openai/gpt-4o-mini', fallbacks: ['openai/gpt-4o'] },
         resources: { memoryMb: 1024, cpuShares: 256 },
+        // Firecrawl Web Intelligence — routed through Kyra proxy for usage tracking + limits
+        firecrawlEnv: {
+          FIRECRAWL_API_URL: `${process.env.NEXT_PUBLIC_APP_URL || 'https://kyra.conversionsystem.com'}/api/fc`,
+          FIRECRAWL_API_KEY: 'kyra-managed',
+          X_KYRA_AGENCY_ID: agencyId,
+        },
       }),
     });
 
