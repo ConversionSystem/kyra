@@ -184,6 +184,72 @@ console.log('OpenClaw config written to /root/.openclaw/openclaw.json');
 " || { echo "FATAL: Failed to generate config"; exit 1; }
 fi
 
+# ── Generate himalaya config from secrets (every boot) ───────────────────────
+# .secrets.env is written by Kyra dashboard when email credentials are saved.
+# We regenerate himalaya-config.toml on every boot so it always reflects
+# the current credentials and survives container restarts.
+SECRETS_ENV="/root/.openclaw/workspace/.secrets.env"
+HIMALAYA_CONFIG="/root/.openclaw/workspace/himalaya-config.toml"
+
+if [ -f "$SECRETS_ENV" ]; then
+  # Source secrets to get email vars
+  set -a
+  # shellcheck disable=SC1090
+  . "$SECRETS_ENV" 2>/dev/null || true
+  set +a
+
+  if [ -n "$EMAIL_ADDRESS" ] && [ -n "$EMAIL_IMAP_HOST" ] && [ -n "$EMAIL_PASSWORD" ]; then
+    IMAP_PORT="${EMAIL_IMAP_PORT:-993}"
+    SMTP_HOST="${EMAIL_SMTP_HOST:-$(echo "$EMAIL_IMAP_HOST" | sed 's/imap/smtp/')}"
+    SMTP_PORT="${EMAIL_SMTP_PORT:-465}"
+
+    # Choose correct encryption based on port
+    if [ "$IMAP_PORT" = "993" ]; then
+      IMAP_ENC="ssl"
+    else
+      IMAP_ENC="start-tls"
+    fi
+    if [ "$SMTP_PORT" = "465" ]; then
+      SMTP_ENC="ssl"
+    else
+      SMTP_ENC="start-tls"
+    fi
+
+    DISPLAY_NAME="$(echo "$EMAIL_ADDRESS" | cut -d@ -f1)"
+
+    # himalaya v1.x format — inline dotted keys (required by v1.0+)
+    cat > "$HIMALAYA_CONFIG" << TOML_EOF
+[accounts.default]
+email = "${EMAIL_ADDRESS}"
+display-name = "${DISPLAY_NAME}"
+default = true
+
+backend.type = "imap"
+backend.host = "${EMAIL_IMAP_HOST}"
+backend.port = ${IMAP_PORT}
+backend.encryption.type = "${IMAP_ENC}"
+backend.login = "${EMAIL_ADDRESS}"
+backend.auth.type = "password"
+backend.auth.raw = "${EMAIL_PASSWORD}"
+
+message.send.backend.type = "smtp"
+message.send.backend.host = "${SMTP_HOST}"
+message.send.backend.port = ${SMTP_PORT}
+message.send.backend.encryption.type = "${SMTP_ENC}"
+message.send.backend.login = "${EMAIL_ADDRESS}"
+message.send.backend.auth.type = "password"
+message.send.backend.auth.raw = "${EMAIL_PASSWORD}"
+TOML_EOF
+
+    chmod 600 "$HIMALAYA_CONFIG"
+    echo "✅ himalaya-config.toml generated for $EMAIL_ADDRESS (IMAP: $EMAIL_IMAP_HOST:$IMAP_PORT, SMTP: $SMTP_HOST:$SMTP_PORT)"
+  else
+    echo "ℹ️  No email credentials in .secrets.env — skipping himalaya config (configure via Kyra dashboard)"
+  fi
+else
+  echo "ℹ️  No .secrets.env found — skipping himalaya config"
+fi
+
 # ── Run openclaw doctor (config self-healing) ────────────────────────────────
 # This detects and fixes broken configs, normalizes settings, and ensures
 # a clean state before starting the gateway. Critical for volume-persisted
