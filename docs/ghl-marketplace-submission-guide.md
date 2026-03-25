@@ -89,15 +89,15 @@ While GoHighLevel gives you the CRM, pipeline, and messaging infrastructure — 
 ━━━ AGENCY REVENUE MODEL ━━━
 
 Agencies charge clients $500–$2,000/month per AI worker.
-At Pro ($249/mo, 10 clients billed at $997/mo): $9,970/mo revenue · $9,721/mo gross margin.
+At Pro ($299/mo, 10 clients billed at $997/mo): $9,970/mo revenue · $9,671/mo gross margin.
 Most agencies recover their Kyra cost with a single client.
 
 ━━━ PRICING ━━━
 
 Solo Pro: $49/mo — 1 AI worker for individual business owners
 Lite: $99/mo — 3 client AI workers · 7-day free trial
-Pro: $249/mo — 10 client AI workers · 7-day free trial
-Scale: $499/mo — 30 client AI workers · 7-day free trial
+Pro: $299/mo — 10 client AI workers · 7-day free trial
+Scale: $499/mo — 20 client AI workers · 7-day free trial
 
 Annual plans available (save 20%).
 

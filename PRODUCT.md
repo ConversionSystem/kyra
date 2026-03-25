@@ -10,9 +10,9 @@ Kyra is a white-label AI workforce platform built on OpenClaw for agencies. Agen
 ## Plans
 | Plan | Price | Clients | Credits/mo |
 |------|-------|---------|------------|
-| Lite | $99/mo | 3 | 500 |
-| Pro | $249/mo | 10 | 1,500 |
-| Scale | $499/mo | 30 | 2,500 |
+| Lite | $99/mo | 3 | – |
+| Pro | $299/mo | 10 | – |
+| Scale | $499/mo | 20 | – |
 
 7-day free trial on all paid plans.
 
@@ -21,4 +21,4 @@ Kyra is a white-label AI workforce platform built on OpenClaw for agencies. Agen
 - "Your agency. Their AI. Your brand."
 - "Not a chatbot. A workforce."
 
-_Last updated: 2026-03-05_
+_Last updated: 2026-03-25_

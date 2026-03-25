@@ -216,13 +216,13 @@ Real deployments. Response time. Industries served.
 
 Reframe the tiers:
 - **Starter ($99/mo):** "Deploy your first 5 AI workers"
-- **Pro ($249/mo):** "Run a full AI workforce — up to 15 clients"
+- **Pro ($299/mo): "Run a full AI workforce — up to 10 clients"
 - **Scale ($499/mo):** "Unlimited AI workforce deployment"
 
 Add the "vs. hiring" comparison:
 - 1 human employee: $3,500/mo + benefits
 - 1 Kyra AI worker: $20/mo
-- 15 AI workers + full platform: $249/mo
+- 10 AI workers + full platform: $299/mo
 
 ---
 

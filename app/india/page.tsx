@@ -141,8 +141,8 @@ export default function IndiaPage() {
             </div>
             {[
               { plan: 'Lite — $99/mo', slots: '5 clients', rev: '₹2,00,000/mo' },
-              { plan: 'Pro — $249/mo', slots: '10 clients', rev: '₹6,00,000/mo', hot: true },
-              { plan: 'Scale — $499/mo', slots: '30 clients', rev: '₹2,00,00,000/mo' },
+              { plan: 'Pro — $299/mo', slots: '10 clients', rev: '₹6,00,000/mo', hot: true },
+              { plan: 'Scale — $499/mo', slots: '20 clients', rev: '₹8,00,000/mo' },
             ].map(r => (
               <div key={r.plan} className={`grid grid-cols-3 px-5 py-4 text-sm border-b border-white/5 ${r.hot ? 'bg-indigo-500/10' : ''}`}>
                 <span className={`font-semibold ${r.hot ? 'text-indigo-300' : 'text-gray-300'}`}>{r.plan}</span>
