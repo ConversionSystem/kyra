@@ -258,9 +258,10 @@ async function syncHimalayaConfigIfNeeded(
   const smtpPort = (containerConfig.email_smtp_port as string) || '465';
   const displayName = email.split('@')[0];
 
-  // Choose correct encryption based on port
-  const imapEncryption = imapPort === '993' ? 'ssl' : 'start-tls';
-  const smtpEncryption = smtpPort === '465' ? 'ssl' : 'start-tls';
+  // himalaya v1.x only accepts "tls" and "start-tls" (not "ssl")
+  // port 993 (IMAP) → tls, port 465 (SMTP) → tls, port 587 (SMTP) → start-tls
+  const imapEncryption = 'tls'; // IMAP almost always uses TLS (port 993)
+  const smtpEncryption = smtpPort === '587' ? 'start-tls' : 'tls';
 
   // himalaya v1.x config format (inline dotted keys — required by v1.0+)
   const config = `[accounts.default]

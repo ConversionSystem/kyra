@@ -206,16 +206,13 @@ if [ -f "$SECRETS_ENV" ]; then
     SMTP_HOST="${EMAIL_SMTP_HOST:-$(echo "$EMAIL_IMAP_HOST" | sed 's/imap/smtp/')}"
     SMTP_PORT="${EMAIL_SMTP_PORT:-465}"
 
-    # Choose correct encryption based on port
-    if [ "$IMAP_PORT" = "993" ]; then
-      IMAP_ENC="ssl"
-    else
-      IMAP_ENC="start-tls"
-    fi
-    if [ "$SMTP_PORT" = "465" ]; then
-      SMTP_ENC="ssl"
-    else
+    # himalaya v1.x: only "tls" and "start-tls" are valid (not "ssl")
+    # IMAP port 993 = tls, SMTP port 465 = tls, SMTP port 587 = start-tls
+    IMAP_ENC="tls"
+    if [ "$SMTP_PORT" = "587" ]; then
       SMTP_ENC="start-tls"
+    else
+      SMTP_ENC="tls"
     fi
 
     DISPLAY_NAME="$(echo "$EMAIL_ADDRESS" | cut -d@ -f1)"
