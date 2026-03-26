@@ -11,6 +11,7 @@ import { assemblePage } from './templates/assembler';
 import { getRecipeForIndustry } from './templates/recipes';
 import { getTemplateById } from './templates/gallery';
 import { resolvePhotos } from './unsplash';
+import { checkDesignQuality } from './design-quality-checker';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SupabaseClient = any;
@@ -173,6 +174,26 @@ export async function assembleSitePages(
       pageType: p.type,
     }),
   }));
+
+  // Run design quality check on the homepage (most important page)
+  const homepage = assembledPages.find(p => p.type === 'homepage');
+  if (homepage) {
+    const designQuality = checkDesignQuality(homepage.html);
+    if (designQuality.issues.length > 0) {
+      const criticalIssues = designQuality.issues.filter(i => i.severity === 'critical');
+      const warnings = designQuality.issues.filter(i => i.severity === 'warning');
+      console.log(
+        `[build-helpers] Design quality: ${designQuality.score}/100 (${designQuality.grade}) | ` +
+        `Slop: ${designQuality.slopScore}/100 | ` +
+        `${criticalIssues.length} critical, ${warnings.length} warnings`,
+      );
+      if (criticalIssues.length > 0) {
+        console.warn('[build-helpers] Critical design issues:', criticalIssues.map(i => i.message).join('; '));
+      }
+    } else {
+      console.log(`[build-helpers] Design quality: ${designQuality.score}/100 (${designQuality.grade}) — ${designQuality.passedChecks.length} checks passed`);
+    }
+  }
 
   return { assembledPages, recipe, constants, theme, resolvedPhotos };
 }
