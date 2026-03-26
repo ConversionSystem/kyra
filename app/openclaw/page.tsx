@@ -181,7 +181,7 @@ export default function OpenClawPage() {
 
           <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-6 text-center">
             <p className="text-slate-700 text-lg font-semibold">
-              Kyra Pro: <span className="text-indigo-600 font-black">$249/mo flat</span> for 10 clients + 1,500 credits/mo.
+              Kyra Pro: <span className="text-indigo-600 font-black">$299/mo flat</span> for 10 clients.
             </p>
             <p className="text-slate-500 mt-1">The margin is yours.</p>
           </div>

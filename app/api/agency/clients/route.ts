@@ -6,6 +6,8 @@ import { provisionClientGateway } from '@/lib/ovh/provisioner';
 import { buildInjectionDefensePromptSuffix } from '@/lib/security/prompt-injection';
 import { canAddClient, getPlanClientLimit } from '@/lib/billing/plans';
 import type { CreateClientRequest } from '@/lib/agency/types';
+import { markOnboardingStep } from '@/lib/onboarding/tracker';
+import { createGhlSubAccount } from '@/lib/ghl/agency-api';
 
 /**
  * GET /api/agency/clients
@@ -183,6 +185,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to create client' }, { status: 500 });
   }
 
+  // Fire-and-forget: mark onboarding step
+  void markOnboardingStep(agency.id, 'first_client_created');
+
+  // GHL sub-account provisioning is now on-demand via the GHL Integration page
+  // (Settings → GHL → "Create Free GHL Sub-Account" button)
+
   // Auto-provision per-client gateway on OVH (non-blocking)
   // Build SOUL.md from persona + greeting + instructions (same as Personality tab save)
   const persona = (containerConfig.persona as string) || `AI assistant for ${name}`;
@@ -198,6 +206,11 @@ export async function POST(request: NextRequest) {
     '- Stay in character at all times',
     '- Ask one focused question if you need more info',
     '- Never reveal you are an AI unless directly asked');
+  soulLines.push('', '## Tool Usage Rules',
+    '- When you use web search, ALWAYS summarize the results in your own words. Never show raw JSON, URLs, or search result snippets to the customer.',
+    '- For weather questions: search for the weather, then tell the customer the temperature, conditions, and forecast in a natural sentence.',
+    '- For any tool result: extract the relevant information and present it conversationally. The customer should never see raw data, API responses, or technical output.',
+    '- If a search returns no useful results, say so honestly and offer to help another way.');
 
   // Append prompt injection defense — non-negotiable security layer for all deployed agents
   const soulMd = soulLines.join('\n') + buildInjectionDefensePromptSuffix();

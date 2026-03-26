@@ -4,6 +4,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { requireAgencyMember } from '@/lib/agency/middleware';
+import { syncIntegrationCredentials } from '@/lib/secrets/sync';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -69,4 +71,52 @@ Use GHL tools to manage the CRM when needed.
     workspace: workspaceFiles,
     env: ghlEnv,
   });
+}
+
+// PATCH /api/agency/clients/:id/container-config
+// Merges keys into the client's container_config JSONB column.
+// Called from the Setup tab in the dashboard.
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+
+  const result = await requireAgencyMember();
+  if (result.error) {
+    return NextResponse.json({ error: result.error.message }, { status: result.error.status });
+  }
+
+  const body = await req.json();
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return NextResponse.json({ error: 'Body must be a JSON object' }, { status: 400 });
+  }
+
+  const supabase = createServiceClientWithoutCookies();
+
+  // Fetch current container_config
+  const { data: client, error: fetchError } = await supabase
+    .from('agency_clients')
+    .select('container_config')
+    .eq('id', id)
+    .single();
+
+  if (fetchError || !client) {
+    return NextResponse.json({ error: 'Client not found' }, { status: 404 });
+  }
+
+  const merged = { ...(client.container_config as Record<string, unknown> || {}), ...body };
+
+  const { error: updateError } = await supabase
+    .from('agency_clients')
+    .update({ container_config: merged })
+    .eq('id', id);
+
+  if (updateError) {
+    return NextResponse.json({ error: 'Failed to update config' }, { status: 500 });
+  }
+
+  // Fire-and-forget: sync integration credentials to the container's .secrets.env
+  syncIntegrationCredentials(id, merged as Record<string, unknown>).catch((err) => {
+    console.warn('[container-config] Failed to sync integration credentials:', err);
+  });
+
+  return NextResponse.json({ ok: true, container_config: merged });
 }

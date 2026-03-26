@@ -66,10 +66,10 @@ const PLANS = [
   },
   {
     name: 'Pro',
-    price: '$249',
+    price: '$299',
     period: '/mo',
     desc: 'For growing agencies scaling up',
-    features: ['20 AI workers', '20+ channels', '2,000 credits/month', 'Full white-label', 'Priority support'],
+    features: ['10 AI workers', '20+ channels', 'Full white-label', 'Priority support'],
     cta: 'Start Pro',
     href: '/signup/agency?plan=pro',
     featured: true,

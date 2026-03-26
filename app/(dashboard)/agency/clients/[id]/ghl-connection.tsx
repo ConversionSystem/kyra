@@ -445,35 +445,12 @@ export default function GHLConnection({
               </div>
             </div>
 
-            {/* ── Method 2: OAuth (Coming Soon) ────────────────────────── */}
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-5 space-y-3 opacity-75">
-              <div className="flex items-center gap-2">
-                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-200">
-                  <Plug className="h-3.5 w-3.5 text-gray-500" />
-                </div>
-                <h3 className="font-medium text-gray-700">
-                  One-Click Connect
-                </h3>
-                <span className="rounded-full bg-gray-200 px-2 py-0.5 text-xs font-medium text-gray-500">
-                  Coming Soon
-                </span>
-              </div>
-
-              <p className="text-sm text-gray-500">
-                One-click OAuth connection via the GHL Marketplace. Available once our marketplace app is approved.
-              </p>
-
-              <Button
-                onClick={handleOAuthConnect}
-                disabled={true}
-                variant="outline"
-                className="w-full flex items-center justify-center gap-2 opacity-50 cursor-not-allowed"
-              >
-                <Plug className="h-4 w-4" />
-                Connect GoHighLevel
-                <ExternalLink className="h-3 w-3 opacity-50" />
-              </Button>
-            </div>
+            {/* ── Method 2: Create Free GHL Sub-Account ────────────── */}
+            <CreateFreeSubAccount clientId={clientId} onCreated={(locationId) => {
+              setLocationIdInput(locationId);
+              setSuccess(`GHL sub-account created! Location ID auto-filled. Now connect with an API token or use it directly.`);
+              onConnected?.();
+            }} />
 
             {/* ── Capabilities list ───────────────────────────────────── */}
             <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-500 space-y-2">
@@ -495,5 +472,85 @@ export default function GHLConnection({
         )}
       </CardContent>
     </Card>
+  );
+}
+
+// ── Create Free GHL Sub-Account ──────────────────────────────────────────────
+
+function CreateFreeSubAccount({ clientId, onCreated }: { clientId: string; onCreated: (locationId: string) => void }) {
+  const [creating, setCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [created, setCreated] = useState(false);
+
+  const handleCreate = async () => {
+    setCreating(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/agency/clients/${clientId}/ghl/create-subaccount`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Failed to create sub-account');
+        return;
+      }
+      setCreated(true);
+      if (data.locationId) onCreated(data.locationId);
+    } catch {
+      setError('Network error. Please try again.');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  if (created) {
+    return (
+      <div className="rounded-lg border border-green-200 bg-green-50 p-5 space-y-2">
+        <div className="flex items-center gap-2">
+          <Check className="h-5 w-5 text-green-600" />
+          <h3 className="font-medium text-green-800">GHL Sub-Account Created!</h3>
+        </div>
+        <p className="text-sm text-green-700">
+          Your free GoHighLevel sub-account is ready. The Location ID has been auto-saved to this client.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border border-indigo-200 bg-indigo-50/50 p-5 space-y-3">
+      <div className="flex items-center gap-2">
+        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-100">
+          <Plug className="h-3.5 w-3.5 text-indigo-600" />
+        </div>
+        <h3 className="font-medium text-gray-900">
+          Create a Free GHL Sub-Account
+        </h3>
+        <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">
+          Free
+        </span>
+      </div>
+
+      <p className="text-sm text-gray-600">
+        Don&apos;t have a GoHighLevel account? We&apos;ll create a free sub-account for this client — includes phone number, SMS, email, calendar, pipeline, and automations. No GHL subscription needed.
+      </p>
+
+      {error && (
+        <div className="rounded-md bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
+      <Button
+        onClick={handleCreate}
+        disabled={creating}
+        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center gap-2"
+      >
+        {creating ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Plug className="h-4 w-4" />
+        )}
+        {creating ? 'Creating sub-account...' : 'Create Free GHL Sub-Account'}
+      </Button>
+    </div>
   );
 }

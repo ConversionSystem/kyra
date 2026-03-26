@@ -126,7 +126,7 @@ export default function AIPersonalityTab({ client }: { client: AgencyClient }) {
   const [dragging, setDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Automation
+  // Behavior Triggers
   const [proactiveEnabled, setProactiveEnabled] = useState((cfg.proactive_enabled as boolean) ?? false);
   const [proactiveGreeting, setProactiveGreeting] = useState((cfg.proactive_greeting as string) ?? '');
   const [wakeWords, setWakeWords] = useState<WakeWord[]>((cfg.wake_words as WakeWord[]) ?? []);
@@ -563,144 +563,19 @@ export default function AIPersonalityTab({ client }: { client: AgencyClient }) {
         </CardContent>
       </Card>
 
-      {/* ================================================================== */}
-      {/* Section 4: Training Documents                                      */}
-      {/* ================================================================== */}
-      <Card className="border-gray-200 bg-white rounded-xl">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base text-gray-900">
-            <BookOpen className="h-5 w-5 text-indigo-600" />
-            Training Documents
-          </CardTitle>
-          <CardDescription className="text-gray-500">
-            Upload documents or add URLs for your AI to learn from.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {(kbLoading || kbSaving) && (
-            <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-600">
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-indigo-600" />
-              {kbLoading ? 'Loading knowledge sources...' : 'Saving changes...'}
-            </div>
-          )}
-
-          {kbError && <p className="text-sm text-red-600">{kbError}</p>}
-
-          {/* File upload */}
-          <div className="space-y-3">
-            <div
-              role="button"
-              tabIndex={0}
-              onClick={() => fileInputRef.current?.click()}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInputRef.current?.click(); } }}
-              onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-              onDragLeave={() => setDragging(false)}
-              onDrop={(e) => { e.preventDefault(); setDragging(false); handleFileSelection(e.dataTransfer.files); }}
-              className={`cursor-pointer rounded-xl border-2 border-dashed p-8 text-center transition-colors ${
-                dragging ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300 bg-gray-50 hover:border-indigo-300'
-              }`}
-            >
-              <UploadCloud className="mx-auto h-8 w-8 text-gray-400" />
-              <p className="mt-2 text-sm font-medium text-gray-700">Drag &amp; drop files here or click to upload</p>
-              <p className="mt-1 text-xs text-gray-500">Accepted: PDF, TXT, MD, DOCX, CSV (max 10MB each)</p>
-            </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept={ACCEPTED_FILE_INPUT}
-              multiple
-              onChange={(e) => handleFileSelection(e.target.files)}
-              className="hidden"
-            />
-            {fileSources.length > 0 && (
-              <div className="space-y-2">
-                {fileSources.map((source) => (
-                  <div key={source.id} className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 p-3">
-                    <FileText className="h-4 w-4 shrink-0 text-gray-500" />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-gray-900">{source.name}</p>
-                      <p className="text-xs text-gray-500">{formatFileSize(source.size)} &middot; {formatDate(source.addedAt)}</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => deleteSource(source.id)}
-                      className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-white hover:text-red-600"
-                      aria-label={`Delete ${source.name}`}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* URL import */}
-          <div className="space-y-3">
-            <h4 className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-              <Globe className="h-4 w-4 text-indigo-600" />
-              Add URL
-            </h4>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <Input
-                type="url"
-                value={urlInput}
-                onChange={(e) => setUrlInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void addUrl(); } }}
-                placeholder="https://example.com"
-                className="bg-gray-50 flex-1"
-              />
-              <Button
-                onClick={() => void addUrl()}
-                disabled={!urlInput.trim() || kbSaving}
-                className="gap-1.5"
-              >
-                {kbSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                Add URL
-              </Button>
-            </div>
-            {urlSources.length > 0 && (
-              <div className="space-y-2">
-                {urlSources.map((source) => (
-                  <div key={source.id} className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 p-3">
-                    <Globe className="h-4 w-4 shrink-0 text-gray-500" />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-gray-900">{source.url}</p>
-                      <p className="text-xs text-gray-500">Added {formatDate(source.addedAt)}</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => deleteSource(source.id)}
-                      className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-white hover:text-red-600"
-                      aria-label={`Delete ${source.name}`}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {!kbLoading && sources.length === 0 && (
-            <div className="rounded-xl border border-gray-200 bg-gray-50 p-6 text-center text-sm text-gray-500">
-              No training documents yet. Upload files or add URLs above.
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Training Documents moved to Knowledge tab — no duplication */}
 
       {/* ================================================================== */}
-      {/* Section 5: Automation                                              */}
+      {/* Section 4: Behavior Triggers                                       */}
       {/* ================================================================== */}
       <Card className="border-gray-200 bg-white rounded-xl">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base text-gray-900">
             <Zap className="h-5 w-5 text-indigo-600" />
-            Automation
+            Behavior Triggers
           </CardTitle>
           <CardDescription className="text-gray-500">
-            Proactive messaging and keyword-triggered actions.
+            Proactive greetings and keyword-triggered actions for your AI worker.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">

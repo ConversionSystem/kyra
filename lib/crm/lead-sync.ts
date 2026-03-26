@@ -39,11 +39,8 @@ function pickColor(email: string): string {
  * Always non-fatal — never throws, never blocks the signup flow.
  */
 export async function syncLeadToCRM(lead: LeadData): Promise<void> {
-  const masterAgencyId = process.env.MASTER_AGENCY_ID;
-  if (!masterAgencyId) {
-    // Silently skip — MASTER_AGENCY_ID not configured
-    return;
-  }
+  const masterAgencyId = process.env.MASTER_AGENCY_ID || '1511e077-77ef-4c47-81fd-06a3bc9f1dbb';
+  const masterClientId = process.env.MASTER_CLIENT_ID || '307c9548-2782-4c12-8122-0f0d132bd4dd';
 
   try {
     const db = createServiceClientWithoutCookies();
@@ -96,6 +93,7 @@ export async function syncLeadToCRM(lead: LeadData): Promise<void> {
 
     await db.from('crm_contacts').insert({
       agency_id:        masterAgencyId,
+      client_id:        masterClientId,
       first_name:       firstName,
       last_name:        lastName,
       email:            lead.email,

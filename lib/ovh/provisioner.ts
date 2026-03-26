@@ -21,6 +21,7 @@ const GATEWAY_DOMAIN = 'gw.kyra.conversionsystem.com';
 
 import { resolveOcModel } from '@/lib/agency/ai-models';
 import { getRouterTierForModel } from '@/lib/billing/model-credits';
+import { markOnboardingStep } from '@/lib/onboarding/tracker';
 
 /**
  * Given an agencies.api_keys record, return the winning provider + key + model.
@@ -180,15 +181,15 @@ export async function provisionClientGateway(
     if (hasByok) {
       // BYOK: use their provider's model directly, pass all their keys, no router
       const byokModel = winningKey?.model ?? 'anthropic/claude-sonnet-4-5';
-      agentModel = { primary: byokModel, fallbacks: ['openai/gpt-4o-mini'] };
+      agentModel = { primary: byokModel, fallbacks: ['openrouter/anthropic/claude-haiku-4.5', 'openai/gpt-4o-mini'] };
       cleanApiKeys = { ...apiKeysForContainer }; // pass all keys
     } else {
-      // Platform key: route through kyra-router, always use openai/gpt-4o-mini
-      agentModel = { primary: 'openai/gpt-4o-mini', fallbacks: ['openai/gpt-4o'] };
+      // Platform key: use claude-haiku-4.5 via openrouter (better tool use than gpt-4o-mini)
+      agentModel = { primary: 'openrouter/anthropic/claude-haiku-4.5', fallbacks: ['openrouter/anthropic/claude-sonnet-4', 'openai/gpt-4o-mini'] };
       cleanApiKeys = undefined; // provisioner injects platform key
     }
 
-    // Resolve model + tier from DB — if user already set a model preference, use it
+    // Resolve model from DB — check client first, then agency default
     const { data: clientData } = await supabase
       .from('agency_clients')
       .select('ai_model')
@@ -196,14 +197,22 @@ export async function provisionClientGateway(
       .single();
     const routerMaxTier = getRouterTierForModel(clientData?.ai_model);
 
-    // Override agentModel if the client has a saved ai_model in the DB
-    if (clientData?.ai_model && typeof clientData.ai_model === 'string') {
-      const savedModel = clientData.ai_model;
-      // Only override if not already matching (prevents unnecessary changes)
-      if (savedModel !== agentModel.primary) {
-        console.log(`[ovh-provisioner] Using saved ai_model: ${savedModel} (was: ${agentModel.primary})`);
-        agentModel = { primary: savedModel, fallbacks: agentModel.fallbacks };
-      }
+    // Priority: client ai_model > agency default ai_model > platform default
+    let resolvedModel = clientData?.ai_model as string | undefined;
+    if (!resolvedModel) {
+      // Fall back to agency-level default model
+      const { data: agencySettingsData } = await supabase
+        .from('agencies')
+        .select('settings')
+        .eq('id', agencyId)
+        .single();
+      const agencySettings = (agencySettingsData?.settings as Record<string, unknown>) || {};
+      resolvedModel = agencySettings.ai_model as string | undefined;
+    }
+
+    if (resolvedModel && typeof resolvedModel === 'string' && resolvedModel !== agentModel.primary) {
+      console.log(`[ovh-provisioner] Using resolved ai_model: ${resolvedModel} (was: ${agentModel.primary})`);
+      agentModel = { primary: resolvedModel, fallbacks: agentModel.fallbacks };
     }
 
     // Call OVH provisioner
@@ -218,8 +227,15 @@ export async function provisionClientGateway(
         agentModel,
         routerMaxTier,  // passed to provisioner → sets KYRA_MAX_TIER on container
         resources: {
-          memoryMb: resources.memoryMb || 1024,  // OpenClaw needs ~350MB min; 256 causes OOM crash
+          memoryMb: resources.memoryMb || 1536,  // OpenClaw needs ~1GB+; 1024 causes OOM under load
           cpuShares: resources.cpuShares || 256,
+        },
+        // Firecrawl Web Intelligence — routed through Kyra proxy for usage tracking + limits
+        // FIRECRAWL_API_KEY encodes the agencyId so firecrawl-cli sends it as Bearer token
+        // Proxy extracts it from "Authorization: Bearer kyra-agency-{agencyId}"
+        firecrawlEnv: {
+          FIRECRAWL_API_URL: `${(process.env.NEXT_PUBLIC_APP_URL || 'https://kyra.conversionsystem.com').replace(/\/+$/, '')}/api/fc`,
+          FIRECRAWL_API_KEY: `kyra-agency-${agencyId}`,
         },
       }),
     });
@@ -245,6 +261,9 @@ export async function provisionClientGateway(
       .eq('id', clientId);
 
     console.log(`[ovh-provisioner] Client ${clientId} provisioned: ${data.gatewayUrl}`);
+
+    // Fire-and-forget: mark onboarding step
+    void markOnboardingStep(agencyId, 'first_container_provisioned');
 
     return {
       success: true,
@@ -567,7 +586,7 @@ export async function chatViaGateway(
     messages.push({ role: 'user', content: message });
 
     const requestBody: Record<string, unknown> = {
-      model: options.model || 'openai/gpt-4o-mini',
+      model: options.model || 'openrouter/anthropic/claude-haiku-4.5',
       messages,
       stream: false,
       ...(options.sessionId ? { user: options.sessionId } : {}),
@@ -823,7 +842,13 @@ You help the agency owner manage their AI business:
 - You help with both operational tasks and strategic thinking
 
 ## Style
-Be direct, strategic, and action-oriented. The agency owner is busy building a business.`;
+Be direct, strategic, and action-oriented. The agency owner is busy building a business.
+
+## Tool Usage Rules
+- When you use web search, ALWAYS summarize the results in your own words. Never show raw JSON, URLs, or search result snippets.
+- For weather questions: search for the weather, then tell the user the temperature, conditions, and forecast in a natural sentence.
+- For any tool result: extract the relevant information and present it conversationally. Never show raw data, API responses, or technical output.
+- If a search returns no useful results, say so honestly and offer to help another way.`;
 
     const userMd = `# ${agencyName} Agency Owner\n\nThis is the agency owner's personal AI terminal.`;
 
@@ -842,6 +867,11 @@ Be direct, strategic, and action-oriented. The agency owner is busy building a b
           ? { primary: winningKey.model, fallbacks: ['openai/gpt-4o-mini'] }
           : { primary: 'openai/gpt-4o-mini', fallbacks: ['openai/gpt-4o'] },
         resources: { memoryMb: 1024, cpuShares: 256 },
+        // Firecrawl Web Intelligence — routed through Kyra proxy for usage tracking + limits
+        firecrawlEnv: {
+          FIRECRAWL_API_URL: `${(process.env.NEXT_PUBLIC_APP_URL || 'https://kyra.conversionsystem.com').replace(/\/+$/, '')}/api/fc`,
+          FIRECRAWL_API_KEY: `kyra-agency-${agencyId}`,
+        },
       }),
     });
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { requireAgencyMember, requireAgencyAdmin } from '@/lib/agency/middleware';
+import { markOnboardingStep } from '@/lib/onboarding/tracker';
 
 /**
  * GET /api/agency/settings
@@ -103,6 +104,9 @@ export async function PATCH(request: NextRequest) {
     console.error('Failed to update agency settings:', updateError);
     return NextResponse.json({ error: 'Failed to update settings' }, { status: 500 });
   }
+
+  // Fire-and-forget: mark onboarding step
+  void markOnboardingStep(agency.id, 'profile_completed');
 
   return NextResponse.json(updated);
 }

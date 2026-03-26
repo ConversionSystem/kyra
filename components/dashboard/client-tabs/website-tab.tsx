@@ -1290,9 +1290,14 @@ function SettingsView({ site, onRefreshSite, onDeleteSite }: {
       const res = await fetch(`/api/agency/sites/${site.id}`, { method: 'DELETE' });
       if (res.ok) {
         onDeleteSite();
+        // Force refresh — setSite(null) alone doesn't navigate or visibly update
+        window.location.reload();
+      } else {
+        const data = await res.json().catch(() => ({ error: 'Delete failed' }));
+        alert(`Failed to delete: ${data.error || res.statusText}`);
       }
-    } catch {
-      // silent
+    } catch (err) {
+      alert(`Delete failed: ${err instanceof Error ? err.message : 'Network error'}`);
     } finally {
       setDeleting(false);
     }

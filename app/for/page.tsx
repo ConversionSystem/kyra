@@ -227,12 +227,12 @@ export default async function ForPage({ searchParams }: Props) {
           </p>
           <div className="border-2 border-indigo-200 rounded-2xl overflow-hidden">
             <div className="bg-indigo-50 px-6 py-4 border-b border-indigo-100">
-              <p className="text-sm font-bold text-indigo-800">Revenue model — Pro Plan ($249/mo)</p>
+              <p className="text-sm font-bold text-indigo-800">Revenue model — Pro Plan ($299/mo)</p>
             </div>
             <div className="p-6 space-y-3">
               {[
                 { label: '10 clients × $997/mo', value: '$9,970/mo', positive: true },
-                { label: 'Kyra Pro plan cost', value: '- $249/mo', positive: false },
+                { label: 'Kyra Pro plan cost', value: '- $299/mo', positive: false },
                 { label: 'AI API costs (est.)', value: '- $20/mo', positive: false },
               ].map(r => (
                 <div key={r.label} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
@@ -242,7 +242,7 @@ export default async function ForPage({ searchParams }: Props) {
               ))}
               <div className="flex justify-between items-center pt-3 mt-2">
                 <span className="font-bold text-gray-900">Monthly margin</span>
-                <span className="text-2xl font-black text-green-600">$9,701/mo</span>
+                <span className="text-2xl font-black text-green-600">$9,651/mo</span>
               </div>
             </div>
           </div>
@@ -267,7 +267,7 @@ export default async function ForPage({ searchParams }: Props) {
                 ctx: '🏡 Real estate + auto agency',
               },
               {
-                quote: "White-labeled it as our own AI product. Now it's our highest-margin offering. Clients pay $997/mo, we pay $249 total for 15 of them.",
+                quote: "White-labeled it as our own AI product. Now it's our highest-margin offering. Clients pay $997/mo, we pay $299 total for 10 of them.",
                 ctx: '💰 Agency owner',
               },
               {

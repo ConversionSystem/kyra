@@ -7,47 +7,45 @@ interface ServicesData {
     icon?: string;
   }>;
   businessName?: string;
+  colors: { primary: string; secondary: string };
 }
 
 export function alternatingServices(data: ServicesData): string {
   const heading = data.heading || 'Our Services';
-
-  const placeholderSvg = `<svg xmlns="http://www.w3.org/2000/svg" class="w-16 h-16 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.41a2.25 2.25 0 013.182 0l2.909 2.91M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" /></svg>`;
+  const { primary, secondary } = data.colors;
 
   const rows = data.services.map((s, i) => {
-    const isEven = i % 2 === 0;
-    const icon = s.icon || '';
-    const desc = s.description
-      ? `<p class="text-base leading-relaxed" style="color: var(--color-text-muted);">${s.description}</p>`
-      : '';
+    const isOdd = i % 2 === 0; // 0-indexed, so first item is "odd row"
+    const bgColor = isOdd ? '#ffffff' : '#f9fafb';
+    const descText = s.description || `Learn more about our ${s.name} services.`;
+    const desc = `<p style="color: #6b7280; font-size: 1rem; line-height: 1.8; margin: 0 0 1.5rem 0;">${descText}</p>`;
 
-    const imagePlaceholder = `<div class="flex items-center justify-center rounded-xl aspect-video" style="background: var(--color-border); color: var(--color-text-muted);">
-          ${placeholderSvg}
+    const decorative = `<div class="rounded-2xl flex items-center justify-center" style="background: linear-gradient(135deg, ${primary}15, ${secondary}20); min-height: 240px; aspect-ratio: 4/3;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="${primary}" stroke-width="1" opacity="0.4"><path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.049.58.025 1.193-.14 1.743" /></svg>
         </div>`;
 
     const textBlock = `<div class="flex flex-col justify-center">
-          ${icon ? `<div class="text-4xl mb-3">${icon}</div>` : ''}
-          <h3 class="text-2xl font-bold mb-3"><a href="#${s.slug}" style="color: var(--color-text);">${s.name}</a></h3>
+          ${s.icon ? `<div style="font-size: 2rem; margin-bottom: 0.75rem;">${s.icon}</div>` : ''}
+          <h3 style="color: #1f2937; font-size: 1.5rem; font-weight: 700; margin: 0 0 0.75rem 0;">${s.name}</h3>
           ${desc}
+          <a href="/services/${s.slug}" style="color: ${primary}; font-weight: 600; font-size: 0.938rem; text-decoration: none;">Learn more &rarr;</a>
         </div>`;
 
-    const orderClasses = isEven
-      ? 'md:flex-row'
-      : 'md:flex-row-reverse';
+    const orderClasses = isOdd ? 'md:flex-row' : 'md:flex-row-reverse';
 
-    return `<div class="flex flex-col ${orderClasses} gap-8 md:gap-12 items-center">
-        <div class="w-full md:w-1/2">${imagePlaceholder}</div>
+    return `<div style="background: ${bgColor};" class="py-16 sm:py-20 px-4 sm:px-6">
+      <div class="max-w-6xl mx-auto flex flex-col ${orderClasses} gap-10 md:gap-16 items-center">
+        <div class="w-full md:w-1/2">${decorative}</div>
         <div class="w-full md:w-1/2">${textBlock}</div>
-      </div>`;
-  }).join('\n      ');
+      </div>
+    </div>`;
+  }).join('\n    ');
 
-  return `<section class="py-16 sm:py-20 px-4 sm:px-6" style="background: var(--color-surface);" aria-label="${heading}">
-  <div class="max-w-6xl mx-auto">
-    <h2 class="text-3xl sm:text-4xl font-bold text-center mb-16" style="color: var(--color-text);">${heading}</h2>
-    <div class="flex flex-col gap-16 sm:gap-20">
-      ${rows}
-    </div>
+  return `<section aria-label="${heading}">
+  <div class="py-16 sm:py-24 px-4 sm:px-6" style="background: #ffffff;">
+    <h2 class="text-center max-w-4xl mx-auto" style="color: #1f2937; font-size: 2.25rem; font-weight: 800; margin: 0;">${heading}</h2>
   </div>
+    ${rows}
 </section>`;
 }
 

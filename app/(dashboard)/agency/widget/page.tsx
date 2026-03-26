@@ -108,6 +108,17 @@ export default function WidgetBuilderPage() {
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [agencyPlan, setAgencyPlan] = useState<string>('free');
+
+  // Load agency plan
+  useEffect(() => {
+    fetch('/api/agency')
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+      .then(data => {
+        setAgencyPlan(data.agency?.plan || data.plan || 'free');
+      })
+      .catch((err) => { console.error('[widget] load agency plan:', err); });
+  }, []);
 
   // Load clients
   useEffect(() => {
@@ -292,6 +303,7 @@ export default function WidgetBuilderPage() {
           previewMode={previewMode}
           setPreviewMode={setPreviewMode}
           selectedClient={selectedClient}
+          agencyPlan={agencyPlan}
         />
       ) : (
         <WidgetAnalytics
@@ -325,6 +337,7 @@ function WidgetBuilder({
   previewMode,
   setPreviewMode,
   selectedClient,
+  agencyPlan,
 }: {
   config: WidgetConfig;
   setConfig: (fn: (prev: WidgetConfig) => WidgetConfig) => void;
@@ -340,6 +353,7 @@ function WidgetBuilder({
   previewMode: string;
   setPreviewMode: (m: 'desktop' | 'mobile') => void;
   selectedClient: string;
+  agencyPlan: string;
 }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -487,25 +501,44 @@ function WidgetBuilder({
             </div>
           )}
 
-          {/* Powered by */}
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">&quot;Powered by Kyra&quot; badge</label>
-              <p className="text-xs text-gray-500">Free marketing — recommended for free tier</p>
+          {/* Powered by badge — locked for free/lite */}
+          {(agencyPlan === 'free' || agencyPlan === 'starter') ? (
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  &quot;Powered by Kyra&quot; badge
+                  <span className="ml-2 text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">Always on</span>
+                </label>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Upgrade to Pro to remove the badge from your widgets.
+                </p>
+              </div>
+              {/* Locked toggle — visually on but not clickable */}
+              <div className="relative inline-flex h-6 w-11 items-center rounded-full bg-indigo-500 opacity-60 cursor-not-allowed">
+                <span className="inline-block h-4 w-4 transform rounded-full bg-white translate-x-6" />
+              </div>
             </div>
-            <button
-              onClick={() => setConfig(prev => ({ ...prev, poweredBy: !prev.poweredBy }))}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                config.poweredBy ? 'bg-indigo-500' : 'bg-gray-300'
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  config.poweredBy ? 'translate-x-6' : 'translate-x-1'
+          ) : (
+            /* Pro/Scale — show the real toggle */
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">&quot;Powered by Kyra&quot; badge</label>
+                <p className="text-xs text-gray-500">Remove the Kyra badge from your chat widgets.</p>
+              </div>
+              <button
+                onClick={() => setConfig(prev => ({ ...prev, poweredBy: !prev.poweredBy }))}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  config.poweredBy ? 'bg-indigo-500' : 'bg-gray-300'
                 }`}
-              />
-            </button>
-          </div>
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    config.poweredBy ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Save Button */}

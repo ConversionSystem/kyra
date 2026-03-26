@@ -10,7 +10,7 @@ const NAV_LINKS = [
   { href: '/use-cases', label: 'Use Cases' },
   { href: '/guides', label: 'Setup Guides' },
   { href: '/blog', label: 'Blog' },
-  { href: '/ghl', label: 'For GHL' },
+  { href: '/ghl-marketplace', label: 'GHL Marketplace' },
   { href: '/openclaw', label: 'OpenClaw →' },
   { href: '/help', label: 'Help' },
 ];

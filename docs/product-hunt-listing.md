@@ -30,9 +30,9 @@ Kyra lets agencies deploy, manage, and monetize AI workers for their clients —
 - **Premium AI workers** — like our Vet SEO Worker that autonomously manages local SEO across 7 platforms
 
 ### Pricing
-- **Lite** $99/mo — 3 clients, 500 credits
-- **Pro** $249/mo — 10 clients, 1,500 credits
-- **Scale** $499/mo — 30 clients, 2,500 credits
+- **Lite** $99/mo — 3 clients
+- **Pro** $299/mo — 10 clients
+- **Scale** $499/mo — 20 clients
 - 7-day free trial, no credit card required
 
 ## Topics

@@ -98,7 +98,7 @@ const SECTIONS = [
     faqs: [
       {
         q: 'What does each plan include?',
-        a: 'Lite ($99/mo): 3 AI workers + 500 credits/mo. Pro ($249/mo): 10 AI workers + 1,500 credits/mo + white-label. Scale ($499/mo): 30 AI workers + 2,500 credits/mo + everything. All paid plans include a 7-day free trial.',
+        a: 'Lite ($99/mo): 3 client AI workers. Pro ($299/mo): 10 AI workers + white-label. Scale ($499/mo): 20 AI workers + everything. All paid plans include a 7-day free trial.',
       },
       {
         q: 'What is BYOK (Bring Your Own Key)?',

@@ -23,13 +23,21 @@ export async function GET() {
   const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
   // All agencies
-  const { data: agencies } = await db
+  const { data: agencies, error: agErr } = await db
     .from('agencies')
-    .select('id, name, slug, plan, account_level, created_at, settings, gateway_status, gateway_url')
+    .select('id, name, slug, plan, created_at, settings, gateway_status')
     .order('created_at', { ascending: false });
 
+  if (agErr) {
+    console.error('[master/stats] agencies query error:', agErr.message);
+    return NextResponse.json({ error: agErr.message }, { status: 500 });
+  }
+
   const allAgencies = agencies ?? [];
-  const realAgencies = allAgencies.filter(a => a.account_level !== 'master');
+  const masterAgencyId = process.env.MASTER_AGENCY_ID ?? '';
+  const realAgencies = allAgencies.filter(a =>
+    a.id !== masterAgencyId && !(a.name ?? '').toLowerCase().includes('conversion system')
+  );
   const soloAgencies = realAgencies.filter(a => (a.settings as Record<string, unknown>)?.account_type === 'solo');
   const agencyAccounts = realAgencies.filter(a => (a.settings as Record<string, unknown>)?.account_type !== 'solo');
   const agencyIds = realAgencies.map(a => a.id);

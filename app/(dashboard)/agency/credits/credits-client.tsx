@@ -13,7 +13,7 @@ import {
   Coins, Zap, ShoppingBag, Gift, RotateCcw,
   CheckCircle2, AlertCircle, AlertTriangle, Crown,
   TrendingUp, BarChart3, ArrowUpRight, ArrowDownRight, Minus,
-  RefreshCw, Sparkles, Key,
+  RefreshCw, Sparkles, Key, Globe,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -255,6 +255,223 @@ function UsageTab() {
   );
 }
 
+// ─── Web Intelligence Tab ─────────────────────────────────────────────────────
+
+interface WebUsageData {
+  used: number;
+  limit: number;
+  plan: string;
+  resetDate: string;
+  lastScrapedAt: string | null;
+}
+
+function WebIntelligenceTab() {
+  const [data, setData] = useState<WebUsageData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch('/api/agency/web-intelligence/usage');
+      if (res.ok) setData(await res.json());
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { void load(); }, [load]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <Loader2 className="h-6 w-6 animate-spin text-indigo-300" />
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="text-center py-12 text-gray-400 text-sm">
+        Failed to load web intelligence data.
+      </div>
+    );
+  }
+
+  // Free/solo plans — show upgrade callout
+  if (data.limit === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-white p-8 text-center">
+          <Globe className="h-12 w-12 text-indigo-400 mx-auto mb-4" />
+          <h3 className="text-lg font-bold text-gray-900 mb-2">Web Intelligence</h3>
+          <p className="text-sm text-gray-600 mb-1 font-semibold">Powered by Firecrawl</p>
+          <p className="text-sm text-gray-500 mb-6 max-w-md mx-auto">
+            Give your AI workers eyes on the internet. Scrape pages, search the web, and autonomously research any topic — all from within your AI worker conversations.
+          </p>
+          <div className="inline-flex items-center gap-2 bg-indigo-600 text-white text-sm font-semibold px-5 py-2.5 rounded-lg">
+            Available on Lite plan ($99/mo) and above
+          </div>
+          <div className="mt-6 grid grid-cols-3 gap-4 text-left max-w-lg mx-auto">
+            {[
+              { label: 'Lite', scrapes: '500 scrapes/mo' },
+              { label: 'Pro', scrapes: '2,000 scrapes/mo' },
+              { label: 'Scale', scrapes: '5,000 scrapes/mo' },
+            ].map(p => (
+              <div key={p.label} className="rounded-xl border border-gray-200 p-3 text-center">
+                <p className="text-xs font-bold text-gray-700">{p.label}</p>
+                <p className="text-xs text-indigo-600 font-semibold mt-1">{p.scrapes}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const usedPct = Math.min(100, (data.used / data.limit) * 100);
+  const isHealthy = usedPct < 80;
+  const isLow = usedPct >= 80 && usedPct < 100;
+  const isEmpty = usedPct >= 100;
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-600 to-indigo-700 text-white p-5 sm:p-6">
+        <div className="flex items-start gap-4">
+          <div className="h-12 w-12 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+            <Globe className="h-6 w-6 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-indigo-200 uppercase tracking-wide mb-1">Web Intelligence</p>
+            <p className="text-sm text-indigo-200 mb-3">Powered by Firecrawl — your AI workers can read the internet</p>
+            <div className="flex items-baseline gap-2">
+              <p className="text-4xl font-black leading-none">{data.used.toLocaleString()}</p>
+              <span className="text-indigo-200 text-sm font-medium">/ {data.limit.toLocaleString()} scrapes used</span>
+            </div>
+            <div className="mt-2">
+              {isEmpty ? (
+                <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-100 bg-red-500/40 rounded-full px-2.5 py-0.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-300 animate-pulse" /> Limit reached
+                </span>
+              ) : isLow ? (
+                <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-100 bg-amber-500/30 rounded-full px-2.5 py-0.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse" /> Getting low
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-100 bg-emerald-500/30 rounded-full px-2.5 py-0.5">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-300" />
+                  </span>
+                  Healthy
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+        {/* Progress bar */}
+        <div className="mt-5">
+          <div className="flex justify-between text-xs text-indigo-200 mb-1.5">
+            <span>{data.used.toLocaleString()} used</span>
+            <span>{(data.limit - data.used).toLocaleString()} remaining</span>
+          </div>
+          <div className="h-2 w-full bg-white/20 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all ${isEmpty ? 'bg-red-400' : isLow ? 'bg-amber-400' : 'bg-white/70'}`}
+              style={{ width: `${Math.max(usedPct, 2)}%` }}
+            />
+          </div>
+          <p className="text-xs text-indigo-300 mt-2">
+            Resets {new Date(data.resetDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+            {data.lastScrapedAt && (
+              <span className="ml-3">· Last scrape: {timeAgo(data.lastScrapedAt)}</span>
+            )}
+          </p>
+        </div>
+      </div>
+
+      {/* Limit reached banner */}
+      {isEmpty && (
+        <div className="flex items-center gap-3 bg-red-50 border border-red-200 text-red-800 rounded-xl px-4 py-3 text-sm">
+          <AlertCircle className="h-5 w-5 text-red-500 shrink-0" />
+          <div>
+            <p className="font-semibold">Monthly web scrape limit reached.</p>
+            <p className="text-xs text-red-600 mt-0.5">Upgrade your plan for more scrapes, or wait until the 1st of next month.</p>
+          </div>
+        </div>
+      )}
+
+      {/* Credit cost reference */}
+      <Card className="border-gray-200">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <Zap className="h-4 w-4 text-indigo-500" />
+            Scrape Credit Costs
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="divide-y divide-gray-50">
+            {[
+              { action: 'Scrape (single page)', cost: 1, desc: 'firecrawl scrape <url>' },
+              { action: 'Crawl (per page discovered)', cost: 1, desc: 'firecrawl crawl <url>' },
+              { action: 'Map (URL discovery)', cost: 1, desc: 'firecrawl map <url>' },
+              { action: 'Search (web results + content)', cost: 2, desc: 'firecrawl search "<query>"' },
+              { action: 'Extract (structured data)', cost: 2, desc: 'firecrawl extract <url>' },
+              { action: 'Agent (autonomous research)', cost: 5, desc: 'firecrawl agent "<prompt>"' },
+            ].map(item => (
+              <div key={item.action} className="flex items-center justify-between py-2.5">
+                <div>
+                  <p className="text-sm text-gray-700 font-medium">{item.action}</p>
+                  <p className="text-xs text-gray-400 font-mono">{item.desc}</p>
+                </div>
+                <span className="text-sm font-semibold text-indigo-600 shrink-0 ml-4">
+                  {item.cost} credit{item.cost !== 1 ? 's' : ''}
+                </span>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* How it works */}
+      <div className="rounded-xl border border-gray-200 bg-gray-50 p-5">
+        <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-4">How Web Intelligence works</p>
+        <div className="grid sm:grid-cols-2 gap-4">
+          {[
+            {
+              icon: <Globe className="h-5 w-5 text-indigo-500" />,
+              title: 'Your AI can read any website',
+              body: 'Workers use firecrawl-cli to scrape pages, search the web, and autonomously research topics.',
+            },
+            {
+              icon: <Sparkles className="h-5 w-5 text-emerald-500" />,
+              title: 'Pre-configured and ready',
+              body: 'No API keys to manage. Auth is injected automatically into every container.',
+            },
+            {
+              icon: <Zap className="h-5 w-5 text-amber-500" />,
+              title: 'Counted per call, not per token',
+              body: 'Each scrape, search, or agent run costs a fixed number of credits — predictable and transparent.',
+            },
+            {
+              icon: <RefreshCw className="h-5 w-5 text-violet-500" />,
+              title: 'Resets monthly',
+              body: `Your ${data.limit.toLocaleString()} scrape allowance resets on the 1st of each month. Unused scrapes do not roll over.`,
+            },
+          ].map(item => (
+            <div key={item.title} className="flex gap-3">
+              <div className="shrink-0 mt-0.5">{item.icon}</div>
+              <div>
+                <p className="text-sm font-semibold text-gray-800">{item.title}</p>
+                <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{item.body}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function CreditsClient({
@@ -264,7 +481,7 @@ export function CreditsClient({
   recentTransactions: initialTransactions,
   checkoutStatus,
 }: Props) {
-  const [activeTab, setActiveTab] = useState<'topup' | 'usage'>('topup');
+  const [activeTab, setActiveTab] = useState<'topup' | 'usage' | 'web'>('topup');
   const [loadingPack, setLoadingPack]   = useState<string | null>(null);
   const [error, setError]               = useState<string | null>(null);
 
@@ -501,6 +718,14 @@ export function CreditsClient({
         >
           Usage Analytics
         </button>
+        <button
+          onClick={() => setActiveTab('web')}
+          className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${
+            activeTab === 'web' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          Web Intelligence
+        </button>
       </div>
 
       {/* ── Top Up Tab ── */}
@@ -634,6 +859,8 @@ export function CreditsClient({
       )}
 
       {activeTab === 'usage' && <UsageTab />}
+
+      {activeTab === 'web' && <WebIntelligenceTab />}
     </div>
   );
 }

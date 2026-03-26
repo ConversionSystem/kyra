@@ -207,11 +207,11 @@ Under 5 minutes from OAuth connection to AI worker live. Template picks the conf
 
 ## Pricing
 
-**Starter — $99/mo** — Up to 5 clients, core AI worker deployment, agency dashboard
+**Lite — $99/mo** — Up to 3 clients, core AI worker deployment, agency dashboard
 
-**Pro — $249/mo** — Up to 15 clients, BYOK, white-label portals, full analytics
+**Pro — $299/mo** — Up to 10 clients, BYOK, white-label portals, full analytics
 
-**Scale — $499/mo** — Unlimited clients, priority support, custom onboarding
+**Scale — $499/mo** — Up to 20 clients, priority support, custom onboarding
 
 See full pricing: **kyra.conversionsystem.com/pricing**
 

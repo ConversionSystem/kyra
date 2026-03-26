@@ -8,6 +8,24 @@
 
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { decrypt } from './crypto';
+
+/** Maps container_config keys to environment variable names for the container. */
+const INTEGRATION_ENV_MAP: Record<string, string> = {
+  microsoft_tenant_id: 'MS_TENANT_ID',
+  microsoft_client_id: 'MS_CLIENT_ID',
+  microsoft_client_secret: 'MS_CLIENT_SECRET',
+  google_service_account_email: 'GOOGLE_SERVICE_ACCOUNT_EMAIL',
+  google_service_account_key: 'GOOGLE_SERVICE_ACCOUNT_KEY',
+  fathom_api_key: 'FATHOM_API_KEY',
+  github_token: 'GH_TOKEN',
+  github_repos: 'GITHUB_REPOS',
+  email_address: 'EMAIL_ADDRESS',
+  email_imap_host: 'EMAIL_IMAP_HOST',
+  email_imap_port: 'EMAIL_IMAP_PORT',
+  email_password: 'EMAIL_PASSWORD',
+  email_smtp_host: 'EMAIL_SMTP_HOST',
+  email_smtp_port: 'EMAIL_SMTP_PORT',
+};
 import {
   syncSecretsToContainer,
   readWorkspaceFile,
@@ -149,5 +167,136 @@ async function wakeContainerIfConfigured(clientId: string): Promise<void> {
     }
   } catch {
     // Wake is best-effort — don't fail the sync
+  }
+}
+
+/**
+ * Sync integration credentials from container_config to the container's .secrets.env.
+ *
+ * Reads existing client_secrets, merges them with integration env vars extracted
+ * from container_config, and pushes the full set to the container.
+ * This ensures integration credentials and manual secrets coexist in .secrets.env.
+ */
+export async function syncIntegrationCredentials(
+  clientId: string,
+  containerConfig: Record<string, unknown>
+): Promise<void> {
+  try {
+    // 1. Extract integration env vars from container_config
+    const integrationSecrets: Array<{ key: string; value: string }> = [];
+    for (const [configKey, envName] of Object.entries(INTEGRATION_ENV_MAP)) {
+      const val = containerConfig[configKey];
+      if (typeof val === 'string' && val.trim()) {
+        integrationSecrets.push({ key: envName, value: val });
+      }
+    }
+
+    if (integrationSecrets.length === 0) return;
+
+    // 2. Read existing client_secrets so we don't overwrite them
+    const supabase = createServiceClientWithoutCookies();
+    const { data: rows } = await supabase
+      .from('client_secrets')
+      .select('key_name, encrypted_value')
+      .eq('client_id', clientId);
+
+    const allSecrets = [...integrationSecrets];
+    const integrationKeySet = new Set(integrationSecrets.map((s) => s.key));
+
+    for (const row of rows ?? []) {
+      // Don't duplicate keys that integration already provides
+      if (!integrationKeySet.has(row.key_name as string)) {
+        try {
+          allSecrets.push({ key: row.key_name as string, value: decrypt(row.encrypted_value as string) });
+        } catch {
+          // Skip secrets that fail to decrypt
+        }
+      }
+    }
+
+    // 3. Push merged set to container
+    const syncResult = await syncSecretsToContainer(clientId, allSecrets);
+    if (!syncResult.ok) {
+      console.error(`[integration-sync] Failed to sync to container for ${clientId}:`, syncResult.error);
+      return;
+    }
+
+    // 4. Update TOOLS.md with all key names
+    const allKeyNames = allSecrets.map((s) => s.key).sort();
+    await updateToolsMdSecrets(clientId, allKeyNames);
+
+    // 5. If email credentials present, generate himalaya config in workspace
+    await syncHimalayaConfigIfNeeded(clientId, containerConfig);
+
+    // 6. Wake the container
+    await wakeContainerIfConfigured(clientId);
+  } catch (err) {
+    console.error(
+      `[integration-sync] Unexpected error for ${clientId}:`,
+      err instanceof Error ? err.message : err
+    );
+  }
+}
+
+/**
+ * Generate and write himalaya config to the workspace when email credentials are present.
+ * Written to ~/workspace/himalaya-config.toml so the AI worker can use:
+ *   himalaya -c ~/workspace/himalaya-config.toml envelope list
+ */
+async function syncHimalayaConfigIfNeeded(
+  clientId: string,
+  containerConfig: Record<string, unknown>
+): Promise<void> {
+  const email = containerConfig.email_address as string | undefined;
+  const imapHost = containerConfig.email_imap_host as string | undefined;
+  const password = containerConfig.email_password as string | undefined;
+
+  if (!email || !imapHost || !password) return;
+
+  const imapPort = (containerConfig.email_imap_port as string) || '993';
+  const smtpHost = (containerConfig.email_smtp_host as string) || imapHost.replace('imap', 'smtp');
+  const smtpPort = (containerConfig.email_smtp_port as string) || '465';
+  const displayName = email.split('@')[0];
+
+  // himalaya v1.x only accepts "tls" and "start-tls" (not "ssl")
+  // port 993 (IMAP) → tls, port 465 (SMTP) → tls, port 587 (SMTP) → start-tls
+  const imapEncryption = 'tls'; // IMAP almost always uses TLS (port 993)
+  const smtpEncryption = smtpPort === '587' ? 'start-tls' : 'tls';
+
+  // himalaya v1.x config format (inline dotted keys — required by v1.0+)
+    // Detect Gmail — needs folder.aliases for [Gmail]/* folder names
+  const isGmail = imapHost.includes('gmail.com');
+  const folderAliases = isGmail ? `
+folder.aliases.sent = "[Gmail]/Sent Mail"
+folder.aliases.drafts = "[Gmail]/Drafts"
+folder.aliases.trash = "[Gmail]/Trash"
+folder.aliases.spam = "[Gmail]/Spam"
+` : '';
+
+  const config = `[accounts.default]
+email = "${email}"
+display-name = "${displayName}"
+default = true
+
+backend.type = "imap"
+backend.host = "${imapHost}"
+backend.port = ${imapPort}
+backend.encryption.type = "${imapEncryption}"
+backend.login = "${email}"
+backend.auth.type = "password"
+backend.auth.raw = "${password}"
+${folderAliases}
+message.send.backend.type = "smtp"
+message.send.backend.host = "${smtpHost}"
+message.send.backend.port = ${smtpPort}
+message.send.backend.encryption.type = "${smtpEncryption}"
+message.send.backend.login = "${email}"
+message.send.backend.auth.type = "password"
+message.send.backend.auth.raw = "${password}"
+`;
+
+  const result = await writeWorkspaceFile(clientId, 'himalaya-config.toml', config);
+  if (!result.ok) {
+    console.error(`[integration-sync] Failed to write himalaya config for ${clientId}:`, result.error);
   }
 }

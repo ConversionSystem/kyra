@@ -45,6 +45,7 @@ const INDUSTRIES = [
 const FEATURES = [
   { icon: '🌐', title: 'AI Website Builder', desc: '15-25 SEO-optimized pages generated in minutes. Service pages, city pages, blog, FAQ, contact — all written by AI, built for search engines.' },
   { icon: '🤖', title: 'AI Worker', desc: 'Chat widget on every site. Books appointments, captures leads, answers questions 24/7. Trained on the business automatically.' },
+  { icon: '🌍', title: 'Web Intelligence', desc: "AI workers that can browse the web live — competitor pricing, company research, lead enrichment, industry news. Real-time data, automatically, on every client.", badge: 'New' },
   { icon: '📊', title: 'CRM Built-In', desc: 'Every lead from the website, chat, and GHL flows into one inbox. Nothing falls through the cracks.' },
   { icon: '📈', title: 'Growth Engine', desc: 'AI suggests new pages to grow your search presence. One click to generate and publish. Sites that keep growing with AI-generated content.' },
   { icon: '🏢', title: 'One Dashboard', desc: 'Manage 20 clients from one login. See every site, every lead, every conversation. White-label everything.' },
@@ -144,9 +145,14 @@ export default function HomePage() {
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {FEATURES.map((f) => (
-              <div key={f.title} className="bg-white/5 border border-white/10 rounded-2xl p-5">
+              <div key={f.title} className={`bg-white/5 border rounded-2xl p-5 ${f.badge ? 'border-indigo-500/40 ring-1 ring-indigo-500/20' : 'border-white/10'}`}>
                 <div className="text-2xl mb-3">{f.icon}</div>
-                <h3 className="font-bold mb-1.5">{f.title}</h3>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <h3 className="font-bold">{f.title}</h3>
+                  {f.badge && (
+                    <span className="bg-indigo-500 text-white text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full">{f.badge}</span>
+                  )}
+                </div>
                 <p className="text-slate-400 text-sm leading-relaxed">{f.desc}</p>
               </div>
             ))}

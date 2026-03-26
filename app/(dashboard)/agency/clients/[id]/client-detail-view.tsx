@@ -30,10 +30,13 @@ import {
   Clock,
   User,
   Bot,
-  X,
-  Plus,
   Users,
   Globe,
+  TrendingUp,
+  Cpu,
+  ChevronUp,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import type { AgencyClient, AgencyMember } from '@/lib/agency/queries';
 import GHLConnection from './ghl-connection';
@@ -51,6 +54,8 @@ import TrainTab from '@/components/dashboard/client-tabs/train-tab';
 import InsightsTab from '@/components/dashboard/client-tabs/insights-tab';
 import WebsiteTab from '@/components/dashboard/client-tabs/website-tab';
 import AIWorkersTab from '@/components/dashboard/client-tabs/ai-workers-tab';
+import MarketingTab from '@/components/dashboard/client-tabs/marketing-tab';
+import ITOperationsTab from '@/components/dashboard/client-tabs/it-operations-tab';
 
 // ── Setup Nudge Banner ────────────────────────────────────────────────────────
 
@@ -117,7 +122,7 @@ interface ChatMessage {
   content: string;
 }
 
-type Tab = 'inbox' | 'chat' | 'train' | 'workers' | 'crm' | 'website' | 'settings' | 'insights' | 'share';
+type Tab = 'inbox' | 'chat' | 'train' | 'workers' | 'marketing' | 'operations' | 'crm' | 'website' | 'settings' | 'insights' | 'share';
 
 // Map legacy ?tab= values to new tab IDs
 const LEGACY_TAB_MAP: Record<string, Tab> = {
@@ -126,9 +131,10 @@ const LEGACY_TAB_MAP: Record<string, Tab> = {
   personality: 'train',
   templates: 'workers',
   'ai-workers': 'workers',
-  skills: 'train',
+  skills: 'workers',
+  'it-operations': 'operations',
   website: 'website',
-  knowledge: 'website',
+  knowledge: 'train',
   ghl: 'settings',
   channels: 'settings',
   secrets: 'settings',
@@ -145,23 +151,32 @@ const LEGACY_TAB_MAP: Record<string, Tab> = {
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'inbox', label: 'Inbox', icon: Inbox },
   { id: 'chat', label: 'Chat', icon: MessageSquare },
-  { id: 'train', label: 'Train', icon: Brain },
-  { id: 'workers', label: 'AI Workers', icon: Bot },
+  { id: 'marketing', label: 'Marketing', icon: TrendingUp },
+  { id: 'operations', label: 'Operations', icon: Cpu },
   { id: 'crm', label: 'CRM', icon: Users },
   { id: 'website', label: 'Website', icon: Globe },
-  { id: 'settings', label: 'Settings', icon: Settings },
-  { id: 'insights', label: 'Insights', icon: BarChart3 },
-  { id: 'share', label: 'Share', icon: Share2 },
 ];
 
 // Grouped sidebar navigation — desktop only
 const TAB_GROUPS: { label?: string; tabs: typeof TABS }[] = [
   {
-    tabs: TABS.filter(t => ['inbox', 'chat', 'train', 'workers', 'crm', 'website'].includes(t.id)),
+    // Daily use — no label
+    tabs: TABS,
   },
   {
     label: 'Configure',
-    tabs: TABS.filter(t => ['settings', 'insights', 'share'].includes(t.id)),
+    tabs: [
+      { id: 'train' as Tab, label: 'Train', icon: Brain },
+      { id: 'workers' as Tab, label: 'AI Workers', icon: Bot },
+      { id: 'settings' as Tab, label: 'Settings', icon: Settings },
+    ],
+  },
+  {
+    label: 'Analyze',
+    tabs: [
+      { id: 'insights' as Tab, label: 'Insights', icon: BarChart3 },
+      { id: 'share' as Tab, label: 'Share', icon: Share2 },
+    ],
   },
 ];
 
@@ -235,13 +250,31 @@ function ReprovisionButton({ clientId }: { clientId: string }) {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
+const MASTER_AGENCY_ID = '1511e077-77ef-4c47-81fd-06a3bc9f1dbb';
+
+// Agencies with access to advanced tabs (Marketing + IT Operations Center)
+// Add agency IDs here to unlock these tabs for specific accounts
+const ADVANCED_TABS_AGENCIES = new Set([
+  '1511e077-77ef-4c47-81fd-06a3bc9f1dbb', // Conversion System (Kyra master)
+  '18e6e562-ec29-4652-a38b-58f6be2e533f', // TrustedNetworx
+  '13cc47bc-88bb-4ef8-84e8-f2c0cd97fd3e', // Priv7 (Purple Lotus — Paul Rivera)
+]);
+
 export function ClientDetailView({ client: initialClient, role, plan, accountType }: ClientDetailViewProps) {
   const isFreeOrSolo = !plan || plan === 'free' || plan === 'solo_pro' || (plan === 'free' && accountType === 'solo');
+  const hasAdvancedTabs = ADVANCED_TABS_AGENCIES.has(initialClient.agency_id ?? '');
   const router = useRouter();
   const searchParams = useSearchParams();
   const rawTab = searchParams.get('tab') || 'inbox';
   const resolvedTab = (LEGACY_TAB_MAP[rawTab] ?? rawTab) as Tab;
-  const initialTab = TABS.some(t => t.id === resolvedTab) ? resolvedTab : 'inbox';
+  // Marketing & Operations tabs visible to master agency + explicitly allowed agencies
+  const HIDDEN_TABS = hasAdvancedTabs ? [] : ['marketing', 'operations'];
+  const filteredGroups = TAB_GROUPS.map(g => ({
+    ...g,
+    tabs: g.tabs.filter(t => !HIDDEN_TABS.includes(t.id)),
+  }));
+  const ALL_TAB_IDS = filteredGroups.flatMap(g => g.tabs.map(t => t.id));
+  const initialTab = ALL_TAB_IDS.includes(resolvedTab) ? resolvedTab : 'inbox';
   const [activeTab, setActiveTab] = useState<Tab>(initialTab);
 
   // Update URL when tab changes (without full reload)
@@ -284,7 +317,7 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
 
         {/* Left sidebar nav — desktop only */}
         <aside className="hidden md:flex flex-col w-48 shrink-0 bg-white border-r border-gray-100 pt-2 pb-6 px-2 sticky top-0 self-start max-h-screen overflow-y-auto">
-          {TAB_GROUPS.map((group, gi) => (
+          {filteredGroups.map((group, gi) => (
             <div key={group.label ?? gi} className={gi > 0 ? 'mt-5' : ''}>
               {group.label && (
                 <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest px-3 mb-1">
@@ -317,7 +350,7 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
         <div className="md:hidden w-full">
           <div className="border-b border-gray-200 overflow-x-auto scrollbar-hide bg-white">
             <nav className="flex gap-0.5 px-4 -mb-px">
-              {TABS.map((tab) => {
+              {TAB_GROUPS.flatMap(g => g.tabs).map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
                 return (
@@ -362,6 +395,12 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
           {activeTab === 'workers' && (
             <AIWorkersTab client={initialClient} agencyId={initialClient.agency_id} />
           )}
+          {activeTab === 'marketing' && (
+            <MarketingTab client={initialClient} />
+          )}
+          {activeTab === 'operations' && (
+            <ITOperationsTab client={initialClient} />
+          )}
           {activeTab === 'crm' && (
             <CrmTab client={initialClient} clientId={initialClient.id} />
           )}
@@ -388,13 +427,9 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
 // ── Terminal Tab ──────────────────────────────────────────────────────────────
 
 function TerminalTab({ client }: { client: AgencyClient }) {
-  const gatewayUrl = (client as any).gateway_url as string | undefined;
-  const gatewayToken = (client as any).gateway_token as string | undefined;
-  const gatewayUrlWithToken = gatewayUrl && gatewayToken
-    ? `${gatewayUrl}?token=${gatewayToken}`
-    : gatewayUrl || null;
+  const hasGateway = !!(client.gateway_url && client.gateway_status === 'running');
 
-  if (!gatewayUrlWithToken) {
+  if (!hasGateway) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <Terminal className="h-12 w-12 text-gray-300 mb-4" />
@@ -405,6 +440,8 @@ function TerminalTab({ client }: { client: AgencyClient }) {
       </div>
     );
   }
+
+  const terminalPageUrl = `/terminal/${client.id}`;
 
   return (
     <div className="space-y-6">
@@ -421,7 +458,7 @@ function TerminalTab({ client }: { client: AgencyClient }) {
           </div>
         </div>
         <a
-          href={gatewayUrlWithToken}
+          href={terminalPageUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 bg-indigo-500 hover:bg-indigo-400 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
@@ -450,7 +487,7 @@ function SettingsTab({
   const [industry, setIndustry] = useState(client.industry);
   const [status, setStatus] = useState(client.status);
   const [aiModel, setAiModel] = useState<string>(
-    (client as AgencyClient & { ai_model?: string }).ai_model ?? 'gpt-4o-mini'
+    (client as AgencyClient & { ai_model?: string }).ai_model ?? 'openrouter/anthropic/claude-haiku-4.5'
   );
   const [isSavingModel, setIsSavingModel] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -805,15 +842,389 @@ function GHLTab({ client, onRefresh }: { client: AgencyClient; onRefresh: () => 
   );
 }
 
+// ── Integrations Tab (all integrations in one place) ─────────────────────────
+
+interface IntegrationField {
+  key: string;
+  label: string;
+  placeholder: string;
+  help: string;
+  sensitive?: boolean;
+  multiline?: boolean;
+}
+
+interface IntegrationDef {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  connected: boolean;
+  fields: IntegrationField[];
+  setupSteps: string[];
+  alwaysConnected?: boolean;
+  note?: string;
+  workerRelevance?: Record<string, 'required' | 'optional'>;
+}
+
+function IntegrationsTab({ client, onRefresh }: { client: AgencyClient; onRefresh: () => void }) {
+  const cfg = (client.container_config || {}) as Record<string, unknown>;
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [saving, setSaving] = useState<string | null>(null);
+  const [saved, setSaved] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [showSensitive, setShowSensitive] = useState<Record<string, boolean>>({});
+
+  const integrations: IntegrationDef[] = [
+    {
+      id: 'ghl',
+      name: 'GoHighLevel',
+      icon: '🔗',
+      description: 'CRM, SMS, email, calendar, pipeline',
+      connected: !!(client.ghl_location_id),
+      fields: [],
+      setupSteps: [],
+    },
+    {
+      id: 'email',
+      name: 'Email (IMAP/SMTP)',
+      icon: '📧',
+      description: 'Connect any email account — Outlook, Gmail, Yahoo, or custom IMAP',
+      connected: !!(cfg.email_imap_host),
+      fields: [
+        { key: 'email_imap_host', label: 'IMAP Server', placeholder: 'imap.gmail.com or outlook.office365.com', help: 'Gmail: imap.gmail.com | Outlook: outlook.office365.com | Yahoo: imap.mail.yahoo.com' },
+        { key: 'email_imap_port', label: 'IMAP Port', placeholder: '993', help: 'Usually 993 for SSL' },
+        { key: 'email_address', label: 'Email Address', placeholder: 'you@example.com', help: 'The email address to read and send from' },
+        { key: 'email_password', label: 'App Password', placeholder: 'Your app-specific password', help: 'Gmail: myaccount.google.com → Security → App Passwords | Outlook: account.microsoft.com → Security → App Passwords', sensitive: true },
+        { key: 'email_smtp_host', label: 'SMTP Server', placeholder: 'smtp.gmail.com or smtp.office365.com', help: 'Gmail: smtp.gmail.com | Outlook: smtp.office365.com' },
+        { key: 'email_smtp_port', label: 'SMTP Port', placeholder: '465', help: 'Usually 465 for SSL or 587 for TLS' },
+      ],
+      setupSteps: [
+        'For Gmail: Go to myaccount.google.com → Security → 2-Step Verification → App Passwords → Generate',
+        'For Outlook: Go to account.microsoft.com → Security → Advanced Security → App Passwords',
+        'Enter your IMAP and SMTP server details below',
+        'The AI worker will use these to read and send emails',
+      ],
+      workerRelevance: { 'it-operations-specialist': 'required' },
+    },
+    {
+      id: 'microsoft365',
+      name: 'Microsoft 365',
+      icon: '📧',
+      description: 'Outlook email, OneDrive files, Teams messaging',
+      connected: !!(cfg.microsoft_tenant_id && cfg.microsoft_client_id && cfg.microsoft_client_secret),
+      fields: [
+        { key: 'microsoft_tenant_id', label: 'Tenant ID', placeholder: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx', help: 'Azure Portal → Azure Active Directory → Overview → Tenant ID' },
+        { key: 'microsoft_client_id', label: 'Application (Client) ID', placeholder: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx', help: 'Azure Portal → App Registrations → Your App → Client ID' },
+        { key: 'microsoft_client_secret', label: 'Client Secret', placeholder: 'Your app client secret value', help: 'Azure Portal → App Registrations → Certificates & Secrets', sensitive: true },
+      ],
+      setupSteps: [
+        'Go to Azure Portal (portal.azure.com)',
+        'Navigate to Azure Active Directory → App Registrations → New Registration',
+        'Name it "Kyra AI Integration" — set Redirect URI to your callback URL',
+        'Grant permissions: Mail.ReadWrite, Files.ReadWrite.All, Chat.ReadWrite, Calendars.ReadWrite',
+        'Create a Client Secret and copy the Value (not the ID)',
+        'Copy Tenant ID, Client ID, and Client Secret below',
+      ],
+      workerRelevance: { 'it-operations-specialist': 'required' },
+    },
+    {
+      id: 'google',
+      name: 'Google Workspace',
+      icon: '✉️',
+      description: 'Gmail, Google Drive, Google Calendar',
+      connected: !!(cfg.google_service_account_email),
+      fields: [
+        { key: 'google_service_account_email', label: 'Service Account Email', placeholder: 'your-bot@project.iam.gserviceaccount.com', help: 'Google Cloud Console → IAM & Admin → Service Accounts' },
+        { key: 'google_service_account_key', label: 'Service Account JSON Key', placeholder: 'Paste the entire JSON key file content', help: 'Create a key for the service account → download JSON', sensitive: true, multiline: true },
+      ],
+      setupSteps: [
+        'Go to Google Cloud Console (console.cloud.google.com)',
+        'Create a new project or select existing',
+        'Enable APIs: Gmail API, Google Drive API, Google Calendar API',
+        'Create a Service Account under IAM & Admin',
+        'Download the JSON key file',
+        'Share your Google Drive folders and Calendar with the service account email',
+        'Paste the service account email and JSON key below',
+      ],
+      workerRelevance: { 'it-operations-specialist': 'required' },
+    },
+    {
+      id: 'fathom',
+      name: 'Fathom',
+      icon: '🎙️',
+      description: 'Meeting transcripts, summaries, action items',
+      connected: !!(cfg.fathom_api_key),
+      fields: [
+        { key: 'fathom_api_key', label: 'API Key', placeholder: 'fathom_xxxxxxxx', help: 'Fathom → Settings → API → Generate Key', sensitive: true },
+      ],
+      setupSteps: [
+        'Log in to Fathom (fathom.video)',
+        'Go to Settings → API',
+        'Generate a new API key',
+        'Paste it below',
+      ],
+      workerRelevance: { 'it-operations-specialist': 'optional' },
+    },
+    {
+      id: 'github',
+      name: 'GitHub',
+      icon: '🔧',
+      description: 'Repositories, pull requests, deployments',
+      connected: !!(cfg.github_token),
+      fields: [
+        { key: 'github_token', label: 'Personal Access Token', placeholder: 'ghp_xxxxxxxxxxxx', help: 'GitHub → Settings → Developer Settings → Personal Access Tokens', sensitive: true },
+        { key: 'github_repos', label: 'Repositories to Monitor', placeholder: 'org/repo1\norg/repo2', help: 'One repository per line (owner/repo format)', multiline: true },
+      ],
+      setupSteps: [
+        'Go to GitHub → Settings → Developer Settings → Personal Access Tokens',
+        'Generate a classic token with scopes: repo, workflow, read:org',
+        'Paste the token and list your repositories below',
+      ],
+      workerRelevance: { 'it-operations-specialist': 'required' },
+    },
+    {
+      id: 'wordpress',
+      name: 'WordPress',
+      icon: '📝',
+      description: 'Blog publishing, content management',
+      connected: !!(cfg.wordpress_url && cfg.wordpress_username),
+      fields: [
+        { key: 'wordpress_url', label: 'Site URL', placeholder: 'https://yourblog.com', help: 'Your WordPress site URL' },
+        { key: 'wordpress_username', label: 'Username', placeholder: 'admin', help: 'WordPress admin username' },
+        { key: 'wordpress_app_password', label: 'Application Password', placeholder: 'xxxx xxxx xxxx xxxx', help: 'WordPress → Users → Profile → Application Passwords', sensitive: true },
+      ],
+      setupSteps: [
+        'Go to WordPress Admin → Users → Profile',
+        'Scroll to Application Passwords section',
+        'Create a new application password for "Kyra AI"',
+        'Paste the URL, username, and password below',
+      ],
+      workerRelevance: { 'seo-writer': 'required' },
+    },
+    {
+      id: 'dataforseo',
+      name: 'DataForSEO',
+      icon: '📊',
+      description: 'SEO keyword research, SERP analysis, rank tracking',
+      connected: !!(cfg.dataforseo_login && cfg.dataforseo_password),
+      fields: [
+        { key: 'dataforseo_login', label: 'API Login', placeholder: 'your@email.com', help: 'DataForSEO dashboard → API Access' },
+        { key: 'dataforseo_password', label: 'API Password', placeholder: 'Your API password', help: 'DataForSEO dashboard → API Access', sensitive: true },
+      ],
+      setupSteps: [
+        'Sign up at dataforseo.com',
+        'Go to your dashboard → API Access',
+        'Copy your login and password below',
+      ],
+      workerRelevance: { 'seo-writer': 'required' },
+    },
+    {
+      id: 'heygen',
+      name: 'HeyGen',
+      icon: '🎬',
+      description: 'AI video generation, avatars',
+      connected: !!(cfg.heygen_api_key),
+      fields: [
+        { key: 'heygen_api_key', label: 'API Key', placeholder: 'your-heygen-api-key', help: 'HeyGen → Settings → API', sensitive: true },
+      ],
+      setupSteps: [
+        'Log in to HeyGen',
+        'Go to Settings → API',
+        'Generate an API key and paste it below',
+      ],
+      workerRelevance: { 'seo-writer': 'optional' },
+    },
+  ];
+
+  // Sort integrations: relevant to active worker first, then others
+  const activeWorkerId = cfg.active_worker_id as string | undefined;
+  const sortedIntegrations = activeWorkerId
+    ? [...integrations].sort((a, b) => {
+        const aRelevance = a.workerRelevance?.[activeWorkerId];
+        const bRelevance = b.workerRelevance?.[activeWorkerId];
+        // GHL always stays first
+        if (a.id === 'ghl') return -1;
+        if (b.id === 'ghl') return 1;
+        // Required before optional before irrelevant
+        const rank = (r: string | undefined) => r === 'required' ? 0 : r === 'optional' ? 1 : 2;
+        return rank(aRelevance) - rank(bRelevance);
+      })
+    : integrations;
+
+  const handleSave = async (integrationId: string, fields: IntegrationField[]) => {
+    setSaving(integrationId);
+    setError(null);
+    try {
+      const configUpdate: Record<string, string> = {};
+      fields.forEach(f => {
+        if (values[f.key]?.trim()) configUpdate[f.key] = values[f.key].trim();
+      });
+      const res = await fetch(`/api/agency/clients/${client.id}/container-config`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(configUpdate),
+      });
+      if (!res.ok) throw new Error('Failed to save');
+      setSaved(integrationId);
+      setTimeout(() => setSaved(null), 3000);
+    } catch {
+      setError('Failed to save configuration. Try again.');
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-gray-500">Connect your tools and services. All credentials are encrypted.</p>
+
+      <div className="space-y-3">
+        {sortedIntegrations.map(integration => {
+          const isExpanded = expandedId === integration.id;
+          return (
+            <div
+              key={integration.id}
+              className={`rounded-xl border transition-all ${
+                isExpanded ? 'border-indigo-300 shadow-md' : 'border-gray-200 hover:border-indigo-200'
+              }`}
+            >
+              <button
+                onClick={() => setExpandedId(isExpanded ? null : integration.id)}
+                className="w-full flex items-center justify-between p-4 text-left"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-xl">{integration.icon}</span>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">{integration.name}</p>
+                    <p className="text-xs text-gray-500">{integration.description}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {activeWorkerId && integration.workerRelevance?.[activeWorkerId] && (
+                    <span className={`inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded-full ${
+                      integration.workerRelevance[activeWorkerId] === 'required'
+                        ? 'bg-amber-100 text-amber-700'
+                        : 'bg-blue-50 text-blue-600'
+                    }`}>
+                      {integration.workerRelevance[activeWorkerId] === 'required' ? 'Required' : 'Optional'}
+                    </span>
+                  )}
+                  {integration.connected || integration.alwaysConnected ? (
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-700">
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                      Connected
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-500">
+                      <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
+                      Not Connected
+                    </span>
+                  )}
+                  {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                </div>
+              </button>
+
+              {isExpanded && (
+                <div className="px-4 pb-4 border-t border-gray-100">
+                  {/* GHL uses its own dedicated component */}
+                  {integration.id === 'ghl' ? (
+                    <div className="pt-4">
+                      <GHLTab client={client} onRefresh={onRefresh} />
+                    </div>
+                  ) : (
+                    <>
+                      {integration.setupSteps.length > 0 && (
+                        <div className="mt-3 rounded-lg bg-indigo-50 p-3">
+                          <p className="text-xs font-semibold text-indigo-900 mb-2">Step-by-step guide:</p>
+                          <ol className="space-y-1">
+                            {integration.setupSteps.map((step, i) => (
+                              <li key={i} className="text-xs text-indigo-800 flex gap-2">
+                                <span className="font-semibold text-indigo-600 shrink-0">{i + 1}.</span>
+                                {step}
+                              </li>
+                            ))}
+                          </ol>
+                        </div>
+                      )}
+
+                      {integration.fields.length > 0 && (
+                        <div className="mt-4 space-y-3">
+                          {integration.fields.map(field => (
+                            <div key={field.key}>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">{field.label}</label>
+                              <p className="text-[10px] text-gray-400 mb-1">{field.help}</p>
+                              {field.multiline ? (
+                                <textarea
+                                  value={values[field.key] || (cfg[field.key] as string) || ''}
+                                  onChange={e => setValues(v => ({ ...v, [field.key]: e.target.value }))}
+                                  placeholder={field.placeholder}
+                                  rows={4}
+                                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono"
+                                />
+                              ) : (
+                                <div className="relative">
+                                  <input
+                                    type={field.sensitive && !showSensitive[field.key] ? 'password' : 'text'}
+                                    value={values[field.key] || (cfg[field.key] as string) || ''}
+                                    onChange={e => setValues(v => ({ ...v, [field.key]: e.target.value }))}
+                                    placeholder={field.placeholder}
+                                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono pr-10"
+                                  />
+                                  {field.sensitive && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setShowSensitive(s => ({ ...s, [field.key]: !s[field.key] }))}
+                                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                    >
+                                      {showSensitive[field.key] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+
+                          <div className="flex items-center gap-3 pt-2">
+                            <button
+                              onClick={() => handleSave(integration.id, integration.fields)}
+                              disabled={saving === integration.id}
+                              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                            >
+                              {saving === integration.id ? 'Saving…' : 'Save Configuration'}
+                            </button>
+                            {saved === integration.id && (
+                              <span className="text-xs text-green-600 font-medium flex items-center gap-1">
+                                <CheckCircle2 className="w-3.5 h-3.5" /> Saved
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {error && saving === null && (
+                        <p className="mt-2 text-xs text-red-600">{error}</p>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ── Settings Tab Merged (General + Channels + Integrations + Security + Voice + SMS + Workflows) ──
 
-type SettingsSubTab = 'general' | 'channels' | 'integrations' | 'security' | 'voice' | 'sms' | 'workflows';
+type SettingsSubTab = 'general' | 'channels' | 'integrations' | 'voice' | 'sms' | 'workflows';
 
 const SETTINGS_SUB_TABS: { id: SettingsSubTab; label: string }[] = [
   { id: 'general', label: 'General' },
   { id: 'channels', label: 'Channels' },
   { id: 'integrations', label: 'Integrations' },
-  { id: 'security', label: 'Security' },
   { id: 'voice', label: 'Voice' },
   { id: 'sms', label: 'SMS' },
   { id: 'workflows', label: 'Workflows' },
@@ -865,10 +1276,16 @@ function SettingsTabMerged({
         <ChannelsLiveTab clientId={client.id} client={client} />
       )}
       {activeSubTab === 'integrations' && (
-        <GHLTab client={client} onRefresh={onRefresh} />
-      )}
-      {activeSubTab === 'security' && (
-        <SecretsTab clientId={client.id} />
+        <div className="space-y-8">
+          <IntegrationsTab client={client} onRefresh={onRefresh} />
+
+          {/* Secrets Vault */}
+          <div className="border-t border-gray-200 pt-6">
+            <h3 className="text-sm font-semibold text-gray-900 mb-1">Custom Secrets</h3>
+            <p className="text-xs text-gray-500 mb-4">Store additional API keys or credentials not covered by the integrations above.</p>
+            <SecretsTab clientId={client.id} />
+          </div>
+        </div>
       )}
       {activeSubTab === 'voice' && (
         <VoiceClient

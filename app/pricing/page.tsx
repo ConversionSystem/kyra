@@ -14,7 +14,7 @@ const PLANS = [
     annualSave: 240,
     period: '/month',
     desc: 'Launch your AI agency with 3 clients — each gets a full website + AI worker + CRM.',
-    cta: 'Try Free — Build Your First Site',
+    cta: 'Get Started — Build Your First Site',
     href: '/website-builder?plan=starter',
     featured: false,
     badge: 'Start here',
@@ -24,6 +24,7 @@ const PLANS = [
       'AI Website Builder — 15-25 SEO-optimized pages per client',
       'Lead capture forms + CRM sync',
       '500 platform credits / month',
+      '🌍 500 web scrapes/mo — AI workers can read the internet',
       '21 industry templates',
       'Telegram, SMS, web chat',
       'CRM integration',
@@ -39,17 +40,18 @@ const PLANS = [
     annualSave: 720,
     period: '/month',
     desc: 'Full AI workforce — up to 10 clients, each with website + AI worker + CRM.',
-    cta: 'Try Free — Build Your First Site',
+    cta: 'Get Started — Build Your First Site',
     href: '/website-builder?plan=pro',
     featured: true,
     badge: 'Best for growing agencies',
-    revenueCallout: 'Charge $800–1,200/mo per client = $8,000–12,000/mo revenue on $249 cost',
+    revenueCallout: 'Charge $800–1,200/mo per client = $8,000–12,000/mo revenue on $299 cost',
     features: [
       '10 client AI workers',
       'AI Website Builder — 15-25 SEO-optimized pages per client',
       'Lead capture forms + CRM sync',
       'Growth Engine — AI-powered SEO page generation',
       '1,500 platform credits / month',
+      '🌍 2,000 web scrapes/mo — full web intelligence',
       'Everything in Lite',
       'White-label branding',
       'Custom AI personalities',
@@ -65,7 +67,7 @@ const PLANS = [
     annualSave: 1200,
     period: '/month',
     desc: 'Built for high-volume agencies — 20 clients, each with the full Business in a Box.',
-    cta: 'Try Free — Build Your First Site',
+    cta: 'Get Started — Build Your First Site',
     href: '/website-builder?plan=scale',
     featured: false,
     badge: 'For high-volume agencies',
@@ -76,6 +78,7 @@ const PLANS = [
       'Lead capture forms + CRM sync',
       'Growth Engine — AI-powered SEO page generation',
       '2,500 platform credits / month',
+      '🌍 5,000 web scrapes/mo — full automation stack',
       'Everything in Pro',
       'AI Sales Pipeline (unlimited + priority)',
       'Dedicated infrastructure',
@@ -272,7 +275,7 @@ export default function PricingPage() {
         {/* Credits callout */}
         <div className="mt-6 rounded-2xl border border-indigo-500/30 bg-indigo-950/40 p-5 text-center">
           <p className="text-indigo-200 text-sm font-semibold">
-            Platform credits are included — no API keys needed to start. Lite: 500 · Pro: 1,500 · Scale: 2,500. BYOK available on Lite+.
+            Platform credits are included — no API keys needed to start. BYOK available on Lite+.
           </p>
         </div>
 
@@ -294,9 +297,9 @@ export default function PricingPage() {
 
         {/* ROI callout */}
         <div className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-6 sm:p-8 text-center">
-          <p className="text-slate-400 text-sm mb-1">At Pro plan {annual ? '($199/mo annual)' : '($249/mo)'} with just 5 clients billed at $1,000/mo each:</p>
+          <p className="text-slate-400 text-sm mb-1">At Pro plan {annual ? '($239/mo annual)' : '($299/mo)'} with just 5 clients billed at $1,000/mo each:</p>
           <p className="text-2xl font-black text-green-400">
-            $5,000/mo revenue · ${annual ? '4,801' : '4,751'}/mo margin
+            $5,000/mo revenue · ${annual ? '4,761' : '4,701'}/mo margin
           </p>
           <p className="text-slate-500 text-xs mt-1">Each client gets: 15-25 page SEO-optimized website + AI worker + CRM + lead capture</p>
         </div>

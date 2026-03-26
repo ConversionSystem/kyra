@@ -26,7 +26,7 @@ const features = [
   {
     icon: Layers,
     title: 'Multi-Client Dashboard',
-    desc: 'Manage 30 clients\' websites, AI workers, and leads from one dashboard. Deploy a new client in under 10 minutes.',
+    desc: 'Manage 20 clients\' websites, AI workers, and leads from one dashboard. Deploy a new client in under 10 minutes.',
   },
   {
     icon: MessageSquare,

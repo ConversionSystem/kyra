@@ -72,7 +72,7 @@ export const POSTS: BlogPost[] = [
 
 <p>Once you have your first AI worker live and your client sees results, scaling is straightforward. Every new client follows the same 5-step process. The AI personalities are different, the channels might vary, but the infrastructure is the same.</p>
 
-<p>At 10 clients charging $800/month each: $8,000/month in recurring revenue. At 20 clients: $16,000/month. Kyra Pro handles 15 clients at $249/month — your gross margin is 97% before API costs.</p>
+<p>At 10 clients charging $800/month each: $8,000/month in recurring revenue. At 20 clients: $16,000/month. Kyra Pro handles 10 clients at $299/month — your gross margin is 96% before API costs.</p>
 
 <h2>The Competitive Moat</h2>
 
@@ -177,7 +177,7 @@ export const POSTS: BlogPost[] = [
 <p>Let's run the numbers on a basic agency AI operation:</p>
 
 <ul>
-  <li><strong>Platform cost:</strong> $249/month (Kyra Pro, up to 15 AI workers)</li>
+  <li><strong>Platform cost:</strong> $299/month (Kyra Pro, up to 10 AI workers)</li>
   <li><strong>API cost:</strong> ~$1–3/client/month at moderate conversation volume</li>
   <li><strong>Your price to clients:</strong> $800–$1,500/month per AI worker</li>
   <li><strong>10 clients at $1,000/month:</strong> $10,000 MRR</li>
@@ -185,7 +185,7 @@ export const POSTS: BlogPost[] = [
   <li><strong>Gross margin:</strong> ~97%</li>
 </ul>
 
-<p>At 15 clients — Kyra Pro capacity — you're at $15,000/month with essentially no marginal cost increase.</p>
+<p>At 10 clients — Kyra Pro capacity — you're at $10,000/month with essentially no marginal cost increase.</p>
 
 <h2>The 90-Day Playbook</h2>
 
@@ -406,7 +406,7 @@ export const POSTS: BlogPost[] = [
 <tr><td>AI Enterprise</td><td>$2,000/mo</td><td>Everything in Pro + weekly performance reports, monthly strategy calls, priority support</td></tr>
 </table>
 
-<p>Your cost to Kyra: $249/month for up to 15 clients (Pro plan). At $1,000/client on 15 clients = $15,000/month revenue, $14,753/month gross margin.</p>
+<p>Your cost to Kyra: $299/month for up to 10 clients (Pro plan). At $1,000/client on 10 clients = $10,000/month revenue, $9,701/month gross margin.</p>
 
 <h2>Client Onboarding Playbook</h2>
 

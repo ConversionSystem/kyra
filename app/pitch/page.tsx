@@ -102,8 +102,8 @@ const SLIDES = [
     subtitle: 'Your cost to Kyra: $99–$499/month for all of them.',
     table: [
       { plan: 'Lite', cost: '$99/mo', clients: '3 clients', revenue: '$2,991/mo', margin: '$2,892' },
-      { plan: 'Pro', cost: '$249/mo', clients: '10 clients', revenue: '$9,970/mo', margin: '$9,721' },
-      { plan: 'Scale', cost: '$499/mo', clients: '30 clients', revenue: '$29,910/mo', margin: '$29,411' },
+      { plan: 'Pro', cost: '$299/mo', clients: '10 clients', revenue: '$9,970/mo', margin: '$9,671' },
+      { plan: 'Scale', cost: '$499/mo', clients: '20 clients', revenue: '$19,980/mo', margin: '$19,481' },
     ],
     tableNote: 'Assumes $1,000/client/month billing. API costs ~$1–3/client/month.',
     cta: null,

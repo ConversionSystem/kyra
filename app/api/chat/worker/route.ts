@@ -243,7 +243,7 @@ export async function POST(request: NextRequest) {
           'Authorization': `Bearer ${resolved.token}`,
         },
         body: JSON.stringify({
-          model: modelConfig.id || 'openai/gpt-4o-mini',
+          model: modelConfig.id || 'openrouter/anthropic/claude-haiku-4.5',
           messages: chatMessages,
           stream: true,
         }),

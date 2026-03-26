@@ -184,6 +184,83 @@ console.log('OpenClaw config written to /root/.openclaw/openclaw.json');
 " || { echo "FATAL: Failed to generate config"; exit 1; }
 fi
 
+# ── Generate himalaya config from secrets (every boot) ───────────────────────
+# .secrets.env is written by Kyra dashboard when email credentials are saved.
+# We regenerate himalaya-config.toml on every boot so it always reflects
+# the current credentials and survives container restarts.
+# The workspace is mounted at /home/node/.openclaw by the OVH provisioner.
+# Detect user home dynamically to support both root (legacy) and node (current) containers.
+OPENCLAW_HOME="${HOME:-/home/node}/.openclaw"
+SECRETS_ENV="${OPENCLAW_HOME}/workspace/.secrets.env"
+HIMALAYA_CONFIG="${OPENCLAW_HOME}/workspace/himalaya-config.toml"
+
+if [ -f "$SECRETS_ENV" ]; then
+  # Source secrets to get email vars
+  set -a
+  # shellcheck disable=SC1090
+  . "$SECRETS_ENV" 2>/dev/null || true
+  set +a
+
+  if [ -n "$EMAIL_ADDRESS" ] && [ -n "$EMAIL_IMAP_HOST" ] && [ -n "$EMAIL_PASSWORD" ]; then
+    IMAP_PORT="${EMAIL_IMAP_PORT:-993}"
+    SMTP_HOST="${EMAIL_SMTP_HOST:-$(echo "$EMAIL_IMAP_HOST" | sed 's/imap/smtp/')}"
+    SMTP_PORT="${EMAIL_SMTP_PORT:-465}"
+
+    # himalaya v1.x: only "tls" and "start-tls" are valid (not "ssl")
+    # IMAP port 993 = tls, SMTP port 465 = tls, SMTP port 587 = start-tls
+    IMAP_ENC="tls"
+    if [ "$SMTP_PORT" = "587" ]; then
+      SMTP_ENC="start-tls"
+    else
+      SMTP_ENC="tls"
+    fi
+
+    DISPLAY_NAME="$(echo "$EMAIL_ADDRESS" | cut -d@ -f1)"
+
+    # Gmail needs folder.aliases for [Gmail]/* folder names
+    GMAIL_ALIASES=""
+    if echo "$EMAIL_IMAP_HOST" | grep -q "gmail.com"; then
+      GMAIL_ALIASES='
+folder.aliases.sent = "[Gmail]/Sent Mail"
+folder.aliases.drafts = "[Gmail]/Drafts"
+folder.aliases.trash = "[Gmail]/Trash"
+folder.aliases.spam = "[Gmail]/Spam"'
+    fi
+
+    # himalaya v1.x format — inline dotted keys (required by v1.0+)
+    cat > "$HIMALAYA_CONFIG" << TOML_EOF
+[accounts.default]
+email = "${EMAIL_ADDRESS}"
+display-name = "${DISPLAY_NAME}"
+default = true
+
+backend.type = "imap"
+backend.host = "${EMAIL_IMAP_HOST}"
+backend.port = ${IMAP_PORT}
+backend.encryption.type = "${IMAP_ENC}"
+backend.login = "${EMAIL_ADDRESS}"
+backend.auth.type = "password"
+backend.auth.raw = "${EMAIL_PASSWORD}"
+${GMAIL_ALIASES}
+
+message.send.backend.type = "smtp"
+message.send.backend.host = "${SMTP_HOST}"
+message.send.backend.port = ${SMTP_PORT}
+message.send.backend.encryption.type = "${SMTP_ENC}"
+message.send.backend.login = "${EMAIL_ADDRESS}"
+message.send.backend.auth.type = "password"
+message.send.backend.auth.raw = "${EMAIL_PASSWORD}"
+TOML_EOF
+
+    chmod 600 "$HIMALAYA_CONFIG"
+    echo "✅ himalaya-config.toml generated for $EMAIL_ADDRESS (IMAP: $EMAIL_IMAP_HOST:$IMAP_PORT, SMTP: $SMTP_HOST:$SMTP_PORT)"
+  else
+    echo "ℹ️  No email credentials in .secrets.env — skipping himalaya config (configure via Kyra dashboard)"
+  fi
+else
+  echo "ℹ️  No .secrets.env found — skipping himalaya config"
+fi
+
 # ── Run openclaw doctor (config self-healing) ────────────────────────────────
 # This detects and fixes broken configs, normalizes settings, and ensures
 # a clean state before starting the gateway. Critical for volume-persisted

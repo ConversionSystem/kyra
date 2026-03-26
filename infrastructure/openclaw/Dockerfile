@@ -33,6 +33,35 @@ RUN apt-get update && apt-get install -y \
 RUN npm install -g openclaw@latest \
     && openclaw --version
 
+# Install himalaya (email CLI) — v1.x binary from GitHub releases
+RUN curl -fsSL https://github.com/pimalaya/himalaya/releases/download/v1.0.0/himalaya-x86_64-unknown-linux-musl.tar.gz \
+    | tar -xz -C /usr/local/bin \
+    && chmod +x /usr/local/bin/himalaya \
+    && himalaya --version
+
+# Install mcporter (MCP client — for google-workspace-mcp skill)
+RUN npm install -g @mcporter/cli 2>/dev/null || \
+    npm install -g mcporter 2>/dev/null || \
+    echo "[INFO] mcporter not available on npm — skipping (google-workspace-mcp will use curl fallback)"
+
+# ── CLI wrapper scripts ──────────────────────────────────────────────────────
+# These wrappers auto-source .secrets.env so the AI never has to manually
+# source credentials — just call `gh` or `himalaya` directly.
+
+# gh wrapper: auto-sources GH_TOKEN from .secrets.env
+RUN mv /usr/bin/gh /usr/bin/gh.real && \
+    printf '#!/bin/bash\nSECRETS="/home/node/.openclaw/workspace/.secrets.env"\nif [ -f "$SECRETS" ]; then\n  set -a\n  . "$SECRETS"\n  set +a\nfi\nexec /usr/bin/gh.real "$@"\n' > /usr/bin/gh && \
+    chmod +x /usr/bin/gh
+
+# himalaya wrapper: auto-sources .secrets.env + auto-passes -c config flag
+RUN mv /usr/local/bin/himalaya /usr/local/bin/himalaya.real && \
+    printf '#!/bin/bash\nCONFIG="/home/node/.openclaw/workspace/himalaya-config.toml"\nSECRETS="/home/node/.openclaw/workspace/.secrets.env"\nif [ -f "$SECRETS" ]; then\n  set -a\n  . "$SECRETS"\n  set +a\nfi\nif [ -f "$CONFIG" ]; then\n  exec /usr/local/bin/himalaya.real -c "$CONFIG" "$@"\nelse\n  exec /usr/local/bin/himalaya.real "$@"\nfi\n' > /usr/local/bin/himalaya && \
+    chmod +x /usr/local/bin/himalaya
+
+# send-email helper: AI just calls send-email TO SUBJECT BODY — no syntax to learn
+RUN printf '#!/bin/bash\n# Usage: send-email "to@example.com" "Subject" "Body text"\nTO="$1"\nSUBJECT="$2"\nBODY="$3"\nif [ -z "$TO" ] || [ -z "$SUBJECT" ] || [ -z "$BODY" ]; then\n  echo "Usage: send-email \x27to@example.com\x27 \x27Subject\x27 \x27Body\x27"\n  exit 1\nfi\nSECRETS="/home/node/.openclaw/workspace/.secrets.env"\nif [ -f "$SECRETS" ]; then\n  set -a; . "$SECRETS"; set +a\nfi\nhimalaya template send <<EOF\nFrom: $EMAIL_ADDRESS\nTo: $TO\nSubject: $SUBJECT\n\n$BODY\nEOF\n' > /usr/local/bin/send-email && \
+    chmod +x /usr/local/bin/send-email
+
 # Copy workspace defaults to staging area (volume may override at runtime)
 RUN mkdir -p /root/.openclaw-defaults/workspace/memory
 COPY workspace/ /root/.openclaw-defaults/workspace/

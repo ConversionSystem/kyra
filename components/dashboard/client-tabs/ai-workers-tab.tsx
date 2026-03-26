@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import type { AgencyClient } from '@/lib/agency/queries';
 import { ROLE_WORKERS, type RoleWorker } from '@/lib/ai-workers/role-workers';
+import SkillsTab from './skills-tab';
 
 // ── Channel badge colors ─────────────────────────────────────────────────────
 
@@ -56,7 +57,22 @@ function matchesCategory(worker: RoleWorker, category: WorkerCategory): boolean 
   return true;
 }
 
+const MASTER_AGENCY_IDS = ['1511e077-77ef-4c47-81fd-06a3bc9f1dbb'];
+
 export default function AIWorkersTab({ client, agencyId }: AIWorkersTabProps) {
+  const [view, setView] = useState<'workers' | 'skills'>('workers');
+  const isMasterAgency = MASTER_AGENCY_IDS.includes(agencyId);
+
+  // Filter workers by visibility — private workers shown to allowed agencies + master admin
+  const visibleWorkers = ROLE_WORKERS.filter(w => {
+    if (!w.visibility || w.visibility === 'public') return true;
+    if (w.visibility === 'private') {
+      if (w.allowedAgencies?.includes(agencyId)) return true;
+      if (isMasterAgency) return true;
+    }
+    return false;
+  });
+
   const [activeCategory, setActiveCategory] = useState<WorkerCategory>('all');
   const [applyWorker, setApplyWorker] = useState<RoleWorker | null>(null);
   const [variables, setVariables] = useState<Record<string, string>>({});
@@ -146,8 +162,26 @@ export default function AIWorkersTab({ client, agencyId }: AIWorkersTabProps) {
     finally { setLoadingIndustry(false); }
   };
 
+  if (view === 'skills') {
+    return (
+      <div className="space-y-6">
+        <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+          <button onClick={() => setView('workers')} className="px-3 py-1.5 text-sm font-medium rounded-md transition-colors text-gray-500 hover:text-gray-700">AI Workers</button>
+          <button onClick={() => setView('skills')} className="px-3 py-1.5 text-sm font-medium rounded-md transition-colors bg-white text-gray-900 shadow-sm">Skills</button>
+        </div>
+        <SkillsTab client={client} />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
+      {/* Sub-nav: Workers | Skills */}
+      <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+        <button onClick={() => setView('workers')} className="px-3 py-1.5 text-sm font-medium rounded-md transition-colors bg-white text-gray-900 shadow-sm">AI Workers</button>
+        <button onClick={() => setView('skills')} className="px-3 py-1.5 text-sm font-medium rounded-md transition-colors text-gray-500 hover:text-gray-700">Skills</button>
+      </div>
+
       {/* Currently Active Worker */}
       {activeWorker && (
         <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center justify-between">
@@ -177,8 +211,8 @@ export default function AIWorkersTab({ client, agencyId }: AIWorkersTabProps) {
       <div className="bg-gray-50 border border-gray-100 rounded-2xl p-2 flex flex-wrap gap-1.5">
         {WORKER_CATEGORIES.map(cat => {
           const count = cat.key === 'all'
-            ? ROLE_WORKERS.length
-            : ROLE_WORKERS.filter(w => matchesCategory(w, cat.key)).length;
+            ? visibleWorkers.length
+            : visibleWorkers.filter(w => matchesCategory(w, cat.key)).length;
           const isActive = activeCategory === cat.key;
           return (
             <button
@@ -202,7 +236,7 @@ export default function AIWorkersTab({ client, agencyId }: AIWorkersTabProps) {
 
       {/* Worker cards grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {ROLE_WORKERS.filter(w => matchesCategory(w, activeCategory)).map(worker => (
+        {visibleWorkers.filter(w => matchesCategory(w, activeCategory)).map(worker => (
           <WorkerCard
             key={worker.id}
             worker={worker}

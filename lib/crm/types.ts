@@ -128,6 +128,8 @@ export interface ContactFilters {
   stage?: string;
   score_label?: string;
   tag?: string;
+  startDate?: string;
+  endDate?: string;
   sort?: 'name' | 'score' | 'last_activity' | 'created';
   order?: 'asc' | 'desc';
   page?: number;

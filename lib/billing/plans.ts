@@ -12,6 +12,7 @@ export interface PlanConfig {
   price: number;            // USD/month
   maxClients: number;       // max client AI workers
   monthlyCredits: number;   // platform credits included per month (0 = BYOK only)
+  monthlyWebScrapes: number; // Firecrawl web scrape allowance per month (0 = no web intelligence)
   trialDays: number;        // free trial length in days
   description: string;
   features: string[];
@@ -29,6 +30,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     price: 0,
     maxClients: 1,
     monthlyCredits: 0,
+    monthlyWebScrapes: 0,
     trialDays: 0,         // No expiry during beta
     description: 'Free forever during beta. No credit card required.',
     features: [
@@ -54,6 +56,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     price: 39,
     maxClients: 1,
     monthlyCredits: 2000,
+    monthlyWebScrapes: 0,
     trialDays: 0,
     hidden: true,
     description: 'Your personal AI worker — run it for your own business with no limits.',
@@ -77,13 +80,15 @@ export const PLANS: Record<Plan, PlanConfig> = {
   starter: {
     name: 'Lite',
     price: 99,
-    maxClients: 3,
+    maxClients: 4,       // 3 plan workers + 1 free worker they bring from Free tier
     monthlyCredits: 10000,
+    monthlyWebScrapes: 500,
     trialDays: 0,
-    description: 'Launch your AI agency with your first 3 clients.',
+    description: 'Launch your AI agency with your first 3 clients + 1 free.',
     features: [
-      '3 client AI workers',
+      '4 AI workers (3 + 1 free)',
       '10,000 platform credits / month',
+      '500 web scrapes/mo — AI workers can read the internet',
       'Client management dashboard',
       '21 industry templates',
       'Multi-channel messaging (SMS, Telegram, web chat)',
@@ -102,13 +107,15 @@ export const PLANS: Record<Plan, PlanConfig> = {
   pro: {
     name: 'Pro',
     price: 299,
-    maxClients: 10,
+    maxClients: 11,      // 10 plan workers + 1 free worker they bring from Free tier
     monthlyCredits: 25000,
+    monthlyWebScrapes: 2000,
     trialDays: 0,
     description: 'For growing agencies managing multiple clients.',
     features: [
-      '10 client AI workers',
+      '11 AI workers (10 + 1 free)',
       '25,000 platform credits / month',
+      '2,000 web scrapes/mo — full web intelligence',
       'Everything in Lite',
       'White-label branding',
       'Custom AI personalities',
@@ -128,13 +135,15 @@ export const PLANS: Record<Plan, PlanConfig> = {
   scale: {
     name: 'Scale',
     price: 499,
-    maxClients: 20,
+    maxClients: 21,      // 20 plan workers + 1 free worker they bring from Free tier
     monthlyCredits: 50000,
+    monthlyWebScrapes: 5000,
     trialDays: 0,
-    description: 'Built for high-volume agencies — up to 20 clients, full Business in a Box.',
+    description: 'Built for high-volume agencies — up to 20 clients + 1 free, full Business in a Box.',
     features: [
-      '20 client AI workers',
+      '21 AI workers (20 + 1 free)',
       '50,000 platform credits / month',
+      '5,000 web scrapes/mo — full automation stack',
       'Everything in Pro',
       'Dedicated infrastructure',
       'Custom domain per agency',

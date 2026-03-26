@@ -17,7 +17,7 @@ export default async function AiModelPage() {
   const settings = (agency.settings as Record<string, unknown>) ?? {};
 
   // Model preference — stored in agency.settings.ai_model
-  let currentModel = (settings.ai_model as string) ?? 'gpt-4o-mini';
+  let currentModel = (settings.ai_model as string) ?? 'openrouter/anthropic/claude-haiku-4.5';
 
   // If agency settings doesn't have ai_model yet, check the client row
   if (!settings.ai_model) {
