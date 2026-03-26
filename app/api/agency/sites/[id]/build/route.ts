@@ -3,6 +3,16 @@ import { waitUntil } from '@vercel/functions';
 import { requireAgencyMember } from '@/lib/agency/middleware';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { resolvePhotos } from '@/lib/sites/unsplash';
+
+/** Strip stray markdown from LLM-generated content before assembly */
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/\*\*/g, '')
+    .replace(/\*/g, '')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/^(?:H[1-6]|Title|Headline|Subtitle)[:\s]*/i, '')
+    .trim();
+}
 import { assemblePage } from '@/lib/sites/templates/assembler';
 import { getRecipeForIndustry } from '@/lib/sites/templates/recipes';
 import { getTemplateById } from '@/lib/sites/templates/gallery';
@@ -287,7 +297,7 @@ async function buildAndDeploy(site: any, supabase: any) {
         title: p.title,
         metaTitle: p.metaTitle,
         metaDescription: p.metaDescription,
-        hero_h1: p.heroH1 || p.title,
+        hero_h1: stripMarkdown(p.heroH1 || p.title),
         hero_subtitle: p.heroSubtitle || '',
         content_sections: (p.sections || []) as { heading: string; body: string; bullets?: string[] }[],
         faq: (p.faq || []) as { question: string; answer: string }[],
