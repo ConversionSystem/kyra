@@ -8,6 +8,16 @@
 // ============================================================================
 
 import { assemblePage } from './templates/assembler';
+
+/** Strip stray markdown from LLM-generated content before assembly */
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/\*\*/g, '')            // bold markers
+    .replace(/\*/g, '')              // italic markers
+    .replace(/^#{1,6}\s+/gm, '')     // heading markers
+    .replace(/^(?:H[1-6]|Title|Headline|Subtitle)[:\s]*/i, '') // LLM label prefixes
+    .trim();
+}
 import { getRecipeForIndustry } from './templates/recipes';
 import { getTemplateById } from './templates/gallery';
 import { resolvePhotos } from './unsplash';
@@ -147,7 +157,7 @@ export async function assembleSitePages(
         title: p.title,
         metaTitle: p.metaTitle,
         metaDescription: p.metaDescription,
-        hero_h1: p.heroH1 || p.title,
+        hero_h1: stripMarkdown(p.heroH1 || p.title),
         hero_subtitle: p.heroSubtitle || '',
         content_sections: (p.sections || []) as { heading: string; body: string; bullets?: string[] }[],
         faq: (p.faq || []) as { question: string; answer: string }[],
