@@ -65,7 +65,7 @@ export const INDUSTRY_RECIPES: Record<string, SectionRecipe> = {
     navbar: 'sticky-white',
   },
   restaurant: {
-    hero: 'video-hero',
+    hero: 'split-screen',   // split-screen: photo-heavy, shows food/ambiance well
     services: 'tabs',
     about: 'timeline',
     testimonials: 'carousel',
@@ -105,7 +105,7 @@ export const INDUSTRY_RECIPES: Record<string, SectionRecipe> = {
     navbar: 'transparent-overlay',
   },
   fitness: {
-    hero: 'video-hero',
+    hero: 'gradient-overlay',   // gradient-overlay: energetic, bold — perfect for fitness
     services: 'grid-3col',
     about: 'stats-bar',
     testimonials: 'carousel',

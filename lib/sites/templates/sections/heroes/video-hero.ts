@@ -1,3 +1,9 @@
+// video-hero.ts
+// Animated gradient hero with a premium dark cinematic feel.
+// TODO (future): Accept a `videoUrl` prop and swap the CSS animation background
+//   for a real <video autoplay muted loop playsinline> element.
+//   For now, the animated gradient looks great and prevents the gray placeholder.
+
 interface HeroData {
   h1: string;
   subtitle: string;
@@ -11,39 +17,48 @@ interface HeroData {
   colors: { primary: string; secondary: string };
 }
 
-function phoneIcon(): string {
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`;
-}
-
-function playIcon(): string {
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="12" cy="12" r="12" fill="currentColor" opacity="0.3"/><polygon points="10,8 16,12 10,16" fill="white"/></svg>`;
-}
-
 export function videoHero(data: HeroData): string {
-  const bgStyle = data.photoUrl
-    ? `background-image: url('${data.photoUrl}'); background-size: cover; background-position: center;`
-    : `background: #111827;`;
+  const phoneCta = data.phone
+    ? `<a href="${data.phoneHref || `tel:${data.phone}`}" class="inline-flex items-center justify-center px-6 py-3 rounded-lg text-lg font-semibold border-2 border-white/80 text-white hover:bg-white hover:text-gray-900 transition-all duration-200" aria-label="Call ${data.phone}">${data.phone}</a>`
+    : '';
 
-  return `<section class="relative min-h-[70vh] flex items-center overflow-hidden" style="${bgStyle}" aria-label="${data.businessName || ''} hero">
-  <!-- Cinematic dark gradient background -->
-  <div class="absolute inset-0" style="background: linear-gradient(135deg, #111827 0%, #1f2937 30%, #111827 60%, ${data.colors.primary}20 100%);${data.photoUrl ? ' opacity: 0.7;' : ''}" aria-hidden="true"></div>
-  <div class="absolute inset-0" style="background: radial-gradient(ellipse at 50% 50%, ${data.colors.primary}10, transparent 70%);" aria-hidden="true"></div>
-  <!-- Film grain overlay -->
-  <div class="absolute inset-0 opacity-5" style="background-image: url('data:image/svg+xml,%3Csvg viewBox=%220 0 256 256%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noise%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%224%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noise)%22/%3E%3C/svg%3E');" aria-hidden="true"></div>
-  <!-- Decorative play button watermark -->
-  <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-5 pointer-events-none" aria-hidden="true">
-    <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 24 24" fill="white" stroke="none"><circle cx="12" cy="12" r="11" fill="none" stroke="white" stroke-width="1"/><polygon points="10,8 16,12 10,16"/></svg>
-  </div>
+  const bookingCta = data.bookingUrl
+    ? `<a href="${data.bookingUrl}" class="inline-flex items-center justify-center px-8 py-3 rounded-lg text-lg font-semibold text-white transition-all duration-200 hover:opacity-90" style="background: var(--color-primary);" aria-label="Book now">Book Now</a>`
+    : '';
+
+  return `<section class="relative min-h-[85vh] flex items-center justify-center overflow-hidden" aria-label="${data.businessName ? `${data.businessName} hero` : 'Hero'}">
+  <!-- Animated cinematic gradient background — swap for <video> when videoUrl is available -->
+  <div class="absolute inset-0 video-hero-bg" aria-hidden="true"></div>
+  <!-- Overlay -->
   <div class="absolute inset-0 bg-black/40"></div>
-  <div class="relative z-10 max-w-5xl mx-auto px-6 py-20 sm:py-28 text-center">
-    ${data.emergencyText ? `<span class="inline-block mb-6 px-5 py-2 rounded-full text-sm font-bold uppercase tracking-wider text-white" style="background: ${data.colors.primary}; box-shadow: 0 0 20px ${data.colors.primary}60;">${data.emergencyText}</span>` : ''}
-    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white leading-tight mb-6">${data.h1}</h1>
-    <p class="text-lg sm:text-xl text-white/70 max-w-2xl mx-auto mb-10">${data.subtitle}</p>
-    <div class="flex flex-col sm:flex-row gap-4 justify-center">
-      ${data.phone ? `<a href="${data.phoneHref || `tel:${data.phone}`}" class="inline-flex items-center gap-2 text-white font-bold px-8 py-4 rounded-xl text-lg shadow-lg hover:shadow-xl transition-all" style="background: ${data.colors.primary};">${phoneIcon()} ${data.phone}</a>` : ''}
-      ${data.bookingUrl ? `<a href="${data.bookingUrl}" class="inline-flex items-center gap-2 border-2 border-white/30 text-white font-semibold px-8 py-4 rounded-xl text-lg hover:bg-white/10 transition-all backdrop-blur-sm">Book Now</a>` : ''}
+  <!-- Content -->
+  <div class="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 text-center py-24">
+    <h1 class="text-4xl sm:text-5xl md:text-7xl font-bold leading-tight mb-6 tracking-tight" style="color: #ffffff; text-shadow: 0 2px 20px rgba(0,0,0,0.5);">${data.h1}</h1>
+    <p class="text-xl sm:text-2xl mb-10 max-w-2xl mx-auto font-light" style="color: rgba(255,255,255,0.90); text-shadow: 0 1px 8px rgba(0,0,0,0.4);">${data.subtitle}</p>
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+      ${bookingCta}
+      ${phoneCta}
     </div>
   </div>
+  <!-- Animated gradient CSS (injected once, harmless if duplicated) -->
+  <style>
+    .video-hero-bg {
+      background: linear-gradient(
+        135deg,
+        var(--color-secondary, #0f0f1a) 0%,
+        var(--color-primary, #4f46e5) 40%,
+        #1e1b4b 70%,
+        var(--color-secondary, #0f0f1a) 100%
+      );
+      background-size: 300% 300%;
+      animation: video-hero-shift 12s ease infinite;
+    }
+    @keyframes video-hero-shift {
+      0%   { background-position: 0% 50%; }
+      50%  { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+  </style>
 </section>`;
 }
 

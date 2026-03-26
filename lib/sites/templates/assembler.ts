@@ -2,6 +2,7 @@
 
 import type { SectionRecipe } from './recipes';
 import type { ContentSection, FaqItem } from '../types';
+import { getDesignCSS } from '../design-system';
 
 // Section imports — heroes
 import { fullBleedHero } from './sections/heroes/full-bleed';
@@ -101,40 +102,12 @@ const NAVBARS: Record<string, typeof stickyWhiteNavbar> = {
   'hamburger': hamburgerNavbar,
 };
 
-// ---------- Helpers ----------
-
-/** Format hours object into displayable string */
-function formatHours(hours: Record<string, string>): string {
-  // Wizard format: { days: 'Mon-Fri', start: '8:00 AM', end: '6:00 PM' }
-  if ('days' in hours && 'start' in hours && 'end' in hours) {
-    return `${hours.days}: ${hours.start} - ${hours.end}`;
-  }
-  // Day-keyed format: { mon: '8am-6pm', tue: '8am-6pm', ... }
-  return Object.entries(hours)
-    .map(([day, time]) => `${day.charAt(0).toUpperCase() + day.slice(1)}: ${time}`)
-    .join('\n');
-}
-
-/** Convert markdown bold (**text**) to <strong> and strip other markdown syntax */
-function mdToHtml(text: string): string {
-  return text
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')  // **bold**
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')               // *italic*
-    .replace(/~~(.+?)~~/g, '<del>$1</del>')              // ~~strikethrough~~
-    .replace(/`(.+?)`/g, '<code>$1</code>')              // `code`
-    .replace(/\*{2,}/g, '')                               // strip orphaned ** or ***
-    .replace(/#{1,6}\s/g, '')                             // strip markdown headers (# ## ###)
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')             // [link text](url) → link text
-    .trim();
-}
-
 // ---------- Assembler ----------
 
 export interface AssemblePageOptions {
   recipe: SectionRecipe;
-  colorVars: string;       // CSS custom properties block (kept for backwards compat)
-  colorPrimary: string;    // e.g. '#dc2626'
-  colorSecondary: string;  // e.g. '#111827'
+  colorVars: string;       // CSS custom properties block (:root vars only)
+  designStyle?: string;    // Design style key for getDesignCSS() — wires in body/card/button overrides
   pageData: {
     title: string;
     metaTitle?: string;
@@ -166,13 +139,16 @@ export interface AssemblePageOptions {
     ownerStory?: string;
     emergencyText?: string;
     tagline?: string;
+    colorPrimary?: string;
+    colorSecondary?: string;
+    /** Real Google/site reviews — used instead of placeholders when available */
+    reviews?: Array<{ author_name: string; text: string; rating: number; time_description?: string }>;
   };
   pageType: string;
 }
 
 export function assemblePage(options: AssemblePageOptions): string {
-  const { recipe, colorVars, colorPrimary, colorSecondary, pageData, siteData, pageType } = options;
-  const colors = { primary: colorPrimary, secondary: colorSecondary };
+  const { recipe, colorVars, designStyle, pageData, siteData, pageType } = options;
 
   const heroFn = HEROES[recipe.hero] || HEROES['gradient-overlay'];
   const servicesFn = SERVICES[recipe.services] || SERVICES['grid-3col'];
@@ -183,15 +159,16 @@ export function assemblePage(options: AssemblePageOptions): string {
   const footerFn = FOOTERS[recipe.footer] || FOOTERS['four-column'];
   const navbarFn = NAVBARS[recipe.navbar] || NAVBARS['sticky-white'];
 
-  // Build navbar links with real page URLs
-  const firstServiceSlug = siteData.services?.[0]?.slug;
-  const navLinks = [
-    { label: 'Home', href: '/' },
-    { label: 'Services', href: firstServiceSlug ? `/services/${firstServiceSlug}` : '/services' },
-    { label: 'About', href: '/about' },
-    { label: 'Reviews', href: '/reviews' },
-    { label: 'Contact', href: '/contact' },
-  ];
+  // Colors object passed to every section (required after main branch section refactor)
+  const colors = {
+    primary: siteData.colorPrimary || '#4f46e5',
+    secondary: siteData.colorSecondary || '#111827',
+  };
+
+  // Format hours for footer: Record<string,string> → human-readable lines
+  const formattedHours = siteData.hours
+    ? Object.entries(siteData.hours).map(([day, time]) => `${day}: ${time}`).join(' · ')
+    : undefined;
 
   // Build section HTML
   const navbarHtml = navbarFn({
@@ -200,13 +177,19 @@ export function assemblePage(options: AssemblePageOptions): string {
     phone: siteData.phone,
     phoneHref: siteData.phoneHref,
     bookingUrl: siteData.booking_url,
-    links: navLinks,
     colors,
+    links: [
+      { label: 'Home', href: '/' },
+      { label: 'Services', href: '#services' },
+      { label: 'About', href: '#about' },
+      { label: 'Reviews', href: '#testimonials' },
+      { label: 'Contact', href: '#contact' },
+    ],
   });
 
   const heroHtml = heroFn({
-    h1: mdToHtml(pageData.hero_h1),
-    subtitle: mdToHtml(pageData.hero_subtitle),
+    h1: pageData.hero_h1,
+    subtitle: pageData.hero_subtitle,
     phone: siteData.phone,
     phoneHref: siteData.phoneHref,
     bookingUrl: siteData.booking_url,
@@ -222,7 +205,7 @@ export function assemblePage(options: AssemblePageOptions): string {
     services: (siteData.services || []).map(s => ({
       name: s.name,
       slug: s.slug,
-      description: mdToHtml(s.description || ''),
+      description: s.description || '',
     })),
     businessName: siteData.business_name,
     colors,
@@ -230,14 +213,14 @@ export function assemblePage(options: AssemblePageOptions): string {
 
   // Build about section from content_sections if available
   const aboutBody = pageData.content_sections
-    ?.map(s => `<h3>${mdToHtml(s.heading)}</h3><p>${mdToHtml(s.body)}</p>`)
+    ?.map(s => `<h3>${s.heading}</h3><p>${s.body}</p>`)
     .join('') || '';
 
   const aboutHtml = aboutFn({
     heading: `About ${siteData.business_name}`,
     body: aboutBody,
     ownerName: siteData.ownerName,
-    ownerStory: siteData.ownerStory ? mdToHtml(siteData.ownerStory) : undefined,
+    ownerStory: siteData.ownerStory,
     photoUrl: siteData.photos?.[1]?.url,
     yearsInBusiness: siteData.yearsInBusiness,
     rating: siteData.rating,
@@ -246,14 +229,23 @@ export function assemblePage(options: AssemblePageOptions): string {
     colors,
   });
 
-  // Placeholder testimonials (real ones come from reviews page data)
+  // Use real reviews when available; fall back to business-specific placeholders
+  const reviewData = siteData.reviews?.length
+    ? siteData.reviews.slice(0, 3).map(r => ({
+        name: r.author_name,
+        text: r.text,
+        rating: r.rating,
+        location: 'Verified Customer',
+      }))
+    : [
+        { name: 'Satisfied Customer', text: `${siteData.business_name} did an excellent job. Highly recommend to anyone in the area!`, rating: 5, location: 'Local' },
+        { name: 'Happy Client', text: `Professional, on-time, and great quality work. ${siteData.business_name} exceeded our expectations.`, rating: 5, location: 'Nearby' },
+        { name: 'Loyal Customer', text: `We've used ${siteData.business_name} for years. Consistent, reliable, and always a pleasure to work with.`, rating: 5, location: 'Local' },
+      ];
+
   const testimonialsHtml = testimonialsFn({
     heading: 'What Our Customers Say',
-    testimonials: [
-      { name: 'Happy Customer', text: 'Excellent service! Highly recommended.', rating: 5, location: 'Local' },
-      { name: 'Satisfied Client', text: 'Professional, on-time, and great quality work.', rating: 5, location: 'Nearby' },
-      { name: 'Loyal Customer', text: 'Been using their services for years. Never disappointed.', rating: 5, location: 'Local' },
-    ],
+    testimonials: reviewData,
     colors,
   });
 
@@ -271,15 +263,10 @@ export function assemblePage(options: AssemblePageOptions): string {
   const faqHtml = pageData.faq?.length
     ? faqFn({
         heading: 'Frequently Asked Questions',
-        faqs: pageData.faq.map(f => ({
-          question: mdToHtml(f.question),
-          answer: mdToHtml(f.answer),
-        })),
+        faqs: pageData.faq,
         colors,
       })
     : '';
-
-  const formattedHours = siteData.hours ? formatHours(siteData.hours) : undefined;
 
   const footerHtml = footerFn({
     businessName: siteData.business_name,
@@ -301,40 +288,22 @@ export function assemblePage(options: AssemblePageOptions): string {
 
   // Kyra chat widget
   const widgetScript = siteData.widget_client_id
-    ? `<script src="https://kyra.conversionsystem.com/api/widget/${siteData.widget_client_id}/script" async></script>`
+    ? `<script src="https://widget.kyra.conversionsystem.com/widget.js" data-client-id="${siteData.widget_client_id}" async></script>`
     : '';
 
   const metaTitle = pageData.metaTitle || `${pageData.title} | ${siteData.business_name}`;
   const metaDesc = pageData.metaDescription || pageData.hero_subtitle;
 
-  // Build content sections HTML for subpages
-  const contentSectionsHtml = (pageData.content_sections || [])
-    .map(s => `<section class="py-12 sm:py-16 px-4 sm:px-6"><div class="max-w-4xl mx-auto"><h2 class="text-2xl sm:text-3xl font-bold mb-6" style="color: #1f2937;">${mdToHtml(s.heading)}</h2><div class="prose max-w-none text-lg leading-relaxed" style="color: #4b5563;">${mdToHtml(s.body)}</div></div></section>`)
-    .join('\n    ');
-
-  // Determine section layout based on page type
-  let mainContent = '';
-  switch (pageType) {
-    case 'service':
-      mainContent = `${heroHtml}\n    ${contentSectionsHtml}\n    ${faqHtml}\n    ${ctaHtml}`;
-      break;
-    case 'blog':
-      mainContent = `${contentSectionsHtml}`;
-      break;
-    case 'city':
-      mainContent = `${heroHtml}\n    ${contentSectionsHtml}\n    ${ctaHtml}`;
-      break;
-    case 'about':
-    case 'contact':
-    case 'reviews':
-    case 'faq':
-    case 'utility':
-      mainContent = `${heroHtml}\n    ${contentSectionsHtml}`;
-      break;
-    default: // homepage
-      mainContent = `${heroHtml}\n    ${servicesHtml}\n    ${aboutHtml}\n    ${testimonialsHtml}\n    ${faqHtml}\n    ${ctaHtml}`;
-      break;
-  }
+  // Get design-style-specific CSS overrides (body bg, card styles, button styles, typography)
+  // This is what makes modern-dark look different from clean-light, bold, and minimal.
+  // colorPrimary/Secondary come from the :root vars already set in colorVars.
+  const colorPrimary = colorVars.match(/--color-primary:\s*([^;]+);/)?.[1]?.trim() || '#4f46e5';
+  const colorSecondary = colorVars.match(/--color-secondary:\s*([^;]+);/)?.[1]?.trim() || '#111827';
+  const activeDesignStyle = designStyle || 'clean-light';
+  // getDesignCSS returns a full block starting with :root { ... } — we only want the rules after that
+  const fullDesignCSS = getDesignCSS(activeDesignStyle, colorPrimary, colorSecondary);
+  // Strip the :root block (already handled by colorVars) to avoid duplication
+  const designOverrideCSS = fullDesignCSS.replace(/:root\s*\{[^}]*\}\s*/g, '').trim();
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -343,24 +312,26 @@ export function assemblePage(options: AssemblePageOptions): string {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(metaTitle)}</title>
   <meta name="description" content="${escapeHtml(metaDesc)}">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   ${schemaScript}
   <style>
     :root {
       ${colorVars}
     }
-    body { font-family: 'Inter', system-ui, -apple-system, sans-serif; color: #1f2937; }
+    /* Design style overrides — body, section, card, button, typography */
+    ${designOverrideCSS}
     a { color: inherit; }
-    html { scroll-behavior: smooth; }
   </style>
 </head>
 <body>
   ${navbarHtml}
   <main>
-    ${mainContent}
+    ${heroHtml}
+    ${pageType === 'homepage' ? servicesHtml : ''}
+    ${aboutHtml}
+    ${pageType === 'homepage' ? testimonialsHtml : ''}
+    ${faqHtml}
+    ${ctaHtml}
   </main>
   ${footerHtml}
   ${widgetScript}
