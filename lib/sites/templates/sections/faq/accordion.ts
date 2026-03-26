@@ -8,7 +8,7 @@ export function accordionFaq(data: FaqData): string {
   const heading = data.heading || 'Frequently Asked Questions';
 
   const items = data.faqs.map(faq => `
-    <details class="rounded-xl shadow-md mb-3" style="background: #ffffff;">
+    <details class="rounded-xl shadow-md mb-3" style="background: var(--color-surface);">
       <summary class="flex items-center justify-between cursor-pointer px-6 py-4 text-lg font-semibold select-none list-none" style="color: #1f2937;">
         <span>${faq.question}</span>
         <span class="faq-icon ml-4 text-xl transition-transform" style="color: ${data.colors.primary};">+</span>
@@ -17,7 +17,7 @@ export function accordionFaq(data: FaqData): string {
     </details>`).join('');
 
   return `<style>details[open] summary .faq-icon { transform: rotate(45deg); }</style>
-<section class="py-16 sm:py-24 px-4" style="background: #f9fafb;" aria-label="FAQ">
+<section class="py-16 sm:py-24 px-4" style="background: var(--color-surface);" aria-label="FAQ">
   <div class="max-w-3xl mx-auto">
     <h2 class="text-3xl font-bold text-center mb-10" style="color: #1f2937;">${heading}</h2>
     <div>

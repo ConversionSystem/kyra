@@ -26,25 +26,25 @@ export function photoSplitAbout(data: AboutData): string {
 
   const statBoxes: string[] = [];
   if (data.yearsInBusiness) {
-    statBoxes.push(`<div class="rounded-xl p-4 text-center" style="background: #f9fafb;">
+    statBoxes.push(`<div class="rounded-xl p-4 text-center" style="background: var(--color-surface);">
       <span class="block text-2xl font-bold" style="color: ${data.colors.primary};">${data.yearsInBusiness}+</span>
       <span class="text-sm" style="color: #6b7280;">Years Experience</span>
     </div>`);
   }
   if (data.rating) {
-    statBoxes.push(`<div class="rounded-xl p-4 text-center" style="background: #f9fafb;">
+    statBoxes.push(`<div class="rounded-xl p-4 text-center" style="background: var(--color-surface);">
       <span class="block text-2xl font-bold" style="color: ${data.colors.primary};">${data.rating}</span>
       <span class="text-sm" style="color: #6b7280;">Star Rating</span>
     </div>`);
   }
   if (data.reviewCount) {
-    statBoxes.push(`<div class="rounded-xl p-4 text-center" style="background: #f9fafb;">
+    statBoxes.push(`<div class="rounded-xl p-4 text-center" style="background: var(--color-surface);">
       <span class="block text-2xl font-bold" style="color: ${data.colors.primary};">${data.reviewCount}+</span>
       <span class="text-sm" style="color: #6b7280;">Reviews</span>
     </div>`);
   }
   if (data.license) {
-    statBoxes.push(`<div class="rounded-xl p-4 text-center" style="background: #f9fafb;">
+    statBoxes.push(`<div class="rounded-xl p-4 text-center" style="background: var(--color-surface);">
       <span class="block text-2xl font-bold" style="color: ${data.colors.primary};">${data.license}</span>
       <span class="text-sm" style="color: #6b7280;">Licensed</span>
     </div>`);
@@ -54,7 +54,7 @@ export function photoSplitAbout(data: AboutData): string {
     ? `<div class="grid grid-cols-2 gap-3 mt-6">${statBoxes.join('')}</div>`
     : '';
 
-  return `<section class="py-16 sm:py-24" style="background: #ffffff;" aria-label="About">
+  return `<section class="py-16 sm:py-24" style="background: var(--color-surface);" aria-label="About">
   <div class="max-w-6xl mx-auto px-4 sm:px-6">
     <div class="flex flex-col md:flex-row gap-8 md:gap-12 items-center">
       <div class="w-full md:w-1/2 aspect-[4/5] rounded-2xl overflow-hidden shadow-lg">

@@ -44,7 +44,7 @@ export function tabsServices(data: ServicesData): string {
     }`;
   }).join('\n    ');
 
-  return `<section class="py-16 sm:py-24 px-4 sm:px-6" style="background: #ffffff;" aria-label="${heading}">
+  return `<section class="py-16 sm:py-24 px-4 sm:px-6" style="background: var(--color-surface);" aria-label="${heading}">
   <style>
     ${tabStyles}
   </style>
@@ -55,7 +55,7 @@ export function tabsServices(data: ServicesData): string {
       <nav class="flex flex-wrap gap-2 justify-center" style="margin-bottom: 2rem;" aria-label="Service tabs">
         ${labels}
       </nav>
-      <div class="${uid}-panels rounded-2xl shadow-lg" style="background: #ffffff; border: 1px solid #e5e7eb; padding: 2rem 2.5rem;">
+      <div class="${uid}-panels rounded-2xl shadow-lg" style="background: var(--color-surface); border: 1px solid #e5e7eb; padding: 2rem 2.5rem;">
         ${panels}
       </div>
     </div>

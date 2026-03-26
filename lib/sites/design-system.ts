@@ -195,7 +195,7 @@ a { color: var(--color-primary); font-weight: 700; }
     default:
       return `${vars}
 
-/* minimal: Generous whitespace, narrow columns, understated typography */
+/* minimal: Generous whitespace, refined typography, full-width layout */
 body {
   background-color: #ffffff;
   color: #374151;
@@ -205,35 +205,31 @@ body {
   background: #ffffff;
   color: #111827;
   padding: 5rem 0;
-  max-width: 42rem;
-  margin: 0 auto;
 }
-.hero h1 { color: #111827; font-weight: 600; font-size: 2rem; }
+.hero h1 { color: #111827; font-weight: 600; font-size: 2.5rem; letter-spacing: -0.01em; }
 .hero .subtitle { color: #6b7280; font-size: 1.125rem; }
 .card {
   background: #ffffff;
   border: none;
   border-top: 1px solid #e5e7eb;
-  padding: 2rem 0;
+  padding: 2rem;
 }
 .btn-primary {
   background: transparent;
   color: var(--color-primary);
   font-weight: 500;
-  padding: 0.625rem 1.5rem;
-  border-radius: 0.25rem;
+  padding: 0.75rem 1.75rem;
+  border-radius: 0.375rem;
   border: 1px solid var(--color-primary);
   transition: background 0.2s, color 0.2s;
 }
 .btn-primary:hover { background: var(--color-primary); color: #ffffff; }
 section {
-  max-width: 42rem;
-  margin: 0 auto;
-  padding: 3rem 1rem;
+  padding: 4rem 1rem;
   border-bottom: 1px solid #f3f4f6;
 }
-h2 { font-size: 1.5rem; font-weight: 600; color: #111827; }
-h3 { font-size: 1.125rem; font-weight: 500; color: #374151; }
+h2 { font-size: 1.75rem; font-weight: 600; color: #111827; }
+h3 { font-size: 1.25rem; font-weight: 500; color: #374151; }
 p { color: #6b7280; line-height: 1.8; }
 a { color: var(--color-primary); text-decoration: underline; }
 .trust-signal { color: #374151; font-weight: 500; }`;

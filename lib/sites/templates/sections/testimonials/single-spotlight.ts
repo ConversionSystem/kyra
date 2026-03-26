@@ -24,7 +24,7 @@ export function singleSpotlightTestimonials(data: TestimonialsData): string {
   const t = data.testimonials[0];
   if (!t) return '';
 
-  return `<section class="py-16 sm:py-24 px-4" style="background: #f9fafb;" aria-label="Featured testimonial">
+  return `<section class="py-16 sm:py-24 px-4" style="background: var(--color-surface);" aria-label="Featured testimonial">
   <div class="max-w-3xl mx-auto text-center">
     <h2 class="text-3xl sm:text-4xl font-bold mb-12" style="color: #1f2937;">${heading}</h2>
     <div style="font-size: 96px; line-height: 1; color: ${data.colors.primary}; opacity: 0.3;">&ldquo;</div>
