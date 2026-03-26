@@ -46,9 +46,16 @@ export async function assembleSitePages(
   const phone = site.phone || '';
   const phoneDigits = phone.replace(/[^0-9]/g, '');
 
+  // Format phone for display: 1234567890 → (123) 456-7890
+  const formattedPhone = phoneDigits.length === 10
+    ? `(${phoneDigits.slice(0, 3)}) ${phoneDigits.slice(3, 6)}-${phoneDigits.slice(6)}`
+    : phoneDigits.length === 11 && phoneDigits.startsWith('1')
+      ? `(${phoneDigits.slice(1, 4)}) ${phoneDigits.slice(4, 7)}-${phoneDigits.slice(7)}`
+      : phone; // Keep original if not standard US
+
   const constants = {
     name: site.business_name || '',
-    phone,
+    phone: formattedPhone,
     phoneHref: phoneDigits ? `tel:+${phoneDigits.length === 10 ? '1' : ''}${phoneDigits}` : '',
     email: `info@${site.site_domain || site.site_subdomain || 'yourdomain.com'}`,
     address: [address.street, address.city, address.state, address.zip].filter(Boolean).join(', '),

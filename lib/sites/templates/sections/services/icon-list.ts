@@ -18,7 +18,7 @@ export function iconListServices(data: ServicesData): string {
 
   const items = data.services.map((s, i) => {
     const icon = s.icon || wrenchSvg;
-    const descText = s.description || `Learn more about our ${s.name} services.`;
+    const descText = s.description || `Professional ${s.name.toLowerCase()} services tailored to your needs. Contact us for a free consultation.`;
     const desc = `<p style="color: #6b7280; font-size: 0.938rem; line-height: 1.7; margin: 0.25rem 0 0 0;">${descText}</p>`;
     const borderBottom = i < data.services.length - 1
       ? `border-bottom: 1px solid #f3f4f6;`

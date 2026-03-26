@@ -165,10 +165,22 @@ export function assemblePage(options: AssemblePageOptions): string {
     secondary: siteData.colorSecondary || '#111827',
   };
 
-  // Format hours for footer: Record<string,string> → human-readable lines
-  const formattedHours = siteData.hours
-    ? Object.entries(siteData.hours).map(([day, time]) => `${day}: ${time}`).join(' · ')
-    : undefined;
+  // Format hours for footer: handles both wizard format { days, start, end }
+  // and day-keyed format { Monday: "8AM-6PM", Tuesday: "8AM-6PM" }
+  let formattedHours: string | undefined;
+  if (siteData.hours) {
+    const h = siteData.hours as Record<string, string>;
+    if (h.days && h.start && h.end) {
+      // Wizard format: single schedule block
+      formattedHours = `${h.days}: ${h.start} - ${h.end}`;
+    } else {
+      // Day-keyed format: combine into readable string
+      formattedHours = Object.entries(h)
+        .filter(([k]) => !['days', 'start', 'end'].includes(k))
+        .map(([day, time]) => `${day}: ${time}`)
+        .join(' · ');
+    }
+  }
 
   // Build section HTML
   const navbarHtml = navbarFn({

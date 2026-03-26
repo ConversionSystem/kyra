@@ -18,7 +18,7 @@ export function grid3colServices(data: ServicesData): string {
 
   const cards = data.services.map((s) => {
     const icon = s.icon || wrenchSvg;
-    const descText = s.description || `Learn more about our ${s.name} services.`;
+    const descText = s.description || `Professional ${s.name.toLowerCase()} services tailored to your needs. Contact us for a free consultation.`;
     const desc = `<p style="color: #6b7280; font-size: 0.938rem; line-height: 1.7; margin: 0;">${descText}</p>`;
 
     return `<article class="rounded-2xl shadow-lg" style="background: var(--color-surface); border-top: 4px solid ${primary}; transition: transform 0.25s ease, box-shadow 0.25s ease;" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 20px 25px -5px rgba(0,0,0,0.1),0 8px 10px -6px rgba(0,0,0,0.1)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow=''">
