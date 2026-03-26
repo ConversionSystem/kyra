@@ -25,7 +25,7 @@ export function tabsServices(data: ServicesData): string {
   }).join('\n        ');
 
   const panels = data.services.map((s) => {
-    const descText = s.description || `Learn more about our ${s.name} services.`;
+    const descText = s.description || `Professional ${s.name.toLowerCase()} services tailored to your needs. Contact us for a free consultation.`;
     const desc = `<p style="color: #6b7280; font-size: 1rem; line-height: 1.8; margin: 1rem 0 0 0;">${descText}</p>`;
 
     return `<article class="${uid}-panel" data-tab="${s.slug}" style="display: none;">

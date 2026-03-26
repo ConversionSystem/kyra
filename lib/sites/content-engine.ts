@@ -1101,11 +1101,13 @@ function parseBlogContent(raw: string, fallbackTitle: string): ParsedContent {
 
 function cleanLine(line: string): string {
   return line
-    .replace(/^[#*\-\d.]+\s*/, '')
-    .replace(/^\*\*(.+)\*\*$/, '$1')
-    .replace(/^["']|["']$/g, '')
-    .replace(/\u2014/g, ' - ')
-    .replace(/\u2013/g, '-')
+    .replace(/^[#*\-\d.]+\s*/, '')         // strip markdown heading/list prefixes
+    .replace(/^(?:H[1-6]|Title|Headline|Subtitle|Hero|CTA|Button)[:\s]*["']*/i, '') // strip LLM label prefixes like "H1:", "Subtitle:", "Title:"
+    .replace(/\*\*/g, '')                    // strip all bold markers (not just wrapping)
+    .replace(/\*/g, '')                      // strip italic markers
+    .replace(/^["']|["']$/g, '')             // strip surrounding quotes
+    .replace(/\u2014/g, ' - ')              // em dash
+    .replace(/\u2013/g, '-')                // en dash
     .trim();
 }
 
