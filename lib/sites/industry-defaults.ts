@@ -1,5 +1,11 @@
 // Industry defaults for the Website Builder wizard
 // Maps industry slugs to default services, branding, and config
+//
+// NOTE: nearbyCities are intentionally empty. The wizard's Step 3 has a
+// custom city input where users enter their actual service areas. We removed
+// all hardcoded city suggestions (Feb 2026) because they were tied to specific
+// US metros and showed wrong cities for businesses in different regions.
+// The user's entered city from Step 1 is auto-added as primary city.
 
 export interface IndustryDefault {
   label: string;
@@ -28,7 +34,7 @@ export const INDUSTRY_DEFAULTS: Record<string, IndustryDefault> = {
     aiName: 'Alex',
     needsGeoPages: true,
     defaultPageCount: 25,
-    nearbyCities: ['San Mateo', 'Burlingame', 'Foster City', 'Redwood City', 'Belmont', 'San Carlos', 'Daly City', 'South San Francisco', 'Millbrae', 'Half Moon Bay'],
+    nearbyCities: [],
   },
   plumbing: {
     label: 'Plumbing',
@@ -45,7 +51,7 @@ export const INDUSTRY_DEFAULTS: Record<string, IndustryDefault> = {
     aiName: 'Sam',
     needsGeoPages: true,
     defaultPageCount: 25,
-    nearbyCities: ['San Jose', 'Sunnyvale', 'Santa Clara', 'Mountain View', 'Palo Alto', 'Cupertino', 'Milpitas', 'Fremont', 'Campbell', 'Los Gatos'],
+    nearbyCities: [],
   },
   electrical: {
     label: 'Electrical',
@@ -62,7 +68,7 @@ export const INDUSTRY_DEFAULTS: Record<string, IndustryDefault> = {
     aiName: 'Sparky',
     needsGeoPages: true,
     defaultPageCount: 25,
-    nearbyCities: ['Oakland', 'Berkeley', 'Hayward', 'San Leandro', 'Alameda', 'Fremont', 'Union City', 'Newark', 'Pleasanton', 'Dublin'],
+    nearbyCities: [],
   },
   dental: {
     label: 'Dental',
@@ -96,7 +102,7 @@ export const INDUSTRY_DEFAULTS: Record<string, IndustryDefault> = {
     aiName: 'James',
     needsGeoPages: true,
     defaultPageCount: 18,
-    nearbyCities: ['Downtown', 'Midtown', 'Westside', 'Northside', 'Southside', 'East End', 'West End', 'Central', 'Uptown', 'Suburbs'],
+    nearbyCities: [],
   },
   restaurant: {
     label: 'Restaurant',
@@ -129,7 +135,7 @@ export const INDUSTRY_DEFAULTS: Record<string, IndustryDefault> = {
     aiName: 'Riley',
     needsGeoPages: true,
     defaultPageCount: 25,
-    nearbyCities: ['Los Angeles', 'Beverly Hills', 'Santa Monica', 'Pasadena', 'Glendale', 'Burbank', 'Long Beach', 'Culver City', 'West Hollywood', 'Malibu'],
+    nearbyCities: [],
   },
   auto: {
     label: 'Auto / Mechanic',
@@ -146,7 +152,7 @@ export const INDUSTRY_DEFAULTS: Record<string, IndustryDefault> = {
     aiName: 'Max',
     needsGeoPages: true,
     defaultPageCount: 30,
-    nearbyCities: ['Houston', 'Sugar Land', 'Katy', 'Pearland', 'Pasadena', 'The Woodlands', 'Spring', 'Cypress', 'Humble', 'Missouri City'],
+    nearbyCities: [],
   },
   'med-spa': {
     label: 'Medical Spa',
@@ -229,7 +235,7 @@ export const INDUSTRY_DEFAULTS: Record<string, IndustryDefault> = {
     aiName: 'Rex',
     needsGeoPages: true,
     defaultPageCount: 30,
-    nearbyCities: ['Dallas', 'Fort Worth', 'Arlington', 'Plano', 'Irving', 'Garland', 'Frisco', 'McKinney', 'Denton', 'Mesquite'],
+    nearbyCities: [],
   },
   landscaping: {
     label: 'Landscaping',
@@ -246,7 +252,7 @@ export const INDUSTRY_DEFAULTS: Record<string, IndustryDefault> = {
     aiName: 'Luke',
     needsGeoPages: true,
     defaultPageCount: 25,
-    nearbyCities: ['Phoenix', 'Scottsdale', 'Tempe', 'Mesa', 'Chandler', 'Gilbert', 'Glendale', 'Peoria', 'Surprise', 'Goodyear'],
+    nearbyCities: [],
   },
   'lawn-care': {
     label: 'Lawn Care',
@@ -263,7 +269,7 @@ export const INDUSTRY_DEFAULTS: Record<string, IndustryDefault> = {
     aiName: 'Buddy',
     needsGeoPages: true,
     defaultPageCount: 25,
-    nearbyCities: ['Atlanta', 'Marietta', 'Roswell', 'Alpharetta', 'Kennesaw', 'Smyrna', 'Decatur', 'Duluth', 'Lawrenceville', 'Suwanee'],
+    nearbyCities: [],
   },
   cleaning: {
     label: 'Cleaning',
@@ -280,7 +286,7 @@ export const INDUSTRY_DEFAULTS: Record<string, IndustryDefault> = {
     aiName: 'Clara',
     needsGeoPages: true,
     defaultPageCount: 25,
-    nearbyCities: ['Chicago', 'Evanston', 'Oak Park', 'Naperville', 'Schaumburg', 'Arlington Heights', 'Skokie', 'Cicero', 'Berwyn', 'Des Plaines'],
+    nearbyCities: [],
   },
   painting: {
     label: 'Painting',
@@ -297,7 +303,7 @@ export const INDUSTRY_DEFAULTS: Record<string, IndustryDefault> = {
     aiName: 'Pat',
     needsGeoPages: true,
     defaultPageCount: 25,
-    nearbyCities: ['Denver', 'Aurora', 'Lakewood', 'Littleton', 'Centennial', 'Westminster', 'Thornton', 'Arvada', 'Boulder', 'Broomfield'],
+    nearbyCities: [],
   },
   flooring: {
     label: 'Flooring',
@@ -314,7 +320,7 @@ export const INDUSTRY_DEFAULTS: Record<string, IndustryDefault> = {
     aiName: 'Frank',
     needsGeoPages: true,
     defaultPageCount: 25,
-    nearbyCities: ['Nashville', 'Franklin', 'Murfreesboro', 'Brentwood', 'Hendersonville', 'Gallatin', 'Lebanon', 'Mt Juliet', 'Spring Hill', 'Smyrna'],
+    nearbyCities: [],
   },
   remodeling: {
     label: 'Remodeling',
@@ -331,7 +337,7 @@ export const INDUSTRY_DEFAULTS: Record<string, IndustryDefault> = {
     aiName: 'Rob',
     needsGeoPages: true,
     defaultPageCount: 25,
-    nearbyCities: ['Portland', 'Beaverton', 'Tigard', 'Lake Oswego', 'Hillsboro', 'Gresham', 'Milwaukie', 'Oregon City', 'West Linn', 'Tualatin'],
+    nearbyCities: [],
   },
   'pest-control': {
     label: 'Pest Control',
@@ -348,7 +354,7 @@ export const INDUSTRY_DEFAULTS: Record<string, IndustryDefault> = {
     aiName: 'Pete',
     needsGeoPages: true,
     defaultPageCount: 30,
-    nearbyCities: ['Tampa', 'St Petersburg', 'Clearwater', 'Brandon', 'Riverview', 'Wesley Chapel', 'Palm Harbor', 'Largo', 'Dunedin', 'Safety Harbor'],
+    nearbyCities: [],
   },
   locksmith: {
     label: 'Locksmith',
@@ -365,7 +371,7 @@ export const INDUSTRY_DEFAULTS: Record<string, IndustryDefault> = {
     aiName: 'Leo',
     needsGeoPages: true,
     defaultPageCount: 25,
-    nearbyCities: ['Las Vegas', 'Henderson', 'North Las Vegas', 'Paradise', 'Spring Valley', 'Summerlin', 'Enterprise', 'Boulder City', 'Mesquite', 'Pahrump'],
+    nearbyCities: [],
   },
   moving: {
     label: 'Moving',
@@ -382,7 +388,7 @@ export const INDUSTRY_DEFAULTS: Record<string, IndustryDefault> = {
     aiName: 'Mike',
     needsGeoPages: true,
     defaultPageCount: 25,
-    nearbyCities: ['San Diego', 'Chula Vista', 'Carlsbad', 'Oceanside', 'Escondido', 'El Cajon', 'La Mesa', 'Encinitas', 'Poway', 'San Marcos'],
+    nearbyCities: [],
   },
   salon: {
     label: 'Salon / Beauty',
@@ -435,6 +441,162 @@ export const INDUSTRY_DEFAULTS: Record<string, IndustryDefault> = {
     defaultPageCount: 10,
     nearbyCities: [],
   },
+
+  // ── New Industries (Mar 26, 2026) ──────────────────────────────────────
+
+  cannabis: {
+    label: 'Cannabis / Dispensary',
+    services: [
+      { name: 'Flower', slug: 'flower' },
+      { name: 'Edibles', slug: 'edibles' },
+      { name: 'Concentrates', slug: 'concentrates' },
+      { name: 'Pre-Rolls', slug: 'pre-rolls' },
+      { name: 'Topicals', slug: 'topicals' },
+      { name: 'Accessories', slug: 'accessories' },
+    ],
+    designStyle: 'modern-dark',
+    colors: { primary: '#16a34a', secondary: '#14532d' },
+    aiName: 'Bud',
+    needsGeoPages: false,
+    defaultPageCount: 15,
+    nearbyCities: [],
+  },
+  contractor: {
+    label: 'General Contractor',
+    services: [
+      { name: 'New Construction', slug: 'new-construction' },
+      { name: 'Home Renovation', slug: 'home-renovation' },
+      { name: 'Commercial Build-Out', slug: 'commercial-build-out' },
+      { name: 'Permits & Planning', slug: 'permits-planning' },
+      { name: 'Foundation Work', slug: 'foundation-work' },
+      { name: 'Project Management', slug: 'project-management' },
+    ],
+    designStyle: 'modern-dark',
+    colors: { primary: '#d97706', secondary: '#1c1917' },
+    aiName: 'Jake',
+    needsGeoPages: true,
+    defaultPageCount: 25,
+    nearbyCities: [],
+  },
+  insurance: {
+    label: 'Insurance',
+    services: [
+      { name: 'Auto Insurance', slug: 'auto-insurance' },
+      { name: 'Home Insurance', slug: 'home-insurance' },
+      { name: 'Life Insurance', slug: 'life-insurance' },
+      { name: 'Business Insurance', slug: 'business-insurance' },
+      { name: 'Health Insurance', slug: 'health-insurance' },
+      { name: 'Umbrella Policy', slug: 'umbrella-policy' },
+    ],
+    designStyle: 'clean-light',
+    colors: { primary: '#1e40af', secondary: '#eff6ff' },
+    aiName: 'Sarah',
+    needsGeoPages: false,
+    defaultPageCount: 15,
+    nearbyCities: [],
+  },
+  photography: {
+    label: 'Photography',
+    services: [
+      { name: 'Wedding Photography', slug: 'wedding-photography' },
+      { name: 'Portrait Sessions', slug: 'portrait-sessions' },
+      { name: 'Corporate Headshots', slug: 'corporate-headshots' },
+      { name: 'Event Photography', slug: 'event-photography' },
+      { name: 'Product Photography', slug: 'product-photography' },
+      { name: 'Real Estate Photography', slug: 'real-estate-photography' },
+    ],
+    designStyle: 'minimal',
+    colors: { primary: '#1f2937', secondary: '#f9fafb' },
+    aiName: 'Ava',
+    needsGeoPages: false,
+    defaultPageCount: 12,
+    nearbyCities: [],
+  },
+  chiropractic: {
+    label: 'Chiropractic',
+    services: [
+      { name: 'Spinal Adjustment', slug: 'spinal-adjustment' },
+      { name: 'Sports Injury Treatment', slug: 'sports-injury' },
+      { name: 'Sciatica Treatment', slug: 'sciatica-treatment' },
+      { name: 'Neck Pain Relief', slug: 'neck-pain-relief' },
+      { name: 'Posture Correction', slug: 'posture-correction' },
+      { name: 'Wellness Programs', slug: 'wellness-programs' },
+    ],
+    designStyle: 'clean-light',
+    colors: { primary: '#0d9488', secondary: '#f0fdfa' },
+    aiName: 'Dr. Kim',
+    needsGeoPages: false,
+    defaultPageCount: 15,
+    nearbyCities: [],
+  },
+  therapy: {
+    label: 'Therapy / Counseling',
+    services: [
+      { name: 'Individual Therapy', slug: 'individual-therapy' },
+      { name: 'Couples Counseling', slug: 'couples-counseling' },
+      { name: 'Family Therapy', slug: 'family-therapy' },
+      { name: 'Anxiety Treatment', slug: 'anxiety-treatment' },
+      { name: 'Depression Support', slug: 'depression-support' },
+      { name: 'Trauma / EMDR', slug: 'trauma-emdr' },
+    ],
+    designStyle: 'minimal',
+    colors: { primary: '#7c3aed', secondary: '#f5f3ff' },
+    aiName: 'Maya',
+    needsGeoPages: false,
+    defaultPageCount: 15,
+    nearbyCities: [],
+  },
+  'pet-services': {
+    label: 'Pet Services',
+    services: [
+      { name: 'Dog Grooming', slug: 'dog-grooming' },
+      { name: 'Pet Boarding', slug: 'pet-boarding' },
+      { name: 'Dog Walking', slug: 'dog-walking' },
+      { name: 'Pet Sitting', slug: 'pet-sitting' },
+      { name: 'Dog Training', slug: 'dog-training' },
+      { name: 'Pet Daycare', slug: 'pet-daycare' },
+    ],
+    designStyle: 'clean-light',
+    colors: { primary: '#ea580c', secondary: '#fff7ed' },
+    aiName: 'Paws',
+    needsGeoPages: false,
+    defaultPageCount: 12,
+    nearbyCities: [],
+  },
+  wedding: {
+    label: 'Wedding / Events',
+    services: [
+      { name: 'Wedding Planning', slug: 'wedding-planning' },
+      { name: 'Event Coordination', slug: 'event-coordination' },
+      { name: 'Venue Decoration', slug: 'venue-decoration' },
+      { name: 'Floral Design', slug: 'floral-design' },
+      { name: 'DJ / Entertainment', slug: 'dj-entertainment' },
+      { name: 'Corporate Events', slug: 'corporate-events' },
+    ],
+    designStyle: 'minimal',
+    colors: { primary: '#be185d', secondary: '#fdf2f8' },
+    aiName: 'Grace',
+    needsGeoPages: false,
+    defaultPageCount: 12,
+    nearbyCities: [],
+  },
+  mortgage: {
+    label: 'Mortgage / Lending',
+    services: [
+      { name: 'Home Purchase Loans', slug: 'home-purchase-loans' },
+      { name: 'Refinancing', slug: 'refinancing' },
+      { name: 'FHA Loans', slug: 'fha-loans' },
+      { name: 'VA Loans', slug: 'va-loans' },
+      { name: 'Investment Property Loans', slug: 'investment-property-loans' },
+      { name: 'Pre-Approval', slug: 'pre-approval' },
+    ],
+    designStyle: 'clean-light',
+    colors: { primary: '#1e40af', secondary: '#f8fafc' },
+    aiName: 'Mark',
+    needsGeoPages: false,
+    defaultPageCount: 15,
+    nearbyCities: [],
+  },
 };
 
 export const DESIGN_STYLES = [
@@ -451,9 +613,19 @@ export const TONE_OPTIONS = [
 ] as const;
 
 export const AI_CAPABILITIES = [
-  { id: 'answer_questions', label: 'Answer questions' },
-  { id: 'book_appointments', label: 'Book appointments' },
-  { id: 'capture_leads', label: 'Capture leads' },
-  { id: 'provide_quotes', label: 'Provide quotes' },
-  { id: 'qualify_leads', label: 'Qualify leads' },
+  { id: 'answer_questions', label: 'Answer questions about the business' },
+  { id: 'book_appointments', label: 'Book appointments and schedule calls' },
+  { id: 'capture_leads', label: 'Capture lead info (name, phone, email)' },
+  { id: 'provide_quotes', label: 'Provide estimates and pricing info' },
+  { id: 'qualify_leads', label: 'Qualify leads and assess urgency' },
+] as const;
+
+// Business hours time options for the wizard dropdown
+export const BUSINESS_HOURS_OPTIONS = [
+  '6:00 AM', '6:30 AM', '7:00 AM', '7:30 AM', '8:00 AM', '8:30 AM',
+  '9:00 AM', '9:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM',
+  '12:00 PM', '12:30 PM', '1:00 PM', '1:30 PM', '2:00 PM', '2:30 PM',
+  '3:00 PM', '3:30 PM', '4:00 PM', '4:30 PM', '5:00 PM', '5:30 PM',
+  '6:00 PM', '6:30 PM', '7:00 PM', '7:30 PM', '8:00 PM', '8:30 PM',
+  '9:00 PM', '9:30 PM', '10:00 PM', '10:30 PM', '11:00 PM',
 ] as const;

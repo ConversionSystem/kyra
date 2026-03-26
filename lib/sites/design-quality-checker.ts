@@ -183,6 +183,8 @@ export function checkDesignQuality(html: string): DesignQualityResult {
   }
 
   // 2b. Skip heading levels (h1 → h3 without h2)
+  // Note: h1 count is also checked by html-quality-checker.ts (structural check).
+  // This design checker focuses on hierarchy/skip patterns which are design concerns.
   if (h1Count > 0 && h3Count > 0 && h2Count === 0) {
     issues.push({
       category: 'typography',

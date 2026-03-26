@@ -25,6 +25,7 @@ import {
   DESIGN_STYLES,
   TONE_OPTIONS,
   AI_CAPABILITIES,
+  BUSINESS_HOURS_OPTIONS,
 } from '@/lib/sites/industry-defaults';
 import { getTemplatesForIndustry, TEMPLATE_GALLERY } from '@/lib/sites/templates/gallery';
 import type { TemplatePreview } from '@/lib/sites/templates/gallery';
@@ -111,7 +112,7 @@ const initialWizardData: WizardData = {
   photoPreviewUrls: [],
   logo: null,
   logoPreviewUrl: '',
-  colorPrimary: '#6366f1',
+  colorPrimary: '#2563eb',
   colorSecondary: '#111827',
   designStyle: 'modern-dark',
   tagline: '',
@@ -319,7 +320,17 @@ function StepBusinessInfo({
             <input
               type="tel"
               value={data.phone}
-              onChange={(e) => onChange({ phone: e.target.value })}
+              onChange={(e) => {
+                // Auto-format phone as user types: (XXX) XXX-XXXX
+                const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+                let formatted = digits;
+                if (digits.length >= 6) {
+                  formatted = `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+                } else if (digits.length >= 3) {
+                  formatted = `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+                }
+                onChange({ phone: formatted });
+              }}
               placeholder="(555) 123-4567"
               className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             />
@@ -632,33 +643,41 @@ function StepServiceArea({
         <p className="text-xs text-indigo-600 mt-1">This is auto-filled from your address. Change it in Step 1.</p>
       </div>
 
-      {/* Nearby cities */}
+      {/* Service cities */}
       <div className="space-y-4">
+        {nearbyCities.length > 0 && (
+          <div>
+            <p className="text-sm font-medium text-gray-700 mb-2">
+              Suggested cities <span className="text-gray-400 font-normal">(click to add)</span>
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {nearbyCities.map((city) => {
+                const isSelected = data.selectedCities.includes(city);
+                return (
+                  <button
+                    key={city}
+                    onClick={() => toggleCity(city)}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${
+                      isSelected
+                        ? 'bg-indigo-600 text-white border-indigo-600'
+                        : data.selectedCities.length >= 6
+                          ? 'bg-gray-50 text-gray-300 border-gray-200 cursor-not-allowed'
+                          : 'bg-white text-gray-700 border-gray-200 hover:border-indigo-400 hover:bg-indigo-50'
+                    }`}
+                  >
+                    {isSelected && <Check className="inline h-3 w-3 mr-1" />}
+                    {city}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         <div>
           <p className="text-sm font-medium text-gray-700 mb-2">
-            Nearby cities <span className="text-gray-400 font-normal">(suggestions — add your actual service cities below)</span>
+            Add the cities you serve
           </p>
-          <div className="flex flex-wrap gap-2">
-            {nearbyCities.map((city) => {
-              const isSelected = data.selectedCities.includes(city);
-              return (
-                <button
-                  key={city}
-                  onClick={() => toggleCity(city)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${
-                    isSelected
-                      ? 'bg-indigo-600 text-white border-indigo-600'
-                      : data.selectedCities.length >= 6
-                        ? 'bg-gray-50 text-gray-300 border-gray-200 cursor-not-allowed'
-                        : 'bg-white text-gray-700 border-gray-200 hover:border-indigo-400 hover:bg-indigo-50'
-                  }`}
-                >
-                  {isSelected && <Check className="inline h-3 w-3 mr-1" />}
-                  {city}
-                </button>
-              );
-            })}
-          </div>
         </div>
 
         {/* Custom city input */}
@@ -1254,23 +1273,27 @@ function StepAIPersonality({
             </div>
             <div>
               <p className="text-xs text-gray-500 mb-1">Open</p>
-              <input
-                type="text"
+              <select
                 value={data.businessHoursStart}
                 onChange={(e) => onChange({ businessHoursStart: e.target.value })}
-                placeholder="8:00 AM"
                 className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
+              >
+                {BUSINESS_HOURS_OPTIONS.map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
             </div>
             <div>
               <p className="text-xs text-gray-500 mb-1">Close</p>
-              <input
-                type="text"
+              <select
                 value={data.businessHoursEnd}
                 onChange={(e) => onChange({ businessHoursEnd: e.target.value })}
-                placeholder="6:00 PM"
                 className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
+              >
+                {BUSINESS_HOURS_OPTIONS.map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
             </div>
           </div>
         </div>
@@ -2440,7 +2463,7 @@ export default function WebsiteBuilderWizard() {
                 </>
               ) : step === 6 ? (
                 <>
-                  Generate Website
+                  Generate Website — takes ~2-3 min
                   <Sparkles className="h-4 w-4" />
                 </>
               ) : (
