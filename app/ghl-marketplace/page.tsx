@@ -3,12 +3,12 @@ import Link from 'next/link';
 import PublicNav from '@/components/layout/public-nav';
 import PublicFooter from '@/components/layout/public-footer';
 import { PixelEvent } from '@/components/analytics/PixelEvent';
-import { TestimonialPlaceholder } from '@/components/marketing/testimonial-placeholder';
+// TestimonialPlaceholder removed — no real testimonials to show yet (brand rule: no fake social proof)
 
 export const metadata: Metadata = {
   title: 'Kyra for GHL Agencies — AI Workers That Book, Respond & Close',
   description:
-    'Deploy intelligent AI workers for your GHL clients in 5 minutes. They respond to leads, book appointments, and close deals — 24/7. Deploy AI workers for your GHL clients in 5 minutes.',
+    'Deploy intelligent AI workers for your GHL clients in minutes. They respond to leads, book appointments, and close deals — 24/7.',
 };
 
 const FEATURES = [
@@ -35,7 +35,7 @@ const PRICING = [
     price: '$99',
     period: '/mo',
     features: ['3 clients', 'GHL integration', 'Email support'],
-    cta: 'Start Free Trial',
+    cta: 'Get Started',
     popular: false,
   },
   {
@@ -43,7 +43,7 @@ const PRICING = [
     price: '$299',
     period: '/mo',
     features: ['10 clients', 'White-label branding', 'Priority support'],
-    cta: 'Start Free Trial',
+    cta: 'Get Started',
     popular: true,
   },
   {
@@ -51,7 +51,7 @@ const PRICING = [
     price: '$499',
     period: '/mo',
     features: ['20 clients', 'Everything in Pro', 'Dedicated onboarding'],
-    cta: 'Start Free Trial',
+    cta: 'Get Started',
     popular: false,
   },
 ];
@@ -67,7 +67,7 @@ const FAQS = [
   },
   {
     q: 'What happens after the trial?',
-    a: 'You only pay if you love it. Cancel anytime, no questions asked. No credit card required to start.',
+    a: 'You keep your free account as long as you want. When you\'re ready to scale, upgrade anytime. No credit card required to start.',
   },
   {
     q: 'Do my clients need a GHL account?',
@@ -99,24 +99,17 @@ export default function GhlMarketplacePage() {
             </span>
           </h1>
           <p className="text-xl text-gray-300 max-w-2xl mx-auto mb-10 leading-relaxed">
-            Deploy intelligent AI workers for your clients in 5 minutes. They respond to leads,
+            Deploy intelligent AI workers for your clients in minutes. They respond to leads,
             book appointments, and close deals — 24/7.
           </p>
           <Link
             href="/signup/agency"
             className="inline-block bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-lg px-10 py-4 rounded-xl transition-colors"
           >
-            Start Free 7-Day Trial →
+            Try It Free →
           </Link>
           <p className="text-gray-500 text-sm mt-4">No credit card required</p>
         </div>
-      </section>
-
-      {/* ── Social Proof ── */}
-      <section className="border-b border-gray-100 py-8 bg-gray-50">
-        <p className="text-center text-sm text-gray-500 font-medium">
-          Join <span className="text-gray-900 font-bold">50+ agencies</span> already running AI workers on Kyra
-        </p>
       </section>
 
       {/* ── Feature Grid ── */}
@@ -187,13 +180,6 @@ export default function GhlMarketplacePage() {
         </div>
       </section>
 
-      {/* ── Testimonial ── */}
-      <section className="py-20 px-4">
-        <div className="max-w-3xl mx-auto">
-          <TestimonialPlaceholder />
-        </div>
-      </section>
-
       {/* ── FAQ ── */}
       <section className="py-20 px-4 bg-gray-50">
         <div className="max-w-3xl mx-auto">
@@ -216,13 +202,13 @@ export default function GhlMarketplacePage() {
             Ready to add AI workers to your agency?
           </h2>
           <p className="text-indigo-200 text-lg mb-8">
-            Deploy your first AI worker in 5 minutes.
+            Deploy your first AI worker in under 10 minutes.
           </p>
           <Link
             href="/signup/agency"
             className="inline-block bg-white text-indigo-700 font-black text-lg px-10 py-4 rounded-xl hover:bg-indigo-50 transition-colors"
           >
-            Start Free 7-Day Trial →
+            Try It Free →
           </Link>
           <p className="text-indigo-300 text-sm mt-4">
             No credit card required. Cancel anytime.

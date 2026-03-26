@@ -65,7 +65,7 @@ export default function TermsPage() {
             title: '5. Billing and Payment',
             items: [
               'Paid plans are billed monthly via Stripe.',
-              'Subscription plans are billed monthly or annually. No free trial is currently offered.',
+              'Subscription plans are billed monthly or annually. A free account with limited features is available.',
               'Cancellation takes effect at the end of the current billing period; no prorated refunds.',
               'We reserve the right to suspend accounts with overdue payments.',
             ],

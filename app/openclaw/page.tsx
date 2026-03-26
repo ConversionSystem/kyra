@@ -5,10 +5,10 @@ import PublicFooter from '@/components/layout/public-footer';
 
 export const metadata: Metadata = {
   title: 'Kyra — Deploy OpenClaw AI Workers to Every Client | Agency Platform',
-  description: 'The only platform built for agencies running OpenClaw at scale. One dashboard. Every client. Autonomous AI workers deployed in 5 minutes.',
+  description: 'A platform built for agencies running OpenClaw at scale. One dashboard. Every client. AI workers deployed in minutes.',
   openGraph: {
     title: 'Kyra — Deploy OpenClaw AI Workers to Every Client',
-    description: 'The only platform built for agencies running OpenClaw at scale. One dashboard. Every client. Autonomous AI workers deployed in 5 minutes.',
+    description: 'A platform built for agencies running OpenClaw at scale. One dashboard. Every client. AI workers deployed in minutes.',
   },
 };
 
@@ -139,7 +139,7 @@ export default function OpenClawPage() {
               {
                 icon: '✅',
                 title: '5-min onboarding — template → live instantly',
-                desc: "21 pre-built AI worker templates. Pick the industry, connect your CRM, and your client's AI worker is operating in under 5 minutes.",
+                desc: "25+ industry AI worker templates. Pick the industry, connect your CRM, and your client's AI worker is operating in under 10 minutes.",
               },
               {
                 icon: '✅',
@@ -240,7 +240,7 @@ export default function OpenClawPage() {
               Start deploying OpenClaw AI workers today.
             </h2>
             <p className="text-indigo-200 text-lg mb-8 max-w-lg mx-auto">
-              Free to start. No credit card. Your first AI worker live in 5 minutes.
+              Free to start. No credit card. Your first AI worker live in under 10 minutes.
             </p>
             <Link
               href="/solo"

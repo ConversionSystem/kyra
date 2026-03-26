@@ -274,7 +274,7 @@ const SLIDES: Slide[] = [
     content: (
       <div className="flex flex-col justify-center px-4 sm:px-8 lg:px-16 min-h-full max-w-4xl mx-auto">
         <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black text-white mb-4 text-center">
-          Live in <span className="text-indigo-400">5 minutes.</span> Not 5 weeks.
+          Live in <span className="text-indigo-400">under 10 minutes.</span> Not 5 weeks.
         </h2>
         <p className="text-slate-400 text-center mb-12">No developers. No code. No infrastructure to manage.</p>
 
@@ -429,7 +429,7 @@ const SLIDES: Slide[] = [
             to every client?
           </h2>
           <p className="text-xl text-slate-300 max-w-xl mx-auto leading-relaxed">
-            Start free. Deploy your first AI worker in 5 minutes. 
+            Start free. Deploy your first AI worker in under 10 minutes. 
             No credit card. No commitment. Just results.
           </p>
         </div>
