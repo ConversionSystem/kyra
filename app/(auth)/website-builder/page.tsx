@@ -46,20 +46,20 @@ const FEATURES = [
 ];
 
 const COMPARISON_FEATURES = [
-  { label: 'Time to launch', diy: 'Weeks', wix: 'Days', dev: 'Months', kyra: '5 minutes' },
+  { label: 'Time to launch', diy: 'Weeks', wix: 'Days', dev: 'Months', kyra: 'Under 10 min' },
   { label: 'SEO optimization', diy: 'Manual', wix: 'Basic', dev: 'Depends', kyra: 'Automatic' },
   { label: 'AI chat trained on your site', diy: false, wix: false, dev: false, kyra: true },
   { label: 'Local SEO pages', diy: false, wix: 'Manual', dev: '$$$$', kyra: 'Automatic' },
-  { label: 'Monthly cost', diy: 'Free + hours', wix: '$16-45', dev: '$3,000+', kyra: 'Free to start' },
+  { label: 'Monthly cost', diy: 'Free + hours', wix: '$17-159', dev: '$3,000+', kyra: 'Free to start' },
   { label: 'Updates & growth', diy: 'You', wix: 'You', dev: 'Pay more', kyra: 'AI-powered' },
 ];
 
 const FAQS = [
   { q: 'Is it really free?', a: 'Yes. You get 1 free account — no credit card required. Build your first site, connect the AI worker, and see results before you decide to upgrade.' },
-  { q: 'How long does it take?', a: 'Under 5 minutes. Answer a few questions, and your full website is generated, optimized, and live.' },
+  { q: 'How long does it take?', a: 'Under 10 minutes. Answer a few questions, and your full website is generated, optimized, and live — while you grab a coffee.' },
   { q: 'Can I edit the content?', a: 'Yes. Every page is fully editable from your dashboard. Change text, images, or structure anytime.' },
   { q: 'Do I need a domain?', a: 'Not to start. We provide a free subdomain immediately. You can connect your own custom domain at any time.' },
-  { q: 'What industries do you support?', a: '12+ built-in industry templates including dental, legal, restaurants, real estate, HVAC, med spas, and more.' },
+  { q: 'What industries do you support?', a: '25+ industry-specific templates including dental, legal, restaurants, real estate, HVAC, med spas, fitness, veterinary, and more — each with tailored content, colors, and AI persona.' },
   { q: 'Is it mobile-friendly?', a: 'Yes. Every site is responsive by default. Looks great on phones, tablets, and desktops.' },
   { q: 'What about SEO?', a: 'Schema markup, meta tags, XML sitemap, and optimized content are all generated automatically. No SEO expertise needed.' },
 ];
@@ -185,7 +185,7 @@ export default function WebsiteBuilderPage() {
                 </a>
               </div>
               <div className="mt-6 flex items-center gap-5 justify-center lg:justify-start text-xs text-gray-500">
-                <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> Under 5 min</span>
+                <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> Under 10 min</span>
                 <span className="flex items-center gap-1"><Shield className="h-3.5 w-3.5" /> Free SSL</span>
                 <span className="flex items-center gap-1"><Search className="h-3.5 w-3.5" /> SEO built-in</span>
                 <span className="flex items-center gap-1"><Zap className="h-3.5 w-3.5" /> 1 free account</span>
