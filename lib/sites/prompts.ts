@@ -15,6 +15,7 @@ import type { ClientSite, SiteService, SiteCity } from './types';
 
 // ---------- Shared anti-pattern block ----------
 
+// Anti-patterns + 10-star product thinking (inspired by gstack's /plan-ceo-review)
 const ANTI_PATTERNS = [
   'Do NOT use any of these phrases or anything similar:',
   '- "we pride ourselves"',
@@ -27,10 +28,33 @@ const ANTI_PATTERNS = [
   '- "in today\'s fast-paced world"',
   '- "at the end of the day"',
   '- "one-stop shop"',
+  '- "cutting-edge"',
+  '- "industry-leading"',
+  '- "best-in-class"',
+  '- "world-class"',
+  '- "unparalleled"',
+  '- "seamless experience"',
+  '- "holistic approach"',
+  '- "leverage our expertise"',
+  '- "unlock the power"',
+  '- "revolutionize"',
+  '- "streamline your workflow"',
+  '- "empower your"',
+  '- "your all-in-one solution"',
   '',
   'Do NOT use em dashes (--) anywhere in the output.',
   'No generic filler. Every sentence must be specific to THIS business.',
   'Write like a skilled human copywriter, not an AI template.',
+  '',
+  '## The 10-Star Test (apply this thinking)',
+  'Before writing, ask yourself: what would a customer say if this business was the BEST',
+  'version of itself? Not "good service" -- what specific thing would make someone tell',
+  'their neighbor about this business? Write copy that captures THAT feeling.',
+  'A 1-star experience: no one answers the phone.',
+  'A 5-star experience: they show up on time and do decent work.',
+  'A 10-star experience: they text you 30 min before arrival, finish early, clean up',
+  'after themselves, and the owner calls next week to make sure everything is perfect.',
+  'Write content that paints the 10-star picture for THIS specific business.',
 ].join('\n');
 
 // ---------- Helper ----------
