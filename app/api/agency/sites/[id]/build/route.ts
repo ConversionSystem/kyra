@@ -307,6 +307,8 @@ async function buildAndDeploy(site: any, supabase: any) {
         ownerStory: site.owner_story || undefined,
         emergencyText: constants.emergencyText,
         tagline: constants.tagline,
+        colorPrimary: theme.colorPrimary,
+        colorSecondary: theme.colorSecondary,
         reviews: siteReviews,
       },
       pageType: p.type,

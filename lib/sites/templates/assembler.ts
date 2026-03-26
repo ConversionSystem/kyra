@@ -139,6 +139,8 @@ export interface AssemblePageOptions {
     ownerStory?: string;
     emergencyText?: string;
     tagline?: string;
+    colorPrimary?: string;
+    colorSecondary?: string;
     /** Real Google/site reviews — used instead of placeholders when available */
     reviews?: Array<{ author_name: string; text: string; rating: number; time_description?: string }>;
   };
@@ -157,6 +159,17 @@ export function assemblePage(options: AssemblePageOptions): string {
   const footerFn = FOOTERS[recipe.footer] || FOOTERS['four-column'];
   const navbarFn = NAVBARS[recipe.navbar] || NAVBARS['sticky-white'];
 
+  // Colors object passed to every section (required after main branch section refactor)
+  const colors = {
+    primary: siteData.colorPrimary || '#4f46e5',
+    secondary: siteData.colorSecondary || '#111827',
+  };
+
+  // Format hours for footer: Record<string,string> → human-readable lines
+  const formattedHours = siteData.hours
+    ? Object.entries(siteData.hours).map(([day, time]) => `${day}: ${time}`).join(' · ')
+    : undefined;
+
   // Build section HTML
   const navbarHtml = navbarFn({
     businessName: siteData.business_name,
@@ -164,6 +177,7 @@ export function assemblePage(options: AssemblePageOptions): string {
     phone: siteData.phone,
     phoneHref: siteData.phoneHref,
     bookingUrl: siteData.booking_url,
+    colors,
     links: [
       { label: 'Home', href: '/' },
       { label: 'Services', href: '#services' },
@@ -183,6 +197,7 @@ export function assemblePage(options: AssemblePageOptions): string {
     emergencyText: siteData.emergencyText,
     photoUrl: siteData.photos?.[0]?.url,
     logoUrl: siteData.logoUrl,
+    colors,
   });
 
   const servicesHtml = servicesFn({
@@ -193,6 +208,7 @@ export function assemblePage(options: AssemblePageOptions): string {
       description: s.description || '',
     })),
     businessName: siteData.business_name,
+    colors,
   });
 
   // Build about section from content_sections if available
@@ -210,6 +226,7 @@ export function assemblePage(options: AssemblePageOptions): string {
     rating: siteData.rating,
     reviewCount: siteData.reviewCount,
     license: siteData.license,
+    colors,
   });
 
   // Use real reviews when available; fall back to business-specific placeholders
@@ -229,6 +246,7 @@ export function assemblePage(options: AssemblePageOptions): string {
   const testimonialsHtml = testimonialsFn({
     heading: 'What Our Customers Say',
     testimonials: reviewData,
+    colors,
   });
 
   const ctaHtml = ctaFn({
@@ -239,12 +257,14 @@ export function assemblePage(options: AssemblePageOptions): string {
     bookingUrl: siteData.booking_url,
     businessName: siteData.business_name,
     emergencyText: siteData.emergencyText,
+    colors,
   });
 
   const faqHtml = pageData.faq?.length
     ? faqFn({
         heading: 'Frequently Asked Questions',
         faqs: pageData.faq,
+        colors,
       })
     : '';
 
@@ -254,10 +274,11 @@ export function assemblePage(options: AssemblePageOptions): string {
     phoneHref: siteData.phoneHref,
     email: siteData.email,
     address: siteData.address,
-    hours: siteData.hours,
+    formattedHours,
     services: siteData.services,
     cities: siteData.cities,
     bookingUrl: siteData.booking_url,
+    colors,
   });
 
   // Schema markup

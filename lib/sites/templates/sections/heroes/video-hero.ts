@@ -14,6 +14,7 @@ interface HeroData {
   emergencyText?: string;
   photoUrl?: string;
   logoUrl?: string;
+  colors: { primary: string; secondary: string };
 }
 
 export function videoHero(data: HeroData): string {

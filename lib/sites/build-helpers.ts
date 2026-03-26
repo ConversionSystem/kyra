@@ -166,6 +166,8 @@ export async function assembleSitePages(
         ownerStory: site.owner_story || undefined,
         emergencyText: constants.emergencyText,
         tagline: constants.tagline,
+        colorPrimary: theme.colorPrimary,
+        colorSecondary: theme.colorSecondary,
         reviews: siteReviews,
       },
       pageType: p.type,
