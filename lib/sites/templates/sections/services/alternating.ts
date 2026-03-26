@@ -17,7 +17,7 @@ export function alternatingServices(data: ServicesData): string {
   const rows = data.services.map((s, i) => {
     const isOdd = i % 2 === 0; // 0-indexed, so first item is "odd row"
     const bgColor = isOdd ? 'var(--color-surface)' : 'var(--color-border)';
-    const descText = s.description || `Learn more about our ${s.name} services.`;
+    const descText = s.description || `Professional ${s.name.toLowerCase()} services tailored to your needs. Contact us for a free consultation.`;
     const desc = `<p style="color: #6b7280; font-size: 1rem; line-height: 1.8; margin: 0 0 1.5rem 0;">${descText}</p>`;
 
     const decorative = `<div class="rounded-2xl flex items-center justify-center" style="background: linear-gradient(135deg, ${primary}15, ${secondary}20); min-height: 240px; aspect-ratio: 4/3;">
