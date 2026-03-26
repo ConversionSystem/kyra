@@ -101,7 +101,7 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
         <Rocket className="h-8 w-8 text-white" />
       </div>
       <h1 className="text-3xl font-black text-gray-900 mb-3">
-        Your first AI worker goes live in 5 minutes.
+        Your first AI worker goes live in minutes.
       </h1>
       <p className="text-gray-500 text-sm mb-2 max-w-sm mx-auto leading-relaxed">
         Deploy an AI that handles every inbound lead — SMS, booking, follow-up — automatically.
