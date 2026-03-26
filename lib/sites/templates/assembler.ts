@@ -2,6 +2,7 @@
 
 import type { SectionRecipe } from './recipes';
 import type { ContentSection, FaqItem } from '../types';
+import { getDesignCSS } from '../design-system';
 
 // Section imports — heroes
 import { fullBleedHero } from './sections/heroes/full-bleed';
@@ -105,7 +106,8 @@ const NAVBARS: Record<string, typeof stickyWhiteNavbar> = {
 
 export interface AssemblePageOptions {
   recipe: SectionRecipe;
-  colorVars: string;       // CSS custom properties block
+  colorVars: string;       // CSS custom properties block (:root vars only)
+  designStyle?: string;    // Design style key for getDesignCSS() — wires in body/card/button overrides
   pageData: {
     title: string;
     metaTitle?: string;
@@ -137,12 +139,14 @@ export interface AssemblePageOptions {
     ownerStory?: string;
     emergencyText?: string;
     tagline?: string;
+    /** Real Google/site reviews — used instead of placeholders when available */
+    reviews?: Array<{ author_name: string; text: string; rating: number; time_description?: string }>;
   };
   pageType: string;
 }
 
 export function assemblePage(options: AssemblePageOptions): string {
-  const { recipe, colorVars, pageData, siteData, pageType } = options;
+  const { recipe, colorVars, designStyle, pageData, siteData, pageType } = options;
 
   const heroFn = HEROES[recipe.hero] || HEROES['gradient-overlay'];
   const servicesFn = SERVICES[recipe.services] || SERVICES['grid-3col'];
@@ -208,14 +212,23 @@ export function assemblePage(options: AssemblePageOptions): string {
     license: siteData.license,
   });
 
-  // Placeholder testimonials (real ones come from reviews page data)
+  // Use real reviews when available; fall back to business-specific placeholders
+  const reviewData = siteData.reviews?.length
+    ? siteData.reviews.slice(0, 3).map(r => ({
+        name: r.author_name,
+        text: r.text,
+        rating: r.rating,
+        location: 'Verified Customer',
+      }))
+    : [
+        { name: 'Satisfied Customer', text: `${siteData.business_name} did an excellent job. Highly recommend to anyone in the area!`, rating: 5, location: 'Local' },
+        { name: 'Happy Client', text: `Professional, on-time, and great quality work. ${siteData.business_name} exceeded our expectations.`, rating: 5, location: 'Nearby' },
+        { name: 'Loyal Customer', text: `We've used ${siteData.business_name} for years. Consistent, reliable, and always a pleasure to work with.`, rating: 5, location: 'Local' },
+      ];
+
   const testimonialsHtml = testimonialsFn({
     heading: 'What Our Customers Say',
-    testimonials: [
-      { name: 'Happy Customer', text: 'Excellent service! Highly recommended.', rating: 5, location: 'Local' },
-      { name: 'Satisfied Client', text: 'Professional, on-time, and great quality work.', rating: 5, location: 'Nearby' },
-      { name: 'Loyal Customer', text: 'Been using their services for years. Never disappointed.', rating: 5, location: 'Local' },
-    ],
+    testimonials: reviewData,
   });
 
   const ctaHtml = ctaFn({
@@ -260,6 +273,17 @@ export function assemblePage(options: AssemblePageOptions): string {
   const metaTitle = pageData.metaTitle || `${pageData.title} | ${siteData.business_name}`;
   const metaDesc = pageData.metaDescription || pageData.hero_subtitle;
 
+  // Get design-style-specific CSS overrides (body bg, card styles, button styles, typography)
+  // This is what makes modern-dark look different from clean-light, bold, and minimal.
+  // colorPrimary/Secondary come from the :root vars already set in colorVars.
+  const colorPrimary = colorVars.match(/--color-primary:\s*([^;]+);/)?.[1]?.trim() || '#4f46e5';
+  const colorSecondary = colorVars.match(/--color-secondary:\s*([^;]+);/)?.[1]?.trim() || '#111827';
+  const activeDesignStyle = designStyle || 'clean-light';
+  // getDesignCSS returns a full block starting with :root { ... } — we only want the rules after that
+  const fullDesignCSS = getDesignCSS(activeDesignStyle, colorPrimary, colorSecondary);
+  // Strip the :root block (already handled by colorVars) to avoid duplication
+  const designOverrideCSS = fullDesignCSS.replace(/:root\s*\{[^}]*\}\s*/g, '').trim();
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -273,7 +297,8 @@ export function assemblePage(options: AssemblePageOptions): string {
     :root {
       ${colorVars}
     }
-    body { font-family: system-ui, -apple-system, sans-serif; color: var(--color-text); }
+    /* Design style overrides — body, section, card, button, typography */
+    ${designOverrideCSS}
     a { color: inherit; }
   </style>
 </head>

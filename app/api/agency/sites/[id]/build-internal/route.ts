@@ -8,12 +8,16 @@
  *   2) build-internal: VPS Next.js compile + deploy (~2-4 min)
  *
  * Auth: Bearer token from KYRA_API_SECRET env var (internal only, never user-facing).
+ *
+ * NOTE: Uses assembleSitePages() from lib/sites/build-helpers.ts — same template
+ * system as the manual /build route. All first-time builds now get proper templates,
+ * design styles, and real reviews (not the old generic single-template flow).
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { waitUntil } from '@vercel/functions';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
-import { resolvePhotos } from '@/lib/sites/unsplash';
+import { assembleSitePages } from '@/lib/sites/build-helpers';
 
 export const maxDuration = 300;
 
@@ -75,41 +79,15 @@ async function runBuild(siteId: string, supabase: ReturnType<typeof createServic
 
   if (pagesErr || !pages?.length) throw new Error('No pages found for site');
 
-  const services = (site.services || []) as Array<{ name: string; slug: string; description?: string }>;
-  const cities = (site.cities || []) as Array<{ name: string; slug: string; state?: string }>;
-  const address = site.address || {};
+  // Update status to deploying
+  await supabase
+    .from('client_sites')
+    .update({ status: 'deploying', updated_at: new Date().toISOString() })
+    .eq('id', siteId);
 
-  const phone = site.phone || '';
-  const phoneDigits = phone.replace(/[^0-9]/g, '');
-
-  const constants = {
-    name: site.business_name || '',
-    phone,
-    phoneHref: phoneDigits ? `tel:+${phoneDigits.length === 10 ? '1' : ''}${phoneDigits}` : '',
-    email: `info@${domain}`,
-    address: [address.street, address.city, address.state, address.zip].filter(Boolean).join(', '),
-    license: site.license || '',
-    rating: site.rating || 5.0,
-    reviewCount: site.review_count || 0,
-    yearsInBusiness: site.years_in_business || 1,
-    hours: site.hours || {},
-    coordinates: { lat: address.lat || 0, lng: address.lng || 0 },
-    tagline: site.tagline || '',
-    url: `https://${domain}`,
-    bookingUrl: site.booking_url || '',
-    googleReviewUrl: (site as Record<string, unknown>).google_review_url || '',
-    industry: site.industry || '',
-    emergencyText: site.emergency_247 ? '24/7 Emergency Service Available' : '',
-    services,
-    serviceAreas: cities,
-  };
-
-  const theme = {
-    colorPrimary: site.color_primary || '#dc2626',
-    colorSecondary: site.color_secondary || '#111827',
-    designStyle: site.design_style || 'modern-dark',
-    bookingUrl: site.booking_url || null,
-  };
+  // Assemble all pages using the shared helper — same template system as manual /build
+  const { assembledPages, recipe, constants, theme, resolvedPhotos } =
+    await assembleSitePages(site, pages, supabase);
 
   const pagesData = pages.map((p: {
     slug: string; page_type: string; title: string;
@@ -129,13 +107,7 @@ async function runBuild(siteId: string, supabase: ReturnType<typeof createServic
     schema: p.schema_markup,
   }));
 
-  // Update status to deploying
-  await supabase
-    .from('client_sites')
-    .update({ status: 'deploying', updated_at: new Date().toISOString() })
-    .eq('id', siteId);
-
-  console.log(`[build-internal] Calling VPS for site ${siteId} (${domain}), ${pages.length} pages`);
+  console.log(`[build-internal] Calling VPS for site ${siteId} (${domain}), ${pages.length} pages, template: ${site.template_id || 'industry-default'}, style: ${theme.designStyle}`);
 
   // Call VPS provisioner — up to 4 min for Next.js build
   const res = await fetch(`${PROVISIONER_URL}/sites/${siteId}/build-and-deploy`, {
@@ -147,14 +119,17 @@ async function runBuild(siteId: string, supabase: ReturnType<typeof createServic
     body: JSON.stringify({
       domain,
       template: 'generic',
+      useNewTemplateSystem: true,
       constants,
       theme,
       pages: pagesData,
+      assembledPages,
+      recipe,
       widgetClientId: site.client_id,
       ga4Id: site.ga4_id || null,
       whiteLabel: site.white_label ?? false,
       logoUrl: site.logo_url || null,
-      photos: resolvePhotos(site.photos, site.industry),
+      photos: resolvedPhotos,
     }),
     signal: AbortSignal.timeout(240_000), // 4 min max for VPS build
   });

@@ -236,14 +236,30 @@ async function buildAndDeploy(site: any, supabase: any) {
   const recipe = templatePreview?.recipe || getRecipeForIndustry(site.industry || '');
   const resolvedPhotos = resolvePhotos(site.photos, site.industry);
 
-  // Build color CSS variables from theme
+  // Fetch real reviews from site_reviews if available (graceful fallback if table doesn't exist)
+  let siteReviews: Array<{ author_name: string; text: string; rating: number; time_description?: string }> = [];
+  try {
+    const { data: reviewRows } = await supabase
+      .from('site_reviews')
+      .select('author_name, text, rating, time_description')
+      .eq('site_id', site.id)
+      .gte('rating', 4)
+      .order('rating', { ascending: false })
+      .limit(5);
+    if (reviewRows?.length) siteReviews = reviewRows;
+  } catch {
+    // site_reviews table may not exist yet — use placeholders
+  }
+
+  // Build color CSS variables from theme (used in :root block)
+  const isDark = theme.designStyle === 'modern-dark';
   const colorVars = [
     `--color-primary: ${theme.colorPrimary};`,
     `--color-secondary: ${theme.colorSecondary};`,
-    `--color-surface: #ffffff;`,
-    `--color-text: #111827;`,
-    `--color-text-muted: #6b7280;`,
-    `--color-border: #e5e7eb;`,
+    `--color-surface: ${isDark ? '#1f2937' : '#ffffff'};`,
+    `--color-text: ${isDark ? '#f9fafb' : '#111827'};`,
+    `--color-text-muted: ${isDark ? '#9ca3af' : '#6b7280'};`,
+    `--color-border: ${isDark ? 'rgba(255,255,255,0.1)' : '#e5e7eb'};`,
     `--color-accent: ${theme.colorPrimary};`,
   ].join('\n      ');
 
@@ -259,6 +275,7 @@ async function buildAndDeploy(site: any, supabase: any) {
     html: assemblePage({
       recipe,
       colorVars,
+      designStyle: theme.designStyle,
       pageData: {
         title: p.title,
         metaTitle: p.metaTitle,
@@ -290,6 +307,7 @@ async function buildAndDeploy(site: any, supabase: any) {
         ownerStory: site.owner_story || undefined,
         emergencyText: constants.emergencyText,
         tagline: constants.tagline,
+        reviews: siteReviews,
       },
       pageType: p.type,
     }),
