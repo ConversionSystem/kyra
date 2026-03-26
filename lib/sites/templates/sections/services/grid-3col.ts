@@ -21,7 +21,7 @@ export function grid3colServices(data: ServicesData): string {
     const descText = s.description || `Learn more about our ${s.name} services.`;
     const desc = `<p style="color: #6b7280; font-size: 0.938rem; line-height: 1.7; margin: 0;">${descText}</p>`;
 
-    return `<article class="rounded-2xl shadow-lg" style="background: #ffffff; border-top: 4px solid ${primary}; transition: transform 0.25s ease, box-shadow 0.25s ease;" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 20px 25px -5px rgba(0,0,0,0.1),0 8px 10px -6px rgba(0,0,0,0.1)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow=''">
+    return `<article class="rounded-2xl shadow-lg" style="background: var(--color-surface); border-top: 4px solid ${primary}; transition: transform 0.25s ease, box-shadow 0.25s ease;" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 20px 25px -5px rgba(0,0,0,0.1),0 8px 10px -6px rgba(0,0,0,0.1)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow=''">
       <div class="p-8">
         <div class="flex items-center justify-center rounded-full" style="width: 56px; height: 56px; background: ${primary}; margin-bottom: 1.25rem;">${icon}</div>
         <h3 style="color: #1f2937; font-size: 1.25rem; font-weight: 700; margin: 0 0 0.5rem 0;"><a href="/services/${s.slug}" style="color: #1f2937; text-decoration: none;">${s.name}</a></h3>
@@ -30,7 +30,7 @@ export function grid3colServices(data: ServicesData): string {
     </article>`;
   }).join('\n    ');
 
-  return `<section class="py-16 sm:py-24 px-4 sm:px-6" style="background: #ffffff;" aria-label="${heading}">
+  return `<section class="py-16 sm:py-24 px-4 sm:px-6" style="background: var(--color-surface);" aria-label="${heading}">
   <div class="max-w-6xl mx-auto">
     <h2 class="text-center" style="color: #1f2937; font-size: 2.25rem; font-weight: 800; margin: 0 0 3rem 0;">${heading}</h2>
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">

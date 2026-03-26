@@ -18,7 +18,7 @@ export function transparentOverlayNavbar(data: NavbarData): string {
     .join('\n      ');
 
   const cta = data.phone
-    ? `<a href="${data.phoneHref || `tel:${data.phone}`}" class="px-5 py-2 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90" style="background: #ffffff; color: #1f2937;">${data.phone}</a>`
+    ? `<a href="${data.phoneHref || `tel:${data.phone}`}" class="px-5 py-2 rounded-lg text-sm font-semibold transition-opacity hover:opacity-90" style="background: var(--color-surface); color: #1f2937;">${data.phone}</a>`
     : '';
 
   return `<nav class="absolute top-0 left-0 right-0 z-50 px-4 sm:px-6 py-4" aria-label="Main navigation">

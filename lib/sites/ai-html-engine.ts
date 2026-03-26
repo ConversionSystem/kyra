@@ -20,7 +20,7 @@ const API_KEY = process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY;
 
 // AI HTML generation uses a capable model for all pages (needs to write good HTML)
 const HTML_MODEL = HAS_OPENROUTER
-  ? 'anthropic/claude-sonnet-4-5'
+  ? 'anthropic/claude-sonnet-4-6'
   : 'gpt-4o';
 
 const HTML_MAX_TOKENS = 8000; // Full HTML documents need more tokens

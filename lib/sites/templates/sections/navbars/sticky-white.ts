@@ -24,7 +24,7 @@ export function stickyWhiteNavbar(data: NavbarData): string {
       </a>`
     : '';
 
-  return `<nav class="sticky top-0 z-50 shadow-sm px-4 sm:px-6 py-3" style="background: #ffffff;" aria-label="Main navigation">
+  return `<nav class="sticky top-0 z-50 shadow-sm px-4 sm:px-6 py-3" style="background: var(--color-surface);" aria-label="Main navigation">
   <div class="max-w-6xl mx-auto flex items-center justify-between">
     <a href="/" class="shrink-0">${logo}</a>
     <div class="hidden md:flex items-center gap-6">
