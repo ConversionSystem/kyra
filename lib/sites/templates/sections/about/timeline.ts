@@ -37,7 +37,7 @@ export function timelineAbout(data: AboutData): string {
     return `<div class="relative flex flex-row ${cardSide} items-start gap-4 md:gap-8">
       <!-- Left / Right card -->
       <div class="hidden md:block md:w-5/12 ${textAlign}">
-        ${isEven ? `<div class="inline-block rounded-xl shadow-md p-5" style="background: #ffffff;">
+        ${isEven ? `<div class="inline-block rounded-xl shadow-md p-5" style="background: var(--color-surface);">
           <p class="text-base leading-relaxed" style="color: #6b7280;">${m.text}</p>
         </div>` : `<span class="inline-block rounded-full px-4 py-1.5 text-sm font-bold" style="background: ${data.colors.primary}; color: #ffffff;">${m.year}</span>`}
       </div>
@@ -50,7 +50,7 @@ export function timelineAbout(data: AboutData): string {
 
       <!-- Right / Left card -->
       <div class="md:w-5/12 ${isEven ? '' : ''}">
-        ${isEven ? `<span class="inline-block rounded-full px-4 py-1.5 text-sm font-bold" style="background: ${data.colors.primary}; color: #ffffff;">${m.year}</span>` : `<div class="inline-block rounded-xl shadow-md p-5" style="background: #ffffff;">
+        ${isEven ? `<span class="inline-block rounded-full px-4 py-1.5 text-sm font-bold" style="background: ${data.colors.primary}; color: #ffffff;">${m.year}</span>` : `<div class="inline-block rounded-xl shadow-md p-5" style="background: var(--color-surface);">
           <p class="text-base leading-relaxed" style="color: #6b7280;">${m.text}</p>
         </div>`}
       </div>
@@ -58,14 +58,14 @@ export function timelineAbout(data: AboutData): string {
       <!-- Mobile: card below dot (visible only on small screens) -->
       <div class="md:hidden flex-1 pb-8">
         <span class="inline-block rounded-full px-4 py-1.5 text-sm font-bold mb-2" style="background: ${data.colors.primary}; color: #ffffff;">${m.year}</span>
-        <div class="rounded-xl shadow-md p-4" style="background: #ffffff;">
+        <div class="rounded-xl shadow-md p-4" style="background: var(--color-surface);">
           <p class="text-base leading-relaxed" style="color: #6b7280;">${m.text}</p>
         </div>
       </div>
     </div>`;
   }).join('');
 
-  return `<section class="py-16 sm:py-24" style="background: #f9fafb;" aria-label="Our Journey">
+  return `<section class="py-16 sm:py-24" style="background: var(--color-surface);" aria-label="Our Journey">
   <div class="max-w-4xl mx-auto px-4 sm:px-6">
     <h2 class="text-3xl sm:text-4xl font-bold text-center mb-4" style="color: #1f2937;">${heading}</h2>
     ${body ? `<p class="text-center text-lg mb-12 max-w-2xl mx-auto" style="color: #6b7280;">${body}</p>` : '<div class="mb-12"></div>'}

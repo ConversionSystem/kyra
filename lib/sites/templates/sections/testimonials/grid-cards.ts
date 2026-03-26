@@ -25,7 +25,7 @@ export function gridCardsTestimonials(data: TestimonialsData): string {
   const cards = data.testimonials.map(t => {
     const initial = t.name.charAt(0).toUpperCase();
     return `
-    <div class="rounded-2xl p-8 shadow-lg" style="background: #ffffff; border-left: 4px solid ${data.colors.primary};">
+    <div class="rounded-2xl p-8 shadow-lg" style="background: var(--color-surface); border-left: 4px solid ${data.colors.primary};">
       ${t.rating ? renderStars(t.rating, data.colors.primary) : ''}
       <p class="text-base leading-relaxed mb-6" style="color: #1f2937;">${t.text}</p>
       <div class="flex items-center gap-3">
@@ -38,7 +38,7 @@ export function gridCardsTestimonials(data: TestimonialsData): string {
     </div>`;
   }).join('');
 
-  return `<section class="py-16 sm:py-24 px-4" style="background: #f9fafb;" aria-label="Testimonials">
+  return `<section class="py-16 sm:py-24 px-4" style="background: var(--color-surface);" aria-label="Testimonials">
   <div class="max-w-6xl mx-auto">
     <h2 class="text-3xl sm:text-4xl font-bold text-center mb-12" style="color: #1f2937;">${heading}</h2>
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">

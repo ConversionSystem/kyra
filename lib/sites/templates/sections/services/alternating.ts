@@ -16,7 +16,7 @@ export function alternatingServices(data: ServicesData): string {
 
   const rows = data.services.map((s, i) => {
     const isOdd = i % 2 === 0; // 0-indexed, so first item is "odd row"
-    const bgColor = isOdd ? '#ffffff' : '#f9fafb';
+    const bgColor = isOdd ? 'var(--color-surface)' : 'var(--color-border)';
     const descText = s.description || `Learn more about our ${s.name} services.`;
     const desc = `<p style="color: #6b7280; font-size: 1rem; line-height: 1.8; margin: 0 0 1.5rem 0;">${descText}</p>`;
 
@@ -42,7 +42,7 @@ export function alternatingServices(data: ServicesData): string {
   }).join('\n    ');
 
   return `<section aria-label="${heading}">
-  <div class="py-16 sm:py-24 px-4 sm:px-6" style="background: #ffffff;">
+  <div class="py-16 sm:py-24 px-4 sm:px-6" style="background: var(--color-surface);">
     <h2 class="text-center max-w-4xl mx-auto" style="color: #1f2937; font-size: 2.25rem; font-weight: 800; margin: 0;">${heading}</h2>
   </div>
     ${rows}

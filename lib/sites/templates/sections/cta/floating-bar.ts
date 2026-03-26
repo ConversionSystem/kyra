@@ -18,7 +18,7 @@ export function floatingBarCta(data: CtaData): string {
     : '';
 
   const bookingCta = data.bookingUrl
-    ? `<a href="${data.bookingUrl}" class="inline-flex items-center justify-center px-5 py-2 rounded-lg font-semibold text-sm transition-opacity hover:opacity-90" style="background: #ffffff; color: ${data.colors.primary};">Book Now</a>`
+    ? `<a href="${data.bookingUrl}" class="inline-flex items-center justify-center px-5 py-2 rounded-lg font-semibold text-sm transition-opacity hover:opacity-90" style="background: var(--color-surface); color: ${data.colors.primary};">Book Now</a>`
     : '';
 
   return `<div class="fixed bottom-0 left-0 right-0 z-50 py-3 px-4 shadow-2xl" style="background: ${data.colors.primary};" role="complementary" aria-label="Quick contact bar">

@@ -56,39 +56,45 @@ const MAX_RETRIES = 3;
 const BASE_RETRY_DELAY_MS = 2000;
 
 // Model routing — OpenRouter uses "provider/model", OpenAI uses just "model"
+// Angel directive (Mar 26): Use claude-sonnet-4-6 for all content generation.
+// Richer, more professional content across every page type.
 const MODELS = HAS_OPENROUTER
   ? {
-      hero:        'anthropic/claude-sonnet-4-5',
-      service:     'openai/gpt-4o',
-      city:        'openai/gpt-4o',
-      cityService: 'openai/gpt-4o-mini',
-      faq:         'anthropic/claude-3-5-haiku',
-      blog:        'openai/gpt-4o-mini',
-      meta:        'anthropic/claude-3-5-haiku',
+      hero:        'anthropic/claude-sonnet-4-6',
+      service:     'anthropic/claude-sonnet-4-6',
+      city:        'anthropic/claude-sonnet-4-6',
+      cityService: 'anthropic/claude-sonnet-4-6',
+      faq:         'anthropic/claude-sonnet-4-6',
+      blog:        'anthropic/claude-sonnet-4-6',
+      meta:        'anthropic/claude-sonnet-4-6',
     }
   : {
       // OpenAI fallback — all models via OpenAI directly
       hero:        'gpt-4o',
       service:     'gpt-4o',
       city:        'gpt-4o',
-      cityService: 'gpt-4o-mini',
-      faq:         'gpt-4o-mini',
-      blog:        'gpt-4o-mini',
-      meta:        'gpt-4o-mini',
+      cityService: 'gpt-4o',
+      faq:         'gpt-4o',
+      blog:        'gpt-4o',
+      meta:        'gpt-4o',
     };
 
+// Increased token limits (Mar 26) for richer, more professional content.
+// Previous limits produced thin, generic text. Claude Sonnet 4.6 can
+// generate detailed, conversion-optimized copy when given room.
 const MAX_TOKENS = {
-  hero: 2000,
-  service: 1500,
-  city: 1200,
-  cityService: 1000,
-  faq: 2000,
-  blog: 1500,
-  meta: 500,
+  hero: 3000,
+  service: 2500,
+  city: 2000,
+  cityService: 1500,
+  faq: 3000,
+  blog: 2500,
+  meta: 800,
 } as const;
 
 // Approximate cost per 1K tokens (input + output combined estimate)
 const COST_PER_1K: Record<string, number> = {
+  'anthropic/claude-sonnet-4-6': 0.015,
   'anthropic/claude-sonnet-4-5': 0.015,
   'openai/gpt-4o': 0.01,
   'openai/gpt-4o-mini': 0.0003,
