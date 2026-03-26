@@ -1118,16 +1118,21 @@ function StepChooseDesign({
                   <Check className="h-3.5 w-3.5 text-white" />
                 </span>
               )}
-              {/* Color preview blocks */}
-              <div className="flex gap-1.5 mb-3">
-                <div
-                  className="h-16 flex-1 rounded-lg"
-                  style={{ background: `linear-gradient(135deg, ${t.previewColors.primary}, ${t.previewColors.secondary})` }}
-                />
-                <div className="flex flex-col gap-1.5 w-8">
-                  <div className="flex-1 rounded" style={{ backgroundColor: t.previewColors.primary }} />
-                  <div className="flex-1 rounded" style={{ backgroundColor: t.previewColors.secondary }} />
-                </div>
+              {/* Template visual preview — previewHtml is static controlled content from gallery.ts */}
+              <div className="h-24 rounded-lg overflow-hidden mb-3 border border-gray-100 bg-gray-50">
+                {t.previewHtml ? (
+                  // Safe: previewHtml is hardcoded in gallery.ts, not user input
+                  <div
+                    className="w-full h-full"
+                    // eslint-disable-next-line react/no-danger
+                    dangerouslySetInnerHTML={{ __html: t.previewHtml }}
+                  />
+                ) : (
+                  <div
+                    className="w-full h-full"
+                    style={{ background: `linear-gradient(135deg, ${t.previewColors.primary}, ${t.previewColors.secondary})` }}
+                  />
+                )}
               </div>
               <h3 className="font-semibold text-gray-900 text-sm mb-1">{t.name}</h3>
               <p className="text-xs text-gray-500 leading-relaxed">{t.description}</p>

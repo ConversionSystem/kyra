@@ -9,6 +9,8 @@ export interface TemplatePreview {
   industries: string[];
   recipe: SectionRecipe;
   previewColors: { primary: string; secondary: string };
+  /** Short inline HTML snippet rendered in the wizard template picker as a visual preview */
+  previewHtml?: string;
 }
 
 export const TEMPLATE_GALLERY: TemplatePreview[] = [
@@ -28,6 +30,7 @@ export const TEMPLATE_GALLERY: TemplatePreview[] = [
       navbar: 'sticky-white',
     },
     previewColors: { primary: '#dc2626', secondary: '#111827' },
+    previewHtml: '<div style="background:linear-gradient(135deg,#1a1a2e,#111827);padding:16px;font-family:system-ui;height:100%"><div style="background:rgba(220,38,38,0.15);border:1px solid rgba(220,38,38,0.3);border-radius:6px;padding:12px 14px"><div style="color:#fff;font-size:14px;font-weight:800;margin-bottom:4px">Your Business Name</div><div style="color:rgba(255,255,255,0.7);font-size:10px;margin-bottom:10px">Professional services you can trust</div><div style="display:flex;gap:6px"><div style="background:#dc2626;color:#fff;padding:5px 10px;border-radius:4px;font-size:9px;font-weight:700">CALL NOW</div><div style="border:1px solid rgba(255,255,255,0.4);color:#fff;padding:5px 10px;border-radius:4px;font-size:9px">Learn More</div></div></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-top:8px"><div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:4px;padding:6px;text-align:center"><div style="color:#dc2626;font-size:11px;font-weight:800">500+</div><div style="color:rgba(255,255,255,0.5);font-size:8px">Jobs Done</div></div><div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:4px;padding:6px;text-align:center"><div style="color:#dc2626;font-size:11px;font-weight:800">5★</div><div style="color:rgba(255,255,255,0.5);font-size:8px">Rating</div></div><div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:4px;padding:6px;text-align:center"><div style="color:#dc2626;font-size:11px;font-weight:800">24/7</div><div style="color:rgba(255,255,255,0.5);font-size:8px">Service</div></div></div></div>',
   },
   {
     id: 'clean-clinical',
@@ -45,6 +48,7 @@ export const TEMPLATE_GALLERY: TemplatePreview[] = [
       navbar: 'sticky-white',
     },
     previewColors: { primary: '#0d9488', secondary: '#f0fdfa' },
+    previewHtml: '<div style="background:#fff;padding:16px;font-family:system-ui;height:100%"><div style="text-align:center;padding:10px 0"><div style="display:inline-block;background:#f0fdfa;color:#0d9488;font-size:9px;font-weight:700;padding:3px 10px;border-radius:20px;margin-bottom:8px;border:1px solid #99f6e4">Trusted Since 1998</div><div style="color:#111827;font-size:14px;font-weight:700;margin-bottom:4px">Your Health, Our Priority</div><div style="color:#6b7280;font-size:10px;margin-bottom:10px">Compassionate care for the whole family</div><div style="background:#0d9488;color:#fff;display:inline-block;padding:6px 16px;border-radius:6px;font-size:9px;font-weight:600">Book Appointment</div></div><div style="border-top:1px solid #e5e7eb;padding-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:6px"><div style="display:flex;align-items:center;gap:6px"><div style="width:24px;height:24px;background:#f0fdfa;border-radius:50%;display:flex;align-items:center;justify-content:center"><div style="width:8px;height:8px;background:#0d9488;border-radius:50%"></div></div><div style="color:#374151;font-size:9px;font-weight:500">General Care</div></div><div style="display:flex;align-items:center;gap:6px"><div style="width:24px;height:24px;background:#f0fdfa;border-radius:50%;display:flex;align-items:center;justify-content:center"><div style="width:8px;height:8px;background:#0d9488;border-radius:50%"></div></div><div style="color:#374151;font-size:9px;font-weight:500">Emergency</div></div></div></div>',
   },
   {
     id: 'bold-emergency',
@@ -62,6 +66,7 @@ export const TEMPLATE_GALLERY: TemplatePreview[] = [
       navbar: 'sticky-white',
     },
     previewColors: { primary: '#ef4444', secondary: '#18181b' },
+    previewHtml: '<div style="background:#18181b;padding:16px;font-family:system-ui;height:100%"><div style="background:#ef4444;border-radius:6px;padding:10px 12px;text-align:center;margin-bottom:8px"><div style="color:#fff;font-size:9px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:2px">⚡ 24/7 EMERGENCY SERVICE</div><div style="color:rgba(255,255,255,0.9);font-size:13px;font-weight:900;margin-bottom:6px">Fast Response. Call Now.</div><div style="background:#fff;color:#ef4444;padding:6px 14px;border-radius:4px;font-size:11px;font-weight:800;display:inline-block">(555) 000-0000</div></div><div style="display:flex;flex-direction:column;gap:4px"><div style="display:flex;align-items:center;gap:8px;padding:6px;background:rgba(255,255,255,0.05);border-radius:4px"><div style="color:#ef4444;font-size:12px">✓</div><div style="color:rgba(255,255,255,0.8);font-size:9px">Licensed &amp; Insured</div></div><div style="display:flex;align-items:center;gap:8px;padding:6px;background:rgba(255,255,255,0.05);border-radius:4px"><div style="color:#ef4444;font-size:12px">✓</div><div style="color:rgba(255,255,255,0.8);font-size:9px">Same Day Service</div></div><div style="display:flex;align-items:center;gap:8px;padding:6px;background:rgba(255,255,255,0.05);border-radius:4px"><div style="color:#ef4444;font-size:12px">✓</div><div style="color:rgba(255,255,255,0.8);font-size:9px">Upfront Pricing</div></div></div></div>',
   },
   {
     id: 'elegant-minimal',
@@ -79,6 +84,7 @@ export const TEMPLATE_GALLERY: TemplatePreview[] = [
       navbar: 'transparent-overlay',
     },
     previewColors: { primary: '#ec4899', secondary: '#fdf2f8' },
+    previewHtml: '<div style="background:linear-gradient(160deg,#fdf2f8,#fff);padding:16px;font-family:Georgia,serif;height:100%"><div style="text-align:center;padding:8px 0 12px"><div style="color:#9ca3af;font-size:8px;letter-spacing:0.2em;text-transform:uppercase;margin-bottom:6px">Refined &amp; Elegant</div><div style="color:#111827;font-size:15px;font-weight:400;margin-bottom:4px;font-style:italic">Your Beautiful Space</div><div style="color:#6b7280;font-size:9px;margin-bottom:12px;line-height:1.5">Experience luxury. Feel the difference.</div><div style="border:1px solid #ec4899;color:#ec4899;padding:5px 14px;border-radius:2px;font-size:9px;display:inline-block;letter-spacing:0.1em;text-transform:uppercase">Book a Consultation</div></div><div style="border-top:1px solid #f3e8ff;padding-top:10px"><div style="color:#9ca3af;font-size:8px;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:6px">Services</div><div style="color:#374151;font-size:10px;margin-bottom:4px;padding-bottom:4px;border-bottom:1px solid #f9f0ff">— Facial Treatments</div><div style="color:#374151;font-size:10px;margin-bottom:4px;padding-bottom:4px;border-bottom:1px solid #f9f0ff">— Body Contouring</div><div style="color:#374151;font-size:10px">— Skincare Consultations</div></div></div>',
   },
   {
     id: 'photo-forward',
@@ -96,6 +102,7 @@ export const TEMPLATE_GALLERY: TemplatePreview[] = [
       navbar: 'sticky-white',
     },
     previewColors: { primary: '#d97706', secondary: '#1c1917' },
+    previewHtml: '<div style="background:#fff;font-family:system-ui;height:100%;display:flex;flex-direction:column"><div style="display:grid;grid-template-columns:1fr 1fr;height:72px"><div style="background:linear-gradient(135deg,#d97706,#92400e);display:flex;align-items:center;justify-content:center;padding:8px"><div style="color:rgba(255,255,255,0.9);font-size:8px;text-align:center;font-weight:300;line-height:1.4">Our work<br/>speaks for itself</div></div><div style="background:linear-gradient(135deg,#1c1917,#292524);display:flex;align-items:center;justify-content:center;padding:8px"><div style="color:#d97706;font-size:16px;font-weight:900;text-align:center">See<br/>Portfolio</div></div></div><div style="padding:10px;flex:1"><div style="color:#111827;font-size:11px;font-weight:700;margin-bottom:4px">Transforming Spaces</div><div style="color:#6b7280;font-size:9px;margin-bottom:8px;line-height:1.4">Quality craftsmanship in every project we take on.</div><div style="display:flex;gap:4px"><div style="background:#d97706;color:#fff;padding:4px 8px;border-radius:4px;font-size:8px;font-weight:600">View Work</div><div style="border:1px solid #e5e7eb;color:#374151;padding:4px 8px;border-radius:4px;font-size:8px">Get Quote</div></div></div></div>',
   },
   {
     id: 'local-trust',
@@ -113,6 +120,7 @@ export const TEMPLATE_GALLERY: TemplatePreview[] = [
       navbar: 'sticky-white',
     },
     previewColors: { primary: '#2563eb', secondary: '#eff6ff' },
+    previewHtml: '<div style="background:#eff6ff;padding:16px;font-family:system-ui;height:100%"><div style="background:#fff;border:1px solid #dbeafe;border-radius:8px;padding:12px;margin-bottom:8px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div style="width:28px;height:28px;background:#2563eb;border-radius:50%;display:flex;align-items:center;justify-content:center"><div style="color:#fff;font-size:10px;font-weight:800">✓</div></div><div><div style="color:#111827;font-size:11px;font-weight:700">Trusted in Your Area</div><div style="color:#2563eb;font-size:8px">⭐⭐⭐⭐⭐ 4.9 · 200+ reviews</div></div></div><div style="color:#374151;font-size:9px;line-height:1.4;margin-bottom:8px">"Best service in the neighborhood! Showed up on time and did an amazing job."</div><div style="display:flex;gap-4"><div style="background:#2563eb;color:#fff;padding:5px 12px;border-radius:4px;font-size:8px;font-weight:600;display:inline-block">Get Free Estimate</div></div></div><div style="background:#fff;border:1px solid #dbeafe;border-radius:6px;padding:8px;display:flex;align-items:center;gap:6px"><div style="font-size:14px">📍</div><div style="color:#374151;font-size:9px">Serving your local area &amp; surrounding neighborhoods</div></div></div>',
   },
   {
     id: 'modern-gradient',
@@ -130,6 +138,7 @@ export const TEMPLATE_GALLERY: TemplatePreview[] = [
       navbar: 'hamburger',
     },
     previewColors: { primary: '#7c3aed', secondary: '#1e1b4b' },
+    previewHtml: '<div style="background:linear-gradient(135deg,#1e1b4b 0%,#4c1d95 40%,#7c3aed 100%);padding:16px;font-family:system-ui;height:100%"><div style="margin-bottom:12px"><div style="display:flex;gap:4px;margin-bottom:6px"><div style="height:2px;flex:1;background:rgba(167,139,250,0.4);border-radius:1px"></div><div style="height:2px;flex:2;background:#a78bfa;border-radius:1px"></div><div style="height:2px;flex:1;background:rgba(167,139,250,0.4);border-radius:1px"></div></div><div style="color:rgba(255,255,255,0.6);font-size:8px;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:4px">Transform Your Future</div><div style="color:#fff;font-size:15px;font-weight:800;margin-bottom:4px;line-height:1.2">Achieve Your<br/>Goals Faster</div><div style="color:rgba(255,255,255,0.7);font-size:9px;margin-bottom:10px">Expert guidance, proven results.</div><div style="background:linear-gradient(90deg,#a78bfa,#7c3aed);color:#fff;padding:6px 14px;border-radius:6px;font-size:9px;font-weight:700;display:inline-block">Get Started Free →</div></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px"><div style="background:rgba(255,255,255,0.1);backdrop-filter:blur(4px);border-radius:4px;padding:6px;text-align:center"><div style="color:#a78bfa;font-size:10px;font-weight:800">98%</div><div style="color:rgba(255,255,255,0.5);font-size:7px">Success</div></div><div style="background:rgba(255,255,255,0.1);backdrop-filter:blur(4px);border-radius:4px;padding:6px;text-align:center"><div style="color:#a78bfa;font-size:10px;font-weight:800">1K+</div><div style="color:rgba(255,255,255,0.5);font-size:7px">Clients</div></div><div style="background:rgba(255,255,255,0.1);backdrop-filter:blur(4px);border-radius:4px;padding:6px;text-align:center"><div style="color:#a78bfa;font-size:10px;font-weight:800">5★</div><div style="color:rgba(255,255,255,0.5);font-size:7px">Rated</div></div></div></div>',
   },
   {
     id: 'conversion-focused',
@@ -147,6 +156,7 @@ export const TEMPLATE_GALLERY: TemplatePreview[] = [
       navbar: 'sticky-white',
     },
     previewColors: { primary: '#4f46e5', secondary: '#eef2ff' },
+    previewHtml: '<div style="background:#fff;padding:14px;font-family:system-ui;height:100%;display:flex;gap:10px"><div style="flex:1"><div style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:6px;padding:8px;margin-bottom:6px"><div style="color:#4f46e5;font-size:8px;font-weight:700;letter-spacing:0.1em;margin-bottom:3px">FREE CONSULTATION</div><div style="color:#111827;font-size:11px;font-weight:800;margin-bottom:3px;line-height:1.3">Get Expert Help Today</div><div style="color:#6b7280;font-size:8px">No obligation. Results guaranteed.</div></div><div style="display:flex;flex-direction:column;gap:3px"><div style="display:flex;align-items:center;gap:4px;font-size:8px;color:#374151"><span style="color:#4f46e5">✓</span>Free initial assessment</div><div style="display:flex;align-items:center;gap:4px;font-size:8px;color:#374151"><span style="color:#4f46e5">✓</span>Same-day response</div><div style="display:flex;align-items:center;gap:4px;font-size:8px;color:#374151"><span style="color:#4f46e5">✓</span>No hidden fees</div></div></div><div style="width:90px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:8px"><div style="color:#111827;font-size:8px;font-weight:700;margin-bottom:6px">Quick Contact</div><div style="background:#fff;border:1px solid #d1d5db;border-radius:3px;padding:4px 6px;font-size:7px;color:#9ca3af;margin-bottom:4px">Your Name</div><div style="background:#fff;border:1px solid #d1d5db;border-radius:3px;padding:4px 6px;font-size:7px;color:#9ca3af;margin-bottom:6px">Phone / Email</div><div style="background:#4f46e5;color:#fff;text-align:center;padding:5px;border-radius:3px;font-size:8px;font-weight:600">Send →</div></div></div>',
   },
 ];
 

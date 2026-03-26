@@ -8,16 +8,16 @@
  *   2) build-internal: VPS Next.js compile + deploy (~2-4 min)
  *
  * Auth: Bearer token from KYRA_API_SECRET env var (internal only, never user-facing).
+ *
+ * NOTE: Uses assembleSitePages() from lib/sites/build-helpers.ts — same template
+ * system as the manual /build route. All first-time builds now get proper templates,
+ * design styles, and real reviews (not the old generic single-template flow).
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { waitUntil } from '@vercel/functions';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
-import { resolvePhotos } from '@/lib/sites/unsplash';
-import { assemblePage } from '@/lib/sites/templates/assembler';
-import { getRecipeForIndustry } from '@/lib/sites/templates/recipes';
-import { getTemplateById } from '@/lib/sites/templates/gallery';
-import { generateColorVariables } from '@/lib/sites/design-system';
+import { assembleSitePages } from '@/lib/sites/build-helpers';
 
 export const maxDuration = 300;
 
@@ -79,41 +79,15 @@ async function runBuild(siteId: string, supabase: ReturnType<typeof createServic
 
   if (pagesErr || !pages?.length) throw new Error('No pages found for site');
 
-  const services = (site.services || []) as Array<{ name: string; slug: string; description?: string }>;
-  const cities = (site.cities || []) as Array<{ name: string; slug: string; state?: string }>;
-  const address = site.address || {};
+  // Update status to deploying
+  await supabase
+    .from('client_sites')
+    .update({ status: 'deploying', updated_at: new Date().toISOString() })
+    .eq('id', siteId);
 
-  const phone = site.phone || '';
-  const phoneDigits = phone.replace(/[^0-9]/g, '');
-
-  const constants = {
-    name: site.business_name || '',
-    phone,
-    phoneHref: phoneDigits ? `tel:+${phoneDigits.length === 10 ? '1' : ''}${phoneDigits}` : '',
-    email: `info@${domain}`,
-    address: [address.street, address.city, address.state, address.zip].filter(Boolean).join(', '),
-    license: site.license || '',
-    rating: site.rating || 5.0,
-    reviewCount: site.review_count || 0,
-    yearsInBusiness: site.years_in_business || 1,
-    hours: site.hours || {},
-    coordinates: { lat: address.lat || 0, lng: address.lng || 0 },
-    tagline: site.tagline || '',
-    url: `https://${domain}`,
-    bookingUrl: site.booking_url || '',
-    googleReviewUrl: (site as Record<string, unknown>).google_review_url || '',
-    industry: site.industry || '',
-    emergencyText: site.emergency_247 ? '24/7 Emergency Service Available' : '',
-    services,
-    serviceAreas: cities,
-  };
-
-  const theme = {
-    colorPrimary: site.color_primary || '#dc2626',
-    colorSecondary: site.color_secondary || '#111827',
-    designStyle: site.design_style || 'modern-dark',
-    bookingUrl: site.booking_url || null,
-  };
+  // Assemble all pages using the shared helper — same template system as manual /build
+  const { assembledPages, recipe, constants, theme, resolvedPhotos } =
+    await assembleSitePages(site, pages, supabase);
 
   const pagesData = pages.map((p: {
     slug: string; page_type: string; title: string;
@@ -133,73 +107,9 @@ async function runBuild(siteId: string, supabase: ReturnType<typeof createServic
     schema: p.schema_markup,
   }));
 
-  // Update status to deploying
-  await supabase
-    .from('client_sites')
-    .update({ status: 'deploying', updated_at: new Date().toISOString() })
-    .eq('id', siteId);
+  console.log(`[build-internal] Calling VPS for site ${siteId} (${domain}), ${pages.length} pages, template: ${site.template_id || 'industry-default'}, style: ${theme.designStyle}`);
 
-  // Assemble HTML pages using the template system
-  const templatePreview = site.template_id ? getTemplateById(site.template_id) : null;
-  const recipe = templatePreview?.recipe || getRecipeForIndustry(site.industry || '');
-  const colorVars = generateColorVariables(
-    site.color_primary || '#dc2626',
-    site.color_secondary || '#111827',
-    site.design_style || 'modern-dark',
-  );
-  const resolvedPhotos = resolvePhotos(site.photos, site.industry);
-
-  const assembledPages = pagesData.map((p: {
-    slug: string; type: string; title: string;
-    metaTitle: string; metaDescription: string;
-    heroH1: string; heroSubtitle: string;
-    sections: unknown; faq: unknown; schema: unknown;
-  }) => ({
-    slug: p.slug,
-    type: p.type,
-    html: assemblePage({
-      recipe,
-      colorVars,
-      colorPrimary: site.color_primary || '#dc2626',
-      colorSecondary: site.color_secondary || '#111827',
-      pageData: {
-        title: p.title,
-        metaTitle: p.metaTitle,
-        metaDescription: p.metaDescription,
-        hero_h1: p.heroH1 || p.title,
-        hero_subtitle: p.heroSubtitle || '',
-        content_sections: (p.sections || []) as { heading: string; body: string; bullets?: string[] }[],
-        faq: (p.faq || []) as { question: string; answer: string }[],
-        schema_markup: p.schema,
-      },
-      siteData: {
-        business_name: constants.name,
-        phone: constants.phone,
-        phoneHref: constants.phoneHref,
-        email: constants.email,
-        address: constants.address,
-        services,
-        cities: cities.map(c => ({ name: c.name, slug: c.slug })),
-        hours: site.hours || {},
-        photos: resolvedPhotos,
-        booking_url: constants.bookingUrl,
-        widget_client_id: site.client_id,
-        logoUrl: site.logo_url || undefined,
-        rating: constants.rating,
-        reviewCount: constants.reviewCount,
-        yearsInBusiness: constants.yearsInBusiness,
-        ownerName: site.owner_name || undefined,
-        ownerStory: site.owner_story || undefined,
-        emergencyText: constants.emergencyText,
-        tagline: constants.tagline,
-      },
-      pageType: p.type,
-    }),
-  }));
-
-  console.log(`[build-internal] Assembled ${assembledPages.length} HTML pages for ${domain}`);
-
-  // Call VPS provisioner with pre-assembled HTML (skips Next.js build on VPS)
+  // Call VPS provisioner — up to 4 min for Next.js build
   const res = await fetch(`${PROVISIONER_URL}/sites/${siteId}/build-and-deploy`, {
     method: 'POST',
     headers: {
@@ -209,17 +119,19 @@ async function runBuild(siteId: string, supabase: ReturnType<typeof createServic
     body: JSON.stringify({
       domain,
       template: 'generic',
+      useNewTemplateSystem: true,
       constants,
       theme,
       pages: pagesData,
       assembledPages,
+      recipe,
       widgetClientId: site.client_id,
       ga4Id: site.ga4_id || null,
       whiteLabel: site.white_label ?? false,
       logoUrl: site.logo_url || null,
       photos: resolvedPhotos,
     }),
-    signal: AbortSignal.timeout(240_000),
+    signal: AbortSignal.timeout(240_000), // 4 min max for VPS build
   });
 
   if (!res.ok) {
