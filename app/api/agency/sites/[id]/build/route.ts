@@ -297,7 +297,7 @@ async function buildAndDeploy(site: any, supabase: any) {
         title: p.title,
         metaTitle: p.metaTitle,
         metaDescription: p.metaDescription,
-        hero_h1: stripMarkdown(p.heroH1 || p.title),
+        hero_h1: stripMarkdown(p.heroH1 || '') || `${constants.name} — ${constants.industry ? constants.industry.charAt(0).toUpperCase() + constants.industry.slice(1).replace(/-/g, ' ') : ''} Services${address.city ? ' in ' + address.city : ''}`,
         hero_subtitle: p.heroSubtitle || '',
         content_sections: (p.sections || []) as { heading: string; body: string; bullets?: string[] }[],
         faq: (p.faq || []) as { question: string; answer: string }[],

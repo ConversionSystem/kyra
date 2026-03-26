@@ -9,6 +9,13 @@
 
 import { assemblePage } from './templates/assembler';
 
+/** Generate a decent H1 when the LLM parser fails to extract one */
+function generateFallbackH1(businessName: string, industry: string, city?: string): string {
+  const cityStr = city ? ` in ${city}` : '';
+  const industryLabel = industry ? ` ${industry.charAt(0).toUpperCase() + industry.slice(1).replace(/-/g, ' ')}` : '';
+  return `${businessName}${industryLabel ? ` —${industryLabel}` : ''} Services${cityStr}`;
+}
+
 /** Strip stray markdown from LLM-generated content before assembly */
 function stripMarkdown(text: string): string {
   return text
@@ -157,7 +164,7 @@ export async function assembleSitePages(
         title: p.title,
         metaTitle: p.metaTitle,
         metaDescription: p.metaDescription,
-        hero_h1: stripMarkdown(p.heroH1 || p.title),
+        hero_h1: stripMarkdown(p.heroH1 || '') || generateFallbackH1(constants.name, constants.industry, address.city),
         hero_subtitle: p.heroSubtitle || '',
         content_sections: (p.sections || []) as { heading: string; body: string; bullets?: string[] }[],
         faq: (p.faq || []) as { question: string; answer: string }[],
