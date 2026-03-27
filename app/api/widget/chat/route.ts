@@ -206,6 +206,46 @@ export async function POST(request: NextRequest) {
     // Degrade gracefully — proceed without knowledge
   }
 
+  // ── FIX 4: Inject CRM relationship memory for returning visitors ──────────
+  // If this visitor has been in the CRM before (matched by email/phone from prior sessions),
+  // inject their history so the AI knows who they are.
+  let crmContextSection = '';
+  try {
+    // Look up the visitor by sessionId to find previously captured lead info
+    const { data: priorLead } = await supabase
+      .from('web_chat_leads')
+      .select('email, phone, crm_contact_id')
+      .eq('client_id', clientId)
+      .eq('session_id', resolvedSessionId)
+      .maybeSingle();
+
+    if (priorLead?.crm_contact_id) {
+      const { getMemories, buildMemoryContext } = await import('@/lib/crm/relationship-memory');
+      const { data: crmContact } = await supabase
+        .from('crm_contacts')
+        .select('first_name, last_name, stage, score_label, ai_summary, ai_next_action')
+        .eq('id', priorLead.crm_contact_id)
+        .single();
+
+      if (crmContact) {
+        const memories = await getMemories(client.agency_id, priorLead.crm_contact_id);
+        const memCtx = buildMemoryContext(memories);
+        const visitorName = [crmContact.first_name, crmContact.last_name].filter(Boolean).join(' ');
+        crmContextSection = [
+          `RETURNING VISITOR CONTEXT:`,
+          visitorName ? `- Name: ${visitorName}` : '',
+          crmContact.stage ? `- Stage: ${crmContact.stage}` : '',
+          crmContact.score_label ? `- Lead score: ${crmContact.score_label}` : '',
+          crmContact.ai_summary ? `- Summary: ${crmContact.ai_summary}` : '',
+          crmContact.ai_next_action ? `- Pending follow-up: ${crmContact.ai_next_action}` : '',
+          memCtx ? `Relationship notes:\n${memCtx}` : '',
+        ].filter(Boolean).join('\n');
+      }
+    }
+  } catch (err) {
+    console.error('[widget/chat] CRM context error:', err);
+  }
+
   // ── Lead Capture Prompt ────────────────────────────────────────────────────
   const exchangeCount = Array.isArray(history) ? Math.floor(history.length / 2) : 0;
   const leadCapturePrompt = getLeadCapturePrompt(exchangeCount);
@@ -234,6 +274,7 @@ export async function POST(request: NextRequest) {
     cfg.website_url ? `Website: ${cfg.website_url}` : '',
     `If you can't resolve something, say: "Let me connect you with our team — they'll follow up shortly."`,
     knowledgeSection,
+    crmContextSection ? `\n${crmContextSection}` : '',
     leadCapturePrompt,
   ].filter(Boolean).join('\n');
 
