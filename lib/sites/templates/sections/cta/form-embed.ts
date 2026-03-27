@@ -10,40 +10,71 @@ interface CtaData {
 }
 
 export function formEmbedCta(data: CtaData): string {
-  const heading = data.heading || 'Get in Touch';
+  const heading = data.heading || 'Get a Free Quote Today';
   const phone = data.phone || '';
   const phoneHref = data.phoneHref || `tel:${phone}`;
-  const inputClasses = 'w-full px-4 py-3.5 rounded-xl text-base outline-none transition-all focus:ring-2';
+  const { primary, secondary } = data.colors;
 
-  return `<section class="py-16 sm:py-24 px-4" style="background: var(--color-surface);" aria-label="Contact form">
-  <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-0 rounded-2xl overflow-hidden shadow-2xl">
-    <div class="p-10 sm:p-14 flex flex-col justify-center" style="background: linear-gradient(135deg, ${data.colors.primary}, ${data.colors.secondary});">
-      <h2 class="text-3xl sm:text-4xl font-bold mb-4" style="color: #ffffff;">${heading}</h2>
-      ${data.subtitle ? `<p class="text-lg mb-6" style="color: #ffffff; opacity: 0.9;">${data.subtitle}</p>` : ''}
-      ${phone ? `<p class="text-lg mb-2" style="color: #ffffff;">Call us: <a href="${phoneHref}" class="font-semibold underline transition-opacity hover:opacity-80" style="color: #ffffff;">${phone}</a></p>` : ''}
-      ${data.emergencyText ? `<p class="mt-6 text-sm font-medium" style="color: #ffffff; opacity: 0.85;">${data.emergencyText}</p>` : ''}
-    </div>
-    <div class="p-10 sm:p-14" style="background: var(--color-surface);">
-      <h3 class="text-xl font-semibold mb-6" style="color: #1f2937;">Send Us a Message</h3>
-      <form action="#" method="POST" class="space-y-4">
-        <div>
-          <label for="contact-name" class="block text-sm font-medium mb-1" style="color: #1f2937;">Name</label>
-          <input type="text" id="contact-name" name="name" required class="${inputClasses}" style="background: var(--color-surface); border: 2px solid #e5e7eb; color: #1f2937;" placeholder="Your name" />
+  const benefits = [
+    { icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>`, text: 'No obligation — completely free' },
+    { icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"></polyline></svg>`, text: 'We respond within 1 hour' },
+    { icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`, text: 'Licensed, insured, and bonded' },
+    { icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`, text: '5-star rated service, every time' },
+  ];
+
+  const inputStyle = 'style="width: 100%; box-sizing: border-box; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 10px; font-size: 0.95rem; color: #111827; background: #ffffff; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor=\'' + primary + '\'" onblur="this.style.borderColor=\'#e5e7eb\'"';
+
+  return `<section style="padding: 5rem 1.5rem; background: #f8fafc;" aria-label="Contact form section" id="contact">
+  <div style="max-width: 1100px; margin: 0 auto;">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0; border-radius: 24px; overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.15);">
+
+      <!-- Left: Benefits panel -->
+      <div style="background: linear-gradient(145deg, ${secondary} 0%, ${primary} 60%, ${primary}cc 100%); padding: 3.5rem; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden;">
+        <div style="position: absolute; inset: 0; opacity: 0.06; background-image: radial-gradient(circle, rgba(255,255,255,0.6) 1px, transparent 1px); background-size: 22px 22px;" aria-hidden="true"></div>
+        <div style="position: relative; z-index: 1;">
+          <div style="display: inline-block; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 5px 14px; border-radius: 100px; margin-bottom: 1.25rem;">Free & No Obligation</div>
+          <h2 style="font-size: clamp(1.6rem, 3vw, 2.2rem); font-weight: 900; color: #ffffff; margin: 0 0 0.75rem 0; letter-spacing: -0.02em; line-height: 1.2;">${heading}</h2>
+          ${data.subtitle ? `<p style="color: rgba(255,255,255,0.88); font-size: 1rem; line-height: 1.6; margin: 0 0 2rem 0;">${data.subtitle}</p>` : '<div style="height: 1.5rem;"></div>'}
+          <div style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2.5rem;">
+            ${benefits.map(b => `<div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">${b.icon}</div>
+              <span style="color: rgba(255,255,255,0.92); font-size: 0.93rem; font-weight: 500;">${b.text}</span>
+            </div>`).join('')}
+          </div>
+          ${phone ? `<div style="padding: 1rem 1.25rem; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25); border-radius: 14px; backdrop-filter: blur(8px);">
+            <p style="color: rgba(255,255,255,0.75); font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; margin: 0 0 4px 0;">Prefer to call?</p>
+            <a href="${phoneHref}" style="color: #ffffff; font-weight: 900; font-size: 1.3rem; text-decoration: none; letter-spacing: -0.01em;">${phone}</a>
+          </div>` : ''}
         </div>
-        <div>
-          <label for="contact-email" class="block text-sm font-medium mb-1" style="color: #1f2937;">Email</label>
-          <input type="email" id="contact-email" name="email" required class="${inputClasses}" style="background: var(--color-surface); border: 2px solid #e5e7eb; color: #1f2937;" placeholder="your@email.com" />
-        </div>
-        <div>
-          <label for="contact-phone" class="block text-sm font-medium mb-1" style="color: #1f2937;">Phone</label>
-          <input type="tel" id="contact-phone" name="phone" class="${inputClasses}" style="background: var(--color-surface); border: 2px solid #e5e7eb; color: #1f2937;" placeholder="(555) 123-4567" />
-        </div>
-        <div>
-          <label for="contact-message" class="block text-sm font-medium mb-1" style="color: #1f2937;">Message</label>
-          <textarea id="contact-message" name="message" rows="4" required class="${inputClasses} resize-y" style="background: var(--color-surface); border: 2px solid #e5e7eb; color: #1f2937;" placeholder="How can we help?"></textarea>
-        </div>
-        <button type="submit" class="w-full py-3.5 rounded-xl text-lg font-semibold shadow-lg transition-all hover:shadow-xl hover:opacity-90" style="background: ${data.colors.primary}; color: #ffffff;">Send Message</button>
-      </form>
+      </div>
+
+      <!-- Right: Form panel -->
+      <div style="background: #ffffff; padding: 3.5rem;">
+        <h3 style="font-size: 1.4rem; font-weight: 800; color: #111827; margin: 0 0 0.5rem 0;">Send Us a Message</h3>
+        <p style="color: #6b7280; font-size: 0.9rem; margin: 0 0 2rem 0;">We'll get back to you within 1 hour.</p>
+        <form action="#" method="POST" style="display: flex; flex-direction: column; gap: 1.1rem;">
+          <div>
+            <label for="kyra-name" style="display: block; font-size: 0.85rem; font-weight: 600; color: #374151; margin-bottom: 6px;">Full Name *</label>
+            <input type="text" id="kyra-name" name="name" required placeholder="Your full name" ${inputStyle} />
+          </div>
+          <div>
+            <label for="kyra-phone" style="display: block; font-size: 0.85rem; font-weight: 600; color: #374151; margin-bottom: 6px;">Phone Number *</label>
+            <input type="tel" id="kyra-phone" name="phone" required placeholder="(555) 123-4567" ${inputStyle} />
+          </div>
+          <div>
+            <label for="kyra-email" style="display: block; font-size: 0.85rem; font-weight: 600; color: #374151; margin-bottom: 6px;">Email</label>
+            <input type="email" id="kyra-email" name="email" placeholder="your@email.com" ${inputStyle} />
+          </div>
+          <div>
+            <label for="kyra-message" style="display: block; font-size: 0.85rem; font-weight: 600; color: #374151; margin-bottom: 6px;">How Can We Help? *</label>
+            <textarea id="kyra-message" name="message" rows="4" required placeholder="Tell us about your project or question..." style="width: 100%; box-sizing: border-box; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 10px; font-size: 0.95rem; color: #111827; background: #ffffff; outline: none; transition: border-color 0.2s; resize: vertical; font-family: inherit;" onfocus="this.style.borderColor='${primary}'" onblur="this.style.borderColor='#e5e7eb'"></textarea>
+          </div>
+          <button type="submit" style="width: 100%; padding: 14px; background: ${primary}; color: #ffffff; font-weight: 800; font-size: 1.05rem; border: none; border-radius: 12px; cursor: pointer; transition: opacity 0.2s, transform 0.2s; box-shadow: 0 6px 20px ${primary}50;" onmouseover="this.style.opacity='0.9';this.style.transform='translateY(-1px)'" onmouseout="this.style.opacity='1';this.style.transform='translateY(0)'">
+            Get My Free Quote →
+          </button>
+          <p style="text-align: center; color: #9ca3af; font-size: 0.8rem; margin: 0;">🔒 Your information is safe with us. No spam, ever.</p>
+        </form>
+      </div>
     </div>
   </div>
 </section>`;
