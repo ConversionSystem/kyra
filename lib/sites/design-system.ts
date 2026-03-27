@@ -2,10 +2,10 @@
 // Design System — CSS generation for design styles and brand colors
 //
 // Each design style produces meaningfully different CSS:
-// - modern-dark: Dark backgrounds, glassmorphism, gradient CTAs
-// - clean-light: White/card-based, soft shadows, professional
-// - bold: Extra-large type, high-contrast sections, aggressive CTAs
-// - minimal: Generous whitespace, narrow columns, understated
+// - modern-dark: Dark slate body, glassmorphism cards, glowing CTAs
+// - clean-light: White/gray body, sharp cards, professional service look
+// - bold: High-contrast, thick borders, aggressive typography, strong color blocks
+// - minimal: Maximum whitespace, light borders, refined typography
 // ============================================================================
 
 import type { DesignStyle } from './types';
@@ -32,9 +32,9 @@ export function generateColorVariables(
   const secondaryRgb = hexToRgb(colorSecondary);
   const isDark = designStyle === 'modern-dark';
 
-  const surface = isDark ? '#1f2937' : '#ffffff';
-  const text = isDark ? '#f9fafb' : '#111827';
-  const textMuted = isDark ? '#9ca3af' : '#6b7280';
+  const surface = isDark ? '#1e293b' : '#ffffff';
+  const text = isDark ? '#f1f5f9' : '#111827';
+  const textMuted = isDark ? '#94a3b8' : '#6b7280';
   const border = isDark ? 'rgba(255,255,255,0.1)' : '#e5e7eb';
   const accent = colorSecondary || colorPrimary;
 
@@ -64,174 +64,164 @@ export function getDesignCSS(
     case 'modern-dark':
       return `${vars}
 
-/* modern-dark: Dark body, glassmorphism cards, gradient CTAs */
+/* ===== MODERN DARK — Dark slate, glassmorphism, glowing accents ===== */
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
 body {
-  background-color: #111827;
-  color: #f9fafb;
-  font-family: 'Inter', system-ui, sans-serif;
+  background-color: #0f172a;
+  color: #e2e8f0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  line-height: 1.6;
+  margin: 0;
 }
-.hero {
-  background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
-  color: #f9fafb;
+/* Section alternation */
+section { background-color: #0f172a; }
+section:nth-child(even) { background-color: #1e293b; }
+/* Glassmorphism cards */
+.kyra-card, [class*="rounded-2xl"]:not(section):not(nav):not(footer) {
+  background: rgba(255, 255, 255, 0.04) !important;
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.09) !important;
 }
-.hero h1 { color: #ffffff; font-weight: 800; }
-.hero .subtitle { color: #d1d5db; }
-.card {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 1rem;
-  padding: 2rem;
-}
-.btn-primary {
-  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
-  color: #ffffff;
-  font-weight: 700;
-  padding: 0.875rem 2rem;
-  border-radius: 0.75rem;
-  border: none;
-  transition: opacity 0.2s;
-}
-.btn-primary:hover { opacity: 0.9; }
-section { border-bottom: 1px solid rgba(255, 255, 255, 0.06); }
-h2, h3 { color: #f3f4f6; }
-p { color: #d1d5db; }
+/* Headings */
+h1, h2, h3, h4, h5, h6 { color: #f1f5f9; font-weight: 800; letter-spacing: -0.02em; }
+h2 { font-size: clamp(1.7rem, 3.5vw, 2.5rem); }
+h3 { font-size: 1.2rem; }
+/* Body text */
+p { color: #94a3b8; line-height: 1.75; }
+/* Links */
 a { color: var(--color-primary); }
-.trust-signal { color: var(--color-primary); font-weight: 600; }`;
+/* Service section bg */
+section[aria-label*="Services"], section[aria-label*="service"] { background-color: #1e293b; }
+/* Testimonials bg */
+section[aria-label*="Testimonial"] { background-color: #0f172a; }
+/* Stats section already uses gradient */
+/* Footer */
+footer { background-color: #020617 !important; }
+/* Override Tailwind gray text in dark mode */
+[style*="color: #6b7280"], [style*="color: #374151"], [style*="color: #4b5563"] { color: #94a3b8 !important; }
+[style*="color: #1f2937"], [style*="color: #111827"] { color: #f1f5f9 !important; }
+/* Card backgrounds in dark mode */
+[style*="background: #ffffff"], [style*="background:#ffffff"],
+[style*="background: #f9fafb"], [style*="background: #f8fafc"] {
+  background: #1e293b !important;
+}
+[style*="border: 1px solid #f0f0f0"],
+[style*="border: 1px solid #e5e7eb"] {
+  border-color: rgba(255,255,255,0.08) !important;
+}`;
 
     case 'clean-light':
       return `${vars}
 
-/* clean-light: White body, card sections, soft shadows, professional */
+/* ===== CLEAN LIGHT — White body, card-based, professional ===== */
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
 body {
   background-color: #ffffff;
-  color: #111827;
-  font-family: 'Inter', system-ui, sans-serif;
+  color: #1f2937;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  line-height: 1.6;
+  margin: 0;
 }
-.hero {
-  background: #f9fafb;
-  color: #111827;
-  border-bottom: 1px solid #e5e7eb;
-}
-.hero h1 { color: #111827; font-weight: 700; }
-.hero .subtitle { color: #4b5563; }
-.card {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.75rem;
-  padding: 1.75rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-}
-.btn-primary {
-  background: var(--color-primary);
-  color: #ffffff;
-  font-weight: 600;
-  padding: 0.75rem 1.75rem;
-  border-radius: 0.5rem;
-  border: none;
-  transition: background 0.2s;
-}
-.btn-primary:hover { filter: brightness(1.1); }
-section {
-  border-bottom: 1px solid #f3f4f6;
-  padding: 4rem 0;
-}
-h2, h3 { color: #111827; }
-p { color: #374151; }
+section { background-color: #ffffff; }
+section:nth-child(even) { background-color: #f9fafb; }
+/* Cards */
+.kyra-card { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+/* Headings */
+h1, h2, h3, h4, h5, h6 { color: #111827; font-weight: 700; letter-spacing: -0.015em; }
+h2 { font-size: clamp(1.6rem, 3.5vw, 2.4rem); }
+/* Body text */
+p { color: #4b5563; line-height: 1.7; }
 a { color: var(--color-primary); }
-.trust-signal { color: var(--color-primary); font-weight: 600; }`;
+/* Section overrides */
+section[aria-label*="Services"] { background-color: #f9fafb; }
+section[aria-label*="Testimonial"] { background-color: #f3f4f6; }
+footer { background-color: #111827 !important; }`;
 
     case 'bold':
       return `${vars}
 
-/* bold: Extra-large headlines, high-contrast sections, aggressive CTAs */
+/* ===== BOLD — High-contrast, big type, thick borders, strong color blocks ===== */
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
 body {
   background-color: #ffffff;
   color: #111827;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  line-height: 1.6;
+  margin: 0;
 }
-.hero {
-  background: var(--color-primary);
-  color: #ffffff;
-  padding: 6rem 0;
-}
-.hero h1 {
-  color: #ffffff;
-  font-size: 3.75rem;
-  font-weight: 900;
-  line-height: 1.1;
-  letter-spacing: -0.025em;
-}
-.hero .subtitle { color: rgba(255, 255, 255, 0.9); font-size: 1.25rem; }
-.card {
+section { background-color: #ffffff; }
+section:nth-child(even) { background-color: #f3f4f6; }
+/* Bold cards */
+.kyra-card {
   background: #ffffff;
   border: 3px solid #111827;
-  border-radius: 0.5rem;
-  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 6px 6px 0 #111827;
 }
-.btn-primary {
-  background: #111827;
-  color: #ffffff;
-  font-weight: 800;
-  padding: 1rem 2.5rem;
-  border-radius: 0.25rem;
-  border: none;
-  font-size: 1.125rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  transition: transform 0.15s, background 0.2s;
+/* Big, heavy headings */
+h1, h2, h3, h4, h5, h6 {
+  color: #111827;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
 }
-.btn-primary:hover { transform: scale(1.03); background: var(--color-primary); }
-section:nth-child(even) { background: #f9fafb; }
-section:nth-child(odd) { background: #ffffff; }
-section { padding: 5rem 0; }
-h2 { font-size: 2.5rem; font-weight: 800; color: #111827; }
-h3 { font-size: 1.5rem; font-weight: 700; color: #111827; }
-p { color: #374151; font-size: 1.125rem; line-height: 1.75; }
+h2 { font-size: clamp(1.9rem, 4vw, 3rem); }
+h3 { font-size: 1.3rem; }
+/* Body text */
+p { color: #374151; font-size: 1.05rem; line-height: 1.7; }
 a { color: var(--color-primary); font-weight: 700; }
-.trust-signal { color: var(--color-primary); font-weight: 800; font-size: 1.25rem; }`;
+/* Services section */
+section[aria-label*="Services"] { background-color: #f3f4f6; }
+/* Testimonials */
+section[aria-label*="Testimonial"] { background-color: #111827; }
+section[aria-label*="Testimonial"] h2 { color: #ffffff !important; }
+section[aria-label*="Testimonial"] [style*="color: #111827"] { color: #ffffff !important; }
+section[aria-label*="Testimonial"] [style*="color: #374151"] { color: #d1d5db !important; }
+footer { background-color: #111827 !important; }`;
 
     case 'minimal':
     default:
       return `${vars}
 
-/* minimal: Generous whitespace, refined typography, full-width layout */
+/* ===== MINIMAL — Generous whitespace, elegant type, no clutter ===== */
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
 body {
-  background-color: #ffffff;
+  background-color: #fafafa;
   color: #374151;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  line-height: 1.7;
+  margin: 0;
 }
-.hero {
-  background: #ffffff;
-  color: #111827;
-  padding: 5rem 0;
-}
-.hero h1 { color: #111827; font-weight: 600; font-size: 2.5rem; letter-spacing: -0.01em; }
-.hero .subtitle { color: #6b7280; font-size: 1.125rem; }
-.card {
+section { background-color: #fafafa; }
+section:nth-child(even) { background-color: #ffffff; }
+/* Minimal cards — borderless or hairline */
+.kyra-card {
   background: #ffffff;
   border: none;
-  border-top: 1px solid #e5e7eb;
-  padding: 2rem;
+  border-top: 2px solid var(--color-primary);
+  border-radius: 0;
+  padding: 2.5rem;
 }
-.btn-primary {
-  background: transparent;
-  color: var(--color-primary);
-  font-weight: 500;
-  padding: 0.75rem 1.75rem;
-  border-radius: 0.375rem;
-  border: 1px solid var(--color-primary);
-  transition: background 0.2s, color 0.2s;
+/* Refined typography */
+h1, h2, h3, h4, h5, h6 {
+  color: #111827;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
 }
-.btn-primary:hover { background: var(--color-primary); color: #ffffff; }
-section {
-  padding: 4rem 1rem;
-  border-bottom: 1px solid #f3f4f6;
-}
-h2 { font-size: 1.75rem; font-weight: 600; color: #111827; }
-h3 { font-size: 1.25rem; font-weight: 500; color: #374151; }
+h2 { font-size: clamp(1.5rem, 3vw, 2.2rem); font-weight: 600; }
+h3 { font-size: 1.1rem; font-weight: 600; }
+/* Body */
 p { color: #6b7280; line-height: 1.8; }
-a { color: var(--color-primary); text-decoration: underline; }
-.trust-signal { color: #374151; font-weight: 500; }`;
+a { color: var(--color-primary); text-decoration: underline; text-underline-offset: 3px; }
+/* Services — more whitespace */
+section[aria-label*="Services"] { padding: 6rem 1.5rem; background: #ffffff; }
+/* Testimonials — clean white */
+section[aria-label*="Testimonial"] { background-color: #f9fafb; }
+footer { background-color: #111827 !important; }`;
   }
 }
