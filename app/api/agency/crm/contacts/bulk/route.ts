@@ -106,12 +106,12 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      // Sprint 4: Bulk SMS from segment
+      // Bulk SMS — logs to CRM AND delivers via GHL
       case 'sms': {
         const message = payload?.message as string;
         if (!message?.trim()) return NextResponse.json({ error: 'message required' }, { status: 400 });
 
-        // Fetch contacts with phone numbers (either from explicit IDs or from segment filter)
+        // Fetch contacts with phone numbers
         let contactQuery = service
           .from('crm_contacts')
           .select('id, first_name, last_name, phone')
@@ -125,21 +125,73 @@ export async function POST(req: NextRequest) {
         const { data: smsContacts } = await contactQuery;
         if (!smsContacts?.length) return NextResponse.json({ ok: true, count: 0, message: 'No contacts with phone numbers' });
 
-        // Log as activity (actual SMS delivery via GHL is handled separately by the AI worker)
-        const activityRows = smsContacts.map(c => ({
-          agency_id: result.agency.id,
-          contact_id: c.id,
-          type: 'sms',
-          actor: 'human',
-          direction: 'outbound',
-          subject: 'Bulk SMS',
-          body: message.replace(/\{\{first_name\}\}/gi, c.first_name || 'there'),
-          needs_attention: false,
-        }));
+        // Find a GHL-connected client for this agency to use for delivery
+        const { data: ghlClient } = await service
+          .from('agency_clients')
+          .select('id, ghl_location_id, ghl_private_token, ghl_access_token')
+          .eq('agency_id', result.agency.id)
+          .not('ghl_location_id', 'is', null)
+          .limit(1)
+          .single();
 
-        await service.from('crm_activities').insert(activityRows);
+        let delivered = 0;
+        let failed = 0;
+        const GHL_API_BASE = 'https://services.leadconnectorhq.com';
+        const GHL_API_VERSION = '2021-04-15';
 
-        return NextResponse.json({ ok: true, count: smsContacts.length });
+        // Deliver SMS via GHL for contacts that have a matching GHL contact
+        for (const contact of smsContacts) {
+          const personalizedMsg = message.replace(/\{\{first_name\}\}/gi, contact.first_name || 'there');
+
+          // Log to CRM activities
+          try {
+            await service.from('crm_activities').insert({
+              agency_id: result.agency.id,
+              contact_id: contact.id,
+              type: 'sms',
+              actor: 'human',
+              direction: 'outbound',
+              subject: 'Bulk SMS',
+              body: personalizedMsg,
+              needs_attention: false,
+            });
+          } catch { /* non-fatal */ }
+
+          // Deliver via GHL if credentials available
+          if (ghlClient?.ghl_location_id) {
+            const ghlToken = ghlClient.ghl_private_token || ghlClient.ghl_access_token;
+            if (ghlToken && contact.phone) {
+              try {
+                // Search for GHL contact by phone
+                const searchRes = await fetch(
+                  `${GHL_API_BASE}/contacts/search/duplicate?locationId=${ghlClient.ghl_location_id}&phone=${encodeURIComponent(contact.phone)}`,
+                  { headers: { Authorization: `Bearer ${ghlToken}`, Version: GHL_API_VERSION }, signal: AbortSignal.timeout(5000) }
+                );
+                if (searchRes.ok) {
+                  const searchData = await searchRes.json();
+                  const ghlContactId = searchData?.contact?.id || searchData?.contacts?.[0]?.id;
+                  if (ghlContactId) {
+                    const sendRes = await fetch(`${GHL_API_BASE}/conversations/messages`, {
+                      method: 'POST',
+                      headers: { Authorization: `Bearer ${ghlToken}`, Version: GHL_API_VERSION, 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ type: 'SMS', contactId: ghlContactId, message: personalizedMsg }),
+                      signal: AbortSignal.timeout(8000),
+                    });
+                    if (sendRes.ok) { delivered++; } else { failed++; }
+                  }
+                }
+              } catch { failed++; }
+            }
+          }
+        }
+
+        return NextResponse.json({
+          ok: true,
+          count: smsContacts.length,
+          delivered,
+          failed,
+          message: ghlClient ? `SMS queued for ${smsContacts.length} contacts (${delivered} delivered via GHL)` : `Logged for ${smsContacts.length} contacts (connect GHL for live delivery)`,
+        });
       }
 
       default:
