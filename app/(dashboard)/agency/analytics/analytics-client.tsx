@@ -51,6 +51,7 @@ interface IntelligenceData {
   recent: RecentConvo[];
   roi: { hoursSaved: number; laborCostSaved: number };
   crm?: { pipelineValue: number; openDealCount: number };
+  voice?: { callCount: number };
   clientNames: Record<string, string>;
 }
 
@@ -231,23 +232,36 @@ export function AnalyticsClient({ agencyPlan, clients }: { agencyPlan: string; c
           />
         </div>
 
-        {/* CRM Pipeline Strip — only shown when CRM has data */}
-        {data.crm && data.crm.openDealCount > 0 && (
-          <div className="grid grid-cols-2 gap-3">
-            <HeroCard
-              label="Open Pipeline Value"
-              value={`$${data.crm.pipelineValue >= 1000 ? `${(data.crm.pipelineValue / 1000).toFixed(1)}K` : data.crm.pipelineValue}`}
-              sub="from CRM deals"
-              icon={DollarSign}
-              color="text-emerald-600 bg-emerald-50 border-emerald-200"
-            />
-            <HeroCard
-              label="Open Deals"
-              value={String(data.crm.openDealCount)}
-              sub="active in pipeline"
-              icon={Users}
-              color="text-amber-600 bg-amber-50 border-amber-200"
-            />
+        {/* CRM + Voice Strip — only shown when data exists */}
+        {((data.crm && data.crm.openDealCount > 0) || (data.voice && data.voice.callCount > 0)) && (
+          <div className={`grid gap-3 ${[data.crm?.openDealCount, data.voice?.callCount].filter(Boolean).length >= 2 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+            {data.crm && data.crm.openDealCount > 0 && (
+              <HeroCard
+                label="Open Pipeline Value"
+                value={`$${data.crm.pipelineValue >= 1000 ? `${(data.crm.pipelineValue / 1000).toFixed(1)}K` : data.crm.pipelineValue}`}
+                sub="from CRM deals"
+                icon={DollarSign}
+                color="text-emerald-600 bg-emerald-50 border-emerald-200"
+              />
+            )}
+            {data.crm && data.crm.openDealCount > 0 && (
+              <HeroCard
+                label="Open Deals"
+                value={String(data.crm.openDealCount)}
+                sub="active in pipeline"
+                icon={Users}
+                color="text-amber-600 bg-amber-50 border-amber-200"
+              />
+            )}
+            {data.voice && data.voice.callCount > 0 && (
+              <HeroCard
+                label="Voice Calls"
+                value={String(data.voice.callCount)}
+                sub={`last ${days} days`}
+                icon={MessageSquare}
+                color="text-blue-600 bg-blue-50 border-blue-200"
+              />
+            )}
           </div>
         )}
 
