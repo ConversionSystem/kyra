@@ -50,6 +50,7 @@ interface IntelligenceData {
   topWorkers: TopWorker[];
   recent: RecentConvo[];
   roi: { hoursSaved: number; laborCostSaved: number };
+  crm?: { pipelineValue: number; openDealCount: number };
   clientNames: Record<string, string>;
 }
 
@@ -229,6 +230,26 @@ export function AnalyticsClient({ agencyPlan, clients }: { agencyPlan: string; c
             color="text-purple-600 bg-purple-50 border-purple-200"
           />
         </div>
+
+        {/* CRM Pipeline Strip — only shown when CRM has data */}
+        {data.crm && data.crm.openDealCount > 0 && (
+          <div className="grid grid-cols-2 gap-3">
+            <HeroCard
+              label="Open Pipeline Value"
+              value={`$${data.crm.pipelineValue >= 1000 ? `${(data.crm.pipelineValue / 1000).toFixed(1)}K` : data.crm.pipelineValue}`}
+              sub="from CRM deals"
+              icon={DollarSign}
+              color="text-emerald-600 bg-emerald-50 border-emerald-200"
+            />
+            <HeroCard
+              label="Open Deals"
+              value={String(data.crm.openDealCount)}
+              sub="active in pipeline"
+              icon={Users}
+              color="text-amber-600 bg-amber-50 border-amber-200"
+            />
+          </div>
+        )}
 
         {/* Section 2: Conversation Trend Chart */}
         <TrendChart trend={trend} clientNames={data.clientNames} />

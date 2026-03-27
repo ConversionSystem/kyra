@@ -23,8 +23,8 @@ export async function GET(request: NextRequest) {
   const since = new Date();
   since.setDate(since.getDate() - days);
 
-  // Parallel: conversations, active workers, all workers
-  const [convosResult, activeWorkersResult, allWorkersResult] = await Promise.all([
+  // Parallel: conversations, active workers, all workers, CRM pipeline
+  const [convosResult, activeWorkersResult, allWorkersResult, crmPipelineResult] = await Promise.all([
     supabase
       .from('client_conversations')
       .select('id, client_id, channel, user_message, ai_response, tokens_used, created_at')
@@ -42,10 +42,20 @@ export async function GET(request: NextRequest) {
       .from('agency_clients')
       .select('id', { count: 'exact', head: true })
       .eq('agency_id', agency.id),
+
+    // FIX 6: CRM pipeline metrics
+    supabase
+      .from('crm_deals')
+      .select('stage, value')
+      .eq('agency_id', agency.id)
+      .not('stage', 'in', '(won,lost)'),
   ]);
 
   const convos = convosResult.data ?? [];
   const workers = activeWorkersResult.data ?? [];
+  const openDeals = crmPipelineResult.data ?? [];
+  const pipelineValue = openDeals.reduce((sum, d) => sum + (Number(d.value) || 0), 0);
+  const openDealCount = openDeals.length;
 
   // ── Hero metrics ──
   const totalConversations = convos.length;
@@ -128,6 +138,10 @@ export async function GET(request: NextRequest) {
     roi: {
       hoursSaved,
       laborCostSaved,
+    },
+    crm: {
+      pipelineValue,
+      openDealCount,
     },
     clientNames: clientNameMap,
   });
