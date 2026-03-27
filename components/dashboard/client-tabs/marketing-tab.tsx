@@ -7,6 +7,7 @@ import {
   PenTool,
   Eye,
   Smartphone,
+  Mail,
   ArrowRight,
   Loader2,
   Plus,
@@ -20,10 +21,11 @@ import {
   Inbox,
 } from 'lucide-react';
 import type { AgencyClient } from '@/lib/agency/queries';
+import EmailMarketingTab from './email-marketing-tab';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-type SubTab = 'dashboard' | 'seo' | 'content' | 'competitors' | 'social';
+type SubTab = 'dashboard' | 'seo' | 'content' | 'competitors' | 'social' | 'email';
 
 interface Keyword {
   keyword: string;
@@ -841,6 +843,7 @@ const SUB_TABS: { id: SubTab; label: string; icon: React.ElementType }[] = [
   { id: 'content', label: 'Content', icon: PenTool },
   { id: 'competitors', label: 'Competitors', icon: Eye },
   { id: 'social', label: 'Social', icon: Smartphone },
+  { id: 'email', label: 'Email', icon: Mail },
 ];
 
 export default function MarketingTab({ client }: { client: AgencyClient }) {
@@ -877,6 +880,7 @@ export default function MarketingTab({ client }: { client: AgencyClient }) {
       {subTab === 'content' && <ContentView clientId={client.id} />}
       {subTab === 'competitors' && <CompetitorsView clientId={client.id} />}
       {subTab === 'social' && <SocialView clientId={client.id} />}
+      {subTab === 'email' && <EmailMarketingTab client={client} />}
     </div>
   );
 }
