@@ -116,7 +116,7 @@ export async function GET(req: NextRequest) {
   const { data: clients } = await supabase
     .from('agency_clients')
     .select('id, name, agency_id, settings, gateway_url, gateway_token, gateway_status')
-    .eq('status', 'active')
+    .in('status', ['active', 'setup'])
     .not('gateway_url', 'is', null)
     .not('gateway_token', 'is', null);
 
