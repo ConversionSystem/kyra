@@ -35,10 +35,8 @@ const NAV_LINKS: NavLink[] = [
   { label: 'Automations',   href: '/agency/automations', icon: ZapIcon,       desc: 'Scheduled actions & triggers',      section: 'automation' },
 
   // ── Insights ──
-  { label: 'Intelligence',  href: '/agency/analytics',   icon: TrendingUp,    desc: 'ROI metrics & conversation trends', section: 'insights' },
-  { label: 'Performance',   href: '/agency/performance', icon: BarChart3,     desc: 'AI worker stats',                   section: 'insights' },
+  { label: 'Analytics',     href: '/agency/analytics',   icon: BarChart3,     desc: 'Performance & revenue',             section: 'insights' },
   { label: 'Token Usage',   href: '/agency/usage',       icon: Activity,      desc: 'Costs & activity per client',       section: 'insights' },
-  { label: 'Revenue',       href: '/agency/revenue',     icon: TrendingUp,    desc: 'Revenue tracking',                  section: 'insights' },
 ];
 
 const SECTION_LABELS: Record<string, string> = {

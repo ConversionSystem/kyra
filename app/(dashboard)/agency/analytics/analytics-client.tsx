@@ -4,9 +4,10 @@ import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import {
   MessageSquare, Bot, Clock, TrendingUp, Loader2,
-  Users, Zap, DollarSign, ExternalLink,
+  Users, Zap, DollarSign, ExternalLink, BarChart3,
 } from 'lucide-react';
 import { SectionNav } from '@/components/dashboard/section-nav';
+import { AnalyticsRevenueTab } from './analytics-revenue-tab';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 // ── Types ──
@@ -83,7 +84,8 @@ const CHANNEL_LABELS: Record<string, string> = {
 
 // ── Main Component ──
 
-export function AnalyticsClient({ agencyPlan }: { agencyPlan: string }) {
+export function AnalyticsClient({ agencyPlan, clients }: { agencyPlan: string; clients?: Array<{ id: string; name: string; status: string; monthlyRate: number }> }) {
+  const [activeTab, setActiveTab] = useState<'performance' | 'revenue'>('performance');
   const [data, setData] = useState<IntelligenceData | null>(null);
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState(30);
@@ -96,10 +98,44 @@ export function AnalyticsClient({ agencyPlan }: { agencyPlan: string }) {
       .catch(() => setLoading(false));
   }, [days]);
 
+  // Tab nav — always rendered
+  const tabNav = (
+    <div className="flex gap-1 border-b border-gray-200 px-4 sm:px-6 md:px-8">
+      {([
+        { id: 'performance', label: 'Performance', icon: BarChart3 },
+        { id: 'revenue', label: 'Revenue', icon: TrendingUp },
+      ] as const).map(t => (
+        <button
+          key={t.id}
+          onClick={() => setActiveTab(t.id)}
+          className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors -mb-px ${
+            activeTab === t.id
+              ? 'border-indigo-600 text-indigo-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <t.icon className="w-4 h-4" />
+          {t.label}
+        </button>
+      ))}
+    </div>
+  );
+
+  if (activeTab === 'revenue') {
+    return (
+      <div className="space-y-0">
+        <SectionNav currentHref="/agency/analytics" />
+        {tabNav}
+        <AnalyticsRevenueTab clients={clients || []} />
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="space-y-0">
         <SectionNav currentHref="/agency/analytics" />
+        {tabNav}
         <div className="flex items-center justify-center py-32">
           <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
         </div>
@@ -111,6 +147,7 @@ export function AnalyticsClient({ agencyPlan }: { agencyPlan: string }) {
     return (
       <div className="space-y-0">
         <SectionNav currentHref="/agency/analytics" />
+        {tabNav}
         <div className="p-8 text-center text-gray-500">Failed to load analytics data.</div>
       </div>
     );
@@ -130,17 +167,18 @@ export function AnalyticsClient({ agencyPlan }: { agencyPlan: string }) {
   return (
     <div className="space-y-0">
       <SectionNav currentHref="/agency/analytics" />
+      {tabNav}
       <div className="p-4 sm:p-6 md:p-8 max-w-6xl space-y-6">
 
         {/* Header */}
         <div className="flex items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              <TrendingUp className="h-6 w-6 text-indigo-600" />
-              Agency Intelligence
+              <BarChart3 className="h-6 w-6 text-indigo-600" />
+              Performance
             </h1>
             <p className="text-sm text-gray-500 mt-1">
-              Performance metrics and ROI across all your AI workers
+              AI worker metrics and ROI across all your clients
             </p>
           </div>
           <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">

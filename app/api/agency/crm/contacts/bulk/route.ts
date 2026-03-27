@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
   const { action, contact_ids, payload } = body as {
-    action: 'tag' | 'stage' | 'delete' | 'export';
+    action: 'tag' | 'stage' | 'delete' | 'export' | 'sms';
     contact_ids: string[];
     payload?: Record<string, unknown>;
   };
@@ -104,6 +104,42 @@ export async function POST(req: NextRequest) {
             'Content-Disposition': `attachment; filename="contacts-${new Date().toISOString().split('T')[0]}.csv"`,
           },
         });
+      }
+
+      // Sprint 4: Bulk SMS from segment
+      case 'sms': {
+        const message = payload?.message as string;
+        if (!message?.trim()) return NextResponse.json({ error: 'message required' }, { status: 400 });
+
+        // Fetch contacts with phone numbers (either from explicit IDs or from segment filter)
+        let contactQuery = service
+          .from('crm_contacts')
+          .select('id, first_name, last_name, phone')
+          .eq('agency_id', result.agency.id)
+          .not('phone', 'is', null);
+
+        if (contact_ids?.length) {
+          contactQuery = contactQuery.in('id', contact_ids);
+        }
+
+        const { data: smsContacts } = await contactQuery;
+        if (!smsContacts?.length) return NextResponse.json({ ok: true, count: 0, message: 'No contacts with phone numbers' });
+
+        // Log as activity (actual SMS delivery via GHL is handled separately by the AI worker)
+        const activityRows = smsContacts.map(c => ({
+          agency_id: result.agency.id,
+          contact_id: c.id,
+          type: 'sms',
+          actor: 'human',
+          direction: 'outbound',
+          subject: 'Bulk SMS',
+          body: message.replace(/\{\{first_name\}\}/gi, c.first_name || 'there'),
+          needs_attention: false,
+        }));
+
+        await service.from('crm_activities').insert(activityRows);
+
+        return NextResponse.json({ ok: true, count: smsContacts.length });
       }
 
       default:
