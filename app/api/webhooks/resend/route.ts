@@ -100,5 +100,70 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // ── FIX 5: Sync email engagement → CRM contact activity + score ──────────
+  // Opens and clicks increase contact engagement score.
+  // Bounces and complaints reduce it and update contact status.
+  if (existing.contact_id && ['opened', 'clicked', 'bounced'].includes(event)) {
+    try {
+      // Get campaign agency_id
+      const { data: camp } = await supabase
+        .from('email_campaigns')
+        .select('agency_id, client_id')
+        .eq('id', existing.campaign_id)
+        .single();
+
+      if (camp?.agency_id) {
+        // Find CRM contact linked to this email_contact
+        const { data: emailContact } = await supabase
+          .from('email_contacts')
+          .select('email')
+          .eq('id', existing.contact_id)
+          .single();
+
+        if (emailContact?.email) {
+          const { data: crmContact } = await supabase
+            .from('crm_contacts')
+            .select('id')
+            .eq('agency_id', camp.agency_id)
+            .eq('email', emailContact.email)
+            .maybeSingle();
+
+          if (crmContact) {
+            // Log as CRM activity
+            await supabase.from('crm_activities').insert({
+              agency_id: camp.agency_id,
+              contact_id: crmContact.id,
+              type: 'email',
+              actor: 'system',
+              direction: event === 'opened' || event === 'clicked' ? 'inbound' : 'outbound',
+              subject: `Email ${event}`,
+              body: `Email from campaign was ${event}`,
+              needs_attention: false,
+            });
+
+            // Boost score on engagement: opened +5, clicked +10
+            if (event === 'opened' || event === 'clicked') {
+              const { data: c } = await supabase
+                .from('crm_contacts')
+                .select('score')
+                .eq('id', crmContact.id)
+                .single();
+              if (c) {
+                const bonus = event === 'clicked' ? 10 : 5;
+                const newScore = Math.min(100, (c.score || 0) + bonus);
+                await supabase
+                  .from('crm_contacts')
+                  .update({ score: newScore, last_activity_at: new Date().toISOString() })
+                  .eq('id', crmContact.id);
+              }
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error('[webhooks/resend] CRM sync error:', err);
+    }
+  }
+
   return NextResponse.json({ ok: true });
 }

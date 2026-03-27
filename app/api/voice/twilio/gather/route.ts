@@ -10,6 +10,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { deductCredits, requireCredits } from '@/lib/billing/credit-engine';
 import { getKnowledgeContext } from '@/lib/knowledge/rag';
+import { logConversationToCrm } from '@/lib/crm/conversation-logger';
+import { GHL_TOOL_DEFINITIONS, executeTool } from '@/lib/ghl/ghl-tools';
+import { getValidToken } from '@/lib/ghl/api';
 
 // Cache client config per clientId — avoids repeated Supabase queries mid-call
 // TTL 5 min — fast enough to pick up config changes without DB hit every turn
@@ -244,6 +247,38 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // ── FIX 3: Inject CRM relationship memory for this caller ────────────────
+  let crmMemorySection = '';
+  try {
+    const { getMemories, buildMemoryContext } = await import('@/lib/crm/relationship-memory');
+    // Find CRM contact by phone
+    const { data: crmContact } = await supabase
+      .from('crm_contacts')
+      .select('id, first_name, last_name, score_label, stage, ai_summary, ai_next_action')
+      .eq('agency_id', agency_id)
+      .eq('phone', callerNumber)
+      .maybeSingle();
+
+    if (crmContact) {
+      const memories = await getMemories(agency_id, crmContact.id);
+      if (memories.length > 0) {
+        const memCtx = buildMemoryContext(memories);
+        const contactName = [crmContact.first_name, crmContact.last_name].filter(Boolean).join(' ');
+        crmMemorySection = [
+          `CALLER CONTEXT (from CRM):`,
+          contactName ? `- Name: ${contactName}` : '',
+          `- Relationship stage: ${crmContact.stage}`,
+          crmContact.score_label ? `- Lead score: ${crmContact.score_label}` : '',
+          crmContact.ai_summary ? `- Summary: ${crmContact.ai_summary}` : '',
+          crmContact.ai_next_action ? `- Pending action: ${crmContact.ai_next_action}` : '',
+          memCtx ? `\nRELATIONSHIP NOTES:\n${memCtx}` : '',
+        ].filter(Boolean).join('\n');
+      }
+    }
+  } catch (err) {
+    console.error('[voice/gather] CRM memory error:', err);
+  }
+
   // ── Build system prompt — same brain as text/widget chat ────────────────
   const systemPrompt = [
     persona || `You are ${aiName}, a friendly AI assistant for ${clientName}.`,
@@ -264,6 +299,7 @@ export async function POST(req: NextRequest) {
     '',
     // Knowledge base — docs, website content, FAQs
     knowledgeSection ? `\nKNOWLEDGE BASE — Use this to answer questions accurately:\n${knowledgeSection}` : '',
+    crmMemorySection ? `\n${crmMemorySection}` : '',
     '',
     `Caller's phone: ${callerNumber}`,
   ].filter(Boolean).join('\n').trim();
@@ -282,10 +318,66 @@ export async function POST(req: NextRequest) {
     return twiml(`<Say voice="${ttsVoice}">I'm sorry, service is temporarily unavailable. Please call back later. Goodbye!</Say><Hangup/>`);
   }
 
+  // ── FIX 2: Load GHL token for tool execution ──────────────────────────────
+  // Fetch GHL credentials so the voice AI can book appointments, tag contacts etc.
+  let ghlToken: string | null = null;
+  let ghlLocationId: string | null = null;
+  let ghlContactId: string | null = null;
+  try {
+    const { data: clientGhl } = await supabase
+      .from('agency_clients')
+      .select('ghl_private_token, ghl_access_token, ghl_location_id')
+      .eq('id', clientId)
+      .single();
+    if (clientGhl) {
+      ghlToken = await getValidToken(clientId).catch(() => null);
+      ghlLocationId = clientGhl.ghl_location_id ?? null;
+    }
+    // Find GHL contact by caller phone number
+    if (ghlToken && ghlLocationId && callerNumber) {
+      const searchRes = await executeTool('search_contacts', { query: callerNumber }, {
+        token: ghlToken, contactId: '', locationId: ghlLocationId, clientId,
+      });
+      if (searchRes.success && Array.isArray((searchRes.data as Record<string,unknown>)?.contacts)) {
+        const contacts = (searchRes.data as Record<string, unknown[]>).contacts as Array<{id: string}>;
+        if (contacts.length > 0) ghlContactId = contacts[0].id;
+      }
+    }
+  } catch (err) {
+    console.error('[voice/gather] GHL token fetch error:', err);
+  }
+
+  // Conditionally attach GHL tools if we have a valid token
+  const voiceTools = ghlToken ? [
+    // Subset of tools that make sense for voice calls
+    ...GHL_TOOL_DEFINITIONS.filter(t => [
+      'book_appointment', 'get_available_slots', 'get_calendars', 'confirm_appointment',
+      'reschedule_appointment', 'add_contact_tags', 'add_contact_note',
+      'create_contact', 'escalate_to_human',
+    ].includes(t.function.name)),
+  ] : [];
+
   // Call LLM directly — skip VPS gateway hop for lower latency
   let aiResponse = '';
   try {
     if (!llmKey) throw new Error('No LLM key configured');
+    const messages: Array<{role: string; content: string}> = [
+      { role: 'system', content: systemPrompt },
+      ...history.slice(-6),
+      { role: 'user', content: speechResult },
+    ];
+
+    const requestBody: Record<string, unknown> = {
+      model: llmModel,
+      messages,
+      temperature: 0.7,
+      max_tokens: 120,
+    };
+    if (voiceTools.length > 0) {
+      requestBody.tools = voiceTools;
+      requestBody.tool_choice = 'auto';
+    }
+
     const aiRes = await fetch(llmUrl, {
       method: 'POST',
       headers: {
@@ -293,21 +385,56 @@ export async function POST(req: NextRequest) {
         Authorization: `Bearer ${llmKey}`,
         ...(llmUrl.includes('openrouter') ? { 'HTTP-Referer': 'https://kyra.conversionsystem.com', 'X-Title': 'Kyra Voice' } : {}),
       },
-      body: JSON.stringify({
-        model: llmModel,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          ...history.slice(-6),
-        ],
-        temperature: 0.7,
-        max_tokens: 80,  // short = faster response + more natural on phone
-      }),
-      signal: AbortSignal.timeout(6000),  // 6s max — caller shouldn't wait longer
+      body: JSON.stringify(requestBody),
+      signal: AbortSignal.timeout(8000),
     });
 
     if (aiRes.ok) {
       const data = await aiRes.json();
-      aiResponse = data.choices?.[0]?.message?.content?.trim() ?? '';
+      const choice = data.choices?.[0];
+
+      // Handle tool calls (e.g., book_appointment)
+      if (choice?.finish_reason === 'tool_calls' && choice?.message?.tool_calls && ghlToken && ghlLocationId) {
+        const toolCall = choice.message.tool_calls[0];
+        const toolName = toolCall.function.name;
+        let toolArgs: Record<string, unknown> = {};
+        try { toolArgs = JSON.parse(toolCall.function.arguments); } catch {}
+
+        const toolResult = await executeTool(toolName, toolArgs, {
+          token: ghlToken,
+          contactId: ghlContactId || '',
+          locationId: ghlLocationId,
+          clientId,
+          calendarId: (toolArgs.calendar_id as string) || '',
+        });
+
+        // Feed tool result back for natural language response
+        const followUpRes = await fetch(llmUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${llmKey}`,
+            ...(llmUrl.includes('openrouter') ? { 'HTTP-Referer': 'https://kyra.conversionsystem.com', 'X-Title': 'Kyra Voice' } : {}),
+          },
+          body: JSON.stringify({
+            model: llmModel,
+            messages: [
+              ...messages,
+              { role: 'assistant', content: null, tool_calls: choice.message.tool_calls },
+              { role: 'tool', tool_call_id: toolCall.id, content: JSON.stringify(toolResult.data || toolResult.error || 'done') },
+            ],
+            temperature: 0.7,
+            max_tokens: 80,
+          }),
+          signal: AbortSignal.timeout(6000),
+        });
+        if (followUpRes.ok) {
+          const followUpData = await followUpRes.json();
+          aiResponse = followUpData.choices?.[0]?.message?.content?.trim() ?? '';
+        }
+      } else {
+        aiResponse = choice?.message?.content?.trim() ?? '';
+      }
     } else {
       console.error('[voice/gather] LLM error:', aiRes.status, await aiRes.text().catch(() => ''));
     }
@@ -330,6 +457,25 @@ export async function POST(req: NextRequest) {
 
   // Increment voice minutes (~0.5 min per turn approximation)
   void supabase.rpc('increment_voice_minutes', { p_agency_id: agency_id, p_minutes: 0.5 });
+
+  // ── FIX 1: Log voice conversation to CRM activity timeline ───────────────
+  // This makes every call turn visible in the contact's CRM timeline.
+  void logConversationToCrm(agency_id, {
+    type: 'InboundMessage',
+    phone: callerNumber,
+    body: speechResult,
+    messageType: 'voice',
+    direction: 'inbound',
+  }).catch(err => console.error('[voice/gather] CRM log error:', err));
+
+  // Log AI response turn too
+  void logConversationToCrm(agency_id, {
+    type: 'OutboundMessage',
+    phone: callerNumber,
+    body: aiResponse,
+    messageType: 'voice',
+    direction: 'outbound',
+  }).catch(() => {});
 
   // Log conversation to Supabase (store both client_id and agency_id for flexible querying)
   void supabase.from('voice_call_logs').upsert({

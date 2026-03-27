@@ -192,6 +192,35 @@ export async function POST(
     // 3. No separate leads table needed — crm_contacts + crm_activities covers it
     // (web_chat_leads doesn't exist; pipeline_leads is for outbound campaigns)
 
+    // ── FIX 7: Push website lead to GHL as a contact ──────────────────────────
+    // If the client has GHL connected, create/update the contact in GHL too.
+    try {
+      const { data: ghlClient } = await supabase
+        .from('agency_clients')
+        .select('ghl_private_token, ghl_access_token, ghl_location_id')
+        .eq('id', client.id)
+        .single();
+
+      if (ghlClient?.ghl_location_id) {
+        const { getValidToken } = await import('@/lib/ghl/api');
+        const { executeTool } = await import('@/lib/ghl/ghl-tools');
+        const token = await getValidToken(client.id).catch(() => null);
+
+        if (token) {
+          const nameParts = name.trim().split(' ');
+          await executeTool('create_contact', {
+            first_name: nameParts[0] || name,
+            last_name: nameParts.slice(1).join(' ') || '',
+            phone,
+            email: email || undefined,
+            tags: ['website-lead', 'kyra-website', ...(serviceType ? [serviceType] : [])],
+          }, { token, contactId: '', locationId: ghlClient.ghl_location_id, clientId: client.id });
+        }
+      }
+    } catch (ghlErr) {
+      console.error('[LEAD] GHL push error (non-fatal):', ghlErr);
+    }
+
     console.log(`[LEAD] Saved: ${name} (${phone}) → client ${client.id}, agency ${agencyId}, CRM: ${crmContactId}`);
     return NextResponse.json({ ok: true, crmContactId }, { headers: CORS });
 
