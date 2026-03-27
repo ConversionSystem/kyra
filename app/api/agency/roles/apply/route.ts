@@ -104,12 +104,25 @@ export async function POST(request: NextRequest) {
       soulLines.push('- Never reveal you are an AI unless directly asked');
 
       const soulMd = soulLines.join('\n') + buildInjectionDefensePromptSuffix();
-      const pushResult = await updateClientConfig(clientId, { soulMd });
+
+      // Also build and push TOOLS.md so the container knows about GHL + CRM tools
+      const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://kyra.conversionsystem.com').replace(/\/+$/, '');
+      const toolsMd = `# TOOLS.md — Kyra Platform Tools
+
+Use the Kyra API bridge for GHL and CRM operations. Your Bearer token is your identity.
+
+POST ${appUrl}/api/agent/ghl-tool → GHL actions (book_appointment, create_contact, send_sms, etc.)
+POST ${appUrl}/api/agent/crm-context → CRM lookup (contact history, deals, memories, stats)
+
+See the full tool reference in your workspace TOOLS.md.
+`;
+
+      const pushResult = await updateClientConfig(clientId, { soulMd, toolsMd });
 
       if (pushResult.success) {
-        console.log(`[roles/apply] SOUL.md pushed for client ${clientId} — role: ${roleName}`);
+        console.log(`[roles/apply] SOUL.md + TOOLS.md pushed for client ${clientId} — role: ${roleName}`);
       } else {
-        console.warn(`[roles/apply] Failed to push SOUL.md for ${clientId}:`, pushResult.error);
+        console.warn(`[roles/apply] Failed to push config for ${clientId}:`, pushResult.error);
       }
     } catch (err) {
       console.error(`[roles/apply] Error pushing SOUL.md for ${clientId}:`, err);
