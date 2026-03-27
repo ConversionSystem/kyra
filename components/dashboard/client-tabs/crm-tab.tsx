@@ -8,6 +8,7 @@ import {
   Calendar, Download, Filter, MessageSquare, Target,
   TrendingUp, Zap, CheckSquare, Square, Briefcase, Eye,
   MoreHorizontal, RefreshCw, ChevronLeft, Sparkles, Flame, Bot, Bell,
+  Sliders, GitMerge, Layers, PhoneCall, GitBranch,
 } from 'lucide-react';
 import type { AgencyClient } from '@/lib/agency/queries';
 
@@ -140,7 +141,7 @@ interface AnalyticsData {
   recent_activities: ActivityItem[];
 }
 
-type Section = 'ai' | 'contacts' | 'deals' | 'tasks' | 'analytics' | 'activity';
+type Section = 'ai' | 'contacts' | 'deals' | 'tasks' | 'analytics' | 'activity' | 'segments' | 'scoring' | 'merge';
 
 // CommandFeedItem for AI Insights section
 interface CommandFeedItem {
@@ -656,6 +657,7 @@ function ContactDetailPanel({ contact: initial, onBack, client }: { contact: Con
   const [showSendSms, setShowSendSms] = useState(false);
   const [showAddNote, setShowAddNote] = useState(false);
   const [showAddTask, setShowAddTask] = useState(false);
+  const [showLogCall, setShowLogCall] = useState(false);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [tasks, setTasks] = useState<CrmTask[]>([]);
   const [deals, setDeals] = useState<Deal[]>([]);
@@ -813,6 +815,7 @@ function ContactDetailPanel({ contact: initial, onBack, client }: { contact: Con
           <div className="flex items-center gap-2 mt-4 pt-4 border-t border-gray-100">
             <button onClick={() => setShowSendEmail(true)} className={btnSecondary + ' text-xs px-3 py-1.5'}><Mail className="w-3.5 h-3.5 mr-1 inline" />Send Email</button>
             <button onClick={() => setShowSendSms(true)} className={btnSecondary + ' text-xs px-3 py-1.5'}><MessageSquare className="w-3.5 h-3.5 mr-1 inline" />Send SMS</button>
+            <button onClick={() => setShowLogCall(true)} className={btnSecondary + ' text-xs px-3 py-1.5'}><PhoneCall className="w-3.5 h-3.5 mr-1 inline" />Log Call</button>
             <button onClick={() => setShowAddNote(true)} className={btnSecondary + ' text-xs px-3 py-1.5'}><FileText className="w-3.5 h-3.5 mr-1 inline" />Add Note</button>
             <button onClick={() => setShowAddTask(true)} className={btnSecondary + ' text-xs px-3 py-1.5'}><CheckSquare className="w-3.5 h-3.5 mr-1 inline" />Add Task</button>
           </div>
@@ -948,6 +951,7 @@ function ContactDetailPanel({ contact: initial, onBack, client }: { contact: Con
       {/* Modals */}
       {showSendEmail && <SendMessageModal channel="email" contactId={contact.id} contactName={contactName(contact)} onClose={() => setShowSendEmail(false)} onSent={loadActivities} />}
       {showSendSms && <SendMessageModal channel="sms" contactId={contact.id} contactName={contactName(contact)} onClose={() => setShowSendSms(false)} onSent={loadActivities} />}
+      {showLogCall && <LogCallModal contactId={contact.id} onClose={() => setShowLogCall(false)} onSaved={loadActivities} />}
       {showAddNote && <AddNoteModal contactId={contact.id} onClose={() => setShowAddNote(false)} onSaved={loadActivities} />}
       {showAddTask && <AddTaskModal contactId={contact.id} onClose={() => setShowAddTask(false)} onSaved={loadTasks} />}
     </div>
@@ -1067,6 +1071,79 @@ function AddNoteModal({ contactId, onClose, onSaved }: { contactId: string; onCl
   );
 }
 
+// ── Log Call Modal (Sprint 4) ──────────────────────────────────────────────────
+
+function LogCallModal({ contactId, onClose, onSaved }: { contactId: string; onClose: () => void; onSaved: () => void }) {
+  const [duration, setDuration] = useState('');
+  const [outcome, setOutcome] = useState('connected');
+  const [notes, setNotes] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await fetch('/api/agency/crm/activities', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contact_id: contactId,
+          type: 'call',
+          actor: 'human',
+          direction: 'outbound',
+          subject: `Call — ${outcome}${duration ? ` (${duration} min)` : ''}`,
+          body: notes || null,
+          metadata: { duration_minutes: duration ? parseInt(duration) : null, outcome },
+        }),
+      });
+      onSaved();
+      onClose();
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <Modal onClose={onClose}>
+      <ModalHeader title="Log Call" onClose={onClose} />
+      <div className="p-5 space-y-4">
+        <div className="grid grid-cols-2 gap-3">
+          <FormField label="Outcome">
+            <select className={inputClass} value={outcome} onChange={e => setOutcome(e.target.value)}>
+              <option value="connected">Connected</option>
+              <option value="voicemail">Left Voicemail</option>
+              <option value="no_answer">No Answer</option>
+              <option value="busy">Busy</option>
+              <option value="wrong_number">Wrong Number</option>
+            </select>
+          </FormField>
+          <FormField label="Duration (minutes)">
+            <input
+              className={inputClass}
+              type="number"
+              placeholder="e.g. 5"
+              value={duration}
+              onChange={e => setDuration(e.target.value)}
+              min="0"
+            />
+          </FormField>
+        </div>
+        <FormField label="Notes (optional)">
+          <textarea
+            className={inputClass + ' h-24 resize-none'}
+            placeholder="What was discussed?"
+            value={notes}
+            onChange={e => setNotes(e.target.value)}
+          />
+        </FormField>
+      </div>
+      <div className="flex justify-end gap-2 p-5 border-t border-gray-100">
+        <button onClick={onClose} className={btnSecondary}>Cancel</button>
+        <button onClick={handleSave} disabled={saving} className={btnPrimary}>
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><PhoneCall className="w-4 h-4 inline mr-1" />Log Call</>}
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
 // ── Add Task Modal ─────────────────────────────────────────────────────────────
 
 function AddTaskModal({ contactId, onClose, onSaved }: { contactId?: string; onClose: () => void; onSaved: () => void }) {
@@ -1161,8 +1238,12 @@ function DealsSection() {
         ))}
       </div>
 
-      {/* Add button */}
-      <div className="flex justify-end">
+      {/* Add button + automation hint */}
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-gray-400 flex items-center gap-1.5">
+          <GitBranch className="w-3.5 h-3.5" />
+          Stage automations are configured in <button onClick={() => {/* parent will handle */}} className="text-indigo-600 hover:underline">Tools → Scoring</button>
+        </p>
         <button onClick={() => setShowAdd(true)} className={btnPrimary}><Plus className="w-4 h-4 mr-1 inline" />Add Deal</button>
       </div>
 
@@ -1907,10 +1988,668 @@ function AIInsightsSection({ setSection }: { setSection: (s: Section) => void })
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// SPRINT 1A — LEAD SCORING UI
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+interface ScoringRule {
+  id: string;
+  name: string;
+  enabled: boolean;
+  trigger: { type: string; [k: string]: unknown };
+  action: { type: string; [k: string]: unknown };
+  requires_approval: boolean;
+  created_at: string;
+}
+
+function ScoringSection() {
+  const [rules, setRules] = useState<ScoringRule[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [scoring, setScoring] = useState(false);
+  const [scoreResult, setScoreResult] = useState<{ scored: number; stale: number } | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const loadRules = useCallback(async () => {
+    try {
+      const res = await fetch('/api/agency/crm/rules');
+      if (res.ok) { const data = await res.json(); setRules(data.rules || []); }
+    } catch (err) { console.error('[scoring]', err); } finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { loadRules(); }, [loadRules]);
+
+  const toggleRule = (id: string) => {
+    setRules(prev => prev.map(r => r.id === id ? { ...r, enabled: !r.enabled } : r));
+  };
+
+  const saveRules = async () => {
+    setSaving(true);
+    try {
+      await fetch('/api/agency/crm/rules', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rules }),
+      });
+    } finally { setSaving(false); }
+  };
+
+  const runScoring = async () => {
+    setScoring(true);
+    setScoreResult(null);
+    try {
+      const res = await fetch('/api/agency/crm/score', { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        setScoreResult({ scored: data.scoring?.scored ?? 0, stale: data.stale_deals?.stale ?? 0 });
+      }
+    } finally { setScoring(false); }
+  };
+
+  const triggerLabel = (rule: ScoringRule): string => {
+    const t = rule.trigger;
+    if (t.type === 'deal_stale') return `Deal inactive for ${t.days} days`;
+    if (t.type === 'score_above') return `Score above ${t.threshold}`;
+    if (t.type === 'score_below') return `Score below ${t.threshold}`;
+    if (t.type === 'no_activity') return `No activity for ${t.days} days`;
+    if (t.type === 'inbound_message') return 'New inbound message';
+    if (t.type === 'deal_won') return 'Deal won';
+    if (t.type === 'deal_lost') return 'Deal lost';
+    if (t.type === 'contact_stage_change') return `Contact stage → ${t.to}`;
+    return t.type.replace(/_/g, ' ');
+  };
+
+  const actionLabel = (rule: ScoringRule): string => {
+    const a = rule.action;
+    if (a.type === 'send_follow_up') return `Send follow-up via ${a.channel}`;
+    if (a.type === 'create_task') return `Create task: ${a.title}`;
+    if (a.type === 'change_stage') return `Change stage to ${a.to}`;
+    if (a.type === 'add_tag') return `Add tag: ${a.tag}`;
+    if (a.type === 'score_contacts') return 'Re-score all contacts';
+    if (a.type === 'detect_stale_deals') return 'Detect stale deals';
+    if (a.type === 'notify_owner') return `Notify you: ${a.message}`;
+    return a.type.replace(/_/g, ' ');
+  };
+
+  if (loading) return <div className="flex items-center justify-center py-16"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2">
+            <Sliders className="h-5 w-5 text-indigo-600" /> Lead Scoring &amp; Automation Rules
+          </h2>
+          <p className="text-sm text-gray-500 mt-0.5">Configure when AI automatically takes action on contacts and deals.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={runScoring}
+            disabled={scoring}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm border border-indigo-200 text-indigo-600 rounded-lg hover:bg-indigo-50 transition disabled:opacity-50"
+          >
+            {scoring ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+            Run Scoring Now
+          </button>
+          <button
+            onClick={saveRules}
+            disabled={saving}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition disabled:opacity-50"
+          >
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+            Save Rules
+          </button>
+        </div>
+      </div>
+
+      {scoreResult && (
+        <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 flex items-center gap-3">
+          <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
+          <p className="text-sm text-green-800">
+            Scored <strong>{scoreResult.scored}</strong> contacts · Found <strong>{scoreResult.stale}</strong> stale deals
+          </p>
+          <button onClick={() => setScoreResult(null)} className="ml-auto text-green-600 hover:text-green-800"><X className="w-4 h-4" /></button>
+        </div>
+      )}
+
+      {/* Score legend */}
+      <div className="grid grid-cols-4 gap-3">
+        {[
+          { label: 'Hot', range: '75–100', color: 'bg-red-50 border-red-200 text-red-700', dot: 'bg-red-500' },
+          { label: 'Warm', range: '50–74', color: 'bg-orange-50 border-orange-200 text-orange-700', dot: 'bg-orange-500' },
+          { label: 'Cold', range: '25–49', color: 'bg-blue-50 border-blue-200 text-blue-700', dot: 'bg-blue-500' },
+          { label: 'New', range: '0–24', color: 'bg-gray-50 border-gray-200 text-gray-600', dot: 'bg-gray-400' },
+        ].map(s => (
+          <div key={s.label} className={`rounded-xl border p-3 ${s.color}`}>
+            <div className="flex items-center gap-2 mb-1">
+              <div className={`w-2.5 h-2.5 rounded-full ${s.dot}`} />
+              <span className="text-sm font-semibold">{s.label}</span>
+            </div>
+            <div className="text-xs opacity-75">Score {s.range}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Scoring factors */}
+      <div className="bg-white border border-gray-200 rounded-xl p-5">
+        <h3 className="text-sm font-semibold text-gray-900 mb-3">How Contacts Are Scored</h3>
+        <div className="grid grid-cols-2 gap-x-8 gap-y-2">
+          {[
+            { factor: 'Has email address', points: '+10' },
+            { factor: 'Has phone number', points: '+10' },
+            { factor: 'Has company', points: '+5' },
+            { factor: 'Has been enriched', points: '+15' },
+            { factor: 'Has open deal', points: '+20' },
+            { factor: 'Recent activity (7 days)', points: '+30' },
+            { factor: 'Inbound messages', points: '+5 each' },
+            { factor: 'Outbound messages', points: '+3 each' },
+          ].map(f => (
+            <div key={f.factor} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
+              <span className="text-sm text-gray-700">{f.factor}</span>
+              <span className="text-sm font-medium text-indigo-600">{f.points}</span>
+            </div>
+          ))}
+        </div>
+        <p className="text-xs text-gray-400 mt-3">Scoring runs automatically every 24h. Click "Run Scoring Now" to force-update.</p>
+      </div>
+
+      {/* Automation rules */}
+      <div>
+        <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+          <GitBranch className="h-4 w-4 text-indigo-500" /> Automation Rules
+          <span className="text-xs text-gray-400 font-normal">— AI takes action automatically when triggers fire</span>
+        </h3>
+        {rules.length === 0 ? (
+          <div className="bg-gray-50 rounded-xl p-8 text-center text-gray-400">
+            <GitBranch className="w-8 h-8 mx-auto mb-2 opacity-40" />
+            <p className="text-sm">No rules yet. Rules are loaded from your agency defaults.</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {rules.map(rule => (
+              <div key={rule.id} className={`bg-white border rounded-xl p-4 transition ${rule.enabled ? 'border-gray-200' : 'border-gray-100 opacity-60'}`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <button
+                      onClick={() => toggleRule(rule.id)}
+                      className={`w-9 h-5 rounded-full transition-colors flex-shrink-0 ${rule.enabled ? 'bg-indigo-600' : 'bg-gray-300'}`}
+                    >
+                      <div className={`w-4 h-4 bg-white rounded-full mx-auto shadow transition-transform ${rule.enabled ? 'translate-x-2' : '-translate-x-0'}`} style={{ transform: rule.enabled ? 'translateX(4px)' : 'translateX(-4px)' }} />
+                    </button>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900">{rule.name}</p>
+                      <div className="flex items-center gap-2 mt-0.5 text-xs text-gray-500">
+                        <span className="bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded">When: {triggerLabel(rule)}</span>
+                        <span className="text-gray-300">→</span>
+                        <span className="bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded">Then: {actionLabel(rule)}</span>
+                        {rule.requires_approval && (
+                          <span className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">Needs approval</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// SPRINT 1B — SMART SEGMENTS UI
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+interface Segment {
+  id: string;
+  name: string;
+  emoji: string;
+  filters: Array<{ field: string; operator: string; value: string | string[] | number | boolean }>;
+  count?: number;
+  created_at: string;
+}
+
+const SEGMENT_FIELDS = [
+  { value: 'stage', label: 'Stage' },
+  { value: 'score_label', label: 'Score' },
+  { value: 'tags', label: 'Tag' },
+  { value: 'source', label: 'Source' },
+  { value: 'last_contacted_days', label: 'Days Since Contact' },
+  { value: 'has_deal', label: 'Has Deal' },
+];
+
+const SEGMENT_OPERATORS: Record<string, { value: string; label: string }[]> = {
+  stage: [{ value: 'eq', label: 'is' }, { value: 'neq', label: 'is not' }],
+  score_label: [{ value: 'eq', label: 'is' }, { value: 'neq', label: 'is not' }],
+  tags: [{ value: 'contains', label: 'contains' }, { value: 'not_in', label: 'does not contain' }],
+  source: [{ value: 'eq', label: 'is' }, { value: 'neq', label: 'is not' }],
+  last_contacted_days: [{ value: 'gt', label: 'more than' }, { value: 'lt', label: 'less than' }],
+  has_deal: [{ value: 'eq', label: 'is' }],
+};
+
+const SEGMENT_VALUE_OPTIONS: Record<string, string[]> = {
+  stage: ['lead', 'contact', 'customer', 'churned'],
+  score_label: ['hot', 'warm', 'cold', 'new'],
+  has_deal: ['true', 'false'],
+};
+
+function SegmentsSection({ setSection }: { setSection: (s: Section) => void }) {
+  const [segments, setSegments] = useState<Segment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreate, setShowCreate] = useState(false);
+  const [editSegment, setEditSegment] = useState<Segment | null>(null);
+  const [bulkSmsTarget, setBulkSmsTarget] = useState<Segment | null>(null);
+  const [smsMessage, setSmsMessage] = useState('');
+  const [smsSending, setSmsSending] = useState(false);
+  const [smsResult, setSmsResult] = useState<string | null>(null);
+
+  const loadSegments = useCallback(async () => {
+    try {
+      const res = await fetch('/api/agency/crm/segments');
+      if (res.ok) { const data = await res.json(); setSegments(data.segments || []); }
+    } catch (err) { console.error('[segments]', err); } finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { loadSegments(); }, [loadSegments]);
+
+  const deleteSegment = async (id: string) => {
+    if (!window.confirm('Delete this segment?')) return;
+    await fetch('/api/agency/crm/segments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'delete', segmentId: id }),
+    });
+    loadSegments();
+  };
+
+  // Sprint 4: Bulk SMS from segment
+  const sendBulkSms = async () => {
+    if (!bulkSmsTarget || !smsMessage.trim()) return;
+    setSmsSending(true);
+    setSmsResult(null);
+    try {
+      const res = await fetch('/api/agency/crm/contacts/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'sms',
+          segment_id: bulkSmsTarget.id,
+          payload: { message: smsMessage },
+        }),
+      });
+      const data = await res.json();
+      setSmsResult(res.ok ? `✅ SMS queued for ${data.count ?? '?'} contacts` : `❌ ${data.error || 'Failed'}`);
+      if (res.ok) setSmsMessage('');
+    } finally { setSmsSending(false); }
+  };
+
+  if (loading) return <div className="flex items-center justify-center py-16"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2">
+            <Layers className="h-5 w-5 text-indigo-600" /> Smart Segments
+          </h2>
+          <p className="text-sm text-gray-500 mt-0.5">Save filter presets. Click any segment to view its contacts or send a bulk SMS.</p>
+        </div>
+        <button
+          onClick={() => { setEditSegment(null); setShowCreate(true); }}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+        >
+          <Plus className="w-4 h-4" /> New Segment
+        </button>
+      </div>
+
+      {segments.length === 0 && !showCreate ? (
+        <div className="bg-gray-50 border border-dashed border-gray-200 rounded-xl p-10 text-center">
+          <Layers className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+          <p className="text-sm font-semibold text-gray-900">No segments yet</p>
+          <p className="text-xs text-gray-500 mt-1 mb-4">Create a saved filter like "Hot leads with no reply in 7 days"</p>
+          <button onClick={() => setShowCreate(true)} className="inline-flex items-center gap-1.5 px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+            <Plus className="w-4 h-4" /> Create First Segment
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {segments.map(seg => (
+            <div key={seg.id} className="bg-white border border-gray-200 rounded-xl p-4 hover:border-indigo-200 hover:shadow-sm transition">
+              <div className="flex items-start justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">{seg.emoji || '📋'}</span>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">{seg.name}</p>
+                    <p className="text-xs text-gray-500">{seg.filters.length} filter{seg.filters.length !== 1 ? 's' : ''}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => { setEditSegment(seg); setShowCreate(true); }}
+                    className="p-1.5 text-gray-400 hover:text-gray-700 rounded"
+                    title="Edit"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => deleteSegment(seg.id)}
+                    className="p-1.5 text-gray-400 hover:text-red-600 rounded"
+                    title="Delete"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-1 mb-3">
+                {seg.filters.map((f, i) => (
+                  <span key={i} className="text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full">
+                    {f.field} {f.operator} {String(f.value)}
+                  </span>
+                ))}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setSection('contacts')}
+                  className="flex-1 text-xs py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50 transition text-gray-600"
+                >
+                  View Contacts
+                </button>
+                <button
+                  onClick={() => setBulkSmsTarget(seg)}
+                  className="flex-1 text-xs py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition font-medium"
+                >
+                  📱 Bulk SMS
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Segment Create/Edit Modal */}
+      {showCreate && (
+        <SegmentEditor
+          segment={editSegment}
+          onClose={() => { setShowCreate(false); setEditSegment(null); }}
+          onSaved={() => { setShowCreate(false); setEditSegment(null); loadSegments(); }}
+        />
+      )}
+
+      {/* Bulk SMS Modal */}
+      {bulkSmsTarget && (
+        <Modal onClose={() => { setBulkSmsTarget(null); setSmsMessage(''); setSmsResult(null); }}>
+          <ModalHeader title={`Bulk SMS — ${bulkSmsTarget.name}`} onClose={() => { setBulkSmsTarget(null); setSmsMessage(''); setSmsResult(null); }} />
+          <div className="p-5 space-y-4">
+            <p className="text-sm text-gray-600">Send an SMS to all contacts in this segment who have a phone number.</p>
+            <FormField label="Message">
+              <textarea
+                className={inputClass + ' h-28 resize-none'}
+                placeholder="Hi {{first_name}}, just checking in..."
+                value={smsMessage}
+                onChange={e => setSmsMessage(e.target.value)}
+              />
+            </FormField>
+            <p className="text-xs text-gray-400">You can use {'{{first_name}}'} as a merge tag.</p>
+            {smsResult && (
+              <div className={`rounded-lg px-3 py-2 text-sm ${smsResult.startsWith('✅') ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+                {smsResult}
+              </div>
+            )}
+          </div>
+          <div className="flex justify-end gap-2 p-5 border-t border-gray-100">
+            <button onClick={() => setBulkSmsTarget(null)} className={btnSecondary}>Cancel</button>
+            <button
+              onClick={sendBulkSms}
+              disabled={smsSending || !smsMessage.trim()}
+              className={btnPrimary}
+            >
+              {smsSending ? <><Loader2 className="w-4 h-4 animate-spin inline mr-1" />Sending...</> : 'Send SMS'}
+            </button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+function SegmentEditor({ segment, onClose, onSaved }: {
+  segment: Segment | null;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [name, setName] = useState(segment?.name || '');
+  const [emoji, setEmoji] = useState(segment?.emoji || '📋');
+  const [filters, setFilters] = useState<Segment['filters']>(
+    segment?.filters || [{ field: 'stage', operator: 'eq', value: 'lead' }]
+  );
+  const [saving, setSaving] = useState(false);
+
+  const addFilter = () => setFilters(f => [...f, { field: 'stage', operator: 'eq', value: 'lead' }]);
+  const removeFilter = (i: number) => setFilters(f => f.filter((_, idx) => idx !== i));
+  const updateFilter = (i: number, patch: Partial<Segment['filters'][0]>) => {
+    setFilters(f => f.map((fi, idx) => idx === i ? { ...fi, ...patch } : fi));
+  };
+
+  const handleSave = async () => {
+    if (!name.trim()) return;
+    setSaving(true);
+    try {
+      await fetch('/api/agency/crm/segments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'save', segment: { ...segment, name, emoji, filters, id: segment?.id } }),
+      });
+      onSaved();
+    } finally { setSaving(false); }
+  };
+
+  const EMOJIS = ['📋', '🔥', '💎', '⭐', '🏆', '📊', '🎯', '💼', '🌱', '❄️'];
+
+  return (
+    <Modal onClose={onClose}>
+      <ModalHeader title={segment ? 'Edit Segment' : 'New Segment'} onClose={onClose} />
+      <div className="p-5 space-y-4">
+        <div className="flex gap-3">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Emoji</label>
+            <select className="border border-gray-200 rounded-lg px-2 py-2 text-lg w-14" value={emoji} onChange={e => setEmoji(e.target.value)}>
+              {EMOJIS.map(e => <option key={e} value={e}>{e}</option>)}
+            </select>
+          </div>
+          <div className="flex-1">
+            <label className="block text-xs font-medium text-gray-600 mb-1">Segment Name</label>
+            <input className={inputClass} placeholder="e.g. Hot leads, No reply 7d…" value={name} onChange={e => setName(e.target.value)} />
+          </div>
+        </div>
+
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-xs font-medium text-gray-600">Filters (all must match)</label>
+            <button onClick={addFilter} className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+              <Plus className="w-3 h-3" /> Add Filter
+            </button>
+          </div>
+          <div className="space-y-2">
+            {filters.map((f, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <select className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm flex-1" value={f.field} onChange={e => updateFilter(i, { field: e.target.value, operator: 'eq', value: '' })}>
+                  {SEGMENT_FIELDS.map(sf => <option key={sf.value} value={sf.value}>{sf.label}</option>)}
+                </select>
+                <select className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm w-28" value={f.operator} onChange={e => updateFilter(i, { operator: e.target.value })}>
+                  {(SEGMENT_OPERATORS[f.field] || [{ value: 'eq', label: 'is' }]).map(op => (
+                    <option key={op.value} value={op.value}>{op.label}</option>
+                  ))}
+                </select>
+                {SEGMENT_VALUE_OPTIONS[f.field] ? (
+                  <select className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm flex-1" value={String(f.value)} onChange={e => updateFilter(i, { value: e.target.value })}>
+                    {SEGMENT_VALUE_OPTIONS[f.field].map(v => <option key={v} value={v}>{v}</option>)}
+                  </select>
+                ) : (
+                  <input className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm flex-1" placeholder="value" value={String(f.value)} onChange={e => updateFilter(i, { value: e.target.value })} />
+                )}
+                <button onClick={() => removeFilter(i)} className="text-gray-400 hover:text-red-600 p-1">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="flex justify-end gap-2 p-5 border-t border-gray-100">
+        <button onClick={onClose} className={btnSecondary}>Cancel</button>
+        <button onClick={handleSave} disabled={saving || !name.trim()} className={btnPrimary}>
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Segment'}
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// SPRINT 2A — CONTACT MERGE UI
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+interface DuplicateGroup {
+  key: string;
+  matchType: 'email' | 'phone';
+  contacts: Array<{
+    id: string;
+    first_name: string | null;
+    last_name: string | null;
+    email: string | null;
+    phone: string | null;
+    score: number;
+    stage: string;
+    created_at: string;
+    activity_count: number;
+  }>;
+}
+
+function MergeSection() {
+  const [groups, setGroups] = useState<DuplicateGroup[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [merging, setMerging] = useState<string | null>(null);
+  const [merged, setMerged] = useState<Set<string>>(new Set());
+
+  const loadDuplicates = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/agency/crm/merge');
+      if (res.ok) { const data = await res.json(); setGroups(data.groups || []); }
+    } catch (err) { console.error('[merge]', err); } finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { loadDuplicates(); }, [loadDuplicates]);
+
+  const merge = async (group: DuplicateGroup, primaryId: string) => {
+    const secondaryId = group.contacts.find(c => c.id !== primaryId)?.id;
+    if (!secondaryId) return;
+    setMerging(group.key);
+    try {
+      const res = await fetch('/api/agency/crm/merge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ primary_id: primaryId, secondary_id: secondaryId }),
+      });
+      if (res.ok) {
+        setMerged(prev => new Set([...prev, group.key]));
+        setGroups(prev => prev.filter(g => g.key !== group.key));
+      }
+    } finally { setMerging(null); }
+  };
+
+  if (loading) return <div className="flex items-center justify-center py-16"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2">
+            <GitMerge className="h-5 w-5 text-indigo-600" /> Contact Deduplication
+          </h2>
+          <p className="text-sm text-gray-500 mt-0.5">Merge duplicate contacts that share the same email or phone.</p>
+        </div>
+        <button onClick={loadDuplicates} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+          <RefreshCw className="w-4 h-4" /> Refresh
+        </button>
+      </div>
+
+      {merged.size > 0 && (
+        <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 flex items-center gap-3">
+          <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
+          <p className="text-sm text-green-800">Merged <strong>{merged.size}</strong> duplicate group{merged.size !== 1 ? 's' : ''}. Activities and deals were transferred to the primary contact.</p>
+        </div>
+      )}
+
+      {groups.length === 0 ? (
+        <div className="bg-green-50 border border-green-200 rounded-xl p-10 text-center">
+          <CheckCircle2 className="w-10 h-10 text-green-500 mx-auto mb-3" />
+          <p className="text-sm font-semibold text-green-800">No duplicates found!</p>
+          <p className="text-xs text-green-600 mt-1">Your contact database looks clean.</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+            ⚠️ Found <strong>{groups.length}</strong> duplicate group{groups.length !== 1 ? 's' : ''}. Choose which contact to keep as primary — its data will be preserved and the other will be deleted.
+          </p>
+          {groups.map(group => (
+            <div key={group.key} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+              <div className="bg-gray-50 px-4 py-2.5 border-b border-gray-200 flex items-center justify-between">
+                <span className="text-xs font-medium text-gray-600 uppercase tracking-wide">
+                  Duplicate by {group.matchType}: {group.key.split(':')[1]}
+                </span>
+                <span className="text-xs text-gray-400">{group.contacts.length} records</span>
+              </div>
+              <div className="divide-y divide-gray-50">
+                {group.contacts.map(c => (
+                  <div key={c.id} className="flex items-center justify-between px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-bold text-indigo-600">
+                        {((c.first_name?.charAt(0) || '') + (c.last_name?.charAt(0) || '')).toUpperCase() || '?'}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          {[c.first_name, c.last_name].filter(Boolean).join(' ') || 'Unnamed'}
+                        </p>
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          {c.email && <span>{c.email}</span>}
+                          {c.phone && <span>{c.phone}</span>}
+                          <span className={`px-1.5 py-0.5 rounded-full ${stageBadge(c.stage)}`}>{c.stage}</span>
+                          <span>{c.activity_count} activities</span>
+                          <span>Score: {c.score}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => merge(group, c.id)}
+                      disabled={merging === group.key}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition"
+                    >
+                      {merging === group.key ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <GitMerge className="w-3.5 h-3.5" />}
+                      Keep This
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// SPRINT 2B — DEAL STAGE AUTOMATIONS (added inside DealsSection header)
+// Sprint 4 — Call Logging (added inside ContactDetailPanel)
+// Both handled inline in their respective sections below via new buttons/modals.
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // MAIN CRM TAB COMPONENT
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-const SECTIONS: { key: Section; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+const MAIN_SECTIONS: { key: Section; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { key: 'ai', label: 'AI Insights', icon: Sparkles },
   { key: 'contacts', label: 'Contacts', icon: Users },
   { key: 'deals', label: 'Deals', icon: DollarSign },
@@ -1919,23 +2658,67 @@ const SECTIONS: { key: Section; label: string; icon: React.ComponentType<{ class
   { key: 'activity', label: 'Activity', icon: Activity },
 ];
 
+const TOOLS_SECTIONS: { key: Section; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { key: 'segments', label: 'Segments', icon: Layers },
+  { key: 'scoring', label: 'Scoring', icon: Sliders },
+  { key: 'merge', label: 'Duplicates', icon: GitMerge },
+];
+
 export default function CrmTab({ client, clientId }: { client: AgencyClient; clientId?: string }) {
   const [section, setSection] = useState<Section>('ai');
+  const [showTools, setShowTools] = useState(false);
   const scopedClientId = clientId ?? client.id;
+
+  const allSections = [...MAIN_SECTIONS, ...TOOLS_SECTIONS];
+  const activeSection = allSections.find(s => s.key === section);
+  const isToolsSection = TOOLS_SECTIONS.some(s => s.key === section);
 
   return (
     <div className="space-y-6">
-      {/* Section pills */}
-      <div className="flex items-center gap-1 bg-gray-50 rounded-lg p-1 overflow-x-auto">
-        {SECTIONS.map(s => (
-          <button key={s.key} onClick={() => setSection(s.key)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md transition-colors whitespace-nowrap ${
-              section === s.key ? 'bg-white shadow-sm text-gray-900 font-medium' : 'text-gray-500 hover:text-gray-700'
-            }`}>
-            <s.icon className="w-4 h-4" />
-            {s.label}
+      {/* Navigation */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {/* Main section pills */}
+        <div className="flex items-center gap-1 bg-gray-50 rounded-lg p-1 overflow-x-auto flex-1 min-w-0">
+          {MAIN_SECTIONS.map(s => (
+            <button key={s.key} onClick={() => { setSection(s.key); setShowTools(false); }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md transition-colors whitespace-nowrap ${
+                section === s.key ? 'bg-white shadow-sm text-gray-900 font-medium' : 'text-gray-500 hover:text-gray-700'
+              }`}>
+              <s.icon className="w-4 h-4" />
+              {s.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Tools dropdown */}
+        <div className="relative">
+          <button
+            onClick={() => setShowTools(t => !t)}
+            className={`flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg border transition whitespace-nowrap ${
+              isToolsSection
+                ? 'bg-indigo-600 text-white border-indigo-600'
+                : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            <Sliders className="w-4 h-4" />
+            Tools
+            <ChevronDown className="w-3.5 h-3.5" />
           </button>
-        ))}
+          {showTools && (
+            <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 py-1 min-w-[160px]">
+              {TOOLS_SECTIONS.map(s => (
+                <button
+                  key={s.key}
+                  onClick={() => { setSection(s.key); setShowTools(false); }}
+                  className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm hover:bg-gray-50 transition ${section === s.key ? 'text-indigo-600 font-medium' : 'text-gray-700'}`}
+                >
+                  <s.icon className="w-4 h-4" />
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Section content */}
@@ -1945,6 +2728,9 @@ export default function CrmTab({ client, clientId }: { client: AgencyClient; cli
       {section === 'tasks' && <TasksSection />}
       {section === 'analytics' && <AnalyticsSection />}
       {section === 'activity' && <ActivitySection />}
+      {section === 'segments' && <SegmentsSection setSection={setSection} />}
+      {section === 'scoring' && <ScoringSection />}
+      {section === 'merge' && <MergeSection />}
     </div>
   );
 }
