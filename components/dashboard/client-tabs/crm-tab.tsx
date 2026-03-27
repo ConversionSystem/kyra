@@ -4,10 +4,10 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Users, Mail, DollarSign, BarChart3, Activity, Plus, Search, Upload,
   Trash2, Send, Clock, CheckCircle2, AlertTriangle, Loader2,
-  ArrowLeft, X, FileText, ChevronDown, Edit3, Phone, Tag, Star,
+  ArrowLeft, X, FileText, ChevronDown, ChevronRight, Edit3, Phone, Tag, Star,
   Calendar, Download, Filter, MessageSquare, Target,
   TrendingUp, Zap, CheckSquare, Square, Briefcase, Eye,
-  MoreHorizontal, RefreshCw, ChevronLeft, ChevronRight,
+  MoreHorizontal, RefreshCw, ChevronLeft, Sparkles, Flame, Bot, Bell,
 } from 'lucide-react';
 import type { AgencyClient } from '@/lib/agency/queries';
 
@@ -140,7 +140,19 @@ interface AnalyticsData {
   recent_activities: ActivityItem[];
 }
 
-type Section = 'contacts' | 'campaigns' | 'deals' | 'tasks' | 'analytics' | 'activity';
+type Section = 'ai' | 'contacts' | 'deals' | 'tasks' | 'analytics' | 'activity';
+
+// CommandFeedItem for AI Insights section
+interface CommandFeedItem {
+  id: string;
+  attention_type: string;
+  subject: string | null;
+  body: string | null;
+  created_at: string;
+  contact_id: string | null;
+  metadata: Record<string, unknown> | null;
+  contact?: { first_name: string | null; last_name: string | null; company_name?: string | null } | null;
+}
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -1263,264 +1275,6 @@ function DealModal({ deal, contacts, onClose, onSaved }: { deal: Deal | null; co
   );
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 4. CAMPAIGNS SECTION
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function CampaignsSection({ client }: { client: AgencyClient }) {
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [templates, setTemplates] = useState<Template[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showCreate, setShowCreate] = useState(false);
-  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
-  const [editMode, setEditMode] = useState(false);
-
-  const loadCampaigns = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/agency/clients/${client.id}/email/campaigns`);
-      if (res.ok) { const data = await res.json(); setCampaigns(Array.isArray(data) ? data : data.campaigns || []); }
-    } catch (err) { console.error('[crm-tab]', err); } finally { setLoading(false); }
-  }, [client.id]);
-
-  const loadTemplates = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/agency/clients/${client.id}/email/templates`);
-      if (res.ok) { const data = await res.json(); setTemplates(Array.isArray(data) ? data : data.templates || []); }
-    } catch (err) { console.error('[crm-tab]', err); }
-  }, [client.id]);
-
-  useEffect(() => { loadCampaigns(); loadTemplates(); }, [loadCampaigns, loadTemplates]);
-
-  const handleSend = async (campaignId: string) => {
-    if (!window.confirm('Send this campaign now?')) return;
-    await fetch(`/api/agency/clients/${client.id}/email/campaigns/${campaignId}/send`, { method: 'POST' });
-    loadCampaigns();
-  };
-
-  const handleDelete = async (campaignId: string) => {
-    if (!window.confirm('Delete this campaign?')) return;
-    await fetch(`/api/agency/clients/${client.id}/email/campaigns/${campaignId}`, { method: 'DELETE' });
-    if (selectedCampaign?.id === campaignId) setSelectedCampaign(null);
-    loadCampaigns();
-  };
-
-  const campaignStatusBadge = (status: string) => {
-    const map: Record<string, string> = {
-      draft: 'bg-gray-100 text-gray-600', scheduled: 'bg-blue-50 text-blue-700',
-      sending: 'bg-amber-50 text-amber-700', sent: 'bg-emerald-50 text-emerald-700',
-      failed: 'bg-red-50 text-red-700',
-    };
-    return map[status] || 'bg-gray-100 text-gray-600';
-  };
-
-  if (selectedCampaign) {
-    return (
-      <CampaignDetail
-        campaign={selectedCampaign}
-        clientId={client.id}
-        onBack={() => { setSelectedCampaign(null); loadCampaigns(); }}
-        onSend={() => handleSend(selectedCampaign.id)}
-        onDelete={() => handleDelete(selectedCampaign.id)}
-      />
-    );
-  }
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium text-gray-700">{campaigns.length} campaigns</h3>
-        <button onClick={() => setShowCreate(true)} className={btnPrimary}><Plus className="w-4 h-4 mr-1 inline" />New Campaign</button>
-      </div>
-
-      {loading ? (
-        <div className="flex items-center justify-center py-20"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>
-      ) : campaigns.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col items-center justify-center py-20 text-gray-400">
-          <Mail className="w-10 h-10 mb-2 opacity-50" /><p className="text-sm">No campaigns yet</p>
-        </div>
-      ) : (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          {campaigns.map(c => (
-            <div key={c.id} onClick={() => setSelectedCampaign(c)} className="flex items-center justify-between px-4 py-3 border-b border-gray-50 hover:bg-gray-50 cursor-pointer">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-gray-900">{c.name}</span>
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${campaignStatusBadge(c.status)}`}>{c.status}</span>
-                </div>
-                <div className="text-xs text-gray-500 mt-0.5">{c.subject}</div>
-              </div>
-              <div className="flex items-center gap-4 text-xs text-gray-500">
-                {c.status === 'sent' && (
-                  <div className="flex items-center gap-3">
-                    <span>Sent: {c.total_sent}</span>
-                    <span>Opened: {c.total_opened}</span>
-                    <span>Clicked: {c.total_clicked}</span>
-                  </div>
-                )}
-                <span>{timeAgo(c.created_at)}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {showCreate && (
-        <CreateCampaignModal
-          clientId={client.id}
-          templates={templates}
-          onClose={() => setShowCreate(false)}
-          onSaved={() => { setShowCreate(false); loadCampaigns(); }}
-        />
-      )}
-    </div>
-  );
-}
-
-// ── Campaign Detail ────────────────────────────────────────────────────────────
-
-function CampaignDetail({ campaign, clientId, onBack, onSend, onDelete }: {
-  campaign: Campaign; clientId: string; onBack: () => void; onSend: () => void; onDelete: () => void;
-}) {
-  const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({
-    name: campaign.name, subject: campaign.subject, from_name: campaign.from_name,
-    from_email: campaign.from_email, html_body: campaign.html_body,
-  });
-  const [saving, setSaving] = useState(false);
-
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      await fetch(`/api/agency/clients/${clientId}/email/campaigns/${campaign.id}`, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form),
-      });
-      setEditing(false);
-      onBack();
-    } finally { setSaving(false); }
-  };
-
-  const openRate = campaign.total_sent > 0 ? ((campaign.total_opened / campaign.total_sent) * 100).toFixed(1) : '0';
-  const clickRate = campaign.total_sent > 0 ? ((campaign.total_clicked / campaign.total_sent) * 100).toFixed(1) : '0';
-
-  return (
-    <div className="space-y-4">
-      <button onClick={onBack} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
-        <ArrowLeft className="w-4 h-4" /> Back to campaigns
-      </button>
-
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">{campaign.name}</h2>
-          <div className="flex items-center gap-2">
-            {campaign.status === 'draft' && (
-              <>
-                <button onClick={() => setEditing(!editing)} className={btnSecondary}><Edit3 className="w-4 h-4 mr-1 inline" />Edit</button>
-                <button onClick={onSend} className={btnPrimary}><Send className="w-4 h-4 mr-1 inline" />Send Now</button>
-              </>
-            )}
-            <button onClick={onDelete} className="text-red-500 hover:text-red-700 text-sm">Delete</button>
-          </div>
-        </div>
-
-        {editing ? (
-          <div className="space-y-4">
-            <FormField label="Name"><input className={inputClass} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></FormField>
-            <FormField label="Subject"><input className={inputClass} value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))} /></FormField>
-            <FormField label="From Name"><input className={inputClass} value={form.from_name} onChange={e => setForm(f => ({ ...f, from_name: e.target.value }))} /></FormField>
-            <FormField label="From Email"><input className={inputClass} value={form.from_email} onChange={e => setForm(f => ({ ...f, from_email: e.target.value }))} /></FormField>
-            <FormField label="HTML Body"><textarea className={inputClass + ' h-40 resize-none font-mono text-xs'} value={form.html_body} onChange={e => setForm(f => ({ ...f, html_body: e.target.value }))} /></FormField>
-            <div className="flex gap-2">
-              <button onClick={handleSave} disabled={saving} className={btnPrimary}>{saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}</button>
-              <button onClick={() => setEditing(false)} className={btnSecondary}>Cancel</button>
-            </div>
-          </div>
-        ) : (
-          <>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div><span className="text-gray-500">Subject:</span> <span className="text-gray-900">{campaign.subject}</span></div>
-              <div><span className="text-gray-500">From:</span> <span className="text-gray-900">{campaign.from_name} &lt;{campaign.from_email}&gt;</span></div>
-              <div><span className="text-gray-500">Status:</span> <span className="text-gray-900">{campaign.status}</span></div>
-              <div><span className="text-gray-500">Created:</span> <span className="text-gray-900">{timeAgo(campaign.created_at)}</span></div>
-            </div>
-
-            {campaign.status === 'sent' && (
-              <div className="grid grid-cols-4 gap-3 mt-4 pt-4 border-t border-gray-100">
-                {[
-                  { label: 'Sent', value: campaign.total_sent },
-                  { label: 'Opened', value: `${campaign.total_opened} (${openRate}%)` },
-                  { label: 'Clicked', value: `${campaign.total_clicked} (${clickRate}%)` },
-                  { label: 'Bounced', value: campaign.total_bounced },
-                ].map(s => (
-                  <div key={s.label} className="text-center">
-                    <div className="text-lg font-semibold text-gray-900">{s.value}</div>
-                    <div className="text-xs text-gray-500">{s.label}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ── Create Campaign Modal ──────────────────────────────────────────────────────
-
-function CreateCampaignModal({ clientId, templates, onClose, onSaved }: {
-  clientId: string; templates: Template[]; onClose: () => void; onSaved: () => void;
-}) {
-  const [form, setForm] = useState({ name: '', subject: '', from_name: '', from_email: '', html_body: '', template_id: '' });
-  const [saving, setSaving] = useState(false);
-
-  const applyTemplate = (templateId: string) => {
-    const t = templates.find(t => t.id === templateId);
-    if (t) setForm(f => ({ ...f, subject: t.subject, html_body: t.html_body, template_id: templateId }));
-  };
-
-  const handleSave = async () => {
-    if (!form.name.trim()) return;
-    setSaving(true);
-    try {
-      const res = await fetch(`/api/agency/clients/${clientId}/email/campaigns`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form),
-      });
-      if (res.ok) onSaved();
-    } finally { setSaving(false); }
-  };
-
-  return (
-    <Modal onClose={onClose}>
-      <ModalHeader title="New Campaign" onClose={onClose} />
-      <div className="p-5 space-y-4">
-        {templates.length > 0 && (
-          <FormField label="Template (optional)">
-            <select className={inputClass} value={form.template_id} onChange={e => applyTemplate(e.target.value)}>
-              <option value="">Start from scratch</option>
-              {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-            </select>
-          </FormField>
-        )}
-        <FormField label="Campaign Name"><input className={inputClass} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></FormField>
-        <FormField label="Subject Line"><input className={inputClass} value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))} /></FormField>
-        <div className="grid grid-cols-2 gap-3">
-          <FormField label="From Name"><input className={inputClass} value={form.from_name} onChange={e => setForm(f => ({ ...f, from_name: e.target.value }))} /></FormField>
-          <FormField label="From Email"><input className={inputClass} value={form.from_email} onChange={e => setForm(f => ({ ...f, from_email: e.target.value }))} /></FormField>
-        </div>
-        <FormField label="Email Body (HTML)"><textarea className={inputClass + ' h-40 resize-none font-mono text-xs'} value={form.html_body} onChange={e => setForm(f => ({ ...f, html_body: e.target.value }))} /></FormField>
-      </div>
-      <div className="flex justify-end gap-2 p-5 border-t border-gray-100">
-        <button onClick={onClose} className={btnSecondary}>Cancel</button>
-        <button onClick={handleSave} disabled={saving || !form.name.trim()} className={btnPrimary}>
-          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create Campaign'}
-        </button>
-      </div>
-    </Modal>
-  );
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 5. TASKS SECTION
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -1866,26 +1620,6 @@ function ActivitySection() {
 
   return (
     <div className="space-y-4">
-      {/* Attention items */}
-      {feed.attention_items.length > 0 && (
-        <div className="space-y-2">
-          <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-1"><AlertTriangle className="w-4 h-4 text-amber-500" />Needs Attention</h3>
-          {feed.attention_items.map(a => (
-            <div key={a.id} className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 flex items-start gap-3">
-              {activityIcon(a.type)}
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-amber-900">{a.subject || a.type}</div>
-                {a.body && <div className="text-sm text-amber-700 mt-0.5 line-clamp-2">{a.body}</div>}
-                <div className="flex items-center gap-2 mt-1 text-xs text-amber-600">
-                  {a.contact_name && <span>{a.contact_name}</span>}
-                  <span>{timeAgo(a.created_at)}</span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
       {/* AI handled today */}
       {feed.ai_handled_today.length > 0 && (
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
@@ -1944,29 +1678,258 @@ function ActivitySection() {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// AI INSIGHTS SECTION — Default CRM Home
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function AIInsightsSection({ setSection }: { setSection: (s: Section) => void }) {
+  const [feed, setFeed] = useState<FeedResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [aiHandledOpen, setAiHandledOpen] = useState(false);
+  const [sending, setSending] = useState<string | null>(null);
+
+  const fetchFeed = useCallback(async () => {
+    try {
+      const res = await fetch('/api/agency/crm/feed');
+      if (res.ok) setFeed(await res.json());
+    } catch (err) { console.error('[crm-ai]', err); } finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => {
+    fetchFeed();
+    const interval = setInterval(fetchFeed, 30_000);
+    return () => clearInterval(interval);
+  }, [fetchFeed]);
+
+  const approveAndSend = async (item: CommandFeedItem) => {
+    if (!item.contact_id || !item.metadata?.ai_draft) return;
+    setSending(item.id);
+    try {
+      const res = await fetch(`/api/agency/crm/contacts/${item.contact_id}/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          channel: item.metadata?.channel || 'email',
+          message: item.metadata.ai_draft as string,
+          subject: item.subject || 'Follow-up',
+        }),
+      });
+      if (res.ok) {
+        await fetch('/api/agency/crm/activities', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ activity_id: item.id }),
+        });
+        fetchFeed();
+      }
+    } catch (err) { console.error('[crm-ai] send failed:', err); }
+    setSending(null);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+      </div>
+    );
+  }
+
+  const stats = feed?.stats || { total_contacts: 0, pipeline_value: 0, hot_leads: 0, ai_handled_count: 0 };
+  const attentionItems = (feed?.attention_items || []) as unknown as CommandFeedItem[];
+
+  return (
+    <div className="space-y-6">
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <button
+          onClick={() => setSection('contacts')}
+          className="bg-white border border-gray-200 rounded-xl p-5 text-left hover:border-indigo-200 hover:shadow-sm transition"
+        >
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
+              <Users className="h-5 w-5 text-indigo-600" />
+            </div>
+            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Contacts</span>
+          </div>
+          <div className="text-3xl font-bold text-gray-900">{stats.total_contacts}</div>
+        </button>
+
+        <button
+          onClick={() => setSection('deals')}
+          className="bg-white border border-gray-200 rounded-xl p-5 text-left hover:border-purple-200 hover:shadow-sm transition"
+        >
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center">
+              <TrendingUp className="h-5 w-5 text-purple-600" />
+            </div>
+            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Pipeline</span>
+          </div>
+          <div className="text-3xl font-bold text-gray-900">
+            ${stats.pipeline_value >= 1000
+              ? `${(stats.pipeline_value / 1000).toFixed(1)}K`
+              : stats.pipeline_value}
+          </div>
+        </button>
+
+        <div className="bg-white border border-gray-200 rounded-xl p-5">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center">
+              <Flame className="h-5 w-5 text-red-500" />
+            </div>
+            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Hot Leads</span>
+          </div>
+          <div className="text-3xl font-bold text-gray-900">{stats.hot_leads}</div>
+        </div>
+      </div>
+
+      {/* Needs Attention */}
+      {attentionItems.length > 0 ? (
+        <div>
+          <h2 className="text-sm font-bold text-gray-900 flex items-center gap-2 mb-3">
+            <Bell className="h-4 w-4 text-amber-500" />
+            NEEDS YOUR ATTENTION
+            <span className="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full">
+              {attentionItems.length}
+            </span>
+          </h2>
+          <div className="space-y-2">
+            {attentionItems.map(item => {
+              const firstName = item.contact?.first_name;
+              const lastName = item.contact?.last_name;
+              const name = [firstName, lastName].filter(Boolean).join(' ') || 'Unknown Contact';
+              const initials = ((firstName?.charAt(0) || '') + (lastName?.charAt(0) || '')).toUpperCase() || '?';
+              const AVATAR_COLORS = ['bg-indigo-500','bg-purple-500','bg-pink-500','bg-rose-500','bg-orange-500','bg-amber-500','bg-emerald-500'];
+              const colorIdx = (name.charCodeAt(0) || 0) % AVATAR_COLORS.length;
+              return (
+                <div key={item.id} className="bg-white border border-amber-200 rounded-xl p-4 hover:border-amber-300 transition">
+                  <div className="flex items-start gap-3">
+                    <div className={`w-9 h-9 rounded-full ${AVATAR_COLORS[colorIdx]} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
+                      {initials}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-sm font-semibold text-gray-900">{name}</span>
+                        {item.contact?.company_name && (
+                          <span className="text-xs text-gray-500">· {item.contact.company_name}</span>
+                        )}
+                        <span className="text-[10px] text-gray-400 ml-auto">{timeAgo(item.created_at)}</span>
+                      </div>
+                      <p className="text-sm text-gray-700">{item.subject || item.body?.slice(0, 120)}</p>
+                      <div className="flex items-center gap-2 mt-2">
+                        {item.attention_type === 'approval_needed' && (item.metadata?.ai_draft as string) && (
+                          <button
+                            disabled={sending === item.id}
+                            onClick={() => approveAndSend(item)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition"
+                          >
+                            {sending === item.id
+                              ? <Loader2 className="h-3 w-3 animate-spin" />
+                              : <Send className="h-3 w-3" />}
+                            Approve &amp; Send
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setSection('activity')}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+                        >
+                          View Activity
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-center">
+          <CheckCircle2 className="h-8 w-8 text-green-500 mx-auto mb-2" />
+          <p className="font-semibold text-green-800">All clear!</p>
+          <p className="text-sm text-green-600 mt-1">Nothing needs your attention. AI is handling everything.</p>
+        </div>
+      )}
+
+      {/* AI Handled Today */}
+      {stats.ai_handled_count > 0 && (
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          <button
+            onClick={() => setAiHandledOpen(!aiHandledOpen)}
+            className="w-full px-5 py-3 flex items-center justify-between hover:bg-gray-50 transition"
+          >
+            <span className="text-sm font-bold text-gray-900 flex items-center gap-2">
+              <Bot className="h-4 w-4 text-indigo-500" />
+              AI HANDLED TODAY
+              <span className="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded-full">
+                {stats.ai_handled_count}
+              </span>
+            </span>
+            {aiHandledOpen
+              ? <ChevronDown className="h-4 w-4 text-gray-400" />
+              : <ChevronRight className="h-4 w-4 text-gray-400" />}
+          </button>
+          {aiHandledOpen && (
+            <div className="px-5 pb-4 space-y-1">
+              {(feed?.ai_handled_today || []).slice(0, 15).map(act => (
+                <div key={act.id} className="flex items-center gap-2 py-1.5 text-xs text-gray-600">
+                  <Sparkles className="h-3 w-3 text-indigo-400 shrink-0" />
+                  <span>{act.subject || act.body?.slice(0, 80) || act.type}</span>
+                  <span className="text-gray-400 ml-auto shrink-0">{timeAgo(act.created_at)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Quick Actions */}
+      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+        <button
+          onClick={() => setSection('contacts')}
+          className="flex-1 py-3 px-4 text-sm font-medium border border-gray-200 rounded-xl hover:bg-gray-50 flex items-center justify-center gap-2 transition"
+        >
+          <Users className="h-4 w-4" /> All Contacts
+        </button>
+        <button
+          onClick={() => setSection('deals')}
+          className="flex-1 py-3 px-4 text-sm font-medium border border-gray-200 rounded-xl hover:bg-gray-50 flex items-center justify-center gap-2 transition"
+        >
+          <DollarSign className="h-4 w-4" /> Deals
+        </button>
+        <button
+          onClick={() => setSection('tasks')}
+          className="flex-1 py-3 px-4 text-sm font-medium border border-gray-200 rounded-xl hover:bg-gray-50 flex items-center justify-center gap-2 transition"
+        >
+          <CheckSquare className="h-4 w-4" /> Tasks
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // MAIN CRM TAB COMPONENT
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const SECTIONS: { key: Section; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { key: 'ai', label: 'AI Insights', icon: Sparkles },
   { key: 'contacts', label: 'Contacts', icon: Users },
   { key: 'deals', label: 'Deals', icon: DollarSign },
-  { key: 'campaigns', label: 'Campaigns', icon: Mail },
   { key: 'tasks', label: 'Tasks', icon: CheckSquare },
   { key: 'analytics', label: 'Analytics', icon: BarChart3 },
   { key: 'activity', label: 'Activity', icon: Activity },
 ];
 
 export default function CrmTab({ client, clientId }: { client: AgencyClient; clientId?: string }) {
-  const [section, setSection] = useState<Section>('contacts');
+  const [section, setSection] = useState<Section>('ai');
   const scopedClientId = clientId ?? client.id;
 
   return (
     <div className="space-y-6">
       {/* Section pills */}
-      <div className="flex items-center gap-1 bg-gray-50 rounded-lg p-1 w-fit">
+      <div className="flex items-center gap-1 bg-gray-50 rounded-lg p-1 overflow-x-auto">
         {SECTIONS.map(s => (
           <button key={s.key} onClick={() => setSection(s.key)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md transition-colors ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md transition-colors whitespace-nowrap ${
               section === s.key ? 'bg-white shadow-sm text-gray-900 font-medium' : 'text-gray-500 hover:text-gray-700'
             }`}>
             <s.icon className="w-4 h-4" />
@@ -1976,9 +1939,9 @@ export default function CrmTab({ client, clientId }: { client: AgencyClient; cli
       </div>
 
       {/* Section content */}
+      {section === 'ai' && <AIInsightsSection setSection={setSection} />}
       {section === 'contacts' && <ContactsSection client={client} clientId={scopedClientId} />}
       {section === 'deals' && <DealsSection />}
-      {section === 'campaigns' && <CampaignsSection client={client} />}
       {section === 'tasks' && <TasksSection />}
       {section === 'analytics' && <AnalyticsSection />}
       {section === 'activity' && <ActivitySection />}
