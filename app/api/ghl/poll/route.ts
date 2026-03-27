@@ -10,6 +10,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { deductCredit } from '@/lib/billing/credit-engine';
+import { processWithSmartEngine } from '@/lib/ghl/smart-handler';
+import type { AgencyClient } from '@/lib/agency/types';
 
 // ── Pipeline Lead Context ──────────────────────────────────────────────────
 // When a contact replies, check if they're a pipeline lead and inject context
@@ -665,145 +667,61 @@ export async function GET(request: NextRequest) {
           }
         }
 
-      // Step 5: Call gateway
+      // Step 5: Process with Smart Engine (tools + memory + function calling)
+      // The Smart Engine is the REAL AI brain — 50 GHL tools, CRM memory, relationship history.
+      // The old approach (raw /v1/chat/completions to container) was a dumb proxy.
+      // Now every poll conversation goes through the same engine as webhook conversations.
       try {
-        // Use clean session key with daily rotation to prevent session bloat
-        const today = new Date().toISOString().slice(0, 10);
-        const clientShort = client.id.slice(0, 8);
-        // Hash contact ID to avoid any pattern matching issues with gateway session store
-        let contactHash = 0;
-        for (let i = 0; i < conv.contactId.length; i++) {
-          contactHash = ((contactHash << 5) - contactHash + conv.contactId.charCodeAt(i)) | 0;
-        }
-        const contactKey = Math.abs(contactHash).toString(36);
-        const sessionKey = `ghl:${clientShort}:${contactKey}:${today}`;
+        // Build a minimal AgencyClient object for the Smart Engine
+        const smartClient = {
+          id: client.id as string,
+          agency_id: client.agency_id as string,
+          name: client.name as string,
+          slug: '',
+          industry: null,
+          status: client.status as string,
+          container_config: client.container_config as Record<string, unknown>,
+          ghl_location_id: (client.ghl_location_id as string) || undefined,
+          ghl_private_token: (client.ghl_private_token as string) || undefined,
+          ghl_access_token: (client.ghl_access_token as string) || undefined,
+          template: null,
+        } as unknown as AgencyClient;
 
-        // The AI's core identity (persona + instructions) lives in the container's SOUL.md.
-        // Here we inject only the per-conversation context that SOUL.md doesn't know:
-        // who the customer is, that this is SMS, and any greeting for first-time contacts.
-        const cfg = (client.container_config as Record<string, unknown>) ?? {};
-        const persona = (cfg.persona as string) || `AI assistant for ${client.name}`;
-        const greeting = (cfg.greeting as string) || '';
+        addLog(`    Running Smart Engine for ${conv.contactName || conv.phone}...`);
 
-        const systemContext = [
-          `You are ${persona}. You are responding via SMS — keep replies concise (1-3 sentences max).`,
-          greeting && isFirstContact
-            ? `This is the customer's FIRST message. Open your reply with this exact greeting: "${greeting}"`
-            : '',
-          // CRM context — inject what we know about this contact from GHL
-          contactCtx
-            ? contactCtx.customContext
-            : `Customer name: ${conv.contactName || conv.phone || 'Unknown'}.`,
-          contactCtx?.tags?.length
-            ? `Use the tags to personalise your response (e.g. if tagged 'hot-lead', be more proactive about next steps).`
-            : '',
-          `Respond naturally and helpfully. Do not mention you are an AI unless directly asked.`,
-          `If you cannot fully resolve the customer's issue or they ask for a human, say: "I'll flag this for our team and someone will follow up with you shortly." Then stop — don't keep trying to solve it.`,
-          // Inject booking link if configured
-          cfg.calendar_url
-            ? `When a customer wants to schedule, book, or make an appointment, include this booking link in your reply: ${cfg.calendar_url}`
-            : '',
-          // ── Knowledge Base ─────────────────────────────────────────────────
-          // Business-specific knowledge: services, FAQ, pricing, hours, etc.
-          knowledgeCtx || '',
-          // ── Pipeline Lead Sales Context ────────────────────────────────────
-          // If this contact is a pipeline lead, inject everything the AI needs to close
-          pipelineCtx ? [
-            `\n--- SALES CONTEXT (this is a qualified prospect from our outreach pipeline) ---`,
-            `Prospect: ${pipelineCtx.fullName}, ${pipelineCtx.title} at ${pipelineCtx.company} (${pipelineCtx.industry})`,
-            `What we're selling: ${pipelineCtx.valueProp}`,
-            pipelineCtx.enrichment.company_context ? `About their company: ${pipelineCtx.enrichment.company_context}` : '',
-            pipelineCtx.enrichment.services_offered ? `Their services: ${pipelineCtx.enrichment.services_offered}` : '',
-            pipelineCtx.enrichment.likely_pain_points ? `Their likely pain points: ${pipelineCtx.enrichment.likely_pain_points}` : '',
-            pipelineCtx.enrichment.opportunity_angle ? `Our angle: ${pipelineCtx.enrichment.opportunity_angle}` : '',
-            pipelineCtx.enrichment.icebreaker ? `Icebreaker: ${pipelineCtx.enrichment.icebreaker}` : '',
-            ``,
-            `YOUR GOAL: Qualify this prospect and book a demo with Angel Castro (Founder).`,
-            `APPROACH:`,
-            `- Be conversational, not salesy. They already showed interest by replying.`,
-            `- Ask ONE qualifying question per message (don't overwhelm them).`,
-            `- Good qualifying questions: "How many clients are you managing right now?" / "What tools are you using for AI currently?" / "What's the biggest bottleneck in your agency?"`,
-            `- When they express clear interest, push toward booking: "Want to jump on a quick 15-minute call with Angel? He can walk you through exactly how it works for ${pipelineCtx.industry} agencies."`,
-            `- Booking link: https://kyra.conversionsystem.com/get-demo`,
-            `- Keep SMS replies SHORT — 1-3 sentences max.`,
-            `- If they say not interested, be gracious: "No worries at all, appreciate the reply! We're here if anything changes."`,
-            `--- END SALES CONTEXT ---`,
-          ].filter(Boolean).join('\n') : '',
-        ].filter(Boolean).join('\n');
-
-        // Build OpenAI-compatible messages for /v1/chat/completions
-        const chatMessages: Array<{ role: string; content: string }> = [];
-        if (systemContext) {
-          chatMessages.push({ role: 'system', content: systemContext });
-        }
-
-        // Inject conversation history (last 6 messages before this one)
-        // so the AI maintains context across multi-turn conversations
-        const historyMessages = messages
-          .filter((m: any) => m.id !== latestInbound.id && m.body?.trim())
-          .sort((a: any, b: any) => new Date(a.dateAdded).getTime() - new Date(b.dateAdded).getTime())
-          .slice(-6); // last 6 messages = up to 3 exchanges
-
-        for (const msg of historyMessages) {
-          chatMessages.push({
-            role: msg.direction === 'inbound' ? 'user' : 'assistant',
-            content: msg.body.trim(),
-          });
-        }
-
-        chatMessages.push({ role: 'user', content: latestInbound.body });
-
-        const chatRes = await fetch(`${gatewayUrl}/v1/chat/completions`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${gateway?.gateway_token || ''}`,
-          },
-          body: JSON.stringify({
-            model: 'openrouter/anthropic/claude-haiku-4.5',
-            messages: chatMessages,
-            stream: false,
-            max_tokens: 400,
-          }),
-          signal: AbortSignal.timeout(30_000),
+        const smartResult = await processWithSmartEngine({
+          client: smartClient,
+          contactId: conv.contactId,
+          contactName: conv.contactName || conv.phone || 'Customer',
+          contactPhone: conv.phone || null,
+          contactEmail: conv.email || null,
+          conversationId: conv.id,
+          messageType: (() => {
+            const t = latestInbound.messageType || conv.lastMessageType || 'TYPE_SMS';
+            const m: Record<string, string> = { TYPE_SMS: 'SMS', TYPE_EMAIL: 'Email', TYPE_WHATSAPP: 'WhatsApp', TYPE_FB_MESSENGER: 'Facebook Messenger', TYPE_INSTAGRAM: 'Instagram DM', TYPE_LIVE_CHAT: 'Live Chat' };
+            return m[t] || 'SMS';
+          })(),
+          messageBody: latestInbound.body,
         });
 
-        if (!chatRes.ok) {
-          const errText = await chatRes.text().catch(() => '');
-          addLog(`  Gateway error: ${chatRes.status} ${errText.slice(0, 100)}`);
-          continue;
-        }
+        let aiResponse = smartResult.reply;
+        addLog(`    Smart Engine: ${smartResult.responseTimeMs}ms | Tools: [${smartResult.toolsUsed.join(', ') || 'none'}] | Escalated: ${smartResult.escalated}`);
 
-        // Parse OpenAI-compatible response (stream: false → standard JSON)
-        let aiResponse = '';
-        try {
-          const chatData = await chatRes.json();
-          // Standard OpenAI format: choices[0].message.content
-          aiResponse = chatData?.choices?.[0]?.message?.content || '';
-          // Legacy bridge.js fallbacks (in case old containers still respond)
-          if (!aiResponse) aiResponse = chatData?.response || chatData?.fullResponse || '';
-        } catch (err: any) {
-          addLog(`  Failed to parse gateway JSON: ${err.message}`);
-          continue;
-        }
-
-        if (!aiResponse.trim()) {
-          addLog(`  Empty AI response from gateway`);
-          continue;
-        }
-        addLog(`  AI: "${aiResponse.slice(0, 80)}..."`);
-
-        // Auto-append calendar booking link if AI mentions appointments and URL is configured
-        const calendarUrl = cfg.calendar_url as string | undefined;
-        if (calendarUrl) {
+        // Append booking link if AI mentioned scheduling and link is configured (extra safety net)
+        const calendarUrl = (client.container_config as Record<string, unknown>)?.calendar_url as string | undefined;
+        if (calendarUrl && !aiResponse.includes('http')) {
           const BOOKING_KEYWORDS = ['schedule', 'book', 'appointment', 'available', 'slot', 'calendar'];
-          const mentionsBooking = BOOKING_KEYWORDS.some(k => aiResponse.toLowerCase().includes(k));
-          const alreadyHasLink = aiResponse.includes(calendarUrl) || aiResponse.includes('http');
-          if (mentionsBooking && !alreadyHasLink) {
+          if (BOOKING_KEYWORDS.some(k => aiResponse.toLowerCase().includes(k))) {
             aiResponse = `${aiResponse}\n\nBook online: ${calendarUrl}`;
-            addLog(`  📅 Booking link appended`);
           }
         }
+
+        // Keep legacy session key variable for any code below that references it
+        const today = new Date().toISOString().slice(0, 10);
+        const clientShort = client.id.slice(0, 8);
+        const sessionKey = `ghl:${clientShort}:${conv.contactId.slice(0, 8)}:${today}`;
+
+        addLog(`  AI: "${aiResponse.slice(0, 80)}..."`);
 
         // Step 6: Send reply via GHL
         // Map GHL message types to valid Send Message API types
@@ -867,6 +785,11 @@ export async function GET(request: NextRequest) {
           }
 
           // Fire-and-forget CRM update: tag + note the contact based on conversation
+          // Build a minimal conversation array for extractCRMUpdate
+          const convSummaryMessages = [
+            { role: 'user', content: latestInbound.body },
+            { role: 'assistant', content: aiResponse },
+          ];
           const ghlTokenForCRM = client.ghl_private_token || client.ghl_access_token;
           if (ghlTokenForCRM && gatewayUrl && gateway?.gateway_token) {
             void (async () => {
@@ -874,7 +797,7 @@ export async function GET(request: NextRequest) {
                 const crmUpdate = await extractCRMUpdate(
                   gatewayUrl,
                   gateway.gateway_token,
-                  [...chatMessages, { role: 'assistant', content: aiResponse }],
+                  convSummaryMessages,
                 );
                 if (crmUpdate && (crmUpdate.tagsToAdd.length > 0 || crmUpdate.note || crmUpdate.needsHuman)) {
                   await applyGHLCRMUpdates(conv.contactId, ghlTokenForCRM, crmUpdate, addLog);
