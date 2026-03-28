@@ -80,9 +80,23 @@ export async function executeTool(
     };
   }
 
+  // Inject default calendar_id / pipeline_id from context if LLM didn't provide them
+  const enrichedArgs = { ...args };
+  if (!enrichedArgs.calendar_id && ctx.calendarId && CALENDAR_TOOLS.has(name)) {
+    enrichedArgs.calendar_id = ctx.calendarId;
+  }
+  if (!enrichedArgs.pipeline_id && ctx.pipelineId && name === 'create_opportunity') {
+    enrichedArgs.pipeline_id = ctx.pipelineId;
+  }
+
   // Route to the new skills system
-  return executeGHLTool(name, args, ctx.token, ctx.locationId);
+  return executeGHLTool(name, enrichedArgs, ctx.token, ctx.locationId);
 }
+
+/** Calendar tools that benefit from default calendar_id injection */
+const CALENDAR_TOOLS = new Set([
+  'book_appointment', 'get_available_slots', 'get_appointments',
+]);
 
 // Re-export the new skills system for direct access
 export { ALL_GHL_TOOLS, executeGHLTool } from './skills';

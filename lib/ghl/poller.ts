@@ -28,6 +28,7 @@ import { getConversationHistory, saveConversationTurn } from './conversation-mem
 import { defend, scanOutput } from '@/lib/security/prompt-injection';
 import { deductCredit } from '@/lib/billing/credit-engine';
 import { routeMessage } from './model-router';
+import { resolveGHLConfig } from './resolve-ghl-config';
 import { callLLMWithTools } from './direct-llm';
 import { getCustomerMemory, updateCustomerMemory, formatMemoryForPrompt, extractFactsFromConversation } from '@/lib/memory/customer-memory';
 import { isReviewGateActive, queueForReview } from './review-gate';
@@ -408,12 +409,16 @@ async function processConversation(
       ? dbHistory.map((t) => ({ role: t.role, content: t.content }))
       : buildHistoryFromGHL(messages);
 
+  // ── Resolve GHL calendar/pipeline config ──────────────────────────────
+  const cc = (client.container_config as Record<string, unknown>) || {};
+  const ghlConfig = await resolveGHLConfig(client.agency_id, cc);
+
   // ── Build enriched system prompt ─────────────────────────────────────
   const systemPrompt = buildPersonaSystemPrompt(client, client.agency_templates, {
     messageType: formatChannelName(messageType),
     contactName,
     contactInfo,
-  }, permissionPrompt);
+  }, permissionPrompt, ghlConfig);
 
   const sessionKey = `${getSessionKeyForClient(client.id)}:contact:${conv.contactId}`;
 
@@ -424,14 +429,13 @@ async function processConversation(
   }
 
   // ── Tool context (for GHL function calling) ──────────────────────────
-  const cc = (client.container_config as Record<string, unknown>) || {};
   const toolCtx: ToolContext = {
     token,
     contactId: conv.contactId,
     locationId: client.ghl_location_id || '',
     clientId: client.id,
-    calendarId: (cc.calendar_id as string) || undefined,
-    pipelineId: (cc.pipeline_id as string) || undefined,
+    calendarId: ghlConfig.calendarId,
+    pipelineId: ghlConfig.pipelineId,
   };
 
   // ── Prompt injection defense (Layer 1 + 2) ────────────────────────────
@@ -846,6 +850,7 @@ function buildPersonaSystemPrompt(
   template: AgencyTemplate | null | undefined,
   ctx: PromptContext,
   permissionPrompt?: string,
+  ghlConfig?: { calendarId?: string; pipelineId?: string },
 ): string {
   const cc = (client.container_config as Record<string, unknown>) || {};
   const lines: string[] = [];
@@ -937,8 +942,17 @@ function buildPersonaSystemPrompt(
   lines.push('--- Tools Available ---');
   lines.push('You have access to tools to take action:');
   lines.push('- book_appointment: When a customer wants to schedule/book. Confirm the time first.');
+  if (ghlConfig?.calendarId) {
+    lines.push(`  Default calendar_id: ${ghlConfig.calendarId}`);
+    lines.push('  Always use this calendar_id when booking unless the customer specifies otherwise.');
+  }
+  lines.push('- get_available_slots: Check available times before booking. Use the calendar_id above.');
+  lines.push('- get_calendars: List all calendars (use if you need to find a specific calendar).');
   lines.push('- tag_contact: Add relevant tags (e.g. "hot-lead", "pricing-requested", "booked").');
   lines.push('- create_opportunity: When a customer shows clear buying intent.');
+  if (ghlConfig?.pipelineId) {
+    lines.push(`  Default pipeline_id: ${ghlConfig.pipelineId}`);
+  }
   lines.push('- escalate_to_human: When the customer needs a real person. Always tell them you are connecting them.');
   lines.push('');
 
