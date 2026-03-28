@@ -7,7 +7,7 @@
  */
 
 import type { ToolDefinition, ToolExecutor } from '@/lib/ai/claude';
-import { getSkillById } from '@/lib/skills/registry';
+import { getSkillById, normalizeSkillId } from '@/lib/skills/registry';
 import { webSearch, formatSearchResults } from '@/lib/tools/web-search';
 import { simpleFetch, formatFetchedContent } from '@/lib/tools/url-fetch';
 import { browseUrl } from '@/lib/tools/browser-tool';
@@ -15,9 +15,9 @@ import { analyzeImage } from '@/lib/tools/image-analysis';
 import { extractTextFromFile } from '@/lib/tools/file-processor';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 
-/** Claude tool schemas keyed by the skill ID that provides them */
+/** Claude tool schemas keyed by the skill ID (kebab-case) that provides them */
 const TOOL_SCHEMAS: Record<string, ToolDefinition[]> = {
-  web_search: [
+  'web-search': [
     {
       name: 'web_search',
       description:
@@ -38,7 +38,7 @@ const TOOL_SCHEMAS: Record<string, ToolDefinition[]> = {
       },
     },
   ],
-  web_fetch: [
+  'web-scraper': [
     {
       name: 'web_fetch',
       description:
@@ -59,7 +59,7 @@ const TOOL_SCHEMAS: Record<string, ToolDefinition[]> = {
       },
     },
   ],
-  browser: [
+  'web-browser': [
     {
       name: 'browse_url',
       description:
@@ -85,7 +85,7 @@ const TOOL_SCHEMAS: Record<string, ToolDefinition[]> = {
       },
     },
   ],
-  image_understanding: [
+  'image-analysis': [
     {
       name: 'analyze_image',
       description:
@@ -106,7 +106,7 @@ const TOOL_SCHEMAS: Record<string, ToolDefinition[]> = {
       },
     },
   ],
-  file_upload: [
+  'pdf-analysis': [
     {
       name: 'read_file',
       description:
@@ -126,14 +126,14 @@ const TOOL_SCHEMAS: Record<string, ToolDefinition[]> = {
 };
 
 /**
- * Map from openclawTools tool name → our TOOL_SCHEMAS key.
+ * Map from openclawTools tool name → our TOOL_SCHEMAS key (kebab-case skill ID).
  */
 const OPENCLAW_TOOL_TO_SCHEMA: Record<string, string> = {
-  web_search: 'web_search',
-  web_fetch: 'web_fetch',
-  browser: 'browser',
-  analyze_image: 'image_understanding',
-  read_file: 'file_upload',
+  web_search: 'web-search',
+  web_fetch: 'web-scraper',
+  browser: 'web-browser',
+  image: 'image-analysis',
+  pdf: 'pdf-analysis',
 };
 
 /**
@@ -143,7 +143,8 @@ export function getToolDefinitions(enabledSkillIds: string[]): ToolDefinition[] 
   const tools: ToolDefinition[] = [];
   const seen = new Set<string>();
 
-  for (const skillId of enabledSkillIds) {
+  for (const rawSkillId of enabledSkillIds) {
+    const skillId = normalizeSkillId(rawSkillId);
     const directSchemas = TOOL_SCHEMAS[skillId];
     if (directSchemas) {
       for (const schema of directSchemas) {
