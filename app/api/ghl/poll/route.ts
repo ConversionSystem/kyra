@@ -707,9 +707,13 @@ export async function GET(request: NextRequest) {
         let aiResponse = smartResult.reply;
         addLog(`    Smart Engine: ${smartResult.responseTimeMs}ms | Tools: [${smartResult.toolsUsed.join(', ') || 'none'}] | Escalated: ${smartResult.escalated}`);
 
-        // Append booking link if AI mentioned scheduling and link is configured (extra safety net)
+        // Append booking link ONLY if AI didn't use a booking tool AND mentioned scheduling
+        // If the AI used book_appointment/get_available_slots, it handled booking — don't append link
+        const bookingToolUsed = smartResult.toolsUsed.some(t => 
+          ['book_appointment', 'get_available_slots', 'get_calendars'].includes(t)
+        );
         const calendarUrl = (client.container_config as Record<string, unknown>)?.calendar_url as string | undefined;
-        if (calendarUrl && !aiResponse.includes('http')) {
+        if (calendarUrl && !aiResponse.includes('http') && !bookingToolUsed) {
           const BOOKING_KEYWORDS = ['schedule', 'book', 'appointment', 'available', 'slot', 'calendar'];
           if (BOOKING_KEYWORDS.some(k => aiResponse.toLowerCase().includes(k))) {
             aiResponse = `${aiResponse}\n\nBook online: ${calendarUrl}`;
