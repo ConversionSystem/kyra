@@ -259,10 +259,17 @@ function buildSmartSystemPrompt(
   }
 
   if (cc.calendar_url) {
-    bizContext.push(
-      `Booking link: ${cc.calendar_url}`,
-      'When a customer wants to schedule, share this link or use the book_appointment tool if you have their preferred time.',
-    );
+    if (ghlConfig?.calendarId) {
+      bizContext.push(
+        `Booking page (for reference only): ${cc.calendar_url}`,
+        'IMPORTANT: When a customer wants to schedule, DO NOT just share the link. USE the book_appointment tool to book directly. Only share the link as a last resort if the tool fails.',
+      );
+    } else {
+      bizContext.push(
+        `Booking link: ${cc.calendar_url}`,
+        'When a customer wants to schedule, share this booking link.',
+      );
+    }
   }
 
   if (cc.business_hours?.enabled) {
@@ -357,7 +364,7 @@ When a NEW lead reaches out, follow these steps IN ORDER:
    - If missing phone: "What's the best number to reach you?"
 
 5. **Move to Next Step**
-   - ${cc.calendar_url ? `Offer booking link: ${cc.calendar_url}` : 'Suggest scheduling a time'}
+   - ${ghlConfig?.calendarId ? 'Use the book_appointment tool to schedule them directly — ask for their preferred date/time first' : cc.calendar_url ? `Share booking link: ${cc.calendar_url}` : 'Suggest scheduling a time'}
    - Set a clear expectation: "You'll hear back within [timeframe]"
    - End with a specific next action, not a vague "let us know"
 
