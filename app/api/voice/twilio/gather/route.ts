@@ -408,14 +408,13 @@ export async function POST(req: NextRequest) {
         let toolArgs: Record<string, unknown> = {};
         try { toolArgs = JSON.parse(toolCall.function.arguments); } catch {}
 
-        // Resolve calendar/pipeline from config chain (container_config → pipeline_integrations)
-        const voiceGhlConfig = await resolveGHLConfig(vcfg.data.agency_id, null);
+        // Reuse voiceGhlCfg resolved above (same agency, no need to query again)
         const toolResult = await executeTool(toolName, toolArgs, {
           token: ghlToken,
           contactId: ghlContactId || '',
           locationId: ghlLocationId,
           clientId,
-          calendarId: (toolArgs.calendar_id as string) || voiceGhlConfig.calendarId || '',
+          calendarId: (toolArgs.calendar_id as string) || voiceGhlCfg.calendarId || '',
         });
 
         // Feed tool result back for natural language response
