@@ -6,33 +6,27 @@ import {
   Download, Check, Trash2, RefreshCw, TrendingUp,
 } from 'lucide-react';
 import type { AgencyClient } from '@/lib/agency/queries';
+import { BUILTIN_SKILLS as REGISTRY_SKILLS, type SkillCategory } from '@/lib/skills/registry';
 
-interface SkillDefinition {
+// Map registry skills to the UI format
+interface UISkillDefinition {
   id: string;
   name: string;
   desc: string;
   icon: string;
-  category: 'Research' | 'Communication' | 'Knowledge' | 'Monitoring' | 'Utilities';
+  category: SkillCategory;
 }
 
-// Built-in OpenClaw skills available on every container
-const BUILTIN_SKILLS: SkillDefinition[] = [
-  { id: 'web-search', name: 'Web Search', desc: 'Search the internet for live information', icon: '🔍', category: 'Research' },
-  { id: 'web-fetch', name: 'Web Scraper', desc: 'Extract content from any URL or webpage', icon: '🌐', category: 'Research' },
-  { id: 'email', name: 'Email (IMAP/SMTP)', desc: 'Read, send, and manage emails from any account', icon: '📧', category: 'Communication' },
-  { id: 'google-workspace', name: 'Google Workspace', desc: 'Gmail, Calendar, Drive, Sheets, and Docs', icon: '📅', category: 'Communication' },
-  { id: 'pdf-analysis', name: 'PDF Analysis', desc: 'Read, analyze, and extract data from PDF documents', icon: '📄', category: 'Knowledge' },
-  { id: 'summarize', name: 'Summarize', desc: 'Summarize URLs, podcasts, YouTube videos, and documents', icon: '📝', category: 'Knowledge' },
-  { id: 'blog-monitor', name: 'Blog Monitor', desc: 'Track RSS feeds, blogs, and news for updates', icon: '📡', category: 'Monitoring' },
-  { id: 'weather', name: 'Weather', desc: 'Current weather and forecasts for any location', icon: '🌤️', category: 'Utilities' },
-  { id: 'voice-tts', name: 'Text-to-Speech', desc: 'Convert text responses to natural-sounding voice', icon: '🔊', category: 'Communication' },
-  { id: 'image-analysis', name: 'Image Analysis', desc: 'Analyze and describe images with vision AI', icon: '🖼️', category: 'Knowledge' },
-  { id: 'browser', name: 'Web Browser', desc: 'Navigate websites, fill forms, take screenshots', icon: '🖥️', category: 'Research' },
-  { id: 'code-execution', name: 'Code Runner', desc: 'Execute code, scripts, and shell commands', icon: '⚡', category: 'Utilities' },
-];
+const BUILTIN_SKILLS: UISkillDefinition[] = REGISTRY_SKILLS.map(s => ({
+  id: s.id,
+  name: s.name,
+  desc: s.description,
+  icon: s.icon,
+  category: s.category,
+}));
 
-const CATEGORIES: Array<'All' | SkillDefinition['category']> = [
-  'All', 'Research', 'Communication', 'Knowledge', 'Monitoring', 'Utilities',
+const CATEGORIES: Array<'All' | SkillCategory> = [
+  'All', 'Research', 'Communication', 'Knowledge', 'Monitoring', 'Utilities', 'Integration', 'AI',
 ];
 
 // ClawHub live skill from API
