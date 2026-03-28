@@ -4,108 +4,15 @@
  * When a user toggles skills on/off in the Skills tab, this module
  * generates a SKILLS.md file and writes it to the container workspace
  * so the AI knows which capabilities are available.
+ *
+ * Skill definitions are imported from registry.ts (single source of truth).
  */
 
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { writeWorkspaceFile, wakeContainerAI } from '@/lib/ovh/sync';
+import { BUILTIN_SKILLS, type BuiltInSkill } from '@/lib/skills/registry';
 
-// ── Built-in skill definitions (mirrors skills-tab.tsx) ──────────────────────
-
-interface BuiltinSkill {
-  id: string;
-  name: string;
-  description: string;
-  usage: string;
-}
-
-const BUILTIN_SKILLS: BuiltinSkill[] = [
-  {
-    id: 'web-search',
-    name: 'Web Search',
-    description: 'Search the internet for live information using Perplexity Sonar.',
-    usage: 'Use the `web_search` tool to find current information, news, pricing, competitors, or any live data.',
-  },
-  {
-    id: 'web-fetch',
-    name: 'Web Scraper',
-    description: 'Extract readable content from any URL or webpage.',
-    usage: 'Use the `web_fetch` tool to read articles, documentation, product pages, or any public URL.',
-  },
-  {
-    id: 'email',
-    name: 'Email (IMAP/SMTP)',
-    description: 'Read, send, and manage emails from any configured email account.',
-    usage: 'Use the `himalaya` skill to list, read, compose, reply, forward, and search emails.',
-  },
-  {
-    id: 'google-workspace',
-    name: 'Google Workspace',
-    description: 'Gmail, Calendar, Drive, Sheets, and Docs integration.',
-    usage: 'Use the `gog` skill for Gmail, Google Calendar events, Drive files, Sheets data, and Docs.',
-  },
-  {
-    id: 'pdf-analysis',
-    name: 'PDF Analysis',
-    description: 'Read, analyze, and extract data from PDF documents.',
-    usage: 'Use the `pdf` tool to analyze PDF files — extract text, tables, and structured data.',
-  },
-  {
-    id: 'summarize',
-    name: 'Summarize',
-    description: 'Summarize URLs, podcasts, YouTube videos, and documents.',
-    usage: 'Use the `summarize` skill to get concise summaries of web pages, videos, or uploaded documents.',
-  },
-  {
-    id: 'blog-monitor',
-    name: 'Blog Monitor',
-    description: 'Track RSS feeds, blogs, and news sources for updates.',
-    usage: 'Use the `blogwatcher` skill to monitor RSS/Atom feeds and get alerts when new content is published.',
-  },
-  {
-    id: 'weather',
-    name: 'Weather',
-    description: 'Current weather conditions and forecasts for any location.',
-    usage: 'Use the `weather` skill to get current conditions, forecasts, and weather alerts for any city.',
-  },
-  {
-    id: 'voice-tts',
-    name: 'Text-to-Speech',
-    description: 'Convert text responses to natural-sounding voice audio.',
-    usage: 'Use the `tts` tool to convert text to spoken audio. Useful for voice responses and accessibility.',
-  },
-  {
-    id: 'image-analysis',
-    name: 'Image Analysis',
-    description: 'Analyze and describe images with vision AI models.',
-    usage: 'Use the `image` tool to analyze photos, screenshots, diagrams, or any image content.',
-  },
-  {
-    id: 'browser',
-    name: 'Web Browser',
-    description: 'Navigate websites, fill forms, take screenshots, and automate web interactions.',
-    usage: 'Use the `browser` tool to open URLs, interact with web pages, fill forms, and capture screenshots.',
-  },
-  {
-    id: 'code-execution',
-    name: 'Code Runner',
-    description: 'Execute code, scripts, and shell commands in a sandboxed environment.',
-    usage: 'Use the `exec` tool to run shell commands, scripts, or code snippets.',
-  },
-  {
-    id: 'web-intelligence',
-    name: 'Web Intelligence (Firecrawl)',
-    description: 'Scrape, crawl, search, and autonomously research any website. Powered by Firecrawl.',
-    usage: `Use the firecrawl-cli tool to access the internet:
-- firecrawl scrape <url> --only-main-content — read a webpage cleanly
-- firecrawl search "<query>" --limit 10 — web search with full content
-- firecrawl map <url> — discover all URLs on a site
-- firecrawl crawl <url> --limit 50 --wait — crawl an entire website
-- firecrawl agent "<prompt>" --wait — autonomous web research (AI finds and extracts data)
-
-Auth is pre-configured via FIRECRAWL_API_KEY and FIRECRAWL_API_URL environment variables.
-Use this tool whenever you need live web data: competitor pricing, company research, lead enrichment, industry news, product details.`,
-  },
-];
+// ── Map for O(1) lookups ─────────────────────────────────────────────────────
 
 const BUILTIN_SKILLS_MAP = new Map(BUILTIN_SKILLS.map(s => [s.id, s]));
 
@@ -147,7 +54,7 @@ export async function syncSkillsToContainer(clientId: string): Promise<{
   const installedClawHub = (settings.installed_clawhub_skills as InstalledClawHubSkill[]) || [];
 
   // 2. Map skill IDs to full definitions
-  const enabledBuiltins: BuiltinSkill[] = [];
+  const enabledBuiltins: BuiltInSkill[] = [];
   for (const skillId of enabledSkillIds) {
     const skill = BUILTIN_SKILLS_MAP.get(skillId);
     if (skill) enabledBuiltins.push(skill);
@@ -190,7 +97,7 @@ export async function syncSkillsToContainer(clientId: string): Promise<{
 // ── SKILLS.md Generator ──────────────────────────────────────────────────────
 
 function generateSkillsMd(
-  builtins: BuiltinSkill[],
+  builtins: BuiltInSkill[],
   clawHub: InstalledClawHubSkill[]
 ): string {
   const lines: string[] = [
@@ -210,9 +117,11 @@ function generateSkillsMd(
     lines.push(`## Built-in Skills (${builtins.length})`);
     lines.push('');
     for (const skill of builtins) {
-      lines.push(`### ${skill.name}`);
+      lines.push(`### ${skill.icon} ${skill.name}`);
       lines.push(`${skill.description}`);
-      lines.push(`**Usage:** ${skill.usage}`);
+      lines.push('');
+      lines.push(`**Usage:**`);
+      lines.push(skill.usage);
       lines.push('');
     }
   }
