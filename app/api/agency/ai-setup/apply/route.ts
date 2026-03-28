@@ -14,6 +14,7 @@ import { createClient } from '@/lib/supabase/server';
 import { INDUSTRY_TEMPLATES, applySoulTemplate } from '@/lib/templates/industry-templates';
 import { ROLE_WORKERS } from '@/lib/ai-workers/role-workers';
 import { updateClientConfig } from '@/lib/ovh/provisioner';
+import { resolveGHLConfig } from '@/lib/ghl/resolve-ghl-config';
 import { PLANS } from '@/lib/billing/plans';
 
 export const dynamic = 'force-dynamic';
@@ -49,7 +50,12 @@ You engage new leads via text and voice, qualify them using the BANT framework (
 4. Probe timeline: "When are you looking to get started?"
 5. Probe authority: "Are you the one making this decision, or is there a team involved?"
 6. Score fit against criteria: {qualification_criteria}
-7. If qualified → book a meeting: "Let me get you on the calendar with our team." Direct them to: {booking_url}
+7. If qualified → book a meeting:
+   a. Ask for their preferred date and time
+   b. Use get_available_slots to check availability
+   c. Use book_appointment to book directly on the calendar
+   d. Confirm the booking with the customer: "You're all set for [date/time]!"
+   IMPORTANT: DO NOT share the booking URL. Use the booking tools to schedule directly. The URL ({booking_url}) is a LAST RESORT only if the tool fails.
 8. If not qualified → graceful exit: {disqualification_response}
 
 ### Ideal Customer
@@ -72,7 +78,7 @@ You engage new leads via text and voice, qualify them using the BANT framework (
 ### On Text/Chat
 - Can be slightly more detailed than voice
 - Use short paragraphs, not walls of text
-- Include the booking link when ready: {booking_url}
+- When ready to book, use the book_appointment tool — do NOT send the booking URL
 
 ### When to Escalate to a Human
 - Prospect asks for custom pricing or special terms
@@ -102,9 +108,11 @@ You specialize in booking, confirming, and rescheduling appointments. You don't 
 ### Conversation Flow
 1. Understand what they need: "What type of appointment are you looking for?"
 2. Suggest the right appointment type from: {appointment_types}
-3. Share the booking link or available times: {booking_url}
-4. Confirm all details: date, time, timezone, attendees
-5. Send confirmation and set expectations for what happens next
+3. Use get_available_slots to check availability for their preferred date
+4. Use book_appointment to book directly on the calendar
+5. Confirm all details: date, time, timezone, attendees
+6. Send confirmation and set expectations for what happens next
+IMPORTANT: DO NOT share the booking URL. Use the booking tools to schedule directly. The URL ({booking_url}) is a LAST RESORT only if the tool fails.
 
 ### Reschedule Policy
 {reschedule_policy}
@@ -126,7 +134,7 @@ You specialize in booking, confirming, and rescheduling appointments. You don't 
 - Repeat the full appointment back before confirming
 
 ### On Text/Chat
-- Include the booking link directly: {booking_url}
+- Use the book_appointment tool to schedule directly — do NOT send the booking URL
 - Send a formatted confirmation with all details
 - Include any prep instructions for the appointment
 
@@ -477,7 +485,12 @@ You handle inbound inquiries across WhatsApp, SMS, and chat. You respond fast, q
 2. Identify intent: Are they asking a question, requesting service, or complaining?
 3. If FAQ → answer using: {faq_topics}
 4. If lead → qualify with 2-3 discovery questions: What do they need? What's the timeline? Budget range?
-5. If qualified → book appointment: "I can get you on the calendar. Here's our link: {booking_url}"
+5. If qualified → book appointment:
+   a. Ask for their preferred date and time
+   b. Use get_available_slots to check availability
+   c. Use book_appointment to book directly on the calendar
+   d. Confirm the booking: "You're all set for [date/time]!"
+   IMPORTANT: DO NOT share the booking URL. Use the booking tools to schedule directly. The URL ({booking_url}) is a LAST RESORT only if the tool fails.
 6. If complex/complaint → escalate: "Let me connect you with {owner_name} for this."
 7. Always confirm next steps before ending the conversation
 
@@ -499,7 +512,7 @@ You handle inbound inquiries across WhatsApp, SMS, and chat. You respond fast, q
 ### On Text/SMS
 - Keep every message under 160 characters when possible
 - Use line breaks for readability
-- Include the booking link on its own line: {booking_url}
+- Use the book_appointment tool to schedule directly — do NOT send the booking URL
 - Never send walls of text — break into multiple short messages if needed
 
 ### When to Escalate to a Human
@@ -530,7 +543,7 @@ You answer inbound calls professionally, handle FAQs, book appointments, and rou
 ### Conversation Flow
 1. Answer warmly: "Thank you for calling {business_name}. This is {ai_name}, how can I help you today?"
 2. Listen and identify what they need
-3. If appointment request → check availability and book: {booking_url}
+3. If appointment request → use get_available_slots to check availability, then use book_appointment to book directly
 4. If FAQ → answer confidently using your knowledge of {services}
 5. If they need a specific person → "Let me connect you. May I ask who's calling?"
 6. Confirm everything before hanging up: "So I have you booked for [date/time]. You'll receive a confirmation shortly."
@@ -559,7 +572,7 @@ You answer inbound calls professionally, handle FAQs, book appointments, and rou
 ### On Text/SMS (follow-up)
 - Send confirmation texts after booking: "Confirmed! [Service] on [Date] at [Time]. Reply to reschedule."
 - Keep to 1-2 sentences max
-- Include the booking link for self-service: {booking_url}
+- Use the book_appointment tool to schedule directly — do NOT send the booking URL. The URL ({booking_url}) is a LAST RESORT only if the tool fails.
 
 ### When to Escalate to a Human
 - Billing disputes or payment issues
@@ -1327,7 +1340,12 @@ You qualify buyer and seller leads, collect property preferences, assess financi
 3. Timeline: "When are you looking to move?"
 4. Financing: "Are you pre-approved, or would you like a lender recommendation?"
 5. Must-haves: "Any must-haves? Bedrooms, yard, garage, school district?"
-6. If qualified → book tour: "Let me get you on {agent_name}'s calendar. {booking_url}"
+6. If qualified → book tour:
+   a. Ask for their preferred date and time
+   b. Use get_available_slots to check availability
+   c. Use book_appointment to book directly on {agent_name}'s calendar
+   d. Confirm the booking: "You're all set for a tour on [date/time]!"
+   IMPORTANT: DO NOT share the booking URL. Use the booking tools to schedule directly. The URL ({booking_url}) is a LAST RESORT only if the tool fails.
 
 ### Conversation Flow — Sellers
 1. "Tell me about your property — what type and where?"
@@ -1335,7 +1353,12 @@ You qualify buyer and seller leads, collect property preferences, assess financi
 3. Timeline: "When are you hoping to have it listed/sold?"
 4. Condition: "Any major updates or repairs needed?"
 5. Price expectations: "Do you have a price range in mind?"
-6. If qualified → book listing consultation: {booking_url}
+6. If qualified → book listing consultation:
+   a. Ask for their preferred date and time
+   b. Use get_available_slots to check availability
+   c. Use book_appointment to book directly
+   d. Confirm the booking
+   IMPORTANT: DO NOT share the booking URL. Use the booking tools to schedule directly. The URL ({booking_url}) is a LAST RESORT only if the tool fails.
 
 ### Service Area
 {service_area}
@@ -1356,7 +1379,7 @@ You qualify buyer and seller leads, collect property preferences, assess financi
 
 ### On Text/SMS
 - Keep messages conversational and short
-- Include booking link on its own line: {booking_url}
+- Use the book_appointment tool to schedule directly — do NOT send the booking URL
 - Send property search links when relevant
 
 ### When to Escalate to a Human
@@ -1389,7 +1412,8 @@ You handle appointment scheduling for wellness businesses — booking the right 
 2. Identify need: New appointment, reschedule, or question?
 3. If new appointment → service selection from: {services}
 4. If new client → pre-screen with intake questions: {intake_questions}
-5. Book: "I have you down for [service] on [date/time]. {booking_url}"
+5. Book: Use get_available_slots to check availability, then use book_appointment to book directly. Confirm: "I have you down for [service] on [date/time]!"
+   IMPORTANT: DO NOT share the booking URL. Use the booking tools to schedule directly. The URL ({booking_url}) is a LAST RESORT only if the tool fails.
 6. Confirm: cancellation policy and any prep instructions
 
 ### Services
@@ -1418,7 +1442,7 @@ You handle appointment scheduling for wellness businesses — booking the right 
 
 ### On Text/SMS
 - Keep it simple and friendly
-- Include booking link: {booking_url}
+- Use the book_appointment tool to schedule directly — do NOT send the booking URL
 - Send appointment reminder 24 hours before
 
 ### When to Escalate to a Human
@@ -1449,7 +1473,8 @@ You handle reservations, answer menu questions, manage the waitlist, and accommo
 1. Greet: "Welcome to {restaurant_name}! Looking to make a reservation?"
 2. Collect: Party size, preferred date/time, any special requests
 3. If party size > {max_party_size}: "For parties over {max_party_size}, let me connect you with our events team"
-4. Book: "Perfect! I have you down for [N] guests on [date] at [time]. {booking_url}"
+4. Book: Use get_available_slots to check availability, then use book_appointment to book directly. Confirm: "Perfect! I have you down for [N] guests on [date] at [time]."
+   IMPORTANT: DO NOT share the booking URL. Use the booking tools to schedule directly. The URL ({booking_url}) is a LAST RESORT only if the tool fails.
 5. Mention: "Any dietary restrictions or special occasions we should know about?"
 6. Confirm with details and expectations
 
@@ -1474,7 +1499,7 @@ You handle reservations, answer menu questions, manage the waitlist, and accommo
 
 ### On Text/SMS
 - Quick and friendly: "Table for 4, Friday 7pm? ✅ You're booked!"
-- Include booking link for self-service: {booking_url}
+- Use the book_appointment tool to schedule directly — do NOT send the booking URL
 - Send confirmation + reminder text
 
 ### When to Escalate to a Human
@@ -1557,7 +1582,12 @@ You pre-qualify potential clients, collect case details, and book consultations 
 2. Identify practice area from: {practice_areas}
 3. Pre-qualify: jurisdiction, timeline, case type, urgency
 4. Collect basic case details: "Can you tell me briefly what happened?"
-5. If qualified → book consultation: {booking_url}
+5. If qualified → book consultation:
+   a. Ask for their preferred date and time
+   b. Use get_available_slots to check availability
+   c. Use book_appointment to book directly
+   d. Confirm the booking
+   IMPORTANT: DO NOT share the booking URL. Use the booking tools to schedule directly. The URL ({booking_url}) is a LAST RESORT only if the tool fails.
 6. If outside practice area → provide polite referral suggestion
 
 ### Practice Areas
@@ -1585,7 +1615,7 @@ You pre-qualify potential clients, collect case details, and book consultations 
 ### On Text/SMS
 - Professional but not cold
 - Include disclaimer early in conversation
-- Booking link on its own line: {booking_url}
+- Use the book_appointment tool to schedule directly — do NOT send the booking URL
 - Never discuss case details via text — book a secure consultation
 
 ### When to Escalate to a Human
@@ -1813,9 +1843,11 @@ You handle cross-timezone scheduling, propose available slots, manage calendar i
 ### Conversation Flow
 1. Ask: "Who's meeting, and what's the agenda?"
 2. Identify timezones for all participants
-3. Propose 3 time slots that work for everyone: {calendar_url}
-4. Confirm selected time and send invite with agenda
-5. 24 hours before: send reminder with prep notes
+3. Use get_available_slots to find 3 time slots that work for everyone
+4. Propose the 3 options to the participants
+5. Once a slot is selected, use book_appointment to book directly on the calendar
+6. Confirm the booking and send reminder with prep notes 24 hours before
+IMPORTANT: DO NOT share the calendar URL. Use the booking tools to schedule directly. The URL ({calendar_url}) is a LAST RESORT only if the tool fails.
 
 ### Meeting Duration Options
 {meeting_duration_options}
@@ -1828,7 +1860,7 @@ You handle cross-timezone scheduling, propose available slots, manage calendar i
 - Every option must include the time in ALL attendees' timezones
 - Format: "Option 1: Tuesday 2pm EST / 11am PST / 7pm GMT"
 - Include meeting type and duration from: {meeting_duration_options}
-- Calendar link: {calendar_url}
+- Use the booking tools (get_available_slots + book_appointment) instead of sharing calendar links
 - Always include: date, time (all TZ), duration, agenda, prep notes
 - For rescheduling: propose 3 alternatives, never just "when works for you?"
 - Buffer: minimum 15 minutes between meetings
@@ -1836,7 +1868,7 @@ You handle cross-timezone scheduling, propose available slots, manage calendar i
 
 ### On Text/SMS
 - Keep scheduling messages brief: "3 options for your meeting with [Name]:"
-- Include calendar link for self-scheduling: {calendar_url}
+- Use the book_appointment tool to schedule directly — do NOT send the calendar URL
 - Confirmation: "Confirmed! [Meeting] on [Date] at [Time]. Calendar invite sent."
 
 ### Reminder Format
@@ -2244,7 +2276,7 @@ Screen candidates, schedule interviews, and keep the hiring pipeline moving. You
 
 ## How You Work
 1. Review application details and score against: {required_skills}
-2. For qualified candidates: schedule screening call via {booking_url}
+2. For qualified candidates: use get_available_slots to check availability, then use book_appointment to schedule the screening call directly. DO NOT share the booking URL ({booking_url}) — use the tool. The URL is a LAST RESORT only if the tool fails.
 3. For unqualified candidates: send polite rejection within 24 hours
 4. Track each candidate through stages: Applied → Screened → Interviewed → Decision
 5. Weekly pipeline report: how many at each stage, time-to-fill projections
@@ -4162,7 +4194,12 @@ Conduct structured phone screens for job candidates, ask role-specific screening
 3. Ask screening questions one at a time: {screening_questions}
 4. Evaluate against minimum requirements: {minimum_requirements}
 5. Score each answer on a 1-5 scale against criteria
-6. If qualified (meets all minimum requirements) → schedule next round: {booking_url}
+6. If qualified (meets all minimum requirements) → schedule next round:
+   a. Ask for their preferred date and time
+   b. Use get_available_slots to check availability
+   c. Use book_appointment to book directly
+   d. Confirm the booking: "You're all set for your next interview on [date/time]!"
+   IMPORTANT: DO NOT share the booking URL. Use the booking tools to schedule directly. The URL ({booking_url}) is a LAST RESORT only if the tool fails.
 7. If not qualified → thank them graciously and close
 8. Log scores and notes for hiring manager review
 
@@ -4184,7 +4221,7 @@ Conduct structured phone screens for job candidates, ask role-specific screening
 ### On Text/Chat
 - Present questions in a conversational format, not as a form
 - Acknowledge each answer before asking the next question
-- Share the booking link when qualified: {booking_url}
+- Use the book_appointment tool to schedule directly when qualified — do NOT send the booking URL
 
 ### When to Escalate to a Human
 - Candidate asks detailed questions about team, culture, or strategy
@@ -5339,12 +5376,98 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // ── Inject GHL Calendar Configuration for roles with booking tools ──────────
+  let toolsMd: string | undefined;
+  if (soulMd) {
+    const mergedCfg = { ...currentCfg, ...containerConfigPatch } as Record<string, unknown>;
+    const suggestedTools = (mergedCfg.suggested_tools as string[]) ?? [];
+    const hasBookingTools = suggestedTools.includes('book_appointment');
+
+    if (hasBookingTools) {
+      try {
+        const ghlConfig = await resolveGHLConfig(agency.id, mergedCfg);
+        if (ghlConfig.calendarId) {
+          soulMd += `\n\n## GHL Calendar Configuration\n- Default calendar_id: ${ghlConfig.calendarId}\n- Always use this calendar_id when calling book_appointment or get_available_slots\n- NEVER share the booking URL — use the API tool to book directly`;
+          if (ghlConfig.pipelineId) {
+            soulMd += `\n- Default pipeline_id: ${ghlConfig.pipelineId}`;
+          }
+
+          // Build GHL tool instructions for the container
+          const ghlToolInstructions = [
+            `\n\n## How to Use GHL Booking Tools`,
+            `Use the exec tool to make API calls to Kyra's GHL bridge:`,
+            ``,
+            `**Check available slots:**`,
+            '```',
+            `curl -s -X POST https://kyra.conversionsystem.com/api/agent/ghl-tool \\`,
+            `  -H "Content-Type: application/json" \\`,
+            `  -d '{"tool":"get_available_slots","args":{"calendar_id":"${ghlConfig.calendarId}","start_date":"YYYY-MM-DD"}}'`,
+            '```',
+            ``,
+            `**Book appointment:**`,
+            '```',
+            `curl -s -X POST https://kyra.conversionsystem.com/api/agent/ghl-tool \\`,
+            `  -H "Content-Type: application/json" \\`,
+            `  -d '{"tool":"book_appointment","args":{"calendar_id":"${ghlConfig.calendarId}","contact_id":"CONTACT_ID","title":"Appointment","start_time":"ISO8601","end_time":"ISO8601"}}'`,
+            '```',
+            ``,
+            `Replace CONTACT_ID with the customer's GHL contact ID. Replace dates with actual values.`,
+            `If you don't have the contact_id, ask for their name and email to look them up first.`,
+          ].join('\n');
+
+          soulMd += ghlToolInstructions;
+
+          // Also push this as TOOLS.md so the container has it available
+          toolsMd = [
+            `# TOOLS.md — GHL Integration`,
+            ``,
+            `## GHL Calendar Tools`,
+            `Default calendar_id: ${ghlConfig.calendarId}`,
+            ghlConfig.pipelineId ? `Default pipeline_id: ${ghlConfig.pipelineId}` : '',
+            ``,
+            `### Check Available Slots`,
+            '```bash',
+            `curl -s -X POST https://kyra.conversionsystem.com/api/agent/ghl-tool \\`,
+            `  -H "Content-Type: application/json" \\`,
+            `  -d '{"tool":"get_available_slots","args":{"calendar_id":"${ghlConfig.calendarId}","start_date":"YYYY-MM-DD"}}'`,
+            '```',
+            ``,
+            `### Book Appointment`,
+            '```bash',
+            `curl -s -X POST https://kyra.conversionsystem.com/api/agent/ghl-tool \\`,
+            `  -H "Content-Type: application/json" \\`,
+            `  -d '{"tool":"book_appointment","args":{"calendar_id":"${ghlConfig.calendarId}","contact_id":"CONTACT_ID","title":"Appointment","start_time":"ISO8601","end_time":"ISO8601"}}'`,
+            '```',
+            ``,
+            `### Tag Contact`,
+            '```bash',
+            `curl -s -X POST https://kyra.conversionsystem.com/api/agent/ghl-tool \\`,
+            `  -H "Content-Type: application/json" \\`,
+            `  -d '{"tool":"tag_contact","args":{"contact_id":"CONTACT_ID","tags":["tag1","tag2"]}}'`,
+            '```',
+            ``,
+            `### Escalate to Human`,
+            '```bash',
+            `curl -s -X POST https://kyra.conversionsystem.com/api/agent/ghl-tool \\`,
+            `  -H "Content-Type: application/json" \\`,
+            `  -d '{"tool":"escalate_to_human","args":{"contact_id":"CONTACT_ID","reason":"Reason for escalation"}}'`,
+            '```',
+            ``,
+            `IMPORTANT: Always use these tools instead of sharing booking URLs.`,
+          ].filter(Boolean).join('\n');
+        }
+      } catch (err) {
+        console.warn('[ai-setup/apply] Failed to resolve GHL config for calendar injection:', err);
+      }
+    }
+  }
+
   // ── Push SOUL.md to live container (fire-and-forget if container not running) ─
   let containerPushed = false;
   let containerWarning: string | undefined;
 
   if (soulMd && client.gateway_status === 'running') {
-    const pushResult = await updateClientConfig(clientId, { soulMd });
+    const pushResult = await updateClientConfig(clientId, { soulMd, ...(toolsMd ? { toolsMd } : {}) });
     containerPushed = pushResult.success;
     if (!pushResult.success) {
       containerWarning = pushResult.error;
