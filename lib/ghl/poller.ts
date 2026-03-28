@@ -916,7 +916,14 @@ function buildPersonaSystemPrompt(
     if (businessAddress) lines.push(`Business address: ${businessAddress}`);
     if (location) lines.push(`Location: ${location}`);
     if (websiteUrl) lines.push(`Website: ${websiteUrl}`);
-    if (calendarUrl) lines.push(`Booking link: ${calendarUrl}`);
+    if (calendarUrl) {
+      if (ghlConfig?.calendarId) {
+        lines.push(`Booking page (reference only): ${calendarUrl}`);
+        lines.push('IMPORTANT: When a customer wants to book, DO NOT share the link. USE the book_appointment tool to book directly. Ask for their preferred date/time, check availability with get_available_slots, then book. Only share the link if the tool fails.');
+      } else {
+        lines.push(`Booking link: ${calendarUrl}`);
+      }
+    }
     lines.push('');
   }
 
