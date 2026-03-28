@@ -452,17 +452,20 @@ export const SKILLS_REGISTRY: SkillDefinition[] = BUILTIN_SKILLS.map(skill => {
 // The old registry used snake_case IDs. Some tables (user_skills) may still
 // store these. This map provides backward compatibility.
 const LEGACY_ID_MAP: Record<string, string> = {
+  // snake_case IDs from old registry.ts
   'web_search': 'web-search',
   'web_fetch': 'web-scraper',
   'browser': 'web-browser',
   'image_gen': 'image-generation',
-  'whisper': 'voice-tts',        // closest match
+  'whisper': 'voice-tts',
   'tts': 'voice-tts',
   'image_understanding': 'image-analysis',
-  'file_upload': 'pdf-analysis',  // closest match
-  'notion': 'google-workspace',   // no direct equivalent, map to closest
-  'trello': 'google-workspace',   // no direct equivalent
-  'code-execution': 'code-runner', // old kebab ID from skills-tab
+  'file_upload': 'pdf-analysis',
+  'notion': 'google-workspace',
+  'trello': 'google-workspace',
+  // old kebab-case IDs that changed
+  'web-fetch': 'web-scraper',       // renamed to web-scraper
+  'code-execution': 'code-runner',   // renamed to code-runner
 };
 
 /**
