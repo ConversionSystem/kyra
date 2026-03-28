@@ -13,6 +13,7 @@ import { getKnowledgeContext } from '@/lib/knowledge/rag';
 import { logConversationToCrm } from '@/lib/crm/conversation-logger';
 import { GHL_TOOL_DEFINITIONS, executeTool } from '@/lib/ghl/ghl-tools';
 import { getValidToken } from '@/lib/ghl/api';
+import { resolveGHLConfig } from '@/lib/ghl/resolve-ghl-config';
 
 // Cache client config per clientId — avoids repeated Supabase queries mid-call
 // TTL 5 min — fast enough to pick up config changes without DB hit every turn
@@ -347,6 +348,13 @@ export async function POST(req: NextRequest) {
     console.error('[voice/gather] GHL token fetch error:', err);
   }
 
+  // Resolve calendar/pipeline IDs and inject into system prompt
+  const voiceGhlCfg = await resolveGHLConfig(agency_id, null);
+  let enrichedSystemPrompt = systemPrompt;
+  if (ghlToken && voiceGhlCfg.calendarId) {
+    enrichedSystemPrompt += `\n\nCALENDAR CONFIG:\nDefault calendar_id: ${voiceGhlCfg.calendarId}\nWhen booking appointments, always use this calendar_id.`;
+  }
+
   // Conditionally attach GHL tools if we have a valid token
   const voiceTools = ghlToken ? [
     // Subset of tools that make sense for voice calls
@@ -362,7 +370,7 @@ export async function POST(req: NextRequest) {
   try {
     if (!llmKey) throw new Error('No LLM key configured');
     const messages: Array<{role: string; content: string}> = [
-      { role: 'system', content: systemPrompt },
+      { role: 'system', content: enrichedSystemPrompt },
       ...history.slice(-6),
       { role: 'user', content: speechResult },
     ];
@@ -400,12 +408,14 @@ export async function POST(req: NextRequest) {
         let toolArgs: Record<string, unknown> = {};
         try { toolArgs = JSON.parse(toolCall.function.arguments); } catch {}
 
+        // Resolve calendar/pipeline from config chain (container_config → pipeline_integrations)
+        const voiceGhlConfig = await resolveGHLConfig(vcfg.data.agency_id, null);
         const toolResult = await executeTool(toolName, toolArgs, {
           token: ghlToken,
           contactId: ghlContactId || '',
           locationId: ghlLocationId,
           clientId,
-          calendarId: (toolArgs.calendar_id as string) || '',
+          calendarId: (toolArgs.calendar_id as string) || voiceGhlConfig.calendarId || '',
         });
 
         // Feed tool result back for natural language response

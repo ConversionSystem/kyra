@@ -154,6 +154,34 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  // Sync calendar_id + pipeline_id to all agency clients' container_config
+  // so the AI worker knows which calendar/pipeline to use without extra lookups
+  if (defaultConfig.calendar_id || defaultConfig.pipeline_id) {
+    try {
+      const { data: clients } = await svc
+        .from('agency_clients')
+        .select('id, container_config')
+        .eq('agency_id', agencyId);
+
+      if (clients) {
+        for (const c of clients) {
+          const existing = (c.container_config as Record<string, unknown>) || {};
+          const updated: Record<string, unknown> = { ...existing };
+          if (defaultConfig.calendar_id) updated.calendar_id = defaultConfig.calendar_id;
+          if (defaultConfig.pipeline_id) updated.pipeline_id = defaultConfig.pipeline_id;
+          await svc
+            .from('agency_clients')
+            .update({ container_config: updated })
+            .eq('id', c.id);
+        }
+        console.log(`[ghl/connect] Synced calendar_id + pipeline_id to ${clients.length} client(s)`);
+      }
+    } catch (syncErr) {
+      // Non-fatal — resolveGHLConfig falls back to pipeline_integrations anyway
+      console.warn('[ghl/connect] Failed to sync IDs to container_config:', syncErr);
+    }
+  }
+
   return NextResponse.json({
     connected: true,
     location_id: resolvedLocationId,
@@ -202,6 +230,31 @@ export async function PATCH(req: NextRequest) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Sync updated calendar_id / pipeline_id to client container_configs
+  if (mergedConfig.calendar_id || mergedConfig.pipeline_id) {
+    try {
+      const { data: clients } = await svc
+        .from('agency_clients')
+        .select('id, container_config')
+        .eq('agency_id', agencyId);
+
+      if (clients) {
+        for (const c of clients) {
+          const existingCc = (c.container_config as Record<string, unknown>) || {};
+          const updatedCc: Record<string, unknown> = { ...existingCc };
+          if (mergedConfig.calendar_id) updatedCc.calendar_id = mergedConfig.calendar_id;
+          if (mergedConfig.pipeline_id) updatedCc.pipeline_id = mergedConfig.pipeline_id;
+          await svc
+            .from('agency_clients')
+            .update({ container_config: updatedCc })
+            .eq('id', c.id);
+        }
+      }
+    } catch {
+      // Non-fatal
+    }
+  }
 
   return NextResponse.json({ config: updated?.config });
 }
