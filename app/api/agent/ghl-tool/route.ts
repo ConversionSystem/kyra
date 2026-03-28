@@ -17,6 +17,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { executeTool } from '@/lib/ghl/ghl-tools';
 import { getValidToken } from '@/lib/ghl/api';
+import { resolveGHLConfig } from '@/lib/ghl/resolve-ghl-config';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -81,14 +82,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Execute the tool
+    // Resolve default calendar/pipeline from config chain
+    const ghlCfg = await resolveGHLConfig(client.agency_id, null);
+
+    // Execute the tool — prefer explicit args, fall back to resolved defaults
     const result = await executeTool(tool, args, {
       token: ghlToken,
       contactId: (contact_id as string) || (args.contact_id as string) || '',
       locationId: client.ghl_location_id,
       clientId: client.id,
-      calendarId: (args.calendar_id as string) || undefined,
-      pipelineId: (args.pipeline_id as string) || undefined,
+      calendarId: (args.calendar_id as string) || ghlCfg.calendarId || undefined,
+      pipelineId: (args.pipeline_id as string) || ghlCfg.pipelineId || undefined,
     });
 
     console.log(`[agent/ghl-tool] ${client.name} → ${tool}:`, result.success ? 'OK' : result.error);

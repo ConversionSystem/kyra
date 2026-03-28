@@ -17,6 +17,7 @@ import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { logActivity } from '@/lib/crm/activities';
 import { dispatchWebhookEvent } from '@/lib/agency/webhook-dispatcher';
 import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
+import { resolveGHLConfig } from './resolve-ghl-config';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -75,17 +76,23 @@ export async function processWithSmartEngine(
   const startTime = Date.now();
   const cc = (ctx.client.container_config || {}) as ContainerConfig;
 
-  // ── 1. Build rich system prompt ───────────────────────────────────────
-  const systemPrompt = buildSmartSystemPrompt(ctx.client, cc, ctx);
+  // ── 1. Resolve GHL calendar + pipeline IDs ─────────────────────────────
+  const ghlConfig = await resolveGHLConfig(
+    ctx.client.agency_id,
+    ctx.client.container_config as Record<string, unknown> | null,
+  );
 
-  // ── 2. Fetch conversation history ─────────────────────────────────────
+  // ── 2. Build rich system prompt ───────────────────────────────────────
+  const systemPrompt = buildSmartSystemPrompt(ctx.client, cc, ctx, ghlConfig);
+
+  // ── 3. Fetch conversation history ─────────────────────────────────────
   const history = await getConversationHistory(
     ctx.client.id,
     ctx.contactId,
     10,
   ).catch(() => []);
 
-  // ── 3. Fetch relationship memories ────────────────────────────────────
+  // ── 4. Fetch relationship memories ────────────────────────────────────
   const memories = await fetchRelationshipMemories(
     ctx.client.agency_id,
     ctx.contactId,
@@ -93,13 +100,13 @@ export async function processWithSmartEngine(
     ctx.contactEmail,
   );
 
-  // ── 4. Build messages array ───────────────────────────────────────────
+  // ── 5. Build messages array ───────────────────────────────────────────
   const messages = buildMessagesArray(systemPrompt, memories, history, ctx.messageBody);
 
-  // ── 5. Check for wake words (instant actions) ─────────────────────────
+  // ── 6. Check for wake words (instant actions) ─────────────────────────
   const wakeWordMatch = checkWakeWords(ctx.messageBody, cc.wake_words);
 
-  // ── 6. Call LLM with tools ────────────────────────────────────────────
+  // ── 7. Call LLM with tools ────────────────────────────────────────────
   const ghlToken = await getValidToken(ctx.client.id).catch(() => null);
   const toolContext: ToolContext | null = ghlToken
     ? {
@@ -107,8 +114,8 @@ export async function processWithSmartEngine(
         contactId: ctx.contactId,
         locationId: (ctx.client as any).ghl_location_id || '',
         clientId: ctx.client.id,
-        calendarId: undefined,
-        pipelineId: undefined,
+        calendarId: ghlConfig.calendarId,
+        pipelineId: ghlConfig.pipelineId,
       }
     : null;
 
@@ -223,6 +230,7 @@ function buildSmartSystemPrompt(
   client: AgencyClient,
   cc: ContainerConfig,
   ctx: SmartHandlerContext,
+  ghlConfig?: { calendarId?: string; pipelineId?: string },
 ): string {
   const sections: string[] = [];
 
@@ -308,10 +316,17 @@ function buildSmartSystemPrompt(
   // ── Tool Usage Guidelines ──────────────────────────────────────────────
   sections.push(`# Tools Available
 You have access to the following tools:
-- **book_appointment**: Book a time on the calendar. Confirm date/time with the customer first.
+- **book_appointment**: Book a time on the calendar. Confirm date/time with the customer first.${ghlConfig?.calendarId ? `\n  Default calendar_id: ${ghlConfig.calendarId}\n  Always use this calendar_id when booking unless the customer specifies otherwise.` : ''}
+- **get_available_slots**: Check available times before booking.${ghlConfig?.calendarId ? ` Use calendar_id: ${ghlConfig.calendarId}` : ''}
+- **get_calendars**: List all calendars for the location.
 - **tag_contact**: Label this contact (e.g., "hot-lead", "interested-in-pricing"). Use proactively based on conversation signals.
-- **create_opportunity**: Create a sales opportunity when the customer shows buying intent.
+- **create_opportunity**: Create a sales opportunity when the customer shows buying intent.${ghlConfig?.pipelineId ? `\n  Default pipeline_id: ${ghlConfig.pipelineId}` : ''}
 - **escalate_to_human**: Flag for human follow-up when you can't help, the customer is upset, or they ask for a person.
+
+When booking appointments:
+1. First ask the customer for their preferred date/time.
+2. Use get_available_slots to verify the slot is open.
+3. Use book_appointment with the confirmed time.${ghlConfig?.calendarId ? `\n4. Always pass calendar_id: "${ghlConfig.calendarId}" to booking tools.` : ''}
 
 Use tools naturally — don't announce "I'm using a tool." Just take the action and confirm the result to the customer.`);
 
