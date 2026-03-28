@@ -372,29 +372,6 @@ export const ROLE_WORKERS: RoleWorker[] = [
       { key: 'escalation_contact', label: 'Escalation Contact', placeholder: 'manager@acme.com', required: false },
     ],
   },
-  {
-    id: 'cold-outreach', type: 'role', emoji: '📨', name: 'Cold Outreach',
-    roleBadge: 'B2B Prospecting',
-    description: 'Finds leads matching your ICP, crafts personalized first-touch messages, and manages 4-step sequences across email and LinkedIn — without sounding robotic.',
-    tags: ['leads', 'outreach', 'prospecting', 'B2B', 'email'],
-    whatItDoes: [
-      'Identifies prospects matching your ideal customer profile from public signals',
-      'Crafts personalized first lines based on recent news, posts, or company activity',
-      'Manages multi-step sequences with value-add follow-ups (never just "bumping this")',
-      'Tracks sent, opened, replied metrics and optimizes messaging weekly',
-    ],
-    channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Web Search', 'Tags Contacts', 'Creates Deals', 'Web Intelligence'],
-    requiredClawHubSkills: ['firecrawl-cli'],
-    useCase: 'internal',
-    variables: [
-      { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
-      { key: 'icp_title', label: 'ICP Job Titles', placeholder: 'CEO, Founder, VP of Marketing at agencies with 5-50 employees', required: false, type: 'textarea' },
-      { key: 'icp_industry', label: 'ICP Industry', placeholder: 'Digital marketing agencies', required: false },
-      { key: 'icp_company_size', label: 'ICP Company Size', placeholder: '5-50 employees', required: false },
-      { key: 'booking_url', label: 'Booking URL', placeholder: 'https://calendly.com/your-team/discovery', required: false },
-    ],
-  },
 
   // ── GROUP B: Agency Deliverables ──────────────────────────────────────────
 
@@ -852,29 +829,6 @@ export const ROLE_WORKERS: RoleWorker[] = [
     ],
   },
   {
-    id: 'onboarding-guide', type: 'role', emoji: '🚀', name: 'Customer Onboarding Guide',
-    roleBadge: 'Customer Success',
-    description: 'Walks new customers through activation steps, checks in at key milestones, identifies stuck users, and hands off to support when needed.',
-    tags: ['onboarding', 'support', 'retention', 'customer-success'],
-    whatItDoes: [
-      'Guides new customers through setup steps with personalized check-ins',
-      'Tracks activation milestones and flags users who are stuck',
-      'Answers product questions during the critical first 30 days',
-      'Escalates high-touch accounts to CSM when churn risk is detected',
-    ],
-    channels: ['sms', 'chat', 'telegram'],
-    tools: ['Tags Contacts', 'Sends Messages', 'Escalates to Human', 'Web Intelligence'],
-    requiredClawHubSkills: ['firecrawl-cli'],
-    useCase: 'customer-facing',
-    variables: [
-      { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
-      { key: 'product_name', label: 'Product Name', placeholder: 'Acme CRM', required: false },
-      { key: 'activation_steps', label: 'Activation Steps', placeholder: '1. Create account\n2. Import contacts\n3. Set up first pipeline\n4. Send first campaign', required: false, type: 'textarea' },
-      { key: 'csm_contact', label: 'CSM Contact', placeholder: 'csm@acme.com', required: false },
-      { key: 'trial_length_days', label: 'Trial Length (days)', placeholder: '14', required: false },
-    ],
-  },
-  {
     id: 'ab-test-analyst', type: 'role', emoji: '🧪', name: 'A/B Test Analyst',
     roleBadge: 'Growth & Optimization',
     description: 'Analyzes experiment results for statistical significance, segments by user cohort, and recommends what to ship — so growth decisions are data-driven.',
@@ -1016,29 +970,6 @@ export const ROLE_WORKERS: RoleWorker[] = [
   },
 
   // ── GROUP G — SaaS Operations ───────────────────────────────────────────────
-  {
-    id: 'saas-churn-prevention', type: 'role', emoji: '🔒', name: 'Churn Prevention',
-    roleBadge: 'SaaS Retention',
-    description: 'Identifies at-risk SaaS users from behavioral signals, sends personalized re-engagement messages, and tracks recovery rate.',
-    tags: ['saas', 'retention', 'churn', 'reengagement', 'customer-success'],
-    whatItDoes: [
-      'Identifies at-risk SaaS users from behavioral signals',
-      'Sends personalized re-engagement messages at the right moment',
-      'Offers relevant help, tips, or escalation to success team',
-      'Tracks recovery rate: how many at-risk users became active again',
-    ],
-    channels: ['sms', 'chat', 'telegram'],
-    tools: ['Tags Contacts', 'Sends Messages', 'Escalates to Human', 'Web Intelligence'],
-    requiredClawHubSkills: ['firecrawl-cli'],
-    useCase: 'customer-facing',
-    variables: [
-      { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
-      { key: 'product_name', label: 'Product Name', placeholder: 'Acme CRM', required: false },
-      { key: 'activation_benchmark', label: 'Activation Benchmark', placeholder: '3 logins in first 7 days', required: false },
-      { key: 'owner_name', label: 'Owner Name', placeholder: 'John Smith', required: false },
-      { key: 'csm_contact', label: 'CSM Contact', placeholder: 'csm@acme.com', required: false },
-    ],
-  },
   {
     id: 'feature-request-manager', type: 'role', emoji: '💡', name: 'Feature Request Manager',
     roleBadge: 'Product Feedback',
@@ -1251,28 +1182,6 @@ export const ROLE_WORKERS: RoleWorker[] = [
 
   // ── GROUP L — Business ────────────────────────────────────────────────────
   {
-    id: 'deal-forecaster', type: 'role', emoji: '📡', name: 'Deal Forecaster',
-    roleBadge: 'Sales Intelligence',
-    description: 'Scores deals by close probability, flags stale deals, forecasts MRR from your current pipeline, and identifies which deals to prioritize this week.',
-    tags: ['sales', 'pipeline', 'forecasting', 'crm', 'deals'],
-    whatItDoes: [
-      'Scores deals by close probability using pipeline signals',
-      'Flags deals going stale with suggested next actions',
-      'Revenue forecast: expected MRR from current pipeline',
-      'Identifies which deals to prioritize this week',
-    ],
-    channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Creates Deals', 'Tags Contacts', 'Creates Reports', 'Web Intelligence'],
-    requiredClawHubSkills: ['firecrawl-cli'],
-    useCase: 'internal',
-    variables: [
-      { key: 'business_name', label: 'Business Name', placeholder: 'Acme Corp', required: false },
-      { key: 'pipeline_stages', label: 'Pipeline Stages', placeholder: 'Discovery\nProposal Sent\nNegotiation\nClosed Won\nClosed Lost', required: false, type: 'textarea' },
-      { key: 'close_criteria', label: 'Close Criteria', placeholder: 'Budget confirmed, decision maker engaged, timeline under 30 days...', required: false, type: 'textarea' },
-      { key: 'forecast_period', label: 'Forecast Period', placeholder: '30 days', required: false },
-    ],
-  },
-  {
     id: 'personal-crm', type: 'role', emoji: '👤', name: 'Personal CRM',
     roleBadge: 'Relationship Management',
     description: 'Tracks relationships and follow-up reminders, logs conversation details, nudges when contacts go quiet, and surfaces who to reconnect with based on deal stage.',
@@ -1317,28 +1226,6 @@ export const ROLE_WORKERS: RoleWorker[] = [
   },
 
   // ── GROUP M — E-Commerce ──────────────────────────────────────────────────
-  {
-    id: 'inventory-tracker', type: 'role', emoji: '🔄', name: 'Inventory Tracker',
-    roleBadge: 'E-Commerce Operations',
-    description: 'Tracks stock levels across products and variants, sends low-stock alerts, identifies best-sellers and slow movers, and forecasts reorder dates based on sales velocity.',
-    tags: ['inventory', 'ecommerce', 'stock', 'operations', 'supply-chain'],
-    whatItDoes: [
-      'Tracks stock levels across products and variants',
-      'Sends low-stock alerts before items run out',
-      'Identifies best-sellers and slow movers',
-      'Forecasts reorder dates based on sales velocity',
-    ],
-    channels: ['sms', 'voice', 'chat', 'telegram'],
-    tools: ['Sends Alerts', 'Creates Reports', 'Web Intelligence'],
-    requiredClawHubSkills: ['firecrawl-cli'],
-    useCase: 'internal',
-    variables: [
-      { key: 'business_name', label: 'Business Name', placeholder: 'Acme Store', required: false },
-      { key: 'product_categories', label: 'Product Categories', placeholder: 'Electronics\nClothing\nAccessories', required: false, type: 'textarea' },
-      { key: 'low_stock_threshold', label: 'Low Stock Threshold', placeholder: '10 units', required: false },
-      { key: 'reorder_lead_days', label: 'Reorder Lead Days', placeholder: '7', required: false },
-    ],
-  },
   {
     id: 'pricing-optimizer', type: 'role', emoji: '💹', name: 'Pricing Optimizer',
     roleBadge: 'Dynamic Pricing',
