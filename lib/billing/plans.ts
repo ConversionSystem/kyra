@@ -13,6 +13,7 @@ export interface PlanConfig {
   maxClients: number;       // max client AI workers
   monthlyCredits: number;   // platform credits included per month (0 = BYOK only)
   monthlyWebScrapes: number; // Firecrawl web scrape allowance per month (0 = no web intelligence)
+  maxTeamMembers: number;   // max specialist members per AI team (0 = teams disabled)
   trialDays: number;        // free trial length in days
   description: string;
   features: string[];
@@ -31,6 +32,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     maxClients: 1,
     monthlyCredits: 0,
     monthlyWebScrapes: 0,
+    maxTeamMembers: 0,    // No teams on free
     trialDays: 0,         // No expiry during beta
     description: 'Free forever during beta. No credit card required.',
     features: [
@@ -57,6 +59,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     maxClients: 1,
     monthlyCredits: 2000,
     monthlyWebScrapes: 0,
+    maxTeamMembers: 0,    // No teams on solo
     trialDays: 0,
     hidden: true,
     description: 'Your personal AI worker — run it for your own business with no limits.',
@@ -83,6 +86,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     maxClients: 4,       // 3 plan workers + 1 free worker they bring from Free tier
     monthlyCredits: 10000,
     monthlyWebScrapes: 500,
+    maxTeamMembers: 2,   // Primary + 2 specialists
     trialDays: 0,
     description: 'Launch your AI agency with your first 3 clients + 1 free.',
     features: [
@@ -110,6 +114,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     maxClients: 11,      // 10 plan workers + 1 free worker they bring from Free tier
     monthlyCredits: 25000,
     monthlyWebScrapes: 2000,
+    maxTeamMembers: 4,   // Primary + 4 specialists
     trialDays: 0,
     description: 'For growing agencies managing multiple clients.',
     features: [
@@ -138,6 +143,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
     maxClients: 21,      // 20 plan workers + 1 free worker they bring from Free tier
     monthlyCredits: 50000,
     monthlyWebScrapes: 5000,
+    maxTeamMembers: 6,   // Primary + 6 specialists
     trialDays: 0,
     description: 'Built for high-volume agencies — up to 20 clients + 1 free, full Business in a Box.',
     features: [
@@ -175,6 +181,11 @@ export function getPlanClientLimit(plan: Plan | string): number {
 /** Check if an agency can add another client given their current count */
 export function canAddClient(plan: Plan | string, currentClientCount: number): boolean {
   return currentClientCount < getPlanClientLimit(plan);
+}
+
+/** Get the max team members allowed for a plan (0 = teams disabled) */
+export function getPlanTeamLimit(plan: Plan | string): number {
+  return PLANS[plan as Plan]?.maxTeamMembers ?? 0;
 }
 
 /** Get plan display name */
