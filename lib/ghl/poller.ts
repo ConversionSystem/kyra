@@ -28,6 +28,7 @@ import { getConversationHistory, saveConversationTurn } from './conversation-mem
 import { defend, scanOutput } from '@/lib/security/prompt-injection';
 import { deductCredit } from '@/lib/billing/credit-engine';
 import { routeMessage } from './model-router';
+import { ROLE_WORKERS } from '@/lib/ai-workers/role-workers';
 import { resolveGHLConfig } from './resolve-ghl-config';
 import { callLLMWithTools } from './direct-llm';
 import { getCustomerMemory, updateCustomerMemory, formatMemoryForPrompt, extractFactsFromConversation } from '@/lib/memory/customer-memory';
@@ -944,6 +945,28 @@ function buildPersonaSystemPrompt(
     lines.push(`Name: ${ctx.contactName}`);
   }
   lines.push('');
+
+  // ── Team context (if AI Team is configured) ────────────────────────
+  const teamConfig = cc.worker_team as { enabled?: boolean; members?: Array<{ worker_id: string; role: string; triggers: string[] }>; handoff_style?: string } | undefined;
+  if (teamConfig?.enabled && teamConfig.members && teamConfig.members.length > 0) {
+    lines.push('--- Your Team ---');
+    lines.push('You have specialist capabilities for the following areas:');
+    for (const member of teamConfig.members) {
+      const workerDef = ROLE_WORKERS.find(w => w.id === member.worker_id);
+      if (workerDef) {
+        lines.push(`- ${workerDef.emoji} ${workerDef.name}: ${workerDef.description.slice(0, 100)}`);
+        if (member.triggers.length > 0) {
+          lines.push(`  Triggers: ${member.triggers.join(', ')}`);
+        }
+      }
+    }
+    if (teamConfig.handoff_style === 'seamless') {
+      lines.push('Handle all these areas yourself using the available tools. The customer should experience one smooth conversation.');
+    } else {
+      lines.push('When handling a specialist area, briefly acknowledge the handoff: "Let me connect you with our [specialist] for this."');
+    }
+    lines.push('');
+  }
 
   // ── Tool usage guidance ───────────────────────────────────────────────
   lines.push('--- Tools Available ---');

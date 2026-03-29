@@ -18,6 +18,7 @@ import { logActivity } from '@/lib/crm/activities';
 import { dispatchWebhookEvent } from '@/lib/agency/webhook-dispatcher';
 import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
 import { resolveGHLConfig } from './resolve-ghl-config';
+import { ROLE_WORKERS } from '@/lib/ai-workers/role-workers';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -318,6 +319,28 @@ function buildSmartSystemPrompt(
     sections.push(
       `# Language\nAlways respond in ${cc.response_language}. If the customer writes in a different language, still respond in ${cc.response_language} unless they explicitly ask otherwise.`,
     );
+  }
+
+  // ── Team Context (if AI Team is configured) ─────────────────────────
+  const fullCc = (client.container_config as Record<string, unknown>) || {};
+  const teamConfig = fullCc.worker_team as { enabled?: boolean; members?: Array<{ worker_id: string; role: string; triggers: string[] }>; handoff_style?: string } | undefined;
+  if (teamConfig?.enabled && teamConfig.members && teamConfig.members.length > 0) {
+    const teamLines: string[] = ['You have specialist capabilities for the following areas:'];
+    for (const member of teamConfig.members) {
+      const workerDef = ROLE_WORKERS.find(w => w.id === member.worker_id);
+      if (workerDef) {
+        teamLines.push(`- ${workerDef.emoji} ${workerDef.name}: ${workerDef.description.slice(0, 100)}`);
+        if (member.triggers.length > 0) {
+          teamLines.push(`  Triggers: ${member.triggers.join(', ')}`);
+        }
+      }
+    }
+    if (teamConfig.handoff_style === 'seamless') {
+      teamLines.push('\nHandle all these areas yourself using the available tools. The customer should experience one smooth conversation.');
+    } else {
+      teamLines.push('\nWhen handling a specialist area, briefly acknowledge the handoff: "Let me connect you with our [specialist] for this."');
+    }
+    sections.push(`# Your Team\n${teamLines.join('\n')}`);
   }
 
   // ── Tool Usage Guidelines ──────────────────────────────────────────────
