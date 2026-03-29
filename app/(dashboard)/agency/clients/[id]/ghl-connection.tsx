@@ -13,7 +13,6 @@ import { Input } from '@/components/ui/input';
 import {
   Check,
   X,
-  ExternalLink,
   Loader2,
   Unplug,
   Plug,
@@ -22,7 +21,9 @@ import {
   ChevronDown,
   ChevronUp,
   Shield,
-  Copy,
+  CheckCircle2,
+  XCircle,
+  Activity,
 } from 'lucide-react';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -32,6 +33,8 @@ interface GHLConnectionProps {
   ghlLocationId: string | null;
   ghlConnectedAt: string | null;
   hasPrivateToken?: boolean;
+  calendarId?: string | null;
+  pipelineId?: string | null;
   onDisconnected?: () => void;
   onConnected?: () => void;
 }
@@ -43,10 +46,11 @@ export default function GHLConnection({
   ghlLocationId,
   ghlConnectedAt,
   hasPrivateToken,
+  calendarId,
+  pipelineId,
   onDisconnected,
   onConnected,
 }: GHLConnectionProps) {
-  const [isConnecting, setIsConnecting] = useState(false);
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -61,13 +65,15 @@ export default function GHLConnection({
   const [showReconnect, setShowReconnect] = useState(false);
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
 
-  const isConnected = !!ghlLocationId && !disconnected;
+  // Test connection state
+  const [isTesting, setIsTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{
+    ok: boolean;
+    message: string;
+    scopes?: string[];
+  } | null>(null);
 
-  const handleOAuthConnect = useCallback(() => {
-    setIsConnecting(true);
-    setError(null);
-    window.location.href = `/api/agency/clients/${clientId}/ghl/connect`;
-  }, [clientId]);
+  const isConnected = !!ghlLocationId && !disconnected;
 
   const handleTokenConnect = useCallback(async () => {
     if (!token.trim()) {
@@ -135,6 +141,7 @@ export default function GHLConnection({
 
       setDisconnected(true);
       setConfirmDisconnect(false);
+      setTestResult(null);
       onDisconnected?.();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to disconnect');
@@ -142,6 +149,32 @@ export default function GHLConnection({
       setIsDisconnecting(false);
     }
   }, [clientId, onDisconnected]);
+
+  const handleTestConnection = useCallback(async () => {
+    setIsTesting(true);
+    setTestResult(null);
+
+    try {
+      const res = await fetch(
+        `/api/agency/clients/${clientId}/ghl/test-connection`,
+        { method: 'POST' },
+      );
+      const data = await res.json();
+
+      setTestResult({
+        ok: data.ok ?? false,
+        message: data.message || data.error || 'Unknown result',
+        scopes: data.scopes,
+      });
+    } catch {
+      setTestResult({
+        ok: false,
+        message: 'Network error — could not reach the server.',
+      });
+    } finally {
+      setIsTesting(false);
+    }
+  }, [clientId]);
 
   return (
     <Card>
@@ -151,6 +184,11 @@ export default function GHLConnection({
             <span className="text-lg font-bold text-orange-600">G</span>
           </div>
           GoHighLevel Integration
+          {isConnected && (
+            <span className="ml-2 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">
+              Connected
+            </span>
+          )}
         </CardTitle>
         <CardDescription>
           Connect this client&apos;s GHL sub-account to enable CRM features —
@@ -160,13 +198,13 @@ export default function GHLConnection({
 
       <CardContent className="space-y-4">
         {error && (
-          <div className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-600">
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
             {error}
           </div>
         )}
 
         {success && (
-          <div className="rounded-md bg-green-50 px-4 py-3 text-sm text-green-600">
+          <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-600">
             {success}
           </div>
         )}
@@ -174,9 +212,9 @@ export default function GHLConnection({
         {isConnected ? (
           /* ── Connected State ──────────────────────────────────────────── */
           <div className="space-y-4">
-            <div className="flex items-center gap-2 rounded-lg border border-green-500/20 bg-green-500/5 px-4 py-3">
+            <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-4 py-3">
               <Check className="h-5 w-5 text-green-600" />
-              <span className="font-medium text-green-600">Connected</span>
+              <span className="font-medium text-green-700">Connected</span>
               {hasPrivateToken && (
                 <span className="ml-auto rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
                   Private Token
@@ -184,7 +222,7 @@ export default function GHLConnection({
               )}
             </div>
 
-            <div className="grid gap-3 rounded-lg border border-gray-200 bg-gray-100 p-4 text-sm">
+            <div className="grid gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-500">Location ID</span>
                 <span className="font-mono text-xs text-gray-700">
@@ -211,6 +249,22 @@ export default function GHLConnection({
                   {hasPrivateToken ? 'Private Integration Token' : 'OAuth'}
                 </span>
               </div>
+              {calendarId && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Calendar ID</span>
+                  <span className="font-mono text-xs text-gray-700">
+                    {calendarId}
+                  </span>
+                </div>
+              )}
+              {pipelineId && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Pipeline ID</span>
+                  <span className="font-mono text-xs text-gray-700">
+                    {pipelineId}
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-gray-500">Capabilities</span>
                 <span className="text-gray-700">
@@ -218,6 +272,39 @@ export default function GHLConnection({
                 </span>
               </div>
             </div>
+
+            {/* Test Connection Result */}
+            {testResult && (
+              <div
+                className={`rounded-lg border p-3 flex items-start gap-2 ${
+                  testResult.ok
+                    ? 'border-green-200 bg-green-50'
+                    : 'border-red-200 bg-red-50'
+                }`}
+              >
+                {testResult.ok ? (
+                  <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                ) : (
+                  <XCircle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
+                )}
+                <div>
+                  <p
+                    className={`text-sm font-medium ${
+                      testResult.ok ? 'text-green-700' : 'text-red-700'
+                    }`}
+                  >
+                    {testResult.ok ? 'Connection Healthy' : 'Connection Issue'}
+                  </p>
+                  <p
+                    className={`text-xs mt-0.5 ${
+                      testResult.ok ? 'text-green-600' : 'text-red-600'
+                    }`}
+                  >
+                    {testResult.message}
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Reconnect form (hidden by default) */}
             {showReconnect && (
@@ -265,6 +352,20 @@ export default function GHLConnection({
             {/* Action buttons */}
             {!showReconnect && !confirmDisconnect && (
               <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleTestConnection}
+                  disabled={isTesting}
+                  className="flex items-center gap-2"
+                >
+                  {isTesting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Activity className="h-4 w-4" />
+                  )}
+                  {isTesting ? 'Testing…' : 'Test Connection'}
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
@@ -327,30 +428,32 @@ export default function GHLConnection({
 
               {showInstructions && (
                 <div className="rounded-lg border border-indigo-100 bg-white p-4 text-sm text-gray-600 space-y-3">
-                  <ol className="list-decimal list-inside space-y-2">
+                  <ol className="list-decimal list-inside space-y-2.5">
                     <li>
-                      Log into your client&apos;s{' '}
-                      <strong>GHL sub-account</strong>
+                      Log into your{' '}
+                      <a
+                        href="https://app.gohighlevel.com"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-indigo-600 underline hover:text-indigo-800"
+                      >
+                        GoHighLevel account
+                      </a>
                     </li>
                     <li>
                       Go to{' '}
-                      <strong>
-                        Settings → Other Settings → Private Integrations
-                      </strong>
-                      <br />
-                      <span className="text-gray-400 text-xs">
-                        (If you don&apos;t see it, enable it in Settings → Labs
-                        first)
-                      </span>
+                      <strong>Settings → Integrations → API Keys</strong>
                     </li>
                     <li>
                       Click{' '}
-                      <strong>&quot;Create New Integration&quot;</strong>, name
-                      it <strong>&quot;Kyra AI&quot;</strong>
+                      <strong>&quot;Create Private Integration&quot;</strong>
                     </li>
                     <li>
-                      Select these scopes:
-                      <ul className="list-disc list-inside ml-4 mt-1 space-y-0.5 text-gray-500">
+                      Give it a name (e.g., <strong>&quot;Kyra AI&quot;</strong>)
+                    </li>
+                    <li>
+                      Enable <strong>ALL</strong> scopes:
+                      <ul className="list-disc list-inside ml-4 mt-1.5 space-y-1 text-gray-500">
                         <li>Contacts (read + write)</li>
                         <li>Conversations (read + write)</li>
                         <li>Conversations / Messages (read + write)</li>
@@ -359,7 +462,16 @@ export default function GHLConnection({
                       </ul>
                     </li>
                     <li>
-                      <strong>Copy the token</strong> — GHL only shows it once!
+                      Click <strong>&quot;Create&quot;</strong> and{' '}
+                      <strong>copy the token</strong>
+                      <span className="text-amber-600 ml-1 text-xs">(GHL only shows it once!)</span>
+                    </li>
+                    <li>
+                      Paste it above along with your <strong>Location ID</strong>
+                      <br />
+                      <span className="text-gray-400 text-xs">
+                        Found at: Settings → Business Info → scroll down → Company ID
+                      </span>
                     </li>
                   </ol>
 
@@ -418,7 +530,7 @@ export default function GHLConnection({
                 <Button
                   onClick={handleTokenConnect}
                   disabled={isValidating || !token.trim()}
-                  className="w-full flex items-center justify-center gap-2"
+                  className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white"
                 >
                   {isValidating ? (
                     <>
@@ -480,16 +592,19 @@ export default function GHLConnection({
 function CreateFreeSubAccount({ clientId, onCreated }: { clientId: string; onCreated: (locationId: string) => void }) {
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [suggestion, setSuggestion] = useState<string | null>(null);
   const [created, setCreated] = useState(false);
 
   const handleCreate = async () => {
     setCreating(true);
     setError(null);
+    setSuggestion(null);
     try {
       const res = await fetch(`/api/agency/clients/${clientId}/ghl/create-subaccount`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || 'Failed to create sub-account');
+        setSuggestion(data.suggestion || null);
         return;
       }
       setCreated(true);
@@ -534,8 +649,19 @@ function CreateFreeSubAccount({ clientId, onCreated }: { clientId: string; onCre
       </p>
 
       {error && (
-        <div className="rounded-md bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
-          {error}
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 space-y-2">
+          <p className="text-sm text-red-700 font-medium">Could not create sub-account</p>
+          <p className="text-xs text-red-600">{error}</p>
+          {suggestion && (
+            <p className="text-xs text-gray-500 mt-1">
+              <strong>Alternative:</strong> {suggestion}
+            </p>
+          )}
+          {!suggestion && (
+            <p className="text-xs text-gray-500 mt-1">
+              <strong>Alternative:</strong> Use the &quot;Connect with API Token&quot; option above — it works with any existing GHL account.
+            </p>
+          )}
         </div>
       )}
 

@@ -820,6 +820,7 @@ function SettingsTab({
 // ── GHL Tab ───────────────────────────────────────────────────────────────────
 
 function GHLTab({ client, onRefresh }: { client: AgencyClient; onRefresh: () => void }) {
+  const cc = (client.container_config as Record<string, unknown>) ?? {};
   return (
     <div className="space-y-6">
       <p className="text-sm text-gray-500">
@@ -830,6 +831,8 @@ function GHLTab({ client, onRefresh }: { client: AgencyClient; onRefresh: () => 
         ghlLocationId={client.ghl_location_id ?? null}
         ghlConnectedAt={client.ghl_connected_at ?? null}
         hasPrivateToken={!!client.ghl_private_token}
+        calendarId={(cc.calendar_id as string) ?? null}
+        pipelineId={(cc.pipeline_id as string) ?? null}
         onDisconnected={onRefresh}
         onConnected={onRefresh}
       />
