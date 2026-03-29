@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
   LayoutDashboard,
   Search,
@@ -17,8 +17,12 @@ import {
   ExternalLink,
   Trash2,
   RefreshCw,
-  Settings,
-  Inbox,
+  Calendar,
+  Users,
+  Zap,
+  TrendingUp,
+  MessageSquare,
+  Target,
 } from 'lucide-react';
 import type { AgencyClient } from '@/lib/agency/queries';
 import EmailMarketingTab from './email-marketing-tab';
@@ -32,7 +36,6 @@ interface Keyword {
   volume: number;
   kd: number;
   cpc: number;
-  priority: number;
 }
 
 interface SerpResult {
@@ -55,25 +58,32 @@ interface ContentDraft {
   status: string;
   created: string;
   body: string;
-  url?: string;
+}
+
+interface CompetitorResult {
+  domain: string;
+  threat: 'high' | 'medium' | 'low';
+  summary: string;
+}
+
+interface SocialDraft {
+  id: string;
+  platform: string;
+  topic: string;
+  body: string;
+  status: 'draft' | 'posted';
+  created: string;
+  day?: string;
+}
+
+interface WorkerTeamConfig {
+  enabled?: boolean;
+  members?: Array<{ worker_id: string; role: string; name?: string }>;
+  handoff_style?: string;
+  primary_worker_id?: string;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-
-function StatusBadge({ status }: { status: string }) {
-  const colors: Record<string, string> = {
-    Draft: 'bg-gray-100 text-gray-700',
-    'In Review': 'bg-amber-50 text-amber-700',
-    Approved: 'bg-green-50 text-green-700',
-    Published: 'bg-indigo-50 text-indigo-700',
-    Posted: 'bg-indigo-50 text-indigo-700',
-  };
-  return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${colors[status] || 'bg-gray-100 text-gray-700'}`}>
-      {status}
-    </span>
-  );
-}
 
 function MetricCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
@@ -108,6 +118,41 @@ function EmptyState({ icon: Icon, title, description, action }: {
   );
 }
 
+function DraftBadge() {
+  return (
+    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700">
+      DRAFT — awaiting approval
+    </span>
+  );
+}
+
+function ThreatBadge({ level }: { level: 'high' | 'medium' | 'low' }) {
+  const map = {
+    high: { emoji: '🔴', bg: 'bg-red-100 text-red-700', label: 'High threat' },
+    medium: { emoji: '🟡', bg: 'bg-amber-100 text-amber-700', label: 'Medium' },
+    low: { emoji: '🟢', bg: 'bg-green-100 text-green-700', label: 'Low' },
+  };
+  const t = map[level];
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${t.bg}`}>
+      {t.emoji} {t.label}
+    </span>
+  );
+}
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+      className="inline-flex items-center gap-1 p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+      title="Copy to clipboard"
+    >
+      {copied ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
+    </button>
+  );
+}
+
 function ConnectBanner({ service, settingsPath }: { service: string; settingsPath?: string }) {
   return (
     <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 mb-4 flex items-start gap-3">
@@ -117,30 +162,91 @@ function ConnectBanner({ service, settingsPath }: { service: string; settingsPat
         <p className="text-xs text-amber-600 mt-0.5">
           {settingsPath
             ? `Go to Settings → Secrets to add your ${service} credentials.`
-            : `Configure ${service} in your agency settings to enable this feature.`
-          }
+            : `Configure ${service} in your agency settings to enable this feature.`}
         </p>
       </div>
     </div>
   );
 }
 
+/** Send a message to the AI worker chat and get the reply text. */
+async function sendChatPrompt(clientId: string, message: string): Promise<string> {
+  const res = await fetch(`/api/agency/clients/${clientId}/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message }),
+  });
+
+  if (!res.ok) throw new Error(`Chat API error: ${res.status}`);
+
+  // Handle SSE stream
+  if (res.headers.get('content-type')?.includes('text/event-stream')) {
+    const reader = res.body?.getReader();
+    if (!reader) throw new Error('No response body');
+    const decoder = new TextDecoder();
+    let result = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = decoder.decode(value, { stream: true });
+      // Parse SSE events
+      for (const line of chunk.split('\n')) {
+        if (line.startsWith('data: ')) {
+          const data = line.slice(6);
+          if (data === '[DONE]') continue;
+          try {
+            const parsed = JSON.parse(data);
+            const token = parsed.choices?.[0]?.delta?.content || parsed.token || parsed.text || '';
+            result += token;
+          } catch {
+            // Plain text chunk
+            result += data;
+          }
+        }
+      }
+    }
+    return result.trim() || 'Response received — check the AI worker conversation.';
+  }
+
+  // JSON response
+  const data = await res.json();
+  return data.reply || data.message || data.data?.reply || 'Content generated — check the AI worker conversation.';
+}
+
+// ── AI Worker Status Helper ──────────────────────────────────────────────────
+
+function useWorkerStatus(client: AgencyClient) {
+  const cfg = client.container_config || {};
+  const activeWorkerId = cfg.active_worker_id as string | undefined;
+  const workerTeam = cfg.worker_team as WorkerTeamConfig | undefined;
+
+  const isMarketingWorker = activeWorkerId === 'ai-marketing-worker';
+  const isInTeam = workerTeam?.enabled && workerTeam.members?.some(m => m.worker_id === 'ai-marketing-worker');
+  const isActive = isMarketingWorker || !!isInTeam;
+
+  const teamMembers = workerTeam?.enabled ? workerTeam.members : undefined;
+
+  return { isActive, isMarketingWorker, isInTeam, teamMembers, activeWorkerId };
+}
+
 // ── Dashboard View ───────────────────────────────────────────────────────────
 
-function DashboardView({ clientId, onNavigate }: { clientId: string; onNavigate: (tab: SubTab) => void }) {
+function DashboardView({ client, onNavigate }: { client: AgencyClient; onNavigate: (tab: SubTab) => void }) {
+  const clientId = client.id;
   const [stats, setStats] = useState({ conversations: 0, pages: 0, contacts: 0, activities: 0 });
-  const [activities, setActivities] = useState<Array<{ type: string; description: string; created_at: string }>>([]);
+  const [activities, setActivities] = useState<Array<{ type: string; subject: string; body: string; created_at: string; actor: string }>>([]);
   const [loading, setLoading] = useState(true);
+  const { isActive, isMarketingWorker, isInTeam, teamMembers, activeWorkerId } = useWorkerStatus(client);
 
   useEffect(() => {
     async function load() {
       try {
-        // Fetch real stats from API
-        const [convRes, pagesRes, contactsRes, actRes] = await Promise.allSettled([
+        const [convRes, pagesRes, contactsRes, actRes, crmRes] = await Promise.allSettled([
           fetch(`/api/agency/clients/${clientId}/chat?limit=1`).then(r => r.json()),
           fetch(`/api/agency/sites?clientId=${clientId}`).then(r => r.json()),
           fetch(`/api/agency/crm/contacts?clientId=${clientId}&limit=1`).then(r => r.json()),
           fetch(`/api/agency/clients/${clientId}/ghl/actions?limit=10`).then(r => r.json()),
+          fetch(`/api/agency/crm/activities?limit=15`).then(r => r.json()),
         ]);
 
         setStats({
@@ -150,12 +256,15 @@ function DashboardView({ clientId, onNavigate }: { clientId: string; onNavigate:
           activities: actRes.status === 'fulfilled' ? (actRes.value?.data?.length || 0) : 0,
         });
 
-        // Use activities data if available
-        if (actRes.status === 'fulfilled' && actRes.value?.data?.length) {
-          setActivities(actRes.value.data.slice(0, 8).map((a: Record<string, unknown>) => ({
-            type: String(a.action_type || a.type || 'activity'),
-            description: String(a.description || a.action || a.summary || 'Activity'),
-            created_at: String(a.created_at || a.timestamp || ''),
+        // Pull recent activities from CRM activities endpoint
+        if (crmRes.status === 'fulfilled') {
+          const raw = crmRes.value?.activities || crmRes.value?.data || [];
+          setActivities(raw.slice(0, 8).map((a: Record<string, unknown>) => ({
+            type: String(a.type || 'activity'),
+            subject: String(a.subject || a.description || 'Activity'),
+            body: String(a.body || ''),
+            created_at: String(a.created_at || ''),
+            actor: String(a.actor || 'system'),
           })));
         }
       } catch {
@@ -177,7 +286,48 @@ function DashboardView({ clientId, onNavigate }: { clientId: string; onNavigate:
 
   return (
     <div className="space-y-6">
-      {/* Real metric cards from DB */}
+      {/* AI Marketing Worker Status Card */}
+      <div className={`rounded-xl border p-5 ${isActive ? 'border-green-200 bg-green-50' : 'border-amber-200 bg-amber-50'}`}>
+        <div className="flex items-start gap-3">
+          <div className={`p-2 rounded-lg ${isActive ? 'bg-green-100' : 'bg-amber-100'}`}>
+            <Zap className={`h-5 w-5 ${isActive ? 'text-green-700' : 'text-amber-700'}`} />
+          </div>
+          <div className="flex-1">
+            <h3 className={`text-sm font-semibold ${isActive ? 'text-green-800' : 'text-amber-800'}`}>
+              {isActive ? 'AI Marketing Worker — Active' : 'AI Marketing Worker — Not Applied'}
+            </h3>
+            {isActive ? (
+              <>
+                <p className="text-xs text-green-600 mt-0.5">
+                  {isMarketingWorker && !isInTeam && 'Running as primary worker. All marketing modes enabled.'}
+                  {isInTeam && teamMembers && (
+                    <>Marketing team: {teamMembers.map(m => m.name || m.worker_id).join(' + ')}</>
+                  )}
+                  {isInTeam && !teamMembers && 'Part of an active AI team.'}
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-xs text-amber-600 mt-0.5">
+                  Apply the AI Marketing Worker to unlock full marketing capabilities — SEO research, content creation, competitor intel, and social drafting.
+                </p>
+                <button
+                  onClick={() => {
+                    // Navigate to AI Workers tab (parent tab navigation)
+                    const el = document.querySelector('[data-tab-id="ai-workers"]') as HTMLButtonElement;
+                    if (el) el.click();
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 mt-2 text-xs font-medium text-amber-700 bg-amber-100 rounded-lg hover:bg-amber-200 transition-colors"
+                >
+                  Go to AI Workers <ArrowRight className="w-3 h-3" />
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Metric cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <MetricCard label="Conversations" value={stats.conversations} sub="Total AI conversations" />
         <MetricCard label="Site Pages" value={stats.pages} sub="Generated content pages" />
@@ -185,7 +335,7 @@ function DashboardView({ clientId, onNavigate }: { clientId: string; onNavigate:
         <MetricCard label="AI Actions" value={stats.activities} sub="Actions taken by AI" />
       </div>
 
-      {/* Recent Activity — from real data or empty state */}
+      {/* Recent Activity — from CRM activities */}
       <div className="rounded-xl border border-gray-200 bg-white p-5">
         <h3 className="text-sm font-semibold text-gray-900 mb-3">Recent Activity</h3>
         {activities.length > 0 ? (
@@ -193,10 +343,18 @@ function DashboardView({ clientId, onNavigate }: { clientId: string; onNavigate:
             {activities.map((a, i) => (
               <div key={i} className="flex items-start gap-3 text-sm">
                 <span className="shrink-0 text-base">
-                  {a.type.includes('message') ? '💬' : a.type.includes('lead') ? '🎯' : a.type.includes('book') ? '📅' : '⚡'}
+                  {a.type.includes('message') || a.type.includes('chat') ? '💬' :
+                   a.type.includes('lead') || a.type.includes('contact') ? '🎯' :
+                   a.type.includes('book') || a.type.includes('appointment') ? '📅' :
+                   a.type.includes('email') ? '📧' :
+                   a.type.includes('content') || a.type.includes('seo') ? '📝' :
+                   a.actor === 'ai' ? '🤖' : '⚡'}
                 </span>
-                <span className="text-gray-700 flex-1">{a.description}</span>
-                <span className="text-xs text-gray-400 whitespace-nowrap">
+                <div className="flex-1 min-w-0">
+                  <span className="text-gray-700">{a.subject}</span>
+                  {a.body && <p className="text-xs text-gray-400 truncate mt-0.5">{a.body}</p>}
+                </div>
+                <span className="text-xs text-gray-400 whitespace-nowrap shrink-0">
                   {a.created_at ? new Date(a.created_at).toLocaleDateString() : ''}
                 </span>
               </div>
@@ -214,15 +372,17 @@ function DashboardView({ clientId, onNavigate }: { clientId: string; onNavigate:
         <h3 className="text-sm font-semibold text-gray-900 mb-3">Quick Actions</h3>
         <div className="flex flex-wrap gap-2">
           {[
-            { label: 'Research Keywords', tab: 'seo' as SubTab },
-            { label: 'Draft Content', tab: 'content' as SubTab },
-            { label: 'Check Competitors', tab: 'competitors' as SubTab },
+            { label: 'Research Keywords', tab: 'seo' as SubTab, icon: Search },
+            { label: 'Draft Content', tab: 'content' as SubTab, icon: PenTool },
+            { label: 'Check Competitors', tab: 'competitors' as SubTab, icon: Eye },
+            { label: 'Draft Social Posts', tab: 'social' as SubTab, icon: Smartphone },
           ].map(a => (
             <button
               key={a.tab}
               onClick={() => onNavigate(a.tab)}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"
             >
+              <a.icon className="w-3.5 h-3.5" />
               {a.label} <ArrowRight className="w-3.5 h-3.5" />
             </button>
           ))}
@@ -234,7 +394,10 @@ function DashboardView({ clientId, onNavigate }: { clientId: string; onNavigate:
 
 // ── SEO View ─────────────────────────────────────────────────────────────────
 
-function SEOView({ clientId }: { clientId: string }) {
+function SEOView({ client }: { client: AgencyClient }) {
+  const clientId = client.id;
+  const cfg = client.container_config || {};
+
   const [seedKeyword, setSeedKeyword] = useState('');
   const [serpKeyword, setSerpKeyword] = useState('');
   const [rankDomain, setRankDomain] = useState('');
@@ -243,6 +406,11 @@ function SEOView({ clientId }: { clientId: string }) {
   const [ranks, setRanks] = useState<RankResult[]>([]);
   const [loading, setLoading] = useState<string | null>(null);
   const [hasDataForSEO, setHasDataForSEO] = useState<boolean | null>(null);
+  const [aiEstimated, setAiEstimated] = useState(false);
+  const seedInputRef = useRef<HTMLInputElement>(null);
+
+  const businessName = (cfg.business_name as string) || client.name;
+  const industry = (cfg.industry as string) || client.industry || '';
 
   // Check if DataForSEO is configured
   useEffect(() => {
@@ -257,27 +425,63 @@ function SEOView({ clientId }: { clientId: string }) {
   const doResearch = useCallback(async () => {
     if (!seedKeyword.trim()) return;
     setLoading('research');
+    setAiEstimated(false);
+
+    // If DataForSEO is configured, use it
+    if (hasDataForSEO) {
+      try {
+        const res = await fetch(`/api/agency/clients/${clientId}/seo/keywords`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ seed: seedKeyword, limit: 20 }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.data?.length) {
+            setKeywords(data.data.map((k: Record<string, unknown>) => ({
+              keyword: String(k.keyword),
+              volume: Number(k.search_volume || k.volume || 0),
+              kd: Number(k.keyword_difficulty || k.kd || 0),
+              cpc: Number(k.cpc || 0),
+            })));
+            setLoading(null);
+            return;
+          }
+        }
+      } catch { /* fall through to AI */ }
+    }
+
+    // AI-powered keyword research fallback
     try {
-      const res = await fetch(`/api/agency/clients/${clientId}/seo/keywords`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ seed: seedKeyword, limit: 20 }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.data?.length) {
-          setKeywords(data.data.map((k: Record<string, unknown>) => ({
-            keyword: String(k.keyword),
-            volume: Number(k.search_volume || k.volume || 0),
-            kd: Number(k.keyword_difficulty || k.kd || 0),
+      const prompt = `Research SEO keywords for "${businessName}" in the ${industry || 'general'} industry. Seed keyword: "${seedKeyword}". Find 20 keywords with estimated difficulty and search volume.
+
+Return ONLY a JSON array with this format (no markdown, no explanation):
+[{"keyword":"example keyword","volume":1200,"kd":45,"cpc":2.50}]
+
+Volume = estimated monthly search volume. KD = keyword difficulty 0-100. CPC = estimated cost per click in USD.`;
+
+      const reply = await sendChatPrompt(clientId, prompt);
+
+      // Try to parse JSON from the response
+      const jsonMatch = reply.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        try {
+          const parsed = JSON.parse(jsonMatch[0]) as Array<Record<string, unknown>>;
+          setKeywords(parsed.map(k => ({
+            keyword: String(k.keyword || ''),
+            volume: Number(k.volume || 0),
+            kd: Number(k.kd || 0),
             cpc: Number(k.cpc || 0),
-            priority: Number(k.priority || Math.round(Number(k.search_volume || 0) / 100)),
           })));
+          setAiEstimated(true);
+        } catch {
+          // If JSON parse fails, show as single result
+          setKeywords([{ keyword: seedKeyword, volume: 0, kd: 0, cpc: 0 }]);
         }
       }
     } catch { /* handled by empty state */ }
     finally { setLoading(null); }
-  }, [seedKeyword, clientId]);
+  }, [seedKeyword, clientId, hasDataForSEO, businessName, industry]);
 
   const doSerp = useCallback(async () => {
     if (!serpKeyword.trim()) return;
@@ -321,7 +525,15 @@ function SEOView({ clientId }: { clientId: string }) {
   return (
     <div className="space-y-6">
       {hasDataForSEO === false && (
-        <ConnectBanner service="DataForSEO" settingsPath="Settings → Secrets" />
+        <div className="rounded-lg bg-indigo-50 border border-indigo-200 px-4 py-3 mb-4 flex items-start gap-3">
+          <Search className="h-4 w-4 text-indigo-600 mt-0.5 shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-indigo-800">AI-Powered SEO Research</p>
+            <p className="text-xs text-indigo-600 mt-0.5">
+              DataForSEO not configured. Using AI-estimated keyword data. Connect DataForSEO in Settings → Secrets for real search volume data.
+            </p>
+          </div>
+        </div>
       )}
 
       {/* Keyword Research */}
@@ -329,6 +541,7 @@ function SEOView({ clientId }: { clientId: string }) {
         <h3 className="text-sm font-semibold text-gray-900 mb-3">Keyword Research</h3>
         <div className="flex gap-2 mb-4">
           <input
+            ref={seedInputRef}
             value={seedKeyword}
             onChange={e => setSeedKeyword(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && doResearch()}
@@ -344,6 +557,14 @@ function SEOView({ clientId }: { clientId: string }) {
             Research
           </button>
         </div>
+
+        {aiEstimated && keywords.length > 0 && (
+          <div className="rounded-lg bg-blue-50 border border-blue-100 px-3 py-2 mb-3">
+            <p className="text-xs text-blue-700">
+              ℹ️ These are AI-estimated values. Connect DataForSEO for real search volume data.
+            </p>
+          </div>
+        )}
 
         {keywords.length > 0 ? (
           <div className="overflow-x-auto">
@@ -361,7 +582,11 @@ function SEOView({ clientId }: { clientId: string }) {
                   <tr key={k.keyword} className="border-b border-gray-50">
                     <td className="py-2 text-gray-900">{k.keyword}</td>
                     <td className="py-2 text-right text-gray-600">{k.volume.toLocaleString()}</td>
-                    <td className="py-2 text-right text-gray-600">{k.kd}</td>
+                    <td className="py-2 text-right">
+                      <span className={`${k.kd > 70 ? 'text-red-600' : k.kd > 40 ? 'text-amber-600' : 'text-green-600'}`}>
+                        {k.kd}
+                      </span>
+                    </td>
                     <td className="py-2 text-right text-gray-600">${k.cpc.toFixed(2)}</td>
                   </tr>
                 ))}
@@ -474,113 +699,74 @@ function SEOView({ clientId }: { clientId: string }) {
 
 // ── Content View ─────────────────────────────────────────────────────────────
 
-function ContentView({ clientId }: { clientId: string }) {
+const CONTENT_FORMATS = ['Blog Post', 'LinkedIn', 'Twitter Thread', 'Newsletter', 'Video Script'] as const;
+type ContentFormat = typeof CONTENT_FORMATS[number];
+
+function ContentView({ client }: { client: AgencyClient }) {
+  const clientId = client.id;
+  const cfg = client.container_config || {};
+  const businessName = (cfg.business_name as string) || client.name;
+  const industry = (cfg.industry as string) || client.industry || '';
+  const brandTone = (cfg.brand_tone as string) || 'Professional and engaging';
+  const contentPillars = (cfg.content_pillars as string) || '';
+
   const [drafts, setDrafts] = useState<ContentDraft[]>([]);
-  const [loading, setLoading] = useState(false);
   const [topic, setTopic] = useState('');
-  const [format, setFormat] = useState('Blog');
+  const [format, setFormat] = useState<ContentFormat>('Blog Post');
   const [generating, setGenerating] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
-
-  // Load existing content from site pages
-  useEffect(() => {
-    async function loadContent() {
-      setLoading(true);
-      try {
-        // Fetch site pages as content drafts
-        const sitesRes = await fetch(`/api/agency/sites?clientId=${clientId}`);
-        if (sitesRes.ok) {
-          const sitesData = await sitesRes.json();
-          const siteId = sitesData.data?.[0]?.id;
-          if (siteId) {
-            const pagesRes = await fetch(`/api/agency/sites/${siteId}/pages`);
-            if (pagesRes.ok) {
-              const pagesData = await pagesRes.json();
-              const pages = pagesData.data || [];
-              setDrafts(pages.slice(0, 10).map((p: Record<string, unknown>) => ({
-                id: String(p.id || ''),
-                title: String(p.title || p.meta_title || ''),
-                format: String(p.page_type || 'Page').charAt(0).toUpperCase() + String(p.page_type || 'page').slice(1),
-                status: 'Published',
-                created: String(p.generated_at || p.created_at || ''),
-                body: String(p.hero_subtitle || p.meta_description || ''),
-              })));
-            }
-          }
-        }
-      } catch { /* non-fatal */ }
-      finally { setLoading(false); }
-    }
-    loadContent();
-  }, [clientId]);
 
   const handleGenerate = useCallback(async () => {
     if (!topic.trim()) return;
     setGenerating(true);
     try {
-      // Use the chat API to generate content via the AI worker
-      const res = await fetch(`/api/agency/clients/${clientId}/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: `Write a ${format.toLowerCase()} post about: ${topic}. Keep it professional, engaging, and around 300 words.`,
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const newDraft: ContentDraft = {
-          id: `draft-${Date.now()}`,
-          title: topic,
-          format,
-          status: 'Draft',
-          created: new Date().toISOString().split('T')[0],
-          body: data.reply || data.message || data.data?.reply || 'Content generated — check the AI worker conversation.',
-        };
-        setDrafts(prev => [newDraft, ...prev]);
-        setTopic('');
-      }
+      const pillarsLine = contentPillars ? ` Focus on content pillars: ${contentPillars}.` : '';
+      const prompt = `Mode 2: Write a ${format.toLowerCase()} about "${topic}" for ${businessName} in ${industry || 'their industry'}. Match brand tone: ${brandTone}.${pillarsLine}
+
+Make it professional, engaging, and ready to publish. Use appropriate formatting for a ${format.toLowerCase()}.`;
+
+      const reply = await sendChatPrompt(clientId, prompt);
+
+      const newDraft: ContentDraft = {
+        id: `draft-${Date.now()}`,
+        title: topic,
+        format,
+        status: 'Draft',
+        created: new Date().toISOString(),
+        body: reply,
+      };
+      setDrafts(prev => [newDraft, ...prev]);
+      setTopic('');
     } catch { /* handled */ }
     finally { setGenerating(false); }
-  }, [topic, format, clientId]);
-
-  const copyToClipboard = (text: string, id: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
-  };
+  }, [topic, format, clientId, businessName, industry, brandTone, contentPillars]);
 
   const deleteDraft = (id: string) => {
     setDrafts(prev => prev.filter(d => d.id !== id));
   };
 
-  if (loading) {
-    return <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-gray-400" /></div>;
-  }
-
   return (
     <div className="space-y-6">
-      {/* Generate Content */}
+      {/* Content Generator */}
       <div className="rounded-xl border border-gray-200 bg-white p-5">
-        <h3 className="text-sm font-semibold text-gray-900 mb-3">Generate Content</h3>
-        <div className="flex gap-2">
+        <h3 className="text-sm font-semibold text-gray-900 mb-1">Content Generator</h3>
+        <p className="text-xs text-gray-500 mb-4">
+          Generate marketing content using the AI Marketing Worker. All content is generated as drafts for your review.
+        </p>
+        <div className="flex gap-2 mb-2">
           <input
             value={topic}
             onChange={e => setTopic(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleGenerate()}
-            placeholder="Topic or title for new content..."
+            placeholder="Topic or title (e.g., 5 Ways AI is Changing Marketing)"
             className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
           <select
             value={format}
-            onChange={e => setFormat(e.target.value)}
+            onChange={e => setFormat(e.target.value as ContentFormat)}
             className="rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white"
           >
-            <option>Blog</option>
-            <option>LinkedIn</option>
-            <option>Twitter</option>
-            <option>Newsletter</option>
-            <option>Email</option>
+            {CONTENT_FORMATS.map(f => <option key={f} value={f}>{f}</option>)}
           </select>
           <button
             onClick={handleGenerate}
@@ -593,38 +779,49 @@ function ContentView({ clientId }: { clientId: string }) {
         </div>
       </div>
 
-      {/* Content List */}
+      {/* Content Library */}
       <div className="rounded-xl border border-gray-200 bg-white p-5">
-        <h3 className="text-sm font-semibold text-gray-900 mb-3">Content ({drafts.length})</h3>
+        <h3 className="text-sm font-semibold text-gray-900 mb-3">
+          Content Library ({drafts.length})
+        </h3>
         {drafts.length > 0 ? (
           <div className="space-y-3">
             {drafts.map(d => (
-              <div key={d.id} className="border border-gray-100 rounded-lg p-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-medium text-sm text-gray-900 flex-1 truncate">{d.title}</span>
-                  <StatusBadge status={d.status} />
-                  <span className="text-xs text-gray-400">{d.format}</span>
+              <div key={d.id} className="border border-gray-200 rounded-xl p-4 relative">
+                {/* Draft badge */}
+                <div className="absolute top-3 right-3">
+                  <DraftBadge />
                 </div>
-                {expanded === d.id && (
-                  <div className="mt-2 p-3 bg-gray-50 rounded-lg text-sm text-gray-700 whitespace-pre-wrap">{d.body}</div>
+                <div className="flex items-center gap-2 mb-1 pr-36">
+                  <span className="font-medium text-sm text-gray-900 truncate">{d.title}</span>
+                  <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{d.format}</span>
+                </div>
+                <p className="text-xs text-gray-400 mb-2">
+                  {new Date(d.created).toLocaleDateString()} · {new Date(d.created).toLocaleTimeString()}
+                </p>
+
+                {expanded === d.id ? (
+                  <div className="mt-2 p-4 bg-gray-50 rounded-lg text-sm text-gray-700 whitespace-pre-wrap border border-gray-100">
+                    {d.body}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500 truncate">{d.body.slice(0, 150)}...</p>
                 )}
-                <div className="flex items-center gap-2 mt-2">
-                  <button onClick={() => setExpanded(expanded === d.id ? null : d.id)} className="text-xs text-indigo-600 hover:text-indigo-800">
+
+                <div className="flex items-center gap-2 mt-3">
+                  <button
+                    onClick={() => setExpanded(expanded === d.id ? null : d.id)}
+                    className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                  >
                     {expanded === d.id ? 'Collapse' : 'Expand'}
                   </button>
-                  <button onClick={() => copyToClipboard(d.body, d.id)} className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1">
-                    {copiedId === d.id ? <><Check className="w-3 h-3" /> Copied</> : <><Copy className="w-3 h-3" /> Copy</>}
+                  <CopyButton text={d.body} />
+                  <button
+                    onClick={() => deleteDraft(d.id)}
+                    className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1"
+                  >
+                    <Trash2 className="w-3 h-3" /> Delete
                   </button>
-                  {d.status === 'Draft' && (
-                    <button onClick={() => deleteDraft(d.id)} className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1">
-                      <Trash2 className="w-3 h-3" /> Delete
-                    </button>
-                  )}
-                  {d.url && (
-                    <a href={d.url} target="_blank" rel="noopener noreferrer" className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
-                      <ExternalLink className="w-3 h-3" /> View
-                    </a>
-                  )}
                 </div>
               </div>
             ))}
@@ -633,7 +830,7 @@ function ContentView({ clientId }: { clientId: string }) {
           <EmptyState
             icon={PenTool}
             title="No content yet"
-            description="Generate your first content piece above, or your AI Marketing Worker will create content drafts as it runs."
+            description="Generate your first content piece above. Content is generated as drafts awaiting your approval — blog posts, LinkedIn articles, Twitter threads, newsletters, and more."
           />
         )}
       </div>
@@ -643,49 +840,120 @@ function ContentView({ clientId }: { clientId: string }) {
 
 // ── Competitors View ─────────────────────────────────────────────────────────
 
-function CompetitorsView({ clientId }: { clientId: string }) {
+function CompetitorsView({ client }: { client: AgencyClient }) {
+  const clientId = client.id;
+  const cfg = client.container_config || {};
+  const businessName = (cfg.business_name as string) || client.name;
+
   const [competitors, setCompetitors] = useState<string[]>([]);
   const [newCompetitor, setNewCompetitor] = useState('');
   const [scanning, setScanning] = useState(false);
-  const [results, setResults] = useState<Array<{ domain: string; summary: string }>>([]);
+  const [results, setResults] = useState<CompetitorResult[]>([]);
+  const [autoScan, setAutoScan] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Load saved competitors from container_config on mount
+  useEffect(() => {
+    const saved = cfg.marketing_competitors as string[] | undefined;
+    if (saved && Array.isArray(saved)) {
+      setCompetitors(saved);
+    }
+    const savedAutoScan = cfg.marketing_auto_scan as boolean | undefined;
+    if (savedAutoScan !== undefined) {
+      setAutoScan(savedAutoScan);
+    }
+  }, [cfg.marketing_competitors, cfg.marketing_auto_scan]);
+
+  // Persist competitors to container_config
+  const saveCompetitors = useCallback(async (domains: string[], autoScanEnabled?: boolean) => {
+    setSaving(true);
+    try {
+      await fetch(`/api/agency/clients/${clientId}/container-config`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          marketing_competitors: domains,
+          ...(autoScanEnabled !== undefined ? { marketing_auto_scan: autoScanEnabled } : {}),
+        }),
+      });
+    } catch { /* non-fatal */ }
+    finally { setSaving(false); }
+  }, [clientId]);
 
   const addCompetitor = () => {
     const domain = newCompetitor.trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
     if (domain && !competitors.includes(domain)) {
-      setCompetitors(prev => [...prev, domain]);
+      const updated = [...competitors, domain];
+      setCompetitors(updated);
       setNewCompetitor('');
+      saveCompetitors(updated);
     }
+  };
+
+  const removeCompetitor = (domain: string) => {
+    const updated = competitors.filter(x => x !== domain);
+    setCompetitors(updated);
+    saveCompetitors(updated);
+  };
+
+  const toggleAutoScan = () => {
+    const newVal = !autoScan;
+    setAutoScan(newVal);
+    saveCompetitors(competitors, newVal);
   };
 
   const scanCompetitors = useCallback(async () => {
     if (competitors.length === 0) return;
     setScanning(true);
+    setResults([]);
     try {
-      // Use the AI worker chat to analyze competitors
-      const res = await fetch(`/api/agency/clients/${clientId}/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: `Analyze these competitor websites and give me a brief competitive summary for each: ${competitors.join(', ')}. For each, note: what they do well, what they're missing, and any recent content or changes.`,
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const reply = data.reply || data.message || data.data?.reply || '';
+      const prompt = `Mode 3: Analyze these competitors for ${businessName}: ${competitors.join(', ')}. Score each as 🔴 High threat, 🟡 Medium, 🟢 Low. Check their latest blog posts, pricing pages, and social activity.
+
+Return ONLY a JSON array with this format (no markdown, no explanation):
+[{"domain":"competitor.com","threat":"high","summary":"Brief analysis of competitive positioning, recent content, pricing strategy, and threat assessment."}]
+
+threat must be one of: "high", "medium", "low"`;
+
+      const reply = await sendChatPrompt(clientId, prompt);
+
+      // Try to parse JSON from the response
+      const jsonMatch = reply.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        try {
+          const parsed = JSON.parse(jsonMatch[0]) as Array<Record<string, unknown>>;
+          setResults(parsed.map(r => ({
+            domain: String(r.domain || ''),
+            threat: (['high', 'medium', 'low'].includes(String(r.threat)) ? String(r.threat) : 'medium') as 'high' | 'medium' | 'low',
+            summary: String(r.summary || ''),
+          })));
+        } catch {
+          // Fallback: show raw reply
+          setResults(competitors.map(d => ({
+            domain: d,
+            threat: 'medium' as const,
+            summary: reply,
+          })));
+        }
+      } else {
+        // No JSON — show the full reply for each competitor
         setResults(competitors.map(d => ({
           domain: d,
-          summary: reply.includes(d) ? reply : `Analysis for ${d}: ${reply.slice(0, 200)}...`,
+          threat: 'medium' as const,
+          summary: reply,
         })));
       }
     } catch { /* handled */ }
     finally { setScanning(false); }
-  }, [competitors, clientId]);
+  }, [competitors, clientId, businessName]);
 
   return (
     <div className="space-y-6">
       <div className="rounded-xl border border-gray-200 bg-white p-5">
-        <h3 className="text-sm font-semibold text-gray-900 mb-3">Competitor Monitoring</h3>
-        <p className="text-sm text-gray-500 mb-4">Add competitor domains to track. Your AI Marketing Worker can analyze their content and strategy.</p>
+        <h3 className="text-sm font-semibold text-gray-900 mb-1">Competitor Intelligence</h3>
+        <p className="text-sm text-gray-500 mb-4">
+          Track competitor domains. The AI Marketing Worker will analyze their content, pricing, and strategy.
+          {saving && <span className="text-indigo-500 ml-2">Saving...</span>}
+        </p>
 
         <div className="flex gap-2 mb-4">
           <input
@@ -705,132 +973,418 @@ function CompetitorsView({ clientId }: { clientId: string }) {
         </div>
 
         {competitors.length > 0 ? (
-          <div className="space-y-2 mb-4">
-            {competitors.map(c => (
-              <div key={c} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
-                <span className="text-sm text-gray-700">{c}</span>
-                <button onClick={() => setCompetitors(prev => prev.filter(x => x !== c))} className="text-gray-400 hover:text-red-500">
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ))}
-            <button
-              onClick={scanCompetitors}
-              disabled={scanning}
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
-            >
-              {scanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-              Scan Competitors
-            </button>
-          </div>
+          <>
+            <div className="space-y-2 mb-4">
+              {competitors.map(c => (
+                <div key={c} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <ExternalLink className="w-3.5 h-3.5 text-gray-400" />
+                    <span className="text-sm text-gray-700">{c}</span>
+                  </div>
+                  <button onClick={() => removeCompetitor(c)} className="text-gray-400 hover:text-red-500">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-4 mb-4">
+              <button
+                onClick={scanCompetitors}
+                disabled={scanning}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+              >
+                {scanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                Scan Competitors
+              </button>
+
+              <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={autoScan}
+                  onChange={toggleAutoScan}
+                  className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                Scan weekly (automated)
+              </label>
+            </div>
+          </>
         ) : (
           <EmptyState
             icon={Eye}
             title="No competitors tracked"
-            description="Add competitor domains above. Your AI Marketing Worker can scan their websites for content changes, new features, and strategic moves."
+            description="Add competitor domains above. Your AI Marketing Worker can scan their websites for content changes, pricing, and strategic moves. Competitors are saved and persisted."
           />
         )}
-
-        {results.length > 0 && (
-          <div className="mt-4 space-y-3">
-            <h4 className="text-sm font-medium text-gray-700">Scan Results</h4>
-            {results.map(r => (
-              <div key={r.domain} className="border border-gray-100 rounded-lg p-3">
-                <p className="font-medium text-sm text-gray-900 mb-1">{r.domain}</p>
-                <p className="text-sm text-gray-600 whitespace-pre-wrap">{r.summary}</p>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
+
+      {/* Scan Results */}
+      {results.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold text-gray-900">Scan Results</h3>
+          {results.map(r => (
+            <div key={r.domain} className="rounded-xl border border-gray-200 bg-white p-5">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <ExternalLink className="w-4 h-4 text-gray-400" />
+                  <span className="font-medium text-sm text-gray-900">{r.domain}</span>
+                </div>
+                <ThreatBadge level={r.threat} />
+              </div>
+              <p className="text-sm text-gray-600 whitespace-pre-wrap">{r.summary}</p>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
 // ── Social View ──────────────────────────────────────────────────────────────
 
-function SocialView({ clientId }: { clientId: string }) {
-  const [postTopic, setPostTopic] = useState('');
-  const [platform, setPlatform] = useState('LinkedIn');
-  const [generatedPost, setGeneratedPost] = useState('');
-  const [generating, setGenerating] = useState(false);
-  const [copiedPost, setCopiedPost] = useState(false);
+const PLATFORMS = [
+  { id: 'linkedin', label: 'LinkedIn', icon: '🔵' },
+  { id: 'twitter', label: 'Twitter/X', icon: '🐦' },
+  { id: 'instagram', label: 'Instagram', icon: '📸' },
+] as const;
 
-  const handleGeneratePost = useCallback(async () => {
-    if (!postTopic.trim()) return;
+const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const;
+
+function SocialView({ client }: { client: AgencyClient }) {
+  const clientId = client.id;
+  const cfg = client.container_config || {};
+  const businessName = (cfg.business_name as string) || client.name;
+  const industry = (cfg.industry as string) || client.industry || '';
+  const brandTone = (cfg.brand_tone as string) || 'Professional and engaging';
+  const linkedinTargets = (cfg.linkedin_targets as string) || '';
+
+  const [postTopic, setPostTopic] = useState('');
+  const [selectedPlatforms, setSelectedPlatforms] = useState<Set<string>>(new Set(['linkedin']));
+  const [generating, setGenerating] = useState(false);
+  const [drafts, setDrafts] = useState<SocialDraft[]>([]);
+  const [activeSection, setActiveSection] = useState<'generate' | 'calendar' | 'engagement'>('generate');
+
+  // Engagement comments
+  const [engagementLoading, setEngagementLoading] = useState(false);
+  const [engagementComments, setEngagementComments] = useState('');
+
+  const togglePlatform = (id: string) => {
+    setSelectedPlatforms(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        if (next.size > 1) next.delete(id); // keep at least one
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const handleGenerate = useCallback(async () => {
+    if (!postTopic.trim() || selectedPlatforms.size === 0) return;
     setGenerating(true);
-    setGeneratedPost('');
     try {
-      const res = await fetch(`/api/agency/clients/${clientId}/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: `Write a ${platform} post about: ${postTopic}. Make it engaging, use appropriate formatting for ${platform}. Keep it concise and end with a call to action.`,
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setGeneratedPost(data.reply || data.message || data.data?.reply || '');
+      const platforms = Array.from(selectedPlatforms).map(id => PLATFORMS.find(p => p.id === id)!.label);
+      const prompt = `Write social media posts for ${businessName} (${industry || 'general industry'}) about: "${postTopic}". Brand tone: ${brandTone}.
+
+Generate a separate post for EACH of these platforms: ${platforms.join(', ')}
+
+Return ONLY a JSON array (no markdown, no explanation):
+[{"platform":"LinkedIn","body":"Post content here..."},{"platform":"Twitter/X","body":"Tweet content here..."}]
+
+Requirements per platform:
+- LinkedIn: Professional, thought leadership, 150-300 words, use paragraphs and line breaks, end with a question or CTA
+- Twitter/X: Concise, punchy, under 280 characters, use relevant hashtags
+- Instagram: Visual-friendly caption, use emojis, include relevant hashtags at the end, 100-200 words`;
+
+      const reply = await sendChatPrompt(clientId, prompt);
+
+      const jsonMatch = reply.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        try {
+          const parsed = JSON.parse(jsonMatch[0]) as Array<Record<string, unknown>>;
+          const newDrafts = parsed.map(p => ({
+            id: `social-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            platform: String(p.platform || ''),
+            topic: postTopic,
+            body: String(p.body || ''),
+            status: 'draft' as const,
+            created: new Date().toISOString(),
+          }));
+          setDrafts(prev => [...newDrafts, ...prev]);
+          setPostTopic('');
+        } catch {
+          // Fallback: single draft with full reply
+          setDrafts(prev => [{
+            id: `social-${Date.now()}`,
+            platform: platforms[0],
+            topic: postTopic,
+            body: reply,
+            status: 'draft' as const,
+            created: new Date().toISOString(),
+          }, ...prev]);
+        }
+      } else {
+        // No JSON — create one draft per platform with the full reply
+        const newDrafts = platforms.map(p => ({
+          id: `social-${Date.now()}-${p}`,
+          platform: p,
+          topic: postTopic,
+          body: reply,
+          status: 'draft' as const,
+          created: new Date().toISOString(),
+        }));
+        setDrafts(prev => [...newDrafts, ...prev]);
       }
     } catch { /* handled */ }
     finally { setGenerating(false); }
-  }, [postTopic, platform, clientId]);
+  }, [postTopic, selectedPlatforms, clientId, businessName, industry, brandTone]);
+
+  const generateForDay = useCallback(async (day: string) => {
+    if (generating) return;
+    setGenerating(true);
+    try {
+      const platforms = Array.from(selectedPlatforms).map(id => PLATFORMS.find(p => p.id === id)!.label);
+      const prompt = `Write a ${platforms[0]} post for ${businessName} (${industry || 'general industry'}). This is for ${day}. Brand tone: ${brandTone}. Pick a relevant topic for the day/week and make it engaging. Return just the post text, no JSON.`;
+
+      const reply = await sendChatPrompt(clientId, prompt);
+
+      setDrafts(prev => [{
+        id: `social-${Date.now()}-${day}`,
+        platform: platforms[0],
+        topic: `${day} post`,
+        body: reply,
+        status: 'draft' as const,
+        created: new Date().toISOString(),
+        day,
+      }, ...prev]);
+    } catch { /* handled */ }
+    finally { setGenerating(false); }
+  }, [generating, selectedPlatforms, clientId, businessName, industry, brandTone]);
+
+  const markAsPosted = (id: string) => {
+    setDrafts(prev => prev.map(d => d.id === id ? { ...d, status: 'posted' as const } : d));
+  };
+
+  const deleteDraft = (id: string) => {
+    setDrafts(prev => prev.filter(d => d.id !== id));
+  };
+
+  const draftEngagementComments = useCallback(async () => {
+    setEngagementLoading(true);
+    setEngagementComments('');
+    try {
+      const targets = linkedinTargets || 'relevant accounts in our industry';
+      const prompt = `Mode 4: Draft 3 engagement comments for LinkedIn. Target accounts: ${targets}. Rotate styles: data point, personal experience, thoughtful question, different perspective.
+
+For each comment, include:
+1. Which target account it's for
+2. A suggested post topic to comment on
+3. The actual comment draft (2-4 sentences, genuine and helpful)
+
+Make them feel authentic, not salesy. Each should offer genuine value.`;
+
+      const reply = await sendChatPrompt(clientId, prompt);
+      setEngagementComments(reply);
+    } catch { /* handled */ }
+    finally { setEngagementLoading(false); }
+  }, [clientId, linkedinTargets]);
+
+  const platformIcon = (name: string) => {
+    const p = PLATFORMS.find(p => p.label.toLowerCase().includes(name.toLowerCase()) || p.id === name.toLowerCase());
+    return p?.icon || '📱';
+  };
+
+  // Calendar: figure out current week's days
+  const weekDays = useMemo(() => {
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+
+    return WEEKDAYS.map((label, i) => {
+      const date = new Date(monday);
+      date.setDate(monday.getDate() + i);
+      const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const hasContent = drafts.some(d => d.day === label);
+      const isToday = date.toDateString() === today.toDateString();
+      return { label, dateStr, hasContent, isToday };
+    });
+  }, [drafts]);
 
   return (
     <div className="space-y-6">
-      <div className="rounded-xl border border-gray-200 bg-white p-5">
-        <h3 className="text-sm font-semibold text-gray-900 mb-3">Generate Social Post</h3>
-        <p className="text-sm text-gray-500 mb-4">Draft social media posts for your client. Copy and paste into their social accounts.</p>
-
-        <div className="flex gap-2 mb-4">
-          <input
-            value={postTopic}
-            onChange={e => setPostTopic(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleGeneratePost()}
-            placeholder="Topic or idea for the post..."
-            className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-          <select
-            value={platform}
-            onChange={e => setPlatform(e.target.value)}
-            className="rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white"
-          >
-            <option>LinkedIn</option>
-            <option>Twitter</option>
-            <option>Instagram</option>
-            <option>Facebook</option>
-          </select>
+      {/* Section Toggle */}
+      <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+        {[
+          { id: 'generate' as const, label: 'Generate Posts', icon: PenTool },
+          { id: 'calendar' as const, label: 'Calendar', icon: Calendar },
+          { id: 'engagement' as const, label: 'Engagement', icon: MessageSquare },
+        ].map(s => (
           <button
-            onClick={handleGeneratePost}
-            disabled={generating || !postTopic.trim()}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+            key={s.id}
+            onClick={() => setActiveSection(s.id)}
+            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+              activeSection === s.id ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+            }`}
           >
-            {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <PenTool className="w-4 h-4" />}
-            Draft
+            <s.icon className="w-3.5 h-3.5" />
+            {s.label}
           </button>
-        </div>
-
-        {generatedPost ? (
-          <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium text-gray-500">{platform} Draft</span>
-              <button
-                onClick={() => { navigator.clipboard.writeText(generatedPost); setCopiedPost(true); setTimeout(() => setCopiedPost(false), 2000); }}
-                className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
-              >
-                {copiedPost ? <><Check className="w-3 h-3" /> Copied</> : <><Copy className="w-3 h-3" /> Copy</>}
-              </button>
-            </div>
-            <p className="text-sm text-gray-700 whitespace-pre-wrap">{generatedPost}</p>
-          </div>
-        ) : (
-          <EmptyState
-            icon={Smartphone}
-            title="No posts drafted yet"
-            description="Enter a topic above and select a platform. The AI will draft a post optimized for that platform."
-          />
-        )}
+        ))}
       </div>
+
+      {/* Generate Section */}
+      {activeSection === 'generate' && (
+        <div className="rounded-xl border border-gray-200 bg-white p-5">
+          <h3 className="text-sm font-semibold text-gray-900 mb-1">Social Content Studio</h3>
+          <p className="text-xs text-gray-500 mb-4">Generate platform-specific posts. Select multiple platforms to generate all at once.</p>
+
+          {/* Platform Selector */}
+          <div className="flex gap-2 mb-4">
+            {PLATFORMS.map(p => (
+              <button
+                key={p.id}
+                onClick={() => togglePlatform(p.id)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border transition-colors ${
+                  selectedPlatforms.has(p.id)
+                    ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
+                    : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50'
+                }`}
+              >
+                <span>{p.icon}</span> {p.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex gap-2 mb-4">
+            <input
+              value={postTopic}
+              onChange={e => setPostTopic(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleGenerate()}
+              placeholder="Topic or idea for the post..."
+              className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            <button
+              onClick={handleGenerate}
+              disabled={generating || !postTopic.trim()}
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+            >
+              {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <PenTool className="w-4 h-4" />}
+              Generate {selectedPlatforms.size > 1 ? `(${selectedPlatforms.size})` : ''}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Calendar Section */}
+      {activeSection === 'calendar' && (
+        <div className="rounded-xl border border-gray-200 bg-white p-5">
+          <h3 className="text-sm font-semibold text-gray-900 mb-1">Weekly Calendar</h3>
+          <p className="text-xs text-gray-500 mb-4">Click a day to generate content. Filled slots show scheduled drafts.</p>
+          <div className="grid grid-cols-7 gap-2">
+            {weekDays.map(day => (
+              <button
+                key={day.label}
+                onClick={() => !day.hasContent && generateForDay(day.label)}
+                disabled={generating}
+                className={`rounded-lg border p-3 text-center transition-colors ${
+                  day.isToday ? 'border-indigo-300 bg-indigo-50' :
+                  day.hasContent ? 'border-green-200 bg-green-50' :
+                  'border-gray-200 bg-white hover:bg-gray-50'
+                }`}
+              >
+                <p className={`text-xs font-medium ${day.isToday ? 'text-indigo-600' : 'text-gray-500'}`}>
+                  {day.label}
+                </p>
+                <p className="text-[10px] text-gray-400 mt-0.5">{day.dateStr}</p>
+                {day.hasContent ? (
+                  <Check className="w-4 h-4 text-green-600 mx-auto mt-1" />
+                ) : (
+                  <Plus className="w-4 h-4 text-gray-300 mx-auto mt-1" />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Engagement Section */}
+      {activeSection === 'engagement' && (
+        <div className="rounded-xl border border-gray-200 bg-white p-5">
+          <h3 className="text-sm font-semibold text-gray-900 mb-1">LinkedIn Engagement Comments</h3>
+          <p className="text-xs text-gray-500 mb-4">
+            Draft thoughtful engagement comments for target accounts.
+            {linkedinTargets ? '' : ' Set LinkedIn Target Accounts in the AI Workers tab for personalized results.'}
+          </p>
+
+          <button
+            onClick={draftEngagementComments}
+            disabled={engagementLoading}
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 mb-4"
+          >
+            {engagementLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageSquare className="w-4 h-4" />}
+            Draft Engagement Comments
+          </button>
+
+          {engagementComments && (
+            <div className="border border-gray-200 rounded-xl p-4 bg-gray-50 relative">
+              <div className="absolute top-3 right-3">
+                <CopyButton text={engagementComments} />
+              </div>
+              <p className="text-sm text-gray-700 whitespace-pre-wrap pr-8">{engagementComments}</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Draft Queue */}
+      {drafts.length > 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white p-5">
+          <h3 className="text-sm font-semibold text-gray-900 mb-3">
+            Draft Queue ({drafts.filter(d => d.status === 'draft').length} pending)
+          </h3>
+          <div className="space-y-3">
+            {drafts.map(d => (
+              <div key={d.id} className="border border-gray-200 rounded-xl p-4 relative">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-base">{platformIcon(d.platform)}</span>
+                  <span className="text-sm font-medium text-gray-900">{d.platform}</span>
+                  {d.day && <span className="text-xs text-gray-400">· {d.day}</span>}
+                  <span className="text-xs text-gray-400">· {d.topic}</span>
+                  <div className="ml-auto">
+                    {d.status === 'draft' ? (
+                      <DraftBadge />
+                    ) : (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700">
+                        ✓ Posted
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <p className="text-sm text-gray-700 whitespace-pre-wrap">{d.body}</p>
+                <div className="flex items-center gap-2 mt-3">
+                  <CopyButton text={d.body} />
+                  {d.status === 'draft' && (
+                    <button
+                      onClick={() => markAsPosted(d.id)}
+                      className="inline-flex items-center gap-1 text-xs text-green-600 hover:text-green-800 font-medium"
+                    >
+                      <Check className="w-3 h-3" /> Mark as Posted
+                    </button>
+                  )}
+                  <button
+                    onClick={() => deleteDraft(d.id)}
+                    className="inline-flex items-center gap-1 text-xs text-red-500 hover:text-red-700"
+                  >
+                    <Trash2 className="w-3 h-3" /> Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -875,11 +1429,11 @@ export default function MarketingTab({ client }: { client: AgencyClient }) {
       </div>
 
       {/* Sub-tab content */}
-      {subTab === 'dashboard' && <DashboardView clientId={client.id} onNavigate={setSubTab} />}
-      {subTab === 'seo' && <SEOView clientId={client.id} />}
-      {subTab === 'content' && <ContentView clientId={client.id} />}
-      {subTab === 'competitors' && <CompetitorsView clientId={client.id} />}
-      {subTab === 'social' && <SocialView clientId={client.id} />}
+      {subTab === 'dashboard' && <DashboardView client={client} onNavigate={setSubTab} />}
+      {subTab === 'seo' && <SEOView client={client} />}
+      {subTab === 'content' && <ContentView client={client} />}
+      {subTab === 'competitors' && <CompetitorsView client={client} />}
+      {subTab === 'social' && <SocialView client={client} />}
       {subTab === 'email' && <EmailMarketingTab client={client} />}
     </div>
   );
