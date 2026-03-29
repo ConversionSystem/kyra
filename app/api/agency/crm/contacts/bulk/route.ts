@@ -2,6 +2,48 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { getAgencyForUser } from '@/lib/agency/queries';
 import { exportContactsCsv } from '@/lib/crm/export';
+import { getSegments } from '@/lib/crm/segments';
+import type { SegmentFilter } from '@/lib/crm/segments';
+
+// ── Segment → contacts resolver ───────────────────────────────────────────────
+// Resolves a segment's saved filters into a query for crm_contacts.
+// Supports: eq, neq, contains, gt, lt, in, not_in, is_set, not_set
+async function resolveSegmentContacts(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  service: any,
+  agencyId: string,
+  segmentId: string,
+): Promise<string[] | null> {
+  const segments = await getSegments(agencyId);
+  const segment = segments.find(s => s.id === segmentId);
+  if (!segment) return null;
+
+  let query = service
+    .from('crm_contacts')
+    .select('id')
+    .eq('agency_id', agencyId);
+
+  for (const f of segment.filters as SegmentFilter[]) {
+    const { field, operator, value } = f;
+    switch (operator) {
+      case 'eq':    query = query.eq(field, value); break;
+      case 'neq':   query = query.neq(field, value); break;
+      case 'contains': query = query.ilike(field, `%${value}%`); break;
+      case 'gt':    query = query.gt(field, value); break;
+      case 'lt':    query = query.lt(field, value); break;
+      case 'in':    query = query.in(field, Array.isArray(value) ? value : [value]); break;
+      case 'not_in':
+        query = query.not(field, 'in', `(${(Array.isArray(value) ? value : [value]).join(',')})`);
+        break;
+      case 'is_set':   query = query.not(field, 'is', null); break;
+      case 'not_set':  query = query.is(field, null); break;
+    }
+  }
+
+  const { data } = await query.limit(500); // safety cap: 500 contacts per bulk SMS
+  if (!data) return null;
+  return (data as Array<{ id: string }>).map(r => r.id);
+}
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -12,17 +54,34 @@ export async function POST(req: NextRequest) {
   if (!result) return NextResponse.json({ error: 'No agency' }, { status: 403 });
 
   const body = await req.json();
-  const { action, contact_ids, payload } = body as {
+  const { action, contact_ids: rawContactIds, segment_id, payload } = body as {
     action: 'tag' | 'stage' | 'delete' | 'export' | 'sms';
-    contact_ids: string[];
+    contact_ids?: string[];
+    segment_id?: string;
     payload?: Record<string, unknown>;
   };
 
-  if (!action || !contact_ids?.length) {
+  if (!action) {
+    return NextResponse.json({ error: 'action required' }, { status: 400 });
+  }
+
+  // For non-SMS actions, still require contact_ids
+  const requiresContactIds = action !== 'sms' && action !== 'export';
+  if (requiresContactIds && !rawContactIds?.length) {
     return NextResponse.json({ error: 'action and contact_ids required' }, { status: 400 });
   }
 
   const service = await createServiceClient();
+
+  // Resolve contact_ids — either passed directly or resolved from a segment
+  let contact_ids = rawContactIds || [];
+  if (!contact_ids.length && segment_id) {
+    const resolved = await resolveSegmentContacts(service, result.agency.id, segment_id);
+    if (resolved === null) {
+      return NextResponse.json({ error: 'Segment not found' }, { status: 404 });
+    }
+    contact_ids = resolved;
+  }
 
   try {
     switch (action) {
@@ -111,6 +170,10 @@ export async function POST(req: NextRequest) {
         const message = payload?.message as string;
         if (!message?.trim()) return NextResponse.json({ error: 'message required' }, { status: 400 });
 
+        if (!contact_ids.length && !segment_id) {
+          return NextResponse.json({ error: 'contact_ids or segment_id required for SMS' }, { status: 400 });
+        }
+
         // Fetch contacts with phone numbers
         let contactQuery = service
           .from('crm_contacts')
@@ -118,7 +181,7 @@ export async function POST(req: NextRequest) {
           .eq('agency_id', result.agency.id)
           .not('phone', 'is', null);
 
-        if (contact_ids?.length) {
+        if (contact_ids.length) {
           contactQuery = contactQuery.in('id', contact_ids);
         }
 
