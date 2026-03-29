@@ -34,6 +34,14 @@ export async function createGhlSubAccount(params: CreateSubAccountParams): Promi
   const apiKey = process.env.GHL_AGENCY_API_KEY;
   if (!apiKey) throw new Error('GHL_AGENCY_API_KEY not configured');
 
+  const companyId = process.env.GHL_COMPANY_ID;
+  if (!companyId) {
+    throw new Error(
+      'GHL_COMPANY_ID is not configured. Sub-account creation requires a Company ID. ' +
+      'Set GHL_COMPANY_ID in your environment variables.'
+    );
+  }
+
   const res = await fetch(`${GHL_AGENCY_API}/locations/`, {
     method: 'POST',
     headers: {
@@ -42,7 +50,7 @@ export async function createGhlSubAccount(params: CreateSubAccountParams): Promi
       'Version': API_VERSION,
     },
     body: JSON.stringify({
-      companyId: process.env.GHL_COMPANY_ID || undefined,
+      companyId,
       name: params.name,
       email: params.email,
       phone: params.phone || undefined,
@@ -63,7 +71,39 @@ export async function createGhlSubAccount(params: CreateSubAccountParams): Promi
 
   if (!res.ok) {
     const body = await res.text().catch(() => '');
-    throw new Error(`GHL create sub-account failed: ${res.status} ${body}`);
+
+    if (res.status === 401) {
+      throw new Error(
+        'GHL Agency API key is invalid or expired. ' +
+        'Go to GHL → Settings → API Keys and regenerate the Agency API key.'
+      );
+    }
+
+    if (res.status === 403) {
+      if (body.includes('Forbidden resource')) {
+        throw new Error(
+          'GHL Agency API key does not have permission to create sub-accounts. ' +
+          'Go to GHL → Settings → API Keys → regenerate the Agency API key, or ' +
+          'check that your GHL plan includes sub-account management.'
+        );
+      }
+      throw new Error(
+        'GHL permission denied (403). Your Agency API key may need to be regenerated or your plan may not support sub-account creation.'
+      );
+    }
+
+    if (res.status === 422) {
+      let detail = body;
+      try {
+        const parsed = JSON.parse(body);
+        detail = JSON.stringify(parsed.message || parsed);
+      } catch { /* use raw body */ }
+      throw new Error(`GHL validation error: ${detail}`);
+    }
+
+    throw new Error(
+      `GHL API error (${res.status}). Please try again or use the "Connect with API Token" option instead.`
+    );
   }
 
   const data = await res.json();
