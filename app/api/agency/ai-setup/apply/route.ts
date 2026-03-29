@@ -5844,6 +5844,38 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // ── Team context injection ───────────────────────────────────────────
+  if (soulMd) {
+    const teamCfg = currentCfg.worker_team as {
+      enabled?: boolean;
+      primary_worker_id?: string;
+      members?: Array<{ worker_id: string; role: string; triggers: string[] }>;
+      handoff_style?: string;
+    } | undefined;
+
+    if (teamCfg?.enabled && teamCfg.members && teamCfg.members.length > 0) {
+      soulMd += '\n\n## Your Team\n\nYou are the primary AI worker. You have specialist capabilities:\n';
+
+      for (const member of teamCfg.members) {
+        const workerDef = ROLE_WORKERS.find(w => w.id === member.worker_id);
+        if (!workerDef) continue;
+
+        soulMd += `\n### ${workerDef.emoji} ${workerDef.name} (${member.role})\n`;
+        if (member.triggers.length > 0) {
+          soulMd += `**Triggers:** ${member.triggers.join(', ')}\n`;
+        }
+        soulMd += `**Capabilities:** ${workerDef.description}\n`;
+        soulMd += `**How to use:** Handle this area yourself using the available tools.\n`;
+      }
+
+      if (teamCfg.handoff_style === 'seamless') {
+        soulMd += '\n### Handoff Style: Seamless\nHandle all specialist tasks yourself. The customer should experience one smooth conversation.\n';
+      } else {
+        soulMd += '\n### Handoff Style: Announced\nWhen switching to a specialist area, briefly acknowledge: "Let me help you with that scheduling." Then handle it.\n';
+      }
+    }
+  }
+
   // ── Push SOUL.md to live container (fire-and-forget if container not running) ─
   let containerPushed = false;
   let containerWarning: string | undefined;
