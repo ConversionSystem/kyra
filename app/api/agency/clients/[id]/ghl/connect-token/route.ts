@@ -12,7 +12,7 @@ import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { syncIntegrationsToContainer } from '@/lib/integrations/sync';
 
 const GHL_API_BASE = 'https://services.leadconnectorhq.com';
-const GHL_API_VERSION = '2021-04-15';
+const GHL_API_VERSION = '2021-07-28';
 
 export async function POST(
   request: NextRequest,
