@@ -27,6 +27,7 @@ export interface SendEmailParams {
   html?: string;      // optional HTML
   replyTo?: string;
   fromName?: string;  // override sender name
+  fromEmail?: string; // override full from address e.g. "Name <addr@domain.com>"
 }
 
 export interface SendSmsParams {
@@ -54,7 +55,7 @@ export async function sendEmailViaResend(params: SendEmailParams): Promise<SendR
 
   try {
     const { data, error } = await resend.emails.send({
-      from: `${params.fromName || FROM_NAME} <${FROM_EMAIL}>`,
+      from: params.fromEmail || `${params.fromName || FROM_NAME} <${FROM_EMAIL}>`,
       to: [params.to],
       subject: params.subject,
       text: params.body,
