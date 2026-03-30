@@ -76,7 +76,15 @@ const navSections: NavSection[] = [
       { label: 'Activity', href: '/agency/audit', icon: ShieldCheck },
     ],
   },
-  // CRM now lives inside each client's dashboard (CRM tab)
+  // CRM — Contacts + Deal Pipeline
+  {
+    label: 'CRM',
+    collapsible: true,
+    items: [
+      { label: 'Contacts', href: '/agency/crm/contacts', icon: ContactIcon },
+      { label: 'Deal Pipeline', href: '/agency/crm/deals', icon: TargetIcon },
+    ],
+  },
   {
     label: 'Account',
     collapsible: true,
