@@ -87,11 +87,13 @@ export async function POST(req: NextRequest) {
   // Update usage counter (best-effort)
   try { await svc.rpc('increment_client_usage', { p_client_id: clientId }); } catch { /* ignore */ }
 
-  // Deduct credit for the call (1 credit = 1 conversation, including calls)
-  // (non-fatal — don't block if credits table doesn't exist)
+  // Deduct 2 credits for voice call (non-fatal)
   try {
-    const { deductCredit } = await import('@/lib/billing/credit-engine');
-    await deductCredit(client.agency_id, clientId, `Voice call (${callRecord.direction}, ${callRecord.durationSeconds ?? 0}s)`);
+    const { deductCredits } = await import('@/lib/billing/credit-engine');
+    await deductCredits(client.agency_id, 'channel.voice_call', {
+      clientId,
+      description: `Voice call (${callRecord.direction}, ${callRecord.durationSeconds ?? 0}s)`,
+    });
   } catch { /* non-fatal */ }
 
   // Trigger GHL follow-up if call indicates a hot lead

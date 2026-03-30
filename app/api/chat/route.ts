@@ -12,6 +12,7 @@ import { generateConversationTitle } from '@/lib/utils';
 import { Message, Conversation, MemoryType, User } from '@/types';
 import { Plan } from '@/lib/billing/plans';
 import { getAgencyCredits, deductCredits, type CreditAction } from '@/lib/billing/credit-engine';
+import { getCreditsForModel } from '@/lib/billing/model-credits';
 import { processMessageForGraph } from '@/lib/memory/graph';
 import { resolveModelPreference } from '@/lib/ai/model-router';
 import { v4 as uuid } from 'uuid';
@@ -367,12 +368,13 @@ export async function POST(request: NextRequest) {
     else if (hasImageAnalysis) creditAction = 'chat.image_analysis';
     else if (hasFileAnalysis) creditAction = 'chat.file_analysis';
     else if (hasWebSearch || hasUrls || hasToolSkills) creditAction = 'chat.web_search';
-    const creditCost = 1; // Will be determined by deductCredits
+    const creditCost = getCreditsForModel(modelConfig.id);
 
     // Deduct credits via unified engine
     if (agencyId) {
       await deductCredits(agencyId, creditAction, {
-        description: `Chat: ${message.slice(0, 80)}`,
+        override: creditCost,
+        description: `Chat (${modelConfig.id}): ${message.slice(0, 60)}`,
       });
     }
 

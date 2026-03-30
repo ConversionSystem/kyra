@@ -159,6 +159,43 @@ export const MODEL_CREDITS: Record<string, number> = Object.fromEntries(
   MODELS.map(m => [m.id, m.creditsPerTurn])
 );
 
+/**
+ * Aliases for model IDs that arrive in non-canonical formats.
+ * OpenRouter, gateway, and dot-notation variants → internal canonical ID.
+ */
+const MODEL_ID_ALIASES: Record<string, string> = {
+  // OpenRouter full slugs — Anthropic
+  'anthropic/claude-4.6-sonnet-20260217': 'claude-sonnet-4-6',
+  'anthropic/claude-sonnet-4.6': 'claude-sonnet-4-6',
+  'openrouter/anthropic/claude-sonnet-4.6': 'claude-sonnet-4-6',
+  'anthropic/claude-4.5-haiku-20251001': 'claude-haiku-4-5',
+  'anthropic/claude-haiku-4.5': 'claude-haiku-4-5',
+  'openrouter/anthropic/claude-haiku-4.5': 'claude-haiku-4-5',
+  'anthropic/claude-3-5-haiku-20241022': 'claude-haiku-3-5',
+  'anthropic/claude-haiku-3.5': 'claude-haiku-3-5',
+  'openrouter/anthropic/claude-haiku-3.5': 'claude-haiku-3-5',
+  'anthropic/claude-sonnet-3-7': 'claude-sonnet-3-7',
+  'anthropic/claude-3-7-sonnet-20250219': 'claude-sonnet-3-7',
+  'openrouter/anthropic/claude-sonnet-3.7': 'claude-sonnet-3-7',
+  'anthropic/claude-opus-4.6': 'claude-opus-4-6',
+  'openrouter/anthropic/claude-opus-4.6': 'claude-opus-4-6',
+  // OpenRouter full slugs — OpenAI
+  'openai/gpt-4o-mini': 'gpt-4o-mini',
+  'openai/gpt-4o': 'gpt-4o',
+  'openai/o3-mini': 'o3-mini',
+  'openai/o3': 'o3',
+  'openai/o1': 'o1',
+  // OpenRouter full slugs — Google
+  'google/gemini-2.0-flash-001': 'gemini-2.0-flash',
+  'google/gemini-2.5-pro': 'gemini-2.5-pro',
+  // Dot-notation variants (non-canonical)
+  'claude-haiku-4.5': 'claude-haiku-4-5',
+  'claude-sonnet-4.6': 'claude-sonnet-4-6',
+  'claude-sonnet-3.7': 'claude-sonnet-3-7',
+  'claude-opus-4.6': 'claude-opus-4-6',
+  'claude-haiku-3.5': 'claude-haiku-3-5',
+};
+
 /** Map of model ID → router max tier */
 export const MODEL_ROUTER_TIER: Record<string, number> = Object.fromEntries(
   MODELS.map(m => [m.id, m.routerMaxTier])
@@ -169,12 +206,23 @@ export const DEFAULT_MODEL_ID = 'gpt-4o-mini';
 export const DEFAULT_CREDITS_PER_TURN = 1;
 
 /**
+ * Normalize any model ID format to the internal canonical ID.
+ * Handles OpenRouter slugs, dot-notation, and case variations.
+ */
+export function normalizeModelId(modelId: string | null | undefined): string {
+  if (!modelId) return DEFAULT_MODEL_ID;
+  // Try exact match first, then lowercased
+  return MODEL_ID_ALIASES[modelId] ?? MODEL_ID_ALIASES[modelId.toLowerCase()] ?? modelId;
+}
+
+/**
  * Get credit cost for a model ID.
- * Falls back to DEFAULT_CREDITS_PER_TURN if model not found.
+ * Normalizes the ID first, then falls back to DEFAULT_CREDITS_PER_TURN.
  */
 export function getCreditsForModel(modelId: string | null | undefined): number {
   if (!modelId) return DEFAULT_CREDITS_PER_TURN;
-  return MODEL_CREDITS[modelId] ?? DEFAULT_CREDITS_PER_TURN;
+  const normalized = normalizeModelId(modelId);
+  return MODEL_CREDITS[normalized] ?? DEFAULT_CREDITS_PER_TURN;
 }
 
 /**

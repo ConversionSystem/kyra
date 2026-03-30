@@ -21,6 +21,7 @@ import { generateConversationTitle } from '@/lib/utils';
 import { Message, Conversation, MemoryType, User } from '@/types';
 import { Plan } from '@/lib/billing/plans';
 import { getAgencyCredits, deductCredits } from '@/lib/billing/credit-engine';
+import { getCreditsForModel } from '@/lib/billing/model-credits';
 import { getSessionKeyForClient, getSessionKeyForUser, getSystemContextForClient, getSystemPromptForClient } from '@/lib/agency/container';
 import { resolveModelPreference } from '@/lib/ai/model-router';
 import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
@@ -184,12 +185,14 @@ export async function POST(request: NextRequest) {
       conversation = data as Conversation;
     }
 
-    // Deduct credits via unified engine
-    const creditCost = 1;
+    // Deduct credits via unified engine — model-aware
+    const workerModel = (user as any).settings?.preferred_model;
+    const creditCost = getCreditsForModel(workerModel);
     if (workerAgencyId) {
       await deductCredits(workerAgencyId, 'chat.message', {
+        override: creditCost,
         clientId: clientId || undefined,
-        description: `Worker chat: ${message.slice(0, 80)}`,
+        description: `Worker chat (${workerModel || 'default'}): ${message.slice(0, 60)}`,
       });
     }
 

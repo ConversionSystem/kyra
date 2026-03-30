@@ -24,6 +24,7 @@ import { streamChat } from '@/lib/ai/claude';
 import { Message, Conversation, MemoryType, User } from '@/types';
 import { Plan } from '@/lib/billing/plans';
 import { getAgencyCredits, deductCredits } from '@/lib/billing/credit-engine';
+import { getCreditsForModel } from '@/lib/billing/model-credits';
 import { v4 as uuid } from 'uuid';
 import {
   getOrCreateSession,
@@ -231,11 +232,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Deduct credits via unified engine
-    const creditCost = 1;
+    // Deduct credits via unified engine — use user's preferred model for credit lookup
+    const userModel = (user as any).settings?.preferred_model;
+    const creditCost = getCreditsForModel(userModel);
     if (ocAgencyId) {
       await deductCredits(ocAgencyId, 'chat.message', {
-        description: `OpenClaw chat: ${message.slice(0, 80)}`,
+        override: creditCost,
+        description: `OpenClaw chat (${userModel || 'default'}): ${message.slice(0, 60)}`,
       });
     }
 
@@ -469,10 +472,12 @@ async function handleDirectClaude(
 
   const systemPrompt = getSystemPrompt(memories, reminders, calendarEvents);
 
-  const fallbackCreditCost = 1;
+  const userModelPrefFb = (user as any).settings?.preferred_model;
+  const fallbackCreditCost = getCreditsForModel(userModelPrefFb);
   if (ocAgencyId) {
     await deductCredits(ocAgencyId, 'chat.message', {
-      description: 'OpenClaw chat (fallback)',
+      override: fallbackCreditCost,
+      description: `OpenClaw chat fallback (${userModelPrefFb || 'default'})`,
     });
   }
 

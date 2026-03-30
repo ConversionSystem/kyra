@@ -9,7 +9,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
-import { deductCredit } from '@/lib/billing/credit-engine';
+import { deductCredits } from '@/lib/billing/credit-engine';
+import { getCreditsForModel } from '@/lib/billing/model-credits';
 import { processWithSmartEngine } from '@/lib/ghl/smart-handler';
 import { resolveClientGateway } from '@/lib/ovh/provisioner';
 import type { AgencyClient } from '@/lib/agency/types';
@@ -454,7 +455,7 @@ export async function GET(request: NextRequest) {
     const supabase = getSupabase();
     const { data: clients, error: dbError } = await supabase
       .from('agency_clients')
-      .select('id, name, status, ghl_location_id, ghl_private_token, ghl_access_token, agency_id, container_config, ghl_last_contact_scan')
+      .select('id, name, status, ghl_location_id, ghl_private_token, ghl_access_token, agency_id, container_config, ghl_last_contact_scan, ai_model')
       .in('status', ['active', 'setup'])
       .or('ghl_access_token.not.is.null,ghl_private_token.not.is.null');
 
@@ -751,11 +752,17 @@ export async function GET(request: NextRequest) {
           addLog(`  ✅ Reply sent to ${conv.contactName || conv.phone}`);
           totalProcessed++;
 
-          // Deduct 1 credit for this AI conversation (fire-and-forget — never blocks reply)
-          void deductCredit(
+          // Deduct model-aware credits (fire-and-forget — never blocks reply)
+          const ghlModel = (client as any).ai_model || 'gpt-4o-mini';
+          const ghlCredits = getCreditsForModel(ghlModel);
+          void deductCredits(
             client.agency_id as string,
-            client.id,
-            `GHL ${sendType} reply to ${conv.contactName || conv.phone || 'contact'}`,
+            'channel.ghl_sms',
+            {
+              override: ghlCredits,
+              clientId: client.id,
+              description: `GHL ${sendType} reply (${ghlModel}) to ${conv.contactName || conv.phone || 'contact'}`,
+            },
           ).then(result => {
             if (result.insufficient) {
               addLog(`  ⚠️ Credits exhausted for agency ${client.agency_id} — reply still sent`);

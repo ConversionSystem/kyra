@@ -26,7 +26,8 @@ import { resolveNativeModel } from '@/lib/agency/ai-models';
 import { GHL_TOOL_DEFINITIONS, executeTool, type ToolContext } from './ghl-tools';
 import { getConversationHistory, saveConversationTurn } from './conversation-memory';
 import { defend, scanOutput } from '@/lib/security/prompt-injection';
-import { deductCredit } from '@/lib/billing/credit-engine';
+import { deductCredits } from '@/lib/billing/credit-engine';
+import { getCreditsForModel } from '@/lib/billing/model-credits';
 import { routeMessage } from './model-router';
 import { ROLE_WORKERS } from '@/lib/ai-workers/role-workers';
 import { resolveGHLConfig } from './resolve-ghl-config';
@@ -693,17 +694,23 @@ async function processConversation(
     }
   }
 
-  // ── Deduct 1 credit per conversation ─────────────────────────────────
+  // ── Deduct model-aware credits per conversation ──────────────────────
   try {
-    const creditResult = await deductCredit(
+    const pollerModel = (client as any).ai_model || 'gpt-4o-mini';
+    const pollerCredits = getCreditsForModel(pollerModel);
+    const creditResult = await deductCredits(
       client.agency_id,
-      client.id,
-      `AI reply to ${contactName} via ${formatChannelName(messageType)}`,
+      'channel.ghl_sms',
+      {
+        override: pollerCredits,
+        clientId: client.id,
+        description: `AI reply (${pollerModel}) to ${contactName} via ${formatChannelName(messageType)}`,
+      },
     );
     if (creditResult.insufficient) {
       console.warn(`[ghl/poller] ⚠️ Agency ${client.agency_id} has 0 credits — consider topping up`);
     } else {
-      console.log(`[ghl/poller] 🪙 Credit deducted | balance: ${creditResult.newBalance}`);
+      console.log(`[ghl/poller] 🪙 Credit deducted (${pollerCredits}) | balance: ${creditResult.newBalance}`);
     }
   } catch (creditErr) {
     // Non-fatal — never block a reply over a credit issue
