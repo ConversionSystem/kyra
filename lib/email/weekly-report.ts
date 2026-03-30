@@ -181,38 +181,23 @@ function escHtml(str: string): string {
 }
 
 /**
- * Send weekly report email via Resend API (no SDK — plain fetch).
+ * Send weekly report email via GHL platform account.
+ * Sends from hello@conversionsystem.com (verified + warmed in GHL).
  */
 export async function sendWeeklyReport(data: AgencyReportData): Promise<{ ok: boolean; error?: string }> {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    return { ok: false, error: 'RESEND_API_KEY not configured. Add it in Vercel environment variables.' };
-  }
+  const { sendPlatformEmail } = await import('./ghl-platform-sender');
 
   const html = buildWeeklyReportHtml(data);
   const subject = `📊 Weekly Report: ${data.agencyName} — ${data.weekStart} to ${data.weekEnd}`;
-  const from = 'Kyra Reports <reports@conversionsystem.com>';
 
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      from,
-      to: [data.reportEmail],
-      subject,
-      html,
-    }),
+  const result = await sendPlatformEmail({
+    to: data.reportEmail,
+    subject,
+    html,
+    fromName: 'Kyra Reports',
   });
 
-  if (!res.ok) {
-    const body = await res.text();
-    return { ok: false, error: `Resend API error ${res.status}: ${body}` };
-  }
-
-  return { ok: true };
+  return { ok: result.ok, error: result.error };
 }
 
 /**

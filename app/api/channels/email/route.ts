@@ -78,10 +78,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'clientId and to are required' }, { status: 400 });
   }
 
-  const resendKey = process.env.RESEND_API_KEY;
-  if (!resendKey) {
-    return NextResponse.json({ error: 'Email not configured (RESEND_API_KEY missing)' }, { status: 503 });
-  }
+  // Email now routes through GHL platform account — no RESEND_API_KEY check needed
 
   const supabase = getSupabase();
 
@@ -200,28 +197,20 @@ export async function POST(request: NextRequest) {
 </body>
 </html>`;
 
-  // Send via Resend
-  const sendRes = await fetch(RESEND_API, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${resendKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      from: `${senderName} <${senderEmail}>`,
-      to: toName ? `${toName} <${to}>` : to,
-      subject: emailSubject,
-      html: htmlBody,
-    }),
-    signal: AbortSignal.timeout(10_000),
+  // Send via GHL platform account (hello@conversionsystem.com)
+  const { sendPlatformEmail } = await import('@/lib/email/ghl-platform-sender');
+  const sendResult = await sendPlatformEmail({
+    to: toName ? `${toName} <${to}>` : to,
+    subject: emailSubject,
+    html: htmlBody,
+    fromName: senderName,
   });
 
-  if (!sendRes.ok) {
-    const errText = await sendRes.text().catch(() => '');
-    return NextResponse.json({ error: `Resend error: ${sendRes.status} ${errText.slice(0, 200)}` }, { status: 502 });
+  if (!sendResult.ok) {
+    return NextResponse.json({ error: `Email send failed: ${sendResult.error}` }, { status: 502 });
   }
 
-  const sendData = await sendRes.json();
+  const sendData = { id: sendResult.messageId };
 
   // Log to client_conversations
   void supabase.from('client_conversations').insert({
