@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
   const cfg = (client.container_config as Record<string, unknown>) ?? {};
   const persona = (cfg.persona as string) || `AI assistant for ${client.name}`;
   const senderName = fromName || (cfg.email_sender_name as string) || client.name;
-  const senderEmail = (cfg.email_from as string) || `hello@kyra.conversionsystem.com`;
+  const senderEmail = (cfg.email_from as string) || `hello@updates.conversionsystem.com`;
 
   const templatePrompt = TEMPLATE_PROMPTS[templateId] || TEMPLATE_PROMPTS.custom;
   const recipientInfo = toName ? `The recipient's name is ${toName}.` : '';
