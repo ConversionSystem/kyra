@@ -11,7 +11,7 @@
 // ============================================================================
 
 const RESEND_API = 'https://api.resend.com/emails';
-const FROM = 'Angel from Kyra <angel@kyra.conversionsystem.com>';
+const FROM = 'Angel from Kyra <hello@updates.conversionsystem.com>';
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || 'https://kyra.conversionsystem.com').replace(/\/$/, '');
 
 type SequenceDay = 1 | 3 | 5 | 7;
