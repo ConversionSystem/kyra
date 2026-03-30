@@ -390,10 +390,9 @@ export default function GHLConnection({
         ) : (
           /* ── Disconnected State ───────────────────────────────────────── */
           <div className="space-y-6">
-            <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-100 px-4 py-3">
-              <X className="h-5 w-5 text-gray-400" />
-              <span className="text-gray-500">Not connected</span>
-            </div>
+
+            {/* ── Free GHL Sub-Account Banner ───────────────────────── */}
+            <GHLFreeSubAccountBanner clientId={clientId} onRequested={() => onConnected?.()} />
 
             {/* ── Method 1: Private Integration Token (Recommended) ───── */}
             <div className="rounded-lg border-2 border-indigo-200 bg-indigo-50/30 p-5 space-y-4">
@@ -547,18 +546,7 @@ export default function GHLConnection({
               </div>
             </div>
 
-            {/* ── Divider ─────────────────────────────────────────────── */}
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-gray-200" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-gray-400">or</span>
-              </div>
-            </div>
-
-            {/* ── Method 2: Request Free GHL Sub-Account ───────────── */}
-            <RequestGHLSubAccount clientId={clientId} onRequested={() => onConnected?.()} />
+            {/* RequestGHLSubAccount moved to banner at top */}
 
             {/* ── Capabilities list ───────────────────────────────────── */}
             <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-500 space-y-2">
@@ -583,16 +571,78 @@ export default function GHLConnection({
   );
 }
 
-// ── Request GHL Sub-Account ───────────────────────────────────────────────────
+// ── Free Sub-Account Banner ───────────────────────────────────────────────────
 
-function RequestGHLSubAccount({
+function GHLFreeSubAccountBanner({
   clientId,
   onRequested,
 }: {
   clientId: string;
   onRequested: () => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className={`rounded-xl border-2 transition-all duration-200 overflow-hidden ${
+      expanded
+        ? 'border-indigo-300 bg-indigo-50/40 shadow-sm'
+        : 'border-indigo-200 bg-gradient-to-r from-indigo-50 to-violet-50 hover:border-indigo-300 hover:shadow-sm'
+    }`}>
+      {/* Banner header — always visible */}
+      <button
+        onClick={() => setExpanded(v => !v)}
+        className="w-full flex items-center gap-3 px-5 py-4 text-left"
+      >
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-100 shrink-0">
+          <Plug className="h-4 w-4 text-indigo-600" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-semibold text-gray-900 text-sm">
+              Don&apos;t have a GoHighLevel account?
+            </span>
+            <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700 shrink-0">
+              Free
+            </span>
+          </div>
+          <p className="text-xs text-gray-500 mt-0.5">
+            We&apos;ll create a free GHL sub-account for this client — usually within 1 business day.
+          </p>
+        </div>
+        <div className={`shrink-0 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}>
+          <ChevronDown className="h-4 w-4 text-indigo-400" />
+        </div>
+      </button>
+
+      {/* Expandable form */}
+      {expanded && (
+        <div className="border-t border-indigo-200 px-5 pb-5 pt-4">
+          <RequestGHLSubAccount
+            clientId={clientId}
+            onRequested={() => {
+              onRequested();
+              setExpanded(false);
+            }}
+            inline
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Request GHL Sub-Account ───────────────────────────────────────────────────
+
+function RequestGHLSubAccount({
+  clientId,
+  onRequested,
+  inline = false,
+}: {
+  clientId: string;
+  onRequested: () => void;
+  inline?: boolean;
+}) {
+  const [open, setOpen] = useState(inline); // auto-open when used in banner
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -660,21 +710,24 @@ function RequestGHLSubAccount({
   }
 
   return (
-    <div className="rounded-lg border border-indigo-200 bg-indigo-50/50 p-5 space-y-3">
-      <div className="flex items-center gap-2">
-        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-100">
-          <Plug className="h-3.5 w-3.5 text-indigo-600" />
-        </div>
-        <h3 className="font-medium text-gray-900">Get a Free GHL Sub-Account</h3>
-        <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">
-          Free
-        </span>
-      </div>
-
-      <p className="text-sm text-gray-600">
-        Don&apos;t have a GoHighLevel account? Fill out this form — our team will create a free
-        sub-account for this client and connect it automatically. Usually done within 1 business day.
-      </p>
+    <div className={inline ? 'space-y-3' : 'rounded-lg border border-indigo-200 bg-indigo-50/50 p-5 space-y-3'}>
+      {!inline && (
+        <>
+          <div className="flex items-center gap-2">
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-100">
+              <Plug className="h-3.5 w-3.5 text-indigo-600" />
+            </div>
+            <h3 className="font-medium text-gray-900">Get a Free GHL Sub-Account</h3>
+            <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">
+              Free
+            </span>
+          </div>
+          <p className="text-sm text-gray-600">
+            Don&apos;t have a GoHighLevel account? Fill out this form — our team will create a free
+            sub-account for this client and connect it automatically. Usually done within 1 business day.
+          </p>
+        </>
+      )}
 
       {!open ? (
         <button
@@ -686,13 +739,15 @@ function RequestGHLSubAccount({
         </button>
       ) : (
         <div className="space-y-3">
-          <button
-            onClick={() => setOpen(false)}
-            className="flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-800 transition-colors"
-          >
-            <ChevronUp className="h-4 w-4" />
-            Hide form
-          </button>
+          {!inline && (
+            <button
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-800 transition-colors"
+            >
+              <ChevronUp className="h-4 w-4" />
+              Hide form
+            </button>
+          )}
 
           {error && (
             <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
