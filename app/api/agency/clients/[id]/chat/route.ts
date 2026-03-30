@@ -18,6 +18,7 @@ import { resolveClientGateway } from '@/lib/ovh/provisioner';
 import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
 import { dispatchWebhookIfConfigured } from '@/lib/agency/webhook-dispatcher';
 import { deductCredits, requireCredits } from '@/lib/billing/credit-engine';
+import { getCreditsForModel } from '@/lib/billing/model-credits';
 
 export async function POST(
   request: NextRequest,
@@ -104,6 +105,8 @@ export async function POST(
     ].join('\n');
 
     // 7. Forward to the client's gateway via /v1/chat/completions (OpenAI-compatible)
+    const chatModel = (client as any).ai_model || 'openrouter/anthropic/claude-haiku-4.5';
+    const chatCredits = getCreditsForModel(chatModel);
     const chatMessages: Array<{ role: string; content: string }> = [];
     if (systemContext) {
       chatMessages.push({ role: 'system', content: systemContext });
@@ -119,7 +122,7 @@ export async function POST(
           'Authorization': `Bearer ${resolved.token}`,
         },
         body: JSON.stringify({
-          model: 'openrouter/anthropic/claude-haiku-4.5',
+          model: chatModel,
           messages: chatMessages,
           stream: true,
         }),
@@ -206,10 +209,11 @@ export async function POST(
                     .from('client_conversations')
                     .insert({ client_id: clientId, agency_id: client.agency_id, channel: 'test_chat', user_message: message, ai_response: fullResponse });
                 } catch { /* table may not exist yet */ }
-                // Deduct credit for this conversation
+                // Deduct credit for this conversation — model-aware
                 await deductCredits(client.agency_id, 'chat.message', {
+                  override: chatCredits,
                   clientId,
-                  description: `Test chat: ${message.slice(0, 60)}`,
+                  description: `Test chat (${chatModel}): ${message.slice(0, 50)}`,
                 });
                 void dispatchWebhookIfConfigured({ clientId, agencyId: client.agency_id, channel: 'test_chat', userMessage: message, aiResponse: fullResponse });
               })();
@@ -265,10 +269,11 @@ export async function POST(
                     .from('client_conversations')
                     .insert({ client_id: clientId, agency_id: client.agency_id, channel: 'test_chat', user_message: message, ai_response: fullResponse });
                 } catch { /* table may not exist yet */ }
-                // Deduct credit for this conversation
+                // Deduct credit for this conversation — model-aware
                 await deductCredits(client.agency_id, 'chat.message', {
+                  override: chatCredits,
                   clientId,
-                  description: `Test chat: ${message.slice(0, 60)}`,
+                  description: `Test chat (${chatModel}): ${message.slice(0, 50)}`,
                 });
                 void dispatchWebhookIfConfigured({ clientId, agencyId: client.agency_id, channel: 'test_chat', userMessage: message, aiResponse: fullResponse });
               })();

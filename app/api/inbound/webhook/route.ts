@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
   // Fetch client and verify token
   const { data: client } = await svc
     .from('agency_clients')
-    .select('id, name, container_config, agency_id, gateway_status')
+    .select('id, name, container_config, agency_id, gateway_status, ai_model')
     .eq('id', clientId)
     .single();
 
@@ -137,10 +137,17 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // Deduct credit (non-fatal)
+  // Deduct credit — model-aware (non-fatal)
   try {
-    const { deductCredit } = await import('@/lib/billing/credit-engine');
-    await deductCredit(client.agency_id, clientId, 'Webhook/Zapier AI response');
+    const { deductCredits } = await import('@/lib/billing/credit-engine');
+    const { getCreditsForModel } = await import('@/lib/billing/model-credits');
+    const webhookModel = (client as any).ai_model || 'gpt-4o-mini';
+    const webhookCredits = getCreditsForModel(webhookModel);
+    await deductCredits(client.agency_id, 'channel.inbound_webhook', {
+      override: webhookCredits,
+      clientId,
+      description: `Webhook (${webhookModel}) AI response`,
+    });
   } catch { /* non-fatal */ }
 
   // Return the AI response — Zapier can use it in next steps (SMS, email, CRM note, etc.)
