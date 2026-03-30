@@ -15,7 +15,6 @@ import {
   X,
   Loader2,
   Unplug,
-  Plug,
   RefreshCw,
   Key,
   ChevronDown,
@@ -547,22 +546,7 @@ export default function GHLConnection({
               </div>
             </div>
 
-            {/* ── Divider ─────────────────────────────────────────────── */}
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-gray-200" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-gray-400">or</span>
-              </div>
-            </div>
-
-            {/* ── Method 2: Create Free GHL Sub-Account ────────────── */}
-            <CreateFreeSubAccount clientId={clientId} onCreated={(locationId) => {
-              setLocationIdInput(locationId);
-              setSuccess(`GHL sub-account created! Location ID auto-filled. Now connect with an API token or use it directly.`);
-              onConnected?.();
-            }} />
+            {/* Create Free Sub-Account is hidden until GHL Marketplace app is approved */ }
 
             {/* ── Capabilities list ───────────────────────────────────── */}
             <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-500 space-y-2">
@@ -587,108 +571,7 @@ export default function GHLConnection({
   );
 }
 
-// ── Create Free GHL Sub-Account ──────────────────────────────────────────────
-
-function CreateFreeSubAccount({ clientId, onCreated }: { clientId: string; onCreated: (locationId: string) => void }) {
-  const [creating, setCreating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [suggestion, setSuggestion] = useState<string | null>(null);
-  const [needsAgencyConnect, setNeedsAgencyConnect] = useState(false);
-  const [created, setCreated] = useState(false);
-
-  const handleCreate = async () => {
-    setCreating(true);
-    setError(null);
-    setSuggestion(null);
-    setNeedsAgencyConnect(false);
-    try {
-      const res = await fetch(`/api/agency/clients/${clientId}/ghl/create-subaccount`, { method: 'POST' });
-      const data = await res.json() as { error?: string; suggestion?: string; needsAgencyConnect?: boolean; locationId?: string };
-      if (!res.ok) {
-        setError(data.error || 'Failed to create sub-account');
-        setSuggestion(data.suggestion || null);
-        setNeedsAgencyConnect(data.needsAgencyConnect ?? false);
-        return;
-      }
-      setCreated(true);
-      if (data.locationId) onCreated(data.locationId);
-    } catch {
-      setError('Network error. Please try again.');
-    } finally {
-      setCreating(false);
-    }
-  };
-
-  if (created) {
-    return (
-      <div className="rounded-lg border border-green-200 bg-green-50 p-5 space-y-2">
-        <div className="flex items-center gap-2">
-          <Check className="h-5 w-5 text-green-600" />
-          <h3 className="font-medium text-green-800">GHL Sub-Account Created!</h3>
-        </div>
-        <p className="text-sm text-green-700">
-          Your free GoHighLevel sub-account is ready. The Location ID has been auto-saved to this client.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="rounded-lg border border-indigo-200 bg-indigo-50/50 p-5 space-y-3">
-      <div className="flex items-center gap-2">
-        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-100">
-          <Plug className="h-3.5 w-3.5 text-indigo-600" />
-        </div>
-        <h3 className="font-medium text-gray-900">
-          Create a Free GHL Sub-Account
-        </h3>
-        <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">
-          Free
-        </span>
-      </div>
-
-      <p className="text-sm text-gray-600">
-        Don&apos;t have a GoHighLevel account? We&apos;ll create a free sub-account for this client — includes phone number, SMS, email, calendar, pipeline, and automations. No GHL subscription needed.
-      </p>
-
-      {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 space-y-3">
-          <p className="text-sm text-red-700 font-medium">Could not create sub-account</p>
-          <p className="text-xs text-red-600">{error}</p>
-          {needsAgencyConnect ? (
-            <div className="pt-1">
-              <a
-                href="/agency/settings"
-                className="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 transition-colors"
-              >
-                <Plug className="h-3 w-3" />
-                Connect GHL Agency Account in Settings →
-              </a>
-            </div>
-          ) : suggestion ? (
-            <p className="text-xs text-gray-500">
-              <strong>Alternative:</strong> {suggestion}
-            </p>
-          ) : (
-            <p className="text-xs text-gray-500">
-              <strong>Alternative:</strong> Use the &quot;Connect with API Token&quot; option above — it works with any existing GHL account.
-            </p>
-          )}
-        </div>
-      )}
-
-      <Button
-        onClick={handleCreate}
-        disabled={creating}
-        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center gap-2"
-      >
-        {creating ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <Plug className="h-4 w-4" />
-        )}
-        {creating ? 'Creating sub-account...' : 'Create Free GHL Sub-Account'}
-      </Button>
-    </div>
-  );
-}
+// CreateFreeSubAccount removed — pending GHL Marketplace app approval.
+// The OAuth flow requires a published GHL app. Will be re-enabled post-approval.
+// Backend routes (/api/agency/ghl/*, /api/agency/clients/[id]/ghl/create-subaccount)
+// are ready and waiting — just need the frontend entry point back once GHL approves.
