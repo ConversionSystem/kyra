@@ -139,9 +139,9 @@ export async function GET(request: NextRequest) {
     console.error('[nurture-cron] DB error:', nurtureError.message);
   }
 
-  const resendKey = process.env.RESEND_API_KEY;
+  if (pendingEmails?.length) {
+    const { sendPlatformEmail } = await import('@/lib/email/ghl-platform-sender');
 
-  if (pendingEmails?.length && resendKey) {
     for (const row of pendingEmails) {
       const emailContent = getNurtureEmail(row.sequence_step as 1|2|3|4|5|6|7, row.email);
       if (!emailContent) {
@@ -154,30 +154,14 @@ export async function GET(request: NextRequest) {
       }
 
       try {
-        const res = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${resendKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            from: NURTURE_FROM,
-            to: row.email,
-            subject: emailContent.subject,
-            html: emailContent.html,
-            tags: [
-              { name: 'type', value: 'nurture' },
-              { name: 'step', value: String(row.sequence_step) },
-              { name: 'agency_id', value: row.agency_id },
-            ],
-          }),
-          signal: AbortSignal.timeout(10_000),
+        const result = await sendPlatformEmail({
+          to: row.email,
+          subject: emailContent.subject,
+          html: emailContent.html,
+          fromName: 'Angel from Kyra',
         });
 
-        if (!res.ok) {
-          const errText = await res.text().catch(() => '');
-          throw new Error(`Resend ${res.status}: ${errText.slice(0, 100)}`);
-        }
+        if (!result.ok) throw new Error(result.error || 'Send failed');
 
         await supabase
           .from('email_nurture_queue')
@@ -187,13 +171,14 @@ export async function GET(request: NextRequest) {
         console.log(`[nurture-cron] ✅ Step ${row.sequence_step} → ${row.email}`);
         nurtureResults.push({ id: row.id, step: row.sequence_step, result: 'sent' });
         nurtureSent++;
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
         await supabase
           .from('email_nurture_queue')
           .update({ status: 'failed' })
           .eq('id', row.id);
-        console.error(`[nurture-cron] ❌ Step ${row.sequence_step} → ${row.email}:`, err.message);
-        nurtureResults.push({ id: row.id, step: row.sequence_step, result: `failed: ${err.message}` });
+        console.error(`[nurture-cron] ❌ Step ${row.sequence_step} → ${row.email}:`, msg);
+        nurtureResults.push({ id: row.id, step: row.sequence_step, result: `failed: ${msg}` });
       }
     }
   }
