@@ -6,6 +6,7 @@ interface CtaData {
   bookingUrl?: string;
   businessName?: string;
   emergencyText?: string;
+  clientId?: string;
   colors: { primary: string; secondary: string };
 }
 
@@ -17,7 +18,7 @@ export function phoneBannerCta(data: CtaData): string {
 
   const urgencyText = data.emergencyText || 'Call or Text — We Respond Fast';
 
-  return `<section style="background: linear-gradient(130deg, ${secondary} 0%, ${primary} 45%, ${primary}dd 100%); position: relative; overflow: hidden; padding: 4.5rem 1.5rem;" aria-label="Call to action">
+  return `<section id="contact" style="background: linear-gradient(130deg, ${secondary} 0%, ${primary} 45%, ${primary}dd 100%); position: relative; overflow: hidden; padding: 4.5rem 1.5rem;" aria-label="Call to action">
   <!-- Radial glow -->
   <div style="position: absolute; inset: 0; background: radial-gradient(ellipse 80% 80% at 50% 50%, rgba(255,255,255,0.1) 0%, transparent 70%);" aria-hidden="true"></div>
   <!-- Pattern -->

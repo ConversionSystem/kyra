@@ -33,7 +33,7 @@ export function iconListServices(data: ServicesData): string {
       </li>`;
   }).join('\n      ');
 
-  return `<section class="py-16 sm:py-24 px-4 sm:px-6" style="background: var(--color-surface);" aria-label="${heading}">
+  return `<section id="services" class="py-16 sm:py-24 px-4 sm:px-6" style="background: var(--color-surface);" aria-label="${heading}">
   <div class="max-w-3xl mx-auto">
     <h2 class="text-center" style="color: #1f2937; font-size: 2.25rem; font-weight: 800; margin: 0 0 3rem 0;">${heading}</h2>
     <ul style="list-style: none; padding: 0 1rem; margin: 0;">

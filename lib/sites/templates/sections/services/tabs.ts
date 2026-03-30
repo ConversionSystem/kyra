@@ -44,7 +44,7 @@ export function tabsServices(data: ServicesData): string {
     }`;
   }).join('\n    ');
 
-  return `<section class="py-16 sm:py-24 px-4 sm:px-6" style="background: var(--color-surface);" aria-label="${heading}">
+  return `<section id="services" class="py-16 sm:py-24 px-4 sm:px-6" style="background: var(--color-surface);" aria-label="${heading}">
   <style>
     ${tabStyles}
   </style>

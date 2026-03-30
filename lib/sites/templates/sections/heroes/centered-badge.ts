@@ -45,7 +45,7 @@ export function centeredBadgeHero(data: HeroData): string {
     <p style="font-size: clamp(1.1rem, 2.2vw, 1.4rem); color: rgba(255,255,255,0.88); line-height: 1.6; margin: 0 auto 2.5rem; max-width: 36rem; text-shadow: 0 1px 8px rgba(0,0,0,0.25);">${data.subtitle}</p>
 
     <div class="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-      ${data.bookingUrl ? `<a href="${data.bookingUrl}" class="inline-flex items-center justify-center gap-2 font-bold px-10 py-4 rounded-xl text-lg shadow-2xl transition-all hover:scale-105" style="background: #ffffff; color: ${data.colors.primary};">Get Free Quote</a>` : ''}
+      <a href="${data.bookingUrl || '#contact'}" class="inline-flex items-center justify-center gap-2 font-bold px-10 py-4 rounded-xl text-lg shadow-2xl transition-all hover:scale-105" style="background: #ffffff; color: ${data.colors.primary};">Get Free Quote</a>
       ${data.phone ? `<a href="${data.phoneHref || `tel:${data.phone}`}" class="inline-flex items-center justify-center gap-2 border-2 border-white/80 text-white font-semibold px-10 py-4 rounded-xl text-lg transition-all hover:bg-white/15" style="backdrop-filter: blur(8px);">${phoneIcon()} ${data.phone}</a>` : ''}
     </div>
 

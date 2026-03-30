@@ -141,6 +141,9 @@ export interface AssemblePageOptions {
     tagline?: string;
     colorPrimary?: string;
     colorSecondary?: string;
+    domain?: string;
+    city?: string;
+    state?: string;
     /** Real Google/site reviews — used instead of placeholders when available */
     reviews?: Array<{ author_name: string; text: string; rating: number; time_description?: string }>;
   };
@@ -191,7 +194,7 @@ export function assemblePage(options: AssemblePageOptions): string {
     bookingUrl: siteData.booking_url,
     colors,
     links: [
-      { label: 'Home', href: '/' },
+      { label: 'Home', href: '#top' },
       { label: 'Services', href: '#services' },
       { label: 'About', href: '#about' },
       { label: 'Reviews', href: '#testimonials' },
@@ -269,6 +272,7 @@ export function assemblePage(options: AssemblePageOptions): string {
     bookingUrl: siteData.booking_url,
     businessName: siteData.business_name,
     emergencyText: siteData.emergencyText,
+    clientId: siteData.widget_client_id,
     colors,
   });
 
@@ -303,8 +307,25 @@ export function assemblePage(options: AssemblePageOptions): string {
     ? `<script src="https://widget.kyra.conversionsystem.com/widget.js" data-client-id="${siteData.widget_client_id}" async></script>`
     : '';
 
+  // Sticky mobile CTA bar
+  const mobileCta = `<div id="kyra-mobile-cta" style="display:none; position:fixed; bottom:0; left:0; right:0; z-index:40; background:#ffffff; border-top:1px solid #e5e7eb; padding:10px 16px; box-shadow:0 -4px 20px rgba(0,0,0,0.1);">
+  <div style="display:flex; gap:10px; max-width:600px; margin:0 auto;">
+    ${siteData.phone ? `<a href="${siteData.phoneHref || `tel:${siteData.phone}`}" style="flex:1; display:flex; align-items:center; justify-content:center; gap:8px; background:${colors.primary}; color:#fff; font-weight:700; font-size:0.95rem; padding:12px 16px; border-radius:10px; text-decoration:none;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+      Call Now
+    </a>` : ''}
+    <a href="#contact" style="flex:1; display:flex; align-items:center; justify-content:center; gap:8px; background:${colors.secondary}; color:#fff; font-weight:700; font-size:0.95rem; padding:12px 16px; border-radius:10px; text-decoration:none;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      Get Quote
+    </a>
+  </div>
+</div>
+<script>(function(){var c=document.getElementById("kyra-mobile-cta");if(!c)return;function t(){c.style.display=window.innerWidth<=768?"block":"none"}t();window.addEventListener("resize",t)})();</script>`;
+
   const metaTitle = pageData.metaTitle || `${pageData.title} | ${siteData.business_name}`;
   const metaDesc = pageData.metaDescription || pageData.hero_subtitle;
+  const siteUrl = siteData.domain ? `https://${siteData.domain}` : '';
+  const heroImage = siteData.photos?.[0]?.url || '';
 
   // Get design-style-specific CSS overrides (body bg, card styles, button styles, typography)
   // This is what makes modern-dark look different from clean-light, bold, and minimal.
@@ -324,18 +345,33 @@ export function assemblePage(options: AssemblePageOptions): string {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(metaTitle)}</title>
   <meta name="description" content="${escapeHtml(metaDesc)}">
+  <meta name="robots" content="index, follow">
+  ${siteUrl ? `<link rel="canonical" href="${siteUrl}">` : ''}
+  <meta property="og:title" content="${escapeHtml(metaTitle)}">
+  <meta property="og:description" content="${escapeHtml(metaDesc)}">
+  <meta property="og:type" content="website">
+  ${siteUrl ? `<meta property="og:url" content="${siteUrl}">` : ''}
+  ${heroImage ? `<meta property="og:image" content="${escapeHtml(heroImage)}">` : ''}
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="${escapeHtml(metaTitle)}">
+  <meta name="twitter:description" content="${escapeHtml(metaDesc)}">
+  ${heroImage ? `<meta name="twitter:image" content="${escapeHtml(heroImage)}">` : ''}
+  ${siteData.state ? `<meta name="geo.region" content="US-${escapeHtml(siteData.state)}">` : ''}
+  ${siteData.city ? `<meta name="geo.placename" content="${escapeHtml(siteData.city)}">` : ''}
   <script src="https://cdn.tailwindcss.com"></script>
   ${schemaScript}
   <style>
     :root {
       ${colorVars}
     }
+    html { scroll-behavior: smooth; }
+    [id] { scroll-margin-top: 80px; }
     /* Design style overrides — body, section, card, button, typography */
     ${designOverrideCSS}
     a { color: inherit; }
   </style>
 </head>
-<body>
+<body id="top">
   ${navbarHtml}
   <main>
     ${heroHtml}
@@ -346,6 +382,7 @@ export function assemblePage(options: AssemblePageOptions): string {
     ${ctaHtml}
   </main>
   ${footerHtml}
+  ${mobileCta}
   ${widgetScript}
 </body>
 </html>`;
