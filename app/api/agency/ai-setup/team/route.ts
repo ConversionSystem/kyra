@@ -201,7 +201,7 @@ export async function POST(request: NextRequest) {
   }
 
   // ── Rebuild SOUL.md with team context by re-applying the primary worker ─
-  let soulPushed = false;
+  let containerPushed = false;
   let warning: string | undefined;
 
   if (team.enabled && team.primary_worker_id) {
@@ -224,7 +224,7 @@ export async function POST(request: NextRequest) {
 
       if (applyRes.ok) {
         const applyData = await applyRes.json();
-        soulPushed = applyData.containerPushed;
+        containerPushed = applyData.containerPushed;
         if (applyData.warning) warning = applyData.warning;
       } else {
         warning = 'Team config saved but SOUL.md rebuild failed. Re-apply the primary worker manually.';
@@ -238,7 +238,7 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({
     success: true,
     team: workerTeam,
-    soulPushed,
+    containerPushed,
     ...(warning ? { warning } : {}),
   });
 }
