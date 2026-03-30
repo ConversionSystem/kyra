@@ -13,7 +13,7 @@
 // ============================================================================
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || 'https://kyra.conversionsystem.com').replace(/\/$/, '');
-const FROM = 'Steve from Kyra <steve@kyra.conversionsystem.com>';
+const FROM = 'Angel from Kyra <hello@updates.conversionsystem.com>';
 
 export { FROM as NURTURE_FROM };
 

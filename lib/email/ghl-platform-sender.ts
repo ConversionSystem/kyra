@@ -37,8 +37,8 @@ const PLATFORM_FROM_EMAIL =
 const PLATFORM_FROM_NAME =
   process.env.GHL_PLATFORM_FROM_NAME || 'Kyra';
 
-// Fallback sender (Resend onboarding domain — no DNS setup needed)
-const FALLBACK_FROM = 'Kyra <onboarding@resend.dev>';
+// Fallback sender via Resend — uses verified updates.conversionsystem.com domain
+const FALLBACK_FROM = 'Kyra <hello@updates.conversionsystem.com>';
 
 export interface PlatformEmailParams {
   to: string;

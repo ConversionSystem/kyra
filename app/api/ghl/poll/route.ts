@@ -311,8 +311,7 @@ async function sendEscalationAlert(opts: {
   conversationSummary: string;
   notifyEmail: string;
 }): Promise<void> {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey || !opts.notifyEmail) return;
+  if (!opts.notifyEmail) return;
 
   const html = `
     <div style="font-family:sans-serif;max-width:600px;margin:0 auto">
@@ -333,19 +332,12 @@ async function sendEscalationAlert(opts: {
       </div>
     </div>`;
 
-  await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      from: 'Kyra AI <alerts@kyra.conversionsystem.com>',
-      to: opts.notifyEmail,
-      subject: `🚨 ${opts.clientName}: ${opts.contactName} needs a human`,
-      html,
-    }),
-    signal: AbortSignal.timeout(8_000),
+  const { sendPlatformEmail } = await import('@/lib/email/ghl-platform-sender');
+  await sendPlatformEmail({
+    to: opts.notifyEmail,
+    subject: `🚨 ${opts.clientName}: ${opts.contactName} needs a human`,
+    html,
+    fromName: 'Kyra AI Alerts',
   }).catch(() => {});
 }
 
