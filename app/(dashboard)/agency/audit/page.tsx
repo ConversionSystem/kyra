@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Shield, Clock, Filter, ChevronLeft, ChevronRight,
-  AlertTriangle, CheckCircle2, XCircle, Loader2, Search,
+  AlertTriangle, CheckCircle2, XCircle, Loader2, Search, Zap,
 } from 'lucide-react';
 
 interface AuditEntry {
@@ -127,8 +127,8 @@ export default function AuditPage() {
           <Shield className="h-5 w-5 text-indigo-600" />
         </div>
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Activity Log</h1>
-          <p className="text-sm text-gray-500">All GHL actions across your clients</p>
+          <h1 className="text-xl font-semibold text-gray-900">GHL Actions Log</h1>
+          <p className="text-sm text-gray-500">Every action your AI workers took in GoHighLevel — bookings, tags, messages, and more</p>
         </div>
       </div>
 
@@ -195,9 +195,16 @@ export default function AuditPage() {
                 </tr>
               ) : entries.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center text-gray-400">
-                    <Search className="h-5 w-5 mx-auto mb-2" />
-                    No actions logged yet
+                  <td colSpan={7} className="px-4 py-16 text-center">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="h-12 w-12 rounded-xl bg-gray-100 flex items-center justify-center">
+                        <Zap className="h-6 w-6 text-gray-400" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-700 text-sm">No GHL actions yet</p>
+                        <p className="text-gray-400 text-xs mt-1 max-w-xs">When your AI workers book appointments, tag contacts, or send messages via GHL, each action will appear here.</p>
+                      </div>
+                    </div>
                   </td>
                 </tr>
               ) : entries.map(entry => (
