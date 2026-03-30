@@ -27,7 +27,7 @@ export function teamGridAbout(data: AboutData): string {
       ? `<img src="${data.photoUrl}" alt="${ownerName}" class="w-24 h-24 rounded-full object-cover shadow" />`
       : `<div class="w-24 h-24 rounded-full flex items-center justify-center text-3xl font-bold shadow" style="background: linear-gradient(135deg, ${data.colors.primary}, ${data.colors.secondary}); color: #ffffff;">${ownerName.charAt(0).toUpperCase()}</div>`;
 
-    return `<section class="py-16 sm:py-24" style="background: var(--color-surface);" aria-label="About the Owner">
+    return `<section id="about" class="py-16 sm:py-24" style="background: var(--color-surface);" aria-label="About the Owner">
   <div class="max-w-3xl mx-auto px-4 sm:px-6">
     <div class="rounded-2xl shadow-lg p-8 sm:p-12 text-center" style="background: var(--color-surface); border: 1px solid #e5e7eb;">
       <div class="flex justify-center mb-6">${ownerPhoto}</div>
@@ -56,7 +56,7 @@ export function teamGridAbout(data: AboutData): string {
     </div>`;
   }).join('');
 
-  return `<section class="py-16 sm:py-24" style="background: var(--color-surface);" aria-label="Our Team">
+  return `<section id="about" class="py-16 sm:py-24" style="background: var(--color-surface);" aria-label="Our Team">
   <div class="max-w-6xl mx-auto px-4 sm:px-6">
     <h2 class="text-3xl sm:text-4xl font-bold text-center mb-4" style="color: #1f2937;">${heading}</h2>
     ${body ? `<p class="text-center text-lg mb-12 max-w-2xl mx-auto" style="color: #6b7280;">${body}</p>` : '<div class="mb-12"></div>'}

@@ -6,6 +6,7 @@ interface CtaData {
   bookingUrl?: string;
   businessName?: string;
   emergencyText?: string;
+  clientId?: string;
   colors: { primary: string; secondary: string };
 }
 

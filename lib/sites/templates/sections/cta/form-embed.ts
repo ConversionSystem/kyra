@@ -6,6 +6,7 @@ interface CtaData {
   bookingUrl?: string;
   businessName?: string;
   emergencyText?: string;
+  clientId?: string;
   colors: { primary: string; secondary: string };
 }
 
@@ -52,7 +53,7 @@ export function formEmbedCta(data: CtaData): string {
       <div style="background: #ffffff; padding: 3.5rem;">
         <h3 style="font-size: 1.4rem; font-weight: 800; color: #111827; margin: 0 0 0.5rem 0;">Send Us a Message</h3>
         <p style="color: #6b7280; font-size: 0.9rem; margin: 0 0 2rem 0;">We'll get back to you within 1 hour.</p>
-        <form action="#" method="POST" style="display: flex; flex-direction: column; gap: 1.1rem;">
+        <form id="kyra-contact-form" onsubmit="kyraSubmitForm(event)" data-client-id="${data.clientId || ''}" data-business-name="${data.businessName || ''}" style="display: flex; flex-direction: column; gap: 1.1rem;">
           <div>
             <label for="kyra-name" style="display: block; font-size: 0.85rem; font-weight: 600; color: #374151; margin-bottom: 6px;">Full Name *</label>
             <input type="text" id="kyra-name" name="name" required placeholder="Your full name" ${inputStyle} />
@@ -72,8 +73,60 @@ export function formEmbedCta(data: CtaData): string {
           <button type="submit" style="width: 100%; padding: 14px; background: ${primary}; color: #ffffff; font-weight: 800; font-size: 1.05rem; border: none; border-radius: 12px; cursor: pointer; transition: opacity 0.2s, transform 0.2s; box-shadow: 0 6px 20px ${primary}50;" onmouseover="this.style.opacity='0.9';this.style.transform='translateY(-1px)'" onmouseout="this.style.opacity='1';this.style.transform='translateY(0)'">
             Get My Free Quote →
           </button>
+          <div id="kyra-form-status" style="display:none;"></div>
           <p style="text-align: center; color: #9ca3af; font-size: 0.8rem; margin: 0;">🔒 Your information is safe with us. No spam, ever.</p>
         </form>
+        <script>
+        function kyraSubmitForm(e) {
+          e.preventDefault();
+          var form = document.getElementById("kyra-contact-form");
+          var btn = form.querySelector("button[type=submit]");
+          var status = document.getElementById("kyra-form-status");
+          var data = {
+            name: form.querySelector("[name=name]").value,
+            email: form.querySelector("[name=email]").value,
+            phone: form.querySelector("[name=phone]") ? form.querySelector("[name=phone]").value : "",
+            message: form.querySelector("[name=message]") ? form.querySelector("[name=message]").value : "",
+            clientId: form.dataset.clientId || "",
+            businessName: form.dataset.businessName || "",
+            source: "website_form"
+          };
+          btn.disabled = true;
+          btn.textContent = "Sending...";
+          status.style.display = "none";
+          fetch("https://kyra.conversionsystem.com/api/sites/contact", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(data)
+          })
+          .then(function(r) { return r.json(); })
+          .then(function(res) {
+            if (res.ok) {
+              form.style.display = "none";
+              status.style.display = "block";
+              status.style.color = "#16a34a";
+              status.style.fontWeight = "700";
+              status.style.fontSize = "1.1rem";
+              status.style.padding = "2rem";
+              status.style.textAlign = "center";
+              status.textContent = "Message sent! We'll be in touch shortly.";
+            } else {
+              btn.disabled = false;
+              btn.textContent = "Get My Free Quote \\u2192";
+              status.style.display = "block";
+              status.style.color = "#dc2626";
+              status.textContent = "Something went wrong. Please call us directly.";
+            }
+          })
+          .catch(function() {
+            btn.disabled = false;
+            btn.textContent = "Get My Free Quote \\u2192";
+            status.style.display = "block";
+            status.style.color = "#dc2626";
+            status.textContent = "Network error. Please call us directly.";
+          });
+        }
+        </script>
       </div>
     </div>
   </div>
