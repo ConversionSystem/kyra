@@ -593,18 +593,21 @@ function CreateFreeSubAccount({ clientId, onCreated }: { clientId: string; onCre
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [suggestion, setSuggestion] = useState<string | null>(null);
+  const [needsAgencyConnect, setNeedsAgencyConnect] = useState(false);
   const [created, setCreated] = useState(false);
 
   const handleCreate = async () => {
     setCreating(true);
     setError(null);
     setSuggestion(null);
+    setNeedsAgencyConnect(false);
     try {
       const res = await fetch(`/api/agency/clients/${clientId}/ghl/create-subaccount`, { method: 'POST' });
-      const data = await res.json();
+      const data = await res.json() as { error?: string; suggestion?: string; needsAgencyConnect?: boolean; locationId?: string };
       if (!res.ok) {
         setError(data.error || 'Failed to create sub-account');
         setSuggestion(data.suggestion || null);
+        setNeedsAgencyConnect(data.needsAgencyConnect ?? false);
         return;
       }
       setCreated(true);
@@ -649,16 +652,25 @@ function CreateFreeSubAccount({ clientId, onCreated }: { clientId: string; onCre
       </p>
 
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 space-y-2">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 space-y-3">
           <p className="text-sm text-red-700 font-medium">Could not create sub-account</p>
           <p className="text-xs text-red-600">{error}</p>
-          {suggestion && (
-            <p className="text-xs text-gray-500 mt-1">
+          {needsAgencyConnect ? (
+            <div className="pt-1">
+              <a
+                href="/agency/settings"
+                className="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 transition-colors"
+              >
+                <Plug className="h-3 w-3" />
+                Connect GHL Agency Account in Settings →
+              </a>
+            </div>
+          ) : suggestion ? (
+            <p className="text-xs text-gray-500">
               <strong>Alternative:</strong> {suggestion}
             </p>
-          )}
-          {!suggestion && (
-            <p className="text-xs text-gray-500 mt-1">
+          ) : (
+            <p className="text-xs text-gray-500">
               <strong>Alternative:</strong> Use the &quot;Connect with API Token&quot; option above — it works with any existing GHL account.
             </p>
           )}

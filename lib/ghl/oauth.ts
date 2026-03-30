@@ -29,6 +29,7 @@ const GHL_SCOPES = [
 // ── State Param (signed JSON) ────────────────────────────────────────────────
 
 export interface GHLOAuthState {
+  type?: 'client';      // "client" (default) — distinguishes from agency-level state
   clientId: string;     // agency_client id (our DB)
   agencyId: string;     // agency id (our DB)
   userId: string;       // Supabase user id
