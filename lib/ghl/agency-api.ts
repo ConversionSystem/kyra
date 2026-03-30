@@ -34,16 +34,6 @@ export async function createGhlSubAccount(params: CreateSubAccountParams): Promi
   const apiKey = process.env.GHL_AGENCY_API_KEY;
   if (!apiKey) throw new Error('GHL_AGENCY_API_KEY not configured');
 
-  // Private Integration Tokens (pit-...) are sub-account scoped and cannot create locations.
-  // Sub-account creation requires the Agency API Key from GHL → Settings → API Keys.
-  if (apiKey.startsWith('pit-')) {
-    throw new Error(
-      'GHL_AGENCY_API_KEY is set to a Private Integration Token (pit-…), which cannot create sub-accounts. ' +
-      'Set GHL_AGENCY_API_KEY to your Agency API Key instead — found in GHL → Agency View → Settings → API Keys. ' +
-      'The Agency API Key is a different credential from Private Integration tokens.'
-    );
-  }
-
   const companyId = process.env.GHL_COMPANY_ID;
   if (!companyId) {
     throw new Error(
