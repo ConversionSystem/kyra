@@ -250,7 +250,7 @@ function email7(email: string): { subject: string; preview: string; html: string
     </ul>
     ${p('Whatever it is — <strong>reply to this email and tell me.</strong> I read every response personally. No bot, no support ticket. Just me.')}
     ${p('If you want, I\'ll hop on a 15-minute call and walk you through setup. No pitch, just help.')}
-    <a href="mailto:steve@kyra.conversionsystem.com?subject=Need%20help%20with%20Kyra" style="display:inline-block;background:#6366f1;color:#fff;padding:14px 28px;border-radius:8px;font-weight:700;font-size:15px;text-decoration:none;margin:12px 0;">Reply and Tell Me →</a>
+    <a href="mailto:angel@conversionsystem.com?subject=Need%20help%20with%20Kyra" style="display:inline-block;background:#6366f1;color:#fff;padding:14px 28px;border-radius:8px;font-weight:700;font-size:15px;text-decoration:none;margin:12px 0;">Reply and Tell Me →</a>
     ${p('— Steve', true)}`;
 
   return {
