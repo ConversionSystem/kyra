@@ -69,7 +69,7 @@ export function statsBarAbout(data: AboutData): string {
     </div>`;
   });
 
-  return `<section style="background: linear-gradient(135deg, ${secondary} 0%, ${primary} 50%, ${secondary}cc 100%); position: relative; overflow: hidden;" aria-label="Business stats">
+  return `<section id="about" style="background: linear-gradient(135deg, ${secondary} 0%, ${primary} 50%, ${secondary}cc 100%); position: relative; overflow: hidden;" aria-label="Business stats">
   <!-- Subtle pattern overlay -->
   <div style="position: absolute; inset: 0; opacity: 0.06; background-image: radial-gradient(circle, rgba(255,255,255,0.6) 1px, transparent 1px); background-size: 24px 24px;" aria-hidden="true"></div>
   <div style="max-width: 1100px; margin: 0 auto; padding: 3.5rem 1.5rem; position: relative; z-index: 1;">

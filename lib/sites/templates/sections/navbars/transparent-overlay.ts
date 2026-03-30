@@ -23,7 +23,7 @@ export function transparentOverlayNavbar(data: NavbarData): string {
 
   return `<nav class="absolute top-0 left-0 right-0 z-50 px-4 sm:px-6 py-4" aria-label="Main navigation">
   <div class="max-w-6xl mx-auto flex items-center justify-between">
-    <a href="/" class="shrink-0">${logo}</a>
+    <a href="#top" class="shrink-0">${logo}</a>
     <div class="hidden md:flex items-center gap-6">
       ${navLinks}
     </div>

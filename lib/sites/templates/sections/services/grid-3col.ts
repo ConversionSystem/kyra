@@ -64,7 +64,7 @@ export function grid3colServices(data: ServicesData): string {
       </div>`
     : '';
 
-  return `<section style="padding: 5rem 1.5rem; background: #f9fafb;" aria-label="${heading}">
+  return `<section id="services" style="padding: 5rem 1.5rem; background: #f9fafb;" aria-label="${heading}">
   <div style="max-width: 1200px; margin: 0 auto;">
     <div style="text-align: center; margin-bottom: 3.5rem;">
       <div style="display: inline-block; background: ${primary}15; color: ${primary}; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 6px 16px; border-radius: 100px; margin-bottom: 1rem;">What We Offer</div>

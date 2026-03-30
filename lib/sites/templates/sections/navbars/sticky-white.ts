@@ -16,7 +16,7 @@ export function stickyWhiteNavbar(data: NavbarData): string {
     : `<span style="font-size: 1.25rem; font-weight: 900; color: ${primary}; letter-spacing: -0.02em;">${data.businessName}</span>`;
 
   const defaultLinks = [
-    { label: 'Home', href: '/' },
+    { label: 'Home', href: '#top' },
     { label: 'Services', href: '#services' },
     { label: 'About', href: '#about' },
     { label: 'Reviews', href: '#testimonials' },
@@ -36,7 +36,7 @@ export function stickyWhiteNavbar(data: NavbarData): string {
   return `<nav id="kyra-nav" style="position: sticky; top: 0; z-index: 50; background: rgba(255,255,255,0.96); backdrop-filter: blur(12px); border-bottom: 1px solid #f1f5f9; padding: 0 1.5rem; transition: box-shadow 0.3s;" aria-label="Main navigation">
   <div style="max-width: 1200px; margin: 0 auto; height: 68px; display: flex; align-items: center; justify-content: space-between; gap: 2rem;">
     <!-- Logo -->
-    <a href="/" style="flex-shrink: 0; text-decoration: none;">${logo}</a>
+    <a href="#top" style="flex-shrink: 0; text-decoration: none;">${logo}</a>
 
     <!-- Nav links (desktop) -->
     <div style="display: flex; align-items: center; gap: 1.75rem; flex: 1; justify-content: center;">

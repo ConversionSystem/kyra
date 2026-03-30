@@ -75,7 +75,7 @@ export function alternatingServices(data: ServicesData): string {
     </div>`;
   }).join('\n');
 
-  return `<section aria-label="${heading}">
+  return `<section id="services" aria-label="${heading}">
   <div style="background: ${primary}; padding: 3.5rem 1.5rem; text-align: center;">
     <div style="display: inline-block; background: rgba(255,255,255,0.2); color: white; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 6px 16px; border-radius: 100px; margin-bottom: 1rem;">Everything We Offer</div>
     <h2 style="color: #ffffff; font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 900; margin: 0; letter-spacing: -0.02em;">${heading}</h2>

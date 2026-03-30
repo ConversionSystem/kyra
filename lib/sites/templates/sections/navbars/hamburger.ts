@@ -51,7 +51,7 @@ export function hamburgerNavbar(data: NavbarData): string {
   </div>
   <div class="nav-bar sticky top-0 z-50 px-4 sm:px-6 py-3" style="background: var(--color-surface); border-bottom: 1px solid #e5e7eb;">
     <div class="max-w-6xl mx-auto flex items-center justify-between">
-      <a href="/" class="shrink-0">${logo}</a>
+      <a href="#top" class="shrink-0">${logo}</a>
       <div class="hidden lg:flex items-center gap-6">
         ${navLinks}
       </div>
