@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
           const aiReply = data?.choices?.[0]?.message?.content?.trim();
           if (aiReply) {
             // Log for the dashboard
-            void supabase.from('client_conversations').insert({
+            await supabase.from('client_conversations').insert({
               client_id: client.id,
               agency_id: client.agency_id,
               channel: 'voice',

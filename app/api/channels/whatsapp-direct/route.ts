@@ -186,7 +186,7 @@ export async function POST(request: NextRequest) {
 
         if (sendRes.ok) {
           console.log(`[whatsapp-direct] ✅ Replied to ${from}`);
-          void supabase.from('client_conversations').insert({
+          await supabase.from('client_conversations').insert({
             client_id: client.id,
             agency_id: client.agency_id,
             channel: 'whatsapp_direct',
