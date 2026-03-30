@@ -15,6 +15,7 @@ import {
   X,
   Loader2,
   Unplug,
+  Plug,
   RefreshCw,
   Key,
   ChevronDown,
@@ -546,7 +547,18 @@ export default function GHLConnection({
               </div>
             </div>
 
-            {/* Create Free Sub-Account is hidden until GHL Marketplace app is approved */ }
+            {/* ── Divider ─────────────────────────────────────────────── */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-gray-200" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-gray-400">or</span>
+              </div>
+            </div>
+
+            {/* ── Method 2: Request Free GHL Sub-Account ───────────── */}
+            <RequestGHLSubAccount clientId={clientId} onRequested={() => onConnected?.()} />
 
             {/* ── Capabilities list ───────────────────────────────────── */}
             <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-500 space-y-2">
@@ -571,7 +583,235 @@ export default function GHLConnection({
   );
 }
 
-// CreateFreeSubAccount removed — pending GHL Marketplace app approval.
-// The OAuth flow requires a published GHL app. Will be re-enabled post-approval.
-// Backend routes (/api/agency/ghl/*, /api/agency/clients/[id]/ghl/create-subaccount)
-// are ready and waiting — just need the frontend entry point back once GHL approves.
+// ── Request GHL Sub-Account ───────────────────────────────────────────────────
+
+function RequestGHLSubAccount({
+  clientId,
+  onRequested,
+}: {
+  clientId: string;
+  onRequested: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [requestId, setRequestId] = useState<string | null>(null);
+
+  const [form, setForm] = useState({
+    businessName: '',
+    contactName: '',
+    contactEmail: '',
+    contactPhone: '',
+    businessAddress: '',
+    city: '',
+    state: '',
+    country: 'US',
+    timezone: 'America/New_York',
+  });
+
+  const set = (field: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+    setForm(prev => ({ ...prev, [field]: e.target.value }));
+
+  const handleSubmit = async () => {
+    if (!form.businessName.trim() || !form.contactName.trim() || !form.contactEmail.trim()) {
+      setError('Business name, contact name, and email are required.');
+      return;
+    }
+    setSubmitting(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/agency/clients/${clientId}/ghl/request-subaccount`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json() as { ok?: boolean; error?: string; requestId?: string; message?: string };
+      if (!res.ok) {
+        setError(data.error || 'Failed to submit request.');
+        return;
+      }
+      setSubmitted(true);
+      setRequestId(data.requestId || null);
+      onRequested();
+    } catch {
+      setError('Network error. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (submitted) {
+    return (
+      <div className="rounded-lg border border-green-200 bg-green-50 p-5 space-y-2">
+        <div className="flex items-center gap-2">
+          <Check className="h-5 w-5 text-green-600" />
+          <h3 className="font-medium text-green-800">Request Submitted!</h3>
+          {requestId && (
+            <span className="ml-auto text-xs font-mono text-green-600">#{requestId}</span>
+          )}
+        </div>
+        <p className="text-sm text-green-700">
+          We&apos;ll create your GHL sub-account and connect it to this client within 1 business day.
+          Check your email for confirmation.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border border-indigo-200 bg-indigo-50/50 p-5 space-y-3">
+      <div className="flex items-center gap-2">
+        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-100">
+          <Plug className="h-3.5 w-3.5 text-indigo-600" />
+        </div>
+        <h3 className="font-medium text-gray-900">Get a Free GHL Sub-Account</h3>
+        <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">
+          Free
+        </span>
+      </div>
+
+      <p className="text-sm text-gray-600">
+        Don&apos;t have a GoHighLevel account? Fill out this form — our team will create a free
+        sub-account for this client and connect it automatically. Usually done within 1 business day.
+      </p>
+
+      {!open ? (
+        <button
+          onClick={() => setOpen(true)}
+          className="flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-800 transition-colors"
+        >
+          <ChevronDown className="h-4 w-4" />
+          Request a free sub-account
+        </button>
+      ) : (
+        <div className="space-y-3">
+          <button
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-800 transition-colors"
+          >
+            <ChevronUp className="h-4 w-4" />
+            Hide form
+          </button>
+
+          {error && (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
+              {error}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Business Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Acme Dental"
+                value={form.businessName}
+                onChange={set('businessName')}
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Contact Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                placeholder="John Smith"
+                value={form.contactName}
+                onChange={set('contactName')}
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Contact Email <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="email"
+                placeholder="john@acmedental.com"
+                value={form.contactEmail}
+                onChange={set('contactEmail')}
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Phone</label>
+              <input
+                type="tel"
+                placeholder="+1 (555) 000-0000"
+                value={form.contactPhone}
+                onChange={set('contactPhone')}
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">City</label>
+              <input
+                type="text"
+                placeholder="New York"
+                value={form.city}
+                onChange={set('city')}
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">State</label>
+              <input
+                type="text"
+                placeholder="NY"
+                value={form.state}
+                onChange={set('state')}
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Timezone</label>
+              <select
+                value={form.timezone}
+                onChange={set('timezone')}
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="America/New_York">Eastern (ET)</option>
+                <option value="America/Chicago">Central (CT)</option>
+                <option value="America/Denver">Mountain (MT)</option>
+                <option value="America/Los_Angeles">Pacific (PT)</option>
+                <option value="America/Phoenix">Arizona (MST)</option>
+                <option value="America/Anchorage">Alaska (AKT)</option>
+                <option value="Pacific/Honolulu">Hawaii (HST)</option>
+                <option value="Europe/London">London (GMT)</option>
+                <option value="Europe/Paris">Paris (CET)</option>
+                <option value="Asia/Dubai">Dubai (GST)</option>
+                <option value="Asia/Kolkata">India (IST)</option>
+                <option value="Asia/Singapore">Singapore (SGT)</option>
+                <option value="Australia/Sydney">Sydney (AEDT)</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-2 rounded-md bg-amber-50 border border-amber-200 p-3">
+            <Shield className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+            <p className="text-xs text-amber-700">
+              We&apos;ll create the sub-account and connect it to this client automatically.
+              You&apos;ll receive a confirmation email and we&apos;ll notify you when it&apos;s ready.
+            </p>
+          </div>
+
+          <Button
+            onClick={handleSubmit}
+            disabled={submitting}
+            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center gap-2"
+          >
+            {submitting ? (
+              <><Loader2 className="h-4 w-4 animate-spin" />Submitting…</>
+            ) : (
+              <><Plug className="h-4 w-4" />Request Free GHL Sub-Account</>
+            )}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
