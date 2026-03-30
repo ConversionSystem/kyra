@@ -3,22 +3,15 @@
  *
  * Priority order:
  * 1. GHL API (if client has GHL connected) — sends from their GHL location
- * 2. Resend API (if RESEND_API_KEY is set) — sends from noreply@kyra.conversionsystem.com
- * 3. Fail gracefully with error
+ * 2. GHL Platform account (Conversion System) — sends from hello@conversionsystem.com
+ * 3. Resend fallback via onboarding@resend.dev
+ * 4. Fail gracefully with error
+ *
+ * NOTE: conversionsystem.com / kyra.conversionsystem.com are NOT verified in Resend.
+ * All platform emails now route through GHL (lib/email/ghl-platform-sender.ts).
  */
 
-import { Resend } from 'resend';
-
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const FROM_EMAIL = process.env.CRM_FROM_EMAIL || 'noreply@kyra.conversionsystem.com';
-const FROM_NAME = process.env.CRM_FROM_NAME || 'Kyra CRM';
-
-let resendClient: Resend | null = null;
-function getResend(): Resend | null {
-  if (!RESEND_API_KEY) return null;
-  if (!resendClient) resendClient = new Resend(RESEND_API_KEY);
-  return resendClient;
-}
+import { sendPlatformEmailCompat } from './ghl-platform-sender';
 
 export interface SendEmailParams {
   to: string;
@@ -45,32 +38,20 @@ export interface SendResult {
 }
 
 /**
- * Send email via Resend (standalone, no GHL dependency)
+ * Send platform email — routes through GHL Conversion System account,
+ * falls back to Resend (onboarding@resend.dev) if GHL unavailable.
+ *
+ * Previously sent via Resend with unverified domain (broken).
+ * Now sends from hello@conversionsystem.com via GHL (verified + warmed).
  */
 export async function sendEmailViaResend(params: SendEmailParams): Promise<SendResult> {
-  const resend = getResend();
-  if (!resend) {
-    return { ok: false, provider: 'none', error: 'No RESEND_API_KEY configured. Add it in Vercel env vars.' };
-  }
-
-  try {
-    const { data, error } = await resend.emails.send({
-      from: params.fromEmail || `${params.fromName || FROM_NAME} <${FROM_EMAIL}>`,
-      to: [params.to],
-      subject: params.subject,
-      text: params.body,
-      html: params.html || undefined,
-      replyTo: params.replyTo || undefined,
-    });
-
-    if (error) {
-      return { ok: false, provider: 'resend', error: error.message };
-    }
-
-    return { ok: true, provider: 'resend', messageId: data?.id };
-  } catch (err) {
-    return { ok: false, provider: 'resend', error: String(err) };
-  }
+  const result = await sendPlatformEmailCompat(params);
+  return {
+    ok: result.ok,
+    provider: result.provider as SendResult['provider'],
+    messageId: result.messageId,
+    error: result.error,
+  };
 }
 
 /**

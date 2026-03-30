@@ -213,42 +213,22 @@ export async function sendSequenceEmail(
   agency: Agency,
   day: SequenceDay,
 ): Promise<{ ok: boolean; emailId?: string; skipped?: string }> {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return { ok: false, skipped: 'RESEND_API_KEY not configured' };
   if (!agency.ownerEmail) return { ok: false, skipped: 'No owner email' };
 
   const email = getSequenceEmail(day, agency);
   if (!email) return { ok: false, skipped: 'No email for this day/plan' };
 
   try {
-    const res = await fetch(RESEND_API, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: FROM,
-        to: agency.ownerEmail,
-        subject: email.subject,
-        html: email.html,
-        tags: [
-          { name: 'type', value: 'sequence' },
-          { name: 'day', value: String(day) },
-          { name: 'agency_id', value: agency.id },
-        ],
-      }),
-      signal: AbortSignal.timeout(10_000),
+    const { sendPlatformEmail } = await import('./ghl-platform-sender');
+    const result = await sendPlatformEmail({
+      to: agency.ownerEmail,
+      subject: email.subject,
+      html: email.html,
+      fromName: 'Angel from Kyra',
     });
-
-    if (!res.ok) {
-      const err = await res.text().catch(() => '');
-      throw new Error(`Resend ${res.status}: ${err.slice(0, 100)}`);
-    }
-
-    const data = await res.json();
-    return { ok: true, emailId: data.id };
-  } catch (err: any) {
-    return { ok: false, skipped: err.message };
+    if (!result.ok) throw new Error(result.error || 'Send failed');
+    return { ok: true, emailId: result.messageId };
+  } catch (err: unknown) {
+    return { ok: false, skipped: err instanceof Error ? err.message : String(err) };
   }
 }
