@@ -12,7 +12,7 @@
  * 4. Save messages and extract memories/reminders
  */
 
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { searchMemories, saveMemory } from '@/lib/ai/memory';
 import { extractCommands, getSystemPrompt, Reminder, CalendarEvent } from '@/lib/ai/prompts';
@@ -27,6 +27,16 @@ import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
 import { resolveGatewayForUser } from '@/lib/ovh/gateway-resolver';
 import { v4 as uuid } from 'uuid';
 
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: CORS });
+}
+
 export async function POST(request: NextRequest) {
 
   try {
@@ -36,7 +46,7 @@ export async function POST(request: NextRequest) {
     // Authenticate
     const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
     if (authError || !authUser) {
-      return new Response('Unauthorized', { status: 401 });
+      return new Response('Unauthorized', { status: 401, headers: CORS });
     }
 
     // Get or create user profile
@@ -62,7 +72,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (createError || !newUser) {
-        return new Response('Failed to create user profile', { status: 500 });
+        return new Response('Failed to create user profile', { status: 500, headers: CORS });
       }
       user = newUser as User;
     } else {
@@ -94,7 +104,7 @@ export async function POST(request: NextRequest) {
             balance: credits.balance,
             buyUrl: '/agency/credits',
           }),
-          { status: 402, headers: { 'Content-Type': 'application/json' } }
+          { status: 402, headers: { 'Content-Type': 'application/json', ...CORS } }
         );
       }
     }
@@ -104,7 +114,7 @@ export async function POST(request: NextRequest) {
     const body = (await request.json()) as any;
     const { message, conversation_id } = body;
     if (!message || typeof message !== 'string') {
-      return new Response('Message is required', { status: 400 });
+      return new Response('Message is required', { status: 400, headers: CORS });
     }
 
     // --- Agency client mode detection ---
@@ -126,7 +136,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (clientError || !client) {
-        return new Response('Client not found', { status: 404 });
+        return new Response('Client not found', { status: 404, headers: CORS });
       }
 
       const { data: membership, error: memberError } = await supabase
@@ -137,7 +147,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (memberError || !membership) {
-        return new Response('Forbidden: not a member of this agency', { status: 403 });
+        return new Response('Forbidden: not a member of this agency', { status: 403, headers: CORS });
       }
 
       const typedClient = client as AgencyClient & { template?: AgencyTemplate | null };
@@ -161,7 +171,7 @@ export async function POST(request: NextRequest) {
         .insert({ id: conversationId, user_id: authUser.id, title, channel: 'web' })
         .select()
         .single();
-      if (error) return new Response('Failed to create conversation', { status: 500 });
+      if (error) return new Response('Failed to create conversation', { status: 500, headers: CORS });
       conversation = data as Conversation;
     } else {
       const { data, error } = await serviceClient
@@ -170,7 +180,7 @@ export async function POST(request: NextRequest) {
         .eq('id', conversationId)
         .eq('user_id', authUser.id)
         .single();
-      if (error || !data) return new Response('Conversation not found', { status: 404 });
+      if (error || !data) return new Response('Conversation not found', { status: 404, headers: CORS });
       conversation = data as Conversation;
     }
 
@@ -222,7 +232,7 @@ export async function POST(request: NextRequest) {
     if (!resolved) {
       return new Response(
         JSON.stringify({ error: 'No AI gateway found. Deploy a client AI first.' }),
-        { status: 503, headers: { 'Content-Type': 'application/json' } }
+        { status: 503, headers: { 'Content-Type': 'application/json', ...CORS } }
       );
     }
     const { url: gatewayUrl } = resolved;
@@ -256,7 +266,7 @@ export async function POST(request: NextRequest) {
           error: 'Worker unreachable',
           message: 'Kyra\'s backend is temporarily unavailable. Please try again in a moment.',
         }),
-        { status: 503, headers: { 'Content-Type': 'application/json' } }
+        { status: 503, headers: { 'Content-Type': 'application/json', ...CORS } }
       );
     }
 
@@ -265,7 +275,7 @@ export async function POST(request: NextRequest) {
       console.error(`[worker-route] Worker returned ${workerResponse.status}: ${errorText}`);
       return new Response(
         JSON.stringify({ error: 'Worker request failed', details: errorText }),
-        { status: workerResponse.status, headers: { 'Content-Type': 'application/json' } }
+        { status: workerResponse.status, headers: { 'Content-Type': 'application/json', ...CORS } }
       );
     }
 
@@ -360,6 +370,7 @@ export async function POST(request: NextRequest) {
           'Content-Type': 'text/event-stream',
           'Cache-Control': 'no-cache',
           'Connection': 'keep-alive',
+          ...CORS,
         },
       });
     } else {
@@ -417,12 +428,13 @@ export async function POST(request: NextRequest) {
           'Content-Type': 'text/event-stream',
           'Cache-Control': 'no-cache',
           'Connection': 'keep-alive',
+          ...CORS,
         },
       });
     }
   } catch (error) {
     console.error('[worker-route] Chat API error:', error);
-    return new Response('Internal server error', { status: 500 });
+    return new Response('Internal server error', { status: 500, headers: CORS });
   }
 }
 
