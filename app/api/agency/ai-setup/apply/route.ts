@@ -5854,24 +5854,64 @@ export async function POST(request: NextRequest) {
     } | undefined;
 
     if (teamCfg?.enabled && teamCfg.members && teamCfg.members.length > 0) {
-      soulMd += '\n\n## Your Team\n\nYou are the primary AI worker. You have specialist capabilities:\n';
+      soulMd += `\n\n## AI Team Configuration
 
-      for (const member of teamCfg.members) {
-        const workerDef = ROLE_WORKERS.find(w => w.id === member.worker_id);
-        if (!workerDef) continue;
+You are the PRIMARY AI worker leading a multi-specialist team. You handle ALL conversations — specialists are modes you activate, not separate AIs.
 
-        soulMd += `\n### ${workerDef.emoji} ${workerDef.name} (${member.role})\n`;
-        if (member.triggers.length > 0) {
-          soulMd += `**Triggers:** ${member.triggers.join(', ')}\n`;
+### How It Works
+- You are ALWAYS the one talking to the customer
+- When a specialist topic comes up, you seamlessly adopt that specialist's persona and capabilities
+- Background workers run silently — they inform your responses but are never announced
+`;
+
+      const specialists = teamCfg.members.filter(m => m.role === 'specialist');
+      const backgroundWorkers = teamCfg.members.filter(m => m.role === 'background');
+
+      if (specialists.length > 0) {
+        soulMd += '\n### Specialist Modes\n';
+        for (const member of specialists) {
+          const workerDef = ROLE_WORKERS.find(w => w.id === member.worker_id);
+          if (!workerDef) continue;
+
+          soulMd += `\n#### ${workerDef.emoji} ${workerDef.name}\n`;
+          soulMd += `**What they do:** ${workerDef.description}\n`;
+          if (member.triggers.length > 0) {
+            soulMd += `**Activate when user says:** ${member.triggers.map(t => `"${t}"`).join(', ')}\n`;
+            soulMd += `**Detection:** When the user mentions any of these trigger words or concepts, immediately activate ${workerDef.name} mode. Handle the request using all available tools.\n`;
+          }
+          if (workerDef.soulMd) {
+            soulMd += `\n${workerDef.soulMd}\n`;
+          }
         }
-        soulMd += `**Capabilities:** ${workerDef.description}\n`;
-        soulMd += `**How to use:** Handle this area yourself using the available tools.\n`;
+      }
+
+      if (backgroundWorkers.length > 0) {
+        soulMd += '\n### Background Workers (Always Active)\n';
+        soulMd += 'These run silently in every conversation. Use their capabilities without announcing them.\n';
+        for (const member of backgroundWorkers) {
+          const workerDef = ROLE_WORKERS.find(w => w.id === member.worker_id);
+          if (!workerDef) continue;
+
+          soulMd += `\n#### ${workerDef.emoji} ${workerDef.name}\n`;
+          soulMd += `**Silently does:** ${workerDef.description}\n`;
+          if (workerDef.soulMd) {
+            soulMd += `\n${workerDef.soulMd}\n`;
+          }
+        }
       }
 
       if (teamCfg.handoff_style === 'seamless') {
-        soulMd += '\n### Handoff Style: Seamless\nHandle all specialist tasks yourself. The customer should experience one smooth conversation.\n';
+        soulMd += `\n### Routing Rule: Seamless
+When activating a specialist mode, do NOT announce it. Simply shift your tone and approach to match the specialist. The customer should experience one smooth, continuous conversation — never say "let me transfer you" or "switching to specialist mode."
+
+**Example:** Customer asks "Can I book a Tuesday appointment?" → You seamlessly become the appointment setter. Just start helping with scheduling naturally.
+`;
       } else {
-        soulMd += '\n### Handoff Style: Announced\nWhen switching to a specialist area, briefly acknowledge: "Let me help you with that scheduling." Then handle it.\n';
+        soulMd += `\n### Routing Rule: Announced
+When activating a specialist mode, briefly acknowledge the shift: "Let me help you with that scheduling." Then handle it in that specialist's style. Keep the acknowledgment short and natural — one sentence max.
+
+**Example:** Customer asks "Can I book a Tuesday appointment?" → "Absolutely, let me help you with scheduling. What time works best for you on Tuesday?"
+`;
       }
     }
   }
