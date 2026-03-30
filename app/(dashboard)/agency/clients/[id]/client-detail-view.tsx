@@ -438,7 +438,13 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
           {!initialClient.ghl_location_id && !(initialClient as any).ghl_private_token && (
             <GHLStickyBanner
               clientId={initialClient.id}
-              onGoToGHL={() => handleTabChange('settings')}
+              onGoToGHL={() => {
+                handleTabChange('settings');
+                // Small delay so tab renders before scrolling sub-nav
+                setTimeout(() => {
+                  document.getElementById('settings-subtab-integrations')?.click();
+                }, 50);
+              }}
             />
           )}
 
@@ -1323,6 +1329,7 @@ function SettingsTabMerged({
           return (
             <button
               key={tab.id}
+              id={`settings-subtab-${tab.id}`}
               onClick={() => setActiveSubTab(tab.id)}
               className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                 activeSubTab === tab.id
