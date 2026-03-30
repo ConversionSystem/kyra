@@ -47,7 +47,7 @@ async function syncToGHL(params: {
   try {
     // Search for existing contact
     const searchRes = await fetch(
-      `${GHL_API}/contacts/search?locationId=${CS_GHL_LOCATION_ID}&query=${encodeURIComponent(params.email)}&limit=1`,
+      `${GHL_API}/contacts/?locationId=${CS_GHL_LOCATION_ID}&query=${encodeURIComponent(params.email)}&limit=1`,
       { headers: { Authorization: `Bearer ${token}`, Version: GHL_VERSION }, signal: AbortSignal.timeout(8000) },
     );
 
