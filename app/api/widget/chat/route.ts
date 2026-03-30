@@ -26,6 +26,7 @@ import {
   getLeadCapturePrompt,
 } from '@/lib/chat/lead-capture';
 import { deductCredits, requireCredits } from '@/lib/billing/credit-engine';
+import { getCreditsForModel } from '@/lib/billing/model-credits';
 import OpenAI from 'openai';
 
 // Direct LLM client for widget chat — bypasses OpenClaw gateway which has agency persona/SOUL.md
@@ -333,9 +334,11 @@ export async function POST(request: NextRequest) {
   }
 
   // Deduct credit (also awaited to avoid billing gaps)
+  const widgetCredits = getCreditsForModel(WIDGET_MODEL);
   await deductCredits(client.agency_id, 'chat.message', {
+    override: widgetCredits,
     clientId: client.id,
-    description: `Web chat: ${message.trim().slice(0, 60)}`,
+    description: `Web chat (gpt-4o-mini): ${message.trim().slice(0, 50)}`,
   });
 
 

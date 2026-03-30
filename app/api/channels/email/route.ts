@@ -213,7 +213,7 @@ export async function POST(request: NextRequest) {
   const sendData = { id: sendResult.messageId };
 
   // Log to client_conversations
-  void supabase.from('client_conversations').insert({
+  await supabase.from('client_conversations').insert({
     client_id: client.id,
     agency_id: client.agency_id,
     channel: 'email',
