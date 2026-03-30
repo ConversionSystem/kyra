@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   ArrowRight, Loader2, X, ChevronDown, CheckCircle2, AlertTriangle,
   ChevronRight, Users, User, Plus, Trash2, Sparkles,
@@ -123,6 +123,14 @@ export default function AIWorkersTab({ client, agencyId }: AIWorkersTabProps) {
   const [teamResult, setTeamResult] = useState<{ success: boolean; message: string } | null>(null);
   const [addingSpecialist, setAddingSpecialist] = useState(false);
   const [triggerInput, setTriggerInput] = useState<Record<string, string>>({});
+  const [planLimit, setPlanLimit] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch(`/api/agency/ai-setup/team?clientId=${client.id}`)
+      .then(r => r.json())
+      .then(d => { if (typeof d.planLimit === 'number') setPlanLimit(d.planLimit); })
+      .catch(() => {});
+  }, [client.id]);
 
   const saveTeam = async () => {
     if (!teamPrimary) return;
@@ -134,12 +142,20 @@ export default function AIWorkersTab({ client, agencyId }: AIWorkersTabProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           clientId: client.id,
-          team: { primary_worker_id: teamPrimary, members: teamMembers, handoff_style: handoffStyle },
+          team: { enabled: true, primary_worker_id: teamPrimary, members: teamMembers, handoff_style: handoffStyle },
         }),
       });
       const data = await res.json();
       if (res.ok) {
-        setTeamResult({ success: true, message: `AI Team deployed with ${teamMembers.length + 1} members.${data.containerPushed ? ' Live now.' : ''}` });
+        let msg: string;
+        if (data.containerPushed) {
+          msg = `AI Team is live! ${teamMembers.length + 1} workers active in the terminal.`;
+        } else if (data.warning) {
+          msg = `Team saved. ${data.warning}`;
+        } else {
+          msg = `Team saved with ${teamMembers.length + 1} members. Re-apply the primary worker to go live.`;
+        }
+        setTeamResult({ success: true, message: msg });
         setEditingTeam(false);
       } else {
         setTeamResult({ success: false, message: data.error || 'Failed to save team' });
@@ -154,17 +170,26 @@ export default function AIWorkersTab({ client, agencyId }: AIWorkersTabProps) {
   const disableTeam = async () => {
     setSavingTeam(true);
     try {
-      await fetch('/api/agency/ai-setup/team', {
+      const res = await fetch('/api/agency/ai-setup/team', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clientId: client.id, team: null }),
+        body: JSON.stringify({ clientId: client.id, team: { enabled: false } }),
       });
-      setTeamMode(false);
-      setTeamMembers([]);
-      setTeamPrimary('');
-      setTeamResult({ success: true, message: 'Team disabled. Single worker mode restored.' });
-    } catch { /* ignore */ }
-    finally { setSavingTeam(false); }
+      const data = await res.json();
+      if (res.ok) {
+        setTeamMode(false);
+        setTeamMembers([]);
+        setTeamPrimary('');
+        setEditingTeam(false);
+        setTeamResult({ success: true, message: 'Team disabled. Single worker mode restored.' });
+      } else {
+        setTeamResult({ success: false, message: data.error || 'Failed to disable team' });
+      }
+    } catch {
+      setTeamResult({ success: false, message: 'Network error. Please try again.' });
+    } finally {
+      setSavingTeam(false);
+    }
   };
 
   const applyTemplate = (tpl: typeof TEAM_TEMPLATES[0]) => {
@@ -280,8 +305,24 @@ export default function AIWorkersTab({ client, agencyId }: AIWorkersTabProps) {
         <button onClick={() => setView('skills')} className="px-3 py-1.5 text-sm font-medium rounded-md transition-colors text-gray-500 hover:text-gray-700">Skills</button>
       </div>
 
-      {/* Currently Active Worker */}
-      {activeWorker && (
+      {/* Currently Active Worker / Team */}
+      {existingTeam?.enabled ? (
+        <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Users className="w-6 h-6 text-indigo-600" />
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-gray-900">Team Mode</span>
+                <span className="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium">
+                  {(existingTeam.members?.length || 0) + 1} workers
+                </span>
+                <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Live</span>
+              </div>
+              {activeWorker && <p className="text-xs text-gray-500 mt-0.5">Primary: {activeWorker.emoji} {activeWorker.name}</p>}
+            </div>
+          </div>
+        </div>
+      ) : activeWorker ? (
         <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="text-2xl">{activeWorker.emoji}</span>
@@ -295,7 +336,7 @@ export default function AIWorkersTab({ client, agencyId }: AIWorkersTabProps) {
             </div>
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* ── Team Mode Toggle ─────────────────────────────────────────── */}
       <div className="flex items-center gap-2 p-1 bg-gray-100 rounded-lg w-fit">
@@ -369,14 +410,16 @@ export default function AIWorkersTab({ client, agencyId }: AIWorkersTabProps) {
                 }`}>
                   {m.role === 'specialist' ? 'Specialist' : 'Background'}
                 </span>
-                {m.triggers.length > 0 && (
+                {m.triggers.length > 0 ? (
                   <div className="flex gap-1 ml-auto">
                     {m.triggers.slice(0, 3).map(t => (
                       <span key={t} className="text-[10px] bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded-full">{t}</span>
                     ))}
                     {m.triggers.length > 3 && <span className="text-[10px] text-gray-400">+{m.triggers.length - 3}</span>}
                   </div>
-                )}
+                ) : m.role === 'background' ? (
+                  <span className="text-[10px] bg-gray-50 text-gray-400 px-1.5 py-0.5 rounded-full ml-auto">Always active</span>
+                ) : null}
               </div>
             );
           })}
@@ -387,6 +430,18 @@ export default function AIWorkersTab({ client, agencyId }: AIWorkersTabProps) {
       {/* ── Team Builder (editing mode) ────────────────────────────── */}
       {teamMode && (editingTeam || !existingTeam?.enabled) && (
         <div className="rounded-xl border border-indigo-200 bg-white p-5 space-y-4">
+          {planLimit === 0 ? (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center gap-2 text-sm text-amber-700">
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              AI Teams require Lite plan ($99/mo) or above.{' '}
+              <a href="/agency/billing" className="underline font-medium">Upgrade</a>
+            </div>
+          ) : planLimit !== null && teamMembers.length >= planLimit ? (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center gap-2 text-sm text-amber-700">
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              Team limit reached for your plan ({planLimit} specialists max).
+            </div>
+          ) : null}
           <h3 className="font-semibold text-gray-900 flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-indigo-600" />
             Build Your AI Team
@@ -405,6 +460,16 @@ export default function AIWorkersTab({ client, agencyId }: AIWorkersTabProps) {
                       <span className="text-sm font-semibold text-gray-900">{tpl.name}</span>
                     </div>
                     <p className="text-xs text-gray-500">{tpl.description}</p>
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {[tpl.primary, ...tpl.members.map(m => m.worker_id)].map(wid => {
+                        const w = ROLE_WORKERS.find(r => r.id === wid);
+                        return w ? (
+                          <span key={wid} className="inline-flex items-center gap-0.5 text-[9px] bg-white border border-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full">
+                            {w.emoji} {w.name}
+                          </span>
+                        ) : null;
+                      })}
+                    </div>
                   </button>
                 ))}
               </div>
@@ -420,7 +485,7 @@ export default function AIWorkersTab({ client, agencyId }: AIWorkersTabProps) {
             <select value={teamPrimary} onChange={e => setTeamPrimary(e.target.value)}
               className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
               <option value="">— Select primary worker —</option>
-              {visibleWorkers.filter(w => w.useCase === 'customer-facing').map(w => (
+              {visibleWorkers.map(w => (
                 <option key={w.id} value={w.id}>{w.emoji} {w.name}</option>
               ))}
             </select>
@@ -450,6 +515,9 @@ export default function AIWorkersTab({ client, agencyId }: AIWorkersTabProps) {
                             }`}>
                             {m.role === 'specialist' ? 'Specialist' : 'Background'}
                           </button>
+                          <p className="text-[10px] text-gray-400 mt-0.5">
+                            {m.role === 'specialist' ? 'Activates on trigger keywords' : 'Always active, runs silently'}
+                          </p>
                         </div>
                         <button onClick={() => setTeamMembers(prev => prev.filter(p => p.worker_id !== m.worker_id))}
                           className="text-gray-400 hover:text-red-500 transition">
