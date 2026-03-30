@@ -87,8 +87,28 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'clientId is required' }, { status: 400 });
   }
 
-  if (!team) {
-    return NextResponse.json({ error: 'team configuration is required' }, { status: 400 });
+  // Handle explicit disable: team is null, undefined, or { enabled: false }
+  if (!team || (typeof team === 'object' && team.enabled === false)) {
+    const supabase = await createClient();
+    const { data: client } = await supabase
+      .from('agency_clients')
+      .select('id, container_config')
+      .eq('id', clientId)
+      .eq('agency_id', agency.id)
+      .single();
+
+    if (client) {
+      const currentCfg = (client.container_config as Record<string, unknown>) ?? {};
+      const existing = (currentCfg.worker_team as WorkerTeamConfig | undefined) ?? {
+        enabled: false, primary_worker_id: '', members: [], handoff_style: 'seamless' as const,
+      };
+      await supabase
+        .from('agency_clients')
+        .update({ container_config: { ...currentCfg, worker_team: { ...existing, enabled: false } } })
+        .eq('id', clientId)
+        .eq('agency_id', agency.id);
+    }
+    return NextResponse.json({ success: true, team: { enabled: false } });
   }
 
   // ── Plan limit check ──────────────────────────────────────────────────
