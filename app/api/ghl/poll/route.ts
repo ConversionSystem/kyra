@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { deductCredit } from '@/lib/billing/credit-engine';
 import { processWithSmartEngine } from '@/lib/ghl/smart-handler';
+import { resolveClientGateway } from '@/lib/ovh/provisioner';
 import type { AgencyClient } from '@/lib/agency/types';
 
 // ── Pipeline Lead Context ──────────────────────────────────────────────────
@@ -508,18 +509,13 @@ export async function GET(request: NextRequest) {
       }
 
       // Step 3: Resolve the client's own gateway (OVH per-client isolation)
-      const { data: clientGw } = await supabase
-        .from('agency_clients')
-        .select('gateway_url, gateway_token, gateway_status')
-        .eq('id', client.id)
-        .single();
-
-      const gatewayUrl = clientGw?.gateway_url;
-      const gateway = clientGw;
-      if (!gatewayUrl || !['running', 'starting'].includes(clientGw?.gateway_status || '')) {
+      const resolved = await resolveClientGateway(client.id);
+      if (!resolved) {
         addLog(`  No gateway for client ${client.id}`);
         continue;
       }
+      const gatewayUrl = resolved.url;
+      const gateway = { gateway_url: resolved.url, gateway_token: resolved.token, gateway_status: 'running' };
 
       // Step 4: Process up to 3 unread conversations per client
       const MAX_CONVS = 3;
@@ -857,37 +853,32 @@ export async function GET(request: NextRequest) {
 
           // Log to client_conversations so Kyra dashboard shows the exchange
           const contactLabel = conv.contactName || conv.phone || 'Unknown';
-          void supabase.from('client_conversations').insert({
+          const { error: logErr } = await supabase.from('client_conversations').insert({
             client_id: client.id,
             agency_id: client.agency_id,
             channel: `ghl_sms`,
             user_message: `[${contactLabel}] ${latestInbound.body}`,
             ai_response: aiResponse,
-          }).then(({ error: logErr }) => {
-            if (logErr) addLog(`  ⚠️ Conversation log failed: ${logErr.message}`);
           });
+          if (logErr) addLog(`  ⚠️ Conversation log failed: ${logErr.message}`);
 
           // Increment usage_this_month so Overview/Heartbeat stats reflect GHL activity
-          void supabase
-            .rpc('increment_client_usage', { client_id: client.id })
-            .then(({ error: usageErr }) => {
-              if (usageErr) {
-                // Fallback: manual increment if RPC not available
-                void supabase
-                  .from('agency_clients')
-                  .select('usage_this_month')
-                  .eq('id', client.id)
-                  .single()
-                  .then(({ data: cur }) => {
-                    if (cur) {
-                      supabase
-                        .from('agency_clients')
-                        .update({ usage_this_month: (cur.usage_this_month || 0) + 1 })
-                        .eq('id', client.id);
-                    }
-                  });
-              }
-            });
+          const { error: usageErr } = await supabase
+            .rpc('increment_client_usage', { client_id: client.id });
+          if (usageErr) {
+            // Fallback: manual increment if RPC not available
+            const { data: cur } = await supabase
+              .from('agency_clients')
+              .select('usage_this_month')
+              .eq('id', client.id)
+              .single();
+            if (cur) {
+              await supabase
+                .from('agency_clients')
+                .update({ usage_this_month: (cur.usage_this_month || 0) + 1 })
+                .eq('id', client.id);
+            }
+          }
         } else {
           const errText = await sendRes.text().catch(() => '');
           addLog(`  Send failed: ${sendRes.status} ${errText.slice(0, 100)}`);
@@ -1025,13 +1016,13 @@ export async function GET(request: NextRequest) {
             addLog(`  ✅ [proactive] Greeted ${contact.firstName || contact.phone} for ${client.name}`);
             proactiveSent++;
 
-            void supabase.from('client_conversations').insert({
+            await supabase.from('client_conversations').insert({
               client_id: client.id,
               agency_id: client.agency_id,
               channel: 'ghl_sms',
               user_message: `[NEW CONTACT] ${contact.firstName || ''} ${contact.lastName || ''} (${contact.phone})`.trim(),
               ai_response: greetMsg,
-            }).then(() => {});
+            });
           } else {
             const err = await outboundRes.text().catch(() => '');
             addLog(`  [proactive] Send failed for ${contact.id}: ${outboundRes.status} ${err.slice(0, 80)}`);
