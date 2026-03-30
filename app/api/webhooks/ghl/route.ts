@@ -222,6 +222,22 @@ interface ClientRecord {
  * Handle inbound messages — the core flow.
  * Extracts message details and forwards to the client's OpenClaw container.
  */
+// Simple in-memory dedup for webhook retries (TTL: 5 min, max 1000 entries)
+const processedMessages = new Map<string, number>();
+function isAlreadyProcessed(messageId: string | undefined): boolean {
+  if (!messageId) return false;
+  const now = Date.now();
+  // Evict old entries
+  if (processedMessages.size > 1000) {
+    for (const [k, ts] of processedMessages) {
+      if (now - ts > 300_000) processedMessages.delete(k);
+    }
+  }
+  if (processedMessages.has(messageId)) return true;
+  processedMessages.set(messageId, now);
+  return false;
+}
+
 async function handleInboundMessage(
   payload: GHLMessagePayload,
   client: ClientRecord
@@ -240,6 +256,12 @@ async function handleInboundMessage(
     contentType,
     attachments,
   } = payload;
+
+  // Webhook idempotency — skip if we've already processed this message
+  if (isAlreadyProcessed(messageId)) {
+    console.log(`[ghl-webhook] Skipping duplicate message ${messageId}`);
+    return;
+  }
 
   // Build contact display name
   const name =
