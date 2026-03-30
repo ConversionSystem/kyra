@@ -14,6 +14,9 @@ import { sendEmailViaResend } from '@/lib/email/sender';
 export const dynamic = 'force-dynamic';
 
 const SUPPORT_EMAIL = 'support@conversionsystem.com';
+// Using resend.dev sender until conversionsystem.com domain is verified in Resend.
+// To fix: resend.com/domains → add conversionsystem.com → add DNS records in Cloudflare → verify.
+const FROM_EMAIL_OVERRIDE = 'Kyra Platform <onboarding@resend.dev>';
 
 export async function POST(
   request: NextRequest,
@@ -143,7 +146,8 @@ export async function POST(
     subject: `[GHL Request #${requestId}] New sub-account: ${body.businessName}`,
     body: `New GHL sub-account request #${requestId}\n\nBusiness: ${body.businessName}\nContact: ${body.contactName} <${body.contactEmail}>\nPhone: ${body.contactPhone || 'N/A'}\nAddress: ${body.businessAddress || 'N/A'}, ${body.city || ''}, ${body.state || ''} ${body.country || 'US'}\nTimezone: ${body.timezone || 'America/New_York'}\n\nAgency: ${agency.name || agency.id}\nKyra Client: ${client.name || clientId}`,
     html: internalHtml,
-    fromName: 'Kyra Platform',
+    fromEmail: FROM_EMAIL_OVERRIDE,
+    replyTo: SUPPORT_EMAIL,
   });
 
   // ── Send confirmation to requester ────────────────────────────────────────
@@ -174,7 +178,7 @@ export async function POST(
       subject: `GHL sub-account request received — ${body.businessName} (#${requestId})`,
       body: `Hi,\n\nWe've received your request to create a GHL sub-account for ${body.businessName} (Request #${requestId}).\n\nWe'll set it up and connect it to your Kyra dashboard within 1 business day.\n\nQuestions? Email ${SUPPORT_EMAIL}.\n\n— The Kyra Team`,
       html: confirmHtml,
-      fromName: 'Kyra',
+      fromEmail: FROM_EMAIL_OVERRIDE,
       replyTo: SUPPORT_EMAIL,
     });
   }
