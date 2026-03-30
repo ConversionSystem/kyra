@@ -376,11 +376,11 @@ export async function POST(
     replyTo: body.contactEmail,
   });
 
-  // ── 5. Confirmation to requester ──────────────────────────────────────────
-  const requesterEmail = user.email;
-  if (requesterEmail) {
+  // ── 5. Confirmation to contact (the business owner, not the Kyra user) ───────
+  const contactEmail = body.contactEmail!.trim().toLowerCase();
+  if (contactEmail) {
     await sendPlatformEmail({
-      to: requesterEmail,
+      to: contactEmail,
       subject: `GHL sub-account request received — ${body.businessName} (#${requestId})`,
       html: `
         <div style="font-family:-apple-system,sans-serif;max-width:600px;margin:0 auto;">
