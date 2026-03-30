@@ -14,9 +14,8 @@ import { sendEmailViaResend } from '@/lib/email/sender';
 export const dynamic = 'force-dynamic';
 
 const SUPPORT_EMAIL = 'support@conversionsystem.com';
-// Using resend.dev sender until conversionsystem.com domain is verified in Resend.
-// To fix: resend.com/domains → add conversionsystem.com → add DNS records in Cloudflare → verify.
-const FROM_EMAIL_OVERRIDE = 'Kyra Platform <onboarding@resend.dev>';
+// Sends via GHL platform account (hello@conversionsystem.com) with Resend fallback (updates.conversionsystem.com)
+const FROM_EMAIL_OVERRIDE = 'Kyra Platform <hello@updates.conversionsystem.com>';
 
 export async function POST(
   request: NextRequest,

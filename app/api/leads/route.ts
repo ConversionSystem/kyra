@@ -40,17 +40,12 @@ export async function POST(request: NextRequest) {
     console.warn('[leads] DB error (migration may not be applied):', dbError.message);
   }
 
-  // Notify via Resend (fire-and-forget, only if key exists)
-  const resendKey = process.env.RESEND_API_KEY;
-  if (resendKey) {
-    void fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        from: 'Kyra AI <alerts@kyra.conversionsystem.com>',
-        to: 'angel@conversionsystem.com',
-        subject: body.source === 'get-demo' ? `🎯 Demo request: ${body.name || email}` : `🔔 New lead: ${email}`,
-        html: `<b>${body.source === 'get-demo' ? '🎯 Demo Request' : '🔔 New Lead'}</b><br><br>
+  // Notify Angel — fire-and-forget
+  void import('@/lib/email/ghl-platform-sender').then(({ sendPlatformEmail }) =>
+    sendPlatformEmail({
+      to: 'angel@conversionsystem.com',
+      subject: body.source === 'get-demo' ? `🎯 Demo request: ${body.name || email}` : `🔔 New lead: ${email}`,
+      html: `<b>${body.source === 'get-demo' ? '🎯 Demo Request' : '🔔 New Lead'}</b><br><br>
 <b>Email:</b> ${email}<br>
 ${body.name ? `<b>Name:</b> ${body.name}<br>` : ''}
 ${body.company ? `<b>Company:</b> ${body.company}<br>` : ''}
@@ -59,9 +54,9 @@ ${body.size ? `<b>GHL clients:</b> ${body.size}<br>` : ''}
 ${body.how ? `<b>How they heard:</b> ${body.how}<br>` : ''}
 ${body.message ? `<b>Message:</b> ${body.message}<br>` : ''}
 <b>Source:</b> ${body.source || 'landing'}`,
-      }),
-    }).catch(() => {});
-  }
+      fromName: 'Kyra Leads',
+    }).catch(() => {})
+  );
 
   return NextResponse.json({ ok: true });
 }

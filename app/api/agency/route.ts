@@ -217,15 +217,12 @@ export async function POST(request: NextRequest) {
   }
 
   // ── Send welcome email (fire-and-forget) ────────────────────────────────
-  const resendKey = process.env.RESEND_API_KEY;
-  if (resendKey && user.email) {
-    fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${resendKey}` },
-      body: JSON.stringify({
-        from: 'Kyra AI <welcome@kyra.conversionsystem.com>',
-        to: user.email,
+  if (user.email) {
+    void import('@/lib/email/ghl-platform-sender').then(({ sendPlatformEmail }) =>
+      sendPlatformEmail({
+        to: user.email!,
         subject: `Welcome to Kyra — your AI worker is ready 🎁`,
+        fromName: 'Kyra AI',
         html: `
 <!DOCTYPE html>
 <html>
@@ -321,8 +318,8 @@ export async function POST(request: NextRequest) {
   </div>
 </body>
 </html>`,
-      }),
-    }).catch(err => console.warn('[welcome-email] Failed to send:', err));
+      }).catch(err => console.warn('[welcome-email] Failed to send:', err))
+    );
   }
 
   // ── Enroll in nurture email sequence (fire-and-forget) ─────────────────
