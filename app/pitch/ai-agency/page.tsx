@@ -5,41 +5,50 @@ import Link from 'next/link';
 import {
   ChevronLeft, ChevronRight, ArrowRight, DollarSign, TrendingUp,
   Users, Zap, Bot, MessageSquare, CheckCircle2, Clock, Globe,
-  Smartphone, Shield, BarChart3, Sparkles, Star, Briefcase,
-  Home, Wifi, Award, Play, ChevronDown,
+  Shield, BarChart3, Sparkles, Briefcase, Award, Play,
+  Phone, Layers, Target, ChevronDown,
 } from 'lucide-react';
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Sub-components ────────────────────────────────────────────────────────────
 
-function Dot({ active }: { active: boolean }) {
-  return (
-    <div className={`rounded-full transition-all duration-300 ${
-      active ? 'w-8 h-1.5 bg-white' : 'w-1.5 h-1.5 bg-white/30'
-    }`} />
-  );
-}
-
-function Tag({ children, color = 'indigo' }: { children: React.ReactNode; color?: string }) {
-  const colors: Record<string, string> = {
-    indigo: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
-    emerald: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
-    amber: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
-    violet: 'bg-violet-500/20 text-violet-300 border-violet-500/30',
-    rose: 'bg-rose-500/20 text-rose-300 border-rose-500/30',
+function Pill({ children, color = 'slate' }: { children: React.ReactNode; color?: string }) {
+  const map: Record<string, string> = {
+    indigo: 'bg-indigo-500/15 text-indigo-300 border-indigo-500/25',
+    emerald: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/25',
+    amber: 'bg-amber-500/15 text-amber-300 border-amber-500/25',
+    violet: 'bg-violet-500/15 text-violet-300 border-violet-500/25',
+    rose: 'bg-rose-500/15 text-rose-300 border-rose-500/25',
+    slate: 'bg-white/8 text-slate-300 border-white/10',
   };
   return (
-    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${colors[color]}`}>
+    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${map[color] ?? map.slate}`}>
       {children}
     </span>
   );
 }
 
-function MoneyCard({ label, value, sub, accent }: { label: string; value: string; sub?: string; accent?: boolean }) {
+function StatBox({ stat, label, sub, accent }: { stat: string; label: string; sub?: string; accent?: boolean }) {
   return (
-    <div className={`rounded-2xl p-5 text-center ${accent ? 'bg-emerald-500 text-white' : 'bg-white/10 border border-white/10 text-white'}`}>
-      <p className={`text-xs font-semibold uppercase tracking-wider mb-2 ${accent ? 'text-emerald-100' : 'text-slate-400'}`}>{label}</p>
-      <p className={`text-3xl sm:text-4xl font-black ${accent ? 'text-white' : 'text-emerald-400'}`}>{value}</p>
+    <div className={`rounded-2xl p-5 text-center ${accent
+      ? 'bg-emerald-500 text-white'
+      : 'bg-white/5 border border-white/10'}`}>
+      <p className={`text-3xl sm:text-4xl font-black ${accent ? 'text-white' : 'text-emerald-400'}`}>{stat}</p>
+      <p className={`text-sm font-semibold mt-1 ${accent ? 'text-white' : 'text-white'}`}>{label}</p>
       {sub && <p className={`text-xs mt-1 ${accent ? 'text-emerald-100' : 'text-slate-500'}`}>{sub}</p>}
+    </div>
+  );
+}
+
+function FeatureRow({ icon: Icon, title, desc, color }: { icon: React.ElementType; title: string; desc: string; color: string }) {
+  return (
+    <div className="flex gap-4 bg-white/5 border border-white/10 rounded-2xl p-5">
+      <div className={`rounded-xl p-3 h-fit shrink-0 ${color.replace('text-', 'bg-').replace('-400', '-500/10').replace('-300', '-500/10')}`}>
+        <Icon className={`h-5 w-5 ${color}`} />
+      </div>
+      <div>
+        <p className="text-white font-semibold text-sm mb-1">{title}</p>
+        <p className="text-slate-400 text-xs leading-relaxed">{desc}</p>
+      </div>
     </div>
   );
 }
@@ -48,7 +57,7 @@ function MoneyCard({ label, value, sub, accent }: { label: string; value: string
 
 const SLIDES = [
 
-  // ── 1: Hook ──────────────────────────────────────────────────────────────
+  // 1 ── HOOK ─────────────────────────────────────────────────────────────────
   {
     id: 'hook',
     bg: 'from-slate-950 via-indigo-950 to-slate-950',
@@ -56,170 +65,177 @@ const SLIDES = [
       <div className="flex flex-col items-center justify-center text-center px-6 sm:px-12 h-full gap-6">
         <div className="flex items-center gap-2 bg-white/10 border border-white/10 rounded-full px-4 py-2 text-sm font-medium text-white/70">
           <Sparkles className="h-4 w-4 text-indigo-400" />
-          The AI Agency Opportunity — 2026
+          Build an AI agency with Kyra
         </div>
         <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black text-white leading-[1.05] max-w-4xl">
-          Build a real AI agency<br />
-          <span className="text-indigo-400">from anywhere.</span>
+          The AI workforce<br />
+          <span className="text-indigo-400">opportunity is open.</span>
         </h1>
         <p className="text-lg sm:text-xl text-slate-300 max-w-2xl leading-relaxed">
-          Small businesses need AI right now — and don't know where to start.
-          Kyra gives you the platform, the tools, and the system to serve them.
-          No coding. No guesswork. No fake promises.
+          Small businesses across every industry are scrambling to adopt AI — 
+          and most don't know where to start or who to trust.
+          Kyra gives you the platform to be that person.
         </p>
-        <div className="flex flex-col sm:flex-row gap-3 mt-2">
-          <Tag color="emerald">✓ Real recurring revenue</Tag>
-          <Tag color="indigo">✓ Work from anywhere</Tag>
-          <Tag color="amber">✓ Massive market, early timing</Tag>
+        <div className="flex flex-wrap justify-center gap-3 mt-2">
+          <Pill color="emerald">✓ Start free — no credit card</Pill>
+          <Pill color="indigo">✓ 50+ industry templates</Pill>
+          <Pill color="amber">✓ Work from anywhere</Pill>
         </div>
-        <div className="flex items-center gap-2 text-slate-500 text-sm mt-4 animate-bounce">
+        <div className="flex items-center gap-2 text-slate-600 text-sm mt-6 animate-bounce">
           <ChevronDown className="h-4 w-4" />
-          Swipe to explore
+          Arrow keys or swipe
         </div>
       </div>
     ),
   },
 
-  // ── 2: The Problem ───────────────────────────────────────────────────────
+  // 2 ── THE MARKET ──────────────────────────────────────────────────────────
   {
-    id: 'problem',
+    id: 'market',
     bg: 'from-slate-950 to-slate-900',
     content: (
       <div className="flex flex-col justify-center px-6 sm:px-12 h-full max-w-5xl mx-auto gap-8">
         <div>
-          <p className="text-indigo-400 font-semibold text-sm uppercase tracking-wider mb-3">The Problem</p>
+          <p className="text-indigo-400 font-semibold text-sm uppercase tracking-wider mb-3">The Market Right Now</p>
           <h2 className="text-3xl sm:text-5xl font-black text-white leading-tight">
-            Every small business<br />
-            <span className="text-rose-400">is losing leads right now.</span>
+            AI adoption is accelerating.<br />
+            <span className="text-indigo-400">Service businesses lag behind.</span>
+          </h2>
+          <p className="text-slate-400 mt-3 text-sm max-w-2xl">
+            According to the U.S. Small Business Administration (2025), only about 6% of small businesses
+            (under 250 employees) are actively using AI — compared to 11% of large enterprises.
+            That gap is the opportunity.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <StatBox stat="33M+" label="Small businesses in the US" sub="All potential clients" />
+          <StatBox stat="~6%" label="Currently using AI (SBA 2025)" sub="Early adopter window" />
+          <StatBox stat="58%" label="Using AI save 20+ hrs/mo" sub="Once they start" />
+          <StatBox stat="$297B+" label="AI market size 2026" sub="Global projection" accent />
+        </div>
+        <div className="bg-indigo-900/30 border border-indigo-500/20 rounded-2xl p-5">
+          <p className="text-white font-semibold text-sm mb-1">Why service businesses specifically</p>
+          <p className="text-slate-400 text-xs leading-relaxed">
+            Dentists, HVAC companies, law firms, salons — they can't hire a 24/7 receptionist.
+            They miss leads when they're on a job. They follow up too slowly. A well-configured AI
+            worker solves exactly that, at a fraction of the cost of an employee.
+          </p>
+        </div>
+      </div>
+    ),
+  },
+
+  // 3 ── THE PROBLEM ─────────────────────────────────────────────────────────
+  {
+    id: 'problem',
+    bg: 'from-slate-950 via-rose-950/20 to-slate-950',
+    content: (
+      <div className="flex flex-col justify-center px-6 sm:px-12 h-full max-w-5xl mx-auto gap-8">
+        <div>
+          <p className="text-rose-400 font-semibold text-sm uppercase tracking-wider mb-3">The Problem You Solve</p>
+          <h2 className="text-3xl sm:text-5xl font-black text-white leading-tight">
+            Slow response = lost revenue.<br />
+            <span className="text-rose-400">Every single day.</span>
           </h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {[
-            { icon: Clock, stat: '78%', label: 'of leads go to the first business that responds', color: 'text-rose-400' },
-            { icon: MessageSquare, stat: '5 min', label: 'response time kills conversion rate by 80%', color: 'text-amber-400' },
-            { icon: Smartphone, stat: '24/7', label: 'Customers expect instant answers — even at 2 AM', color: 'text-indigo-400' },
-            { icon: DollarSign, stat: '$0', label: 'Revenue from a lead that never gets a reply', color: 'text-rose-400' },
-          ].map(({ icon: Icon, stat, label, color }) => (
-            <div key={stat} className="flex items-start gap-4 bg-white/5 border border-white/10 rounded-2xl p-5">
+            { icon: Clock, stat: '78%', detail: 'of leads convert to the first business that responds', color: 'text-rose-400', src: 'MIT/InsideSales.com research' },
+            { icon: MessageSquare, stat: '5 min', detail: 'response window — after that, lead conversion drops 80%', color: 'text-amber-400', src: 'Harvard Business Review' },
+            { icon: Phone, stat: '62%', detail: 'of calls to small businesses go unanswered', color: 'text-rose-400', src: 'BIA Advisory' },
+            { icon: DollarSign, stat: '$0', detail: 'Revenue from a qualified lead that gets no reply', color: 'text-slate-400', src: '' },
+          ].map(({ icon: Icon, stat, detail, color, src }) => (
+            <div key={stat+detail} className="flex items-start gap-4 bg-white/5 border border-white/10 rounded-2xl p-5">
               <div className="bg-white/10 rounded-xl p-3 shrink-0">
                 <Icon className={`h-5 w-5 ${color}`} />
               </div>
               <div>
                 <p className={`text-2xl font-black ${color}`}>{stat}</p>
-                <p className="text-slate-400 text-sm leading-snug mt-0.5">{label}</p>
+                <p className="text-slate-300 text-sm leading-snug mt-0.5">{detail}</p>
+                {src && <p className="text-slate-600 text-xs mt-1">Source: {src}</p>}
               </div>
             </div>
           ))}
         </div>
         <p className="text-slate-400 text-sm">
-          Plumbers, dentists, restaurants, gyms, law firms, contractors — they all have this problem.
-          None of them have time to fix it. <span className="text-white font-semibold">That's where you come in.</span>
+          Plumbers, dentists, gyms, law firms, real estate agents — this is universal.
+          <span className="text-white font-semibold"> An AI that responds in under 60 seconds fixes it.</span>
         </p>
       </div>
     ),
   },
 
-  // ── 3: The Opportunity ───────────────────────────────────────────────────
+  // 4 ── WHAT IS KYRA ────────────────────────────────────────────────────────
   {
-    id: 'opportunity',
-    bg: 'from-indigo-950 via-slate-900 to-slate-950',
-    content: (
-      <div className="flex flex-col justify-center px-6 sm:px-12 h-full max-w-5xl mx-auto gap-8">
-        <div>
-          <p className="text-indigo-400 font-semibold text-sm uppercase tracking-wider mb-3">The Opportunity</p>
-          <h2 className="text-3xl sm:text-5xl font-black text-white leading-tight">
-            The AI gold rush<br />
-            <span className="text-indigo-400">is happening right now.</span>
-          </h2>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {[
-            { stat: '33M+', label: 'Small businesses in the US alone', sub: 'All potential clients', color: 'text-indigo-400' },
-            { stat: '<5%', label: 'Currently using AI tools effectively', sub: 'The gap you fill', color: 'text-amber-400' },
-            { stat: '$500–2K', label: 'Monthly recurring per client', sub: 'Industry standard rate', color: 'text-emerald-400' },
-          ].map(({ stat, label, sub, color }) => (
-            <div key={stat} className="text-center bg-white/5 border border-white/10 rounded-2xl p-6">
-              <p className={`text-4xl sm:text-5xl font-black ${color} mb-2`}>{stat}</p>
-              <p className="text-white font-semibold text-sm">{label}</p>
-              <p className="text-slate-500 text-xs mt-1">{sub}</p>
-            </div>
-          ))}
-        </div>
-        <div className="bg-indigo-900/40 border border-indigo-500/30 rounded-2xl p-5">
-          <p className="text-white font-semibold mb-1">Why now is the right time</p>
-          <p className="text-slate-400 text-sm leading-relaxed">
-            Business owners have heard about AI but don't know how to use it. They're looking for someone to
-            set it up and manage it for them. The market is hungry, competition is still low,
-            and the platform to deliver it already exists. You just need to show up.
-          </p>
-        </div>
-      </div>
-    ),
-  },
-
-  // ── 4: What is Kyra ─────────────────────────────────────────────────────
-  {
-    id: 'what-is-kyra',
+    id: 'platform',
     bg: 'from-slate-950 to-indigo-950',
     content: (
-      <div className="flex flex-col justify-center px-6 sm:px-12 h-full max-w-5xl mx-auto gap-8">
+      <div className="flex flex-col justify-center px-6 sm:px-12 h-full max-w-5xl mx-auto gap-7">
         <div>
           <p className="text-indigo-400 font-semibold text-sm uppercase tracking-wider mb-3">The Platform</p>
           <h2 className="text-3xl sm:text-5xl font-black text-white leading-tight">
-            Kyra is your<br />
+            Kyra is a white-label<br />
             <span className="text-indigo-400">AI workforce platform.</span>
           </h2>
-          <p className="text-slate-400 mt-3 text-base max-w-2xl">
-            A white-label platform that lets you deploy, manage, and monetize AI workers for your
-            clients — all from one dashboard. No infrastructure. No coding.
+          <p className="text-slate-400 mt-3 text-sm max-w-2xl">
+            Built on OpenClaw — an open-source autonomous AI runtime. You get a dashboard
+            to deploy and manage AI workers for each client, all under your own brand.
           </p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {[
-            { icon: Bot, title: 'AI Workers per client', desc: 'Each client gets a dedicated AI that knows their business — services, hours, prices, personality. Responds to leads in under 60 seconds.', color: 'text-indigo-400 bg-indigo-500/10' },
-            { icon: Globe, title: 'Multi-channel coverage', desc: 'SMS (via GoHighLevel), web chat widget, Telegram, WhatsApp, and voice calls — one AI handles all channels at once.', color: 'text-emerald-400 bg-emerald-500/10' },
-            { icon: BarChart3, title: 'Built-in CRM & pipeline', desc: 'Contacts, conversations, deals, calendar booking — all managed automatically by the AI and visible in your dashboard.', color: 'text-amber-400 bg-amber-500/10' },
-            { icon: Shield, title: 'Your brand, your business', desc: 'White-label branding: your logo, your colors, your company name on the dashboard, client portal, and chat widget.', color: 'text-violet-400 bg-violet-500/10' },
-          ].map(({ icon: Icon, title, desc, color }) => (
-            <div key={title} className="flex gap-4 bg-white/5 border border-white/10 rounded-2xl p-5">
-              <div className={`rounded-xl p-3 h-fit shrink-0 ${color.split(' ')[1]}`}>
-                <Icon className={`h-5 w-5 ${color.split(' ')[0]}`} />
-              </div>
-              <div>
-                <p className="text-white font-semibold text-sm mb-1">{title}</p>
-                <p className="text-slate-400 text-xs leading-relaxed">{desc}</p>
-              </div>
-            </div>
-          ))}
+          <FeatureRow
+            icon={Bot}
+            title="One AI worker per client"
+            desc="Each client gets a dedicated AI configured with their business — services, hours, prices, tone, and knowledge. Not a shared chatbot."
+            color="text-indigo-400"
+          />
+          <FeatureRow
+            icon={Layers}
+            title="AI Teams (new)"
+            desc="Deploy a team of specialist AIs per client: a front-desk receptionist routes to an appointment setter, sales qualifier, or objection handler based on what the lead says."
+            color="text-violet-400"
+          />
+          <FeatureRow
+            icon={Globe}
+            title="Multi-channel, one AI brain"
+            desc="SMS (via GHL), web chat widget, Telegram, WhatsApp, voice calls — the same AI handles all channels simultaneously."
+            color="text-emerald-400"
+          />
+          <FeatureRow
+            icon={Shield}
+            title="White-label — your brand"
+            desc="Your logo, your colors, your company name on the dashboard, client portals, and chat widget. Clients see your agency, not Kyra."
+            color="text-amber-400"
+          />
         </div>
       </div>
     ),
   },
 
-  // ── 5: What the AI Actually Does ─────────────────────────────────────────
+  // 5 ── WHAT THE AI DOES ────────────────────────────────────────────────────
   {
-    id: 'ai-capabilities',
+    id: 'capabilities',
     bg: 'from-slate-950 via-slate-900 to-indigo-950',
     content: (
       <div className="flex flex-col justify-center px-6 sm:px-12 h-full max-w-5xl mx-auto gap-6">
         <div>
-          <p className="text-indigo-400 font-semibold text-sm uppercase tracking-wider mb-3">What the AI Does</p>
+          <p className="text-indigo-400 font-semibold text-sm uppercase tracking-wider mb-3">What the AI Actually Does</p>
           <h2 className="text-3xl sm:text-5xl font-black text-white leading-tight">
-            A full-time employee.<br />
-            <span className="text-emerald-400">Without the salary.</span>
+            A 24/7 employee<br />
+            <span className="text-emerald-400">without the payroll.</span>
           </h2>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {[
-            { emoji: '💬', title: 'Responds in < 60 sec', desc: 'Every inbound SMS, web chat, Telegram, WhatsApp' },
-            { emoji: '📅', title: 'Books appointments', desc: 'Checks availability, confirms in GHL calendar' },
-            { emoji: '🏷️', title: 'Qualifies leads', desc: 'Asks the right questions, scores and tags hot prospects' },
-            { emoji: '📋', title: 'Updates the CRM', desc: 'Creates contacts, logs conversations, moves deals in pipeline' },
-            { emoji: '📞', title: 'Answers calls', desc: 'Picks up, has a natural voice conversation, takes action' },
-            { emoji: '🚨', title: 'Escalates when needed', desc: 'Flags complex issues to a human instantly' },
-            { emoji: '🔄', title: 'Follows up on leads', desc: 'Automated sequences via GHL workflows' },
-            { emoji: '📊', title: 'Reports everything', desc: 'Every conversation, lead, outcome visible to you' },
-            { emoji: '🌐', title: 'Works 24/7/365', desc: 'No sick days, no holidays, no overtime pay' },
+            { emoji: '💬', title: 'Responds in < 60 seconds', desc: 'Every inbound SMS, web chat, Telegram, or WhatsApp message' },
+            { emoji: '📅', title: 'Books appointments', desc: 'Checks GHL calendar availability, books and sends confirmations' },
+            { emoji: '🏷️', title: 'Qualifies & tags leads', desc: 'Asks the right questions, scores interest, tags hot prospects in GHL CRM' },
+            { emoji: '📋', title: 'Updates the CRM', desc: 'Creates contacts, logs every conversation, moves deals through the pipeline' },
+            { emoji: '📞', title: 'Answers phone calls', desc: 'Picks up, converses naturally via voice AI, logs transcript to CRM' },
+            { emoji: '🚨', title: 'Escalates when needed', desc: 'Flags complex requests or upset customers to a real human instantly' },
+            { emoji: '🌐', title: 'Reads the internet', desc: 'Web Intelligence (Pro+) lets the AI browse live for competitor pricing, leads, news' },
+            { emoji: '🔄', title: 'Follows up automatically', desc: 'Triggers GHL workflow sequences for leads that don\'t respond' },
+            { emoji: '📊', title: 'Full conversation history', desc: 'Every message, lead, and outcome tracked in your dashboard' },
           ].map(({ emoji, title, desc }) => (
             <div key={title} className="bg-white/5 border border-white/8 rounded-xl p-4">
               <span className="text-2xl">{emoji}</span>
@@ -228,60 +244,103 @@ const SLIDES = [
             </div>
           ))}
         </div>
-        <p className="text-slate-500 text-xs text-center">
-          All powered by the latest AI models (Claude, GPT-4o) with automatic fallback and routing.
+        <p className="text-slate-600 text-xs text-center">
+          Powered by Claude (Anthropic), GPT-4o (OpenAI), and Gemini — auto-routed based on message complexity.
+          Agencies can bring their own API key (BYOK) to control costs.
         </p>
       </div>
     ),
   },
 
-  // ── 6: 50+ Templates ─────────────────────────────────────────────────────
+  // 6 ── AI TEAMS (new feature) ──────────────────────────────────────────────
+  {
+    id: 'ai-teams',
+    bg: 'from-violet-950/50 via-slate-950 to-slate-950',
+    content: (
+      <div className="flex flex-col justify-center px-6 sm:px-12 h-full max-w-5xl mx-auto gap-7">
+        <div>
+          <div className="inline-flex items-center gap-2 bg-violet-500/15 border border-violet-500/25 rounded-full px-3 py-1 text-xs font-semibold text-violet-300 mb-4">
+            <Zap className="h-3 w-3" /> New — AI Teams
+          </div>
+          <h2 className="text-3xl sm:text-5xl font-black text-white leading-tight">
+            Not one AI.<br />
+            <span className="text-violet-400">A whole team of them.</span>
+          </h2>
+          <p className="text-slate-400 mt-3 text-sm max-w-2xl">
+            Deploy multiple specialist AI workers per client that hand off between each other
+            based on what the customer says — no coding or configuration beyond clicking a template.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {[
+            { emoji: '📞', name: 'Appointment Setter', desc: 'Triggers on "book", "schedule", "availability" keywords — checks GHL calendar and confirms' },
+            { emoji: '🎯', name: 'Sales Qualifier', desc: 'Triggers on pricing and interest questions — scores lead, creates opportunity in GHL' },
+            { emoji: '🗣️', name: 'Objection Handler', desc: 'Activates when hesitation is detected — trained responses for common objections' },
+            { emoji: '⭐', name: 'Review Responder', desc: 'Monitors for feedback mentions — drafts and sends professional responses' },
+            { emoji: '🛒', name: 'Abandoned Cart', desc: 'E-commerce: detects cart abandonment and re-engages automatically' },
+            { emoji: '📊', name: 'Pipeline Tracker', desc: 'Background worker: monitors GHL deals and alerts on stale opportunities' },
+          ].map(({ emoji, name, desc }) => (
+            <div key={name} className="flex gap-3 bg-white/5 border border-white/10 rounded-xl p-4">
+              <span className="text-xl shrink-0">{emoji}</span>
+              <div>
+                <p className="text-white font-semibold text-xs mb-1">{name}</p>
+                <p className="text-slate-500 text-xs leading-snug">{desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+        <p className="text-slate-600 text-xs">
+          30+ specialist worker roles. Pre-built team templates: Full-Service Front Desk, Sales Machine,
+          Real Estate Team, E-Commerce Support, Agency Operations. Available on Lite plan and above.
+        </p>
+      </div>
+    ),
+  },
+
+  // 7 ── 50+ TEMPLATES ───────────────────────────────────────────────────────
   {
     id: 'templates',
     bg: 'from-slate-950 to-slate-900',
     content: (
       <div className="flex flex-col justify-center px-6 sm:px-12 h-full max-w-5xl mx-auto gap-6">
         <div>
-          <p className="text-indigo-400 font-semibold text-sm uppercase tracking-wider mb-3">Ready-Made Templates</p>
+          <p className="text-indigo-400 font-semibold text-sm uppercase tracking-wider mb-3">Industry Templates</p>
           <h2 className="text-3xl sm:text-5xl font-black text-white leading-tight">
             50+ industries.<br />
-            <span className="text-indigo-400">Launch in minutes.</span>
+            <span className="text-indigo-400">Deploy in under 3 minutes.</span>
           </h2>
-          <p className="text-slate-400 mt-3">Each template has a pre-built AI personality, greeting, and instructions — tailored for that industry. Edit or deploy as-is.</p>
+          <p className="text-slate-400 mt-3 text-sm">
+            Every template includes a pre-built AI personality, greeting, instructions, and GHL integration config.
+            No customization required — though you can edit everything.
+          </p>
         </div>
         <div className="flex flex-wrap gap-2">
           {[
-            'Dental', 'Real Estate', 'Law Firm', 'HVAC', 'Auto Repair',
-            'Gym & Fitness', 'Restaurant', 'Med Spa', 'Insurance', 'Veterinary',
-            'Salon & Barbershop', 'Roofing', 'Cannabis Dispensary', 'Moving Company',
-            'Plumbing', 'Accounting', 'Photography', 'Tutoring', 'Travel Agency',
-            'Cleaning Service', '+ 30 more',
-          ].map((industry) => (
-            <span
-              key={industry}
-              className={`rounded-full px-3 py-1 text-xs font-semibold border ${
-                industry === '+ 30 more'
-                  ? 'border-indigo-500/50 text-indigo-400 bg-indigo-500/10'
-                  : 'border-white/10 text-slate-300 bg-white/5'
-              }`}
-            >
-              {industry}
-            </span>
+            'Dental','Real Estate','Law Firm','HVAC','Auto Repair','Gym & Fitness',
+            'Restaurant','Med Spa','Insurance','Veterinary','Salon','Roofing',
+            'Cannabis Dispensary','Moving Company','Plumbing','Accounting',
+            'Chiropractic','Mental Health','Mortgage','Property Management',
+            'Pest Control','Solar','Wedding Planning','Physical Therapy',
+            'Childcare','Senior Care','E-Commerce','Staffing','Yoga','Catering',
+            '+ 20 more',
+          ].map((ind) => (
+            <span key={ind} className={`rounded-full px-3 py-1 text-xs font-medium border ${
+              ind.startsWith('+')
+                ? 'border-indigo-500/40 text-indigo-400 bg-indigo-500/10'
+                : 'border-white/10 text-slate-300 bg-white/5'
+            }`}>{ind}</span>
           ))}
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
+        <div className="grid grid-cols-3 gap-3">
           {[
-            { n: '1', title: 'Pick a template', desc: 'Choose the client\'s industry. AI is pre-configured.', time: '1 min' },
-            { n: '2', title: 'Connect channels', desc: 'Paste a GHL token or embed the web chat widget.', time: '2 min' },
-            { n: '3', title: 'Go live', desc: 'AI starts responding to every inbound message.', time: '0 min' },
-          ].map(({ n, title, desc, time }) => (
-            <div key={n} className="bg-white/5 border border-white/10 rounded-2xl p-5">
-              <div className="flex items-center justify-between mb-3">
-                <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white font-black text-sm">{n}</div>
-                <span className="text-indigo-400 text-xs font-semibold">{time}</span>
-              </div>
-              <p className="text-white font-semibold text-sm mb-1">{title}</p>
-              <p className="text-slate-400 text-xs leading-relaxed">{desc}</p>
+            { n: '1', label: 'Pick template', time: '~30 sec' },
+            { n: '2', label: 'Connect GHL + channels', time: '~2 min' },
+            { n: '3', label: 'AI goes live', time: 'Instant' },
+          ].map(({ n, label, time }) => (
+            <div key={n} className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
+              <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white font-black text-sm mx-auto mb-2">{n}</div>
+              <p className="text-white font-semibold text-xs">{label}</p>
+              <p className="text-indigo-400 text-xs mt-1">{time}</p>
             </div>
           ))}
         </div>
@@ -289,182 +348,146 @@ const SLIDES = [
     ),
   },
 
-  // ── 7: The Business Model ─────────────────────────────────────────────────
+  // 8 ── BUSINESS MODEL ──────────────────────────────────────────────────────
   {
     id: 'business-model',
-    bg: 'from-slate-950 via-emerald-950/30 to-slate-950',
+    bg: 'from-slate-950 via-emerald-950/20 to-slate-950',
     content: (
       <div className="flex flex-col justify-center px-6 sm:px-12 h-full max-w-5xl mx-auto gap-6">
         <div>
           <p className="text-emerald-400 font-semibold text-sm uppercase tracking-wider mb-3">The Business Model</p>
           <h2 className="text-3xl sm:text-5xl font-black text-white leading-tight">
-            You charge clients.<br />
+            You set your price.<br />
             <span className="text-emerald-400">You keep the margin.</span>
           </h2>
+          <p className="text-slate-400 mt-2 text-sm">
+            Kyra is your platform cost. What you charge clients is entirely up to you.
+          </p>
         </div>
 
         <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
-          <p className="text-slate-400 text-sm mb-5">How the numbers work (your Pro plan example):</p>
-          <div className="grid grid-cols-3 gap-4 text-center mb-6">
+          <p className="text-slate-400 text-xs mb-5 font-semibold uppercase tracking-wider">Real math — Pro plan, 10 clients</p>
+          <div className="grid grid-cols-3 gap-4 text-center mb-5">
             <div>
               <p className="text-slate-500 text-xs mb-1">You pay Kyra</p>
-              <p className="text-2xl sm:text-3xl font-black text-white">$299<span className="text-sm text-slate-500">/mo</span></p>
-              <p className="text-slate-500 text-xs mt-1">Pro plan · 10 clients</p>
+              <p className="text-3xl font-black text-white">$299<span className="text-sm text-slate-500">/mo</span></p>
+              <p className="text-slate-600 text-xs mt-1">Pro plan · up to 11 clients</p>
             </div>
-            <div className="flex items-center justify-center text-slate-600 text-2xl font-black">→</div>
+            <div className="flex items-center justify-center text-slate-600 text-3xl font-black">→</div>
             <div>
-              <p className="text-slate-500 text-xs mb-1">You charge clients</p>
-              <p className="text-2xl sm:text-3xl font-black text-emerald-400">$500–2K<span className="text-sm text-emerald-600">/mo each</span></p>
-              <p className="text-slate-500 text-xs mt-1">Industry standard rate</p>
+              <p className="text-slate-500 text-xs mb-1">Market rate to charge</p>
+              <p className="text-3xl font-black text-emerald-400">$297–997<span className="text-sm text-emerald-700">/mo each</span></p>
+              <p className="text-slate-600 text-xs mt-1">GHL white-label agencies commonly charge $297–$997/mo</p>
             </div>
           </div>
-          <div className="border-t border-white/10 pt-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <MoneyCard label="Your cost per client" value="~$30" sub="$299 ÷ 10 clients" />
-            <MoneyCard label="You charge per client" value="$997" sub="Conservative estimate" />
-            <MoneyCard label="Your margin" value="$967/client" sub="per month, recurring" accent />
+          <div className="border-t border-white/10 pt-4 grid grid-cols-3 gap-3">
+            <div className="text-center bg-white/5 rounded-xl p-3">
+              <p className="text-slate-500 text-xs mb-1">Your cost per client</p>
+              <p className="text-2xl font-black text-white">~$27</p>
+              <p className="text-slate-600 text-xs mt-1">$299 ÷ 11</p>
+            </div>
+            <div className="text-center bg-white/5 rounded-xl p-3">
+              <p className="text-slate-500 text-xs mb-1">Conservative charge</p>
+              <p className="text-2xl font-black text-white">$497/mo</p>
+              <p className="text-slate-600 text-xs mt-1">per client</p>
+            </div>
+            <div className="text-center bg-emerald-500 rounded-xl p-3">
+              <p className="text-emerald-100 text-xs mb-1">Your margin (10 clients)</p>
+              <p className="text-2xl font-black text-white">$4,671</p>
+              <p className="text-emerald-100 text-xs mt-1">per month recurring</p>
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="bg-emerald-900/20 border border-emerald-500/20 rounded-xl p-4">
-            <p className="text-emerald-400 font-semibold text-sm mb-1">5 clients = $4,850+/mo</p>
-            <p className="text-slate-400 text-xs">After paying for Kyra Pro ($299) you keep ~$4,556/mo</p>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+            <p className="text-white font-semibold text-sm mb-1">Annual pricing available</p>
+            <p className="text-slate-400 text-xs">Pro annual = $239/mo ($720 savings/yr). Offer annual plans to your clients for upfront cash.</p>
           </div>
-          <div className="bg-emerald-900/20 border border-emerald-500/20 rounded-xl p-4">
-            <p className="text-emerald-400 font-semibold text-sm mb-1">10 clients = $9,670+/mo</p>
-            <p className="text-slate-400 text-xs">Fully recurring — clients pay monthly as long as the AI works</p>
+          <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+            <p className="text-white font-semibold text-sm mb-1">BYOK = lower costs</p>
+            <p className="text-slate-400 text-xs">Clients with their own OpenAI key bypass platform credits — your per-client cost drops even further.</p>
           </div>
         </div>
 
         <p className="text-slate-600 text-xs">
-          * Revenue figures are estimates based on market pricing. Your actual results depend on your sales, pricing, and client retention.
-          Kyra does not guarantee income.
+          * Revenue estimates based on current market rates for GHL white-label AI agency services. Your results depend on your sales, pricing, and client retention. Kyra does not guarantee income.
         </p>
       </div>
     ),
   },
 
-  // ── 8: Why Passive / Recurring ───────────────────────────────────────────
-  {
-    id: 'recurring',
-    bg: 'from-slate-950 to-slate-900',
-    content: (
-      <div className="flex flex-col justify-center px-6 sm:px-12 h-full max-w-5xl mx-auto gap-8">
-        <div>
-          <p className="text-indigo-400 font-semibold text-sm uppercase tracking-wider mb-3">Why It's Recurring</p>
-          <h2 className="text-3xl sm:text-5xl font-black text-white leading-tight">
-            Set it up once.<br />
-            <span className="text-indigo-400">Get paid every month.</span>
-          </h2>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {[
-            {
-              icon: Zap,
-              title: 'The AI never stops working',
-              desc: 'Once configured, the AI handles every inbound lead 24/7 — you don\'t touch it unless the client wants changes.',
-              color: 'text-amber-400 bg-amber-500/10',
-            },
-            {
-              icon: TrendingUp,
-              title: 'Clients see real results',
-              desc: 'Businesses that respond to leads instantly close more deals. When clients see revenue from the AI, they keep paying — month after month.',
-              color: 'text-emerald-400 bg-emerald-500/10',
-            },
-            {
-              icon: Users,
-              title: 'Low churn by design',
-              desc: 'Switching AI tools is painful. Clients who integrate Kyra into their workflow tend to stay. The longer they stay, the more data the AI has, the better it gets.',
-              color: 'text-indigo-400 bg-indigo-500/10',
-            },
-            {
-              icon: Briefcase,
-              title: 'You manage — not build',
-              desc: 'You\'re not coding anything. You use the Kyra dashboard to deploy, monitor, and report results to clients. The platform does the heavy lifting.',
-              color: 'text-violet-400 bg-violet-500/10',
-            },
-          ].map(({ icon: Icon, title, desc, color }) => (
-            <div key={title} className="flex gap-4 bg-white/5 border border-white/10 rounded-2xl p-5">
-              <div className={`rounded-xl p-3 h-fit shrink-0 ${color.split(' ')[1]}`}>
-                <Icon className={`h-5 w-5 ${color.split(' ')[0]}`} />
-              </div>
-              <div>
-                <p className="text-white font-semibold text-sm mb-1">{title}</p>
-                <p className="text-slate-400 text-xs leading-relaxed">{desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="bg-indigo-900/30 border border-indigo-500/20 rounded-2xl p-5 text-center">
-          <p className="text-indigo-300 font-semibold mb-1">This is a service business, not passive income in the traditional sense</p>
-          <p className="text-slate-500 text-xs max-w-xl mx-auto">You acquire clients, set them up, and handle occasional requests. The AI handles the day-to-day work. Your time investment drops significantly after onboarding.</p>
-        </div>
-      </div>
-    ),
-  },
-
-  // ── 9: Kyra Pricing ─────────────────────────────────────────────────────
+  // 9 ── KYRA PLANS ──────────────────────────────────────────────────────────
   {
     id: 'pricing',
     bg: 'from-indigo-950 via-slate-900 to-slate-950',
     content: (
-      <div className="flex flex-col justify-center px-4 sm:px-8 lg:px-12 h-full max-w-5xl mx-auto gap-6">
+      <div className="flex flex-col justify-center px-4 sm:px-8 lg:px-10 h-full max-w-5xl mx-auto gap-6">
         <div className="text-center">
-          <p className="text-indigo-400 font-semibold text-sm uppercase tracking-wider mb-3">Kyra Pricing</p>
-          <h2 className="text-3xl sm:text-5xl font-black text-white">
-            Your cost to run the platform.
-          </h2>
-          <p className="text-slate-400 mt-2">You charge clients separately — these are your platform fees.</p>
+          <p className="text-indigo-400 font-semibold text-sm uppercase tracking-wider mb-2">Kyra Plans</p>
+          <h2 className="text-3xl sm:text-4xl font-black text-white">Your platform cost.</h2>
+          <p className="text-slate-400 text-sm mt-1">Start free. Upgrade when clients come in.</p>
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {[
-            { name: 'Free', price: '$0', clients: 1, highlight: false, features: ['1 AI worker', 'All channels', 'Built-in CRM', 'GHL integration', 'No credit card'], cta: 'Start Free' },
-            { name: 'Lite', price: '$99', clients: 3, highlight: false, features: ['3 AI workers', '50+ templates', 'Analytics', 'Escalation alerts', 'Performance reports'], cta: 'Start Lite' },
-            { name: 'Pro', price: '$299', clients: 10, highlight: true, features: ['10 AI workers', 'White-label branding', 'Custom templates', 'Revenue tracking', 'Priority support'], cta: 'Start Pro' },
-            { name: 'Scale', price: '$499', clients: 20, highlight: false, features: ['20 AI workers', 'Dedicated infra', 'Custom domains', 'Advanced analytics', 'Phone support'], cta: 'Start Scale' },
-          ].map(({ name, price, clients, highlight, features, cta }) => (
-            <div key={name} className={`rounded-2xl p-5 flex flex-col ${
+            {
+              name: 'Free', price: '$0', clients: '1 client', monthly: null, highlight: false,
+              features: ['1 AI worker', '50 welcome credits', 'All channels (SMS, web chat, Telegram)', 'GHL integration', 'Full CRM', 'No credit card'],
+              cta: 'Start Free',
+            },
+            {
+              name: 'Lite', price: '$99', clients: '4 clients', monthly: '$79/mo annual', highlight: false,
+              features: ['4 AI workers', '10,000 credits/mo', '500 web scrapes/mo', 'AI Teams (2 specialists)', '50+ templates', 'Escalation alerts', 'Weekly reports'],
+              cta: 'Start Lite',
+            },
+            {
+              name: 'Pro', price: '$299', clients: '11 clients', monthly: '$239/mo annual', highlight: true,
+              features: ['11 AI workers', '25,000 credits/mo', '2,000 web scrapes/mo', 'AI Teams (4 specialists)', 'White-label branding', 'Lead discovery & enrichment', 'Revenue tracking', 'Review queue'],
+              cta: 'Start Pro',
+            },
+            {
+              name: 'Scale', price: '$499', clients: '21 clients', monthly: '$399/mo annual', highlight: false,
+              features: ['21 AI workers', '50,000 credits/mo', '5,000 web scrapes/mo', 'AI Teams (6 specialists)', 'Dedicated infrastructure', 'Custom domain', 'SLA uptime guarantee', 'API access'],
+              cta: 'Start Scale',
+            },
+          ].map(({ name, price, clients, monthly, highlight, features, cta }) => (
+            <div key={name} className={`rounded-2xl p-4 flex flex-col ${
               highlight
-                ? 'bg-white text-gray-900 ring-2 ring-indigo-400 shadow-xl shadow-indigo-500/20 scale-[1.02]'
+                ? 'bg-white text-gray-900 ring-2 ring-indigo-400 shadow-xl shadow-indigo-500/20'
                 : 'bg-white/8 border border-white/10 text-white'
             }`}>
               {highlight && (
-                <div className="text-center mb-3">
-                  <span className="bg-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-full">BEST VALUE</span>
+                <div className="text-center mb-2">
+                  <span className="bg-indigo-600 text-white text-xs font-bold px-2.5 py-0.5 rounded-full">MOST POPULAR</span>
                 </div>
               )}
               <p className={`font-bold text-sm ${highlight ? 'text-gray-900' : 'text-white'}`}>{name}</p>
               <p className={`text-3xl font-black mt-1 ${highlight ? 'text-gray-900' : 'text-white'}`}>{price}<span className={`text-xs font-normal ${highlight ? 'text-gray-500' : 'text-slate-400'}`}>/mo</span></p>
-              <p className={`text-xs mt-1 mb-4 ${highlight ? 'text-indigo-600 font-semibold' : 'text-slate-400'}`}>{clients} client{clients > 1 ? 's' : ''}</p>
-              <ul className="space-y-2 flex-1 mb-4">
+              <p className={`text-xs mt-0.5 mb-1 font-semibold ${highlight ? 'text-indigo-600' : 'text-indigo-400'}`}>{clients}</p>
+              {monthly && <p className={`text-xs mb-3 ${highlight ? 'text-gray-400' : 'text-slate-600'}`}>{monthly}</p>}
+              <ul className="space-y-1.5 flex-1 mb-4 mt-2">
                 {features.map(f => (
-                  <li key={f} className="flex items-start gap-2 text-xs">
-                    <CheckCircle2 className={`h-3.5 w-3.5 mt-0.5 shrink-0 ${highlight ? 'text-emerald-500' : 'text-indigo-400'}`} />
+                  <li key={f} className="flex items-start gap-1.5 text-xs">
+                    <CheckCircle2 className={`h-3 w-3 mt-0.5 shrink-0 ${highlight ? 'text-emerald-500' : 'text-indigo-400'}`} />
                     <span className={highlight ? 'text-gray-600' : 'text-slate-400'}>{f}</span>
                   </li>
                 ))}
               </ul>
-              <Link
-                href="/signup/agency"
-                className={`block text-center text-xs font-bold py-2.5 rounded-xl transition ${
-                  highlight
-                    ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                    : 'bg-white/15 hover:bg-white/25 text-white'
-                }`}
-              >
-                {cta}
-              </Link>
+              <Link href="/signup/agency" className={`block text-center text-xs font-bold py-2.5 rounded-xl transition ${
+                highlight ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-white/15 hover:bg-white/25 text-white'
+              }`}>{cta}</Link>
             </div>
           ))}
         </div>
-        <p className="text-slate-500 text-xs text-center">
-          All plans: multi-channel AI, CRM, GHL integration, conversation inbox, AI personality customization. Cancel anytime.
+        <p className="text-slate-600 text-xs text-center">
+          Voice AI add-on: +$79/mo · 300 minutes of inbound + outbound AI calling · Works with any plan.
+          All plans include: multi-channel AI, CRM, GHL integration, conversation inbox. Cancel anytime.
         </p>
       </div>
     ),
   },
 
-  // ── 10: Who This Is For ──────────────────────────────────────────────────
+  // 10 ── WHO THIS IS FOR ────────────────────────────────────────────────────
   {
     id: 'who',
     bg: 'from-slate-950 to-slate-900',
@@ -473,25 +496,25 @@ const SLIDES = [
         <div>
           <p className="text-indigo-400 font-semibold text-sm uppercase tracking-wider mb-3">Who This Is For</p>
           <h2 className="text-3xl sm:text-5xl font-black text-white leading-tight">
-            You don't need to be<br />
-            <span className="text-indigo-400">a tech expert.</span>
+            No technical background<br />
+            <span className="text-indigo-400">required.</span>
           </h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {[
-            { icon: Briefcase, title: 'Marketing agencies', desc: 'Add AI workers to your existing service stack. Upsell current clients or use it as a lead-gen offer.', good: true },
-            { icon: Users, title: 'Coaches & consultants', desc: 'Help your clients implement AI without doing the technical work yourself. Kyra handles the delivery.', good: true },
-            { icon: Home, title: 'Work-from-home entrepreneurs', desc: 'Build an agency from scratch. Start with free plan, get first client, scale from there.', good: true },
-            { icon: Wifi, title: 'Digital marketing freelancers', desc: 'Add recurring revenue to project-based work. One AI client retainer is worth 3-4 one-off projects.', good: true },
-          ].map(({ icon: Icon, title, desc, good }) => (
-            <div key={title} className={`flex gap-4 rounded-2xl p-5 border ${good ? 'bg-emerald-900/10 border-emerald-500/20' : 'bg-red-900/10 border-red-500/20'}`}>
-              <div className={`rounded-xl p-3 h-fit shrink-0 ${good ? 'bg-emerald-500/10' : 'bg-red-500/10'}`}>
-                <Icon className={`h-5 w-5 ${good ? 'text-emerald-400' : 'text-red-400'}`} />
+            { icon: Briefcase, title: 'Marketing agencies', desc: 'Add AI workers to your service stack. Upsell existing clients or use Kyra as a standalone offer. White-label under your brand.' },
+            { icon: Users, title: 'Coaches & consultants', desc: 'Help your clients implement AI without building anything yourself. Kyra handles the setup; you handle the strategy and relationship.' },
+            { icon: Target, title: 'Work-from-home entrepreneurs', desc: 'Start on the free plan, land a local business as your first client, grow from there. Low overhead, location-independent.' },
+            { icon: BarChart3, title: 'Digital marketing freelancers', desc: 'Add monthly recurring revenue to project-based work. One AI client retainer is typically worth 3–4 one-off website projects.' },
+          ].map(({ icon: Icon, title, desc }) => (
+            <div key={title} className="flex gap-4 bg-emerald-900/10 border border-emerald-500/20 rounded-2xl p-5">
+              <div className="bg-emerald-500/10 rounded-xl p-3 h-fit shrink-0">
+                <Icon className="h-5 w-5 text-emerald-400" />
               </div>
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <p className="text-white font-semibold text-sm">{title}</p>
-                  {good && <CheckCircle2 className="h-4 w-4 text-emerald-400" />}
+                  <CheckCircle2 className="h-4 w-4 text-emerald-400" />
                 </div>
                 <p className="text-slate-400 text-xs leading-relaxed">{desc}</p>
               </div>
@@ -499,40 +522,40 @@ const SLIDES = [
           ))}
         </div>
         <div className="bg-amber-900/20 border border-amber-500/20 rounded-2xl p-4">
-          <p className="text-amber-400 font-semibold text-sm mb-1">What you actually need</p>
+          <p className="text-amber-300 font-semibold text-sm mb-1">What you actually need to start</p>
           <p className="text-slate-400 text-xs leading-relaxed">
-            The ability to have a conversation with a business owner, show them results, and follow up. 
-            Kyra handles everything else — the AI, the CRM, the channels, the reporting.
+            The ability to have a 30-minute conversation with a business owner, demonstrate the AI live,
+            and follow up. Kyra handles the technology. You handle the relationship.
           </p>
         </div>
       </div>
     ),
   },
 
-  // ── 11: What You Get / Dashboard ─────────────────────────────────────────
+  // 11 ── YOUR DASHBOARD ─────────────────────────────────────────────────────
   {
     id: 'dashboard',
     bg: 'from-indigo-950 to-slate-950',
     content: (
       <div className="flex flex-col justify-center px-6 sm:px-12 h-full max-w-5xl mx-auto gap-8">
         <div>
-          <p className="text-indigo-400 font-semibold text-sm uppercase tracking-wider mb-3">Your Agency Dashboard</p>
+          <p className="text-indigo-400 font-semibold text-sm uppercase tracking-wider mb-3">Your Dashboard</p>
           <h2 className="text-3xl sm:text-5xl font-black text-white leading-tight">
-            One place to manage<br />
-            <span className="text-indigo-400">every client's AI.</span>
+            One login.<br />
+            <span className="text-indigo-400">Every client's AI.</span>
           </h2>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {[
-            { emoji: '🤖', title: 'AI Worker per client', desc: 'Each client gets a fully configured AI with their own personality and knowledge' },
-            { emoji: '💬', title: 'Conversation inbox', desc: 'See every message the AI sends and receives across all channels' },
-            { emoji: '📊', title: 'Analytics dashboard', desc: 'Track leads, conversions, response times, and revenue per client' },
-            { emoji: '🔗', title: 'GHL integration', desc: 'Connect each client\'s GoHighLevel sub-account — contacts, calendar, pipeline, workflows' },
-            { emoji: '🏷️', title: 'White-label branding', desc: 'Your logo, your name, your colors on everything the client sees' },
-            { emoji: '🌐', title: 'Client portal', desc: 'Each client gets a login to view their AI\'s activity and conversations' },
-            { emoji: '📱', title: 'Multi-channel AI', desc: 'SMS, web chat, Telegram, WhatsApp, voice — one AI handles all' },
-            { emoji: '📋', title: 'CRM built in', desc: 'Contacts, deals, pipeline — no extra tools needed' },
-            { emoji: '🚨', title: 'Escalation alerts', desc: 'Get notified when a lead needs a human touch' },
+            { emoji: '🤖', title: 'AI Worker per client', desc: 'Configure, monitor, and update each client\'s AI from one place' },
+            { emoji: '💬', title: 'Conversation inbox', desc: 'Read every message the AI sends and receives across all channels' },
+            { emoji: '📊', title: 'Analytics & reporting', desc: 'Response times, lead counts, conversion rates — per client' },
+            { emoji: '🔗', title: 'GHL integration', desc: 'Connect contacts, calendar, pipeline, and workflows per client' },
+            { emoji: '🏷️', title: 'White-label branding', desc: 'Your logo, name, colors. Client portal shows your brand.' },
+            { emoji: '🌐', title: 'Website builder', desc: 'Generate 15–25 page SEO sites for clients from the same dashboard' },
+            { emoji: '📱', title: 'Multi-channel AI', desc: 'SMS, web chat, Telegram, WhatsApp, voice — one AI, all channels' },
+            { emoji: '🛠️', title: 'Skills & integrations', desc: 'Web search, PDF analysis, image AI, Google Workspace, and more' },
+            { emoji: '👥', title: 'Referral program', desc: 'Earn 100–150 credits per referral. Early bird bonus within 48 hrs.' },
           ].map(({ emoji, title, desc }) => (
             <div key={title} className="bg-white/5 border border-white/8 rounded-xl p-4">
               <span className="text-2xl">{emoji}</span>
@@ -545,42 +568,42 @@ const SLIDES = [
     ),
   },
 
-  // ── 12: Getting Started ──────────────────────────────────────────────────
+  // 12 ── HOW TO START ───────────────────────────────────────────────────────
   {
-    id: 'getting-started',
+    id: 'start',
     bg: 'from-slate-950 to-slate-900',
     content: (
-      <div className="flex flex-col justify-center px-6 sm:px-12 h-full max-w-5xl mx-auto gap-8">
+      <div className="flex flex-col justify-center px-6 sm:px-12 h-full max-w-5xl mx-auto gap-7">
         <div>
-          <p className="text-indigo-400 font-semibold text-sm uppercase tracking-wider mb-3">How to Start</p>
+          <p className="text-indigo-400 font-semibold text-sm uppercase tracking-wider mb-3">Getting Started</p>
           <h2 className="text-3xl sm:text-5xl font-black text-white leading-tight">
-            From zero to<br />
-            <span className="text-emerald-400">first paying client.</span>
+            First paying client<br />
+            <span className="text-emerald-400">is closer than you think.</span>
           </h2>
         </div>
-        <div className="space-y-4">
+        <div className="space-y-3">
           {[
             {
-              n: '01', title: 'Sign up free', desc: 'Create your Kyra account. No credit card. You get 1 AI worker and 50 welcome credits to test everything.',
-              tag: 'Today', tagColor: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/30',
+              n: '01', title: 'Create your free account', tag: 'Today', tagColor: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/30',
+              desc: 'Free plan includes 1 AI worker + 50 credits. No credit card. You\'ll have a live dashboard in minutes.',
             },
             {
-              n: '02', title: 'Set up your demo', desc: 'Pick any industry template and configure a demo AI worker. Use the live demo link to show prospects — no login needed on their end.',
-              tag: 'Day 1', tagColor: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+              n: '02', title: 'Build a demo for a target industry', tag: 'Day 1', tagColor: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+              desc: 'Pick a template (dental, HVAC, real estate — whatever you know). Configure it. Share the live demo link — the prospect can text the AI without logging in.',
             },
             {
-              n: '03', title: 'Get your first client', desc: 'Reach out to local businesses in any service industry. Show the demo. Offer to deploy it for them for a monthly fee.',
-              tag: 'Week 1–2', tagColor: 'text-amber-400 bg-amber-500/10 border-amber-500/30',
+              n: '03', title: 'Reach out to local businesses', tag: 'Week 1–2', tagColor: 'text-amber-400 bg-amber-500/10 border-amber-500/30',
+              desc: 'Show the demo live in a meeting or share the link. Ask: "How many leads do you lose because nobody answered in time?" Close on a monthly retainer.',
             },
             {
-              n: '04', title: 'Upgrade and scale', desc: 'Once you have 1–2 paying clients, upgrade to Lite ($99/mo). Keep adding clients. Each one is mostly managed by the AI.',
-              tag: 'Month 1+', tagColor: 'text-violet-400 bg-violet-500/10 border-violet-500/30',
+              n: '04', title: 'Upgrade and scale', tag: 'Month 1+', tagColor: 'text-violet-400 bg-violet-500/10 border-violet-500/30',
+              desc: 'Once you have 2–3 paying clients, upgrade to Lite ($99/mo). Add clients until you hit Pro. The AI runs itself — your time per client drops to 30 min/month.',
             },
-          ].map(({ n, title, desc, tag, tagColor }) => (
-            <div key={n} className="flex gap-4 bg-white/5 border border-white/10 rounded-2xl p-5">
-              <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-black text-sm shrink-0">{n}</div>
+          ].map(({ n, title, tag, tagColor, desc }) => (
+            <div key={n} className="flex gap-4 bg-white/5 border border-white/10 rounded-2xl p-4">
+              <div className="w-9 h-9 rounded-full bg-indigo-600 flex items-center justify-center text-white font-black text-sm shrink-0 mt-0.5">{n}</div>
               <div className="flex-1">
-                <div className="flex items-center gap-3 mb-1">
+                <div className="flex items-center gap-3 mb-1 flex-wrap">
                   <p className="text-white font-semibold text-sm">{title}</p>
                   <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${tagColor}`}>{tag}</span>
                 </div>
@@ -593,72 +616,80 @@ const SLIDES = [
     ),
   },
 
-  // ── 13: Honest Talk ──────────────────────────────────────────────────────
+  // 13 ── THE HONEST SLIDE ───────────────────────────────────────────────────
   {
     id: 'honest',
     bg: 'from-slate-950 to-slate-900',
     content: (
-      <div className="flex flex-col justify-center px-6 sm:px-12 h-full max-w-4xl mx-auto gap-8 text-center">
+      <div className="flex flex-col justify-center px-6 sm:px-12 h-full max-w-4xl mx-auto gap-7 text-center">
         <div>
           <p className="text-amber-400 font-semibold text-sm uppercase tracking-wider mb-3">The Honest Part</p>
           <h2 className="text-3xl sm:text-5xl font-black text-white leading-tight">
-            This is a real business.<br />
-            <span className="text-amber-400">Not a get-rich-quick scheme.</span>
+            Real opportunity.<br />
+            <span className="text-amber-400">Real work required.</span>
           </h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-left">
-          {[
-            { emoji: '✅', title: 'What\'s real', items: [
-              'The platform works — AI responds to leads in real time',
-              'Businesses do pay $500–2K/mo for this kind of service',
-              'Recurring revenue compounds over time as you add clients',
-              'You can start for free and upgrade as you earn',
-              'The market for AI services is genuinely growing',
-            ]},
-            { emoji: '⚠️', title: 'What\'s not guaranteed', items: [
-              'You still have to find and close clients yourself',
-              'Results depend on your sales effort and follow-through',
-              'Income is not passive — you manage client relationships',
-              'It takes time to build a portfolio of paying clients',
-              'No platform can guarantee you a specific income level',
-            ]},
-          ].map(({ emoji, title, items }) => (
-            <div key={title} className="bg-white/5 border border-white/10 rounded-2xl p-5">
-              <p className="text-white font-semibold text-sm mb-3">{emoji} {title}</p>
-              <ul className="space-y-2">
-                {items.map(item => (
-                  <li key={item} className="text-slate-400 text-xs leading-snug flex gap-2">
-                    <span className="mt-0.5 shrink-0">·</span>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          <div className="bg-emerald-900/15 border border-emerald-500/20 rounded-2xl p-5">
+            <p className="text-emerald-400 font-semibold text-sm mb-3">✅ What's genuinely true</p>
+            <ul className="space-y-2">
+              {[
+                'The platform works — AI responds to leads in real-time',
+                'GHL agencies commonly charge $297–$997/mo per client',
+                'Recurring revenue compounds as you add clients',
+                'The AI handles the day-to-day work once configured',
+                'You can start for free and upgrade as you earn',
+                'The small business AI market is early and growing',
+              ].map(item => (
+                <li key={item} className="text-slate-300 text-xs flex gap-2 leading-snug">
+                  <span className="text-emerald-400 shrink-0">·</span>{item}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="bg-amber-900/15 border border-amber-500/20 rounded-2xl p-5">
+            <p className="text-amber-400 font-semibold text-sm mb-3">⚠️ What takes effort</p>
+            <ul className="space-y-2">
+              {[
+                'You have to find and close clients yourself',
+                'Results depend on your sales effort and follow-through',
+                'This is a service business — not fully passive income',
+                'It takes weeks to build a portfolio of paying clients',
+                'No platform can guarantee a specific income level',
+                'Client retention depends on real results for their business',
+              ].map(item => (
+                <li key={item} className="text-slate-300 text-xs flex gap-2 leading-snug">
+                  <span className="text-amber-400 shrink-0">·</span>{item}
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
-        <p className="text-slate-500 text-xs">
-          Kyra is a software platform. Your success depends on your effort, your market, and your clients.
-          We give you the best tools available — what you build with them is up to you.
+        <p className="text-slate-600 text-xs max-w-xl mx-auto">
+          Kyra is a software platform. Your success depends on your effort, your market, and the value you deliver to clients.
+          We give you the best tools we can build — what you create with them is up to you.
         </p>
       </div>
     ),
   },
 
-  // ── 14: CTA ──────────────────────────────────────────────────────────────
+  // 14 ── CTA ────────────────────────────────────────────────────────────────
   {
     id: 'cta',
     bg: 'from-indigo-950 via-indigo-900 to-slate-950',
     content: (
       <div className="flex flex-col items-center justify-center text-center px-6 sm:px-12 h-full gap-8">
         <Award className="h-14 w-14 text-indigo-400" />
-        <h2 className="text-4xl sm:text-6xl lg:text-7xl font-black text-white leading-[1.05] max-w-3xl">
-          Start building<br />
-          <span className="text-indigo-400">your AI agency.</span>
-        </h2>
-        <p className="text-slate-300 text-lg max-w-xl leading-relaxed">
-          Free plan. No credit card. Your first AI worker live in under 10 minutes.
-          Everything else grows from there.
-        </p>
+        <div>
+          <h2 className="text-4xl sm:text-6xl lg:text-7xl font-black text-white leading-[1.05] max-w-3xl">
+            Start building<br />
+            <span className="text-indigo-400">your AI agency.</span>
+          </h2>
+          <p className="text-slate-300 text-lg mt-4 max-w-xl mx-auto leading-relaxed">
+            Free plan. No credit card. First AI worker live in under 10 minutes.
+            Everything else grows from there.
+          </p>
+        </div>
         <div className="flex flex-col sm:flex-row gap-4">
           <Link
             href="/signup/agency"
@@ -671,72 +702,67 @@ const SLIDES = [
             className="inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 transition text-white font-bold text-lg px-10 py-4 rounded-2xl border border-white/20"
           >
             <Play className="h-5 w-5" />
-            See a Live Demo
+            Live AI Demo
           </Link>
         </div>
-        <div className="flex flex-wrap justify-center gap-4 mt-2">
-          {['Free to start', 'No credit card', 'Cancel anytime', '50+ industry templates', 'Real AI — not a chatbot'].map(tag => (
-            <div key={tag} className="flex items-center gap-1.5 text-slate-400 text-sm">
-              <Star className="h-3.5 w-3.5 text-indigo-400 fill-indigo-400" />
-              {tag}
+        <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mt-2 text-slate-400 text-sm">
+          {[
+            { icon: CheckCircle2, text: 'Free to start' },
+            { icon: CheckCircle2, text: 'No credit card' },
+            { icon: CheckCircle2, text: 'Cancel anytime' },
+            { icon: CheckCircle2, text: '50+ templates' },
+            { icon: CheckCircle2, text: 'GHL integration included' },
+          ].map(({ icon: Icon, text }) => (
+            <div key={text} className="flex items-center gap-1.5">
+              <Icon className="h-4 w-4 text-indigo-400" />
+              {text}
             </div>
           ))}
         </div>
+        <p className="text-slate-700 text-xs max-w-lg">
+          kyra.conversionsystem.com · Built on OpenClaw · Questions? support@conversionsystem.com
+        </p>
       </div>
     ),
   },
 ];
 
-// ── Main Component ────────────────────────────────────────────────────────────
+// ── Main ──────────────────────────────────────────────────────────────────────
 
-export default function AIAgencyPitchPage() {
+export default function AIAgencyPitch() {
   const [current, setCurrent] = useState(0);
-  const [direction, setDirection] = useState<'left' | 'right'>('right');
 
-  const prev = useCallback(() => {
-    if (current > 0) {
-      setDirection('left');
-      setCurrent(c => c - 1);
-    }
-  }, [current]);
+  const prev = useCallback(() => setCurrent(c => Math.max(0, c - 1)), []);
+  const next = useCallback(() => setCurrent(c => Math.min(SLIDES.length - 1, c + 1)), []);
 
-  const next = useCallback(() => {
-    if (current < SLIDES.length - 1) {
-      setDirection('right');
-      setCurrent(c => c + 1);
-    }
-  }, [current]);
-
+  // Keyboard
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next();
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prev();
+    const h = (e: KeyboardEvent) => {
+      if (['ArrowRight', 'ArrowDown', 'Space'].includes(e.key)) next();
+      if (['ArrowLeft', 'ArrowUp'].includes(e.key)) prev();
     };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
   }, [next, prev]);
 
-  // Touch/swipe
+  // Touch / swipe
   useEffect(() => {
-    let startX = 0;
-    const onTouchStart = (e: TouchEvent) => { startX = e.touches[0].clientX; };
-    const onTouchEnd = (e: TouchEvent) => {
-      const diff = startX - e.changedTouches[0].clientX;
-      if (Math.abs(diff) > 50) diff > 0 ? next() : prev();
+    let sx = 0;
+    const ts = (e: TouchEvent) => { sx = e.touches[0].clientX; };
+    const te = (e: TouchEvent) => {
+      const dx = sx - e.changedTouches[0].clientX;
+      if (Math.abs(dx) > 50) dx > 0 ? next() : prev();
     };
-    window.addEventListener('touchstart', onTouchStart);
-    window.addEventListener('touchend', onTouchEnd);
-    return () => {
-      window.removeEventListener('touchstart', onTouchStart);
-      window.removeEventListener('touchend', onTouchEnd);
-    };
+    window.addEventListener('touchstart', ts);
+    window.addEventListener('touchend', te);
+    return () => { window.removeEventListener('touchstart', ts); window.removeEventListener('touchend', te); };
   }, [next, prev]);
 
   const slide = SLIDES[current];
 
   return (
-    <div className="fixed inset-0 overflow-hidden bg-slate-950">
-      {/* Slide */}
+    <div className="fixed inset-0 bg-slate-950 overflow-hidden">
+      {/* Slide background + content */}
       <div className={`absolute inset-0 bg-gradient-to-br ${slide.bg} transition-all duration-500`}>
         <div className="absolute inset-0 overflow-y-auto">
           <div className="min-h-full py-16">
@@ -746,28 +772,29 @@ export default function AIAgencyPitchPage() {
       </div>
 
       {/* Top bar */}
-      <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 sm:px-6 py-3 bg-black/20 backdrop-blur-sm z-10">
-        <Link href="/" className="text-white/60 hover:text-white text-sm font-semibold transition flex items-center gap-1.5">
+      <div className="absolute top-0 inset-x-0 flex items-center justify-between px-4 sm:px-6 py-3 bg-black/25 backdrop-blur-sm z-10">
+        <Link href="/" className="flex items-center gap-2 text-white/60 hover:text-white transition text-sm font-semibold">
           <div className="w-6 h-6 bg-indigo-600 rounded-md flex items-center justify-center text-white font-black text-xs">K</div>
           Kyra
         </Link>
-        <p className="text-white/50 text-xs font-medium">
-          {current + 1} / {SLIDES.length}
-        </p>
-        <Link
-          href="/signup/agency"
-          className="text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg transition"
-        >
+        <span className="text-white/40 text-xs font-medium">{current + 1} / {SLIDES.length}</span>
+        <Link href="/signup/agency" className="text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg transition">
           Start Free →
         </Link>
       </div>
 
-      {/* Dot nav */}
+      {/* Dot indicators */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-10">
-        {SLIDES.map((_, i) => <Dot key={i} active={i === current} />)}
+        {SLIDES.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setCurrent(i)}
+            className={`rounded-full transition-all duration-300 ${i === current ? 'w-8 h-1.5 bg-white' : 'w-1.5 h-1.5 bg-white/25 hover:bg-white/50'}`}
+          />
+        ))}
       </div>
 
-      {/* Arrow buttons */}
+      {/* Arrow nav */}
       <button
         onClick={prev}
         disabled={current === 0}
