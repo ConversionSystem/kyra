@@ -1,7 +1,13 @@
 /**
  * GHL Agency-level API client.
- * Used to create sub-accounts (locations) under Angel's agency.
+ * Used to create sub-accounts (locations) under the agency.
+ *
+ * Token priority:
+ *   1. Agency OAuth token from DB (ghl_access_token on agencies table)
+ *   2. GHL_AGENCY_API_KEY env var (fallback for backward compatibility)
  */
+
+import { getAgencyGHLToken } from './agency-oauth';
 
 const GHL_AGENCY_API = 'https://services.leadconnectorhq.com';
 const API_VERSION = '2021-07-28';
@@ -30,22 +36,60 @@ interface SubAccountResult {
   settings?: Record<string, unknown>;
 }
 
-export async function createGhlSubAccount(params: CreateSubAccountParams): Promise<SubAccountResult> {
-  const apiKey = process.env.GHL_AGENCY_API_KEY;
-  if (!apiKey) throw new Error('GHL_AGENCY_API_KEY not configured');
+export async function createGhlSubAccount(
+  params: CreateSubAccountParams,
+  agencyId?: string,
+): Promise<SubAccountResult> {
+  // ── Resolve API token ────────────────────────────────────────────────────
+  let apiToken: string | null = null;
+  let companyId: string | null = null;
 
-  const companyId = process.env.GHL_COMPANY_ID;
+  // Priority 1: agency OAuth token from DB
+  if (agencyId) {
+    apiToken = await getAgencyGHLToken(agencyId);
+
+    if (apiToken) {
+      // Also fetch the company ID stored during OAuth
+      const { createServiceClientWithoutCookies } = await import('@/lib/supabase/server');
+      const db = createServiceClientWithoutCookies();
+      const { data } = await db
+        .from('agencies')
+        .select('ghl_company_id')
+        .eq('id', agencyId)
+        .single();
+      companyId = data?.ghl_company_id ?? null;
+    }
+  }
+
+  // Priority 2: env var fallback
+  if (!apiToken) {
+    apiToken = process.env.GHL_AGENCY_API_KEY ?? null;
+  }
+
   if (!companyId) {
+    companyId = process.env.GHL_COMPANY_ID ?? null;
+  }
+
+  if (!apiToken) {
     throw new Error(
-      'GHL_COMPANY_ID is not configured. Sub-account creation requires a Company ID. ' +
-      'Set GHL_COMPANY_ID in your environment variables.'
+      'GHL is not connected at the agency level. ' +
+      'Go to Settings → Integrations → GoHighLevel → Connect GHL Agency Account ' +
+      'to enable automatic sub-account creation.',
     );
   }
 
+  if (!companyId) {
+    throw new Error(
+      'GHL Company ID is not configured. ' +
+      'Reconnect your GHL agency account from Settings → Integrations.',
+    );
+  }
+
+  // ── Create sub-account ───────────────────────────────────────────────────
   const res = await fetch(`${GHL_AGENCY_API}/locations/`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
+      'Authorization': `Bearer ${apiToken}`,
       'Content-Type': 'application/json',
       'Version': API_VERSION,
     },
@@ -74,21 +118,15 @@ export async function createGhlSubAccount(params: CreateSubAccountParams): Promi
 
     if (res.status === 401) {
       throw new Error(
-        'GHL Agency API key is invalid or expired. ' +
-        'Go to GHL → Settings → API Keys and regenerate the Agency API key.'
+        'GHL token is invalid or expired. ' +
+        'Reconnect your GHL agency account from Settings → Integrations.',
       );
     }
 
     if (res.status === 403) {
-      if (body.includes('Forbidden resource')) {
-        throw new Error(
-          'GHL Agency API key does not have permission to create sub-accounts. ' +
-          'Go to GHL → Settings → API Keys → regenerate the Agency API key, or ' +
-          'check that your GHL plan includes sub-account management.'
-        );
-      }
       throw new Error(
-        'GHL permission denied (403). Your Agency API key may need to be regenerated or your plan may not support sub-account creation.'
+        'GHL token does not have permission to create sub-accounts. ' +
+        'Reconnect your GHL agency account — the new connection includes the required scopes.',
       );
     }
 
@@ -102,7 +140,7 @@ export async function createGhlSubAccount(params: CreateSubAccountParams): Promi
     }
 
     throw new Error(
-      `GHL API error (${res.status}). Please try again or use the "Connect with API Token" option instead.`
+      `GHL API error (${res.status}). Please try again or use the "Connect with API Token" option instead.`,
     );
   }
 
@@ -117,13 +155,20 @@ export async function createGhlSubAccount(params: CreateSubAccountParams): Promi
   };
 }
 
-export async function getGhlSubAccount(locationId: string): Promise<SubAccountResult | null> {
-  const apiKey = process.env.GHL_AGENCY_API_KEY;
-  if (!apiKey) return null;
+export async function getGhlSubAccount(locationId: string, agencyId?: string): Promise<SubAccountResult | null> {
+  let apiToken: string | null = null;
+
+  if (agencyId) {
+    apiToken = await getAgencyGHLToken(agencyId);
+  }
+  if (!apiToken) {
+    apiToken = process.env.GHL_AGENCY_API_KEY ?? null;
+  }
+  if (!apiToken) return null;
 
   const res = await fetch(`${GHL_AGENCY_API}/locations/${locationId}`, {
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
+      'Authorization': `Bearer ${apiToken}`,
       'Version': API_VERSION,
     },
     signal: AbortSignal.timeout(10000),

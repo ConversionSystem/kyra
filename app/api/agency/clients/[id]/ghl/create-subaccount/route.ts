@@ -25,12 +25,6 @@ export async function POST(
     return NextResponse.json({ error: result.error.message }, { status: result.error.status });
   }
 
-  if (!process.env.GHL_AGENCY_API_KEY || !process.env.GHL_COMPANY_ID) {
-    return NextResponse.json({
-      error: 'GHL sub-account creation is not configured. Please use the "Connect with API Token" option above to connect your existing GHL account instead.',
-    }, { status: 400 });
-  }
-
   const db = createServiceClientWithoutCookies();
   const { agency } = result.data;
 
@@ -58,7 +52,7 @@ export async function POST(
     const subAccount = await createGhlSubAccount({
       name: client.name || `Client ${clientId.substring(0, 8)}`,
       country: 'US',
-    });
+    }, agency.id);
 
     // Save location_id to client
     await db
@@ -78,9 +72,13 @@ export async function POST(
     console.error(`[ghl-create] ❌ Failed for client ${clientId}:`, msg);
 
     // Return a user-friendly error with the raw message available for debugging
+    const isNotConnected = msg.includes('not connected at the agency level') || msg.includes('Company ID is not configured');
     return NextResponse.json({
       error: msg,
-      suggestion: 'Use the "Connect with API Token" option above — it works with any existing GHL account.',
-    }, { status: 500 });
+      needsAgencyConnect: isNotConnected,
+      suggestion: isNotConnected
+        ? 'Go to Settings → Integrations → Connect GHL Agency Account, then try again.'
+        : 'Use the "Connect with API Token" option above — it works with any existing GHL account.',
+    }, { status: isNotConnected ? 400 : 500 });
   }
 }
