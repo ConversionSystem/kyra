@@ -15,6 +15,7 @@ import {
   Save,
   FileDown,
   ChevronDown,
+  Plug,
   MessageSquare,
   Settings,
   BarChart3,
@@ -56,6 +57,62 @@ import WebsiteTab from '@/components/dashboard/client-tabs/website-tab';
 import AIWorkersTab from '@/components/dashboard/client-tabs/ai-workers-tab';
 import MarketingTab from '@/components/dashboard/client-tabs/marketing-tab';
 import ITOperationsTab from '@/components/dashboard/client-tabs/it-operations-tab';
+
+// ── GHL Free Sub-Account Sticky Banner ───────────────────────────────────────
+
+function GHLStickyBanner({
+  clientId,
+  onGoToGHL,
+}: {
+  clientId: string;
+  onGoToGHL: () => void;
+}) {
+  const [dismissed, setDismissed] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  if (dismissed || submitted) return null;
+
+  return (
+    <div className="sticky top-0 z-20 -mx-4 sm:-mx-6 md:-mx-8 mb-4">
+      <div className="bg-gradient-to-r from-indigo-600 to-violet-600 px-4 sm:px-6 md:px-8 py-2.5 flex items-center gap-3 shadow-sm">
+        {/* Icon */}
+        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-white/20 shrink-0">
+          <Plug className="h-3.5 w-3.5 text-white" />
+        </div>
+
+        {/* Text */}
+        <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
+          <span className="text-white font-semibold text-sm">
+            Don&apos;t have a GoHighLevel account?
+          </span>
+          <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs font-semibold text-white">
+            Free
+          </span>
+          <span className="text-indigo-200 text-xs hidden sm:inline">
+            — We&apos;ll set one up for this client within 1 business day.
+          </span>
+        </div>
+
+        {/* CTA */}
+        <button
+          onClick={onGoToGHL}
+          className="shrink-0 rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-50 transition-colors whitespace-nowrap"
+        >
+          Get it free →
+        </button>
+
+        {/* Dismiss */}
+        <button
+          onClick={() => setDismissed(true)}
+          className="shrink-0 text-white/60 hover:text-white transition-colors text-lg leading-none ml-1"
+          aria-label="Dismiss"
+        >
+          ×
+        </button>
+      </div>
+    </div>
+  );
+}
 
 // ── Setup Nudge Banner ────────────────────────────────────────────────────────
 
@@ -376,6 +433,14 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
         <main className="flex-1 min-w-0 overflow-y-auto p-4 sm:p-6 md:p-8">
           {/* Status banners — gateway errors, GHL disconnect, missing API key */}
           <ClientStatusBanner client={initialClient} />
+
+          {/* GHL free sub-account sticky banner — shown when GHL not connected */}
+          {!initialClient.ghl_location_id && !(initialClient as any).ghl_private_token && (
+            <GHLStickyBanner
+              clientId={initialClient.id}
+              onGoToGHL={() => handleTabChange('settings')}
+            />
+          )}
 
           {/* Setup nudge — only shown on setup-relevant tabs */}
           {['chat', 'train', 'settings'].includes(activeTab) && (
