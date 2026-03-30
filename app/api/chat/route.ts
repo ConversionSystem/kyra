@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { streamChat, streamChatWithTools } from '@/lib/ai/claude';
 import { searchMemories, saveMemory } from '@/lib/ai/memory';
@@ -17,6 +17,17 @@ import { resolveModelPreference } from '@/lib/ai/model-router';
 import { v4 as uuid } from 'uuid';
 import { features } from '@/lib/config/features';
 import { scanMessage, getBlockResponse, logSecurityEvent } from '@/lib/security/prompt-injection';
+import { truncateHistory } from '@/lib/ai/truncate';
+
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: CORS });
+}
 
 export async function POST(request: NextRequest) {
   // Route through Kyra Worker (multi-tenant) when enabled — takes priority
@@ -38,7 +49,7 @@ export async function POST(request: NextRequest) {
     const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
     
     if (authError || !authUser) {
-      return new Response('Unauthorized', { status: 401 });
+      return new Response('Unauthorized', { status: 401, headers: CORS });
     }
 
     // Get user profile with plan and usage
@@ -66,7 +77,7 @@ export async function POST(request: NextRequest) {
       
       if (createError || !newUser) {
         console.error('Error creating user profile:', createError);
-        return new Response('Failed to create user profile', { status: 500 });
+        return new Response('Failed to create user profile', { status: 500, headers: CORS });
       }
       user = newUser as User;
     } else {
@@ -112,7 +123,7 @@ export async function POST(request: NextRequest) {
           }),
           {
             status: 402,
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...CORS },
           }
         );
       }
@@ -121,7 +132,7 @@ export async function POST(request: NextRequest) {
     const { message, conversation_id, image_url, file_ids } = (await request.json()) as any;
 
     if ((!message || typeof message !== 'string') && (!file_ids || file_ids.length === 0)) {
-      return new Response('Message is required', { status: 400 });
+      return new Response('Message is required', { status: 400, headers: CORS });
     }
 
     // ── Prompt Injection Defense ─────────────────────────────────────────
@@ -140,7 +151,7 @@ export async function POST(request: NextRequest) {
           },
         });
         return new Response(blockedStream, {
-          headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' },
+          headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive', ...CORS },
         });
       }
     }
@@ -169,7 +180,7 @@ export async function POST(request: NextRequest) {
       
       if (error) {
         console.error('Error creating conversation:', error);
-        return new Response('Failed to create conversation', { status: 500 });
+        return new Response('Failed to create conversation', { status: 500, headers: CORS });
       }
       
       conversation = data as Conversation;
@@ -183,7 +194,7 @@ export async function POST(request: NextRequest) {
         .single();
       
       if (error || !data) {
-        return new Response('Conversation not found', { status: 404 });
+        return new Response('Conversation not found', { status: 404, headers: CORS });
       }
       
       conversation = data as Conversation;
@@ -388,11 +399,12 @@ export async function POST(request: NextRequest) {
             })}\n\n`)
           );
 
-          // Build messages for Claude
-          const messagesForClaude = history.map(m => ({
+          // Build messages for Claude — truncate to prevent context window overflow
+          const rawMessages = history.map(m => ({
             role: m.role as 'user' | 'assistant',
             content: m.content
           }));
+          const messagesForClaude = truncateHistory(rawMessages);
 
           // When an image is attached, build a vision content array
           if (image_url) {
@@ -558,11 +570,12 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
+        ...CORS,
       },
     });
   } catch (error) {
     console.error('Chat API error:', error);
-    return new Response('Internal server error', { status: 500 });
+    return new Response('Internal server error', { status: 500, headers: CORS });
   }
 }
 

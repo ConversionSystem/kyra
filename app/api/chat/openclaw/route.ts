@@ -14,7 +14,7 @@
  * 5. Extract memories/reminders from response
  */
 
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { searchMemories, saveMemory } from '@/lib/ai/memory';
 import { extractCommands, Reminder, CalendarEvent } from '@/lib/ai/prompts';
@@ -35,6 +35,17 @@ import {
 } from '@/lib/openclaw/sessions';
 import { getOpenClawSystemPrompt } from '@/lib/openclaw/prompts';
 import { getSystemPrompt } from '@/lib/ai/prompts';
+import { truncateHistory } from '@/lib/ai/truncate';
+
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: CORS });
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -44,7 +55,7 @@ export async function POST(request: NextRequest) {
     // Authenticate
     const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
     if (authError || !authUser) {
-      return new Response('Unauthorized', { status: 401 });
+      return new Response('Unauthorized', { status: 401, headers: CORS });
     }
 
     // Get or create user profile
@@ -70,7 +81,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (createError || !newUser) {
-        return new Response('Failed to create user profile', { status: 500 });
+        return new Response('Failed to create user profile', { status: 500, headers: CORS });
       }
       user = newUser as User;
     } else {
@@ -102,7 +113,7 @@ export async function POST(request: NextRequest) {
             balance: credits.balance,
             buyUrl: '/agency/credits',
           }),
-          { status: 402, headers: { 'Content-Type': 'application/json' } }
+          { status: 402, headers: { 'Content-Type': 'application/json', ...CORS } }
         );
       }
     }
@@ -111,7 +122,7 @@ export async function POST(request: NextRequest) {
 
     const { message, conversation_id } = (await request.json()) as any;
     if (!message || typeof message !== 'string') {
-      return new Response('Message is required', { status: 400 });
+      return new Response('Message is required', { status: 400, headers: CORS });
     }
 
     // --- Check OpenClaw availability; fall back to direct Claude if down ---
@@ -137,7 +148,7 @@ export async function POST(request: NextRequest) {
         .insert({ id: conversationId, user_id: authUser.id, title, channel: 'web' })
         .select()
         .single();
-      if (error) return new Response('Failed to create conversation', { status: 500 });
+      if (error) return new Response('Failed to create conversation', { status: 500, headers: CORS });
       conversation = data as Conversation;
     } else {
       const { data, error } = await serviceClient
@@ -146,7 +157,7 @@ export async function POST(request: NextRequest) {
         .eq('id', conversationId)
         .eq('user_id', authUser.id)
         .single();
-      if (error || !data) return new Response('Conversation not found', { status: 404 });
+      if (error || !data) return new Response('Conversation not found', { status: 404, headers: CORS });
       conversation = data as Conversation;
     }
 
@@ -366,11 +377,12 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
+        ...CORS,
       },
     });
   } catch (error) {
     console.error('OpenClaw chat API error:', error);
-    return new Response('Internal server error', { status: 500 });
+    return new Response('Internal server error', { status: 500, headers: CORS });
   }
 }
 
@@ -415,7 +427,7 @@ async function handleDirectClaude(
       .insert({ id: conversationId, user_id: authUser.id, title, channel: 'web' })
       .select()
       .single();
-    if (error) return new Response('Failed to create conversation', { status: 500 });
+    if (error) return new Response('Failed to create conversation', { status: 500, headers: CORS });
     conversation = data as Conversation;
   } else {
     const { data, error } = await serviceClient
@@ -424,7 +436,7 @@ async function handleDirectClaude(
       .eq('id', conversationId)
       .eq('user_id', authUser.id)
       .single();
-    if (error || !data) return new Response('Conversation not found', { status: 404 });
+    if (error || !data) return new Response('Conversation not found', { status: 404, headers: CORS });
     conversation = data as Conversation;
   }
 
@@ -473,7 +485,8 @@ async function handleDirectClaude(
         }
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'usage', usage: currentUsage + fallbackCreditCost, limit, plan, creditCost: fallbackCreditCost })}\n\n`));
 
-        const messagesForClaude = history.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content }));
+        const rawMessages = history.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content }));
+        const messagesForClaude = truncateHistory(rawMessages);
         messagesForClaude.push({ role: 'user', content: message });
 
         const userModelPref = (user as any).settings?.preferred_model;
@@ -524,7 +537,7 @@ async function handleDirectClaude(
   });
 
   return new Response(stream, {
-    headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' },
+    headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive', ...CORS },
   });
 }
 
