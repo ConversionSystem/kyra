@@ -14,32 +14,12 @@
 
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getCreditsForModel, normalizeModelId } from '@/lib/billing/model-credits';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
 const CRON_SECRET = process.env.CRON_SECRET || '';
-
-// Model credit rates — must match lib/billing/model-credits.ts
-// (duplicated here to avoid next/headers transitive import)
-const MODEL_CREDITS_PER_TURN: Record<string, number> = {
-  'gpt-4o-mini':                          1,
-  'openai/gpt-4o-mini':                   1,
-  'claude-haiku-3-5':                     1,
-  'claude-haiku-4.5':                     1,
-  'openrouter/anthropic/claude-haiku-4.5': 1,
-  'gemini-2.0-flash':  1,
-  'gpt-4o':            5,
-  'claude-sonnet-3-7': 5,
-  'claude-sonnet-4-6': 5,
-  'gemini-2.0-pro':    5,
-  'o3-mini':          10,
-  'o1':               10,
-  'claude-opus-4-6':  25,
-  'gpt-4.5':          25,
-  'o3':               25,
-};
-const DEFAULT_CREDITS_PER_TURN = 1;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -250,7 +230,7 @@ export async function GET(request: Request) {
       // ── 2 + 3. Sync conversations AND bill per turn ───────────────────────
       // Billing is now PER CONVERSATION TURN using the client's selected model rate.
       // This replaces the old token-threshold approach (which missed short conversations).
-      const creditsPerTurn = MODEL_CREDITS_PER_TURN[container.ai_model ?? ''] ?? DEFAULT_CREDITS_PER_TURN;
+      const creditsPerTurn = getCreditsForModel(container.ai_model);
       const lastSyncedTs = (container.settings.terminal_last_synced_ts as number) ?? 0;
       let latestTs = lastSyncedTs;
       let newConversations = 0;
@@ -319,7 +299,7 @@ export async function GET(request: Request) {
           container.agency_id,
           container.client_id,
           credits,
-          `Terminal: ${newTurns} turn${newTurns !== 1 ? 's' : ''} × ${creditsPerTurn} credit${creditsPerTurn !== 1 ? 's' : ''} (${container.ai_model ?? 'claude-haiku-4.5'}) · ${container.name}`,
+          `Terminal: ${newTurns} turn${newTurns !== 1 ? 's' : ''} × ${creditsPerTurn} credit${creditsPerTurn !== 1 ? 's' : ''} (${normalizeModelId(container.ai_model)}) · ${container.name}`,
         );
         if (ok) {
           results.deducted++;

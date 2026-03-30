@@ -456,16 +456,16 @@ export async function POST(req: NextRequest) {
   }
 
   // ── Persist conversation history to Supabase ────────────────────────────
-  void supabase.from('voice_call_history').insert([
+  await supabase.from('voice_call_history').insert([
     { call_sid: callSid, role: 'user', content: speechResult },
     { call_sid: callSid, role: 'assistant', content: aiResponse },
   ]);
 
   // Deduct credits
-  void deductCredits(agency_id, 'channel.voice_call');
+  await deductCredits(agency_id, 'channel.voice_call');
 
   // Increment voice minutes (~0.5 min per turn approximation)
-  void supabase.rpc('increment_voice_minutes', { p_agency_id: agency_id, p_minutes: 0.5 });
+  await supabase.rpc('increment_voice_minutes', { p_agency_id: agency_id, p_minutes: 0.5 });
 
   // ── FIX 1: Log voice conversation to CRM activity timeline ───────────────
   // This makes every call turn visible in the contact's CRM timeline.
@@ -487,7 +487,7 @@ export async function POST(req: NextRequest) {
   }).catch(() => {});
 
   // Log conversation to Supabase (store both client_id and agency_id for flexible querying)
-  void supabase.from('voice_call_logs').upsert({
+  await supabase.from('voice_call_logs').upsert({
     client_id: clientId,
     agency_id: agency_id,
     call_sid: callSid,

@@ -13,6 +13,7 @@ import { logConversationToCrm } from '@/lib/crm/conversation-logger';
 import { processWithSmartEngine } from './smart-handler';
 import { isReviewGateActive, queueForReview } from './review-gate';
 import { deductCredits } from '@/lib/billing/credit-engine';
+import { getCreditsForModel } from '@/lib/billing/model-credits';
 import type { GHLWebhookPayload, GHLMessageChannel } from './types';
 import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
 
@@ -168,11 +169,14 @@ export async function processInboundMessage(
 
   console.log(`[ghl/handler] ✅ ${reviewGateActive ? 'Queued for review' : 'Reply sent'} for ${contactName} → "${client.name}"`);
 
-  // ── Deduct 1 credit for this AI response ──────────────────────────────
+  // ── Deduct model-aware credits for this AI response ────────────────────
   // Fire-and-forget — never block message delivery on billing
+  const whModel = (client as any).ai_model || 'gpt-4o-mini';
+  const whCredits = getCreditsForModel(whModel);
   deductCredits(client.agency_id, 'channel.ghl_sms', {
+    override: whCredits,
     clientId: client.id,
-    description: `GHL ${messageType} reply → ${contactName} (${client.name})`,
+    description: `GHL ${messageType} (${whModel}) reply → ${contactName} (${client.name})`,
   }).catch((err) => console.error('[ghl/handler] Credit deduction failed:', err));
 
   // ── Log both sides to CRM ──────────────────────────────────────────────

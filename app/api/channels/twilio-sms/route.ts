@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
   // Get client
   const { data: client } = await svc
     .from('agency_clients')
-    .select('id, name, container_config, agency_id')
+    .select('id, name, container_config, agency_id, ai_model')
     .eq('id', clientId)
     .single();
 
@@ -81,10 +81,17 @@ export async function POST(req: NextRequest) {
     metadata: { from: fromNumber, to: toNumber, messageSid },
   });
 
-  // Deduct credit
+  // Deduct credit — model-aware
   try {
-    const { deductCredit } = await import('@/lib/billing/credit-engine');
-    await deductCredit(client.agency_id, clientId, 'Twilio SMS AI response');
+    const { deductCredits } = await import('@/lib/billing/credit-engine');
+    const { getCreditsForModel } = await import('@/lib/billing/model-credits');
+    const smsModel = (client as any).ai_model || 'gpt-4o-mini';
+    const smsCredits = getCreditsForModel(smsModel);
+    await deductCredits(client.agency_id, 'channel.twilio_sms', {
+      override: smsCredits,
+      clientId,
+      description: `Twilio SMS (${smsModel}) reply to ${fromNumber}`,
+    });
   } catch { /* non-fatal */ }
 
   // Respond with TwiML — Twilio sends this as an SMS reply
