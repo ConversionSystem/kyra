@@ -2,7 +2,6 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getAgencyForUser } from '@/lib/agency/queries';
 import { SettingsForm } from './settings-form';
-import { GHLAgencyConnection } from '@/components/agency/ghl-agency-connection';
 import type { Agency, AgencyMember, AgencyRole } from '@/lib/agency/types';
 
 export default async function AgencySettingsPage() {
@@ -46,11 +45,6 @@ export default async function AgencySettingsPage() {
         currentRole={role as AgencyRole}
         members={members}
       />
-
-      {/* GHL Agency-Level OAuth Connection */}
-      <div className="mt-8">
-        <GHLAgencyConnection />
-      </div>
     </div>
   );
 }
