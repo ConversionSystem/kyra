@@ -345,8 +345,8 @@ export default function AIWorkersTab({ client, agencyId, plan }: AIWorkersTabPro
         </div>
       ) : null}
 
-      {/* ── Team Mode Toggle ─────────────────────────────────────────── */}
-      <div className="flex items-center gap-2 p-1 bg-gray-100 rounded-lg w-fit">
+      {/* ── Team Mode Toggle — only for master/paid plans ─────────── */}
+      {(canUseMarketingWorker || planLimit === null || planLimit > 0) && <div className="flex items-center gap-2 p-1 bg-gray-100 rounded-lg w-fit">
         <button
           onClick={() => { setTeamMode(false); setEditingTeam(false); }}
           className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
@@ -364,7 +364,7 @@ export default function AIWorkersTab({ client, agencyId, plan }: AIWorkersTabPro
           <Users className="w-3.5 h-3.5" /> Team Mode
           <span className="text-[9px] bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded-full font-bold">NEW</span>
         </button>
-      </div>
+      </div>}
 
       {/* ── Team Result Banner ──────────────────────────────────────── */}
       {teamResult && (
