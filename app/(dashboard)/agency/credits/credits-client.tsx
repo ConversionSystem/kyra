@@ -6,6 +6,7 @@
 // ============================================================================
 
 import { useState, useEffect, useCallback } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import { CREDIT_PACKS, type CreditPack } from '@/lib/billing/credits';
 import type { CreditTransaction } from '@/lib/billing/credit-engine';
 import { pixel } from '@/components/analytics/MetaPixel';
@@ -493,6 +494,15 @@ export function CreditsClient({
   const [polling, setPolling]           = useState(false);
   const [lastUpdated, setLastUpdated]   = useState<Date | null>(null);
 
+  // ── Master account check (only master sees transaction history + credits info) ──
+  const [isMaster, setIsMaster] = useState(false);
+  useEffect(() => {
+    createClient().auth.getUser().then(({ data }) => {
+      const email = data.user?.email || '';
+      setIsMaster(['hello@conversionsystem.com', 'angel@conversionsystem.com'].includes(email));
+    });
+  }, []);
+
   const fetchLive = useCallback(async () => {
     setPolling(true);
     try {
@@ -792,8 +802,8 @@ export function CreditsClient({
             </div>
           </div>
 
-          {/* Transaction history */}
-          {transactions.length > 0 && (
+          {/* Transaction history — master only */}
+          {isMaster && transactions.length > 0 && (
             <div>
               <h2 className="text-base font-bold text-gray-900 mb-3">Recent Activity</h2>
               <Card className="border-gray-200">
@@ -819,8 +829,8 @@ export function CreditsClient({
             </div>
           )}
 
-          {/* How credits work */}
-          <div className="rounded-xl border border-gray-200 bg-gray-50 p-5">
+          {/* How credits work — master only */}
+          {isMaster && <div className="rounded-xl border border-gray-200 bg-gray-50 p-5">
             <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-4">How Kyra Credits work</p>
             <div className="grid sm:grid-cols-2 gap-4">
               {[
@@ -844,7 +854,7 @@ export function CreditsClient({
                 </div>
               ))}
             </div>
-          </div>
+          </div>}
         </>
       )}
 
