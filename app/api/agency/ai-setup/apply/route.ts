@@ -5936,6 +5936,7 @@ When activating a specialist mode, briefly acknowledge the shift: "Let me help y
     appliedName,
     clientName: client.name,
     containerPushed,
+    savedVariables: Object.keys(containerConfigPatch),
     ...(containerWarning ? { warning: containerWarning } : {}),
     ...(installedSkillSlugs.length > 0 ? { autoInstalledSkills: installedSkillSlugs } : {}),
     soulPreview: soulMd.slice(0, 400),

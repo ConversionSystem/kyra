@@ -46,19 +46,19 @@ export interface DataForSEOResponse<T> {
 
 // ── Auth ─────────────────────────────────────────────────────────────────
 
-function getAuth(): string | null {
-  const login = process.env.DATAFORSEO_LOGIN;
-  const password = process.env.DATAFORSEO_PASSWORD;
+function getAuth(creds?: { login: string; password: string }): string | null {
+  const login = creds?.login || process.env.DATAFORSEO_LOGIN;
+  const password = creds?.password || process.env.DATAFORSEO_PASSWORD;
   if (!login || !password) return null;
   return Buffer.from(`${login}:${password}`).toString('base64');
 }
 
-function isConfigured(): boolean {
-  return !!process.env.DATAFORSEO_LOGIN && !!process.env.DATAFORSEO_PASSWORD;
+function isConfigured(creds?: { login: string; password: string }): boolean {
+  return !!(creds?.login || process.env.DATAFORSEO_LOGIN) && !!(creds?.password || process.env.DATAFORSEO_PASSWORD);
 }
 
-async function apiFetch<T>(endpoint: string, body: unknown): Promise<T> {
-  const auth = getAuth();
+async function apiFetch<T>(endpoint: string, body: unknown, creds?: { login: string; password: string }): Promise<T> {
+  const auth = getAuth(creds);
   if (!auth) throw new Error('DataForSEO not configured');
 
   const res = await fetch(`${DATAFORSEO_API}${endpoint}`, {
@@ -110,8 +110,9 @@ function mockSerp(keyword: string): SerpResult[] {
 export async function searchKeywords(
   seed: string,
   options?: { location?: number; language?: string; limit?: number },
+  credentials?: { login: string; password: string },
 ): Promise<DataForSEOResponse<KeywordResult[]>> {
-  if (!isConfigured()) {
+  if (!isConfigured(credentials)) {
     return { mock: true, data: mockKeywords(seed), message: 'DataForSEO not configured. Using mock data.' };
   }
 
@@ -123,6 +124,7 @@ export async function searchKeywords(
       language_code: options?.language ?? 'en',
       limit: options?.limit ?? 100,
     },
+    credentials,
   );
 
   const items: KeywordResult[] = (result?.items ?? []).map((item) => ({
@@ -138,8 +140,9 @@ export async function searchKeywords(
 
 export async function getKeywordVolume(
   keywords: string[],
+  credentials?: { login: string; password: string },
 ): Promise<DataForSEOResponse<KeywordVolumeResult[]>> {
-  if (!isConfigured()) {
+  if (!isConfigured(credentials)) {
     const data: KeywordVolumeResult[] = keywords.map((kw) => ({
       keyword: kw,
       search_volume: Math.floor(Math.random() * 3000) + 50,
@@ -152,6 +155,7 @@ export async function getKeywordVolume(
   const result = await apiFetch<{ items?: Array<Record<string, unknown>> }>(
     '/keywords_data/google_ads/search_volume/live',
     { keywords: keywords.slice(0, 1000) },
+    credentials,
   );
 
   const items: KeywordVolumeResult[] = (result?.items ?? []).map((item) => ({
@@ -166,8 +170,9 @@ export async function getKeywordVolume(
 
 export async function getSerpResults(
   keyword: string,
+  credentials?: { login: string; password: string },
 ): Promise<DataForSEOResponse<SerpResult[]>> {
-  if (!isConfigured()) {
+  if (!isConfigured(credentials)) {
     return { mock: true, data: mockSerp(keyword), message: 'DataForSEO not configured. Using mock data.' };
   }
 
@@ -179,6 +184,7 @@ export async function getSerpResults(
       language_code: 'en',
       depth: 10,
     },
+    credentials,
   );
 
   const items: SerpResult[] = (result?.items ?? [])
@@ -197,8 +203,9 @@ export async function getSerpResults(
 export async function getRankings(
   domain: string,
   keywords: string[],
+  credentials?: { login: string; password: string },
 ): Promise<DataForSEOResponse<RankResult[]>> {
-  if (!isConfigured()) {
+  if (!isConfigured(credentials)) {
     const data: RankResult[] = keywords.map((kw) => ({
       keyword: kw,
       position: Math.random() > 0.3 ? Math.floor(Math.random() * 50) + 1 : null,
@@ -209,7 +216,7 @@ export async function getRankings(
 
   const results: RankResult[] = [];
   for (const keyword of keywords) {
-    const serp = await getSerpResults(keyword);
+    const serp = await getSerpResults(keyword, credentials);
     const match = serp.data.find((r) => r.domain.includes(domain));
     results.push({
       keyword,
@@ -223,14 +230,16 @@ export async function getRankings(
 
 export async function getCompetitorKeywords(
   domain: string,
+  credentials?: { login: string; password: string },
 ): Promise<DataForSEOResponse<KeywordResult[]>> {
-  if (!isConfigured()) {
+  if (!isConfigured(credentials)) {
     return { mock: true, data: mockKeywords(domain), message: 'DataForSEO not configured. Using mock data.' };
   }
 
   const result = await apiFetch<{ items?: Array<Record<string, unknown>> }>(
     '/dataforseo_labs/google/ranked_keywords/live',
     { target: domain, location_code: 2840, language_code: 'en', limit: 100 },
+    credentials,
   );
 
   const items: KeywordResult[] = (result?.items ?? []).map((item) => {
