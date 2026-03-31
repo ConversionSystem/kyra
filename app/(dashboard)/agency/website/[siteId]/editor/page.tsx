@@ -45,6 +45,7 @@ import {
   Layers,
   ChevronUp,
   Palette,
+  Copy,
 } from 'lucide-react';
 
 import {
@@ -321,6 +322,143 @@ function SectionEditModal({
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── FAQ Editor ────────────────────────────────────────────────────────────────
+
+function FaqEditor({
+  page,
+  onSave,
+  saving,
+}: {
+  page: SitePage;
+  onSave: (updates: Partial<SitePage>) => void;
+  saving: boolean;
+}) {
+  const [items, setItems] = useState<FAQItem[]>(page.faq ? [...page.faq] : []);
+  const [dirty, setDirty] = useState(false);
+
+  useEffect(() => {
+    setItems(page.faq ? [...page.faq] : []);
+    setDirty(false);
+  }, [page.faq]);
+
+  const updateItem = (index: number, field: 'question' | 'answer', value: string) => {
+    const newItems = [...items];
+    newItems[index] = { ...newItems[index], [field]: value };
+    setItems(newItems);
+    setDirty(true);
+  };
+
+  const addItem = () => {
+    setItems([...items, { question: '', answer: '' }]);
+    setDirty(true);
+  };
+
+  const removeItem = (index: number) => {
+    setItems(items.filter((_, i) => i !== index));
+    setDirty(true);
+  };
+
+  const moveItem = (index: number, direction: -1 | 1) => {
+    const newItems = [...items];
+    const target = index + direction;
+    if (target < 0 || target >= newItems.length) return;
+    [newItems[index], newItems[target]] = [newItems[target], newItems[index]];
+    setItems(newItems);
+    setDirty(true);
+  };
+
+  const handleSave = () => {
+    const cleanedItems = items.filter(item => item.question.trim() || item.answer.trim());
+    onSave({ faq: cleanedItems.length > 0 ? cleanedItems : null });
+    setDirty(false);
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+          <HelpCircle className="h-4 w-4 text-indigo-500" />
+          FAQ ({items.length} items)
+        </h4>
+        <div className="flex items-center gap-2">
+          {dirty && (
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-1.5 transition-colors"
+            >
+              {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+              Save FAQ
+            </button>
+          )}
+        </div>
+      </div>
+
+      {items.map((item, i) => (
+        <div key={i} className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 space-y-2">
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Question</label>
+                <input
+                  type="text"
+                  value={item.question}
+                  onChange={(e) => updateItem(i, 'question', e.target.value)}
+                  placeholder="e.g. What areas do you serve?"
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Answer</label>
+                <textarea
+                  value={item.answer}
+                  onChange={(e) => updateItem(i, 'answer', e.target.value)}
+                  placeholder="Your answer..."
+                  rows={3}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y"
+                />
+              </div>
+            </div>
+            <div className="flex flex-col items-center gap-1 shrink-0 pt-5">
+              <button
+                onClick={() => moveItem(i, -1)}
+                disabled={i === 0}
+                className="p-1 text-gray-300 hover:text-indigo-500 disabled:opacity-30 transition-colors rounded"
+                title="Move up"
+              >
+                <ArrowUp className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={() => moveItem(i, 1)}
+                disabled={i === items.length - 1}
+                className="p-1 text-gray-300 hover:text-indigo-500 disabled:opacity-30 transition-colors rounded"
+                title="Move down"
+              >
+                <ArrowDown className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={() => removeItem(i)}
+                className="p-1 text-gray-300 hover:text-red-500 transition-colors rounded mt-1"
+                title="Remove FAQ item"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      ))}
+
+      <button
+        onClick={addItem}
+        className="w-full px-4 py-2.5 border-2 border-dashed border-gray-200 rounded-lg text-sm text-gray-500 hover:border-indigo-300 hover:text-indigo-600 transition-colors flex items-center justify-center gap-2"
+      >
+        <Plus className="h-4 w-4" />
+        Add FAQ Item
+      </button>
     </div>
   );
 }
@@ -1016,12 +1154,29 @@ function SectionManager({
   // Track if user made changes
   const [dirty, setDirty] = useState(false);
 
-  // Hidden sections from P1 (site-level visibility is page-based, but we handle section-level here)
-  // Note: section visibility is per-section in the order (removing from order = hidden)
+  // Section picker state
+  const [showSectionPicker, setShowSectionPicker] = useState(false);
 
   const getEffectiveVariant = (sectionType: string): string => {
     return overrides[sectionType] || recipeDefaults[sectionType] || '';
   };
+
+  const removeSection = (index: number) => {
+    const newOrder = sectionOrder.filter((_, i) => i !== index);
+    setSectionOrder(newOrder);
+    setDirty(true);
+  };
+
+  const addSection = (sectionType: string) => {
+    setSectionOrder([...sectionOrder, sectionType]);
+    setShowSectionPicker(false);
+    setDirty(true);
+  };
+
+  // Sections available to add (not already in the order)
+  const availableSections = Object.entries(SECTION_VARIANTS)
+    .filter(([key]) => REORDERABLE_SECTIONS.includes(key as (typeof REORDERABLE_SECTIONS)[number]))
+    .filter(([key]) => !sectionOrder.includes(key));
 
   const moveSection = (index: number, direction: -1 | 1) => {
     const newOrder = [...sectionOrder];
@@ -1134,7 +1289,7 @@ function SectionManager({
                   </div>
                 </div>
 
-                {/* Move up/down arrows */}
+                {/* Move up/down arrows + remove */}
                 <div className="flex items-center gap-0.5 shrink-0">
                   <button
                     onClick={() => moveSection(index, -1)}
@@ -1151,6 +1306,13 @@ function SectionManager({
                     title="Move down"
                   >
                     <ChevronDown className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => removeSection(index)}
+                    className="p-1 text-gray-300 hover:text-red-500 transition-colors rounded ml-1"
+                    title="Remove section"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </div>
               </div>
@@ -1199,6 +1361,47 @@ function SectionManager({
           );
         })}
       </div>
+
+      {/* Add Section button + picker */}
+      {availableSections.length > 0 && (
+        <div className="px-5 py-3 border-t border-gray-50">
+          {showSectionPicker ? (
+            <div className="bg-gray-50 rounded-xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-semibold text-gray-700">Add Section</p>
+                <button
+                  onClick={() => setShowSectionPicker(false)}
+                  className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {availableSections.map(([key, info]) => (
+                  <button
+                    key={key}
+                    onClick={() => addSection(key)}
+                    className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-white border border-gray-200 text-gray-700 hover:border-indigo-300 hover:bg-indigo-50 transition-all text-left"
+                  >
+                    <span className="text-indigo-400">
+                      {SECTION_ICONS[key] || <Layers className="h-4 w-4" />}
+                    </span>
+                    <span className="text-xs font-medium">{info.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowSectionPicker(true)}
+              className="w-full px-4 py-2.5 border-2 border-dashed border-gray-200 rounded-lg text-sm text-gray-500 hover:border-indigo-300 hover:text-indigo-600 transition-colors flex items-center justify-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Add Section
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Navbar & Footer variants (non-reorderable but switchable) */}
       <div className="border-t border-gray-100 px-5 py-3">
@@ -1494,6 +1697,81 @@ export default function PageEditor() {
     }
   };
 
+  // Move content section up/down
+  const moveContentSection = async (index: number, direction: -1 | 1) => {
+    if (!selectedPage?.content_sections) return;
+    const newSections = [...selectedPage.content_sections];
+    const target = index + direction;
+    if (target < 0 || target >= newSections.length) return;
+    [newSections[index], newSections[target]] = [newSections[target], newSections[index]];
+    await savePageEdits({ content_sections: newSections } as Partial<SitePage>);
+  };
+
+  // Delete a content section
+  const deleteContentSection = async (index: number) => {
+    if (!selectedPage?.content_sections) return;
+    const newSections = selectedPage.content_sections.filter((_, i) => i !== index);
+    await savePageEdits({ content_sections: newSections } as Partial<SitePage>);
+  };
+
+  // Add a new blank content section
+  const addContentSection = async () => {
+    const existing = selectedPage?.content_sections || [];
+    const newSections = [...existing, { heading: 'New Section', body: '' }];
+    await savePageEdits({ content_sections: newSections } as Partial<SitePage>);
+  };
+
+  // Duplicate a page
+  const duplicatePage = async (page: SitePage) => {
+    setSaving(true);
+    try {
+      const newSlug = page.slug === '/'
+        ? '/home-copy'
+        : `${page.slug}-copy`;
+
+      const res = await fetch(`/api/agency/sites/${siteId}/pages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: `${page.title} (Copy)`,
+          slug: newSlug,
+          page_type: page.page_type,
+          hero_h1: page.hero_h1,
+          hero_subtitle: page.hero_subtitle,
+          hero_cta_text: page.hero_cta_text,
+          hero_cta_link: page.hero_cta_link,
+          meta_title: page.meta_title,
+          meta_description: page.meta_description,
+          content_sections: page.content_sections,
+          faq: page.faq,
+          source: 'duplicate',
+        }),
+      });
+
+      if (res.ok) {
+        showToast('Page duplicated');
+        // Refresh pages list
+        const pagesRes = await fetch(`/api/agency/sites/${siteId}/pages`);
+        if (pagesRes.ok) {
+          const pagesResult = await pagesRes.json();
+          if (Array.isArray(pagesResult.data)) {
+            setPages(pagesResult.data);
+            // Select the new page
+            const newPage = pagesResult.data.find((p: SitePage) => p.slug === newSlug);
+            if (newPage) setSelectedPage(newPage);
+          }
+        }
+      } else {
+        const err = await res.json().catch(() => ({ error: 'Unknown error' }));
+        showToast(err.error || 'Failed to duplicate page', 'error');
+      }
+    } catch {
+      showToast('Failed to duplicate page', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // Toggle page visibility
   const togglePageVisibility = async (page: SitePage) => {
     setSaving(true);
@@ -1743,7 +2021,14 @@ export default function PageEditor() {
                             <span className="ml-auto shrink-0 w-1.5 h-1.5 rounded-full bg-amber-400" title="Edited" />
                           )}
                         </button>
-                        {/* Visibility toggle */}
+                        {/* Duplicate + Visibility toggle */}
+                        <button
+                          onClick={() => duplicatePage(page)}
+                          className="p-1 text-gray-300 hover:text-indigo-500 transition-colors shrink-0"
+                          title="Duplicate page"
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                        </button>
                         <button
                           onClick={() => togglePageVisibility(page)}
                           className="p-1 text-gray-300 hover:text-gray-500 transition-colors shrink-0"
@@ -1874,68 +2159,91 @@ export default function PageEditor() {
               />
 
               {/* Content Sections */}
-              {selectedPage.content_sections && selectedPage.content_sections.length > 0 && (
-                <div className="space-y-3">
-                  <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-                    <MessageSquare className="h-4 w-4 text-indigo-500" />
-                    Content Sections ({selectedPage.content_sections.length})
-                  </h4>
+              <div className="space-y-3">
+                <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4 text-indigo-500" />
+                  Content Sections ({selectedPage.content_sections?.length || 0})
+                </h4>
 
-                  {selectedPage.content_sections.map((section, i) => (
-                    <div
-                      key={i}
-                      className="bg-white rounded-xl border border-gray-200 p-4 hover:border-indigo-200 transition-colors group"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-gray-900 mb-1">{section.heading || `Section ${i + 1}`}</p>
-                          <p className="text-sm text-gray-500 line-clamp-3">{section.body}</p>
-                          <div className="flex items-center gap-3 mt-2">
-                            {section.bullets && section.bullets.length > 0 && (
-                              <div className="flex items-center gap-1">
-                                <ChevronRight className="h-3 w-3 text-gray-400" />
-                                <span className="text-xs text-gray-400">
-                                  {section.bullets.length} bullet{section.bullets.length !== 1 ? 's' : ''}
-                                </span>
-                              </div>
-                            )}
-                            {section.cta_text && (
-                              <div className="flex items-center gap-1">
-                                <MousePointerClick className="h-3 w-3 text-indigo-400" />
-                                <span className="text-xs text-indigo-500">{section.cta_text}</span>
-                              </div>
-                            )}
-                          </div>
+                {selectedPage.content_sections && selectedPage.content_sections.map((section, i) => (
+                  <div
+                    key={i}
+                    className="bg-white rounded-xl border border-gray-200 p-4 hover:border-indigo-200 transition-colors group"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 mb-1">{section.heading || `Section ${i + 1}`}</p>
+                        <p className="text-sm text-gray-500 line-clamp-3">{section.body}</p>
+                        <div className="flex items-center gap-3 mt-2">
+                          {section.bullets && section.bullets.length > 0 && (
+                            <div className="flex items-center gap-1">
+                              <ChevronRight className="h-3 w-3 text-gray-400" />
+                              <span className="text-xs text-gray-400">
+                                {section.bullets.length} bullet{section.bullets.length !== 1 ? 's' : ''}
+                              </span>
+                            </div>
+                          )}
+                          {section.cta_text && (
+                            <div className="flex items-center gap-1">
+                              <MousePointerClick className="h-3 w-3 text-indigo-400" />
+                              <span className="text-xs text-indigo-500">{section.cta_text}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0 ml-3">
+                        <div className="flex flex-col gap-0.5">
+                          <button
+                            onClick={() => moveContentSection(i, -1)}
+                            disabled={i === 0}
+                            className="p-0.5 text-gray-300 hover:text-indigo-500 disabled:opacity-30 transition-colors"
+                            title="Move up"
+                          >
+                            <ArrowUp className="h-3 w-3" />
+                          </button>
+                          <button
+                            onClick={() => moveContentSection(i, 1)}
+                            disabled={i === (selectedPage.content_sections?.length ?? 0) - 1}
+                            className="p-0.5 text-gray-300 hover:text-indigo-500 disabled:opacity-30 transition-colors"
+                            title="Move down"
+                          >
+                            <ArrowDown className="h-3 w-3" />
+                          </button>
                         </div>
                         <button
                           onClick={() => setEditingSection(i)}
-                          className="shrink-0 ml-3 px-3 py-1.5 text-xs font-medium text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 opacity-0 group-hover:opacity-100 transition-all flex items-center gap-1"
+                          className="px-3 py-1.5 text-xs font-medium text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 opacity-0 group-hover:opacity-100 transition-all flex items-center gap-1"
                         >
                           <Edit3 className="h-3 w-3" />
                           Edit
                         </button>
+                        <button
+                          onClick={() => deleteContentSection(i)}
+                          className="p-1.5 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                          title="Delete section"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
+                  </div>
+                ))}
 
-              {/* FAQ Section */}
-              {selectedPage.faq && selectedPage.faq.length > 0 && (
-                <div className="space-y-3">
-                  <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-                    <HelpCircle className="h-4 w-4 text-indigo-500" />
-                    FAQ ({selectedPage.faq.length} items)
-                  </h4>
+                <button
+                  onClick={addContentSection}
+                  className="w-full px-4 py-2.5 border-2 border-dashed border-gray-200 rounded-lg text-sm text-gray-500 hover:border-indigo-300 hover:text-indigo-600 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Content Section
+                </button>
+              </div>
 
-                  {selectedPage.faq.map((item, i) => (
-                    <div key={i} className="bg-white rounded-xl border border-gray-200 p-4">
-                      <p className="text-sm font-medium text-gray-900 mb-1">Q: {item.question}</p>
-                      <p className="text-sm text-gray-500 line-clamp-2">A: {item.answer}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
+              {/* FAQ Editor */}
+              <FaqEditor
+                page={selectedPage}
+                onSave={savePageEdits}
+                saving={saving}
+              />
 
 
             </div>
