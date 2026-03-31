@@ -59,14 +59,14 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ error: auth.error.message }, { status: auth.error.status });
   }
 
-  let body: { title?: string; slug?: string; page_type?: string };
+  let body: Record<string, unknown>;
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const { title, slug, page_type } = body;
+  const { title, slug, page_type } = body as { title?: string; slug?: string; page_type?: string };
   if (!title || !slug) {
     return NextResponse.json({ error: 'title and slug required' }, { status: 400 });
   }
@@ -85,17 +85,30 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ error: 'Site not found' }, { status: 404 });
   }
 
+  // Build insert payload — support optional fields for page duplication
+  const optionalFields = [
+    'hero_h1', 'hero_subtitle', 'hero_cta_text', 'hero_cta_link',
+    'meta_title', 'meta_description',
+    'content_sections', 'faq', 'schema_markup',
+  ];
+  const insertData: Record<string, unknown> = {
+    site_id: siteId,
+    title,
+    slug,
+    page_type: page_type || 'utility',
+    hero_h1: (body.hero_h1 as string) || title,
+    content_sections: body.content_sections || [{ heading: 'About', body: '' }],
+    source: body.source || 'manual',
+  };
+  for (const key of optionalFields) {
+    if (key in body && !(key in insertData)) {
+      insertData[key] = body[key];
+    }
+  }
+
   const { data: page, error } = await supabase
     .from('site_pages')
-    .insert({
-      site_id: siteId,
-      title,
-      slug,
-      page_type: page_type || 'utility',
-      hero_h1: title,
-      content_sections: [{ heading: 'About', body: '' }],
-      source: 'manual',
-    })
+    .insert(insertData)
     .select()
     .single();
 
