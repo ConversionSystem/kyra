@@ -138,7 +138,9 @@ export async function assembleSitePages(
     slug: string; page_type: string; title: string;
     meta_title: string; meta_description: string;
     hero_h1: string; hero_subtitle: string;
+    hero_cta_text?: string; hero_cta_link?: string;
     content_sections: unknown; faq: unknown; schema_markup: unknown;
+    hidden?: boolean;
   }) => ({
     slug: p.slug,
     type: p.page_type,
@@ -147,13 +149,19 @@ export async function assembleSitePages(
     metaDescription: p.meta_description,
     heroH1: p.hero_h1,
     heroSubtitle: p.hero_subtitle,
+    heroCtaText: p.hero_cta_text || null,
+    heroCtaLink: p.hero_cta_link || null,
     sections: p.content_sections,
     faq: p.faq,
     schema: p.schema_markup,
+    hidden: p.hidden || false,
   }));
 
-  // Assemble full HTML for every page
-  const assembledPages = pagesData.map((p) => ({
+  // Filter out hidden pages (P1: section visibility)
+  const visiblePages = pagesData.filter(p => !p.hidden);
+
+  // Assemble full HTML for every visible page
+  const assembledPages = visiblePages.map((p) => ({
     slug: p.slug,
     type: p.type,
     html: assemblePage({
@@ -166,7 +174,9 @@ export async function assembleSitePages(
         metaDescription: p.metaDescription,
         hero_h1: stripMarkdown(p.heroH1 || '') || generateFallbackH1(constants.name, constants.industry, address.city),
         hero_subtitle: p.heroSubtitle || '',
-        content_sections: (p.sections || []) as { heading: string; body: string; bullets?: string[] }[],
+        hero_cta_text: p.heroCtaText || null,
+        hero_cta_link: p.heroCtaLink || null,
+        content_sections: (p.sections || []) as { heading: string; body: string; bullets?: string[]; cta_text?: string; cta_link?: string }[],
         faq: (p.faq || []) as { question: string; answer: string }[],
         schema_markup: p.schema,
       },
@@ -194,6 +204,9 @@ export async function assembleSitePages(
         colorPrimary: theme.colorPrimary,
         colorSecondary: theme.colorSecondary,
         reviews: siteReviews,
+        navLinks: site.nav_links || null,
+        footerTagline: site.footer_tagline || null,
+        socialLinks: site.social_links || null,
       },
       pageType: p.type,
     }),

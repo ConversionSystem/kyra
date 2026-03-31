@@ -9,6 +9,8 @@ interface FooterData {
   cities?: Array<{ name: string; slug: string }>;
   bookingUrl?: string;
   colors: { primary: string; secondary: string };
+  footerTagline?: string;
+  socialLinks?: Record<string, string>;
 }
 
 export function minimalFooter(data: FooterData): string {

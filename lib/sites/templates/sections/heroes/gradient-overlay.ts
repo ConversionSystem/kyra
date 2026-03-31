@@ -12,6 +12,8 @@ interface HeroData {
   rating?: number;
   reviewCount?: number;
   yearsInBusiness?: number;
+  ctaText?: string;
+  ctaLink?: string;
 }
 
 function phoneIcon(): string {
@@ -74,8 +76,8 @@ export function gradientOverlayHero(data: HeroData): string {
         ? `<a href="${data.phoneHref || `tel:${data.phone}`}" style="display: inline-flex; align-items: center; gap: 10px; background: #ffffff; color: ${data.colors.primary}; font-weight: 800; font-size: 1.1rem; padding: 16px 32px; border-radius: 14px; text-decoration: none; box-shadow: 0 10px 40px rgba(0,0,0,0.3); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform='scale(1)'">${phoneIcon()} ${data.phone}</a>`
         : ''
       }
-      ${data.bookingUrl
-        ? `<a href="${data.bookingUrl}" style="display: inline-flex; align-items: center; gap: 10px; background: ${data.colors.primary}; color: #ffffff; font-weight: 700; font-size: 1.1rem; padding: 16px 32px; border-radius: 14px; text-decoration: none; box-shadow: 0 10px 30px ${data.colors.primary}60; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform='scale(1)'">Get Free Estimate →</a>`
+      ${data.ctaLink || data.bookingUrl
+        ? `<a href="${data.ctaLink || data.bookingUrl}" style="display: inline-flex; align-items: center; gap: 10px; background: ${data.colors.primary}; color: #ffffff; font-weight: 700; font-size: 1.1rem; padding: 16px 32px; border-radius: 14px; text-decoration: none; box-shadow: 0 10px 30px ${data.colors.primary}60; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform='scale(1)'">${data.ctaText || 'Get Free Estimate'} →</a>`
         : ''
       }
     </div>

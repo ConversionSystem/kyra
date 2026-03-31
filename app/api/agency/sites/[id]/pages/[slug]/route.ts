@@ -86,7 +86,8 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   // Allowlist of editable page fields
   const allowedFields = [
     'title', 'meta_title', 'meta_description',
-    'hero_h1', 'hero_subtitle', 'content_sections', 'faq', 'schema_markup',
+    'hero_h1', 'hero_subtitle', 'hero_cta_text', 'hero_cta_link',
+    'content_sections', 'faq', 'schema_markup',
     'hidden',
   ];
 

@@ -114,6 +114,8 @@ export interface AssemblePageOptions {
     metaDescription?: string;
     hero_h1: string;
     hero_subtitle: string;
+    hero_cta_text?: string | null;
+    hero_cta_link?: string | null;
     content_sections?: ContentSection[];
     faq?: FaqItem[];
     schema_markup?: unknown;
@@ -146,6 +148,12 @@ export interface AssemblePageOptions {
     state?: string;
     /** Real Google/site reviews — used instead of placeholders when available */
     reviews?: Array<{ author_name: string; text: string; rating: number; time_description?: string }>;
+    /** Custom nav links from DB */
+    navLinks?: Array<{ label: string; href: string }> | null;
+    /** Custom footer tagline from DB */
+    footerTagline?: string | null;
+    /** Social media links from DB */
+    socialLinks?: Record<string, string> | null;
   };
   pageType: string;
 }
@@ -186,6 +194,14 @@ export function assemblePage(options: AssemblePageOptions): string {
   }
 
   // Build section HTML
+  // Use custom nav links from DB, fall back to defaults
+  const defaultNavLinks = [
+    { label: 'Home', href: '#top' },
+    { label: 'Services', href: '#services' },
+    { label: 'About', href: '#about' },
+    { label: 'Reviews', href: '#testimonials' },
+    { label: 'Contact', href: '#contact' },
+  ];
   const navbarHtml = navbarFn({
     businessName: siteData.business_name,
     logoUrl: siteData.logoUrl,
@@ -193,13 +209,7 @@ export function assemblePage(options: AssemblePageOptions): string {
     phoneHref: siteData.phoneHref,
     bookingUrl: siteData.booking_url,
     colors,
-    links: [
-      { label: 'Home', href: '#top' },
-      { label: 'Services', href: '#services' },
-      { label: 'About', href: '#about' },
-      { label: 'Reviews', href: '#testimonials' },
-      { label: 'Contact', href: '#contact' },
-    ],
+    links: (siteData.navLinks && siteData.navLinks.length > 0) ? siteData.navLinks : defaultNavLinks,
   });
 
   const heroHtml = heroFn({
@@ -213,6 +223,8 @@ export function assemblePage(options: AssemblePageOptions): string {
     photoUrl: siteData.photos?.[0]?.url,
     logoUrl: siteData.logoUrl,
     colors,
+    ctaText: pageData.hero_cta_text || undefined,
+    ctaLink: pageData.hero_cta_link || undefined,
   });
 
   const servicesHtml = servicesFn({
@@ -228,7 +240,13 @@ export function assemblePage(options: AssemblePageOptions): string {
 
   // Build about section from content_sections if available
   const aboutBody = pageData.content_sections
-    ?.map(s => `<h3>${s.heading}</h3><p>${s.body}</p>`)
+    ?.map(s => {
+      let html = `<h3>${s.heading}</h3><p>${s.body}</p>`;
+      if (s.cta_text && s.cta_link) {
+        html += `<div style="margin-top: 1rem;"><a href="${s.cta_link}" style="display: inline-flex; align-items: center; gap: 6px; background: ${colors.primary}; color: white; font-weight: 700; font-size: 0.9rem; padding: 10px 24px; border-radius: 10px; text-decoration: none; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">${s.cta_text} →</a></div>`;
+      }
+      return html;
+    })
     .join('') || '';
 
   const aboutHtml = aboutFn({
@@ -295,6 +313,8 @@ export function assemblePage(options: AssemblePageOptions): string {
     cities: siteData.cities,
     bookingUrl: siteData.booking_url,
     colors,
+    footerTagline: siteData.footerTagline || undefined,
+    socialLinks: siteData.socialLinks || undefined,
   });
 
   // Schema markup
