@@ -9,6 +9,8 @@ interface FooterData {
   cities?: Array<{ name: string; slug: string }>;
   bookingUrl?: string;
   colors: { primary: string; secondary: string };
+  footerTagline?: string;
+  socialLinks?: Record<string, string>;
 }
 
 export function fourColumnFooter(data: FooterData): string {
@@ -65,10 +67,31 @@ export function fourColumnFooter(data: FooterData): string {
       <div style="margin-bottom: 1.25rem;">
         <span style="font-size: 1.5rem; font-weight: 900; color: #ffffff; letter-spacing: -0.02em;">${data.businessName}</span>
       </div>
-      <p style="color: #6b7280; font-size: 0.9rem; line-height: 1.7; margin: 0 0 1.5rem 0; max-width: 240px;">Proudly serving our community with quality, integrity, and care on every job.</p>
-      <!-- Social icons placeholder -->
+      <p style="color: #6b7280; font-size: 0.9rem; line-height: 1.7; margin: 0 0 1.5rem 0; max-width: 240px;">${data.footerTagline || 'Proudly serving our community with quality, integrity, and care on every job.'}</p>
+      <!-- Social icons -->
       <div style="display: flex; gap: 10px;">
-        ${['M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z', 'M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z', 'M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6zM2 9h4v12H2z M4 6a2 2 0 1 0 0-4 2 2 0 0 0 0 4z'].map(path => `<a href="#" style="width: 36px; height: 36px; background: rgba(255,255,255,0.07); border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" onmouseover="this.style.background='${primary}'" onmouseout="this.style.background='rgba(255,255,255,0.07)'"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2"><path d="${path}"/></svg></a>`).join('')}
+        ${(() => {
+          const socialIcons: Record<string, string> = {
+            facebook: 'M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z',
+            twitter: 'M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z',
+            linkedin: 'M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6zM2 9h4v12H2z M4 6a2 2 0 1 0 0-4 2 2 0 0 0 0 4z',
+            instagram: 'M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4a5.8 5.8 0 0 1-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2m-.2 2A3.6 3.6 0 0 0 4 7.6v8.8C4 18.39 5.61 20 7.6 20h8.8a3.6 3.6 0 0 0 3.6-3.6V7.6C20 5.61 18.39 4 16.4 4H7.6m9.65 1.5a1.25 1.25 0 0 1 1.25 1.25A1.25 1.25 0 0 1 17.25 8 1.25 1.25 0 0 1 16 6.75a1.25 1.25 0 0 1 1.25-1.25M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3z',
+            yelp: 'M21.714 18.571L18.857 15.714M12 21.429V12M2.286 5.571L5.143 8.429M12 2.571V12M21.714 5.571L18.857 8.429M2.286 18.571L5.143 15.714',
+          };
+          if (data.socialLinks) {
+            return Object.entries(data.socialLinks)
+              .filter(([, url]) => url)
+              .map(([platform, url]) => {
+                const iconPath = socialIcons[platform] || socialIcons.facebook;
+                return `<a href="${url}" target="_blank" rel="noopener noreferrer" style="width: 36px; height: 36px; background: rgba(255,255,255,0.07); border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" onmouseover="this.style.background='${primary}'" onmouseout="this.style.background='rgba(255,255,255,0.07)'"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2"><path d="${iconPath}"/></svg></a>`;
+              }).join('');
+          }
+          // Default placeholder icons
+          return ['facebook', 'twitter', 'linkedin'].map(platform => {
+            const iconPath = socialIcons[platform];
+            return `<a href="#" style="width: 36px; height: 36px; background: rgba(255,255,255,0.07); border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" onmouseover="this.style.background='${primary}'" onmouseout="this.style.background='rgba(255,255,255,0.07)'"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2"><path d="${iconPath}"/></svg></a>`;
+          }).join('');
+        })()}
       </div>
     </div>
 

@@ -9,6 +9,8 @@ interface HeroData {
   photoUrl?: string;
   logoUrl?: string;
   colors: { primary: string; secondary: string };
+  ctaText?: string;
+  ctaLink?: string;
 }
 
 function phoneIcon(): string {
@@ -57,8 +59,8 @@ export function splitScreenHero(data: HeroData): string {
           ? `<a href="${data.phoneHref || `tel:${data.phone}`}" style="display: inline-flex; align-items: center; gap: 10px; background: #ffffff; color: ${data.colors.primary}; font-weight: 800; font-size: 1.05rem; padding: 14px 28px; border-radius: 12px; text-decoration: none; box-shadow: 0 10px 30px rgba(0,0,0,0.25); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">${phoneIcon()} ${data.phone}</a>`
           : ''
         }
-        ${data.bookingUrl
-          ? `<a href="${data.bookingUrl}" style="display: inline-flex; align-items: center; gap: 10px; border: 2px solid rgba(255,255,255,0.7); color: #ffffff; font-weight: 700; font-size: 1.05rem; padding: 14px 28px; border-radius: 12px; text-decoration: none; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='transparent'">Book Free Consult →</a>`
+        ${data.ctaLink || data.bookingUrl
+          ? `<a href="${data.ctaLink || data.bookingUrl}" style="display: inline-flex; align-items: center; gap: 10px; border: 2px solid rgba(255,255,255,0.7); color: #ffffff; font-weight: 700; font-size: 1.05rem; padding: 14px 28px; border-radius: 12px; text-decoration: none; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='transparent'">${data.ctaText || 'Book Free Consult'} →</a>`
           : ''
         }
       </div>

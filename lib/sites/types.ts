@@ -54,12 +54,28 @@ export interface SitePhoto {
   url: string;
   alt?: string;
   placement?: string;
+  storage_path?: string;
+}
+
+export interface NavLink {
+  label: string;
+  href: string;
+}
+
+export interface SocialLinks {
+  facebook?: string;
+  instagram?: string;
+  twitter?: string;
+  linkedin?: string;
+  yelp?: string;
 }
 
 export interface ContentSection {
   heading: string;
   body: string;
   bullets?: string[];
+  cta_text?: string;
+  cta_link?: string;
 }
 
 export interface FaqItem {
@@ -102,6 +118,12 @@ export interface ClientSite {
   ai_tone: AiTone;
   ai_capabilities: string[] | null;
   booking_url: string | null;
+  email: string | null;
+
+  // Navigation & Footer
+  nav_links: NavLink[] | null;
+  footer_tagline: string | null;
+  social_links: SocialLinks | null;
 
   // Build state
   status: SiteStatus;
@@ -155,6 +177,10 @@ export interface SitePage {
   // User edits
   edited: boolean;
   edited_at: string | null;
+
+  // Hero CTA
+  hero_cta_text: string | null;
+  hero_cta_link: string | null;
 
   // Visibility
   hidden: boolean;
