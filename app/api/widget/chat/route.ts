@@ -141,8 +141,11 @@ export async function POST(request: NextRequest) {
     }, { headers: CORS });
   }
 
-  // ── Credit check ──────────────────────────────────────────────────────────
-  const creditCheck = await requireCredits(client.agency_id, 'chat.message');
+  // ── Model-aware credit check ──────────────────────────────────────────────
+  // Widget always uses WIDGET_MODEL (gpt-4o-mini = 1 cr), but use overrideCost
+  // so the check is consistent and future model changes are auto-respected.
+  const widgetPreflightCost = getCreditsForModel(WIDGET_MODEL);
+  const creditCheck = await requireCredits(client.agency_id, 'chat.message', 1, widgetPreflightCost);
   if (!creditCheck.allowed) {
     return NextResponse.json(
       { error: 'AI unavailable — account credits depleted' },

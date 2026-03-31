@@ -140,7 +140,7 @@ export async function handleSubscriptionDeleted(
 
   await supabase
     .from('agencies')
-    .update({ plan: 'starter', updated_at: new Date().toISOString() })
+    .update({ plan: 'free', updated_at: new Date().toISOString() })
     .eq('id', agencyId);
 }
 
