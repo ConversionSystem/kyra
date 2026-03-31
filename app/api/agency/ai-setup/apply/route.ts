@@ -5710,6 +5710,22 @@ export async function POST(request: NextRequest) {
 
         installedSkillSlugs.push(...toInstall);
         console.log(`[ai-setup/apply] Auto-installed ClawHub skills for ${clientId}:`, toInstall);
+
+        // Also enable the newly installed skills
+        const { data: currentSettings2 } = await supabase
+          .from('agency_clients')
+          .select('settings')
+          .eq('id', clientId)
+          .single();
+        const settings2 = (currentSettings2?.settings as Record<string, unknown>) ?? {};
+        const existingEnabled = (settings2.enabled_skills as string[]) ?? [];
+        const newEnabled = [...new Set([...existingEnabled, ...toInstall])];
+        if (newEnabled.length > existingEnabled.length) {
+          await supabase
+            .from('agency_clients')
+            .update({ settings: { ...settings2, enabled_skills: newEnabled } })
+            .eq('id', clientId);
+        }
       }
 
       // Sync the updated skills list to the container workspace (SKILLS.md)
