@@ -7,9 +7,6 @@ import {
   ExternalLink,
   RefreshCw,
   Loader2,
-  FileText,
-  MapPin,
-  PenLine,
   CheckCircle2,
   AlertTriangle,
   ArrowUpRight,
@@ -21,6 +18,10 @@ import {
   Sparkles,
   Settings,
   Pencil,
+  FileText,
+  Lightbulb,
+  ShieldCheck,
+  ChevronRight,
 } from 'lucide-react';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -95,18 +96,17 @@ function StatusBadge({ status }: { status: SiteData['status'] }) {
   );
 }
 
-// ── SEO Health Checklist ──────────────────────────────────────────────────────
+// ── SEO Health (compact badges) ───────────────────────────────────────────────
 
-function SEOHealthChecklist({ site }: { site: SiteData }) {
+function SEOHealthCompact({ site }: { site: SiteData }) {
   const isDeployed = !!site.last_deployed_at || site.status === 'live';
   const hasSubdomain = !!site.site_subdomain;
 
-  // Not deployed at all — show a simple message
   if (!isDeployed) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
         <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-          <Search className="h-4 w-4 text-gray-400" />
+          <ShieldCheck className="h-4 w-4 text-gray-400" />
           SEO Health
         </h4>
         <p className="text-sm text-gray-500">Deploy your site first to see SEO health checks.</p>
@@ -115,68 +115,51 @@ function SEOHealthChecklist({ site }: { site: SiteData }) {
   }
 
   const checks = [
-    { label: site.page_count > 0 ? `Sitemap (${site.page_count} URLs)` : 'Sitemap', ok: site.page_count > 0 },
-    { label: 'Schema markup (LocalBusiness + FAQ)', ok: true },
-    { label: 'Meta tags (title + description)', ok: true },
-    { label: 'Mobile responsive', ok: true },
-    { label: 'SSL certificate (HTTPS)', ok: hasSubdomain || !!site.site_domain },
-    { label: 'Google Search Console', ok: site.search_console_connected },
+    { label: site.page_count > 0 ? `Sitemap (${site.page_count})` : 'Sitemap', ok: site.page_count > 0 },
+    { label: 'Schema', ok: true },
+    { label: 'Meta tags', ok: true },
+    { label: 'Mobile', ok: true },
+    { label: 'SSL', ok: hasSubdomain || !!site.site_domain },
+    { label: 'GSC', ok: site.search_console_connected },
   ];
 
+  const passing = checks.filter(c => c.ok).length;
+
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-      <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-        <Search className="h-4 w-4 text-gray-400" />
-        SEO Health
-      </h4>
-      <div className="space-y-2">
+    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+          <ShieldCheck className="h-4 w-4 text-gray-400" />
+          SEO Health
+        </h4>
+        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${passing === checks.length ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+          {passing}/{checks.length} passing
+        </span>
+      </div>
+      <div className="flex flex-wrap gap-2">
         {checks.map((check, i) => (
-          <div key={i} className="flex items-center gap-2 text-sm">
+          <span
+            key={i}
+            className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg border ${
+              check.ok
+                ? 'bg-green-50 text-green-700 border-green-200'
+                : 'bg-amber-50 text-amber-700 border-amber-200'
+            }`}
+          >
             {check.ok ? (
-              <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+              <CheckCircle2 className="h-3 w-3 shrink-0" />
             ) : (
-              <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
+              <AlertTriangle className="h-3 w-3 shrink-0" />
             )}
-            <span className={check.ok ? 'text-gray-700' : 'text-amber-700'}>
-              {check.label}
-            </span>
-          </div>
+            {check.label}
+          </span>
         ))}
       </div>
       {!site.search_console_connected && (
-        <p className="text-xs text-amber-600 mt-3 bg-amber-50 rounded-lg p-2">
+        <p className="text-xs text-amber-600 mt-3 bg-amber-50 rounded-xl p-2.5 border border-amber-100">
           Connect Google Search Console to unlock Growth Engine data and track real search performance.
         </p>
       )}
-    </div>
-  );
-}
-
-// ── Page Breakdown ────────────────────────────────────────────────────────────
-
-function PageBreakdown({ pageCount }: { pageCount: number }) {
-  const core = Math.min(pageCount, 10);
-  const local = Math.max(0, Math.min(pageCount - core, 20));
-  const blog = Math.max(0, pageCount - core - local);
-
-  const segments = [
-    { label: 'Core', count: core, icon: FileText, color: 'bg-indigo-100 text-indigo-700 border-indigo-200' },
-    { label: 'Local', count: local, icon: MapPin, color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
-    { label: 'Blog', count: blog, icon: PenLine, color: 'bg-purple-100 text-purple-700 border-purple-200' },
-  ].filter((s) => s.count > 0);
-
-  return (
-    <div className="flex gap-3">
-      {segments.map((seg) => {
-        const Icon = seg.icon;
-        return (
-          <div key={seg.label} className={`flex-1 rounded-xl border p-3 text-center ${seg.color}`}>
-            <Icon className="h-4 w-4 mx-auto mb-1" />
-            <p className="text-lg font-bold">{seg.count}</p>
-            <p className="text-[10px] font-medium uppercase tracking-wide">{seg.label}</p>
-          </div>
-        );
-      })}
     </div>
   );
 }
@@ -204,6 +187,30 @@ function NoSiteState({ clientId, clientName }: { clientId: string; clientName: s
   );
 }
 
+// ── Stat Pill ─────────────────────────────────────────────────────────────────
+
+function StatPill({
+  value,
+  label,
+  icon: Icon,
+  color = 'text-gray-900',
+}: {
+  value: string | number;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  color?: string;
+}) {
+  return (
+    <div className="flex-1 min-w-0 bg-gray-50 rounded-xl p-3 text-center">
+      <div className="flex items-center justify-center gap-1.5 mb-1">
+        <Icon className="h-3.5 w-3.5 text-gray-400" />
+        <p className={`text-lg font-bold ${color}`}>{value}</p>
+      </div>
+      <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">{label}</p>
+    </div>
+  );
+}
+
 // ── Overview View ─────────────────────────────────────────────────────────────
 
 function OverviewView({
@@ -217,184 +224,119 @@ function OverviewView({
   actionLoading: string | null;
   handleAction: (action: string) => void;
 }) {
-  // Growth card compat: support both new (title/description) and legacy (keyword/volume/action)
   const suggestions = site.growth_suggestions;
+  const suggestionCount = suggestions?.length || 0;
   const hasLegacy = suggestions && suggestions.length > 0 && !!suggestions[0].keyword;
 
+  // SEO health score
+  const isDeployed = !!site.last_deployed_at || site.status === 'live';
+  const hasSubdomain = !!site.site_subdomain;
+  const seoChecks = isDeployed
+    ? [
+        site.page_count > 0,
+        true, // schema
+        true, // meta
+        true, // mobile
+        hasSubdomain || !!site.site_domain, // ssl
+        site.search_console_connected, // gsc
+      ]
+    : [];
+  const seoPassing = seoChecks.filter(Boolean).length;
+  const seoTotal = seoChecks.length;
+
+  // Last deployed formatted
+  const lastDeployed = site.last_deployed_at
+    ? new Date(site.last_deployed_at).toLocaleDateString([], {
+        month: 'short',
+        day: 'numeric',
+      })
+    : '—';
+
+  // Top suggestions to display (max 3)
+  const topSuggestions = suggestions?.filter(s => !s.implemented)?.slice(0, 3) || [];
+
   return (
-    <div className="space-y-6">
-      {/* Live site preview card */}
-      {siteUrl && site.status === 'live' && (
-        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-          {/* Browser chrome bar */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50">
-            <div className="flex items-center gap-2">
-              <div className="flex gap-1.5">
-                <div className="w-3 h-3 rounded-full bg-red-400" />
-                <div className="w-3 h-3 rounded-full bg-yellow-400" />
-                <div className="w-3 h-3 rounded-full bg-green-400" />
-              </div>
-              <span className="text-xs text-gray-500 font-mono ml-2 truncate max-w-[200px]">{siteUrl.replace('https://','')}</span>
-            </div>
-            <a href={siteUrl} target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-1 text-xs text-indigo-600 hover:underline font-medium">
-              Open <ExternalLink className="h-3 w-3" />
-            </a>
-          </div>
-          {/* Thumbnail placeholder — links to site */}
-          <a href={siteUrl} target="_blank" rel="noopener noreferrer" className="block">
-            <div className="bg-gradient-to-br from-indigo-50 to-slate-100 h-48 flex flex-col items-center justify-center gap-3 hover:from-indigo-100 transition-colors group">
-              <div className="w-12 h-12 rounded-xl bg-indigo-600 flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
-                <Globe className="h-6 w-6 text-white" />
-              </div>
-              <div className="text-center">
-                <p className="text-sm font-semibold text-gray-700">{site.business_name}</p>
-                <p className="text-xs text-indigo-600 mt-0.5 flex items-center justify-center gap-1">
-                  View live site <ExternalLink className="h-3 w-3" />
-                </p>
-              </div>
-              <div className="flex items-center gap-4 text-xs text-gray-400 mt-1">
-                <span className="flex items-center gap-1"><CheckCircle2 className="h-3 w-3 text-green-500" /> Live</span>
-                <span>{site.page_count || 0} pages</span>
-              </div>
-            </div>
-          </a>
+    <div className="space-y-4">
+      {/* ── Stat Pills ─────────────────────────────────────────────── */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <StatPill
+            value={site.page_count === 0 && ['draft', 'error'].includes(site.status) ? '—' : site.page_count}
+            label="Pages"
+            icon={FileText}
+          />
+          <StatPill
+            value={suggestionCount}
+            label="Growth Ideas"
+            icon={Lightbulb}
+            color={suggestionCount > 0 ? 'text-indigo-600' : 'text-gray-900'}
+          />
+          <StatPill
+            value={isDeployed ? `${seoPassing}/${seoTotal}` : '—'}
+            label="SEO Health"
+            icon={ShieldCheck}
+            color={isDeployed && seoPassing === seoTotal ? 'text-green-600' : isDeployed ? 'text-amber-600' : 'text-gray-900'}
+          />
+          <StatPill
+            value={lastDeployed}
+            label="Last Deploy"
+            icon={Clock}
+          />
         </div>
-      )}
-
-      {/* Page breakdown */}
-      <PageBreakdown pageCount={site.page_count} />
-
-      {/* Quick actions */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <button
-          onClick={() => handleAction('regenerate')}
-          disabled={!!actionLoading}
-          className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-gray-200 shadow-sm hover:border-indigo-300 hover:bg-indigo-50/50 transition-colors text-center disabled:opacity-50"
-        >
-          {actionLoading === 'regenerate' ? (
-            <Loader2 className="h-5 w-5 text-indigo-500 animate-spin" />
-          ) : (
-            <RefreshCw className="h-5 w-5 text-indigo-500" />
-          )}
-          <span className="text-xs font-medium text-gray-700">Regenerate</span>
-        </button>
-        <button
-          onClick={() => handleAction('redeploy')}
-          disabled={!!actionLoading}
-          className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-gray-200 shadow-sm hover:border-green-300 hover:bg-green-50/50 transition-colors text-center disabled:opacity-50"
-        >
-          {actionLoading === 'redeploy' ? (
-            <Loader2 className="h-5 w-5 text-green-500 animate-spin" />
-          ) : (
-            <Rocket className="h-5 w-5 text-green-500" />
-          )}
-          <span className="text-xs font-medium text-gray-700">Redeploy</span>
-        </button>
-        <Link
-          href={`/agency/website/${site.id}/editor`}
-          className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-gray-200 shadow-sm hover:border-purple-300 hover:bg-purple-50/50 transition-colors text-center"
-        >
-          <Pencil className="h-5 w-5 text-purple-500" />
-          <span className="text-xs font-medium text-gray-700">Edit Website</span>
-        </Link>
-        <Link
-          href={`/agency/website/${site.id}/settings`}
-          className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white border border-gray-200 shadow-sm hover:border-amber-300 hover:bg-amber-50/50 transition-colors text-center"
-        >
-          <Settings className="h-5 w-5 text-amber-500" />
-          <span className="text-xs font-medium text-gray-700">Settings</span>
-        </Link>
       </div>
 
-      {/* Live URL */}
-      {siteUrl && site.status === 'live' && (
-        <a
-          href={siteUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 px-4 py-3 bg-green-50 border border-green-200 rounded-xl text-sm font-medium text-green-700 hover:bg-green-100 transition-colors"
+      {/* ── Quick Actions ──────────────────────────────────────────── */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-3">
+        {/* Primary: Edit Website */}
+        <Link
+          href={`/agency/website/${site.id}/editor`}
+          className="flex items-center justify-center gap-2 w-full px-5 py-3 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition-colors shadow-sm"
         >
-          <Globe className="h-4 w-4" />
-          {siteUrl.replace('https://', '')}
-          <ExternalLink className="h-3.5 w-3.5 ml-auto" />
-        </a>
-      )}
+          <Pencil className="h-4 w-4" />
+          Edit Website
+        </Link>
 
-      {/* Growth Engine — supports both legacy and new format */}
-      {hasLegacy ? (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-indigo-500" />
-              Growth Engine
-            </h4>
-            <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium">
-              {suggestions!.length} suggestions
-            </span>
-          </div>
-          <div className="space-y-2">
-            {suggestions!.map((suggestion, i) => (
-              <div
-                key={i}
-                className="flex items-center justify-between gap-3 p-3 rounded-lg border border-gray-100 hover:border-indigo-200 hover:bg-indigo-50/50 transition-colors"
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm text-gray-900 font-medium truncate">
-                    &ldquo;{suggestion.keyword}&rdquo;
-                  </p>
-                  <p className="text-xs text-gray-500">{suggestion.volume} searches/mo</p>
-                </div>
-                <Link
-                  href={`/agency/website/${site.id}/growth`}
-                  className="shrink-0 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors"
-                >
-                  {suggestion.action}
-                </Link>
-              </div>
-            ))}
-          </div>
+        {/* Secondary row */}
+        <div className="grid grid-cols-3 gap-2">
+          <button
+            onClick={() => handleAction('regenerate')}
+            disabled={!!actionLoading}
+            className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 hover:border-gray-300 transition-colors disabled:opacity-50"
+          >
+            {actionLoading === 'regenerate' ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <RefreshCw className="h-3.5 w-3.5" />
+            )}
+            Regenerate
+          </button>
+          <button
+            onClick={() => handleAction('redeploy')}
+            disabled={!!actionLoading}
+            className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 hover:border-gray-300 transition-colors disabled:opacity-50"
+          >
+            {actionLoading === 'redeploy' ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Rocket className="h-3.5 w-3.5" />
+            )}
+            Redeploy
+          </button>
+          <Link
+            href={`/agency/website/${site.id}/settings`}
+            className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 hover:border-gray-300 transition-colors"
+          >
+            <Settings className="h-3.5 w-3.5" />
+            Settings
+          </Link>
         </div>
-      ) : (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-          <h4 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
-            <TrendingUp className="h-4 w-4 text-indigo-500" />
-            Growth Engine
-          </h4>
-          {suggestions && suggestions.length > 0 ? (
-            <>
-              <p className="text-xs text-gray-500 mb-3">
-                {suggestions.length} growth suggestions available.
-              </p>
-              <Link
-                href={`/agency/website/${site.id}/growth`}
-                className="text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors inline-flex items-center gap-1"
-              >
-                View Suggestions <ArrowUpRight className="h-3 w-3" />
-              </Link>
-            </>
-          ) : (
-            <>
-              <p className="text-xs text-gray-500">
-                Growth suggestions will appear here after your site has been live for a few weeks and Google
-                Search Console is connected.
-              </p>
-              <div className="mt-3 bg-indigo-50 border border-indigo-100 rounded-lg p-3">
-                <p className="text-xs text-indigo-700">
-                  The Growth Engine analyzes your search data and suggests new pages, FAQs, and blog
-                  posts to drive more organic traffic.
-                </p>
-              </div>
-            </>
-          )}
-        </div>
-      )}
+      </div>
 
-      {/* SEO Health or Launch Checklist */}
-      {(!!site.last_deployed_at || site.status === 'live') ? (
-        <SEOHealthChecklist site={site} />
+      {/* ── SEO Health ─────────────────────────────────────────────── */}
+      {isDeployed ? (
+        <SEOHealthCompact site={site} />
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
           <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
             <Rocket className="h-4 w-4 text-indigo-500" />
             Launch Checklist
@@ -420,6 +362,70 @@ function OverviewView({
           </div>
         </div>
       )}
+
+      {/* ── Growth Opportunities (compact) ─────────────────────────── */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-indigo-500" />
+            Growth Opportunities
+          </h4>
+          {suggestionCount > 0 && (
+            <Link
+              href={`/agency/website/${site.id}/growth`}
+              className="text-xs font-medium text-indigo-600 hover:text-indigo-700 flex items-center gap-0.5 transition-colors"
+            >
+              View all {suggestionCount}
+              <ChevronRight className="h-3 w-3" />
+            </Link>
+          )}
+        </div>
+
+        {topSuggestions.length > 0 ? (
+          <div className="space-y-2">
+            {topSuggestions.map((suggestion, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100"
+              >
+                <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                  suggestion.priority === 'high' ? 'bg-indigo-500' :
+                  suggestion.priority === 'medium' ? 'bg-amber-500' : 'bg-gray-400'
+                }`} />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm text-gray-900 font-medium truncate">
+                    {hasLegacy ? `"${suggestion.keyword}"` : suggestion.title}
+                  </p>
+                  <p className="text-xs text-gray-500 truncate">
+                    {hasLegacy
+                      ? `${suggestion.volume?.toLocaleString()} searches/mo`
+                      : suggestion.description}
+                  </p>
+                </div>
+                {(suggestion.estimatedVolume || suggestion.volume) && (
+                  <span className="text-xs text-gray-400 shrink-0 font-medium">
+                    {((suggestion.estimatedVolume || suggestion.volume) ?? 0) >= 1000
+                      ? `${(((suggestion.estimatedVolume || suggestion.volume) ?? 0) / 1000).toFixed(1)}K`
+                      : (suggestion.estimatedVolume || suggestion.volume)?.toLocaleString()}{' '}
+                    vol
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div>
+            <p className="text-xs text-gray-500">
+              Growth suggestions will appear here after your site has been live and Google Search Console is connected.
+            </p>
+            <div className="mt-3 bg-indigo-50 border border-indigo-100 rounded-xl p-3">
+              <p className="text-xs text-indigo-700">
+                The Growth Engine analyzes your search data and suggests new pages, FAQs, and blog posts to drive more organic traffic.
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -559,10 +565,10 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
       : null;
 
   return (
-    <div className="space-y-6">
-      {/* Deploying/building banner with self-heal button */}
+    <div className="space-y-4">
+      {/* ── Generating / Building / Deploying banner ──────────────── */}
       {['deploying', 'building', 'generating'].includes(site.status) && (
-        <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 flex items-center gap-3">
+        <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-4 flex items-center gap-3">
           <Loader2 className="h-5 w-5 text-indigo-500 shrink-0 animate-spin" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-indigo-800">
@@ -593,9 +599,9 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
         </div>
       )}
 
-      {/* Error banner */}
+      {/* ── Error banner ──────────────────────────────────────────── */}
       {site.status === 'error' && site.last_deployed_at && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
           <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-amber-800">Last action failed</p>
@@ -613,8 +619,8 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
         </div>
       )}
 
-      {/* Header */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+      {/* ── Site Header Card ──────────────────────────────────────── */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3">
             <div
@@ -641,7 +647,7 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
               )}
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {siteUrl && (
               <a
                 href={siteUrl}
@@ -650,7 +656,7 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
                 className="flex items-center gap-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition"
               >
                 <ArrowUpRight className="h-3.5 w-3.5" />
-                Visit Site
+                Visit
               </a>
             )}
             <Link
@@ -660,48 +666,11 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
               <Users className="h-3.5 w-3.5" />
               Client View
             </Link>
-            <div className="flex items-center gap-1.5 text-xs text-gray-400">
-              <Clock className="h-3.5 w-3.5" />
-              {site.last_deployed_at
-                ? `Deployed ${new Date(site.last_deployed_at).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
-                : 'Not deployed'}
-            </div>
           </div>
-        </div>
-
-        {/* Quick stats */}
-        <div className="flex items-center gap-6 mt-4 pt-4 border-t border-gray-100">
-          <div>
-            {site.page_count === 0 && ['draft', 'error'].includes(site.status) ? (
-              <>
-                <p className="text-sm font-medium text-gray-400">Not built yet</p>
-                <p className="text-xs text-gray-500">Pages</p>
-              </>
-            ) : (
-              <>
-                <p className="text-xl font-bold text-gray-900">{site.page_count}</p>
-                <p className="text-xs text-gray-500">Pages</p>
-              </>
-            )}
-          </div>
-          <div>
-            <p className="text-sm font-medium text-gray-900">{site.industry}</p>
-            <p className="text-xs text-gray-500">Industry</p>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-gray-900">{site.design_style || '\u2014'}</p>
-            <p className="text-xs text-gray-500">Design</p>
-          </div>
-          {site.ai_name && (
-            <div>
-              <p className="text-sm font-medium text-gray-900">{site.ai_name}</p>
-              <p className="text-xs text-gray-500">AI Worker</p>
-            </div>
-          )}
         </div>
       </div>
 
-      {/* Overview content (single view — no sub-navigation) */}
+      {/* ── Overview content ──────────────────────────────────────── */}
       <OverviewView
         site={site}
         siteUrl={siteUrl}
