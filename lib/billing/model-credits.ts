@@ -15,6 +15,7 @@
  *   flagship  (75 cr)  — Sonnet 3.7 $0.154, Sonnet 4.6 $0.154            → 75 cr (was 15 — LOSS)
  *   reasoning (8 cr)   — o3-mini $0.00187                                 → 8 cr
  *   premium   (125 cr) — Opus 4.6 $0.257 (1.67× Sonnet)                  → 125 cr (was 35 — LOSS)
+ *   reasoning2(20 cr)  — o3 ~$0.040/turn (mid-range reasoning)            → 20 cr
  *   ultra     (100 cr) — o1 $0.0255                                       → 100 cr
  */
 
@@ -136,9 +137,12 @@ export const MODELS: ModelOption[] = [
     id: 'o3',
     label: 'o3',
     provider: 'openai',
-    tier: 'premium',
-    creditsPerTurn: 35,
-    description: "OpenAI's most powerful reasoning. Complex problem solving.",
+    // Re-tiered from 'premium' (35 cr) → 'reasoning' (20 cr).
+    // o3 costs ~$0.040/turn actual — far below Opus ($0.257).
+    // 20 cr × $0.005 = $0.10 revenue → ~60% margin. Was mis-priced at 35 cr.
+    tier: 'reasoning',
+    creditsPerTurn: 20,
+    description: "OpenAI's powerful reasoning model. ~$0.040/turn.",
     routerMaxTier: 4,
   },
 

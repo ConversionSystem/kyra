@@ -9,12 +9,14 @@
 import { useState, useEffect } from 'react';
 import { DollarSign, Users, TrendingUp, Zap, ArrowRight, CheckCircle2, Edit2, Save, Loader2 } from 'lucide-react';
 
+// Client counts mirror plans.ts → maxClients (plan workers + 1 free worker)
+// Prices are monthly — Pro is $299, not $249
 const PLAN_LIMITS = {
   free:    { clients: 1,  price: 0,   label: 'Free'    },
-  lite:    { clients: 3,  price: 99,  label: 'Lite'    },
-  starter: { clients: 3,  price: 99,  label: 'Lite'    },
-  pro:     { clients: 10, price: 249, label: 'Pro'     },
-  scale:   { clients: 30, price: 499, label: 'Scale'   },
+  lite:    { clients: 4,  price: 99,  label: 'Lite'    },
+  starter: { clients: 4,  price: 99,  label: 'Lite'    },
+  pro:     { clients: 11, price: 299, label: 'Pro'     },
+  scale:   { clients: 21, price: 499, label: 'Scale'   },
 };
 
 function fmt(n: number) {
