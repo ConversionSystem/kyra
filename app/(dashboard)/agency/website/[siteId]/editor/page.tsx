@@ -42,7 +42,17 @@ import {
   ArrowUp,
   ArrowDown,
   MousePointerClick,
+  Layers,
+  ChevronUp,
+  Palette,
 } from 'lucide-react';
+
+import {
+  SECTION_VARIANTS,
+  REORDERABLE_SECTIONS,
+  DEFAULT_SECTION_ORDER,
+  formatVariantName,
+} from '@/lib/sites/section-variants';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -117,6 +127,10 @@ interface SiteData {
   footer_tagline: string | null;
   social_links: SocialLinks | null;
   photos: SitePhoto[] | null;
+  // P2: Visual Section Management
+  section_order: string[] | null;
+  section_overrides: Record<string, string> | null;
+  template_id: string | null;
 }
 
 // ── Page Type Icons ───────────────────────────────────────────────────────────
@@ -957,6 +971,362 @@ function ImageGallery({
   );
 }
 
+// ── Section Icon Map ──────────────────────────────────────────────────────────
+
+const SECTION_ICONS: Record<string, React.ReactNode> = {
+  hero: <Sparkles className="h-4 w-4" />,
+  services: <Briefcase className="h-4 w-4" />,
+  about: <FileText className="h-4 w-4" />,
+  testimonials: <Star className="h-4 w-4" />,
+  cta: <MousePointerClick className="h-4 w-4" />,
+  faq: <HelpCircle className="h-4 w-4" />,
+  footer: <FileText className="h-4 w-4" />,
+  navbar: <Navigation className="h-4 w-4" />,
+};
+
+// ── Section Manager ───────────────────────────────────────────────────────────
+
+function SectionManager({
+  site,
+  onSave,
+  saving,
+}: {
+  site: SiteData;
+  onSave: (updates: Record<string, unknown>) => void;
+  saving: boolean;
+}) {
+  // Get current recipe-based variants from the industry
+  const recipeDefaults = getRecipeDefaults(site.industry);
+
+  // Section order state — use saved order or default
+  const [sectionOrder, setSectionOrder] = useState<string[]>(
+    site.section_order && site.section_order.length > 0
+      ? site.section_order
+      : [...DEFAULT_SECTION_ORDER]
+  );
+
+  // Section variant overrides
+  const [overrides, setOverrides] = useState<Record<string, string>>(
+    site.section_overrides || {}
+  );
+
+  // Track which section has its variant picker open
+  const [expandedSection, setExpandedSection] = useState<string | null>(null);
+
+  // Track if user made changes
+  const [dirty, setDirty] = useState(false);
+
+  // Hidden sections from P1 (site-level visibility is page-based, but we handle section-level here)
+  // Note: section visibility is per-section in the order (removing from order = hidden)
+
+  const getEffectiveVariant = (sectionType: string): string => {
+    return overrides[sectionType] || recipeDefaults[sectionType] || '';
+  };
+
+  const moveSection = (index: number, direction: -1 | 1) => {
+    const newOrder = [...sectionOrder];
+    const target = index + direction;
+    if (target < 0 || target >= newOrder.length) return;
+    [newOrder[index], newOrder[target]] = [newOrder[target], newOrder[index]];
+    setSectionOrder(newOrder);
+    setDirty(true);
+  };
+
+  const changeVariant = (sectionType: string, variant: string) => {
+    const newOverrides = { ...overrides };
+    // If it's the same as recipe default, remove the override
+    if (variant === recipeDefaults[sectionType]) {
+      delete newOverrides[sectionType];
+    } else {
+      newOverrides[sectionType] = variant;
+    }
+    setOverrides(newOverrides);
+    setDirty(true);
+  };
+
+  const handleSave = () => {
+    // Only save order if it differs from default
+    const isDefaultOrder = JSON.stringify(sectionOrder) === JSON.stringify([...DEFAULT_SECTION_ORDER]);
+    const hasOverrides = Object.keys(overrides).length > 0;
+
+    onSave({
+      section_order: isDefaultOrder ? null : sectionOrder,
+      section_overrides: hasOverrides ? overrides : null,
+    });
+    setDirty(false);
+  };
+
+  const resetToDefaults = () => {
+    setSectionOrder([...DEFAULT_SECTION_ORDER]);
+    setOverrides({});
+    setDirty(true);
+  };
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200">
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <div className="flex items-center gap-2">
+          <Layers className="h-4 w-4 text-indigo-500" />
+          <span className="text-sm font-semibold text-gray-900">Sections</span>
+          <span className="text-[10px] font-medium bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">
+            {sectionOrder.length} sections
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          {dirty && (
+            <button
+              onClick={resetToDefaults}
+              className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
+            >
+              <RotateCcw className="h-3 w-3" />
+              Reset
+            </button>
+          )}
+          <button
+            onClick={handleSave}
+            disabled={saving || !dirty}
+            className="px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-1.5 transition-colors"
+          >
+            {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+            Save Layout
+          </button>
+        </div>
+      </div>
+
+      {/* Section List */}
+      <div className="divide-y divide-gray-50">
+        {sectionOrder.map((sectionType, index) => {
+          const sectionInfo = SECTION_VARIANTS[sectionType];
+          if (!sectionInfo) return null;
+
+          const currentVariant = getEffectiveVariant(sectionType);
+          const isOverridden = sectionType in overrides;
+          const isExpanded = expandedSection === sectionType;
+
+          return (
+            <div key={sectionType} className="group">
+              {/* Section row */}
+              <div className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50/50 transition-colors">
+                {/* Icon */}
+                <span className="text-indigo-400 shrink-0">
+                  {SECTION_ICONS[sectionType] || <Layers className="h-4 w-4" />}
+                </span>
+
+                {/* Name & variant badge */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-gray-900">
+                      {sectionInfo.label}
+                    </span>
+                    <button
+                      onClick={() => setExpandedSection(isExpanded ? null : sectionType)}
+                      className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-md transition-colors cursor-pointer ${
+                        isOverridden
+                          ? 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      <Palette className="h-3 w-3" />
+                      {formatVariantName(currentVariant)}
+                      <ChevronDown className={`h-3 w-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Move up/down arrows */}
+                <div className="flex items-center gap-0.5 shrink-0">
+                  <button
+                    onClick={() => moveSection(index, -1)}
+                    disabled={index === 0}
+                    className="p-1 text-gray-300 hover:text-indigo-500 disabled:opacity-30 disabled:hover:text-gray-300 transition-colors rounded"
+                    title="Move up"
+                  >
+                    <ChevronUp className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => moveSection(index, 1)}
+                    disabled={index === sectionOrder.length - 1}
+                    className="p-1 text-gray-300 hover:text-indigo-500 disabled:opacity-30 disabled:hover:text-gray-300 transition-colors rounded"
+                    title="Move down"
+                  >
+                    <ChevronDown className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Variant picker (expanded) */}
+              {isExpanded && (
+                <div className="px-5 pb-4 pt-1">
+                  <div className="bg-gray-50 rounded-xl p-3">
+                    <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                      Choose {sectionInfo.label} Style
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {sectionInfo.variants.map((variant) => {
+                        const isActive = currentVariant === variant;
+                        const isDefault = variant === recipeDefaults[sectionType];
+                        return (
+                          <button
+                            key={variant}
+                            onClick={() => {
+                              changeVariant(sectionType, variant);
+                              setExpandedSection(null);
+                            }}
+                            className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-left transition-all text-sm ${
+                              isActive
+                                ? 'bg-indigo-600 text-white shadow-sm'
+                                : 'bg-white border border-gray-200 text-gray-700 hover:border-indigo-300 hover:bg-indigo-50'
+                            }`}
+                          >
+                            <span className="font-medium text-xs">{formatVariantName(variant)}</span>
+                            {isDefault && !isActive && (
+                              <span className="text-[9px] font-medium bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded ml-auto">
+                                Default
+                              </span>
+                            )}
+                            {isActive && (
+                              <Check className="h-3.5 w-3.5 ml-auto shrink-0" />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Navbar & Footer variants (non-reorderable but switchable) */}
+      <div className="border-t border-gray-100 px-5 py-3">
+        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
+          Structural
+        </p>
+        {(['navbar', 'footer'] as const).map((sectionType) => {
+          const sectionInfo = SECTION_VARIANTS[sectionType];
+          if (!sectionInfo) return null;
+          const currentVariant = getEffectiveVariant(sectionType);
+          const isOverridden = sectionType in overrides;
+          const isExpanded = expandedSection === sectionType;
+
+          return (
+            <div key={sectionType}>
+              <div className="flex items-center gap-3 py-2">
+                <span className="text-gray-400 shrink-0">
+                  {SECTION_ICONS[sectionType] || <Layers className="h-4 w-4" />}
+                </span>
+                <span className="text-sm font-medium text-gray-700 flex-1">
+                  {sectionInfo.label}
+                </span>
+                <button
+                  onClick={() => setExpandedSection(isExpanded ? null : sectionType)}
+                  className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-md transition-colors cursor-pointer ${
+                    isOverridden
+                      ? 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  <Palette className="h-3 w-3" />
+                  {formatVariantName(currentVariant)}
+                  <ChevronDown className={`h-3 w-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                </button>
+              </div>
+              {isExpanded && (
+                <div className="pb-3 pt-1 pl-7">
+                  <div className="bg-gray-50 rounded-xl p-3">
+                    <div className="grid grid-cols-2 gap-2">
+                      {sectionInfo.variants.map((variant) => {
+                        const isActive = currentVariant === variant;
+                        const isDefault = variant === recipeDefaults[sectionType];
+                        return (
+                          <button
+                            key={variant}
+                            onClick={() => {
+                              changeVariant(sectionType, variant);
+                              setExpandedSection(null);
+                            }}
+                            className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-left transition-all text-sm ${
+                              isActive
+                                ? 'bg-indigo-600 text-white shadow-sm'
+                                : 'bg-white border border-gray-200 text-gray-700 hover:border-indigo-300 hover:bg-indigo-50'
+                            }`}
+                          >
+                            <span className="font-medium text-xs">{formatVariantName(variant)}</span>
+                            {isDefault && !isActive && (
+                              <span className="text-[9px] font-medium bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded ml-auto">
+                                Default
+                              </span>
+                            )}
+                            {isActive && (
+                              <Check className="h-3.5 w-3.5 ml-auto shrink-0" />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/** Get default recipe variants for an industry (client-side helper) */
+function getRecipeDefaults(industry: string): Record<string, string> {
+  // These match the INDUSTRY_RECIPES structure
+  // Using a simplified default since we can't import the full recipes.ts on client side
+  // The variant names are the same keys used in SECTION_VARIANTS
+  const defaults: Record<string, string> = {
+    hero: 'gradient-overlay',
+    services: 'grid-3col',
+    about: 'stats-bar',
+    testimonials: 'grid-cards',
+    cta: 'form-embed',
+    faq: 'accordion',
+    footer: 'four-column',
+    navbar: 'sticky-white',
+  };
+
+  // Industry-specific defaults (matching recipes.ts)
+  const INDUSTRY_DEFAULTS: Record<string, Partial<Record<string, string>>> = {
+    hvac: { hero: 'full-bleed', cta: 'phone-banner' },
+    plumbing: { hero: 'full-bleed', services: 'icon-list', testimonials: 'carousel', cta: 'phone-banner' },
+    electrical: { hero: 'full-bleed', cta: 'phone-banner' },
+    dental: { hero: 'gradient-overlay', services: 'alternating', about: 'team-grid', testimonials: 'carousel', faq: 'two-column', footer: 'map-contact' },
+    legal: { hero: 'centered-badge', services: 'icon-list', about: 'photo-split', testimonials: 'single-spotlight', cta: 'split-offer' },
+    restaurant: { hero: 'split-screen', services: 'tabs', about: 'timeline', testimonials: 'carousel', cta: 'floating-bar', faq: 'two-column', footer: 'map-contact', navbar: 'transparent-overlay' },
+    'real-estate': { hero: 'split-screen', about: 'photo-split' },
+    auto: { hero: 'full-bleed', cta: 'phone-banner' },
+    'med-spa': { hero: 'gradient-overlay', services: 'alternating', about: 'team-grid', testimonials: 'single-spotlight', faq: 'two-column', footer: 'minimal', navbar: 'transparent-overlay' },
+    fitness: { hero: 'gradient-overlay', testimonials: 'carousel', cta: 'floating-bar', navbar: 'hamburger' },
+    veterinary: { hero: 'gradient-overlay', services: 'icon-list', about: 'team-grid', testimonials: 'carousel', faq: 'two-column', footer: 'map-contact' },
+    consulting: { hero: 'centered-badge', services: 'icon-list', about: 'photo-split', testimonials: 'single-spotlight', cta: 'split-offer', footer: 'minimal' },
+    roofing: { hero: 'full-bleed', cta: 'phone-banner' },
+    landscaping: { hero: 'split-screen', services: 'alternating', about: 'photo-split', cta: 'split-offer' },
+    'lawn-care': { hero: 'split-screen', testimonials: 'carousel', cta: 'phone-banner', faq: 'two-column' },
+    cleaning: { hero: 'gradient-overlay', services: 'icon-list' },
+    painting: { hero: 'split-screen', services: 'alternating', about: 'photo-split', testimonials: 'carousel', cta: 'split-offer' },
+    flooring: { hero: 'split-screen', services: 'alternating' },
+    remodeling: { hero: 'full-bleed', services: 'alternating', about: 'timeline', cta: 'split-offer' },
+    'pest-control': { hero: 'full-bleed', testimonials: 'carousel', cta: 'phone-banner' },
+    locksmith: { hero: 'full-bleed', services: 'icon-list', cta: 'phone-banner', footer: 'map-contact' },
+    moving: { hero: 'split-screen', testimonials: 'carousel' },
+    salon: { hero: 'gradient-overlay', services: 'tabs', about: 'team-grid', testimonials: 'single-spotlight', cta: 'floating-bar', faq: 'two-column', footer: 'minimal', navbar: 'transparent-overlay' },
+    medical: { hero: 'centered-badge', services: 'icon-list', about: 'team-grid', testimonials: 'single-spotlight', faq: 'two-column', footer: 'map-contact' },
+    accounting: { hero: 'centered-badge', services: 'icon-list', about: 'photo-split', testimonials: 'single-spotlight', cta: 'split-offer', footer: 'minimal' },
+  };
+
+  const industryOverrides = INDUSTRY_DEFAULTS[industry] || {};
+  return { ...defaults, ...industryOverrides } as Record<string, string>;
+}
+
 // ── Main Editor Page ──────────────────────────────────────────────────────────
 
 export default function PageEditor() {
@@ -1484,6 +1854,13 @@ export default function PageEditor() {
                     siteId={siteId}
                     photos={site.photos || []}
                     onPhotosChanged={refreshSite}
+                  />
+
+                  {/* P2: Section Manager — reorder + variant switching */}
+                  <SectionManager
+                    site={site}
+                    onSave={saveSiteEdits}
+                    saving={savingSite}
                   />
                 </div>
               )}
