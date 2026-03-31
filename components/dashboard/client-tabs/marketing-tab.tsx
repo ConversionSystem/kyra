@@ -242,7 +242,7 @@ function DashboardView({ client, onNavigate }: { client: AgencyClient; onNavigat
     async function load() {
       try {
         const [convRes, pagesRes, contactsRes, actRes, crmRes] = await Promise.allSettled([
-          fetch(`/api/agency/clients/${clientId}/chat?limit=1`).then(r => r.json()),
+          fetch(`/api/agency/clients/${clientId}/conversations?limit=1`).then(r => r.json()),
           fetch(`/api/agency/sites?clientId=${clientId}`).then(r => r.json()),
           fetch(`/api/agency/crm/contacts?clientId=${clientId}&limit=1`).then(r => r.json()),
           fetch(`/api/agency/clients/${clientId}/ghl/actions?limit=10`).then(r => r.json()),
@@ -414,13 +414,13 @@ function SEOView({ client }: { client: AgencyClient }) {
 
   const [seoError, setSeoError] = useState<string | null>(null);
 
-  // Check if DataForSEO is configured
+  // Check if DataForSEO is configured (cheap status probe — no API credits used)
   useEffect(() => {
-    fetch(`/api/agency/clients/${clientId}/seo/keywords?seed=test&limit=1`)
+    fetch(`/api/agency/clients/${clientId}/seo/status`)
       .then(async r => {
         if (!r.ok) { setHasDataForSEO(false); return; }
         const data = await r.json();
-        setHasDataForSEO(!data.mock);
+        setHasDataForSEO(!!data.configured);
       })
       .catch(() => setHasDataForSEO(false));
   }, [clientId]);
@@ -501,6 +501,8 @@ Volume = estimated monthly search volume. KD = keyword difficulty 0-100. CPC = e
             url: String(r.url || ''),
             wordCount: Number(r.word_count || r.wordCount || 0),
           })));
+        } else {
+          setSeoError("No SERP results found for this keyword. Try a different keyword.");
         }
       }
     } catch {
@@ -545,7 +547,14 @@ Volume = estimated monthly search volume. KD = keyword difficulty 0-100. CPC = e
 
       {/* Keyword Research */}
       <div className="rounded-xl border border-gray-200 bg-white p-5">
-        <h3 className="text-sm font-semibold text-gray-900 mb-3">Keyword Research</h3>
+        <div className="flex items-center gap-2 mb-3">
+          <h3 className="text-sm font-semibold text-gray-900">Keyword Research</h3>
+          {hasDataForSEO && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-green-50 text-green-700 border border-green-200">
+              Powered by DataForSEO
+            </span>
+          )}
+        </div>
         <div className="flex gap-2 mb-4">
           <input
             ref={seedInputRef}
@@ -609,7 +618,14 @@ Volume = estimated monthly search volume. KD = keyword difficulty 0-100. CPC = e
 
       {/* SERP Analysis */}
       <div className="rounded-xl border border-gray-200 bg-white p-5">
-        <h3 className="text-sm font-semibold text-gray-900 mb-3">SERP Analysis</h3>
+        <div className="flex items-center gap-2 mb-3">
+          <h3 className="text-sm font-semibold text-gray-900">SERP Analysis</h3>
+          {hasDataForSEO && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-green-50 text-green-700 border border-green-200">
+              Powered by DataForSEO
+            </span>
+          )}
+        </div>
         <div className="flex gap-2 mb-4">
           <input
             value={serpKeyword}
@@ -652,13 +668,20 @@ Volume = estimated monthly search volume. KD = keyword difficulty 0-100. CPC = e
 
       {/* Rank Tracking */}
       <div className="rounded-xl border border-gray-200 bg-white p-5">
-        <h3 className="text-sm font-semibold text-gray-900 mb-3">Rank Tracking</h3>
+        <div className="flex items-center gap-2 mb-3">
+          <h3 className="text-sm font-semibold text-gray-900">Rank Tracking</h3>
+          {hasDataForSEO && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-green-50 text-green-700 border border-green-200">
+              Powered by DataForSEO
+            </span>
+          )}
+        </div>
         <div className="flex gap-2 mb-4">
           <input
             value={rankDomain}
             onChange={e => setRankDomain(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && doRank()}
-            placeholder="Your domain (e.g., yourbusiness.com)"
+            placeholder="yourdomain.com"
             className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
           <button
@@ -696,7 +719,7 @@ Volume = estimated monthly search volume. KD = keyword difficulty 0-100. CPC = e
           </div>
         ) : (
           <p className="text-sm text-gray-400 text-center py-4">
-            Enter your domain to track keyword rankings.
+            Enter your domain to see which keywords you rank for.
           </p>
         )}
       </div>
@@ -729,6 +752,15 @@ function ContentView({ client }: { client: AgencyClient }) {
   const [format, setFormat] = useState<ContentFormat>('Blog Post');
   const [generating, setGenerating] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
+
+  // Persist drafts in sessionStorage so they survive tab switches
+  useEffect(() => {
+    const saved = sessionStorage.getItem(`kyra-content-drafts-${clientId}`);
+    if (saved) { try { setDrafts(JSON.parse(saved)); } catch {} }
+  }, [clientId]);
+  useEffect(() => {
+    sessionStorage.setItem(`kyra-content-drafts-${clientId}`, JSON.stringify(drafts));
+  }, [drafts, clientId]);
 
   const handleGenerate = useCallback(async () => {
     if (!topic.trim()) return;
@@ -863,7 +895,6 @@ function CompetitorsView({ client }: { client: AgencyClient }) {
   const [newCompetitor, setNewCompetitor] = useState('');
   const [scanning, setScanning] = useState(false);
   const [results, setResults] = useState<CompetitorResult[]>([]);
-  const [autoScan, setAutoScan] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // Load saved competitors from container_config on mount
@@ -872,23 +903,16 @@ function CompetitorsView({ client }: { client: AgencyClient }) {
     if (saved && Array.isArray(saved)) {
       setCompetitors(saved);
     }
-    const savedAutoScan = cfg.marketing_auto_scan as boolean | undefined;
-    if (savedAutoScan !== undefined) {
-      setAutoScan(savedAutoScan);
-    }
-  }, [cfg.marketing_competitors, cfg.marketing_auto_scan]);
+  }, [cfg.marketing_competitors]);
 
   // Persist competitors to container_config
-  const saveCompetitors = useCallback(async (domains: string[], autoScanEnabled?: boolean) => {
+  const saveCompetitors = useCallback(async (domains: string[]) => {
     setSaving(true);
     try {
       await fetch(`/api/agency/clients/${clientId}/container-config`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          marketing_competitors: domains,
-          ...(autoScanEnabled !== undefined ? { marketing_auto_scan: autoScanEnabled } : {}),
-        }),
+        body: JSON.stringify({ marketing_competitors: domains }),
       });
     } catch { /* non-fatal */ }
     finally { setSaving(false); }
@@ -908,12 +932,6 @@ function CompetitorsView({ client }: { client: AgencyClient }) {
     const updated = competitors.filter(x => x !== domain);
     setCompetitors(updated);
     saveCompetitors(updated);
-  };
-
-  const toggleAutoScan = () => {
-    const newVal = !autoScan;
-    setAutoScan(newVal);
-    saveCompetitors(competitors, newVal);
   };
 
   const scanCompetitors = useCallback(async () => {
@@ -1011,16 +1029,6 @@ threat must be one of: "high", "medium", "low"`;
                 {scanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
                 Scan Competitors
               </button>
-
-              <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={autoScan}
-                  onChange={toggleAutoScan}
-                  className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                />
-                Scan weekly (automated)
-              </label>
             </div>
           </>
         ) : (
@@ -1077,6 +1085,15 @@ function SocialView({ client }: { client: AgencyClient }) {
   const [generating, setGenerating] = useState(false);
   const [drafts, setDrafts] = useState<SocialDraft[]>([]);
   const [activeSection, setActiveSection] = useState<'generate' | 'calendar' | 'engagement'>('generate');
+
+  // Persist drafts in sessionStorage so they survive tab switches
+  useEffect(() => {
+    const saved = sessionStorage.getItem(`kyra-social-drafts-${clientId}`);
+    if (saved) { try { setDrafts(JSON.parse(saved)); } catch {} }
+  }, [clientId]);
+  useEffect(() => {
+    sessionStorage.setItem(`kyra-social-drafts-${clientId}`, JSON.stringify(drafts));
+  }, [drafts, clientId]);
 
   // Engagement comments
   const [engagementLoading, setEngagementLoading] = useState(false);
@@ -1159,19 +1176,67 @@ Requirements per platform:
     setGenerating(true);
     try {
       const platforms = Array.from(selectedPlatforms).map(id => PLATFORMS.find(p => p.id === id)!.label);
-      const prompt = `Write a ${platforms[0]} post for ${businessName} (${industry || 'general industry'}). This is for ${day}. Brand tone: ${brandTone}. Pick a relevant topic for the day/week and make it engaging. Return just the post text, no JSON.`;
+      const platformList = platforms.join(', ');
+      const prompt = platforms.length === 1
+        ? `Write a ${platforms[0]} post for ${businessName} (${industry || 'general industry'}). This is for ${day}. Brand tone: ${brandTone}. Pick a relevant topic for the day/week and make it engaging. Return just the post text, no JSON.`
+        : `Write social media posts for ${businessName} (${industry || 'general industry'}) for ${day}. Brand tone: ${brandTone}. Pick a relevant topic for the day/week.
+
+Generate a separate post for EACH of these platforms: ${platformList}
+
+Return ONLY a JSON array (no markdown, no explanation):
+[{"platform":"LinkedIn","body":"Post content here..."}]`;
 
       const reply = await sendChatPrompt(clientId, prompt);
 
-      setDrafts(prev => [{
-        id: `social-${Date.now()}-${day}`,
-        platform: platforms[0],
-        topic: `${day} post`,
-        body: reply,
-        status: 'draft' as const,
-        created: new Date().toISOString(),
-        day,
-      }, ...prev]);
+      if (platforms.length === 1) {
+        setDrafts(prev => [{
+          id: `social-${Date.now()}-${day}`,
+          platform: platforms[0],
+          topic: `${day} post`,
+          body: reply,
+          status: 'draft' as const,
+          created: new Date().toISOString(),
+          day,
+        }, ...prev]);
+      } else {
+        const jsonMatch = reply.match(/\[[\s\S]*\]/);
+        if (jsonMatch) {
+          try {
+            const parsed = JSON.parse(jsonMatch[0]) as Array<Record<string, unknown>>;
+            const newDrafts = parsed.map(p => ({
+              id: `social-${Date.now()}-${day}-${Math.random().toString(36).slice(2, 6)}`,
+              platform: String(p.platform || ''),
+              topic: `${day} post`,
+              body: String(p.body || ''),
+              status: 'draft' as const,
+              created: new Date().toISOString(),
+              day,
+            }));
+            setDrafts(prev => [...newDrafts, ...prev]);
+          } catch {
+            setDrafts(prev => [{
+              id: `social-${Date.now()}-${day}`,
+              platform: platforms[0],
+              topic: `${day} post`,
+              body: reply,
+              status: 'draft' as const,
+              created: new Date().toISOString(),
+              day,
+            }, ...prev]);
+          }
+        } else {
+          const newDrafts = platforms.map(p => ({
+            id: `social-${Date.now()}-${day}-${p}`,
+            platform: p,
+            topic: `${day} post`,
+            body: reply,
+            status: 'draft' as const,
+            created: new Date().toISOString(),
+            day,
+          }));
+          setDrafts(prev => [...newDrafts, ...prev]);
+        }
+      }
     } catch { /* handled */ }
     finally { setGenerating(false); }
   }, [generating, selectedPlatforms, clientId, businessName, industry, brandTone]);
