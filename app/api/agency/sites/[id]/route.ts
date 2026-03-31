@@ -72,8 +72,10 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     'business_name', 'industry', 'phone', 'address', 'owner_name', 'owner_story',
     'years_in_business', 'license', 'services', 'cities', 'hours', 'rating', 'review_count',
     'logo_url', 'photos', 'color_primary', 'color_secondary', 'design_style', 'tagline',
-    'ai_name', 'ai_tone', 'ai_capabilities', 'booking_url',
+    'ai_name', 'ai_tone', 'ai_capabilities', 'booking_url', 'email',
     'template_id', 'site_domain', 'site_subdomain',
+    // Navigation & Footer
+    'nav_links', 'footer_tagline', 'social_links',
     // Settings page fields
     'ga4_id', 'white_label', 'google_rating', 'rating', 'google_review_url',
   ];

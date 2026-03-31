@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -14,6 +14,7 @@ import {
   X,
   Sparkles,
   ChevronRight,
+  ChevronDown,
   Home,
   Briefcase,
   MapPin,
@@ -23,10 +24,24 @@ import {
   Phone,
   Edit3,
   Eye,
+  EyeOff,
   RotateCcw,
   TrendingUp,
   Settings,
   BookOpen,
+  Building2,
+  Mail,
+  Clock,
+  Link2,
+  Navigation,
+  Image as ImageIcon,
+  Upload,
+  Trash2,
+  Plus,
+  GripVertical,
+  ArrowUp,
+  ArrowDown,
+  MousePointerClick,
 } from 'lucide-react';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -39,23 +54,48 @@ interface SitePage {
   page_type: string;
   hero_h1: string | null;
   hero_subtitle: string | null;
+  hero_cta_text: string | null;
+  hero_cta_link: string | null;
   meta_title: string | null;
   meta_description: string | null;
   content_sections: ContentSection[] | null;
   faq: FAQItem[] | null;
   edited: boolean;
   edited_at: string | null;
+  hidden: boolean;
 }
 
 interface ContentSection {
   heading: string;
   body: string;
   bullets?: string[];
+  cta_text?: string;
+  cta_link?: string;
 }
 
 interface FAQItem {
   question: string;
   answer: string;
+}
+
+interface NavLink {
+  label: string;
+  href: string;
+}
+
+interface SocialLinks {
+  facebook?: string;
+  instagram?: string;
+  twitter?: string;
+  linkedin?: string;
+  yelp?: string;
+}
+
+interface SitePhoto {
+  url: string;
+  alt?: string;
+  placement?: string;
+  storage_path?: string;
 }
 
 interface SiteData {
@@ -66,6 +106,17 @@ interface SiteData {
   site_domain: string | null;
   site_subdomain: string | null;
   page_count: number;
+  phone: string | null;
+  email: string | null;
+  address: { street?: string; city?: string; state?: string; zip?: string } | null;
+  hours: Record<string, string> | null;
+  booking_url: string | null;
+  google_review_url: string | null;
+  tagline: string | null;
+  nav_links: NavLink[] | null;
+  footer_tagline: string | null;
+  social_links: SocialLinks | null;
+  photos: SitePhoto[] | null;
 }
 
 // ── Page Type Icons ───────────────────────────────────────────────────────────
@@ -85,7 +136,6 @@ const PAGE_ICONS: Record<string, React.ReactNode> = {
 };
 
 function getPageIcon(page: SitePage) {
-  // Check slug-based icons first
   if (page.slug === '/') return PAGE_ICONS.homepage;
   if (page.slug === '/about') return PAGE_ICONS.about;
   if (page.slug === '/contact') return PAGE_ICONS.contact;
@@ -97,6 +147,42 @@ function getPageIcon(page: SitePage) {
 function getPageLabel(page: SitePage): string {
   if (page.slug === '/') return 'Homepage';
   return page.title || page.slug.replace(/^\//, '').replace(/-/g, ' ');
+}
+
+// ── Collapsible Card ──────────────────────────────────────────────────────────
+
+function CollapsibleCard({
+  title,
+  icon,
+  children,
+  defaultOpen = false,
+  badge,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+  badge?: string;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="bg-white rounded-xl border border-gray-200">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-5 py-4 text-left"
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-indigo-500">{icon}</span>
+          <span className="text-sm font-semibold text-gray-900">{title}</span>
+          {badge && (
+            <span className="text-[10px] font-medium bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">{badge}</span>
+          )}
+        </div>
+        <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && <div className="px-5 pb-5 border-t border-gray-100 pt-4">{children}</div>}
+    </div>
+  );
 }
 
 // ── Section Editor Modal ──────────────────────────────────────────────────────
@@ -117,6 +203,8 @@ function SectionEditModal({
   const [heading, setHeading] = useState(section.heading);
   const [body, setBody] = useState(section.body);
   const [bullets, setBullets] = useState(section.bullets?.join('\n') || '');
+  const [ctaText, setCtaText] = useState(section.cta_text || '');
+  const [ctaLink, setCtaLink] = useState(section.cta_link || '');
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
@@ -162,6 +250,36 @@ function SectionEditModal({
               />
             </div>
           )}
+
+          {/* P1: CTA Button per section */}
+          <div className="border-t border-gray-100 pt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-3 flex items-center gap-1.5">
+              <MousePointerClick className="h-3.5 w-3.5 text-indigo-500" />
+              CTA Button <span className="text-gray-400 font-normal">(optional)</span>
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Button Text</label>
+                <input
+                  type="text"
+                  value={ctaText}
+                  onChange={(e) => setCtaText(e.target.value)}
+                  placeholder="e.g. Learn More"
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Button Link</label>
+                <input
+                  type="text"
+                  value={ctaLink}
+                  onChange={(e) => setCtaLink(e.target.value)}
+                  placeholder="e.g. /contact or https://..."
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50 rounded-b-2xl">
@@ -177,6 +295,8 @@ function SectionEditModal({
                 heading,
                 body,
                 bullets: bullets.trim() ? bullets.split('\n').map((b) => b.trim()).filter(Boolean) : undefined,
+                cta_text: ctaText.trim() || undefined,
+                cta_link: ctaLink.trim() || undefined,
               })
             }
             disabled={saving}
@@ -195,10 +315,12 @@ function SectionEditModal({
 
 function HeroEditor({
   page,
+  photos,
   onSave,
   saving,
 }: {
   page: SitePage;
+  photos: SitePhoto[];
   onSave: (updates: Partial<SitePage>) => void;
   saving: boolean;
 }) {
@@ -207,6 +329,17 @@ function HeroEditor({
   const [heroSubtitle, setHeroSubtitle] = useState(page.hero_subtitle || '');
   const [metaTitle, setMetaTitle] = useState(page.meta_title || '');
   const [metaDescription, setMetaDescription] = useState(page.meta_description || '');
+  const [ctaText, setCtaText] = useState(page.hero_cta_text || '');
+  const [ctaLink, setCtaLink] = useState(page.hero_cta_link || '');
+
+  useEffect(() => {
+    setHeroH1(page.hero_h1 || '');
+    setHeroSubtitle(page.hero_subtitle || '');
+    setMetaTitle(page.meta_title || '');
+    setMetaDescription(page.meta_description || '');
+    setCtaText(page.hero_cta_text || '');
+    setCtaLink(page.hero_cta_link || '');
+  }, [page]);
 
   if (!editing) {
     return (
@@ -227,6 +360,9 @@ function HeroEditor({
         <div className="space-y-2">
           <p className="text-lg font-bold text-gray-900">{page.hero_h1 || 'No headline set'}</p>
           <p className="text-sm text-gray-500">{page.hero_subtitle || 'No subtitle'}</p>
+          {page.hero_cta_text && (
+            <p className="text-xs text-indigo-600">CTA: {page.hero_cta_text} → {page.hero_cta_link || '#'}</p>
+          )}
           <div className="pt-2 border-t border-gray-100 mt-3">
             <p className="text-xs text-gray-400">Meta: {page.meta_title || 'Auto-generated'}</p>
           </div>
@@ -262,6 +398,28 @@ function HeroEditor({
             className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">CTA Button Text</label>
+            <input
+              type="text"
+              value={ctaText}
+              onChange={(e) => setCtaText(e.target.value)}
+              placeholder="e.g. Get Free Estimate"
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">CTA Button Link</label>
+            <input
+              type="text"
+              value={ctaLink}
+              onChange={(e) => setCtaLink(e.target.value)}
+              placeholder="e.g. /contact"
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+        </div>
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">Meta Title</label>
           <input
@@ -286,6 +444,8 @@ function HeroEditor({
               onSave({
                 hero_h1: heroH1,
                 hero_subtitle: heroSubtitle,
+                hero_cta_text: ctaText || null,
+                hero_cta_link: ctaLink || null,
                 meta_title: metaTitle,
                 meta_description: metaDescription,
               });
@@ -309,6 +469,494 @@ function HeroEditor({
   );
 }
 
+// ── Business Details Editor ───────────────────────────────────────────────────
+
+function BusinessDetailsEditor({
+  site,
+  onSave,
+  saving,
+}: {
+  site: SiteData;
+  onSave: (updates: Record<string, unknown>) => void;
+  saving: boolean;
+}) {
+  const [phone, setPhone] = useState(site.phone || '');
+  const [email, setEmail] = useState(site.email || '');
+  const [street, setStreet] = useState(site.address?.street || '');
+  const [city, setCity] = useState(site.address?.city || '');
+  const [state, setState] = useState(site.address?.state || '');
+  const [zip, setZip] = useState(site.address?.zip || '');
+  const [bookingUrl, setBookingUrl] = useState(site.booking_url || '');
+  const [googleReviewUrl, setGoogleReviewUrl] = useState(site.google_review_url || '');
+  const [tagline, setTagline] = useState(site.tagline || '');
+  const [hours, setHours] = useState(site.hours || {});
+  const [dirty, setDirty] = useState(false);
+
+  const dayKeys = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+  const dayLabels: Record<string, string> = {
+    mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday',
+    fri: 'Friday', sat: 'Saturday', sun: 'Sunday',
+  };
+
+  return (
+    <CollapsibleCard title="Business Details" icon={<Building2 className="h-4 w-4" />} defaultOpen={false}>
+      <div className="space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1">
+              <Phone className="h-3 w-3" /> Phone
+            </label>
+            <input
+              type="text"
+              value={phone}
+              onChange={(e) => { setPhone(e.target.value); setDirty(true); }}
+              placeholder="(555) 123-4567"
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1">
+              <Mail className="h-3 w-3" /> Email
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => { setEmail(e.target.value); setDirty(true); }}
+              placeholder="info@business.com"
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Street Address</label>
+          <input
+            type="text"
+            value={street}
+            onChange={(e) => { setStreet(e.target.value); setDirty(true); }}
+            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          <input
+            type="text"
+            value={city}
+            onChange={(e) => { setCity(e.target.value); setDirty(true); }}
+            placeholder="City"
+            className="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+          <input
+            type="text"
+            value={state}
+            onChange={(e) => { setState(e.target.value); setDirty(true); }}
+            placeholder="State"
+            className="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+          <input
+            type="text"
+            value={zip}
+            onChange={(e) => { setZip(e.target.value); setDirty(true); }}
+            placeholder="ZIP"
+            className="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Tagline</label>
+          <input
+            type="text"
+            value={tagline}
+            onChange={(e) => { setTagline(e.target.value); setDirty(true); }}
+            placeholder="Your trusted local experts"
+            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1">
+              <Link2 className="h-3 w-3" /> Booking URL
+            </label>
+            <input
+              type="url"
+              value={bookingUrl}
+              onChange={(e) => { setBookingUrl(e.target.value); setDirty(true); }}
+              placeholder="https://calendly.com/..."
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1">
+              <Star className="h-3 w-3" /> Google Review URL
+            </label>
+            <input
+              type="url"
+              value={googleReviewUrl}
+              onChange={(e) => { setGoogleReviewUrl(e.target.value); setDirty(true); }}
+              placeholder="https://g.page/..."
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+        </div>
+
+        {/* Business hours */}
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-2 flex items-center gap-1">
+            <Clock className="h-3 w-3" /> Business Hours
+          </label>
+          <div className="space-y-1.5">
+            {dayKeys.map((day) => (
+              <div key={day} className="flex items-center gap-2">
+                <span className="text-xs text-gray-500 w-20">{dayLabels[day]}</span>
+                <input
+                  type="text"
+                  value={hours[day] || ''}
+                  onChange={(e) => { setHours({ ...hours, [day]: e.target.value }); setDirty(true); }}
+                  placeholder="8:00 AM - 6:00 PM"
+                  className="flex-1 rounded-lg border border-gray-200 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <button
+          onClick={() => {
+            onSave({
+              phone: phone || null,
+              email: email || null,
+              address: { street, city, state, zip, ...((site.address as Record<string, unknown>)?.lat ? { lat: (site.address as Record<string, unknown>).lat } : {}), ...((site.address as Record<string, unknown>)?.lng ? { lng: (site.address as Record<string, unknown>).lng } : {}) },
+              booking_url: bookingUrl || null,
+              google_review_url: googleReviewUrl || null,
+              tagline: tagline || null,
+              hours,
+            });
+            setDirty(false);
+          }}
+          disabled={saving || !dirty}
+          className="w-full px-4 py-2 bg-indigo-600 text-white text-xs font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-1.5"
+        >
+          {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+          Save Business Details
+        </button>
+      </div>
+    </CollapsibleCard>
+  );
+}
+
+// ── Nav Link Editor ───────────────────────────────────────────────────────────
+
+function NavLinkEditor({
+  site,
+  onSave,
+  saving,
+}: {
+  site: SiteData;
+  onSave: (updates: Record<string, unknown>) => void;
+  saving: boolean;
+}) {
+  const defaultLinks: NavLink[] = [
+    { label: 'Home', href: '#top' },
+    { label: 'Services', href: '#services' },
+    { label: 'About', href: '#about' },
+    { label: 'Reviews', href: '#testimonials' },
+    { label: 'Contact', href: '#contact' },
+  ];
+  const [links, setLinks] = useState<NavLink[]>(
+    site.nav_links && site.nav_links.length > 0 ? site.nav_links : defaultLinks
+  );
+  const [dirty, setDirty] = useState(false);
+
+  const addLink = () => {
+    setLinks([...links, { label: '', href: '' }]);
+    setDirty(true);
+  };
+
+  const removeLink = (index: number) => {
+    setLinks(links.filter((_, i) => i !== index));
+    setDirty(true);
+  };
+
+  const moveLink = (index: number, direction: -1 | 1) => {
+    const newLinks = [...links];
+    const target = index + direction;
+    if (target < 0 || target >= links.length) return;
+    [newLinks[index], newLinks[target]] = [newLinks[target], newLinks[index]];
+    setLinks(newLinks);
+    setDirty(true);
+  };
+
+  const updateLink = (index: number, field: 'label' | 'href', value: string) => {
+    const newLinks = [...links];
+    newLinks[index] = { ...newLinks[index], [field]: value };
+    setLinks(newLinks);
+    setDirty(true);
+  };
+
+  return (
+    <CollapsibleCard title="Navigation Links" icon={<Navigation className="h-4 w-4" />} badge={`${links.length} links`}>
+      <div className="space-y-2">
+        {links.map((link, i) => (
+          <div key={i} className="flex items-center gap-2 group">
+            <div className="flex flex-col gap-0.5">
+              <button
+                onClick={() => moveLink(i, -1)}
+                disabled={i === 0}
+                className="p-0.5 text-gray-300 hover:text-gray-500 disabled:opacity-30"
+              >
+                <ArrowUp className="h-3 w-3" />
+              </button>
+              <button
+                onClick={() => moveLink(i, 1)}
+                disabled={i === links.length - 1}
+                className="p-0.5 text-gray-300 hover:text-gray-500 disabled:opacity-30"
+              >
+                <ArrowDown className="h-3 w-3" />
+              </button>
+            </div>
+            <GripVertical className="h-4 w-4 text-gray-300 shrink-0" />
+            <input
+              type="text"
+              value={link.label}
+              onChange={(e) => updateLink(i, 'label', e.target.value)}
+              placeholder="Label"
+              className="flex-1 rounded-lg border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            <input
+              type="text"
+              value={link.href}
+              onChange={(e) => updateLink(i, 'href', e.target.value)}
+              placeholder="#section or /page"
+              className="flex-1 rounded-lg border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            <button
+              onClick={() => removeLink(i)}
+              className="p-1.5 text-gray-300 hover:text-red-500 transition-colors"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ))}
+        <div className="flex items-center gap-2 pt-1">
+          <button
+            onClick={addLink}
+            className="px-3 py-1.5 text-xs font-medium text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 flex items-center gap-1"
+          >
+            <Plus className="h-3 w-3" /> Add Link
+          </button>
+          <button
+            onClick={() => {
+              onSave({ nav_links: links.filter(l => l.label && l.href) });
+              setDirty(false);
+            }}
+            disabled={saving || !dirty}
+            className="px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-1"
+          >
+            {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+            Save
+          </button>
+        </div>
+      </div>
+    </CollapsibleCard>
+  );
+}
+
+// ── Footer Editor ─────────────────────────────────────────────────────────────
+
+function FooterEditor({
+  site,
+  onSave,
+  saving,
+}: {
+  site: SiteData;
+  onSave: (updates: Record<string, unknown>) => void;
+  saving: boolean;
+}) {
+  const [footerTagline, setFooterTagline] = useState(site.footer_tagline || '');
+  const [socialLinks, setSocialLinks] = useState<SocialLinks>(site.social_links || {});
+  const [dirty, setDirty] = useState(false);
+
+  const socialPlatforms: { key: keyof SocialLinks; label: string }[] = [
+    { key: 'facebook', label: 'Facebook' },
+    { key: 'instagram', label: 'Instagram' },
+    { key: 'twitter', label: 'Twitter / X' },
+    { key: 'linkedin', label: 'LinkedIn' },
+    { key: 'yelp', label: 'Yelp' },
+  ];
+
+  return (
+    <CollapsibleCard title="Footer" icon={<FileText className="h-4 w-4" />}>
+      <div className="space-y-3">
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Footer Tagline</label>
+          <textarea
+            value={footerTagline}
+            onChange={(e) => { setFooterTagline(e.target.value); setDirty(true); }}
+            rows={2}
+            placeholder="Proudly serving our community with quality, integrity, and care on every job."
+            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-2">Social Media Links</label>
+          <div className="space-y-2">
+            {socialPlatforms.map(({ key, label }) => (
+              <div key={key} className="flex items-center gap-2">
+                <span className="text-xs text-gray-500 w-24">{label}</span>
+                <input
+                  type="url"
+                  value={socialLinks[key] || ''}
+                  onChange={(e) => {
+                    setSocialLinks({ ...socialLinks, [key]: e.target.value });
+                    setDirty(true);
+                  }}
+                  placeholder={`https://${key}.com/...`}
+                  className="flex-1 rounded-lg border border-gray-200 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <button
+          onClick={() => {
+            const cleanedSocial = Object.fromEntries(
+              Object.entries(socialLinks).filter(([, v]) => v)
+            );
+            onSave({
+              footer_tagline: footerTagline || null,
+              social_links: Object.keys(cleanedSocial).length > 0 ? cleanedSocial : null,
+            });
+            setDirty(false);
+          }}
+          disabled={saving || !dirty}
+          className="w-full px-4 py-2 bg-indigo-600 text-white text-xs font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-1.5"
+        >
+          {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+          Save Footer
+        </button>
+      </div>
+    </CollapsibleCard>
+  );
+}
+
+// ── Image Gallery / Upload ────────────────────────────────────────────────────
+
+function ImageGallery({
+  siteId,
+  photos,
+  onPhotosChanged,
+}: {
+  siteId: string;
+  photos: SitePhoto[];
+  onPhotosChanged: () => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('alt', file.name.replace(/\.[^.]+$/, ''));
+
+      const res = await fetch(`/api/agency/sites/${siteId}/photos`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (res.ok) {
+        onPhotosChanged();
+      }
+    } catch {
+      // silent
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleDelete = async (url: string) => {
+    setDeleting(url);
+    try {
+      const res = await fetch(`/api/agency/sites/${siteId}/photos`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+      });
+      if (res.ok) {
+        onPhotosChanged();
+      }
+    } catch {
+      // silent
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  return (
+    <CollapsibleCard title="Photos" icon={<ImageIcon className="h-4 w-4" />} badge={`${photos.length} photos`}>
+      <div className="space-y-3">
+        {photos.length > 0 && (
+          <div className="grid grid-cols-3 gap-2">
+            {photos.map((photo, i) => (
+              <div key={i} className="relative group rounded-lg overflow-hidden aspect-video bg-gray-100">
+                <img
+                  src={photo.url}
+                  alt={photo.alt || ''}
+                  className="w-full h-full object-cover"
+                />
+                <button
+                  onClick={() => handleDelete(photo.url)}
+                  disabled={deleting === photo.url}
+                  className="absolute top-1 right-1 p-1 bg-black/50 text-white rounded-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500"
+                >
+                  {deleting === photo.url ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-3 w-3" />
+                  )}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          onChange={handleUpload}
+          className="hidden"
+        />
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          className="w-full px-4 py-2.5 border-2 border-dashed border-gray-200 rounded-lg text-sm text-gray-500 hover:border-indigo-300 hover:text-indigo-600 transition-colors flex items-center justify-center gap-2"
+        >
+          {uploading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Uploading...
+            </>
+          ) : (
+            <>
+              <Upload className="h-4 w-4" />
+              Upload Photo
+            </>
+          )}
+        </button>
+      </div>
+    </CollapsibleCard>
+  );
+}
+
 // ── Main Editor Page ──────────────────────────────────────────────────────────
 
 export default function PageEditor() {
@@ -321,6 +969,7 @@ export default function PageEditor() {
   const [selectedPage, setSelectedPage] = useState<SitePage | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingSite, setSavingSite] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [showRegenerateInput, setShowRegenerateInput] = useState(false);
   const [regenerateFeedback, setRegenerateFeedback] = useState('');
@@ -334,7 +983,6 @@ export default function PageEditor() {
       ? `https://${site.site_domain}`
       : null;
 
-  // Toast helper
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
@@ -357,7 +1005,6 @@ export default function PageEditor() {
         const pagesResult = await pagesRes.json();
         if (Array.isArray(pagesResult.data)) {
           setPages(pagesResult.data);
-          // Auto-select first page if none selected
           if (!selectedPage && pagesResult.data.length > 0) {
             setSelectedPage(pagesResult.data[0]);
           }
@@ -391,7 +1038,20 @@ export default function PageEditor() {
     }
   };
 
-  // Save page edits (hero, meta)
+  // Refresh site data
+  const refreshSite = async () => {
+    try {
+      const res = await fetch(`/api/agency/sites/${siteId}`);
+      if (res.ok) {
+        const result = await res.json();
+        setSite(result.data);
+      }
+    } catch {
+      // silently ignore
+    }
+  };
+
+  // Save page edits (hero, meta, hidden)
   const savePageEdits = async (updates: Partial<SitePage>) => {
     if (!selectedPage) return;
     setSaving(true);
@@ -412,6 +1072,28 @@ export default function PageEditor() {
       showToast('Failed to save changes', 'error');
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Save site-level edits (business details, nav links, footer)
+  const saveSiteEdits = async (updates: Record<string, unknown>) => {
+    setSavingSite(true);
+    try {
+      const res = await fetch(`/api/agency/sites/${siteId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
+      if (res.ok) {
+        showToast('Saved');
+        await refreshSite();
+      } else {
+        showToast('Failed to save', 'error');
+      }
+    } catch {
+      showToast('Failed to save', 'error');
+    } finally {
+      setSavingSite(false);
     }
   };
 
@@ -442,6 +1124,40 @@ export default function PageEditor() {
     }
   };
 
+  // Toggle page visibility
+  const togglePageVisibility = async (page: SitePage) => {
+    setSaving(true);
+    try {
+      const encodedSlug = encodeURIComponent(page.slug);
+      const res = await fetch(`/api/agency/sites/${siteId}/pages/${encodedSlug}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hidden: !page.hidden }),
+      });
+      if (res.ok) {
+        showToast(page.hidden ? 'Page visible' : 'Page hidden');
+        // Refresh pages list and selected
+        const pagesRes = await fetch(`/api/agency/sites/${siteId}/pages`);
+        if (pagesRes.ok) {
+          const pagesResult = await pagesRes.json();
+          if (Array.isArray(pagesResult.data)) {
+            setPages(pagesResult.data);
+            if (selectedPage?.id === page.id) {
+              const updatedPage = pagesResult.data.find((p: SitePage) => p.id === page.id);
+              if (updatedPage) setSelectedPage(updatedPage);
+            }
+          }
+        }
+      } else {
+        showToast('Failed to update visibility', 'error');
+      }
+    } catch {
+      showToast('Failed to update visibility', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // Regenerate page with AI
   const regeneratePage = async (feedback?: string) => {
     if (!selectedPage) return;
@@ -455,7 +1171,6 @@ export default function PageEditor() {
       });
       if (res.ok) {
         showToast('Regenerating page... Check back in a moment.');
-        // Poll for completion
         setTimeout(() => refreshPage(selectedPage.slug), 5000);
         setTimeout(() => refreshPage(selectedPage.slug), 10000);
         setTimeout(() => refreshPage(selectedPage.slug), 20000);
@@ -631,23 +1346,42 @@ export default function PageEditor() {
                   {typePages.map((page) => {
                     const isSelected = selectedPage?.id === page.id;
                     return (
-                      <button
+                      <div
                         key={page.id}
-                        onClick={() => setSelectedPage(page)}
-                        className={`w-full flex items-center gap-2.5 px-4 py-2 text-left transition-colors ${
-                          isSelected
-                            ? 'bg-indigo-50 text-indigo-700 border-r-2 border-indigo-600'
-                            : 'text-gray-700 hover:bg-gray-50'
+                        className={`flex items-center gap-1 pr-1 ${
+                          page.hidden ? 'opacity-50' : ''
                         }`}
                       >
-                        <span className={isSelected ? 'text-indigo-500' : 'text-gray-400'}>
-                          {getPageIcon(page)}
-                        </span>
-                        <span className="text-sm truncate">{getPageLabel(page)}</span>
-                        {page.edited && (
-                          <span className="ml-auto shrink-0 w-1.5 h-1.5 rounded-full bg-amber-400" title="Edited" />
-                        )}
-                      </button>
+                        <button
+                          onClick={() => setSelectedPage(page)}
+                          className={`flex-1 flex items-center gap-2.5 px-4 py-2 text-left transition-colors ${
+                            isSelected
+                              ? 'bg-indigo-50 text-indigo-700 border-r-2 border-indigo-600'
+                              : 'text-gray-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          <span className={isSelected ? 'text-indigo-500' : 'text-gray-400'}>
+                            {getPageIcon(page)}
+                          </span>
+                          <span className="text-sm truncate">{getPageLabel(page)}</span>
+                          {page.hidden && (
+                            <span className="ml-auto shrink-0 text-[9px] bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded font-medium">
+                              Hidden
+                            </span>
+                          )}
+                          {!page.hidden && page.edited && (
+                            <span className="ml-auto shrink-0 w-1.5 h-1.5 rounded-full bg-amber-400" title="Edited" />
+                          )}
+                        </button>
+                        {/* Visibility toggle */}
+                        <button
+                          onClick={() => togglePageVisibility(page)}
+                          className="p-1 text-gray-300 hover:text-gray-500 transition-colors shrink-0"
+                          title={page.hidden ? 'Show page' : 'Hide page'}
+                        >
+                          {page.hidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                        </button>
+                      </div>
                     );
                   })}
                 </div>
@@ -665,7 +1399,14 @@ export default function PageEditor() {
                 <div className="flex items-center gap-3">
                   <span className="text-gray-400">{getPageIcon(selectedPage)}</span>
                   <div>
-                    <h2 className="text-lg font-semibold text-gray-900">{getPageLabel(selectedPage)}</h2>
+                    <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                      {getPageLabel(selectedPage)}
+                      {selectedPage.hidden && (
+                        <span className="text-xs bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+                          <EyeOff className="h-3 w-3" /> Hidden
+                        </span>
+                      )}
+                    </h2>
                     <p className="text-xs text-gray-400 font-mono">{selectedPage.slug}</p>
                   </div>
                 </div>
@@ -733,8 +1474,27 @@ export default function PageEditor() {
                 </div>
               </div>
 
+              {/* Site-level editors (show on homepage only to avoid repetition) */}
+              {selectedPage.slug === '/' && site && (
+                <div className="space-y-4">
+                  <BusinessDetailsEditor site={site} onSave={saveSiteEdits} saving={savingSite} />
+                  <NavLinkEditor site={site} onSave={saveSiteEdits} saving={savingSite} />
+                  <FooterEditor site={site} onSave={saveSiteEdits} saving={savingSite} />
+                  <ImageGallery
+                    siteId={siteId}
+                    photos={site.photos || []}
+                    onPhotosChanged={refreshSite}
+                  />
+                </div>
+              )}
+
               {/* Hero & SEO Editor */}
-              <HeroEditor page={selectedPage} onSave={savePageEdits} saving={saving} />
+              <HeroEditor
+                page={selectedPage}
+                photos={site?.photos || []}
+                onSave={savePageEdits}
+                saving={saving}
+              />
 
               {/* Content Sections */}
               {selectedPage.content_sections && selectedPage.content_sections.length > 0 && (
@@ -753,14 +1513,22 @@ export default function PageEditor() {
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold text-gray-900 mb-1">{section.heading || `Section ${i + 1}`}</p>
                           <p className="text-sm text-gray-500 line-clamp-3">{section.body}</p>
-                          {section.bullets && section.bullets.length > 0 && (
-                            <div className="flex items-center gap-1 mt-2">
-                              <ChevronRight className="h-3 w-3 text-gray-400" />
-                              <span className="text-xs text-gray-400">
-                                {section.bullets.length} bullet{section.bullets.length !== 1 ? 's' : ''}
-                              </span>
-                            </div>
-                          )}
+                          <div className="flex items-center gap-3 mt-2">
+                            {section.bullets && section.bullets.length > 0 && (
+                              <div className="flex items-center gap-1">
+                                <ChevronRight className="h-3 w-3 text-gray-400" />
+                                <span className="text-xs text-gray-400">
+                                  {section.bullets.length} bullet{section.bullets.length !== 1 ? 's' : ''}
+                                </span>
+                              </div>
+                            )}
+                            {section.cta_text && (
+                              <div className="flex items-center gap-1">
+                                <MousePointerClick className="h-3 w-3 text-indigo-400" />
+                                <span className="text-xs text-indigo-500">{section.cta_text}</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
                         <button
                           onClick={() => setEditingSection(i)}

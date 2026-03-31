@@ -15,6 +15,8 @@ interface HeroData {
   photoUrl?: string;
   logoUrl?: string;
   colors: { primary: string; secondary: string };
+  ctaText?: string;
+  ctaLink?: string;
 }
 
 export function videoHero(data: HeroData): string {
@@ -22,8 +24,8 @@ export function videoHero(data: HeroData): string {
     ? `<a href="${data.phoneHref || `tel:${data.phone}`}" class="inline-flex items-center justify-center px-6 py-3 rounded-lg text-lg font-semibold border-2 border-white/80 text-white hover:bg-white hover:text-gray-900 transition-all duration-200" aria-label="Call ${data.phone}">${data.phone}</a>`
     : '';
 
-  const bookingCta = data.bookingUrl
-    ? `<a href="${data.bookingUrl}" class="inline-flex items-center justify-center px-8 py-3 rounded-lg text-lg font-semibold text-white transition-all duration-200 hover:opacity-90" style="background: var(--color-primary);" aria-label="Book now">Book Now</a>`
+  const bookingCta = data.ctaLink || data.bookingUrl
+    ? `<a href="${data.ctaLink || data.bookingUrl}" class="inline-flex items-center justify-center px-8 py-3 rounded-lg text-lg font-semibold text-white transition-all duration-200 hover:opacity-90" style="background: var(--color-primary);" aria-label="${data.ctaText || 'Book now'}">${data.ctaText || 'Book Now'}</a>`
     : '';
 
   return `<section class="relative min-h-[85vh] flex items-center justify-center overflow-hidden" aria-label="${data.businessName ? `${data.businessName} hero` : 'Hero'}">

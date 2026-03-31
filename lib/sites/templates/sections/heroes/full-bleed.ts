@@ -9,6 +9,8 @@ interface HeroData {
   photoUrl?: string;
   logoUrl?: string;
   colors: { primary: string; secondary: string };
+  ctaText?: string;
+  ctaLink?: string;
 }
 
 function phoneIcon(): string {
@@ -42,7 +44,7 @@ export function fullBleedHero(data: HeroData): string {
       <p style="font-size: clamp(1.1rem, 2vw, 1.35rem); color: rgba(255,255,255,0.88); line-height: 1.6; margin: 0 0 2.5rem 0; max-width: 38rem; text-shadow: 0 1px 8px rgba(0,0,0,0.3);">${data.subtitle}</p>
       <div class="flex flex-wrap gap-4 mb-10">
         ${data.phone ? `<a href="${data.phoneHref || `tel:${data.phone}`}" class="inline-flex items-center gap-3 font-bold px-8 py-4 rounded-xl text-lg shadow-2xl transition-all hover:scale-105 active:scale-100" style="background: #ffffff; color: ${data.colors.primary}; min-width: 200px; justify-content: center;">${phoneIcon()} ${data.phone}</a>` : ''}
-        <a href="${data.bookingUrl || '#contact'}" class="inline-flex items-center gap-3 border-2 border-white/80 text-white font-semibold px-8 py-4 rounded-xl text-lg transition-all hover:bg-white/15" style="backdrop-filter: blur(8px);">${calendarIcon()} ${data.bookingUrl ? 'Book Online' : 'Get Free Quote'}</a>
+        <a href="${data.ctaLink || data.bookingUrl || '#contact'}" class="inline-flex items-center gap-3 border-2 border-white/80 text-white font-semibold px-8 py-4 rounded-xl text-lg transition-all hover:bg-white/15" style="backdrop-filter: blur(8px);">${calendarIcon()} ${data.ctaText || (data.bookingUrl ? 'Book Online' : 'Get Free Quote')}</a>
       </div>
       <!-- Trust strip -->
       <div class="flex flex-wrap gap-6 items-center">
