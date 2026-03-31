@@ -560,7 +560,7 @@ export function CreditsClient({
             Kyra Credits
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            Power your AI workers. Each credit fuels one AI interaction.
+            Power your AI workers. Credits are consumed per AI response — cost varies by model.
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs text-gray-400 shrink-0 mt-1">
@@ -825,19 +825,9 @@ export function CreditsClient({
             <div className="grid sm:grid-cols-2 gap-4">
               {[
                 {
-                  icon: <Sparkles className="h-5 w-5 text-indigo-500" />,
-                  title: 'Each credit = one AI interaction',
-                  body: 'Every time your AI worker responds, it uses one credit — regardless of the model or channel.',
-                },
-                {
                   icon: <Coins className="h-5 w-5 text-emerald-500" />,
                   title: 'Credits never expire',
                   body: 'Your balance rolls over indefinitely. Top up once, use whenever.',
-                },
-                {
-                  icon: <Zap className="h-5 w-5 text-amber-500" />,
-                  title: 'Smart routing included',
-                  body: 'Kyra automatically picks the most efficient AI model per interaction — at no extra cost.',
                 },
                 {
                   icon: <Key className="h-5 w-5 text-violet-500" />,
