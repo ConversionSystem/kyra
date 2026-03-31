@@ -473,14 +473,40 @@ async function processConversation(
   const secureSystemPrompt = systemPrompt + memoryContext + defense.systemPromptAddition;
 
   // ── Smart model routing: pick cheapest model for this message ────────
-  let routedModel = byokKey?.model;
+  // BYOK clients: route using their configured provider + model
+  // Platform credit clients: route using their configured model (or default)
+  //   — simple messages downgrade to gpt-4o-mini (1 credit), saving credits for the agency
+  const platformModel = (client as any).ai_model || 'gpt-4o-mini';
+  let routedModel: string | undefined = byokKey?.model ?? platformModel;
+
   if (byokKey?.provider && byokKey?.model) {
+    // BYOK: use their own provider routing
     const route = routeMessage(byokKey.provider, byokKey.model, latestInbound.body);
     routedModel = route.model;
     if (route.complexity !== 'complex') {
       console.log(
-        `[ghl/poller] 🧠 Model routing: "${route.complexity}" → ${route.model} (saves ~${route.savingsPct}% vs top model)`,
+        `[ghl/poller] 🧠 BYOK routing: "${route.complexity}" → ${route.model} (saves ~${route.savingsPct}% vs top model)`,
       );
+    }
+  } else {
+    // Platform credit client: smart downgrade to mini for simple messages
+    // Only downgrade if the configured model is NOT already mini-tier
+    const configuredCredits = getCreditsForModel(platformModel);
+    if (configuredCredits > 1) {
+      const SIMPLE_PATTERNS = [
+        /^(hi|hey|hello|yo|hola|sup|what'?s up|good morning|good afternoon|good evening)[?!.,]?$/i,
+        /^(yes|no|ok|okay|sure|nope|yep|yeah|nah|thanks?|thank you|thx|ty|bye|goodbye)[?!.,]?$/i,
+        /^\d{1,5}[?!.]?$/,
+      ];
+      const isSimple = SIMPLE_PATTERNS.some(p => p.test(latestInbound.body.trim()))
+        || latestInbound.body.trim().split(/\s+/).length <= 4;
+
+      if (isSimple) {
+        routedModel = 'openai/gpt-4o-mini';
+        console.log(
+          `[ghl/poller] 🧠 Platform routing: simple message → gpt-4o-mini (1cr vs ${configuredCredits}cr) for "${client.name}"`,
+        );
+      }
     }
   }
 
@@ -695,8 +721,9 @@ async function processConversation(
   }
 
   // ── Deduct model-aware credits per conversation ──────────────────────
+  // Use routedModel (which may have been downgraded by smart routing above)
   try {
-    const pollerModel = (client as any).ai_model || 'gpt-4o-mini';
+    const pollerModel = routedModel || (client as any).ai_model || 'gpt-4o-mini';
     const pollerCredits = getCreditsForModel(pollerModel);
     const creditResult = await deductCredits(
       client.agency_id,
