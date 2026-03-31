@@ -936,6 +936,7 @@ interface IntegrationDef {
   fields: IntegrationField[];
   setupSteps: string[];
   alwaysConnected?: boolean;
+  platformProvided?: boolean; // true = Kyra provides this at platform level, no per-client setup needed
   note?: string;
   workerRelevance?: Record<string, 'required' | 'optional'>;
 }
@@ -1080,17 +1081,11 @@ function IntegrationsTab({ client, onRefresh }: { client: AgencyClient; onRefres
       id: 'dataforseo',
       name: 'DataForSEO',
       icon: '📊',
-      description: 'SEO keyword research, SERP analysis, rank tracking',
-      connected: !!(cfg.dataforseo_login && cfg.dataforseo_password),
-      fields: [
-        { key: 'dataforseo_login', label: 'API Login', placeholder: 'your@email.com', help: 'DataForSEO dashboard → API Access' },
-        { key: 'dataforseo_password', label: 'API Password', placeholder: 'Your API password', help: 'DataForSEO dashboard → API Access', sensitive: true },
-      ],
-      setupSteps: [
-        'Sign up at dataforseo.com',
-        'Go to your dashboard → API Access',
-        'Copy your login and password below',
-      ],
+      description: 'SEO keyword research, SERP analysis, rank tracking — included with all Kyra plans',
+      connected: true, // Platform-level — included with all Kyra plans (no per-client setup required)
+      fields: [],
+      setupSteps: [],
+      platformProvided: true,
       workerRelevance: { 'seo-writer': 'required' },
     },
     {
@@ -1184,7 +1179,12 @@ function IntegrationsTab({ client, onRefresh }: { client: AgencyClient; onRefres
                       {integration.workerRelevance[activeWorkerId] === 'required' ? 'Required' : 'Optional'}
                     </span>
                   )}
-                  {integration.connected || integration.alwaysConnected ? (
+                  {integration.platformProvided ? (
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium rounded-full bg-indigo-100 text-indigo-700">
+                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                      Included
+                    </span>
+                  ) : integration.connected || integration.alwaysConnected ? (
                     <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-700">
                       <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
                       Connected
@@ -1205,6 +1205,16 @@ function IntegrationsTab({ client, onRefresh }: { client: AgencyClient; onRefres
                   {integration.id === 'ghl' ? (
                     <div className="pt-4">
                       <GHLTab client={client} onRefresh={onRefresh} />
+                    </div>
+                  ) : integration.platformProvided ? (
+                    <div className="mt-3 rounded-lg bg-green-50 border border-green-200 px-4 py-3 flex items-start gap-3">
+                      <span className="text-green-600 text-base mt-0.5">✅</span>
+                      <div>
+                        <p className="text-sm font-semibold text-green-800">Included with Kyra</p>
+                        <p className="text-xs text-green-700 mt-0.5">
+                          {integration.name} is provisioned at the platform level — no setup needed. All your clients get access automatically.
+                        </p>
+                      </div>
                     </div>
                   ) : (
                     <>
