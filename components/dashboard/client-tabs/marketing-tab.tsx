@@ -171,6 +171,19 @@ function ConnectBanner({ service, settingsPath }: { service: string; settingsPat
   );
 }
 
+/** Strip markdown code fences from LLM replies before parsing JSON */
+function stripCodeFences(text: string): string {
+  return text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+}
+
+/** Try to parse a JSON array from an LLM reply (handles code fences, markdown wrapping) */
+function parseJsonArray(reply: string): Array<Record<string, unknown>> | null {
+  const cleaned = stripCodeFences(reply);
+  const match = cleaned.match(/\[[\s\S]*\]/);
+  if (!match) return null;
+  try { return JSON.parse(match[0]); } catch { return null; }
+}
+
 /** Send a message to the AI worker chat and get the reply text. */
 async function sendChatPrompt(clientId: string, message: string): Promise<string> {
   const res = await fetch(`/api/agency/clients/${clientId}/chat`, {
@@ -602,22 +615,20 @@ Volume = estimated monthly search volume. KD = keyword difficulty 0-100. CPC = e
 
       const reply = await sendChatPrompt(clientId, prompt);
 
-      // Try to parse JSON from the response
-      const jsonMatch = reply.match(/\[[\s\S]*\]/);
-      if (jsonMatch) {
-        try {
-          const parsed = JSON.parse(jsonMatch[0]) as Array<Record<string, unknown>>;
-          setKeywords(parsed.map(k => ({
-            keyword: String(k.keyword || ''),
-            volume: Number(k.volume || 0),
-            kd: Number(k.kd || 0),
-            cpc: Number(k.cpc || 0),
-          })));
-          setAiEstimated(true);
-        } catch {
-          // If JSON parse fails, show as single result
-          setKeywords([{ keyword: seedKeyword, volume: 0, kd: 0, cpc: 0 }]);
-        }
+      // Parse JSON from AI response (handles markdown code fences)
+      const parsed = parseJsonArray(reply);
+      if (parsed && parsed.length > 0) {
+        setKeywords(parsed.map(k => ({
+          keyword: String(k.keyword || ''),
+          volume: Number(k.volume || 0),
+          kd: Number(k.kd || 0),
+          cpc: Number(k.cpc || 0),
+        })));
+        setAiEstimated(true);
+      } else {
+        // If parse fails entirely, show seed keyword
+        setKeywords([{ keyword: seedKeyword, volume: 0, kd: 0, cpc: 0 }]);
+        setAiEstimated(true);
       }
     } catch { /* handled by empty state */ }
     finally { setLoading(null); }
@@ -833,6 +844,11 @@ Volume = estimated monthly search volume. KD = keyword difficulty 0-100. CPC = e
           </button>
         </div>
 
+        {!hasDataForSEO && serpResults.length === 0 && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 mb-3">
+            <p className="text-xs text-amber-700">DataForSEO not configured — SERP analysis requires DataForSEO credentials. Contact your admin to set up the integration.</p>
+          </div>
+        )}
         {serpResults.length > 0 ? (
           <div className="space-y-2">
             {serpResults.map(r => (
@@ -950,13 +966,13 @@ function ContentView({ client }: { client: AgencyClient }) {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [showHelp, setShowHelp] = useState(false);
 
-  // Persist drafts in sessionStorage so they survive tab switches
+  // Persist drafts in localStorage so they survive browser close
   useEffect(() => {
-    const saved = sessionStorage.getItem(`kyra-content-drafts-${clientId}`);
+    const saved = localStorage.getItem(`kyra-content-drafts-${clientId}`);
     if (saved) { try { setDrafts(JSON.parse(saved)); } catch {} }
   }, [clientId]);
   useEffect(() => {
-    sessionStorage.setItem(`kyra-content-drafts-${clientId}`, JSON.stringify(drafts));
+    localStorage.setItem(`kyra-content-drafts-${clientId}`, JSON.stringify(drafts));
   }, [drafts, clientId]);
 
   const handleGenerate = useCallback(async () => {
@@ -1420,13 +1436,13 @@ function SocialView({ client }: { client: AgencyClient }) {
   const [activeSection, setActiveSection] = useState<'generate' | 'calendar' | 'engagement'>('generate');
   const [showHelp, setShowHelp] = useState(false);
 
-  // Persist drafts in sessionStorage so they survive tab switches
+  // Persist drafts in localStorage so they survive browser close
   useEffect(() => {
-    const saved = sessionStorage.getItem(`kyra-social-drafts-${clientId}`);
+    const saved = localStorage.getItem(`kyra-social-drafts-${clientId}`);
     if (saved) { try { setDrafts(JSON.parse(saved)); } catch {} }
   }, [clientId]);
   useEffect(() => {
-    sessionStorage.setItem(`kyra-social-drafts-${clientId}`, JSON.stringify(drafts));
+    localStorage.setItem(`kyra-social-drafts-${clientId}`, JSON.stringify(drafts));
   }, [drafts, clientId]);
 
   // Engagement comments
