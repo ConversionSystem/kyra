@@ -1937,41 +1937,7 @@ export default function PageEditor() {
                 </div>
               )}
 
-              {/* Live Preview iframe */}
-              {siteUrl && (
-                <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gray-50">
-                    <div className="flex items-center gap-2">
-                      <div className="flex gap-1.5">
-                        <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
-                        <div className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
-                        <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
-                      </div>
-                      <span className="text-xs font-mono text-gray-400 ml-1 truncate">
-                        {siteUrl}{selectedPage.slug}
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => {
-                        const iframe = document.querySelector('#page-preview') as HTMLIFrameElement;
-                        if (iframe) iframe.src = iframe.src;
-                      }}
-                      className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
-                    >
-                      <RotateCcw className="h-3 w-3" />
-                      Refresh
-                    </button>
-                  </div>
-                  <iframe
-                    id="page-preview"
-                    src={`${siteUrl}${selectedPage.slug}?t=${Date.now()}`}
-                    className="w-full border-0"
-                    style={{ height: '500px' }}
-                    title={`Preview: ${getPageLabel(selectedPage)}`}
-                    sandbox="allow-scripts allow-same-origin allow-popups"
-                  />
-                </div>
-              )}
+
             </div>
           ) : (
             <div className="flex items-center justify-center h-full">
