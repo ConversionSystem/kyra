@@ -26,7 +26,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
   const { data: client } = await supabase
     .from('agency_clients')
-    .select('id, agency_id')
+    .select('id, agency_id, container_config')
     .eq('id', clientId)
     .eq('agency_id', agency.id)
     .single();
@@ -34,6 +34,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   if (!client) {
     return NextResponse.json({ error: 'Client not found' }, { status: 404 });
   }
+
+  const cfg = (client.container_config as Record<string, unknown>) ?? {};
+  const credentials = cfg.dataforseo_login && cfg.dataforseo_password
+    ? { login: cfg.dataforseo_login as string, password: cfg.dataforseo_password as string }
+    : undefined;
 
   const { searchParams } = new URL(request.url);
   const domain = searchParams.get('domain');
@@ -49,10 +54,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       if (keywords.length === 0) {
         return NextResponse.json({ error: 'Empty keywords list' }, { status: 400 });
       }
-      const result = await getRankings(domain, keywords);
+      const result = await getRankings(domain, keywords, credentials);
       return NextResponse.json(result);
     } else {
-      const result = await getCompetitorKeywords(domain);
+      const result = await getCompetitorKeywords(domain, credentials);
       return NextResponse.json(result);
     }
   } catch (err) {

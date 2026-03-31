@@ -412,12 +412,15 @@ function SEOView({ client }: { client: AgencyClient }) {
   const businessName = (cfg.business_name as string) || client.name;
   const industry = (cfg.industry as string) || client.industry || '';
 
+  const [seoError, setSeoError] = useState<string | null>(null);
+
   // Check if DataForSEO is configured
   useEffect(() => {
     fetch(`/api/agency/clients/${clientId}/seo/keywords?seed=test&limit=1`)
-      .then(r => {
-        if (r.status === 503 || r.status === 400) setHasDataForSEO(false);
-        else setHasDataForSEO(true);
+      .then(async r => {
+        if (!r.ok) { setHasDataForSEO(false); return; }
+        const data = await r.json();
+        setHasDataForSEO(!data.mock);
       })
       .catch(() => setHasDataForSEO(false));
   }, [clientId]);
@@ -486,6 +489,7 @@ Volume = estimated monthly search volume. KD = keyword difficulty 0-100. CPC = e
   const doSerp = useCallback(async () => {
     if (!serpKeyword.trim()) return;
     setLoading('serp');
+    setSeoError(null);
     try {
       const res = await fetch(`/api/agency/clients/${clientId}/seo/serp?keyword=${encodeURIComponent(serpKeyword)}`);
       if (res.ok) {
@@ -499,13 +503,15 @@ Volume = estimated monthly search volume. KD = keyword difficulty 0-100. CPC = e
           })));
         }
       }
-    } catch { /* handled */ }
-    finally { setLoading(null); }
+    } catch {
+      setSeoError('Failed. Check DataForSEO credentials in Settings → Integrations.');
+    } finally { setLoading(null); }
   }, [serpKeyword, clientId]);
 
   const doRank = useCallback(async () => {
     if (!rankDomain.trim()) return;
     setLoading('rank');
+    setSeoError(null);
     try {
       const res = await fetch(`/api/agency/clients/${clientId}/seo/rank?domain=${encodeURIComponent(rankDomain)}`);
       if (res.ok) {
@@ -518,8 +524,9 @@ Volume = estimated monthly search volume. KD = keyword difficulty 0-100. CPC = e
           })));
         }
       }
-    } catch { /* handled */ }
-    finally { setLoading(null); }
+    } catch {
+      setSeoError('Failed. Check DataForSEO credentials in Settings → Integrations.');
+    } finally { setLoading(null); }
   }, [rankDomain, clientId]);
 
   return (
@@ -693,6 +700,13 @@ Volume = estimated monthly search volume. KD = keyword difficulty 0-100. CPC = e
           </p>
         )}
       </div>
+
+      {seoError && (
+        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 flex items-start gap-3">
+          <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5 shrink-0" />
+          <p className="text-sm text-red-800">{seoError}</p>
+        </div>
+      )}
     </div>
   );
 }
