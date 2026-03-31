@@ -9,6 +9,8 @@ interface FooterData {
   cities?: Array<{ name: string; slug: string }>;
   bookingUrl?: string;
   colors: { primary: string; secondary: string };
+  footerTagline?: string;
+  socialLinks?: Record<string, string>;
 }
 
 export function mapContactFooter(data: FooterData): string {
@@ -44,7 +46,7 @@ export function mapContactFooter(data: FooterData): string {
   <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
     <div>
       <h3 class="text-xl font-bold mb-3" style="color: #ffffff;">${data.businessName}</h3>
-      <p class="text-sm leading-relaxed" style="color: #9ca3af;">Proudly serving our community with quality and care.</p>
+      <p class="text-sm leading-relaxed" style="color: #9ca3af;">${data.footerTagline || 'Proudly serving our community with quality and care.'}</p>
     </div>
     <div class="space-y-3">
       <h3 class="text-xl font-bold" style="color: #ffffff;">Contact</h3>
