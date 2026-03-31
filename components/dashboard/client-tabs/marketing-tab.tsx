@@ -504,7 +504,7 @@ Volume = estimated monthly search volume. KD = keyword difficulty 0-100. CPC = e
         }
       }
     } catch {
-      setSeoError('Failed. Check DataForSEO credentials in Settings → Integrations.');
+      setSeoError('SEO data temporarily unavailable. Please try again in a moment.');
     } finally { setLoading(null); }
   }, [serpKeyword, clientId]);
 
@@ -525,19 +525,19 @@ Volume = estimated monthly search volume. KD = keyword difficulty 0-100. CPC = e
         }
       }
     } catch {
-      setSeoError('Failed. Check DataForSEO credentials in Settings → Integrations.');
+      setSeoError('SEO data temporarily unavailable. Please try again in a moment.');
     } finally { setLoading(null); }
   }, [rankDomain, clientId]);
 
   return (
     <div className="space-y-6">
       {hasDataForSEO === false && (
-        <div className="rounded-lg bg-indigo-50 border border-indigo-200 px-4 py-3 mb-4 flex items-start gap-3">
-          <Search className="h-4 w-4 text-indigo-600 mt-0.5 shrink-0" />
+        <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 mb-4 flex items-start gap-3">
+          <Search className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
           <div>
-            <p className="text-sm font-medium text-indigo-800">AI-Powered SEO Research</p>
-            <p className="text-xs text-indigo-600 mt-0.5">
-              DataForSEO not configured. Using AI-estimated keyword data. Connect DataForSEO in Settings → Secrets for real search volume data.
+            <p className="text-sm font-medium text-amber-800">AI-Estimated SEO Data</p>
+            <p className="text-xs text-amber-700 mt-0.5">
+              Live keyword data is temporarily unavailable. Results below are AI-estimated — useful for planning but not real search volumes.
             </p>
           </div>
         </div>
@@ -568,7 +568,7 @@ Volume = estimated monthly search volume. KD = keyword difficulty 0-100. CPC = e
         {aiEstimated && keywords.length > 0 && (
           <div className="rounded-lg bg-blue-50 border border-blue-100 px-3 py-2 mb-3">
             <p className="text-xs text-blue-700">
-              ℹ️ These are AI-estimated values. Connect DataForSEO for real search volume data.
+              ℹ️ These are AI-estimated values — live data temporarily unavailable.
             </p>
           </div>
         )}
