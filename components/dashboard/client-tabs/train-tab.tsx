@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { AgencyClient } from '@/lib/agency/queries';
 import AIPersonalityTab from './ai-personality-tab';
 import KnowledgeTab from './knowledge-tab';
+import KnowledgeEngineCard from './knowledge-engine-card';
 
 const SUB_TABS = ['personality', 'knowledge'] as const;
 type SubTab = typeof SUB_TABS[number];
@@ -23,6 +24,9 @@ export default function TrainTab({ client, defaultSubTab = 'personality' }: Trai
 
   return (
     <div className="space-y-6">
+      {/* Knowledge Engine — always visible at top of Train tab */}
+      <KnowledgeEngineCard clientId={client.id} />
+
       {/* Sub-nav pills */}
       <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
         {SUB_TABS.map((tab) => (
