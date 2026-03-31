@@ -1971,7 +1971,7 @@ function StepReviewLaunch({
                   className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-white border border-indigo-200 text-indigo-700 rounded-xl font-medium hover:bg-indigo-50 transition-colors"
                 >
                   <Sparkles className="h-4 w-4" />
-                  Edit Pages
+                  Edit Website
                 </button>
               )}
             </>
