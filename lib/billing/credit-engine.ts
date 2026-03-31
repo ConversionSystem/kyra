@@ -131,13 +131,18 @@ export async function getAgencyCredits(agencyId: string): Promise<CreditBalance>
  *   if (!check.allowed) return Response.json({ error: 'Insufficient credits', ...check });
  *   // ... run the expensive operation ...
  *   await deductCredits(agencyId, 'pipeline.find_leads', ...);
+ *
+ * Use `overrideCost` when the action cost is model-aware (e.g. Sonnet = 75, mini = 1).
+ * Without it, the check falls back to CREDIT_COSTS[action] which is a flat 1 for chat.message
+ * and would allow a Sonnet request even with only 1 credit in balance.
  */
 export async function requireCredits(
   agencyId: string,
   action: CreditAction,
   multiplier: number = 1,
+  overrideCost?: number,
 ): Promise<PreflightResult> {
-  const cost = getCreditCost(action) * multiplier;
+  const cost = overrideCost ?? (getCreditCost(action) * multiplier);
 
   // Free actions always pass
   if (cost === 0) {

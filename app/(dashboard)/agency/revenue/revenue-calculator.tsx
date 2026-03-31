@@ -7,12 +7,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
+// Client counts mirror plans.ts → maxClients (plan workers + 1 free worker)
+// Prices match plans.ts exactly
 const PLAN_LIMITS = {
   free:    { clients: 1,  price: 0,   label: 'Free'    },
-  lite:    { clients: 3,  price: 99,  label: 'Lite'    },
-  starter: { clients: 3,  price: 99,  label: 'Lite'    }, // legacy alias
-  pro:     { clients: 10, price: 249, label: 'Pro'     },
-  scale:   { clients: 30, price: 499, label: 'Scale'   },
+  lite:    { clients: 4,  price: 99,  label: 'Lite'    },
+  starter: { clients: 4,  price: 99,  label: 'Lite'    }, // legacy alias
+  pro:     { clients: 11, price: 299, label: 'Pro'     },
+  scale:   { clients: 21, price: 499, label: 'Scale'   },
 };
 
 function fmt(n: number) {
@@ -155,7 +157,7 @@ export default function RevenueCalculator({ realClientCount }: { realClientCount
   const [numClients, setNumClients] = useState(Math.max(realClientCount, 1));
   const [pricePerClient, setPricePerClient] = useState(500);
 
-  const plan = numClients <= 1 ? 'free' : numClients <= 3 ? 'starter' : numClients <= 10 ? 'pro' : 'scale';
+  const plan = numClients <= 1 ? 'free' : numClients <= 4 ? 'starter' : numClients <= 11 ? 'pro' : 'scale';
   const kyraFee = PLAN_LIMITS[plan as keyof typeof PLAN_LIMITS].price;
   const grossRevenue = numClients * pricePerClient;
   const netRevenue = grossRevenue - kyraFee;

@@ -157,9 +157,9 @@ export function AnalyticsClient({ agencyPlan, clients }: { agencyPlan: string; c
 
   const { hero, trend, topWorkers, recent, roi } = data;
 
-  // Monthly cost estimate by plan
+  // Monthly cost estimate by plan — must match plans.ts prices exactly
   const planCosts: Record<string, number> = {
-    free: 0, solo_pro: 97, starter: 297, pro: 497, scale: 997,
+    free: 0, solo_pro: 39, starter: 99, pro: 299, scale: 499,
   };
   const monthlyCost = planCosts[agencyPlan] ?? 0;
   const roiPercent = monthlyCost > 0
