@@ -125,6 +125,10 @@ export interface ClientSite {
   footer_tagline: string | null;
   social_links: SocialLinks | null;
 
+  // P2: Visual Section Management
+  section_order: string[] | null;
+  section_overrides: Record<string, string> | null;
+
   // Build state
   status: SiteStatus;
   template_id: string | null;

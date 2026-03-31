@@ -104,10 +104,41 @@ const NAVBARS: Record<string, typeof stickyWhiteNavbar> = {
 
 // ---------- Assembler ----------
 
+// ---------- Variant Registry (exported for editor UI) ----------
+
+export const VARIANT_REGISTRY: Record<string, { map: Record<string, unknown>; label: string }> = {
+  hero:         { map: HEROES,       label: 'Hero' },
+  services:     { map: SERVICES,     label: 'Services' },
+  about:        { map: ABOUT,        label: 'About' },
+  testimonials: { map: TESTIMONIALS, label: 'Testimonials' },
+  cta:          { map: CTAS,         label: 'CTA' },
+  faq:          { map: FAQS,         label: 'FAQ' },
+  footer:       { map: FOOTERS,      label: 'Footer' },
+  navbar:       { map: NAVBARS,      label: 'Navbar' },
+};
+
+/** Get available variant keys for a section type */
+export function getVariantsForSection(sectionType: string): string[] {
+  const entry = VARIANT_REGISTRY[sectionType];
+  if (!entry) return [];
+  return Object.keys(entry.map);
+}
+
+/** Get all section types with their variant lists (for editor UI) */
+export function getAllSectionVariants(): Record<string, string[]> {
+  const result: Record<string, string[]> = {};
+  for (const [type, entry] of Object.entries(VARIANT_REGISTRY)) {
+    result[type] = Object.keys(entry.map);
+  }
+  return result;
+}
+
 export interface AssemblePageOptions {
   recipe: SectionRecipe;
   colorVars: string;       // CSS custom properties block (:root vars only)
   designStyle?: string;    // Design style key for getDesignCSS() — wires in body/card/button overrides
+  sectionOrder?: string[] | null;       // P2: custom section order (null → default recipe order)
+  sectionOverrides?: Record<string, string> | null;  // P2: variant overrides per section type
   pageData: {
     title: string;
     metaTitle?: string;
@@ -159,16 +190,26 @@ export interface AssemblePageOptions {
 }
 
 export function assemblePage(options: AssemblePageOptions): string {
-  const { recipe, colorVars, designStyle, pageData, siteData, pageType } = options;
+  const { recipe, colorVars, designStyle, pageData, siteData, pageType, sectionOrder, sectionOverrides } = options;
 
-  const heroFn = HEROES[recipe.hero] || HEROES['gradient-overlay'];
-  const servicesFn = SERVICES[recipe.services] || SERVICES['grid-3col'];
-  const aboutFn = ABOUT[recipe.about] || ABOUT['stats-bar'];
-  const testimonialsFn = TESTIMONIALS[recipe.testimonials] || TESTIMONIALS['grid-cards'];
-  const ctaFn = CTAS[recipe.cta] || CTAS['form-embed'];
-  const faqFn = FAQS[recipe.faq] || FAQS['accordion'];
-  const footerFn = FOOTERS[recipe.footer] || FOOTERS['four-column'];
-  const navbarFn = NAVBARS[recipe.navbar] || NAVBARS['sticky-white'];
+  // P2: Merge variant overrides with recipe defaults
+  const effectiveRecipe = { ...recipe };
+  if (sectionOverrides) {
+    for (const [sectionType, variant] of Object.entries(sectionOverrides)) {
+      if (sectionType in effectiveRecipe) {
+        (effectiveRecipe as Record<string, string>)[sectionType] = variant;
+      }
+    }
+  }
+
+  const heroFn = HEROES[effectiveRecipe.hero] || HEROES['gradient-overlay'];
+  const servicesFn = SERVICES[effectiveRecipe.services] || SERVICES['grid-3col'];
+  const aboutFn = ABOUT[effectiveRecipe.about] || ABOUT['stats-bar'];
+  const testimonialsFn = TESTIMONIALS[effectiveRecipe.testimonials] || TESTIMONIALS['grid-cards'];
+  const ctaFn = CTAS[effectiveRecipe.cta] || CTAS['form-embed'];
+  const faqFn = FAQS[effectiveRecipe.faq] || FAQS['accordion'];
+  const footerFn = FOOTERS[effectiveRecipe.footer] || FOOTERS['four-column'];
+  const navbarFn = NAVBARS[effectiveRecipe.navbar] || NAVBARS['sticky-white'];
 
   // Colors object passed to every section (required after main branch section refactor)
   const colors = {
@@ -358,6 +399,28 @@ export function assemblePage(options: AssemblePageOptions): string {
   // Strip the :root block (already handled by colorVars) to avoid duplication
   const designOverrideCSS = fullDesignCSS.replace(/:root\s*\{[^}]*\}\s*/g, '').trim();
 
+  // P2: Build section HTML map for ordered assembly
+  const sectionHtmlMap: Record<string, string> = {
+    hero: heroHtml,
+    services: pageType === 'homepage' ? servicesHtml : '',
+    about: aboutHtml,
+    testimonials: pageType === 'homepage' ? testimonialsHtml : '',
+    faq: faqHtml,
+    cta: ctaHtml,
+  };
+
+  // Default section order (matches original hardcoded order)
+  const defaultOrder = ['hero', 'services', 'about', 'testimonials', 'faq', 'cta'];
+
+  // Use custom order if provided, fall back to default
+  const order = sectionOrder && sectionOrder.length > 0 ? sectionOrder : defaultOrder;
+
+  // Assemble main content sections in the specified order
+  const mainSectionsHtml = order
+    .map(sectionType => sectionHtmlMap[sectionType] || '')
+    .filter(Boolean)
+    .join('\n    ');
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -394,12 +457,7 @@ export function assemblePage(options: AssemblePageOptions): string {
 <body id="top">
   ${navbarHtml}
   <main>
-    ${heroHtml}
-    ${pageType === 'homepage' ? servicesHtml : ''}
-    ${aboutHtml}
-    ${pageType === 'homepage' ? testimonialsHtml : ''}
-    ${faqHtml}
-    ${ctaHtml}
+    ${mainSectionsHtml}
   </main>
   ${footerHtml}
   ${mobileCta}
