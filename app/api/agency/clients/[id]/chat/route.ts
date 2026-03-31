@@ -58,14 +58,18 @@ export async function POST(
       return new Response('Forbidden: not a member of this agency', { status: 403 });
     }
 
-    // 3b. Pre-flight credit check
-    const creditCheck = await requireCredits(client.agency_id, 'chat.message');
+    // 3b. Model-aware pre-flight credit check
+    // Resolve model here so we gate on the real cost (e.g. 75 cr for Sonnet, not 1).
+    const preflightModel = (client as any).ai_model || 'openrouter/anthropic/claude-haiku-4.5';
+    const preflightCost = getCreditsForModel(preflightModel);
+    const creditCheck = await requireCredits(client.agency_id, 'chat.message', 1, preflightCost);
     if (!creditCheck.allowed) {
       return new Response(
         JSON.stringify({
           error: 'Insufficient credits',
-          message: `You need ${creditCheck.cost} credit(s) but have ${creditCheck.balance}. Top up to continue.`,
+          message: `You need ${creditCheck.cost} credit(s) to use ${preflightModel} but have ${creditCheck.balance}. Top up to continue.`,
           balance: creditCheck.balance,
+          cost: preflightCost,
           buyUrl: '/agency/credits',
         }),
         { status: 402, headers: { 'Content-Type': 'application/json' } }
@@ -105,8 +109,8 @@ export async function POST(
     ].join('\n');
 
     // 7. Forward to the client's gateway via /v1/chat/completions (OpenAI-compatible)
-    const chatModel = (client as any).ai_model || 'openrouter/anthropic/claude-haiku-4.5';
-    const chatCredits = getCreditsForModel(chatModel);
+    const chatModel = preflightModel; // already resolved in 3b
+    const chatCredits = preflightCost; // already resolved in 3b
     const chatMessages: Array<{ role: string; content: string }> = [];
     if (systemContext) {
       chatMessages.push({ role: 'system', content: systemContext });
