@@ -38,6 +38,12 @@ import {
   ChevronUp,
   Eye,
   EyeOff,
+  Send,
+  Search,
+  ArrowRight,
+  Phone,
+  Mail,
+  CornerDownLeft,
 } from 'lucide-react';
 import type { AgencyClient, AgencyMember } from '@/lib/agency/queries';
 import GHLConnection from './ghl-connection';
@@ -1420,56 +1426,156 @@ function SettingsTabMerged({
   );
 }
 
-// ── Conversations Tab ─────────────────────────────────────────────────────────
+// ── Conversations Tab (Writable Inbox) ────────────────────────────────────────
 
-interface Conversation {
+interface Thread {
+  contactId: string;
+  contactName: string | null;
+  contactPhone: string | null;
+  contactEmail: string | null;
+  conversationId: string;
+  messageType: string;
+  lastMessage: string;
+  lastMessageAt: string;
+  messageCount: number;
+  hasEscalation: boolean;
+  hasHumanReply: boolean;
+}
+
+interface GHLMessage {
   id: string;
-  channel: string;
-  user_message: string;
+  contact_id: string;
+  contact_name: string | null;
+  contact_phone: string | null;
+  contact_email: string | null;
+  conversation_id: string;
+  inbound_message: string;
   ai_response: string;
+  message_type: string;
+  escalated: boolean;
+  escalation_reason: string | null;
   created_at: string;
 }
 
 function ConversationsTab({ client }: { client: AgencyClient }) {
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [total, setTotal] = useState(0);
+  const [threads, setThreads] = useState<Thread[]>([]);
+  const [totalThreads, setTotalThreads] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [migrationRequired, setMigrationRequired] = useState(false);
-  const [expanded, setExpanded] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedContact, setSelectedContact] = useState<Thread | null>(null);
+  const [threadMessages, setThreadMessages] = useState<GHLMessage[]>([]);
+  const [threadLoading, setThreadLoading] = useState(false);
+  const [replyText, setReplyText] = useState('');
+  const [sending, setSending] = useState(false);
+  const [sendSuccess, setSendSuccess] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const loadConversations = useCallback(() => {
-    fetch(`/api/agency/clients/${client.id}/conversations`)
-      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+  // Load threads
+  const loadThreads = useCallback(() => {
+    const params = new URLSearchParams({ limit: '30' });
+    if (searchQuery) params.set('q', searchQuery);
+    fetch(`/api/agency/clients/${client.id}/threads?${params}`)
+      .then(r => r.json())
       .then(d => {
-        if (d.migrationRequired) { setMigrationRequired(true); return; }
-        setConversations(d.conversations || []);
-        setTotal(d.total ?? (d.conversations || []).length);
+        setThreads(d.threads || []);
+        setTotalThreads(d.total || 0);
       })
-      .catch((err) => console.error('[conversations] load failed:', err))
+      .catch(err => console.error('[threads] load failed:', err))
       .finally(() => setLoading(false));
+  }, [client.id, searchQuery]);
+
+  useEffect(() => {
+    loadThreads();
+    const interval = setInterval(loadThreads, 15_000);
+    return () => clearInterval(interval);
+  }, [loadThreads]);
+
+  // Load messages for selected thread
+  const loadThreadMessages = useCallback((contactId: string) => {
+    setThreadLoading(true);
+    fetch(`/api/agency/clients/${client.id}/messages?limit=100`)
+      .then(r => r.json())
+      .then(d => {
+        const msgs = (d.messages || [])
+          .filter((m: GHLMessage) => m.contact_id === contactId)
+          .sort((a: GHLMessage, b: GHLMessage) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        setThreadMessages(msgs);
+        setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+      })
+      .catch(err => console.error('[thread-messages] load failed:', err))
+      .finally(() => setThreadLoading(false));
   }, [client.id]);
 
   useEffect(() => {
-    loadConversations();
-    // Auto-refresh every 10 seconds so new conversations appear without manual reload
-    const interval = setInterval(loadConversations, 10_000);
-    return () => clearInterval(interval);
-  }, [loadConversations]);
+    if (selectedContact) {
+      loadThreadMessages(selectedContact.contactId);
+      const interval = setInterval(() => loadThreadMessages(selectedContact.contactId), 10_000);
+      return () => clearInterval(interval);
+    }
+  }, [selectedContact, loadThreadMessages]);
 
-  const channelBadge: Record<string, string> = {
-    test_chat: 'bg-blue-50 text-blue-600 border-blue-200',
-    web_chat:  'bg-indigo-50 text-indigo-600 border-indigo-200',
-    portal: 'bg-purple-50 text-purple-600 border-purple-200',
-    telegram: 'bg-sky-50 text-sky-600 border-sky-200',
-    sms: 'bg-green-50 text-green-600 border-green-200',
-    ghl_sms: 'bg-green-50 text-green-600 border-green-200',
-    ghl_email: 'bg-orange-50 text-orange-600 border-orange-200',
-    whatsapp: 'bg-emerald-50 text-emerald-600 border-emerald-200',
+  // Send reply
+  const handleSendReply = async () => {
+    if (!replyText.trim() || !selectedContact || sending) return;
+    setSending(true);
+    setSendError(null);
+    setSendSuccess(false);
+    try {
+      const res = await fetch(`/api/agency/clients/${client.id}/reply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contactId: selectedContact.contactId,
+          conversationId: selectedContact.conversationId,
+          message: replyText.trim(),
+          messageType: selectedContact.messageType || 'SMS',
+          contactName: selectedContact.contactName,
+          contactPhone: selectedContact.contactPhone,
+          contactEmail: selectedContact.contactEmail,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to send');
+      setReplyText('');
+      setSendSuccess(true);
+      setTimeout(() => setSendSuccess(false), 3000);
+      // Refresh messages
+      loadThreadMessages(selectedContact.contactId);
+      loadThreads();
+    } catch (err: any) {
+      setSendError(err.message || 'Failed to send reply');
+    } finally {
+      setSending(false);
+    }
   };
 
-  const channelLabel: Record<string, string> = {
-    test_chat: 'Test Chat', web_chat: 'Chat Widget', portal: 'Portal', telegram: 'Telegram',
-    sms: 'SMS', ghl_sms: 'GHL SMS', ghl_email: 'GHL Email', whatsapp: 'WhatsApp',
+  const channelBadge: Record<string, string> = {
+    SMS: 'bg-green-50 text-green-600 border-green-200',
+    Email: 'bg-orange-50 text-orange-600 border-orange-200',
+    WhatsApp: 'bg-emerald-50 text-emerald-600 border-emerald-200',
+    'Live Chat': 'bg-blue-50 text-blue-600 border-blue-200',
+    Facebook: 'bg-blue-50 text-blue-600 border-blue-200',
+    Instagram: 'bg-pink-50 text-pink-600 border-pink-200',
+    GMB: 'bg-yellow-50 text-yellow-600 border-yellow-200',
+  };
+
+  const formatTime = (ts: string) => {
+    const d = new Date(ts);
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    if (diffMins < 1) return 'just now';
+    if (diffMins < 60) return `${diffMins}m`;
+    const diffHrs = Math.floor(diffMins / 60);
+    if (diffHrs < 24) return `${diffHrs}h`;
+    return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  };
+
+  const getInitials = (name: string | null) => {
+    if (!name) return '?';
+    return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
   };
 
   if (loading) {
@@ -1480,93 +1586,217 @@ function ConversationsTab({ client }: { client: AgencyClient }) {
     );
   }
 
-  if (migrationRequired) {
-    return (
-      <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 space-y-3">
-        <p className="font-semibold text-amber-800 flex items-center gap-2">
-          <AlertTriangle className="h-4 w-4" /> One-time setup required
-        </p>
-        <p className="text-sm text-amber-700">
-          Run this SQL in your{' '}
-          <a href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer" className="underline font-medium">
-            Supabase SQL Editor
-          </a>{' '}
-          to enable conversation logging:
-        </p>
-        <pre className="text-xs bg-white border border-amber-200 rounded-lg p-3 overflow-x-auto text-gray-700 whitespace-pre-wrap">
-{`CREATE TABLE IF NOT EXISTS client_conversations (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  client_id UUID NOT NULL REFERENCES agency_clients(id) ON DELETE CASCADE,
-  agency_id UUID NOT NULL REFERENCES agencies(id) ON DELETE CASCADE,
-  channel TEXT NOT NULL DEFAULT 'test_chat',
-  user_message TEXT NOT NULL,
-  ai_response TEXT NOT NULL,
-  tokens_used INT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-ALTER TABLE client_conversations ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Agency members view" ON client_conversations FOR SELECT
-  USING (agency_id IN (SELECT agency_id FROM agency_members WHERE user_id = auth.uid()));
-CREATE POLICY "Service insert" ON client_conversations FOR INSERT WITH CHECK (true);`}
-        </pre>
-      </div>
-    );
-  }
-
-  if (conversations.length === 0) {
+  if (threads.length === 0 && !searchQuery) {
     return (
       <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
         <Inbox className="h-10 w-10 text-gray-300" />
         <p className="font-medium text-gray-600">No conversations yet</p>
         <p className="text-sm text-gray-400">
-          Open the Terminal tab to test the AI, or share the portal link — conversations will appear here automatically.
+          Conversations from GHL (SMS, WhatsApp, Email) will appear here once customers start messaging.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-3">
-      <p className="text-sm text-gray-500">{total} conversation{total !== 1 ? 's' : ''} logged{total > conversations.length ? ` (showing ${conversations.length} most recent)` : ''}</p>
-      {conversations.map(conv => {
-        const isEscalated = conv.ai_response?.includes("I'll flag this for our team");
-        const isProactive = conv.user_message?.includes('[NEW CONTACT]');
-        return (
-        <div
-          key={conv.id}
-          className={`rounded-xl border transition cursor-pointer ${isEscalated ? 'border-red-200 bg-red-50 hover:border-red-300' : 'border-gray-200 bg-white hover:border-gray-300'}`}
-          onClick={() => setExpanded(expanded === conv.id ? null : conv.id)}
-        >
-          <div className="flex items-start gap-3 p-4">
-            <User className="h-4 w-4 text-indigo-400 mt-0.5 shrink-0" />
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                {isEscalated && <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-medium">🚨 Escalated</span>}
-                {isProactive && !isEscalated && <span className="text-[10px] bg-green-100 text-green-600 px-1.5 py-0.5 rounded font-medium">👋 Proactive greeting</span>}
-              </div>
-              <p className="text-sm text-gray-900 line-clamp-2">{conv.user_message}</p>
-              {expanded === conv.id && (
-                <div className="mt-3 pt-3 border-t border-gray-100 space-y-3">
-                  <div className="flex items-start gap-2">
-                    <Bot className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
-                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{conv.ai_response}</p>
+    <div className="flex h-[calc(100vh-220px)] min-h-[500px] rounded-xl border border-gray-200 overflow-hidden bg-white">
+      {/* ── Thread List (Left Panel) ── */}
+      <div className={`${selectedContact ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-80 lg:w-96 border-r border-gray-200 bg-gray-50/50`}>
+        {/* Search */}
+        <div className="p-3 border-b border-gray-200">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search conversations…"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300"
+            />
+          </div>
+          <p className="text-[10px] text-gray-400 mt-1.5">{totalThreads} conversation{totalThreads !== 1 ? 's' : ''}</p>
+        </div>
+
+        {/* Thread List */}
+        <div className="flex-1 overflow-y-auto">
+          {threads.map(thread => (
+            <button
+              key={thread.contactId}
+              onClick={() => {
+                setSelectedContact(thread);
+                setReplyText('');
+                setSendError(null);
+              }}
+              className={`w-full text-left p-3 border-b border-gray-100 hover:bg-white transition ${
+                selectedContact?.contactId === thread.contactId ? 'bg-white border-l-2 border-l-indigo-500' : ''
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                {/* Avatar */}
+                <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 ${
+                  thread.hasEscalation ? 'bg-red-100 text-red-600' : 'bg-indigo-100 text-indigo-600'
+                }`}>
+                  {getInitials(thread.contactName)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-medium text-gray-900 truncate">
+                      {thread.contactName || thread.contactPhone || 'Unknown'}
+                    </span>
+                    <span className="text-[10px] text-gray-400 shrink-0">{formatTime(thread.lastMessageAt)}</span>
+                  </div>
+                  <p className="text-xs text-gray-500 truncate mt-0.5">{thread.lastMessage}</p>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded border ${channelBadge[thread.messageType] || 'bg-gray-50 text-gray-500 border-gray-200'}`}>
+                      {thread.messageType}
+                    </span>
+                    <span className="text-[9px] text-gray-400">{thread.messageCount} msg{thread.messageCount !== 1 ? 's' : ''}</span>
+                    {thread.hasEscalation && <span className="text-[9px]">🚨</span>}
+                    {thread.hasHumanReply && <span className="text-[9px] text-indigo-500">👤 replied</span>}
                   </div>
                 </div>
-              )}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Thread Detail (Right Panel) ── */}
+      {selectedContact ? (
+        <div className="flex-1 flex flex-col">
+          {/* Header */}
+          <div className="flex items-center gap-3 p-4 border-b border-gray-200 bg-white">
+            <button
+              onClick={() => setSelectedContact(null)}
+              className="md:hidden p-1 rounded hover:bg-gray-100"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </button>
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold ${
+              selectedContact.hasEscalation ? 'bg-red-100 text-red-600' : 'bg-indigo-100 text-indigo-600'
+            }`}>
+              {getInitials(selectedContact.contactName)}
             </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${channelBadge[conv.channel] || 'bg-gray-50 text-gray-500 border-gray-200'}`}>
-                {channelLabel[conv.channel] || conv.channel}
-              </span>
-              <span className="text-[10px] text-gray-400 flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                {new Date(conv.created_at).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-              </span>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-gray-900">{selectedContact.contactName || 'Unknown Contact'}</p>
+              <div className="flex items-center gap-3 text-xs text-gray-500">
+                {selectedContact.contactPhone && (
+                  <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{selectedContact.contactPhone}</span>
+                )}
+                {selectedContact.contactEmail && (
+                  <span className="flex items-center gap-1"><Mail className="h-3 w-3" />{selectedContact.contactEmail}</span>
+                )}
+                <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${channelBadge[selectedContact.messageType] || 'bg-gray-50 text-gray-500 border-gray-200'}`}>
+                  {selectedContact.messageType}
+                </span>
+              </div>
             </div>
           </div>
+
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50/30">
+            {threadLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+              </div>
+            ) : threadMessages.length === 0 ? (
+              <p className="text-sm text-gray-400 text-center py-8">No messages found</p>
+            ) : (
+              threadMessages.map(msg => {
+                const isHumanReply = msg.inbound_message === '[HUMAN REPLY]';
+                return (
+                  <div key={msg.id} className="space-y-2">
+                    {/* Customer message */}
+                    {!isHumanReply && (
+                      <div className="flex justify-start">
+                        <div className="max-w-[80%] rounded-2xl rounded-bl-md px-4 py-2.5 bg-white border border-gray-200 shadow-sm">
+                          <p className="text-sm text-gray-900 whitespace-pre-wrap">{msg.inbound_message}</p>
+                          <p className="text-[10px] text-gray-400 mt-1">{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                        </div>
+                      </div>
+                    )}
+                    {/* AI or Human response */}
+                    <div className="flex justify-end">
+                      <div className={`max-w-[80%] rounded-2xl rounded-br-md px-4 py-2.5 shadow-sm ${
+                        isHumanReply
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-emerald-50 border border-emerald-200 text-gray-900'
+                      }`}>
+                        <div className="flex items-center gap-1.5 mb-1">
+                          {isHumanReply ? (
+                            <span className="text-[10px] font-medium text-indigo-200">👤 You</span>
+                          ) : (
+                            <span className="text-[10px] font-medium text-emerald-600">🤖 AI</span>
+                          )}
+                          {msg.escalated && <span className="text-[10px]">🚨</span>}
+                        </div>
+                        <p className={`text-sm whitespace-pre-wrap ${isHumanReply ? 'text-white' : 'text-gray-800'}`}>
+                          {msg.ai_response}
+                        </p>
+                        <p className={`text-[10px] mt-1 ${isHumanReply ? 'text-indigo-200' : 'text-gray-400'}`}>
+                          {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Reply Input */}
+          <div className="p-3 border-t border-gray-200 bg-white">
+            {sendError && (
+              <div className="mb-2 px-3 py-2 rounded-lg bg-red-50 border border-red-200 text-sm text-red-600 flex items-center gap-2">
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                {sendError}
+              </div>
+            )}
+            {sendSuccess && (
+              <div className="mb-2 px-3 py-2 rounded-lg bg-green-50 border border-green-200 text-sm text-green-600 flex items-center gap-2">
+                <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                Reply sent successfully!
+              </div>
+            )}
+            <div className="flex items-end gap-2">
+              <textarea
+                ref={textareaRef}
+                value={replyText}
+                onChange={e => setReplyText(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendReply();
+                  }
+                }}
+                placeholder={`Reply via ${selectedContact.messageType}… (Enter to send)`}
+                rows={1}
+                className="flex-1 resize-none rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 max-h-32"
+                style={{ minHeight: '40px' }}
+              />
+              <button
+                onClick={handleSendReply}
+                disabled={!replyText.trim() || sending}
+                className="shrink-0 h-10 w-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
+              >
+                {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              </button>
+            </div>
+            <p className="text-[10px] text-gray-400 mt-1.5 flex items-center gap-1">
+              <CornerDownLeft className="h-2.5 w-2.5" /> Enter to send · Shift+Enter for new line · Sends via GHL {selectedContact.messageType}
+            </p>
+          </div>
         </div>
-        );
-      })}
+      ) : (
+        <div className="flex-1 hidden md:flex items-center justify-center bg-gray-50/30">
+          <div className="text-center">
+            <MessageSquare className="h-12 w-12 text-gray-200 mx-auto mb-3" />
+            <p className="text-gray-400 font-medium">Select a conversation</p>
+            <p className="text-xs text-gray-300 mt-1">Choose a thread to view messages and reply</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
