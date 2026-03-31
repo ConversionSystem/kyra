@@ -168,6 +168,8 @@ export async function assembleSitePages(
       recipe,
       colorVars,
       designStyle: theme.designStyle,
+      sectionOrder: site.section_order || null,
+      sectionOverrides: site.section_overrides || null,
       pageData: {
         title: p.title,
         metaTitle: p.metaTitle,
