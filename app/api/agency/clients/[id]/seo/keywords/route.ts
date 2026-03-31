@@ -26,7 +26,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
   const { data: client } = await supabase
     .from('agency_clients')
-    .select('id, agency_id')
+    .select('id, agency_id, container_config')
     .eq('id', clientId)
     .eq('agency_id', agency.id)
     .single();
@@ -34,6 +34,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   if (!client) {
     return NextResponse.json({ error: 'Client not found' }, { status: 404 });
   }
+
+  const cfg = (client.container_config as Record<string, unknown>) ?? {};
+  const credentials = cfg.dataforseo_login && cfg.dataforseo_password
+    ? { login: cfg.dataforseo_login as string, password: cfg.dataforseo_password as string }
+    : undefined;
 
   const { searchParams } = new URL(request.url);
   const seed = searchParams.get('seed');
@@ -45,7 +50,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   const location = parseInt(searchParams.get('location') || '2840', 10);
 
   try {
-    const result = await searchKeywords(seed, { limit, location });
+    const result = await searchKeywords(seed, { limit, location }, credentials);
     return NextResponse.json(result);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -70,7 +75,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
   const { data: client } = await supabase
     .from('agency_clients')
-    .select('id, agency_id')
+    .select('id, agency_id, container_config')
     .eq('id', clientId)
     .eq('agency_id', agency.id)
     .single();
@@ -78,6 +83,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   if (!client) {
     return NextResponse.json({ error: 'Client not found' }, { status: 404 });
   }
+
+  const cfgPost = (client.container_config as Record<string, unknown>) ?? {};
+  const credentialsPost = cfgPost.dataforseo_login && cfgPost.dataforseo_password
+    ? { login: cfgPost.dataforseo_login as string, password: cfgPost.dataforseo_password as string }
+    : undefined;
 
   const body = await request.json();
   const { keywords } = body as { keywords?: string[] };
@@ -87,7 +97,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   }
 
   try {
-    const result = await getKeywordVolume(keywords);
+    const result = await getKeywordVolume(keywords, credentialsPost);
     return NextResponse.json(result);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

@@ -230,6 +230,12 @@ export default function AIWorkersTab({ client, agencyId }: AIWorkersTabProps) {
     if (cfg.business_hours && typeof cfg.business_hours === 'string') {
       initVars.business_hours = cfg.business_hours;
     }
+    // Restore ALL previously saved role variables from container_config
+    for (const [key, value] of Object.entries(cfg)) {
+      if (typeof value === 'string' && value && !initVars[key]) {
+        initVars[key] = value;
+      }
+    }
     setVariables(initVars);
   }, [client.name, client.container_config]);
 
