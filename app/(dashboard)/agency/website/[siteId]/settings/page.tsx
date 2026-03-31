@@ -18,6 +18,14 @@ import {
   Edit3,
   TrendingUp,
   Settings,
+  Search,
+  Bot,
+  Link2,
+  Star,
+  Shield,
+  Trash2,
+  FileText,
+  Palette,
 } from 'lucide-react';
 
 interface SiteData {
@@ -28,9 +36,23 @@ interface SiteData {
   ga4_id: string | null;
   white_label: boolean | null;
   status: string;
+  client_id?: string | null;
+  color_primary: string | null;
+  design_style: string | null;
+  ai_name: string | null;
+  booking_url: string | null;
+  google_review_url: string | null;
+  search_console_connected?: boolean;
 }
 
 const VPS_IP = '15.204.91.157';
+
+const DESIGN_STYLES = [
+  { value: 'modern-dark', label: 'Modern Dark' },
+  { value: 'clean-light', label: 'Clean Light' },
+  { value: 'bold', label: 'Bold' },
+  { value: 'minimal', label: 'Minimal' },
+];
 
 export default function SiteSettings() {
   const params = useParams();
@@ -38,15 +60,28 @@ export default function SiteSettings() {
 
   const [site, setSite] = useState<SiteData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Form fields
+  // Domain
   const [customDomain, setCustomDomain] = useState('');
-  const [ga4Id, setGa4Id] = useState('');
-  const [whiteLabel, setWhiteLabel] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
+
+  // Branding
+  const [colorPrimary, setColorPrimary] = useState('#dc2626');
+  const [designStyle, setDesignStyle] = useState('modern-dark');
+  const [whiteLabel, setWhiteLabel] = useState(false);
+
+  // Analytics
+  const [ga4Id, setGa4Id] = useState('');
+  const [checkingGsc, setCheckingGsc] = useState(false);
+  const [gscStatus, setGscStatus] = useState<'unknown' | 'connected' | 'not_connected'>('unknown');
+
+  // AI Config
+  const [aiName, setAiName] = useState('');
+  const [bookingUrl, setBookingUrl] = useState('');
+  const [googleReviewUrl, setGoogleReviewUrl] = useState('');
 
   useEffect(() => {
     async function fetchSite() {
@@ -59,6 +94,12 @@ export default function SiteSettings() {
           setCustomDomain(s.site_domain || '');
           setGa4Id(s.ga4_id || '');
           setWhiteLabel(s.white_label ?? false);
+          setColorPrimary(s.color_primary || '#dc2626');
+          setDesignStyle(s.design_style || 'modern-dark');
+          setAiName(s.ai_name || '');
+          setBookingUrl(s.booking_url || '');
+          setGoogleReviewUrl(s.google_review_url || '');
+          setGscStatus(s.search_console_connected ? 'connected' : 'not_connected');
         }
       } catch {
         setError('Failed to load site data');
@@ -69,17 +110,17 @@ export default function SiteSettings() {
     fetchSite();
   }, [siteId]);
 
-  const save = async (field: string, value: unknown) => {
-    setSaving(true);
+  const save = async (section: string, updates: Record<string, unknown>) => {
+    setSaving(section);
     setError(null);
     try {
       const res = await fetch(`/api/agency/sites/${siteId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ [field]: value }),
+        body: JSON.stringify(updates),
       });
       if (res.ok) {
-        setSaved(field);
+        setSaved(section);
         setTimeout(() => setSaved(null), 2500);
         // Refresh site data
         const refreshed = await fetch(`/api/agency/sites/${siteId}`);
@@ -94,7 +135,7 @@ export default function SiteSettings() {
     } catch {
       setError('Failed to save settings');
     } finally {
-      setSaving(false);
+      setSaving(null);
     }
   };
 
@@ -105,7 +146,25 @@ export default function SiteSettings() {
     });
   };
 
+  const checkGscConnection = async () => {
+    setCheckingGsc(true);
+    try {
+      const res = await fetch(`/api/agency/sites/${siteId}`);
+      if (res.ok) {
+        const result = await res.json();
+        setGscStatus(result.data?.search_console_connected ? 'connected' : 'not_connected');
+        setSite(result.data);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setCheckingGsc(false);
+    }
+  };
+
   const subdomain = site?.site_subdomain || '';
+  const siteUrl = subdomain ? `https://${subdomain}` : site?.site_domain ? `https://${site.site_domain}` : null;
+  const backHref = site?.client_id ? `/agency/clients/${site.client_id}` : '/agency/website';
 
   if (loading) {
     return (
@@ -120,15 +179,26 @@ export default function SiteSettings() {
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
         <div className="px-4 py-3 flex items-center gap-3">
-          <Link href="/agency/website" className="text-gray-500 hover:text-gray-900">
+          <Link href={backHref} className="text-gray-500 hover:text-gray-900">
             <ArrowLeft className="h-4 w-4" />
           </Link>
-          <div>
+          <div className="flex-1">
             <h1 className="text-sm font-semibold text-gray-900">
               {site?.business_name || 'Site Settings'}
             </h1>
-            <p className="text-xs text-gray-400">Domain, analytics, and branding</p>
+            <p className="text-xs text-gray-400">Configure domain, branding, analytics &amp; more</p>
           </div>
+          {siteUrl && (
+            <a
+              href={siteUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center gap-1.5"
+            >
+              <ExternalLink className="h-3 w-3" />
+              Visit Site
+            </a>
+          )}
         </div>
         {/* Sub-navigation tabs */}
         <div className="flex border-t border-gray-100 px-4">
@@ -154,9 +224,9 @@ export default function SiteSettings() {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
-        {/* Error */}
+        {/* Error Banner */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-2 text-sm text-red-700">
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center gap-2 text-sm text-red-700">
             <AlertCircle className="h-4 w-4 shrink-0" />
             {error}
             <button onClick={() => setError(null)} className="ml-auto">
@@ -165,59 +235,60 @@ export default function SiteSettings() {
           </div>
         )}
 
-        {/* ── Current URL ───────────────────────────────────────────── */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <div className="flex items-center gap-2 mb-1">
-            <Globe className="h-4 w-4 text-indigo-500" />
-            <h3 className="text-sm font-semibold text-gray-900">Current URL</h3>
+        {/* ══════════════════════════════════════════════════════════════
+            Section 1: Domain
+           ══════════════════════════════════════════════════════════════ */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Globe className="h-5 w-5 text-indigo-500" />
+            <h3 className="text-sm font-semibold text-gray-900">Domain</h3>
           </div>
+
+          {/* Current URL */}
           {subdomain ? (
-            <div className="flex items-center gap-2 mt-3">
-              <code className="text-sm bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 flex-1 text-gray-700 font-mono truncate">
-                https://{subdomain}
-              </code>
-              <a
-                href={`https://${subdomain}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-3 py-2 text-xs text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 flex items-center gap-1"
-              >
-                <ExternalLink className="h-3 w-3" />
-                Open
-              </a>
+            <div className="mb-5">
+              <label className="text-xs font-medium text-gray-500 mb-1.5 block">Current URL</label>
+              <div className="flex items-center gap-2">
+                <code className="text-sm bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 flex-1 text-gray-700 font-mono truncate">
+                  https://{subdomain}
+                </code>
+                <a
+                  href={`https://${subdomain}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-2 text-xs text-indigo-600 border border-indigo-200 rounded-xl hover:bg-indigo-50 flex items-center gap-1"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  Visit
+                </a>
+              </div>
             </div>
           ) : (
-            <p className="text-sm text-gray-400 mt-2">No subdomain assigned yet — build the site first.</p>
+            <p className="text-sm text-gray-400 mb-5">No subdomain assigned yet — build the site first.</p>
           )}
-        </div>
 
-        {/* ── Custom Domain ─────────────────────────────────────────── */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <div className="flex items-center gap-2 mb-1">
-            <Globe className="h-4 w-4 text-indigo-500" />
-            <h3 className="text-sm font-semibold text-gray-900">Custom Domain</h3>
-          </div>
-          <p className="text-xs text-gray-500 mb-4">
-            Connect your own domain. You&apos;ll need to update DNS records with your domain registrar.
-          </p>
-
-          <div className="space-y-3">
+          {/* Custom Domain */}
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-1.5 block">Custom Domain</label>
+            <p className="text-xs text-gray-400 mb-3">
+              Connect your own domain. Update DNS records with your registrar.
+            </p>
             <div className="flex gap-2">
               <input
                 type="text"
                 value={customDomain}
                 onChange={(e) => setCustomDomain(e.target.value.toLowerCase().trim())}
-                placeholder="yourdomain.com or www.yourdomain.com"
+                placeholder="yourdomain.com"
                 className="flex-1 rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
               <button
-                onClick={() => save('site_domain', customDomain || null)}
-                disabled={saving}
+                onClick={() => save('domain', { site_domain: customDomain || null })}
+                disabled={saving === 'domain'}
                 className="px-4 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-1.5"
               >
-                {saving && saved !== 'site_domain' ? (
+                {saving === 'domain' ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : saved === 'site_domain' ? (
+                ) : saved === 'domain' ? (
                   <Check className="h-3.5 w-3.5" />
                 ) : null}
                 Save
@@ -226,15 +297,15 @@ export default function SiteSettings() {
 
             {/* DNS Instructions */}
             {customDomain && (
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3">
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3 mt-4">
                 <p className="text-xs font-semibold text-blue-900 uppercase tracking-wider">DNS Records Required</p>
                 <p className="text-xs text-blue-700">
                   Add these records in your DNS provider (Cloudflare, GoDaddy, Namecheap, etc.):
                 </p>
 
                 {/* A Record */}
-                <div className="bg-white rounded-lg border border-blue-100 p-3 space-y-1">
-                  <p className="text-xs font-medium text-gray-700 mb-2">Option A — Root domain (e.g. yourdomain.com)</p>
+                <div className="bg-white rounded-lg border border-blue-100 p-3">
+                  <p className="text-xs font-medium text-gray-700 mb-2">Option A — Root domain</p>
                   <div className="grid grid-cols-3 gap-2 text-xs">
                     <div className="bg-gray-50 rounded p-2">
                       <p className="text-gray-400 text-[10px] mb-0.5">TYPE</p>
@@ -260,7 +331,7 @@ export default function SiteSettings() {
                 </div>
 
                 {/* CNAME Record */}
-                <div className="bg-white rounded-lg border border-blue-100 p-3 space-y-1">
+                <div className="bg-white rounded-lg border border-blue-100 p-3">
                   <p className="text-xs font-medium text-gray-700 mb-2">Option B — www subdomain</p>
                   <div className="grid grid-cols-3 gap-2 text-xs">
                     <div className="bg-gray-50 rounded p-2">
@@ -288,126 +359,340 @@ export default function SiteSettings() {
 
                 <div className="flex items-center gap-2 text-xs text-blue-700 bg-blue-100 rounded-lg p-2">
                   <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-                  DNS changes can take up to 48 hours to propagate. SSL will auto-provision via Let&apos;s Encrypt.
+                  DNS changes can take up to 48 hours. SSL auto-provisions via Let&apos;s Encrypt.
                 </div>
               </div>
             )}
 
             {site?.site_domain && (
-              <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 border border-green-200 rounded-xl p-3">
+              <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 border border-green-200 rounded-xl p-3 mt-3">
                 <CheckCircle2 className="h-3.5 w-3.5" />
-                Custom domain saved: <strong>{site.site_domain}</strong>. Rebuild the site to activate it.
+                Custom domain saved: <strong>{site.site_domain}</strong>. Rebuild to activate.
               </div>
             )}
           </div>
         </div>
 
-        {/* ── Google Analytics ──────────────────────────────────────── */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <div className="flex items-center gap-2 mb-1">
-            <BarChart3 className="h-4 w-4 text-indigo-500" />
-            <h3 className="text-sm font-semibold text-gray-900">Google Analytics 4</h3>
-          </div>
-          <p className="text-xs text-gray-500 mb-4">
-            Track visitors on your site. Create a free GA4 property at{' '}
-            <a
-              href="https://analytics.google.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-indigo-600 hover:underline"
-            >
-              analytics.google.com
-            </a>
-            {' '}and paste your Measurement ID below.
-          </p>
-
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={ga4Id}
-              onChange={(e) => setGa4Id(e.target.value.trim().toUpperCase())}
-              placeholder="G-XXXXXXXXXX"
-              className="flex-1 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-            <button
-              onClick={() => save('ga4_id', ga4Id || null)}
-              disabled={saving}
-              className="px-4 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-1.5"
-            >
-              {saved === 'ga4_id' ? <Check className="h-3.5 w-3.5" /> : null}
-              Save
-            </button>
+        {/* ══════════════════════════════════════════════════════════════
+            Section 2: Branding
+           ══════════════════════════════════════════════════════════════ */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Palette className="h-5 w-5 text-indigo-500" />
+            <h3 className="text-sm font-semibold text-gray-900">Branding</h3>
           </div>
 
-          {site?.ga4_id && (
-            <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 border border-green-200 rounded-xl p-3 mt-3">
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              GA4 tracking active: <strong>{site.ga4_id}</strong>. Will be injected on next rebuild.
-            </div>
-          )}
-
-          <div className="mt-4 bg-gray-50 rounded-xl p-4 space-y-2">
-            <p className="text-xs font-medium text-gray-700">How to get your Measurement ID:</p>
-            <ol className="text-xs text-gray-500 space-y-1 list-decimal list-inside">
-              <li>Go to analytics.google.com and create a property</li>
-              <li>Click Admin → Data Streams → Add Stream → Web</li>
-              <li>Enter your website URL and click Create</li>
-              <li>Copy the Measurement ID (starts with G-)</li>
-            </ol>
-          </div>
-        </div>
-
-        {/* ── White-Label ───────────────────────────────────────────── */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Paintbrush className="h-4 w-4 text-indigo-500" />
-              <div>
-                <h3 className="text-sm font-semibold text-gray-900">White-Label Mode</h3>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  Remove all Kyra / Conversion System branding from the deployed site.
-                </p>
+          <div className="space-y-5">
+            {/* Primary Color */}
+            <div>
+              <label className="text-xs font-medium text-gray-500 mb-1.5 block">Primary Color</label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="color"
+                  value={colorPrimary}
+                  onChange={(e) => setColorPrimary(e.target.value)}
+                  className="w-10 h-10 rounded-lg border border-gray-200 cursor-pointer p-0.5"
+                />
+                <input
+                  type="text"
+                  value={colorPrimary}
+                  onChange={(e) => setColorPrimary(e.target.value)}
+                  placeholder="#dc2626"
+                  className="w-32 rounded-xl border border-gray-200 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <div
+                  className="w-20 h-10 rounded-xl border border-gray-200"
+                  style={{ backgroundColor: colorPrimary }}
+                />
               </div>
             </div>
-            <button
-              onClick={() => {
-                const newVal = !whiteLabel;
-                setWhiteLabel(newVal);
-                save('white_label', newVal);
-              }}
-              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
-                whiteLabel ? 'bg-indigo-600' : 'bg-gray-200'
-              }`}
-            >
-              <span
-                className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform transition-transform ${
-                  whiteLabel ? 'translate-x-5' : 'translate-x-0'
+
+            {/* Design Style */}
+            <div>
+              <label className="text-xs font-medium text-gray-500 mb-1.5 block">Design Style</label>
+              <select
+                value={designStyle}
+                onChange={(e) => setDesignStyle(e.target.value)}
+                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+              >
+                {DESIGN_STYLES.map((style) => (
+                  <option key={style.value} value={style.value}>
+                    {style.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* White Label Toggle */}
+            <div className="flex items-center justify-between py-2">
+              <div>
+                <p className="text-sm font-medium text-gray-700">White-Label Mode</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Remove all Kyra / Conversion System branding
+                </p>
+              </div>
+              <button
+                onClick={() => setWhiteLabel(!whiteLabel)}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
+                  whiteLabel ? 'bg-indigo-600' : 'bg-gray-200'
                 }`}
-              />
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform transition-transform ${
+                    whiteLabel ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+
+            <button
+              onClick={() =>
+                save('branding', {
+                  color_primary: colorPrimary,
+                  design_style: designStyle,
+                  white_label: whiteLabel,
+                })
+              }
+              disabled={saving === 'branding'}
+              className="px-4 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-1.5"
+            >
+              {saving === 'branding' ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : saved === 'branding' ? (
+                <Check className="h-3.5 w-3.5" />
+              ) : null}
+              {saved === 'branding' ? 'Saved!' : 'Save Branding'}
             </button>
           </div>
-          {saved === 'white_label' && (
-            <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
-              <Check className="h-3 w-3" />
-              Saved — rebuild to apply
-            </p>
-          )}
         </div>
 
-        {/* ── Danger Zone ───────────────────────────────────────────── */}
-        <div className="bg-white rounded-xl border border-red-200 p-5">
-          <h3 className="text-sm font-semibold text-red-700 mb-1">Danger Zone</h3>
+        {/* ══════════════════════════════════════════════════════════════
+            Section 3: Analytics & Tracking
+           ══════════════════════════════════════════════════════════════ */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <BarChart3 className="h-5 w-5 text-indigo-500" />
+            <h3 className="text-sm font-semibold text-gray-900">Analytics &amp; Tracking</h3>
+          </div>
+
+          <div className="space-y-6">
+            {/* GA4 */}
+            <div>
+              <label className="text-xs font-medium text-gray-500 mb-1.5 block">
+                Google Analytics 4 — Measurement ID
+              </label>
+              <p className="text-xs text-gray-400 mb-3">
+                Track visitors on your site.{' '}
+                <a
+                  href="https://analytics.google.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-indigo-600 hover:underline"
+                >
+                  Create a free GA4 property →
+                </a>
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={ga4Id}
+                  onChange={(e) => setGa4Id(e.target.value.trim().toUpperCase())}
+                  placeholder="G-XXXXXXXXXX"
+                  className="flex-1 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <button
+                  onClick={() => save('ga4', { ga4_id: ga4Id || null })}
+                  disabled={saving === 'ga4'}
+                  className="px-4 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  {saving === 'ga4' ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : saved === 'ga4' ? (
+                    <Check className="h-3.5 w-3.5" />
+                  ) : null}
+                  Save
+                </button>
+              </div>
+              {site?.ga4_id && (
+                <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 border border-green-200 rounded-xl p-3 mt-3">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  GA4 active: <strong>{site.ga4_id}</strong>. Injected on next rebuild.
+                </div>
+              )}
+            </div>
+
+            {/* Google Search Console */}
+            <div className="border-t border-gray-100 pt-5">
+              <div className="flex items-center gap-2 mb-2">
+                <Search className="h-4 w-4 text-gray-500" />
+                <label className="text-xs font-medium text-gray-500">Google Search Console</label>
+                {gscStatus === 'connected' ? (
+                  <span className="text-[10px] font-medium bg-green-100 text-green-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3" /> Connected
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-medium bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" /> Not Connected
+                  </span>
+                )}
+              </div>
+
+              {gscStatus === 'connected' ? (
+                <p className="text-xs text-green-600">
+                  Search Console is connected and providing data to the Growth Engine.
+                </p>
+              ) : (
+                <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                  <p className="text-xs text-gray-600">
+                    Connect Google Search Console to unlock real keyword data in the Growth Engine.
+                  </p>
+                  <ol className="text-xs text-gray-500 space-y-2 list-decimal list-inside">
+                    <li>
+                      Go to{' '}
+                      <a
+                        href={`https://search.google.com/search-console/welcome?resource_id=${encodeURIComponent(siteUrl || '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-indigo-600 hover:underline"
+                      >
+                        Google Search Console
+                      </a>{' '}
+                      and add your site as a property
+                    </li>
+                    <li>Choose &quot;URL Prefix&quot; and enter: <code className="bg-white px-1.5 py-0.5 rounded border border-gray-200 font-mono text-[11px]">{siteUrl || 'your site URL'}</code></li>
+                    <li>Verify ownership using DNS TXT record or HTML file upload</li>
+                    <li>
+                      Once verified, the system will detect the connection within 24 hours.{' '}
+                      <span className="text-gray-400">Server-side integration requires a Google Service Account.</span>
+                    </li>
+                  </ol>
+                  <button
+                    onClick={checkGscConnection}
+                    disabled={checkingGsc}
+                    className="px-3 py-2 text-xs font-medium text-indigo-600 border border-indigo-200 rounded-xl hover:bg-indigo-50 disabled:opacity-50 flex items-center gap-1.5"
+                  >
+                    {checkingGsc ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Search className="h-3 w-3" />
+                    )}
+                    Check Connection
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ══════════════════════════════════════════════════════════════
+            Section 4: AI Configuration
+           ══════════════════════════════════════════════════════════════ */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Bot className="h-5 w-5 text-indigo-500" />
+            <h3 className="text-sm font-semibold text-gray-900">AI Configuration</h3>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="text-xs font-medium text-gray-500 mb-1.5 block">AI Worker Name</label>
+              <p className="text-xs text-gray-400 mb-2">
+                The name your AI chat widget introduces itself as.
+              </p>
+              <input
+                type="text"
+                value={aiName}
+                onChange={(e) => setAiName(e.target.value)}
+                placeholder={`e.g. ${site?.business_name || 'Your Business'} Assistant`}
+                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-gray-500 mb-1.5 block">Booking URL</label>
+              <p className="text-xs text-gray-400 mb-2">
+                Where the AI directs users to book appointments (e.g. Calendly link).
+              </p>
+              <input
+                type="url"
+                value={bookingUrl}
+                onChange={(e) => setBookingUrl(e.target.value)}
+                placeholder="https://calendly.com/your-business"
+                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-gray-500 mb-1.5 block">Google Review URL</label>
+              <p className="text-xs text-gray-400 mb-2">
+                Link to your Google Business reviews page for the AI to share.
+              </p>
+              <input
+                type="url"
+                value={googleReviewUrl}
+                onChange={(e) => setGoogleReviewUrl(e.target.value)}
+                placeholder="https://g.page/your-business/review"
+                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+
+            <button
+              onClick={() =>
+                save('ai', {
+                  ai_name: aiName || null,
+                  booking_url: bookingUrl || null,
+                  google_review_url: googleReviewUrl || null,
+                })
+              }
+              disabled={saving === 'ai'}
+              className="px-4 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-1.5"
+            >
+              {saving === 'ai' ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : saved === 'ai' ? (
+                <Check className="h-3.5 w-3.5" />
+              ) : null}
+              {saved === 'ai' ? 'Saved!' : 'Save AI Config'}
+            </button>
+          </div>
+        </div>
+
+        {/* ══════════════════════════════════════════════════════════════
+            Section 5: SEO Defaults
+           ══════════════════════════════════════════════════════════════ */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <FileText className="h-5 w-5 text-indigo-500" />
+            <h3 className="text-sm font-semibold text-gray-900">SEO Defaults</h3>
+            <span className="text-[10px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+              Coming Soon
+            </span>
+          </div>
+          <p className="text-xs text-gray-400">
+            Default meta title templates and descriptions will be configurable here. Currently, SEO metadata is managed per-page in the Editor.
+          </p>
+        </div>
+
+        {/* ══════════════════════════════════════════════════════════════
+            Section 6: Danger Zone
+           ══════════════════════════════════════════════════════════════ */}
+        <div className="bg-white rounded-2xl border border-red-200 p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Shield className="h-5 w-5 text-red-500" />
+            <h3 className="text-sm font-semibold text-red-700">Danger Zone</h3>
+          </div>
           <p className="text-xs text-gray-500 mb-4">Irreversible actions. Please be careful.</p>
           <button
             onClick={async () => {
               if (!confirm(`Are you sure you want to delete "${site?.business_name}"? This cannot be undone.`)) return;
               const res = await fetch(`/api/agency/sites/${siteId}`, { method: 'DELETE' });
               if (res.ok) {
-                window.location.href = '/agency/website';
+                window.location.href = site?.client_id ? `/agency/clients/${site.client_id}` : '/agency/website';
               }
             }}
-            className="px-4 py-2 text-sm font-medium text-red-600 border border-red-200 rounded-xl hover:bg-red-50 transition-colors"
+            className="px-4 py-2.5 text-sm font-medium text-red-600 border border-red-200 rounded-xl hover:bg-red-50 transition-colors flex items-center gap-1.5"
           >
+            <Trash2 className="h-3.5 w-3.5" />
             Delete This Site
           </button>
         </div>
