@@ -19,6 +19,7 @@ import { dispatchWebhookEvent } from '@/lib/agency/webhook-dispatcher';
 import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
 import { resolveGHLConfig } from './resolve-ghl-config';
 import { ROLE_WORKERS } from '@/lib/ai-workers/role-workers';
+import { getClientKnowledge } from '@/lib/knowledge/extractor';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -84,7 +85,7 @@ export async function processWithSmartEngine(
   );
 
   // ── 2. Build rich system prompt ───────────────────────────────────────
-  const systemPrompt = buildSmartSystemPrompt(ctx.client, cc, ctx, ghlConfig);
+  let systemPrompt = buildSmartSystemPrompt(ctx.client, cc, ctx, ghlConfig);
 
   // ── 3. Fetch conversation history ─────────────────────────────────────
   const history = await getConversationHistory(
@@ -92,6 +93,12 @@ export async function processWithSmartEngine(
     ctx.contactId,
     10,
   ).catch(() => []);
+
+  // ── 3B. Inject client knowledge (learned from past conversations) ────
+  const clientKnowledge = await getClientKnowledge(ctx.client.id).catch(() => null);
+  if (clientKnowledge) {
+    systemPrompt += `\n\n## What I've Learned About This Business\n${clientKnowledge}`;
+  }
 
   // ── 4. Fetch relationship memories ────────────────────────────────────
   const memories = await fetchRelationshipMemories(

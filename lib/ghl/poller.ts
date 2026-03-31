@@ -34,6 +34,7 @@ import { resolveGHLConfig } from './resolve-ghl-config';
 import { callLLMWithTools } from './direct-llm';
 import { getCustomerMemory, updateCustomerMemory, formatMemoryForPrompt, extractFactsFromConversation } from '@/lib/memory/customer-memory';
 import { isReviewGateActive, queueForReview } from './review-gate';
+import { extractKnowledge, getClientKnowledge } from '@/lib/knowledge/extractor';
 import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
 
 const GHL_API_BASE = 'https://services.leadconnectorhq.com';
@@ -469,8 +470,16 @@ async function processConversation(
     console.log(`[ghl/poller] 🧠 Injected customer memory (${customerMemory.facts.length} facts, ${customerMemory.totalInteractions} interactions)`);
   }
 
-  // Augment system prompt with security reminder + customer memory
-  const secureSystemPrompt = systemPrompt + memoryContext + defense.systemPromptAddition;
+  // ── Client Knowledge Engine — inject learned business knowledge ──────
+  let knowledgeContext = '';
+  const clientKnowledge = await getClientKnowledge(client.id).catch(() => null);
+  if (clientKnowledge) {
+    knowledgeContext = `\n\n## What I've Learned About This Business\n${clientKnowledge}`;
+    console.log(`[ghl/poller] 📚 Injected client knowledge for "${client.name}"`);
+  }
+
+  // Augment system prompt with security reminder + customer memory + knowledge
+  const secureSystemPrompt = systemPrompt + memoryContext + knowledgeContext + defense.systemPromptAddition;
 
   // ── Smart model routing: pick cheapest model for this message ────────
   // BYOK clients: route using their configured provider + model
@@ -676,6 +685,20 @@ async function processConversation(
     }
   } catch (memErr) {
     console.warn('[ghl/poller] Failed to update customer memory:', memErr);
+  }
+
+  // ── Background knowledge extraction (fire-and-forget) ──────────────
+  // Extract structured business knowledge from conversations with 3+ messages
+  // This feeds into the Client Knowledge Engine for smarter AI responses
+  const knowledgeMessages = [
+    ...historyMessages.map((m) => ({ role: m.role, content: m.content })),
+    { role: 'user' as const, content: latestInbound.body },
+    { role: 'assistant' as const, content: aiResponse },
+  ];
+  if (knowledgeMessages.length >= 3) {
+    extractKnowledge(client.id, client.agency_id, knowledgeMessages).catch((err) => {
+      console.error('[knowledge] Extraction failed:', err);
+    });
   }
 
   // ── Log to ghl_message_log ─────────────────────────────────────────
