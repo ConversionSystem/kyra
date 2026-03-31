@@ -181,10 +181,10 @@ function CollapsibleCard({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="bg-white rounded-xl border border-gray-200">
+    <div className="bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-colors">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-5 py-4 text-left"
+        className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50/50 rounded-xl transition-colors"
       >
         <div className="flex items-center gap-2">
           <span className="text-indigo-500">{icon}</span>
@@ -379,24 +379,18 @@ function FaqEditor({
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-          <HelpCircle className="h-4 w-4 text-indigo-500" />
-          FAQ ({items.length} items)
-        </h4>
-        <div className="flex items-center gap-2">
-          {dirty && (
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-1.5 transition-colors"
-            >
-              {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
-              Save FAQ
-            </button>
-          )}
+      {dirty && (
+        <div className="flex justify-end">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-1.5 transition-colors"
+          >
+            {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+            Save FAQ
+          </button>
         </div>
-      </div>
+      )}
 
       {items.map((item, i) => (
         <div key={i} className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
@@ -651,7 +645,7 @@ function BusinessDetailsEditor({
   };
 
   return (
-    <CollapsibleCard title="Business Details" icon={<Building2 className="h-4 w-4" />} defaultOpen={false}>
+    <CollapsibleCard title="Business Details" icon={<Building2 className="h-4 w-4" />} defaultOpen={true}>
       <div className="space-y-3">
         <div className="grid grid-cols-2 gap-3">
           <div>
@@ -1549,6 +1543,7 @@ export default function PageEditor() {
   const [rebuilding, setRebuilding] = useState(false);
   const [editingSection, setEditingSection] = useState<number | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [activeTab, setActiveTab] = useState<'content' | 'design' | 'site'>('content');
 
   const siteUrl = site?.site_subdomain
     ? `https://${site.site_subdomain}`
@@ -1977,66 +1972,53 @@ export default function PageEditor() {
       {/* Main Layout: Sidebar + Content */}
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar — Page List */}
-        <div className="w-64 bg-white border-r border-gray-200 overflow-y-auto shrink-0">
-          <div className="px-4 py-3 border-b border-gray-100">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Pages ({pages.length})</p>
+        <div className="w-56 bg-white border-r border-gray-200 overflow-y-auto shrink-0">
+          <div className="px-3 py-3 border-b border-gray-100">
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider flex items-center justify-between">
+              Pages
+              <span className="bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full text-[10px]">{pages.length}</span>
+            </p>
           </div>
 
-          <div className="py-2">
+          <div className="py-1">
             {GROUP_ORDER.map((type) => {
               const typePages = groupedPages[type];
               if (!typePages || typePages.length === 0) return null;
               return (
-                <div key={type} className="mb-2">
-                  <p className="px-4 py-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                <div key={type} className="mb-1">
+                  <p className="px-3 py-1 text-[9px] font-semibold text-gray-400 uppercase tracking-wider">
                     {GROUP_LABELS[type] || type}
                   </p>
                   {typePages.map((page) => {
                     const isSelected = selectedPage?.id === page.id;
                     return (
-                      <div
+                      <button
                         key={page.id}
-                        className={`flex items-center gap-1 pr-1 ${
+                        onClick={() => {
+                          setSelectedPage(page);
+                          if (page.slug !== '/') setActiveTab('content');
+                        }}
+                        className={`w-full flex items-center gap-2 px-3 py-1.5 text-left transition-colors ${
                           page.hidden ? 'opacity-50' : ''
+                        } ${
+                          isSelected
+                            ? 'bg-indigo-50 text-indigo-700 border-l-2 border-indigo-600'
+                            : 'text-gray-700 hover:bg-gray-50 border-l-2 border-transparent'
                         }`}
                       >
-                        <button
-                          onClick={() => setSelectedPage(page)}
-                          className={`flex-1 flex items-center gap-2.5 px-4 py-2 text-left transition-colors ${
-                            isSelected
-                              ? 'bg-indigo-50 text-indigo-700 border-r-2 border-indigo-600'
-                              : 'text-gray-700 hover:bg-gray-50'
-                          }`}
-                        >
-                          <span className={isSelected ? 'text-indigo-500' : 'text-gray-400'}>
-                            {getPageIcon(page)}
+                        <span className={`shrink-0 ${isSelected ? 'text-indigo-500' : 'text-gray-400'}`}>
+                          {getPageIcon(page)}
+                        </span>
+                        <span className="text-xs truncate flex-1">{getPageLabel(page)}</span>
+                        {page.hidden && (
+                          <span className="shrink-0 text-[8px] bg-gray-200 text-gray-500 px-1 py-0.5 rounded font-medium">
+                            Hidden
                           </span>
-                          <span className="text-sm truncate">{getPageLabel(page)}</span>
-                          {page.hidden && (
-                            <span className="ml-auto shrink-0 text-[9px] bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded font-medium">
-                              Hidden
-                            </span>
-                          )}
-                          {!page.hidden && page.edited && (
-                            <span className="ml-auto shrink-0 w-1.5 h-1.5 rounded-full bg-amber-400" title="Edited" />
-                          )}
-                        </button>
-                        {/* Duplicate + Visibility toggle */}
-                        <button
-                          onClick={() => duplicatePage(page)}
-                          className="p-1 text-gray-300 hover:text-indigo-500 transition-colors shrink-0"
-                          title="Duplicate page"
-                        >
-                          <Copy className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          onClick={() => togglePageVisibility(page)}
-                          className="p-1 text-gray-300 hover:text-gray-500 transition-colors shrink-0"
-                          title={page.hidden ? 'Show page' : 'Hide page'}
-                        >
-                          {page.hidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                        </button>
-                      </div>
+                        )}
+                        {!page.hidden && page.edited && (
+                          <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-amber-400" title="Edited" />
+                        )}
+                      </button>
                     );
                   })}
                 </div>
@@ -2048,203 +2030,302 @@ export default function PageEditor() {
         {/* Content Area */}
         <div className="flex-1 overflow-y-auto">
           {selectedPage ? (
-            <div className="max-w-4xl mx-auto p-6 space-y-6">
-              {/* Page header */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="text-gray-400">{getPageIcon(selectedPage)}</span>
-                  <div>
-                    <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                      {getPageLabel(selectedPage)}
-                      {selectedPage.hidden && (
-                        <span className="text-xs bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
-                          <EyeOff className="h-3 w-3" /> Hidden
-                        </span>
-                      )}
-                    </h2>
-                    <p className="text-xs text-gray-400 font-mono">{selectedPage.slug}</p>
+            <div className="max-w-4xl mx-auto p-6 space-y-5">
+              {/* Page Header */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-3">
+                    <span className="text-indigo-500">{getPageIcon(selectedPage)}</span>
+                    <div>
+                      <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                        {getPageLabel(selectedPage)}
+                        {selectedPage.hidden && (
+                          <span className="text-[10px] bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+                            <EyeOff className="h-3 w-3" /> Hidden
+                          </span>
+                        )}
+                      </h2>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <p className="text-xs text-gray-400 font-mono">{selectedPage.slug}</p>
+                        {selectedPage.slug === '/' && (
+                          <span className="text-[10px] text-gray-400">
+                            › {activeTab === 'content' ? 'Content' : activeTab === 'design' ? 'Design' : 'Site Settings'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {showRegenerateInput ? (
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={regenerateFeedback}
-                        onChange={(e) => setRegenerateFeedback(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
+                  <div className="flex items-center gap-2">
+                    {showRegenerateInput ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={regenerateFeedback}
+                          onChange={(e) => setRegenerateFeedback(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              regeneratePage(regenerateFeedback || undefined);
+                              setShowRegenerateInput(false);
+                              setRegenerateFeedback('');
+                            } else if (e.key === 'Escape') {
+                              setShowRegenerateInput(false);
+                              setRegenerateFeedback('');
+                            }
+                          }}
+                          placeholder="e.g. more friendly, focus on emergency services"
+                          className="w-64 px-2.5 py-1.5 text-xs border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 bg-amber-50"
+                          autoFocus
+                        />
+                        <button
+                          onClick={() => {
                             regeneratePage(regenerateFeedback || undefined);
                             setShowRegenerateInput(false);
                             setRegenerateFeedback('');
-                          } else if (e.key === 'Escape') {
-                            setShowRegenerateInput(false);
-                            setRegenerateFeedback('');
-                          }
-                        }}
-                        placeholder="e.g. more friendly, focus on emergency services"
-                        className="w-64 px-2.5 py-1.5 text-xs border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 bg-amber-50"
-                        autoFocus
-                      />
+                          }}
+                          disabled={regenerating}
+                          className="px-3 py-1.5 text-xs font-medium bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50 flex items-center gap-1.5"
+                        >
+                          {regenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                          Go
+                        </button>
+                        <button
+                          onClick={() => { setShowRegenerateInput(false); setRegenerateFeedback(''); }}
+                          className="px-2 py-1.5 text-xs text-gray-500 hover:text-gray-700"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ) : (
                       <button
-                        onClick={() => {
-                          regeneratePage(regenerateFeedback || undefined);
-                          setShowRegenerateInput(false);
-                          setRegenerateFeedback('');
-                        }}
+                        onClick={() => setShowRegenerateInput(true)}
                         disabled={regenerating}
-                        className="px-3 py-1.5 text-xs font-medium bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50 flex items-center gap-1.5"
+                        className="px-3 py-1.5 text-xs font-medium border border-amber-200 text-amber-700 bg-amber-50 rounded-lg hover:bg-amber-100 disabled:opacity-50 flex items-center gap-1.5"
                       >
                         {regenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                        Go
+                        Regenerate with AI
                       </button>
-                      <button
-                        onClick={() => { setShowRegenerateInput(false); setRegenerateFeedback(''); }}
-                        className="px-2 py-1.5 text-xs text-gray-500 hover:text-gray-700"
+                    )}
+                    {siteUrl && (
+                      <a
+                        href={`${siteUrl}${selectedPage.slug}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center gap-1.5"
                       >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ) : (
+                        <Eye className="h-3 w-3" />
+                        Preview
+                      </a>
+                    )}
                     <button
-                      onClick={() => setShowRegenerateInput(true)}
-                      disabled={regenerating}
-                      className="px-3 py-1.5 text-xs font-medium border border-amber-200 text-amber-700 bg-amber-50 rounded-lg hover:bg-amber-100 disabled:opacity-50 flex items-center gap-1.5"
-                    >
-                      {regenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                      Regenerate with AI
-                    </button>
-                  )}
-                  {siteUrl && (
-                    <a
-                      href={`${siteUrl}${selectedPage.slug}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      onClick={() => togglePageVisibility(selectedPage)}
                       className="px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center gap-1.5"
+                      title={selectedPage.hidden ? 'Show page' : 'Hide page'}
                     >
-                      <Eye className="h-3 w-3" />
-                      Preview
-                    </a>
-                  )}
+                      {selectedPage.hidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                      {selectedPage.hidden ? 'Show' : 'Hide'}
+                    </button>
+                    <button
+                      onClick={() => duplicatePage(selectedPage)}
+                      className="px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center gap-1.5"
+                      title="Duplicate page"
+                    >
+                      <Copy className="h-3 w-3" />
+                      Duplicate
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              {/* Site-level editors (show on homepage only to avoid repetition) */}
-              {selectedPage.slug === '/' && site && (
+              {/* Tab Bar — only show on homepage */}
+              {selectedPage.slug === '/' && (
+                <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
+                  {([
+                    { id: 'content' as const, label: 'Content', icon: <FileText className="h-3.5 w-3.5" /> },
+                    { id: 'design' as const, label: 'Design', icon: <Palette className="h-3.5 w-3.5" /> },
+                    { id: 'site' as const, label: 'Site Settings', icon: <Settings className="h-3.5 w-3.5" /> },
+                  ]).map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`flex-1 flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg transition-all ${
+                        activeTab === tab.id
+                          ? 'bg-white text-indigo-700 shadow-sm'
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      {tab.icon}
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* ─── Content Tab (always shown on non-homepage, conditional on homepage) ─── */}
+              {(selectedPage.slug !== '/' || activeTab === 'content') && (
                 <div className="space-y-4">
-                  <BusinessDetailsEditor site={site} onSave={saveSiteEdits} saving={savingSite} />
-                  <NavLinkEditor site={site} onSave={saveSiteEdits} saving={savingSite} />
-                  <FooterEditor site={site} onSave={saveSiteEdits} saving={savingSite} />
-                  <ImageGallery
-                    siteId={siteId}
-                    photos={site.photos || []}
-                    onPhotosChanged={refreshSite}
+                  {/* Hero & SEO Editor */}
+                  <HeroEditor
+                    page={selectedPage}
+                    photos={site?.photos || []}
+                    onSave={savePageEdits}
+                    saving={saving}
                   />
 
-                  {/* P2: Section Manager — reorder + variant switching */}
+                  {/* Content Sections */}
+                  <CollapsibleCard
+                    title="Content Sections"
+                    icon={<MessageSquare className="h-4 w-4" />}
+                    badge={`${selectedPage.content_sections?.length || 0}`}
+                    defaultOpen={true}
+                  >
+                    <div className="space-y-3">
+                      {(!selectedPage.content_sections || selectedPage.content_sections.length === 0) ? (
+                        <div className="text-center py-8">
+                          <MessageSquare className="h-10 w-10 text-gray-200 mx-auto mb-3" />
+                          <p className="text-sm text-gray-400 mb-3">No content sections yet</p>
+                          <button
+                            onClick={addContentSection}
+                            className="px-4 py-2 text-xs font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 inline-flex items-center gap-1.5"
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                            Add Content Section
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          {selectedPage.content_sections.map((section, i) => (
+                            <div
+                              key={i}
+                              className="bg-gray-50 rounded-xl border border-gray-100 p-4 hover:border-indigo-200 transition-colors group"
+                            >
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-semibold text-gray-900 mb-1">{section.heading || `Section ${i + 1}`}</p>
+                                  <p className="text-sm text-gray-500 line-clamp-3">{section.body}</p>
+                                  <div className="flex items-center gap-3 mt-2">
+                                    {section.bullets && section.bullets.length > 0 && (
+                                      <div className="flex items-center gap-1">
+                                        <ChevronRight className="h-3 w-3 text-gray-400" />
+                                        <span className="text-xs text-gray-400">
+                                          {section.bullets.length} bullet{section.bullets.length !== 1 ? 's' : ''}
+                                        </span>
+                                      </div>
+                                    )}
+                                    {section.cta_text && (
+                                      <div className="flex items-center gap-1">
+                                        <MousePointerClick className="h-3 w-3 text-indigo-400" />
+                                        <span className="text-xs text-indigo-500">{section.cta_text}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0 ml-3">
+                                  <div className="flex flex-col gap-0.5">
+                                    <button
+                                      onClick={() => moveContentSection(i, -1)}
+                                      disabled={i === 0}
+                                      className="p-0.5 text-gray-300 hover:text-indigo-500 disabled:opacity-30 transition-colors"
+                                      title="Move up"
+                                    >
+                                      <ArrowUp className="h-3 w-3" />
+                                    </button>
+                                    <button
+                                      onClick={() => moveContentSection(i, 1)}
+                                      disabled={i === (selectedPage.content_sections?.length ?? 0) - 1}
+                                      className="p-0.5 text-gray-300 hover:text-indigo-500 disabled:opacity-30 transition-colors"
+                                      title="Move down"
+                                    >
+                                      <ArrowDown className="h-3 w-3" />
+                                    </button>
+                                  </div>
+                                  <button
+                                    onClick={() => setEditingSection(i)}
+                                    className="px-3 py-1.5 text-xs font-medium text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 opacity-0 group-hover:opacity-100 transition-all flex items-center gap-1"
+                                  >
+                                    <Edit3 className="h-3 w-3" />
+                                    Edit
+                                  </button>
+                                  <button
+                                    onClick={() => deleteContentSection(i)}
+                                    className="p-1.5 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                                    title="Delete section"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+
+                          <button
+                            onClick={addContentSection}
+                            className="w-full px-4 py-2.5 border-2 border-dashed border-gray-200 rounded-lg text-sm text-gray-500 hover:border-indigo-300 hover:text-indigo-600 transition-colors flex items-center justify-center gap-2"
+                          >
+                            <Plus className="h-4 w-4" />
+                            Add Content Section
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </CollapsibleCard>
+
+                  {/* FAQ Editor */}
+                  <CollapsibleCard
+                    title="FAQ"
+                    icon={<HelpCircle className="h-4 w-4" />}
+                    badge={`${selectedPage.faq?.length || 0} items`}
+                    defaultOpen={false}
+                  >
+                    {(!selectedPage.faq || selectedPage.faq.length === 0) ? (
+                      <div className="text-center py-8">
+                        <HelpCircle className="h-10 w-10 text-gray-200 mx-auto mb-3" />
+                        <p className="text-sm text-gray-400 mb-3">No FAQ items yet</p>
+                        <button
+                          onClick={() => savePageEdits({ faq: [{ question: '', answer: '' }] })}
+                          className="px-4 py-2 text-xs font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 inline-flex items-center gap-1.5"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                          Add FAQ
+                        </button>
+                      </div>
+                    ) : (
+                      <FaqEditor
+                        page={selectedPage}
+                        onSave={savePageEdits}
+                        saving={saving}
+                      />
+                    )}
+                  </CollapsibleCard>
+                </div>
+              )}
+
+              {/* ─── Design Tab (homepage only) ─── */}
+              {selectedPage.slug === '/' && activeTab === 'design' && site && (
+                <div className="space-y-4">
+                  {/* Section Manager — reorder + variant switching */}
                   <SectionManager
                     site={site}
                     onSave={saveSiteEdits}
                     saving={savingSite}
                   />
+
+                  {/* Image Gallery */}
+                  <ImageGallery
+                    siteId={siteId}
+                    photos={site.photos || []}
+                    onPhotosChanged={refreshSite}
+                  />
                 </div>
               )}
 
-              {/* Hero & SEO Editor */}
-              <HeroEditor
-                page={selectedPage}
-                photos={site?.photos || []}
-                onSave={savePageEdits}
-                saving={saving}
-              />
-
-              {/* Content Sections */}
-              <div className="space-y-3">
-                <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-                  <MessageSquare className="h-4 w-4 text-indigo-500" />
-                  Content Sections ({selectedPage.content_sections?.length || 0})
-                </h4>
-
-                {selectedPage.content_sections && selectedPage.content_sections.map((section, i) => (
-                  <div
-                    key={i}
-                    className="bg-white rounded-xl border border-gray-200 p-4 hover:border-indigo-200 transition-colors group"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-900 mb-1">{section.heading || `Section ${i + 1}`}</p>
-                        <p className="text-sm text-gray-500 line-clamp-3">{section.body}</p>
-                        <div className="flex items-center gap-3 mt-2">
-                          {section.bullets && section.bullets.length > 0 && (
-                            <div className="flex items-center gap-1">
-                              <ChevronRight className="h-3 w-3 text-gray-400" />
-                              <span className="text-xs text-gray-400">
-                                {section.bullets.length} bullet{section.bullets.length !== 1 ? 's' : ''}
-                              </span>
-                            </div>
-                          )}
-                          {section.cta_text && (
-                            <div className="flex items-center gap-1">
-                              <MousePointerClick className="h-3 w-3 text-indigo-400" />
-                              <span className="text-xs text-indigo-500">{section.cta_text}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1 shrink-0 ml-3">
-                        <div className="flex flex-col gap-0.5">
-                          <button
-                            onClick={() => moveContentSection(i, -1)}
-                            disabled={i === 0}
-                            className="p-0.5 text-gray-300 hover:text-indigo-500 disabled:opacity-30 transition-colors"
-                            title="Move up"
-                          >
-                            <ArrowUp className="h-3 w-3" />
-                          </button>
-                          <button
-                            onClick={() => moveContentSection(i, 1)}
-                            disabled={i === (selectedPage.content_sections?.length ?? 0) - 1}
-                            className="p-0.5 text-gray-300 hover:text-indigo-500 disabled:opacity-30 transition-colors"
-                            title="Move down"
-                          >
-                            <ArrowDown className="h-3 w-3" />
-                          </button>
-                        </div>
-                        <button
-                          onClick={() => setEditingSection(i)}
-                          className="px-3 py-1.5 text-xs font-medium text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 opacity-0 group-hover:opacity-100 transition-all flex items-center gap-1"
-                        >
-                          <Edit3 className="h-3 w-3" />
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => deleteContentSection(i)}
-                          className="p-1.5 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
-                          title="Delete section"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-
-                <button
-                  onClick={addContentSection}
-                  className="w-full px-4 py-2.5 border-2 border-dashed border-gray-200 rounded-lg text-sm text-gray-500 hover:border-indigo-300 hover:text-indigo-600 transition-colors flex items-center justify-center gap-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add Content Section
-                </button>
-              </div>
-
-              {/* FAQ Editor */}
-              <FaqEditor
-                page={selectedPage}
-                onSave={savePageEdits}
-                saving={saving}
-              />
-
+              {/* ─── Site Settings Tab (homepage only) ─── */}
+              {selectedPage.slug === '/' && activeTab === 'site' && site && (
+                <div className="space-y-4">
+                  <BusinessDetailsEditor site={site} onSave={saveSiteEdits} saving={savingSite} />
+                  <NavLinkEditor site={site} onSave={saveSiteEdits} saving={savingSite} />
+                  <FooterEditor site={site} onSave={saveSiteEdits} saving={savingSite} />
+                </div>
+              )}
 
             </div>
           ) : (
