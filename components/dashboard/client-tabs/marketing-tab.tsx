@@ -23,6 +23,8 @@ import {
   TrendingUp,
   MessageSquare,
   Target,
+  Sparkles,
+  ChevronDown,
 } from 'lucide-react';
 import type { AgencyClient } from '@/lib/agency/queries';
 import EmailMarketingTab from './email-marketing-tab';
@@ -229,6 +231,42 @@ function useWorkerStatus(client: AgencyClient) {
   return { isActive, isMarketingWorker, isInTeam, teamMembers, activeWorkerId };
 }
 
+// ── Setup Steps (module scope) ──────────────────────────────────────────────
+
+const SETUP_STEPS = [
+  {
+    label: "Add content pillars",
+    hint: "Topics your AI will write about (e.g. Agency growth, AI automation, Client results)",
+    check: (cfg: Record<string, unknown>) => !!(cfg.content_pillars as string)?.trim(),
+    tab: "seo",
+    action: "Set up SEO",
+  },
+  {
+    label: "Add your primary keywords",
+    hint: "The keywords you want to rank for (e.g. AI marketing platform, white-label AI)",
+    check: (cfg: Record<string, unknown>) => !!(cfg.primary_keywords as string)?.trim(),
+    tab: "seo",
+    action: "Add keywords",
+  },
+  {
+    label: "Add competitors to monitor",
+    hint: "Add 2-3 competitor domains and we will track their moves automatically",
+    check: (cfg: Record<string, unknown>) => {
+      const comps = cfg.marketing_competitors as string[] | undefined;
+      return Array.isArray(comps) && comps.length > 0;
+    },
+    tab: "competitors",
+    action: "Add competitors",
+  },
+  {
+    label: "Generate your first content piece",
+    hint: "Use the Content tab to write a blog post, LinkedIn post, or newsletter",
+    check: (cfg: Record<string, unknown>) => !!(cfg.first_content_generated),
+    tab: "content",
+    action: "Create content",
+  },
+];
+
 // ── Dashboard View ───────────────────────────────────────────────────────────
 
 function DashboardView({ client, onNavigate }: { client: AgencyClient; onNavigate: (tab: SubTab) => void }) {
@@ -237,6 +275,8 @@ function DashboardView({ client, onNavigate }: { client: AgencyClient; onNavigat
   const [activities, setActivities] = useState<Array<{ type: string; subject: string; body: string; created_at: string; actor: string }>>([]);
   const [loading, setLoading] = useState(true);
   const { isActive, isMarketingWorker, isInTeam, teamMembers, activeWorkerId } = useWorkerStatus(client);
+  const cfg = client.container_config || {};
+  const isSetupComplete = SETUP_STEPS.every(s => s.check(cfg));
 
   useEffect(() => {
     async function load() {
@@ -327,6 +367,50 @@ function DashboardView({ client, onNavigate }: { client: AgencyClient; onNavigat
         </div>
       </div>
 
+      {/* Setup Checklist — shown when worker is active but config is incomplete */}
+      {isActive && !isSetupComplete && (
+        <div className="rounded-xl border-2 border-indigo-200 bg-indigo-50 p-5">
+          <div className="flex items-start gap-3 mb-4">
+            <div className="p-2 rounded-lg bg-indigo-100">
+              <Sparkles className="h-5 w-5 text-indigo-600" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-indigo-900">Complete Your AI Marketing Setup</h3>
+              <p className="text-xs text-indigo-600 mt-0.5">Your AI Marketing Worker is live — finish setup to unlock full capabilities.</p>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            {SETUP_STEPS.map((step, i) => {
+              const done = step.check(cfg);
+              return (
+                <div key={i} className={`flex items-center gap-3 p-3 rounded-lg ${done ? "bg-white/60" : "bg-white"}`}>
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold ${done ? "bg-green-500 text-white" : "bg-indigo-600 text-white"}`}>
+                    {done ? "✓" : i + 1}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-medium ${done ? "text-gray-400 line-through" : "text-gray-900"}`}>{step.label}</p>
+                    {!done && <p className="text-xs text-gray-500 mt-0.5">{step.hint}</p>}
+                  </div>
+                  {!done && (
+                    <button
+                      onClick={() => onNavigate(step.tab as SubTab)}
+                      className="text-xs font-medium text-indigo-600 hover:text-indigo-800 whitespace-nowrap"
+                    >
+                      {step.action} →
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {SETUP_STEPS.filter(s => !s.check(cfg)).length === 0 && (
+            <p className="text-xs text-green-700 font-medium mt-3 text-center">🎉 Setup complete! Your AI Marketing Worker is fully configured.</p>
+          )}
+        </div>
+      )}
+
       {/* Metric cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <MetricCard label="Conversations" value={stats.conversations} sub="Total AI conversations" />
@@ -394,6 +478,12 @@ function DashboardView({ client, onNavigate }: { client: AgencyClient; onNavigat
 
 // ── SEO View ─────────────────────────────────────────────────────────────────
 
+const SEO_HELP = [
+  { title: "Keyword Research — find what people search for", body: "Type your business topic or service (e.g. \"dental implants NYC\") and click Research. You will get real search volumes, difficulty scores, and CPC data powered by DataForSEO." },
+  { title: "SERP Analysis — see who ranks at the top", body: "Enter any keyword to see the top 10 Google results. Use this to understand what content format wins (blog posts vs service pages vs videos) and how long the content needs to be." },
+  { title: "Rank Tracking — monitor your own position", body: "Enter your domain (e.g. yoursite.com) to see which keywords you currently rank for and your position. Check weekly to track progress." },
+];
+
 function SEOView({ client }: { client: AgencyClient }) {
   const clientId = client.id;
   const cfg = client.container_config || {};
@@ -408,6 +498,7 @@ function SEOView({ client }: { client: AgencyClient }) {
   const [hasDataForSEO, setHasDataForSEO] = useState<boolean | null>(null);
   const [aiEstimated, setAiEstimated] = useState(false);
   const seedInputRef = useRef<HTMLInputElement>(null);
+  const [showHelp, setShowHelp] = useState(false);
 
   const businessName = (cfg.business_name as string) || client.name;
   const industry = (cfg.industry as string) || client.industry || '';
@@ -533,6 +624,54 @@ Volume = estimated monthly search volume. KD = keyword difficulty 0-100. CPC = e
 
   return (
     <div className="space-y-6">
+      {/* How to use this tab */}
+      <div className="rounded-xl border border-blue-100 bg-blue-50">
+        <button
+          onClick={() => setShowHelp(!showHelp)}
+          className="w-full flex items-center justify-between px-4 py-3 text-left"
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-base">💡</span>
+            <span className="text-sm font-medium text-blue-800">How to use this tab</span>
+          </div>
+          <ChevronDown className={`w-4 h-4 text-blue-500 transition-transform ${showHelp ? "rotate-180" : ""}`} />
+        </button>
+        {showHelp && (
+          <div className="px-4 pb-4 space-y-2 border-t border-blue-100">
+            {SEO_HELP.map((step, i) => (
+              <div key={i} className="flex gap-3 pt-2">
+                <span className="w-5 h-5 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center shrink-0 mt-0.5 font-bold">{i+1}</span>
+                <div>
+                  <p className="text-sm font-medium text-blue-900">{step.title}</p>
+                  <p className="text-xs text-blue-700 mt-0.5">{step.body}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Primary keywords from setup */}
+      {!!cfg.primary_keywords && (
+        <div className="rounded-xl border border-gray-200 bg-white p-4">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Your primary keywords (from setup)</p>
+          <div className="flex flex-wrap gap-2">
+            {(cfg.primary_keywords as string).split(/[\n,]+/).filter(Boolean).map(kw => (
+              <button
+                key={kw.trim()}
+                onClick={() => setSeedKeyword(kw.trim())}
+                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-indigo-50 text-indigo-700 rounded-full hover:bg-indigo-100 transition-colors cursor-pointer"
+                title="Click to research this keyword"
+              >
+                <Search className="w-3 h-3" />
+                {kw.trim()}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-gray-400 mt-2">Click any keyword to research it instantly.</p>
+        </div>
+      )}
+
       {hasDataForSEO === false && (
         <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 mb-4 flex items-start gap-3">
           <Search className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
@@ -739,6 +878,12 @@ Volume = estimated monthly search volume. KD = keyword difficulty 0-100. CPC = e
 const CONTENT_FORMATS = ['Blog Post', 'LinkedIn', 'Twitter Thread', 'Newsletter', 'Video Script'] as const;
 type ContentFormat = typeof CONTENT_FORMATS[number];
 
+const CONTENT_HELP = [
+  { title: "Type a topic and pick a format", body: "Enter any topic or title idea. Select Blog Post, LinkedIn, Twitter Thread, Newsletter, or Video Script. Your AI Marketing Worker will research the topic first, then write." },
+  { title: "Every piece is a DRAFT — review before publishing", body: "The AI NEVER publishes directly. Every output appears in your Content Library with a \"DRAFT — awaiting approval\" badge. Copy, edit, then publish where you want." },
+  { title: "Content uses your brand voice automatically", body: "The AI reads your brand tone and content pillars (set when deploying the worker) and matches them in every piece. Update them in the AI Workers tab anytime." },
+];
+
 function ContentView({ client }: { client: AgencyClient }) {
   const clientId = client.id;
   const cfg = client.container_config || {};
@@ -752,6 +897,7 @@ function ContentView({ client }: { client: AgencyClient }) {
   const [format, setFormat] = useState<ContentFormat>('Blog Post');
   const [generating, setGenerating] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [showHelp, setShowHelp] = useState(false);
 
   // Persist drafts in sessionStorage so they survive tab switches
   useEffect(() => {
@@ -782,10 +928,18 @@ Make it professional, engaging, and ready to publish. Use appropriate formatting
         body: reply,
       };
       setDrafts(prev => [newDraft, ...prev]);
+      // Mark first content generated for setup checklist
+      if (!cfg.first_content_generated) {
+        fetch(`/api/agency/clients/${clientId}/container-config`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ first_content_generated: true }),
+        }).catch(() => {});
+      }
       setTopic('');
     } catch { /* handled */ }
     finally { setGenerating(false); }
-  }, [topic, format, clientId, businessName, industry, brandTone, contentPillars]);
+  }, [topic, format, clientId, businessName, industry, brandTone, contentPillars, cfg.first_content_generated]);
 
   const deleteDraft = (id: string) => {
     setDrafts(prev => prev.filter(d => d.id !== id));
@@ -793,6 +947,52 @@ Make it professional, engaging, and ready to publish. Use appropriate formatting
 
   return (
     <div className="space-y-6">
+      {/* How to use this tab */}
+      <div className="rounded-xl border border-blue-100 bg-blue-50">
+        <button
+          onClick={() => setShowHelp(!showHelp)}
+          className="w-full flex items-center justify-between px-4 py-3 text-left"
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-base">💡</span>
+            <span className="text-sm font-medium text-blue-800">How to use this tab</span>
+          </div>
+          <ChevronDown className={`w-4 h-4 text-blue-500 transition-transform ${showHelp ? "rotate-180" : ""}`} />
+        </button>
+        {showHelp && (
+          <div className="px-4 pb-4 space-y-2 border-t border-blue-100">
+            {CONTENT_HELP.map((step, i) => (
+              <div key={i} className="flex gap-3 pt-2">
+                <span className="w-5 h-5 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center shrink-0 mt-0.5 font-bold">{i+1}</span>
+                <div>
+                  <p className="text-sm font-medium text-blue-900">{step.title}</p>
+                  <p className="text-xs text-blue-700 mt-0.5">{step.body}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Content pillar quick-start chips */}
+      {contentPillars && (
+        <div className="rounded-xl border border-gray-200 bg-white p-4">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Your content pillars — click to start writing</p>
+          <div className="flex flex-wrap gap-2">
+            {contentPillars.split(/[\n,]+/).filter(Boolean).map(pillar => (
+              <button
+                key={pillar.trim()}
+                onClick={() => setTopic(pillar.trim())}
+                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-violet-50 text-violet-700 rounded-full hover:bg-violet-100 transition-colors"
+              >
+                <PenTool className="w-3 h-3" />
+                {pillar.trim()}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Content Generator */}
       <div className="rounded-xl border border-gray-200 bg-white p-5">
         <h3 className="text-sm font-semibold text-gray-900 mb-1">Content Generator</h3>
@@ -886,6 +1086,12 @@ Make it professional, engaging, and ready to publish. Use appropriate formatting
 
 // ── Competitors View ─────────────────────────────────────────────────────────
 
+const COMPETITORS_HELP = [
+  { title: "Add competitor domains", body: "Type any competitor domain (e.g. competitor.com) and click Add. You can add as many as you want." },
+  { title: "Click \"Scan All Competitors\" to run analysis", body: "The AI will visit each competitor site, check their latest content, pricing, and positioning, then give each a threat score: 🔴 High 🟡 Medium 🟢 Low." },
+  { title: "Use results to stay ahead", body: "When a competitor launches a new product or ranks for a new keyword, you will see it here first. Counter their moves with your own content." },
+];
+
 function CompetitorsView({ client }: { client: AgencyClient }) {
   const clientId = client.id;
   const cfg = client.container_config || {};
@@ -896,6 +1102,7 @@ function CompetitorsView({ client }: { client: AgencyClient }) {
   const [scanning, setScanning] = useState(false);
   const [results, setResults] = useState<CompetitorResult[]>([]);
   const [saving, setSaving] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
 
   // Load saved competitors from container_config on mount
   useEffect(() => {
@@ -980,6 +1187,33 @@ threat must be one of: "high", "medium", "low"`;
 
   return (
     <div className="space-y-6">
+      {/* How to use this tab */}
+      <div className="rounded-xl border border-blue-100 bg-blue-50">
+        <button
+          onClick={() => setShowHelp(!showHelp)}
+          className="w-full flex items-center justify-between px-4 py-3 text-left"
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-base">💡</span>
+            <span className="text-sm font-medium text-blue-800">How to use this tab</span>
+          </div>
+          <ChevronDown className={`w-4 h-4 text-blue-500 transition-transform ${showHelp ? "rotate-180" : ""}`} />
+        </button>
+        {showHelp && (
+          <div className="px-4 pb-4 space-y-2 border-t border-blue-100">
+            {COMPETITORS_HELP.map((step, i) => (
+              <div key={i} className="flex gap-3 pt-2">
+                <span className="w-5 h-5 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center shrink-0 mt-0.5 font-bold">{i+1}</span>
+                <div>
+                  <p className="text-sm font-medium text-blue-900">{step.title}</p>
+                  <p className="text-xs text-blue-700 mt-0.5">{step.body}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="rounded-xl border border-gray-200 bg-white p-5">
         <h3 className="text-sm font-semibold text-gray-900 mb-1">Competitor Intelligence</h3>
         <p className="text-sm text-gray-500 mb-4">
@@ -1072,6 +1306,12 @@ const PLATFORMS = [
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const;
 
+const SOCIAL_HELP = [
+  { title: "Select your platforms", body: "Toggle which platforms you want posts for: LinkedIn, Twitter/X, or Instagram. The AI tailors the format and tone for each platform automatically." },
+  { title: "Type a topic and click Generate", body: "Enter any topic (e.g. \"how AI saves agencies 10 hours a week\"). The AI will write platform-specific posts in your brand voice." },
+  { title: "Drafts stay in your queue until you post", body: "All social posts are saved as drafts. Copy the text to post manually, or click \"Mark as Posted\" to track what went live. Nothing is ever auto-posted." },
+];
+
 function SocialView({ client }: { client: AgencyClient }) {
   const clientId = client.id;
   const cfg = client.container_config || {};
@@ -1085,6 +1325,7 @@ function SocialView({ client }: { client: AgencyClient }) {
   const [generating, setGenerating] = useState(false);
   const [drafts, setDrafts] = useState<SocialDraft[]>([]);
   const [activeSection, setActiveSection] = useState<'generate' | 'calendar' | 'engagement'>('generate');
+  const [showHelp, setShowHelp] = useState(false);
 
   // Persist drafts in sessionStorage so they survive tab switches
   useEffect(() => {
@@ -1293,6 +1534,33 @@ Make them feel authentic, not salesy. Each should offer genuine value.`;
 
   return (
     <div className="space-y-6">
+      {/* How to use this tab */}
+      <div className="rounded-xl border border-blue-100 bg-blue-50">
+        <button
+          onClick={() => setShowHelp(!showHelp)}
+          className="w-full flex items-center justify-between px-4 py-3 text-left"
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-base">💡</span>
+            <span className="text-sm font-medium text-blue-800">How to use this tab</span>
+          </div>
+          <ChevronDown className={`w-4 h-4 text-blue-500 transition-transform ${showHelp ? "rotate-180" : ""}`} />
+        </button>
+        {showHelp && (
+          <div className="px-4 pb-4 space-y-2 border-t border-blue-100">
+            {SOCIAL_HELP.map((step, i) => (
+              <div key={i} className="flex gap-3 pt-2">
+                <span className="w-5 h-5 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center shrink-0 mt-0.5 font-bold">{i+1}</span>
+                <div>
+                  <p className="text-sm font-medium text-blue-900">{step.title}</p>
+                  <p className="text-xs text-blue-700 mt-0.5">{step.body}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Section Toggle */}
       <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
         {[
