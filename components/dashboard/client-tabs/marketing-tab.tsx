@@ -179,40 +179,67 @@ async function sendChatPrompt(clientId: string, message: string): Promise<string
     body: JSON.stringify({ message }),
   });
 
-  if (!res.ok) throw new Error(`Chat API error: ${res.status}`);
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '');
+    throw new Error(`Chat API ${res.status}: ${errText.slice(0, 100)}`);
+  }
 
   // Handle SSE stream
   if (res.headers.get('content-type')?.includes('text/event-stream')) {
     const reader = res.body?.getReader();
     if (!reader) throw new Error('No response body');
     const decoder = new TextDecoder();
-    let result = '';
+    let fullText = '';
+    let doneText = '';
+
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
       const chunk = decoder.decode(value, { stream: true });
-      // Parse SSE events
       for (const line of chunk.split('\n')) {
-        if (line.startsWith('data: ')) {
-          const data = line.slice(6);
-          if (data === '[DONE]') continue;
-          try {
-            const parsed = JSON.parse(data);
-            const token = parsed.choices?.[0]?.delta?.content || parsed.token || parsed.text || '';
-            result += token;
-          } catch {
-            // Plain text chunk
-            result += data;
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (data === '[DONE]') continue;
+        try {
+          const parsed = JSON.parse(data);
+          // Handle { type: "content", content: "..." } — accumulate chunks
+          if (parsed.type === 'content' && parsed.content) {
+            fullText += parsed.content;
           }
+          // Handle { type: "done", fullResponse: "..." } — definitive complete text
+          if (parsed.type === 'done' && parsed.fullResponse) {
+            doneText = parsed.fullResponse;
+          }
+          // OpenAI SSE format fallback
+          if (parsed.choices?.[0]?.delta?.content) {
+            fullText += parsed.choices[0].delta.content;
+          }
+        } catch {
+          // ignore parse errors
         }
       }
     }
-    return result.trim() || 'Response received — check the AI worker conversation.';
+    // Prefer the done event fullResponse (most accurate), fall back to accumulated chunks
+    return (doneText || fullText).trim();
   }
 
-  // JSON response
+  // Non-streaming JSON response
   const data = await res.json();
-  return data.reply || data.message || data.data?.reply || 'Content generated — check the AI worker conversation.';
+  return String(data.reply || data.message || data.response || data.content || '').trim();
+}
+
+/** Extract readable text from AI replies that may contain JSON arrays. */
+function extractTextFromAIReply(reply: string): string {
+  const trimmed = reply.trim();
+  if (trimmed.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(trimmed) as Array<Record<string, unknown>>;
+      if (Array.isArray(parsed) && parsed[0]?.body) {
+        return parsed.map(p => `**${p.platform}**\n\n${p.body}`).join('\n\n---\n\n');
+      }
+    } catch { /* not JSON */ }
+  }
+  return trimmed;
 }
 
 // ── AI Worker Status Helper ──────────────────────────────────────────────────
@@ -281,30 +308,29 @@ function DashboardView({ client, onNavigate }: { client: AgencyClient; onNavigat
   useEffect(() => {
     async function load() {
       try {
-        const [convRes, pagesRes, contactsRes, actRes, crmRes] = await Promise.allSettled([
-          fetch(`/api/agency/clients/${clientId}/conversations?limit=1`).then(r => r.json()),
+        const [convRes, pagesRes, contactsRes, actRes] = await Promise.allSettled([
+          fetch(`/api/agency/clients/${clientId}/conversations?limit=20`).then(r => r.json()),
           fetch(`/api/agency/sites?clientId=${clientId}`).then(r => r.json()),
           fetch(`/api/agency/crm/contacts?clientId=${clientId}&limit=1`).then(r => r.json()),
           fetch(`/api/agency/clients/${clientId}/ghl/actions?limit=10`).then(r => r.json()),
-          fetch(`/api/agency/crm/activities?limit=15`).then(r => r.json()),
         ]);
 
         setStats({
-          conversations: convRes.status === 'fulfilled' ? (convRes.value?.data?.length || convRes.value?.total || 0) : 0,
+          conversations: convRes.status === 'fulfilled' ? (convRes.value?.total ?? convRes.value?.conversations?.length ?? 0) : 0,
           pages: pagesRes.status === 'fulfilled' ? (pagesRes.value?.data?.[0]?.pages_count || 0) : 0,
-          contacts: contactsRes.status === 'fulfilled' ? (contactsRes.value?.data?.length || contactsRes.value?.total || 0) : 0,
+          contacts: contactsRes.status === 'fulfilled' ? (contactsRes.value?.total ?? contactsRes.value?.data?.length ?? 0) : 0,
           activities: actRes.status === 'fulfilled' ? (actRes.value?.data?.length || 0) : 0,
         });
 
-        // Pull recent activities from CRM activities endpoint
-        if (crmRes.status === 'fulfilled') {
-          const raw = crmRes.value?.activities || crmRes.value?.data || [];
-          setActivities(raw.slice(0, 8).map((a: Record<string, unknown>) => ({
-            type: String(a.type || 'activity'),
-            subject: String(a.subject || a.description || 'Activity'),
-            body: String(a.body || ''),
-            created_at: String(a.created_at || ''),
-            actor: String(a.actor || 'system'),
+        // Pull recent activities from client-specific conversations
+        if (convRes.status === 'fulfilled') {
+          const convs = convRes.value?.conversations || [];
+          setActivities(convs.slice(0, 10).map((c: Record<string, unknown>) => ({
+            type: 'conversation',
+            subject: `AI responded via ${String(c.channel || 'chat').replace('_', ' ')}`,
+            body: String(c.user_message || '').slice(0, 80),
+            created_at: String(c.created_at || ''),
+            actor: 'ai',
           })));
         }
       } catch {
@@ -366,6 +392,26 @@ function DashboardView({ client, onNavigate }: { client: AgencyClient; onNavigat
           </div>
         </div>
       </div>
+
+      {/* Tools Status — shown when worker is active */}
+      {isActive && (() => {
+        const installedSkills = (client.settings?.installed_clawhub_skills as Array<{slug:string}> | undefined) ?? [];
+        const hasFirecrawl = installedSkills.some(s => s.slug === 'firecrawl-cli');
+        const hasBlogwatcher = installedSkills.some(s => s.slug === 'blogwatcher');
+        return (
+          <div className="flex flex-wrap gap-2">
+            {[
+              { label: 'Web Intelligence (Firecrawl)', active: hasFirecrawl },
+              { label: 'Blog Monitor', active: hasBlogwatcher },
+            ].map(t => (
+              <div key={t.label} className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-full border ${t.active ? 'bg-green-50 border-green-200 text-green-700' : 'bg-gray-50 border-gray-200 text-gray-500'}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${t.active ? 'bg-green-500' : 'bg-gray-400'}`} />
+                {t.label}
+              </div>
+            ))}
+          </div>
+        );
+      })()}
 
       {/* Setup Checklist — shown when worker is active but config is incomplete */}
       {isActive && !isSetupComplete && (
@@ -606,7 +652,11 @@ Volume = estimated monthly search volume. KD = keyword difficulty 0-100. CPC = e
     setLoading('rank');
     setSeoError(null);
     try {
-      const res = await fetch(`/api/agency/clients/${clientId}/seo/rank?domain=${encodeURIComponent(rankDomain)}`);
+      const cleanDomain = rankDomain.trim()
+        .replace(/^https?:\/\//i, '')
+        .replace(/^www\./i, '')
+        .replace(/\/.*$/, '');
+      const res = await fetch(`/api/agency/clients/${clientId}/seo/rank?domain=${encodeURIComponent(cleanDomain)}`);
       if (res.ok) {
         const data = await res.json();
         if (data.data?.length) {
@@ -832,6 +882,7 @@ Volume = estimated monthly search volume. KD = keyword difficulty 0-100. CPC = e
             Track
           </button>
         </div>
+        <p className="text-xs text-gray-400 mt-1 mb-4">Enter just the domain — e.g. yourdomain.com (no https://)</p>
 
         {ranks.length > 0 ? (
           <div className="overflow-x-auto">
@@ -1047,8 +1098,15 @@ Make it professional, engaging, and ready to publish. Use appropriate formatting
                 </p>
 
                 {expanded === d.id ? (
-                  <div className="mt-2 p-4 bg-gray-50 rounded-lg text-sm text-gray-700 whitespace-pre-wrap border border-gray-100">
-                    {d.body}
+                  <div className="mt-2 p-4 bg-gray-50 rounded-lg text-sm text-gray-700 border border-gray-100 prose prose-sm max-w-none">
+                    {d.body.split('\n').map((line, i) => (
+                      <p key={i} className={line.startsWith('#') ? 'font-bold text-gray-900 mt-3' :
+                                             line.startsWith('**') && line.endsWith('**') ? 'font-semibold mt-2' :
+                                             line === '---' ? 'border-t my-3' :
+                                             line === '' ? 'mb-2' : 'mb-0'}>
+                        {line.replace(/^#+\s/, '').replace(/\*\*/g, '')}
+                      </p>
+                    ))}
                   </div>
                 ) : (
                   <p className="text-sm text-gray-500 truncate">{d.body.slice(0, 150)}...</p>
@@ -1103,14 +1161,21 @@ function CompetitorsView({ client }: { client: AgencyClient }) {
   const [results, setResults] = useState<CompetitorResult[]>([]);
   const [saving, setSaving] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [lastScan, setLastScan] = useState<string | null>(null);
 
-  // Load saved competitors from container_config on mount
+  // Load saved competitors and scan results from container_config on mount
   useEffect(() => {
     const saved = cfg.marketing_competitors as string[] | undefined;
     if (saved && Array.isArray(saved)) {
       setCompetitors(saved);
     }
-  }, [cfg.marketing_competitors]);
+    const savedResults = cfg.marketing_scan_results as CompetitorResult[] | undefined;
+    if (savedResults && Array.isArray(savedResults) && savedResults.length > 0) {
+      setResults(savedResults);
+    }
+    const savedLastScan = cfg.marketing_last_scan as string | undefined;
+    if (savedLastScan) setLastScan(savedLastScan);
+  }, [cfg.marketing_competitors, cfg.marketing_scan_results, cfg.marketing_last_scan]);
 
   // Persist competitors to container_config
   const saveCompetitors = useCallback(async (domains: string[]) => {
@@ -1184,6 +1249,23 @@ threat must be one of: "high", "medium", "low"`;
     } catch { /* handled */ }
     finally { setScanning(false); }
   }, [competitors, clientId, businessName]);
+
+  // Persist scan results whenever they change
+  useEffect(() => {
+    if (results.length > 0) {
+      const now = new Date().toISOString();
+      setLastScan(now);
+      fetch(`/api/agency/clients/${clientId}/container-config`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          marketing_scan_results: results,
+          marketing_last_scan: now,
+        }),
+      }).catch(() => {});
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [results, clientId]);
 
   return (
     <div className="space-y-6">
@@ -1278,16 +1360,27 @@ threat must be one of: "high", "medium", "low"`;
       {results.length > 0 && (
         <div className="space-y-3">
           <h3 className="text-sm font-semibold text-gray-900">Scan Results</h3>
-          {results.map(r => (
-            <div key={r.domain} className="rounded-xl border border-gray-200 bg-white p-5">
-              <div className="flex items-center justify-between mb-2">
+          {lastScan && <p className="text-xs text-gray-400 mb-3">Last scanned: {new Date(lastScan).toLocaleString()}</p>}
+          {results.map((r, i) => (
+            <div key={i} className="border border-gray-200 rounded-xl p-4 bg-white">
+              <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <ExternalLink className="w-4 h-4 text-gray-400" />
-                  <span className="font-medium text-sm text-gray-900">{r.domain}</span>
+                  <a href={`https://${r.domain}`} target="_blank" rel="noopener noreferrer"
+                     className="text-sm font-semibold text-gray-900 hover:text-indigo-600">
+                    {r.domain}
+                  </a>
                 </div>
                 <ThreatBadge level={r.threat} />
               </div>
-              <p className="text-sm text-gray-600 whitespace-pre-wrap">{r.summary}</p>
+              <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{r.summary}</p>
+              <div className="flex gap-2 mt-3">
+                <button onClick={() => window.open(`https://${r.domain}`, '_blank')}
+                  className="text-xs text-indigo-600 hover:underline flex items-center gap-1">
+                  <ExternalLink className="w-3 h-3" /> Visit site
+                </button>
+                <CopyButton text={`${r.domain}: ${r.summary}`} />
+              </div>
             </div>
           ))}
         </div>
@@ -1505,6 +1598,10 @@ For each comment, include:
 Make them feel authentic, not salesy. Each should offer genuine value.`;
 
       const reply = await sendChatPrompt(clientId, prompt);
+      if (!reply) {
+        setEngagementComments('No response received. Make sure your AI Marketing Worker is deployed and running.');
+        return;
+      }
       setEngagementComments(reply);
     } catch { /* handled */ }
     finally { setEngagementLoading(false); }
