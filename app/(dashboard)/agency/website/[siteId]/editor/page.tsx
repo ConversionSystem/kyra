@@ -11,6 +11,7 @@ import {
   Loader2,
   FileText,
   Check,
+  CheckCircle2,
   X,
   Sparkles,
   ChevronRight,
@@ -132,6 +133,7 @@ interface SiteData {
   section_order: string[] | null;
   section_overrides: Record<string, string> | null;
   template_id: string | null;
+  client_id?: string | null;
 }
 
 // ── Page Type Icons ───────────────────────────────────────────────────────────
@@ -1538,9 +1540,11 @@ export default function PageEditor() {
   const [saving, setSaving] = useState(false);
   const [savingSite, setSavingSite] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
+  const [regenerateStatus, setRegenerateStatus] = useState<'idle' | 'working' | 'success' | 'timeout'>('idle');
   const [showRegenerateInput, setShowRegenerateInput] = useState(false);
   const [regenerateFeedback, setRegenerateFeedback] = useState('');
   const [rebuilding, setRebuilding] = useState(false);
+  const regenerateOriginalRef = useRef<string | null>(null);
   const [editingSection, setEditingSection] = useState<number | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [activeTab, setActiveTab] = useState<'content' | 'design' | 'site'>('content');
@@ -1805,6 +1809,11 @@ export default function PageEditor() {
   const regeneratePage = async (feedback?: string) => {
     if (!selectedPage) return;
     setRegenerating(true);
+    setRegenerateStatus('working');
+
+    // Snapshot current content for comparison
+    regenerateOriginalRef.current = JSON.stringify(selectedPage.content_sections);
+
     try {
       const encodedSlug = encodeURIComponent(selectedPage.slug);
       const res = await fetch(`/api/agency/sites/${siteId}/pages/${encodedSlug}`, {
@@ -1813,17 +1822,58 @@ export default function PageEditor() {
         body: JSON.stringify({ action: 'regenerate', feedback }),
       });
       if (res.ok) {
-        showToast('Regenerating page... Check back in a moment.');
-        setTimeout(() => refreshPage(selectedPage.slug), 5000);
-        setTimeout(() => refreshPage(selectedPage.slug), 10000);
-        setTimeout(() => refreshPage(selectedPage.slug), 20000);
+        // Poll at 5s, 10s, 20s — check if content actually changed
+        const checkRegenerated = async (slug: string) => {
+          try {
+            const encoded = encodeURIComponent(slug);
+            const pollRes = await fetch(`/api/agency/sites/${siteId}/pages/${encoded}`);
+            if (pollRes.ok) {
+              const result = await pollRes.json();
+              if (result.data) {
+                const newContent = JSON.stringify(result.data.content_sections);
+                if (newContent !== regenerateOriginalRef.current) {
+                  // Content changed — success!
+                  setSelectedPage(result.data);
+                  setPages((prev) => prev.map((p) => (p.slug === slug ? result.data : p)));
+                  setRegenerating(false);
+                  setRegenerateStatus('success');
+                  showToast('✓ Page regenerated successfully!');
+                  setTimeout(() => setRegenerateStatus('idle'), 4000);
+                  return true;
+                }
+              }
+            }
+          } catch {
+            // silently ignore poll errors
+          }
+          return false;
+        };
+
+        // Staggered polling
+        const slug = selectedPage.slug;
+        setTimeout(async () => {
+          if (await checkRegenerated(slug)) return;
+          setTimeout(async () => {
+            if (await checkRegenerated(slug)) return;
+            setTimeout(async () => {
+              if (await checkRegenerated(slug)) return;
+              // Final timeout — content didn't change yet
+              setRegenerating(false);
+              setRegenerateStatus('timeout');
+              showToast('Regeneration may still be processing. Refresh to check.');
+              setTimeout(() => setRegenerateStatus('idle'), 6000);
+            }, 10000); // 20s total
+          }, 5000); // 10s total
+        }, 5000); // 5s
       } else {
         showToast('Failed to regenerate page', 'error');
+        setRegenerating(false);
+        setRegenerateStatus('idle');
       }
     } catch {
       showToast('Failed to regenerate page', 'error');
-    } finally {
       setRegenerating(false);
+      setRegenerateStatus('idle');
     }
   };
 
@@ -1907,7 +1957,7 @@ export default function PageEditor() {
         <div className="px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link
-              href="/agency/website"
+              href={site?.client_id ? `/agency/clients/${site.client_id}` : '/agency/website'}
               className="text-gray-500 hover:text-gray-900 transition-colors"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -2135,6 +2185,35 @@ export default function PageEditor() {
                   </div>
                 </div>
               </div>
+
+              {/* Regeneration Progress Banner */}
+              {regenerateStatus === 'working' && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3 animate-pulse">
+                  <Loader2 className="h-5 w-5 text-amber-600 animate-spin shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-amber-800">Regenerating with AI...</p>
+                    <p className="text-xs text-amber-600">This takes 15–30 seconds. The page will update automatically.</p>
+                  </div>
+                </div>
+              )}
+              {regenerateStatus === 'success' && (
+                <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-green-800">✓ Page regenerated!</p>
+                    <p className="text-xs text-green-600">Content has been updated. Review the changes below.</p>
+                  </div>
+                </div>
+              )}
+              {regenerateStatus === 'timeout' && (
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center gap-3">
+                  <RefreshCw className="h-5 w-5 text-blue-600 shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-blue-800">Regeneration may still be processing</p>
+                    <p className="text-xs text-blue-600">Refresh the page in a moment to check for updates.</p>
+                  </div>
+                </div>
+              )}
 
               {/* Tab Bar — only show on homepage */}
               {selectedPage.slug === '/' && (
