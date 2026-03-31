@@ -319,13 +319,21 @@ const ADVANCED_TABS_AGENCIES = new Set([
 
 export function ClientDetailView({ client: initialClient, role, plan, accountType }: ClientDetailViewProps) {
   const isFreeOrSolo = !plan || plan === 'free' || plan === 'solo_pro' || (plan === 'free' && accountType === 'solo');
-  const hasAdvancedTabs = ADVANCED_TABS_AGENCIES.has(initialClient.agency_id ?? '');
+  const isPaidPlan = plan === 'pro' || plan === 'scale';
+  const isMasterOrKyra = ADVANCED_TABS_AGENCIES.has(initialClient.agency_id ?? '');
+  const isTrustedNetworx = initialClient.agency_id === '18e6e562-ec29-4652-a38b-58f6be2e533f';
+  const hasAdvancedTabs = isMasterOrKyra || isPaidPlan;
+  // TrustedNetworx gets Operations only (not Marketing) unless they're on a paid plan
+  const hasMarketingTab = isMasterOrKyra || isPaidPlan;
+  const hasOperationsTab = isMasterOrKyra || isPaidPlan || isTrustedNetworx;
   const router = useRouter();
   const searchParams = useSearchParams();
   const rawTab = searchParams.get('tab') || 'inbox';
   const resolvedTab = (LEGACY_TAB_MAP[rawTab] ?? rawTab) as Tab;
-  // Marketing & Operations tabs visible to master agency + explicitly allowed agencies
-  const HIDDEN_TABS = hasAdvancedTabs ? [] : ['marketing', 'operations'];
+  // Feature gating: Marketing, Operations, Voice, AI Marketing Worker
+  const HIDDEN_TABS: string[] = [];
+  if (!hasMarketingTab) HIDDEN_TABS.push('marketing');
+  if (!hasOperationsTab) HIDDEN_TABS.push('operations');
   const filteredGroups = TAB_GROUPS.map(g => ({
     ...g,
     tabs: g.tabs.filter(t => !HIDDEN_TABS.includes(t.id)),
@@ -464,7 +472,7 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
             <TrainTab client={initialClient} />
           )}
           {activeTab === 'workers' && (
-            <AIWorkersTab client={initialClient} agencyId={initialClient.agency_id} />
+            <AIWorkersTab client={initialClient} agencyId={initialClient.agency_id} plan={plan} />
           )}
           {activeTab === 'marketing' && (
             <MarketingTab client={initialClient} />
@@ -1329,12 +1337,15 @@ function SettingsTabMerged({
 }) {
   const [activeSubTab, setActiveSubTab] = useState<SettingsSubTab>('general');
   const isFreeOrSolo = !plan || plan === 'free' || plan === 'solo_pro' || (plan === 'free' && accountType === 'solo');
+  const isPaidPlan = plan === 'pro' || plan === 'scale';
+  const isMasterOrKyra = ADVANCED_TABS_AGENCIES.has(client.agency_id ?? '');
+  const hasVoice = isMasterOrKyra || isPaidPlan;
 
   return (
     <div className="space-y-6">
       {/* Sub-nav pills */}
       <div className="flex flex-wrap gap-2">
-        {SETTINGS_SUB_TABS.map((tab) => {
+        {SETTINGS_SUB_TABS.filter((tab) => tab.id !== 'voice' || hasVoice).map((tab) => {
           const locked = tab.id === 'sms' && isFreeOrSolo;
           return (
             <button
