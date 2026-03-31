@@ -521,7 +521,7 @@ export default function GrowthEngine() {
                   className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
                 >
                   <Globe className="h-4 w-4 text-gray-400" />
-                  Edit Pages
+                  Edit Website
                 </Link>
                 <Link
                   href={`/agency/website/${siteId}/settings`}
