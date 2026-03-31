@@ -46,6 +46,7 @@ const CHANNEL_LABELS: Record<string, string> = {
 interface AIWorkersTabProps {
   client: AgencyClient;
   agencyId: string;
+  plan?: string;
 }
 
 type WorkerCategory = 'all' | 'customer-facing' | 'internal' | 'sales' | 'marketing' | 'operations' | 'industry';
@@ -75,10 +76,10 @@ function matchesCategory(worker: RoleWorker, category: WorkerCategory): boolean 
 
 const MASTER_AGENCY_IDS = ['1511e077-77ef-4c47-81fd-06a3bc9f1dbb'];
 
-export default function AIWorkersTab({ client, agencyId }: AIWorkersTabProps) {
+export default function AIWorkersTab({ client, agencyId, plan }: AIWorkersTabProps) {
   const [view, setView] = useState<'workers' | 'skills'>('workers');
   const isMasterAgency = MASTER_AGENCY_IDS.includes(agencyId);
-
+  const canUseMarketingWorker = isMasterAgency || plan === 'pro' || plan === 'scale';
   // Filter workers by visibility — private workers shown to allowed agencies + master admin
   const visibleWorkers = ROLE_WORKERS.filter(w => {
     if (!w.visibility || w.visibility === 'public') return true;
@@ -664,6 +665,7 @@ export default function AIWorkersTab({ client, agencyId }: AIWorkersTabProps) {
             key={worker.id}
             worker={worker}
             isActive={activeWorkerId === worker.id}
+            locked={!canUseMarketingWorker && worker.tags.some((t: string) => ['content', 'social', 'seo', 'newsletter', 'email', 'branding'].includes(t))}
             onApply={() => openApply(worker)}
           />
         ))}
@@ -739,10 +741,12 @@ export default function AIWorkersTab({ client, agencyId }: AIWorkersTabProps) {
 function WorkerCard({
   worker,
   isActive,
+  locked = false,
   onApply,
 }: {
   worker: RoleWorker;
   isActive: boolean;
+  locked?: boolean;
   onApply: () => void;
 }) {
   return (
@@ -817,13 +821,19 @@ function WorkerCard({
       </div>
 
       {/* Apply button */}
-      <button
-        onClick={onApply}
-        className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
-      >
-        Apply to this client
-        <ArrowRight className="h-3.5 w-3.5" />
-      </button>
+      {locked ? (
+        <div className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 bg-gray-100 text-gray-400 text-sm font-medium rounded-lg cursor-not-allowed">
+          🔒 Pro or Scale plan required
+        </div>
+      ) : (
+        <button
+          onClick={onApply}
+          className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
+        >
+          Apply to this client
+          <ArrowRight className="h-3.5 w-3.5" />
+        </button>
+      )}
     </div>
   );
 }
