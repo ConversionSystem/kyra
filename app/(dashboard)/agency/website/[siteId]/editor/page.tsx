@@ -47,6 +47,7 @@ import {
   ChevronUp,
   Palette,
   Copy,
+  Menu,
 } from 'lucide-react';
 
 import {
@@ -186,7 +187,7 @@ function CollapsibleCard({
     <div className="bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-colors">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50/50 rounded-xl transition-colors"
+        className="w-full flex items-center justify-between px-4 sm:px-5 py-4 text-left hover:bg-gray-50/50 rounded-xl transition-colors min-h-[44px]"
       >
         <div className="flex items-center gap-2">
           <span className="text-indigo-500">{icon}</span>
@@ -197,7 +198,7 @@ function CollapsibleCard({
         </div>
         <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
-      {open && <div className="px-5 pb-5 border-t border-gray-100 pt-4">{children}</div>}
+      {open && <div className="px-4 sm:px-5 pb-4 sm:pb-5 border-t border-gray-100 pt-4">{children}</div>}
     </div>
   );
 }
@@ -224,16 +225,16 @@ function SectionEditModal({
   const [ctaLink, setCtaLink] = useState(section.cta_link || '');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-0 sm:p-4">
+      <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-100">
           <h3 className="text-lg font-semibold text-gray-900">Edit Section</h3>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-            <X className="h-4 w-4 text-gray-500" />
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center">
+            <X className="h-5 w-5 sm:h-4 sm:w-4 text-gray-500" />
           </button>
         </div>
 
-        <div className="p-6 space-y-4">
+        <div className="p-4 sm:p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Heading</label>
             <input
@@ -299,10 +300,10 @@ function SectionEditModal({
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50 rounded-b-2xl">
+        <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t border-gray-100 bg-gray-50 rounded-b-2xl">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+            className="px-4 py-3 sm:py-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors min-h-[44px]"
           >
             Cancel
           </button>
@@ -317,7 +318,7 @@ function SectionEditModal({
               })
             }
             disabled={saving}
-            className="px-5 py-2 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-colors flex items-center gap-2"
+            className="px-5 py-3 sm:py-2 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-colors flex items-center gap-2 min-h-[44px]"
           >
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
             Save Changes
@@ -423,25 +424,25 @@ function FaqEditor({
               <button
                 onClick={() => moveItem(i, -1)}
                 disabled={i === 0}
-                className="p-1 text-gray-300 hover:text-indigo-500 disabled:opacity-30 transition-colors rounded"
+                className="p-2 sm:p-1 text-gray-300 hover:text-indigo-500 disabled:opacity-30 transition-colors rounded min-h-[44px] sm:min-h-0 min-w-[44px] sm:min-w-0 flex items-center justify-center"
                 title="Move up"
               >
-                <ArrowUp className="h-3.5 w-3.5" />
+                <ArrowUp className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
               </button>
               <button
                 onClick={() => moveItem(i, 1)}
                 disabled={i === items.length - 1}
-                className="p-1 text-gray-300 hover:text-indigo-500 disabled:opacity-30 transition-colors rounded"
+                className="p-2 sm:p-1 text-gray-300 hover:text-indigo-500 disabled:opacity-30 transition-colors rounded min-h-[44px] sm:min-h-0 min-w-[44px] sm:min-w-0 flex items-center justify-center"
                 title="Move down"
               >
-                <ArrowDown className="h-3.5 w-3.5" />
+                <ArrowDown className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
               </button>
               <button
                 onClick={() => removeItem(i)}
-                className="p-1 text-gray-300 hover:text-red-500 transition-colors rounded mt-1"
+                className="p-2 sm:p-1 text-gray-300 hover:text-red-500 transition-colors rounded mt-1 min-h-[44px] sm:min-h-0 min-w-[44px] sm:min-w-0 flex items-center justify-center"
                 title="Remove FAQ item"
               >
-                <Trash2 className="h-3.5 w-3.5" />
+                <Trash2 className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
               </button>
             </div>
           </div>
@@ -491,7 +492,7 @@ function HeroEditor({
 
   if (!editing) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5">
         <div className="flex items-center justify-between mb-3">
           <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
             <Eye className="h-4 w-4 text-indigo-500" />
@@ -499,9 +500,9 @@ function HeroEditor({
           </h4>
           <button
             onClick={() => setEditing(true)}
-            className="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1"
+            className="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1 min-h-[44px] sm:min-h-0 px-2"
           >
-            <Edit3 className="h-3 w-3" />
+            <Edit3 className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
             Edit
           </button>
         </div>
@@ -520,7 +521,7 @@ function HeroEditor({
   }
 
   return (
-    <div className="bg-white rounded-xl border-2 border-indigo-200 p-5">
+    <div className="bg-white rounded-xl border-2 border-indigo-200 p-4 sm:p-5">
       <div className="flex items-center justify-between mb-4">
         <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
           <Edit3 className="h-4 w-4 text-indigo-500" />
@@ -534,7 +535,7 @@ function HeroEditor({
             type="text"
             value={heroH1}
             onChange={(e) => setHeroH1(e.target.value)}
-            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full rounded-lg border border-gray-200 px-3 py-3 sm:py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
         <div>
@@ -543,10 +544,10 @@ function HeroEditor({
             type="text"
             value={heroSubtitle}
             onChange={(e) => setHeroSubtitle(e.target.value)}
-            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full rounded-lg border border-gray-200 px-3 py-3 sm:py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">CTA Button Text</label>
             <input
@@ -554,7 +555,7 @@ function HeroEditor({
               value={ctaText}
               onChange={(e) => setCtaText(e.target.value)}
               placeholder="e.g. Get Free Estimate"
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full rounded-lg border border-gray-200 px-3 py-3 sm:py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
           <div>
@@ -564,7 +565,7 @@ function HeroEditor({
               value={ctaLink}
               onChange={(e) => setCtaLink(e.target.value)}
               placeholder="e.g. /contact"
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full rounded-lg border border-gray-200 px-3 py-3 sm:py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
         </div>
@@ -600,14 +601,14 @@ function HeroEditor({
               setEditing(false);
             }}
             disabled={saving}
-            className="px-4 py-2 bg-indigo-600 text-white text-xs font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-1.5"
+            className="px-4 py-3 sm:py-2 bg-indigo-600 text-white text-xs font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-1.5 min-h-[44px] sm:min-h-0"
           >
             {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
             Save
           </button>
           <button
             onClick={() => setEditing(false)}
-            className="px-4 py-2 text-xs font-medium text-gray-600 hover:text-gray-900"
+            className="px-4 py-3 sm:py-2 text-xs font-medium text-gray-600 hover:text-gray-900 min-h-[44px] sm:min-h-0"
           >
             Cancel
           </button>
@@ -649,7 +650,7 @@ function BusinessDetailsEditor({
   return (
     <CollapsibleCard title="Business Details" icon={<Building2 className="h-4 w-4" />} defaultOpen={true}>
       <div className="space-y-3">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1">
               <Phone className="h-3 w-3" /> Phone
@@ -659,7 +660,7 @@ function BusinessDetailsEditor({
               value={phone}
               onChange={(e) => { setPhone(e.target.value); setDirty(true); }}
               placeholder="(555) 123-4567"
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full rounded-lg border border-gray-200 px-3 py-3 sm:py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
           <div>
@@ -671,7 +672,7 @@ function BusinessDetailsEditor({
               value={email}
               onChange={(e) => { setEmail(e.target.value); setDirty(true); }}
               placeholder="info@business.com"
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full rounded-lg border border-gray-200 px-3 py-3 sm:py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
         </div>
@@ -685,27 +686,27 @@ function BusinessDetailsEditor({
             className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
           <input
             type="text"
             value={city}
             onChange={(e) => { setCity(e.target.value); setDirty(true); }}
             placeholder="City"
-            className="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="rounded-lg border border-gray-200 px-2 sm:px-3 py-3 sm:py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
           <input
             type="text"
             value={state}
             onChange={(e) => { setState(e.target.value); setDirty(true); }}
             placeholder="State"
-            className="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="rounded-lg border border-gray-200 px-2 sm:px-3 py-3 sm:py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
           <input
             type="text"
             value={zip}
             onChange={(e) => { setZip(e.target.value); setDirty(true); }}
             placeholder="ZIP"
-            className="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="rounded-lg border border-gray-200 px-2 sm:px-3 py-3 sm:py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
 
@@ -720,7 +721,7 @@ function BusinessDetailsEditor({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1 flex items-center gap-1">
               <Link2 className="h-3 w-3" /> Booking URL
@@ -730,7 +731,7 @@ function BusinessDetailsEditor({
               value={bookingUrl}
               onChange={(e) => { setBookingUrl(e.target.value); setDirty(true); }}
               placeholder="https://calendly.com/..."
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full rounded-lg border border-gray-200 px-3 py-3 sm:py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
           <div>
@@ -742,7 +743,7 @@ function BusinessDetailsEditor({
               value={googleReviewUrl}
               onChange={(e) => { setGoogleReviewUrl(e.target.value); setDirty(true); }}
               placeholder="https://g.page/..."
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full rounded-lg border border-gray-200 px-3 py-3 sm:py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
         </div>
@@ -782,7 +783,7 @@ function BusinessDetailsEditor({
             setDirty(false);
           }}
           disabled={saving || !dirty}
-          className="w-full px-4 py-2 bg-indigo-600 text-white text-xs font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-1.5"
+          className="w-full px-4 py-3 sm:py-2 bg-indigo-600 text-white text-xs font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-1.5 min-h-[44px]"
         >
           {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
           Save Business Details
@@ -1216,7 +1217,7 @@ function SectionManager({
   return (
     <div className="bg-white rounded-xl border border-gray-200">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+      <div className="flex items-center justify-between px-4 sm:px-5 py-4 border-b border-gray-100">
         <div className="flex items-center gap-2">
           <Layers className="h-4 w-4 text-indigo-500" />
           <span className="text-sm font-semibold text-gray-900">Sections</span>
@@ -1258,7 +1259,7 @@ function SectionManager({
           return (
             <div key={sectionType} className="group">
               {/* Section row */}
-              <div className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50/50 transition-colors">
+              <div className="flex items-center gap-2 sm:gap-3 px-4 sm:px-5 py-3 hover:bg-gray-50/50 transition-colors">
                 {/* Icon */}
                 <span className="text-indigo-400 shrink-0">
                   {SECTION_ICONS[sectionType] || <Layers className="h-4 w-4" />}
@@ -1266,13 +1267,13 @@ function SectionManager({
 
                 {/* Name & variant badge */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                     <span className="text-sm font-medium text-gray-900">
                       {sectionInfo.label}
                     </span>
                     <button
                       onClick={() => setExpandedSection(isExpanded ? null : sectionType)}
-                      className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-md transition-colors cursor-pointer ${
+                      className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 sm:py-0.5 rounded-md transition-colors cursor-pointer min-h-[36px] sm:min-h-0 ${
                         isOverridden
                           ? 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100'
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -1290,37 +1291,37 @@ function SectionManager({
                   <button
                     onClick={() => moveSection(index, -1)}
                     disabled={index === 0}
-                    className="p-1 text-gray-300 hover:text-indigo-500 disabled:opacity-30 disabled:hover:text-gray-300 transition-colors rounded"
+                    className="p-2 sm:p-1 text-gray-300 hover:text-indigo-500 disabled:opacity-30 disabled:hover:text-gray-300 transition-colors rounded min-h-[44px] sm:min-h-0 min-w-[44px] sm:min-w-0 flex items-center justify-center"
                     title="Move up"
                   >
-                    <ChevronUp className="h-4 w-4" />
+                    <ChevronUp className="h-5 w-5 sm:h-4 sm:w-4" />
                   </button>
                   <button
                     onClick={() => moveSection(index, 1)}
                     disabled={index === sectionOrder.length - 1}
-                    className="p-1 text-gray-300 hover:text-indigo-500 disabled:opacity-30 disabled:hover:text-gray-300 transition-colors rounded"
+                    className="p-2 sm:p-1 text-gray-300 hover:text-indigo-500 disabled:opacity-30 disabled:hover:text-gray-300 transition-colors rounded min-h-[44px] sm:min-h-0 min-w-[44px] sm:min-w-0 flex items-center justify-center"
                     title="Move down"
                   >
-                    <ChevronDown className="h-4 w-4" />
+                    <ChevronDown className="h-5 w-5 sm:h-4 sm:w-4" />
                   </button>
                   <button
                     onClick={() => removeSection(index)}
-                    className="p-1 text-gray-300 hover:text-red-500 transition-colors rounded ml-1"
+                    className="p-2 sm:p-1 text-gray-300 hover:text-red-500 transition-colors rounded ml-0.5 sm:ml-1 min-h-[44px] sm:min-h-0 min-w-[44px] sm:min-w-0 flex items-center justify-center"
                     title="Remove section"
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    <Trash2 className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
                   </button>
                 </div>
               </div>
 
               {/* Variant picker (expanded) */}
               {isExpanded && (
-                <div className="px-5 pb-4 pt-1">
+                <div className="px-4 sm:px-5 pb-4 pt-1">
                   <div className="bg-gray-50 rounded-xl p-3">
                     <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
                       Choose {sectionInfo.label} Style
                     </p>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {sectionInfo.variants.map((variant) => {
                         const isActive = currentVariant === variant;
                         const isDefault = variant === recipeDefaults[sectionType];
@@ -1331,7 +1332,7 @@ function SectionManager({
                               changeVariant(sectionType, variant);
                               setExpandedSection(null);
                             }}
-                            className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-left transition-all text-sm ${
+                            className={`flex items-center gap-2 px-3 py-3 sm:py-2.5 rounded-lg text-left transition-all text-sm min-h-[44px] ${
                               isActive
                                 ? 'bg-indigo-600 text-white shadow-sm'
                                 : 'bg-white border border-gray-200 text-gray-700 hover:border-indigo-300 hover:bg-indigo-50'
@@ -1548,6 +1549,7 @@ export default function PageEditor() {
   const [editingSection, setEditingSection] = useState<number | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [activeTab, setActiveTab] = useState<'content' | 'design' | 'site'>('content');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const siteUrl = site?.site_subdomain
     ? `https://${site.site_subdomain}`
@@ -1954,50 +1956,60 @@ export default function PageEditor() {
 
       {/* Header */}
       <div className="bg-white border-b border-gray-200 shrink-0">
-        <div className="px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="px-3 sm:px-4 py-3 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            {/* Mobile menu toggle */}
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="md:hidden p-2 -ml-1 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors relative min-h-[44px] min-w-[44px] flex items-center justify-center"
+            >
+              <Menu className="h-5 w-5" />
+              <span className="absolute -top-0.5 -right-0.5 bg-indigo-600 text-white text-[9px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
+                {pages.length}
+              </span>
+            </button>
             <Link
               href={site?.client_id ? `/agency/clients/${site.client_id}` : '/agency/website'}
-              className="text-gray-500 hover:text-gray-900 transition-colors"
+              className="text-gray-500 hover:text-gray-900 transition-colors hidden sm:block"
             >
               <ArrowLeft className="h-4 w-4" />
             </Link>
-            <div>
-              <h1 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-                <Globe className="h-4 w-4 text-indigo-600" />
-                {site?.business_name || 'Site Editor'}
+            <div className="min-w-0">
+              <h1 className="text-sm font-semibold text-gray-900 flex items-center gap-2 truncate">
+                <Globe className="h-4 w-4 text-indigo-600 shrink-0" />
+                <span className="truncate">{site?.business_name || 'Site Editor'}</span>
               </h1>
               {siteUrl && (
-                <p className="text-xs text-gray-400 font-mono">{siteUrl}</p>
+                <p className="text-xs text-gray-400 font-mono truncate max-w-[200px] sm:max-w-none">{siteUrl}</p>
               )}
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {siteUrl && (
               <a
                 href={siteUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center gap-1.5"
+                className="min-h-[44px] sm:min-h-0 px-2 sm:px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center gap-1.5"
               >
-                <ExternalLink className="h-3 w-3" />
-                View Live
+                <ExternalLink className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
+                <span className="hidden sm:inline">View Live</span>
               </a>
             )}
             <button
               onClick={rebuildSite}
               disabled={rebuilding}
-              className="px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-1.5"
+              className="min-h-[44px] sm:min-h-0 px-2 sm:px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-1.5"
             >
-              {rebuilding ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-              Rebuild & Deploy
+              {rebuilding ? <Loader2 className="h-3.5 w-3.5 sm:h-3 sm:w-3 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5 sm:h-3 sm:w-3" />}
+              <span className="hidden sm:inline">Rebuild & Deploy</span>
             </button>
           </div>
         </div>
 
         {/* Sub-navigation tabs */}
-        <div className="flex border-t border-gray-100 px-4">
+        <div className="flex border-t border-gray-100 px-2 sm:px-4 overflow-x-auto">
           {[
             { href: `/agency/website/${siteId}/editor`, icon: <Edit3 className="h-3.5 w-3.5" />, label: 'Editor', active: true },
             { href: `/agency/website/${siteId}/growth`, icon: <TrendingUp className="h-3.5 w-3.5" />, label: 'Growth', active: false },
@@ -2006,7 +2018,7 @@ export default function PageEditor() {
             <Link
               key={tab.href}
               href={tab.href}
-              className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors ${
+              className={`flex items-center gap-1.5 px-3 sm:px-4 py-2.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap flex-1 sm:flex-none justify-center sm:justify-start ${
                 tab.active
                   ? 'border-indigo-600 text-indigo-700'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -2021,8 +2033,89 @@ export default function PageEditor() {
 
       {/* Main Layout: Sidebar + Content */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar — Page List */}
-        <div className="w-56 bg-white border-r border-gray-200 overflow-y-auto shrink-0">
+        {/* Mobile Sidebar Overlay */}
+        <div className={`fixed inset-0 z-40 md:hidden ${mobileMenuOpen ? 'block' : 'hidden'}`}>
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/30"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+          {/* Slide-in panel */}
+          <div className="absolute left-0 top-0 bottom-0 w-72 bg-white shadow-xl overflow-y-auto">
+            <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                Pages
+                <span className="bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full text-[10px]">{pages.length}</span>
+              </p>
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            {/* Back link on mobile */}
+            <div className="px-4 py-2 border-b border-gray-50">
+              <Link
+                href={site?.client_id ? `/agency/clients/${site.client_id}` : '/agency/website'}
+                className="text-xs text-gray-500 hover:text-gray-900 flex items-center gap-1.5 min-h-[44px]"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <ArrowLeft className="h-3.5 w-3.5" />
+                Back to sites
+              </Link>
+            </div>
+            <div className="py-1">
+              {GROUP_ORDER.map((type) => {
+                const typePages = groupedPages[type];
+                if (!typePages || typePages.length === 0) return null;
+                return (
+                  <div key={type} className="mb-1">
+                    <p className="px-4 py-1.5 text-[9px] font-semibold text-gray-400 uppercase tracking-wider">
+                      {GROUP_LABELS[type] || type}
+                    </p>
+                    {typePages.map((page) => {
+                      const isSelected = selectedPage?.id === page.id;
+                      return (
+                        <button
+                          key={page.id}
+                          onClick={() => {
+                            setSelectedPage(page);
+                            if (page.slug !== '/') setActiveTab('content');
+                            setMobileMenuOpen(false);
+                          }}
+                          className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors min-h-[44px] ${
+                            page.hidden ? 'opacity-50' : ''
+                          } ${
+                            isSelected
+                              ? 'bg-indigo-50 text-indigo-700 border-l-2 border-indigo-600'
+                              : 'text-gray-700 hover:bg-gray-50 border-l-2 border-transparent'
+                          }`}
+                        >
+                          <span className={`shrink-0 ${isSelected ? 'text-indigo-500' : 'text-gray-400'}`}>
+                            {getPageIcon(page)}
+                          </span>
+                          <span className="text-sm truncate flex-1">{getPageLabel(page)}</span>
+                          {page.hidden && (
+                            <span className="shrink-0 text-[8px] bg-gray-200 text-gray-500 px-1 py-0.5 rounded font-medium">
+                              Hidden
+                            </span>
+                          )}
+                          {!page.hidden && page.edited && (
+                            <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-amber-400" title="Edited" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop Sidebar — Page List */}
+        <div className="hidden md:block w-56 bg-white border-r border-gray-200 overflow-y-auto shrink-0">
           <div className="px-3 py-3 border-b border-gray-100">
             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider flex items-center justify-between">
               Pages
@@ -2080,34 +2173,34 @@ export default function PageEditor() {
         {/* Content Area */}
         <div className="flex-1 overflow-y-auto">
           {selectedPage ? (
-            <div className="max-w-4xl mx-auto p-6 space-y-5">
+            <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-4 sm:space-y-5">
               {/* Page Header */}
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-3">
-                    <span className="text-indigo-500">{getPageIcon(selectedPage)}</span>
-                    <div>
-                      <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                        {getPageLabel(selectedPage)}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-1">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="text-indigo-500 shrink-0">{getPageIcon(selectedPage)}</span>
+                    <div className="min-w-0">
+                      <h2 className="text-lg sm:text-xl font-bold text-gray-900 flex items-center gap-2 truncate">
+                        <span className="truncate">{getPageLabel(selectedPage)}</span>
                         {selectedPage.hidden && (
-                          <span className="text-[10px] bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+                          <span className="text-[10px] bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full font-medium flex items-center gap-1 shrink-0">
                             <EyeOff className="h-3 w-3" /> Hidden
                           </span>
                         )}
                       </h2>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <p className="text-xs text-gray-400 font-mono">{selectedPage.slug}</p>
+                        <p className="text-xs text-gray-400 font-mono truncate">{selectedPage.slug}</p>
                         {selectedPage.slug === '/' && (
-                          <span className="text-[10px] text-gray-400">
+                          <span className="text-[10px] text-gray-400 shrink-0">
                             › {activeTab === 'content' ? 'Content' : activeTab === 'design' ? 'Design' : 'Site Settings'}
                           </span>
                         )}
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                     {showRegenerateInput ? (
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 w-full sm:w-auto">
                         <input
                           type="text"
                           value={regenerateFeedback}
@@ -2123,7 +2216,7 @@ export default function PageEditor() {
                             }
                           }}
                           placeholder="e.g. more friendly, focus on emergency services"
-                          className="w-64 px-2.5 py-1.5 text-xs border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 bg-amber-50"
+                          className="flex-1 sm:w-64 px-2.5 py-2 sm:py-1.5 text-xs border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 bg-amber-50"
                           autoFocus
                         />
                         <button
@@ -2133,26 +2226,27 @@ export default function PageEditor() {
                             setRegenerateFeedback('');
                           }}
                           disabled={regenerating}
-                          className="px-3 py-1.5 text-xs font-medium bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50 flex items-center gap-1.5"
+                          className="min-h-[44px] sm:min-h-0 px-3 py-1.5 text-xs font-medium bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50 flex items-center gap-1.5"
                         >
                           {regenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
                           Go
                         </button>
                         <button
                           onClick={() => { setShowRegenerateInput(false); setRegenerateFeedback(''); }}
-                          className="px-2 py-1.5 text-xs text-gray-500 hover:text-gray-700"
+                          className="min-h-[44px] sm:min-h-0 px-2 py-1.5 text-xs text-gray-500 hover:text-gray-700"
                         >
-                          <X className="h-3 w-3" />
+                          <X className="h-4 w-4 sm:h-3 sm:w-3" />
                         </button>
                       </div>
                     ) : (
                       <button
                         onClick={() => setShowRegenerateInput(true)}
                         disabled={regenerating}
-                        className="px-3 py-1.5 text-xs font-medium border border-amber-200 text-amber-700 bg-amber-50 rounded-lg hover:bg-amber-100 disabled:opacity-50 flex items-center gap-1.5"
+                        className="min-h-[44px] sm:min-h-0 px-3 py-2 sm:py-1.5 text-xs font-medium border border-amber-200 text-amber-700 bg-amber-50 rounded-lg hover:bg-amber-100 disabled:opacity-50 flex items-center gap-1.5"
                       >
-                        {regenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                        Regenerate with AI
+                        {regenerating ? <Loader2 className="h-3.5 w-3.5 sm:h-3 sm:w-3 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 sm:h-3 sm:w-3" />}
+                        <span className="hidden sm:inline">Regenerate with AI</span>
+                        <span className="sm:hidden">AI</span>
                       </button>
                     )}
                     {siteUrl && (
@@ -2160,27 +2254,27 @@ export default function PageEditor() {
                         href={`${siteUrl}${selectedPage.slug}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center gap-1.5"
+                        className="min-h-[44px] sm:min-h-0 px-2 sm:px-3 py-2 sm:py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center gap-1.5"
                       >
-                        <Eye className="h-3 w-3" />
-                        Preview
+                        <Eye className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
+                        <span className="hidden sm:inline">Preview</span>
                       </a>
                     )}
                     <button
                       onClick={() => togglePageVisibility(selectedPage)}
-                      className="px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center gap-1.5"
+                      className="min-h-[44px] sm:min-h-0 px-2 sm:px-3 py-2 sm:py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center gap-1.5"
                       title={selectedPage.hidden ? 'Show page' : 'Hide page'}
                     >
-                      {selectedPage.hidden ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-                      {selectedPage.hidden ? 'Show' : 'Hide'}
+                      {selectedPage.hidden ? <EyeOff className="h-3.5 w-3.5 sm:h-3 sm:w-3" /> : <Eye className="h-3.5 w-3.5 sm:h-3 sm:w-3" />}
+                      <span className="hidden sm:inline">{selectedPage.hidden ? 'Show' : 'Hide'}</span>
                     </button>
                     <button
                       onClick={() => duplicatePage(selectedPage)}
-                      className="px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center gap-1.5"
+                      className="min-h-[44px] sm:min-h-0 px-2 sm:px-3 py-2 sm:py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center gap-1.5"
                       title="Duplicate page"
                     >
-                      <Copy className="h-3 w-3" />
-                      Duplicate
+                      <Copy className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
+                      <span className="hidden sm:inline">Duplicate</span>
                     </button>
                   </div>
                 </div>
@@ -2217,7 +2311,7 @@ export default function PageEditor() {
 
               {/* Tab Bar — only show on homepage */}
               {selectedPage.slug === '/' && (
-                <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
+                <div className="flex gap-1 bg-gray-100 p-1 rounded-xl overflow-x-auto">
                   {([
                     { id: 'content' as const, label: 'Content', icon: <FileText className="h-3.5 w-3.5" /> },
                     { id: 'design' as const, label: 'Design', icon: <Palette className="h-3.5 w-3.5" /> },
@@ -2226,7 +2320,7 @@ export default function PageEditor() {
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
-                      className={`flex-1 flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg transition-all ${
+                      className={`flex-1 flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2.5 sm:py-2 text-xs font-medium rounded-lg transition-all whitespace-nowrap min-h-[44px] sm:min-h-0 ${
                         activeTab === tab.id
                           ? 'bg-white text-indigo-700 shadow-sm'
                           : 'text-gray-500 hover:text-gray-700'
@@ -2275,9 +2369,9 @@ export default function PageEditor() {
                           {selectedPage.content_sections.map((section, i) => (
                             <div
                               key={i}
-                              className="bg-gray-50 rounded-xl border border-gray-100 p-4 hover:border-indigo-200 transition-colors group"
+                              className="bg-gray-50 rounded-xl border border-gray-100 p-3 sm:p-4 hover:border-indigo-200 transition-colors group"
                             >
-                              <div className="flex items-start justify-between">
+                              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-0">
                                 <div className="flex-1 min-w-0">
                                   <p className="text-sm font-semibold text-gray-900 mb-1">{section.heading || `Section ${i + 1}`}</p>
                                   <p className="text-sm text-gray-500 line-clamp-3">{section.body}</p>
@@ -2298,38 +2392,38 @@ export default function PageEditor() {
                                     )}
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-1 shrink-0 ml-3">
-                                  <div className="flex flex-col gap-0.5">
+                                <div className="flex items-center gap-1.5 sm:gap-1 shrink-0 sm:ml-3">
+                                  <div className="flex sm:flex-col gap-1 sm:gap-0.5">
                                     <button
                                       onClick={() => moveContentSection(i, -1)}
                                       disabled={i === 0}
-                                      className="p-0.5 text-gray-300 hover:text-indigo-500 disabled:opacity-30 transition-colors"
+                                      className="p-2 sm:p-0.5 text-gray-300 hover:text-indigo-500 disabled:opacity-30 transition-colors min-h-[44px] sm:min-h-0 min-w-[44px] sm:min-w-0 flex items-center justify-center rounded-lg sm:rounded-none bg-white sm:bg-transparent border border-gray-200 sm:border-0"
                                       title="Move up"
                                     >
-                                      <ArrowUp className="h-3 w-3" />
+                                      <ArrowUp className="h-4 w-4 sm:h-3 sm:w-3" />
                                     </button>
                                     <button
                                       onClick={() => moveContentSection(i, 1)}
                                       disabled={i === (selectedPage.content_sections?.length ?? 0) - 1}
-                                      className="p-0.5 text-gray-300 hover:text-indigo-500 disabled:opacity-30 transition-colors"
+                                      className="p-2 sm:p-0.5 text-gray-300 hover:text-indigo-500 disabled:opacity-30 transition-colors min-h-[44px] sm:min-h-0 min-w-[44px] sm:min-w-0 flex items-center justify-center rounded-lg sm:rounded-none bg-white sm:bg-transparent border border-gray-200 sm:border-0"
                                       title="Move down"
                                     >
-                                      <ArrowDown className="h-3 w-3" />
+                                      <ArrowDown className="h-4 w-4 sm:h-3 sm:w-3" />
                                     </button>
                                   </div>
                                   <button
                                     onClick={() => setEditingSection(i)}
-                                    className="px-3 py-1.5 text-xs font-medium text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 opacity-0 group-hover:opacity-100 transition-all flex items-center gap-1"
+                                    className="px-3 py-2 sm:py-1.5 text-xs font-medium text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 sm:opacity-0 sm:group-hover:opacity-100 transition-all flex items-center gap-1 min-h-[44px] sm:min-h-0"
                                   >
-                                    <Edit3 className="h-3 w-3" />
+                                    <Edit3 className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
                                     Edit
                                   </button>
                                   <button
                                     onClick={() => deleteContentSection(i)}
-                                    className="p-1.5 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                                    className="p-2 sm:p-1.5 text-gray-400 sm:text-gray-300 hover:text-red-500 sm:opacity-0 sm:group-hover:opacity-100 transition-all min-h-[44px] sm:min-h-0 min-w-[44px] sm:min-w-0 flex items-center justify-center rounded-lg sm:rounded-none bg-white sm:bg-transparent border border-gray-200 sm:border-0"
                                     title="Delete section"
                                   >
-                                    <Trash2 className="h-3.5 w-3.5" />
+                                    <Trash2 className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
                                   </button>
                                 </div>
                               </div>
@@ -2408,10 +2502,17 @@ export default function PageEditor() {
 
             </div>
           ) : (
-            <div className="flex items-center justify-center h-full">
+            <div className="flex items-center justify-center h-full p-4">
               <div className="text-center">
                 <FileText className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-sm text-gray-500">Select a page from the sidebar to edit</p>
+                <p className="text-sm text-gray-500 mb-3">Select a page from the sidebar to edit</p>
+                <button
+                  onClick={() => setMobileMenuOpen(true)}
+                  className="md:hidden px-4 py-3 text-sm font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 inline-flex items-center gap-2"
+                >
+                  <Menu className="h-4 w-4" />
+                  Browse Pages
+                </button>
               </div>
             </div>
           )}
