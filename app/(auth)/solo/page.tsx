@@ -679,7 +679,7 @@ function SoloSignupPageInner() {
             />
             <FAQItem
               question="What counts as a 'credit'?"
-              answer="One credit = one AI conversation turn. When a customer asks your AI a question and gets a response, that's one credit. 50 platform credits included covers most solo businesses. Need more? Upgrade anytime."
+              answer="Credits power your AI responses. Each response costs 1–75 credits depending on which AI model you use — mini models are cheapest (1 credit), while advanced models like Sonnet cost more but handle complex conversations better. 50 platform credits included to get started. Need more? Top up anytime."
             />
             <FAQItem
               question="How does the AI know about my business?"
