@@ -76,6 +76,8 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     'template_id', 'site_domain', 'site_subdomain',
     // Navigation & Footer
     'nav_links', 'footer_tagline', 'social_links',
+    // P2: Visual Section Management
+    'section_order', 'section_overrides',
     // Settings page fields
     'ga4_id', 'white_label', 'google_rating', 'rating', 'google_review_url',
   ];
