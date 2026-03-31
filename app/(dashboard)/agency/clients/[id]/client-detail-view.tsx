@@ -415,7 +415,7 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
         <div className="md:hidden w-full">
           <div className="border-b border-gray-200 overflow-x-auto scrollbar-hide bg-white">
             <nav className="flex gap-0.5 px-4 -mb-px">
-              {TAB_GROUPS.flatMap(g => g.tabs).map((tab) => {
+              {filteredGroups.flatMap(g => g.tabs).map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
                 return (
