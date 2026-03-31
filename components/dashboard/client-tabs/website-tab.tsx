@@ -32,6 +32,7 @@ import {
   Plus,
   EyeOff,
   HelpCircle,
+  LayoutDashboard,
 } from 'lucide-react';
 import type { SitePage, ContentSection, FaqItem, DesignStyle } from '@/lib/sites/types';
 
@@ -521,15 +522,34 @@ function PagesView({ siteId, onGenerate }: { siteId: string; onGenerate?: () => 
 
   return (
     <div className="space-y-2">
+      {/* Full Editor banner */}
+      <Link
+        href={`/agency/website/${siteId}/editor`}
+        className="flex items-center gap-2 px-4 py-3 bg-indigo-50 border border-indigo-200 rounded-xl text-sm font-medium text-indigo-700 hover:bg-indigo-100 transition-colors mb-2"
+      >
+        <Sparkles className="h-4 w-4 shrink-0" />
+        <span>New: Edit menus, footer, images, and section layouts in the <span className="font-semibold">Full Editor</span></span>
+        <ArrowUpRight className="h-3.5 w-3.5 ml-auto shrink-0" />
+      </Link>
+
       <div className="flex items-center justify-between mb-4">
         <h4 className="text-sm font-semibold text-gray-900">{pages.length} Pages</h4>
-        <button
-          onClick={() => setShowNewPageForm(!showNewPageForm)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
-        >
-          <Plus className="h-3 w-3" />
-          New Page
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/agency/website/${siteId}/editor`}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition"
+          >
+            <LayoutDashboard className="h-3 w-3" />
+            Full Editor
+          </Link>
+          <button
+            onClick={() => setShowNewPageForm(!showNewPageForm)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+          >
+            <Plus className="h-3 w-3" />
+            New Page
+          </button>
+        </div>
       </div>
 
       {/* New Page Form (inline) */}
@@ -630,11 +650,21 @@ function PagesView({ siteId, onGenerate }: { siteId: string; onGenerate?: () => 
                 </div>
                 <p className="text-xs text-gray-400 mt-0.5 truncate">/{page.slug}</p>
               </div>
-              {expandedSlug === page.slug ? (
-                <ChevronDown className="h-4 w-4 text-gray-400 shrink-0" />
-              ) : (
-                <ChevronRight className="h-4 w-4 text-gray-400 shrink-0" />
-              )}
+              <div className="flex items-center gap-1 shrink-0">
+                <Link
+                  href={`/agency/website/${siteId}/editor`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="p-1 rounded-md text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                  title="Open in Full Editor"
+                >
+                  <LayoutDashboard className="h-3.5 w-3.5" />
+                </Link>
+                {expandedSlug === page.slug ? (
+                  <ChevronDown className="h-4 w-4 text-gray-400" />
+                ) : (
+                  <ChevronRight className="h-4 w-4 text-gray-400" />
+                )}
+              </div>
             </button>
 
             {expandedSlug === page.slug && (
@@ -1575,6 +1605,14 @@ function OverviewView({
           <Link2 className="h-5 w-5 text-amber-500" />
           <span className="text-xs font-medium text-gray-700">Custom Domain</span>
         </button>
+        <Link
+          href={`/agency/website/${site.id}/editor`}
+          className="flex flex-col items-center gap-2 p-4 rounded-xl bg-indigo-600 text-white shadow-sm hover:bg-indigo-700 transition-colors text-center col-span-2 sm:col-span-4"
+        >
+          <LayoutDashboard className="h-5 w-5" />
+          <span className="text-xs font-semibold">Full Editor</span>
+          <span className="text-[10px] opacity-80">Menus, footer, images, layout</span>
+        </Link>
       </div>
 
       {/* Live URL */}
