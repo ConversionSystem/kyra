@@ -35,6 +35,7 @@ import { callLLMWithTools } from './direct-llm';
 import { getCustomerMemory, updateCustomerMemory, formatMemoryForPrompt, extractFactsFromConversation } from '@/lib/memory/customer-memory';
 import { isReviewGateActive, queueForReview } from './review-gate';
 import { extractKnowledge, getClientKnowledge } from '@/lib/knowledge/extractor';
+import { trackConversation as trackWorkerConversation } from '@/lib/ai-workers/performance-tracker';
 import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
 
 const GHL_API_BASE = 'https://services.leadconnectorhq.com';
@@ -765,6 +766,24 @@ async function processConversation(
   } catch (creditErr) {
     // Non-fatal — never block a reply over a credit issue
     console.warn('[ghl/poller] Credit deduction failed (non-fatal):', creditErr);
+  }
+
+  // ── Worker Performance Tracking ──────────────────────────────────────
+  try {
+    const activeWorkerId = (cc.active_worker_id as string) || 'unknown';
+    await trackWorkerConversation(client.id, client.agency_id, activeWorkerId, {
+      messagesSent: 1,
+      messagesReceived: 1,
+      customerReplied: true, // They sent us a message, so they're engaged
+      escalated: !!escalation,
+      bookingMade: firstResult.toolCalls?.some(tc => tc.name === 'book_appointment') ?? false,
+      customerMessage: latestInbound.body,
+      aiResponse,
+      creditsUsed: getCreditsForModel(routedModel || 'gpt-4o-mini'),
+    });
+  } catch (perfErr) {
+    // Non-fatal — never block a reply over performance tracking
+    console.warn('[ghl/poller] Performance tracking failed (non-fatal):', perfErr);
   }
 
   console.log(`[ghl/poller] ✅ Reply sent to ${contactName} for "${client.name}" (${processingTimeMs}ms)`);
