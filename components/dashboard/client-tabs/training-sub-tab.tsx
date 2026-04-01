@@ -6,28 +6,22 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  Rocket,
-  Bot,
   Building2,
   FileText,
-  Zap,
   Globe,
   Loader2,
   Save,
-  Plus,
-  X,
-  Clock,
+  Sparkles,
+  Trash2,
+  UploadCloud,
   Phone,
   MapPin,
   Calendar,
-  Sparkles,
+  Clock,
   BookOpen,
-  UploadCloud,
-  Trash2,
 } from 'lucide-react';
 import type { AgencyClient } from '@/lib/agency/queries';
-import AISuggestionsCard from '@/components/dashboard/ai-suggestions-card';
-import { ROLE_WORKERS } from '@/lib/ai-workers/role-workers';
+import KnowledgeEngineCard from './knowledge-engine-card';
 
 // ── Knowledge source helpers ─────────────────────────────────────────────────
 
@@ -57,39 +51,13 @@ function formatDate(iso: string) {
   return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-// ── Wake word types ──────────────────────────────────────────────────────────
-
-type WakeWordAction = 'pause' | 'escalate' | 'custom';
-interface WakeWord { keyword: string; action: WakeWordAction; response: string }
-
-// ── Languages ────────────────────────────────────────────────────────────────
-
-const LANGUAGES = [
-  { code: 'auto', label: '🌐 Auto-detect (follows customer)' },
-  { code: 'English', label: '🇺🇸 English' },
-  { code: 'Spanish (Español)', label: '🇪🇸 Español (Spanish)' },
-  { code: 'Portuguese (Português)', label: '🇧🇷 Português (Portuguese)' },
-  { code: 'French (Français)', label: '🇫🇷 Français (French)' },
-  { code: 'German (Deutsch)', label: '🇩🇪 Deutsch (German)' },
-  { code: 'Italian (Italiano)', label: '🇮🇹 Italiano (Italian)' },
-  { code: 'Dutch (Nederlands)', label: '🇳🇱 Nederlands (Dutch)' },
-  { code: 'Polish (Polski)', label: '🇵🇱 Polski (Polish)' },
-  { code: 'Arabic (العربية)', label: '🇸🇦 العربية (Arabic)' },
-  { code: 'Chinese (中文)', label: '🇨🇳 中文 (Chinese)' },
-  { code: 'Japanese (日本語)', label: '🇯🇵 日本語 (Japanese)' },
-  { code: 'Korean (한국어)', label: '🇰🇷 한국어 (Korean)' },
-  { code: 'Hindi (हिन्दी)', label: '🇮🇳 हिन्दी (Hindi)' },
-  { code: 'Russian (Русский)', label: '🇷🇺 Русский (Russian)' },
-  { code: 'Turkish (Türkçe)', label: '🇹🇷 Türkçe (Turkish)' },
-];
-
 // ── Component ────────────────────────────────────────────────────────────────
 
-export default function AIPersonalityTab({ client }: { client: AgencyClient }) {
+export default function TrainingSubTab({ client }: { client: AgencyClient }) {
   const cfg = (client.container_config as Record<string, unknown>) || {};
   const bhCfg = (cfg.business_hours as { enabled?: boolean; start?: string; end?: string; timezone?: string }) || {};
 
-  // Quick Setup
+  // Auto-Train from URL
   const [websiteUrl, setWebsiteUrl] = useState((cfg.website_url as string) || '');
   const [isAutoTraining, setIsAutoTraining] = useState(false);
   const [autoTrainResult, setAutoTrainResult] = useState<{
@@ -100,10 +68,14 @@ export default function AIPersonalityTab({ client }: { client: AgencyClient }) {
     personaUpdated?: boolean;
   } | null>(null);
 
-  // AI Identity
-  const [persona, setPersona] = useState(cfg.persona as string || '');
-  const [greeting, setGreeting] = useState(cfg.greeting as string || '');
-  const [responseLanguage, setResponseLanguage] = useState((cfg.response_language as string) || 'auto');
+  // Knowledge Sources (docs + URLs)
+  const [sources, setSources] = useState<KnowledgeSource[]>([]);
+  const [urlInput, setUrlInput] = useState('');
+  const [kbLoading, setKbLoading] = useState(true);
+  const [kbSaving, setKbSaving] = useState(false);
+  const [kbError, setKbError] = useState<string | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Business Info
   const [industry, setIndustry] = useState((cfg.industry as string) || client.industry || '');
@@ -117,21 +89,7 @@ export default function AIPersonalityTab({ client }: { client: AgencyClient }) {
   const [calendarUrl, setCalendarUrl] = useState((cfg.calendar_url as string) || '');
   const [instructions, setInstructions] = useState(cfg.instructions as string || '');
 
-  // Training Documents
-  const [sources, setSources] = useState<KnowledgeSource[]>([]);
-  const [urlInput, setUrlInput] = useState('');
-  const [kbLoading, setKbLoading] = useState(true);
-  const [kbSaving, setKbSaving] = useState(false);
-  const [kbError, setKbError] = useState<string | null>(null);
-  const [dragging, setDragging] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Behavior Triggers
-  const [proactiveEnabled, setProactiveEnabled] = useState((cfg.proactive_enabled as boolean) ?? false);
-  const [proactiveGreeting, setProactiveGreeting] = useState((cfg.proactive_greeting as string) ?? '');
-  const [wakeWords, setWakeWords] = useState<WakeWord[]>((cfg.wake_words as WakeWord[]) ?? []);
-
-  // Global save state
+  // Save state
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -230,7 +188,6 @@ export default function AIPersonalityTab({ client }: { client: AgencyClient }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Auto-training failed');
       setAutoTrainResult(data);
-      if (data.personaUpdated && data.persona) setPersona(data.persona);
       setMessage({ type: 'success', text: `Trained from ${data.pagesScraped} pages — created ${data.documentsCreated} knowledge documents!` });
     } catch (err: unknown) {
       setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Auto-training failed' });
@@ -239,14 +196,7 @@ export default function AIPersonalityTab({ client }: { client: AgencyClient }) {
     }
   };
 
-  // ── Wake words ───────────────────────────────────────────────────────────
-
-  const addWakeWord = () => setWakeWords((prev) => [...prev, { keyword: '', action: 'escalate', response: '' }]);
-  const removeWakeWord = (i: number) => setWakeWords((prev) => prev.filter((_, idx) => idx !== i));
-  const updateWakeWord = (i: number, patch: Partial<WakeWord>) =>
-    setWakeWords((prev) => prev.map((w, idx) => (idx === i ? { ...w, ...patch } : w)));
-
-  // ── Save all ─────────────────────────────────────────────────────────────
+  // ── Save Business Info ─────────────────────────────────────────────────────
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -258,15 +208,9 @@ export default function AIPersonalityTab({ client }: { client: AgencyClient }) {
         body: JSON.stringify({
           container_config: {
             ...cfg,
-            greeting,
             instructions,
-            persona,
             business_hours: { enabled: bhEnabled, start: bhStart, end: bhEnd, timezone: bhTimezone },
             calendar_url: calendarUrl.trim() || undefined,
-            response_language: responseLanguage || 'auto',
-            proactive_enabled: proactiveEnabled,
-            proactive_greeting: proactiveGreeting.trim() || undefined,
-            wake_words: wakeWords.filter((w) => w.keyword.trim()),
             website_url: websiteUrl.trim() || undefined,
             business_phone: businessPhone.trim() || undefined,
             business_address: businessAddress.trim() || undefined,
@@ -279,7 +223,7 @@ export default function AIPersonalityTab({ client }: { client: AgencyClient }) {
         const payload = await res.json().catch(() => ({})) as { error?: string };
         throw new Error(payload.error || 'Failed to save');
       }
-      setMessage({ type: 'success', text: 'Personality saved. Changes are being pushed to your AI worker.' });
+      setMessage({ type: 'success', text: 'Training settings saved. Changes are being pushed to your AI worker.' });
     } catch {
       setMessage({ type: 'error', text: 'Failed to save. Try again.' });
     } finally {
@@ -292,27 +236,10 @@ export default function AIPersonalityTab({ client }: { client: AgencyClient }) {
   const fileSources = sources.filter((s) => s.type === 'file');
   const urlSources = sources.filter((s) => s.type === 'url');
 
-  // ── Render ───────────────────────────────────────────────────────────────
-
-  // Active worker detection
-  const activeWorkerId = cfg.active_worker_id as string | undefined;
-  const activeWorkerDef = activeWorkerId ? ROLE_WORKERS.find(w => w.id === activeWorkerId) : undefined;
+  // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-8">
-      {/* AI Suggestions */}
-      <AISuggestionsCard clientId={client.id} />
-
-      {/* Active worker banner */}
-      {activeWorkerDef && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 flex items-center gap-2">
-          <span>{activeWorkerDef.emoji}</span>
-          <span>
-            <strong>Active Worker: {activeWorkerDef.name}</strong> — editing personality may override the worker template.
-          </span>
-        </div>
-      )}
-
+    <div className="space-y-6">
       {/* Status message */}
       {message && (
         <div className={`rounded-xl px-4 py-3 text-sm ${
@@ -323,16 +250,16 @@ export default function AIPersonalityTab({ client }: { client: AgencyClient }) {
       )}
 
       {/* ================================================================== */}
-      {/* Section 1: Quick Setup                                             */}
+      {/* Auto-Train from URL                                                */}
       {/* ================================================================== */}
-      <Card className="border-indigo-200 bg-indigo-50/50">
+      <Card className="border-indigo-200 bg-indigo-50/50 rounded-xl">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base text-gray-900">
-            <Rocket className="h-5 w-5 text-indigo-600" />
-            Quick Setup
+            <Sparkles className="h-5 w-5 text-indigo-600" />
+            Auto-Train from Website
           </CardTitle>
           <CardDescription className="text-gray-500">
-            Enter your website URL and we&apos;ll automatically train your AI worker — building its knowledge base and generating a personality from your content.
+            Enter your website URL and we&apos;ll automatically scrape it, extract business knowledge, and train your AI worker.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -356,70 +283,169 @@ export default function AIPersonalityTab({ client }: { client: AgencyClient }) {
           {autoTrainResult && (
             <div className="rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-700">
               Scraped {autoTrainResult.pagesScraped} pages, created {autoTrainResult.documentsCreated} documents.
-              {autoTrainResult.personaUpdated && ' Persona was also updated.'}
+              {autoTrainResult.personaUpdated && ' Persona was also updated — check the Identity tab.'}
             </div>
           )}
         </CardContent>
       </Card>
 
       {/* ================================================================== */}
-      {/* Section 2: AI Identity                                             */}
+      {/* Website Knowledge (manual URL add)                                 */}
       {/* ================================================================== */}
       <Card className="border-gray-200 bg-white rounded-xl">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base text-gray-900">
-            <Bot className="h-5 w-5 text-indigo-600" />
-            AI Identity
+            <Globe className="h-5 w-5 text-indigo-600" />
+            Website Knowledge
           </CardTitle>
           <CardDescription className="text-gray-500">
-            Define who the AI is — its name, personality, and how it greets customers.
+            Add specific website URLs for your AI to reference when answering questions.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Persona */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-900">Persona</label>
-            <p className="text-xs text-gray-400">A short description like &quot;Friendly dental receptionist named Sarah&quot;</p>
-            <Input
-              value={persona}
-              onChange={(e) => setPersona(e.target.value)}
-              placeholder="e.g., Professional dental receptionist named Sarah who is warm and helpful"
-              className="bg-gray-50"
+        <CardContent className="space-y-3">
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <input
+              type="url"
+              value={urlInput}
+              onChange={(e) => setUrlInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  void addUrl();
+                }
+              }}
+              placeholder="https://example.com/specific-page"
+              className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
             />
-          </div>
-
-          {/* Greeting */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-900">Greeting Message</label>
-            <p className="text-xs text-gray-400">The first message sent to new contacts. Leave empty for an auto-greeting.</p>
-            <Textarea
-              value={greeting}
-              onChange={(e) => setGreeting(e.target.value)}
-              placeholder="e.g., Hi! Thanks for reaching out to Smile Dental. How can I help you today?"
-              rows={3}
-              className="bg-gray-50"
-            />
-          </div>
-
-          {/* Response Language */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-900">Response Language</label>
-            <p className="text-xs text-gray-400">The language your AI worker responds in to customers. Auto-detect follows the customer&apos;s language automatically.</p>
-            <select
-              value={responseLanguage}
-              onChange={(e) => setResponseLanguage(e.target.value)}
-              className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            <button
+              type="button"
+              onClick={() => void addUrl()}
+              disabled={!urlInput.trim() || kbSaving}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {LANGUAGES.map((lang) => (
-                <option key={lang.code} value={lang.code}>{lang.label}</option>
-              ))}
-            </select>
+              {kbSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              Add URL
+            </button>
           </div>
+
+          {kbError && <p className="text-sm text-red-600">{kbError}</p>}
+
+          {urlSources.length > 0 && (
+            <div className="space-y-2">
+              {urlSources.map((source) => (
+                <div key={source.id} className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 p-3">
+                  <Globe className="h-4 w-4 shrink-0 text-gray-500" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-gray-900">{source.url}</p>
+                    <p className="text-xs text-gray-500">Added {formatDate(source.addedAt)}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => deleteSource(source.id)}
+                    className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-white hover:text-red-600"
+                    aria-label={`Delete ${source.name}`}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
       {/* ================================================================== */}
-      {/* Section 3: Business Info                                           */}
+      {/* Training Documents (file upload)                                   */}
+      {/* ================================================================== */}
+      <Card className="border-gray-200 bg-white rounded-xl">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base text-gray-900">
+            <FileText className="h-5 w-5 text-indigo-600" />
+            Training Documents
+          </CardTitle>
+          <CardDescription className="text-gray-500">
+            Upload documents so your AI worker can learn from your business content.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => fileInputRef.current?.click()}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                fileInputRef.current?.click();
+              }
+            }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragging(true);
+            }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragging(false);
+              handleFileSelection(e.dataTransfer.files);
+            }}
+            className={`cursor-pointer rounded-xl border-2 border-dashed p-8 text-center transition-colors ${
+              dragging ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300 bg-gray-50 hover:border-indigo-300'
+            }`}
+          >
+            <UploadCloud className="mx-auto h-8 w-8 text-gray-400" />
+            <p className="mt-2 text-sm font-medium text-gray-700">Drag & drop files here or click to upload</p>
+            <p className="mt-1 text-xs text-gray-500">Accepted: PDF, TXT, MD, DOCX, CSV (max 10MB each)</p>
+          </div>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={ACCEPTED_FILE_INPUT}
+            multiple
+            onChange={(e) => handleFileSelection(e.target.files)}
+            className="hidden"
+          />
+
+          {fileSources.length > 0 && (
+            <div className="space-y-2">
+              {fileSources.map((source) => (
+                <div key={source.id} className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 p-3">
+                  <FileText className="h-4 w-4 shrink-0 text-gray-500" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-gray-900">{source.name}</p>
+                    <p className="text-xs text-gray-500">
+                      {formatFileSize(source.size)} • {formatDate(source.addedAt)}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => deleteSource(source.id)}
+                    className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-white hover:text-red-600"
+                    aria-label={`Delete ${source.name}`}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {(kbLoading || kbSaving) && (
+            <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white p-3 text-sm text-gray-600">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-indigo-600" />
+              {kbLoading ? 'Loading knowledge sources...' : 'Saving changes...'}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ================================================================== */}
+      {/* Knowledge Engine (auto-extracted — read-only display)               */}
+      {/* ================================================================== */}
+      <KnowledgeEngineCard clientId={client.id} />
+
+      {/* ================================================================== */}
+      {/* Business Info                                                      */}
       {/* ================================================================== */}
       <Card className="border-gray-200 bg-white rounded-xl">
         <CardHeader>
@@ -430,6 +456,9 @@ export default function AIPersonalityTab({ client }: { client: AgencyClient }) {
           <CardDescription className="text-gray-500">
             Give the AI context about the business so it can answer customer questions accurately.
           </CardDescription>
+          <p className="text-xs text-amber-600 mt-1">
+            ℹ️ These settings are for your AI worker, not your website. Website details are edited in the Website Builder.
+          </p>
         </CardHeader>
         <CardContent className="space-y-5">
           {/* Industry */}
@@ -563,119 +592,14 @@ export default function AIPersonalityTab({ client }: { client: AgencyClient }) {
         </CardContent>
       </Card>
 
-      {/* Training Documents moved to Knowledge tab — no duplication */}
-
       {/* ================================================================== */}
-      {/* Section 4: Behavior Triggers                                       */}
-      {/* ================================================================== */}
-      <Card className="border-gray-200 bg-white rounded-xl">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base text-gray-900">
-            <Zap className="h-5 w-5 text-indigo-600" />
-            Behavior Triggers
-          </CardTitle>
-          <CardDescription className="text-gray-500">
-            Proactive greetings and keyword-triggered actions for your AI worker.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Proactive Greeting */}
-          <div className="space-y-4">
-            <h4 className="text-sm font-semibold text-gray-900">Proactive Greeting</h4>
-            <p className="text-xs text-gray-400">When a new GHL contact is added, the AI can reach out first.</p>
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setProactiveEnabled(!proactiveEnabled)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${proactiveEnabled ? 'bg-indigo-600' : 'bg-gray-200'}`}
-              >
-                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${proactiveEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
-              </button>
-              <span className="text-sm font-medium text-gray-700">
-                {proactiveEnabled ? 'AI reaches out to new contacts' : 'Proactive greeting disabled'}
-              </span>
-            </div>
-            {proactiveEnabled && (
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-gray-700">Opening message</label>
-                <Textarea
-                  value={proactiveGreeting}
-                  onChange={(e) => setProactiveGreeting(e.target.value)}
-                  placeholder={`Hi {{firstName}}, this is ${client.name}'s AI assistant! How can I help you today?`}
-                  className="bg-gray-50 min-h-[80px] text-sm"
-                />
-                <p className="text-xs text-gray-400">Use {'{{firstName}}'} and {'{{lastName}}'} to personalize with GHL contact data.</p>
-              </div>
-            )}
-          </div>
-
-          {/* Wake Words */}
-          <div className="space-y-3 border-t border-gray-100 pt-6">
-            <h4 className="text-sm font-semibold text-gray-900">Wake Words</h4>
-            <p className="text-xs text-gray-400">Keywords that trigger a specific AI behavior when a customer says them.</p>
-            {wakeWords.length === 0 && (
-              <p className="text-sm text-gray-400 italic">No wake words configured.</p>
-            )}
-            {wakeWords.map((w, i) => (
-              <div key={i} className="flex items-start gap-2 p-3 rounded-lg border border-gray-100 bg-gray-50">
-                <div className="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <input
-                    type="text"
-                    placeholder="Keyword (e.g. STOP)"
-                    value={w.keyword}
-                    onChange={(e) => updateWakeWord(i, { keyword: e.target.value })}
-                    className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-400 uppercase"
-                  />
-                  <select
-                    value={w.action}
-                    onChange={(e) => updateWakeWord(i, { action: e.target.value as WakeWordAction })}
-                    className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-400"
-                  >
-                    <option value="pause">Pause AI responses</option>
-                    <option value="escalate">Escalate to human</option>
-                    <option value="custom">Reply with custom text</option>
-                  </select>
-                  {w.action === 'custom' && (
-                    <input
-                      type="text"
-                      placeholder="Custom reply text..."
-                      value={w.response}
-                      onChange={(e) => updateWakeWord(i, { response: e.target.value })}
-                      className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-400"
-                    />
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => removeWakeWord(i)}
-                  className="shrink-0 mt-1 text-gray-400 hover:text-red-500 transition-colors"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            ))}
-            <button
-              type="button"
-              onClick={addWakeWord}
-              className="flex items-center gap-1.5 text-sm text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
-            >
-              <Plus className="h-4 w-4" /> Add wake word
-            </button>
-            <p className="text-xs text-gray-400">
-              Common: STOP (pause), UNSUBSCRIBE (pause), HUMAN / AGENT (escalate), PRICE (custom reply).
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* ================================================================== */}
-      {/* Save All Button                                                    */}
+      {/* Save Training Settings                                             */}
       {/* ================================================================== */}
       <Button onClick={handleSave} disabled={isSaving} className="gap-2 bg-indigo-600 hover:bg-indigo-700" size="lg">
         {isSaving ? (
           <><Loader2 className="h-4 w-4 animate-spin" /> Saving...</>
         ) : (
-          <><Save className="h-4 w-4" /> Save All Changes</>
+          <><Save className="h-4 w-4" /> Save Training Settings</>
         )}
       </Button>
     </div>
