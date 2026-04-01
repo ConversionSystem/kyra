@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Mail, Send, Plus, Search, Upload, Trash2, Eye, X, Users,
   BarChart3, FileText, Clock, CheckCircle2, AlertTriangle, Loader2,
-  ArrowLeft, ChevronDown,
+  ArrowLeft, ChevronDown, Download, Info,
 } from 'lucide-react';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -566,6 +566,31 @@ function CampaignsView({ clientId }: { clientId: string }) {
 // CONTACTS VIEW
 // ══════════════════════════════════════════════════════════════════════════════
 
+// ── CSV Parser ───────────────────────────────────────────────────────────────
+
+function parseCSV(text: string): Record<string, string>[] {
+  const lines = text.trim().split('\n');
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/['"/]/g, ''));
+  return lines.slice(1).map(line => {
+    const values = line.split(',').map(v => v.trim().replace(/^['"]|['"]$/g, ''));
+    const row: Record<string, string> = {};
+    headers.forEach((h, i) => { row[h] = values[i] || ''; });
+    return row;
+  });
+}
+
+function downloadCSVTemplate() {
+  const template = 'email,first_name,last_name,phone,tags\njohn@example.com,John,Doe,+1234567890,vip;newsletter\njane@example.com,Jane,Smith,,newsletter';
+  const blob = new Blob([template], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'contacts_template.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function ContactsView({ clientId }: { clientId: string }) {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [total, setTotal] = useState(0);
@@ -577,7 +602,11 @@ function ContactsView({ clientId }: { clientId: string }) {
   const [addForm, setAddForm] = useState({ email: '', first_name: '', last_name: '', phone: '', tags: '' });
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const csvFileRef = useRef<HTMLInputElement>(null);
+
+  // CSV preview state
+  const [csvPreview, setCsvPreview] = useState<Record<string, string>[] | null>(null);
+  const [csvAllRows, setCsvAllRows] = useState<Record<string, string>[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -605,42 +634,61 @@ function ContactsView({ clientId }: { clientId: string }) {
     load();
   };
 
-  const handleCSV = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCSVFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setImporting(true);
     const text = await file.text();
-    const lines = text.split('\n').filter(l => l.trim());
-    if (lines.length < 2) { setImporting(false); return; }
+    const parsed = parseCSV(text);
 
-    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-    const emailIdx = headers.indexOf('email');
-    if (emailIdx === -1) { setImporting(false); setImportError('CSV must have an "email" column'); return; }
+    // Validate email column exists
+    if (parsed.length === 0) {
+      setImportError('CSV is empty or has no data rows');
+      if (csvFileRef.current) csvFileRef.current.value = '';
+      return;
+    }
+    if (!parsed[0].email && parsed[0].email !== '') {
+      setImportError('CSV must have an "email" column');
+      if (csvFileRef.current) csvFileRef.current.value = '';
+      return;
+    }
+    // Filter out rows without email
+    const validRows = parsed.filter(r => r.email && r.email.trim());
+    if (validRows.length === 0) {
+      setImportError('No valid rows found (all rows missing email)');
+      if (csvFileRef.current) csvFileRef.current.value = '';
+      return;
+    }
 
-    const fnIdx = headers.indexOf('first_name');
-    const lnIdx = headers.indexOf('last_name');
-    const phIdx = headers.indexOf('phone');
-    const tagIdx = headers.indexOf('tags');
+    setImportError(null);
+    setCsvAllRows(validRows);
+    setCsvPreview(validRows.slice(0, 5));
+  };
 
-    const rows = lines.slice(1).map(line => {
-      const cols = line.split(',').map(c => c.trim());
-      return {
-        email: cols[emailIdx],
-        first_name: fnIdx >= 0 ? cols[fnIdx] : undefined,
-        last_name: lnIdx >= 0 ? cols[lnIdx] : undefined,
-        phone: phIdx >= 0 ? cols[phIdx] : undefined,
-        tags: tagIdx >= 0 && cols[tagIdx] ? cols[tagIdx].split(';').map(t => t.trim()) : undefined,
-      };
-    }).filter(r => r.email);
-
+  const handleCSVConfirm = async () => {
+    setImporting(true);
+    const rows = csvAllRows.map(r => ({
+      email: r.email,
+      first_name: r.first_name || undefined,
+      last_name: r.last_name || undefined,
+      phone: r.phone || undefined,
+      tags: r.tags ? r.tags.split(';').map(t => t.trim()).filter(Boolean) : undefined,
+    }));
     await fetch(`/api/agency/clients/${clientId}/email/contacts`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(rows),
     });
     setImporting(false);
-    if (fileRef.current) fileRef.current.value = '';
+    setCsvPreview(null);
+    setCsvAllRows([]);
+    if (csvFileRef.current) csvFileRef.current.value = '';
     load();
+  };
+
+  const handleCSVCancel = () => {
+    setCsvPreview(null);
+    setCsvAllRows([]);
+    if (csvFileRef.current) csvFileRef.current.value = '';
   };
 
   const handleDeleteSelected = async (ids: string[]) => {
@@ -654,6 +702,13 @@ function ContactsView({ clientId }: { clientId: string }) {
 
   return (
     <div className="bg-white rounded-xl border border-gray-200">
+      {/* CRM info banner */}
+      <div className="flex items-center gap-2 px-4 py-2.5 bg-indigo-50 border-b border-indigo-100 rounded-t-xl">
+        <Info className="w-4 h-4 text-indigo-500 flex-shrink-0" />
+        <p className="text-xs text-indigo-700">
+          These are your <strong>email marketing</strong> contacts. To manage customer contacts, use the <strong>CRM</strong> tab.
+        </p>
+      </div>
       <div className="flex items-center justify-between p-4 border-b border-gray-100 flex-wrap gap-3">
         <h3 className="text-lg font-semibold text-gray-900">Contacts <span className="text-sm text-gray-400 font-normal">({total})</span></h3>
         <div className="flex items-center gap-2">
@@ -679,9 +734,13 @@ function ContactsView({ clientId }: { clientId: string }) {
             <option value="bounced">Bounced</option>
           </select>
           {/* CSV import */}
-          <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={handleCSV} />
-          <button onClick={() => fileRef.current?.click()} disabled={importing} className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50">
+          <input ref={csvFileRef} type="file" accept=".csv" className="hidden" onChange={handleCSVFile} />
+          <button onClick={() => csvFileRef.current?.click()} disabled={importing} className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50">
             {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />} Import CSV
+          </button>
+          {/* Download CSV template */}
+          <button onClick={downloadCSVTemplate} className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50">
+            <Download className="w-4 h-4" /> Template
           </button>
           {/* Add contact */}
           <button onClick={() => setShowAdd(true)} className="flex items-center gap-1.5 px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700">
@@ -690,9 +749,64 @@ function ContactsView({ clientId }: { clientId: string }) {
         </div>
       </div>
       {importError && (
-        <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-2 text-sm text-red-700 flex items-center justify-between">
+        <div className="bg-red-50 border border-red-200 rounded-lg mx-4 mt-3 px-4 py-2 text-sm text-red-700 flex items-center justify-between">
           {importError}
           <button onClick={() => setImportError(null)} className="text-red-500 hover:text-red-700 ml-2">&times;</button>
+        </div>
+      )}
+
+      {/* CSV Preview modal */}
+      {csvPreview && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={handleCSVCancel}>
+          <div className="bg-white rounded-xl p-6 w-full max-w-2xl space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <h4 className="text-lg font-semibold text-gray-900">Preview CSV Import</h4>
+              <button onClick={handleCSVCancel}><X className="w-5 h-5 text-gray-400" /></button>
+            </div>
+            <p className="text-sm text-gray-500">
+              Showing {csvPreview.length} of {csvAllRows.length} contacts. Verify the mapping looks correct.
+            </p>
+            <div className="overflow-x-auto border border-gray-200 rounded-lg">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs text-gray-500 uppercase bg-gray-50 border-b border-gray-200">
+                    <th className="px-3 py-2">Email</th>
+                    <th className="px-3 py-2">First Name</th>
+                    <th className="px-3 py-2">Last Name</th>
+                    <th className="px-3 py-2">Phone</th>
+                    <th className="px-3 py-2">Tags</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {csvPreview.map((row, i) => (
+                    <tr key={i} className="hover:bg-gray-50">
+                      <td className="px-3 py-2 text-gray-900">{row.email || <span className="text-red-400 italic">missing</span>}</td>
+                      <td className="px-3 py-2 text-gray-700">{row.first_name || '—'}</td>
+                      <td className="px-3 py-2 text-gray-700">{row.last_name || '—'}</td>
+                      <td className="px-3 py-2 text-gray-700">{row.phone || '—'}</td>
+                      <td className="px-3 py-2 text-gray-700">{row.tags || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {csvAllRows.length > 5 && (
+              <p className="text-xs text-gray-400">...and {csvAllRows.length - 5} more rows</p>
+            )}
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button onClick={handleCSVCancel} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">
+                Cancel
+              </button>
+              <button
+                onClick={handleCSVConfirm}
+                disabled={importing}
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
+              >
+                {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                Import {csvAllRows.length} Contacts
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -913,14 +1027,14 @@ function TemplatesView({ clientId }: { clientId: string }) {
 // ══════════════════════════════════════════════════════════════════════════════
 
 function AnalyticsView({ clientId }: { clientId: string }) {
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [allCampaigns, setAllCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     setLoading(true);
     const res = await fetch(`/api/agency/clients/${clientId}/email/campaigns`);
     const data = await res.json();
-    setCampaigns((data.campaigns || []).filter((c: Campaign) => c.status === 'sent'));
+    setAllCampaigns(data.campaigns || []);
     setLoading(false);
   }, [clientId]);
 
@@ -928,24 +1042,18 @@ function AnalyticsView({ clientId }: { clientId: string }) {
 
   if (loading) return <div className="flex items-center justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>;
 
-  // Fetch all campaigns (including drafts/scheduled) for the no-data state
-  const [allCampaigns, setAllCampaigns] = useState<Campaign[]>([]);
-  useEffect(() => {
-    (async () => {
-      const res = await fetch(`/api/agency/clients/${clientId}/email/campaigns`);
-      const data = await res.json();
-      setAllCampaigns(data.campaigns || []);
-    })();
-  }, [clientId]);
+  const campaigns = allCampaigns.filter(c => c.status === 'sent');
 
   const totals = campaigns.reduce(
     (acc, c) => ({
       sent: acc.sent + c.total_sent,
+      delivered: acc.delivered + c.total_delivered,
       opened: acc.opened + c.total_opened,
       clicked: acc.clicked + c.total_clicked,
       bounced: acc.bounced + c.total_bounced,
+      recipients: acc.recipients + c.total_recipients,
     }),
-    { sent: 0, opened: 0, clicked: 0, bounced: 0 },
+    { sent: 0, delivered: 0, opened: 0, clicked: 0, bounced: 0, recipients: 0 },
   );
 
   const recent10 = campaigns.slice(0, 10);
@@ -961,7 +1069,7 @@ function AnalyticsView({ clientId }: { clientId: string }) {
           <BarChart3 className="w-12 h-12 mx-auto mb-4 text-gray-300" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">No Analytics Yet</h3>
           <p className="text-sm text-gray-500 mb-4">
-            Email analytics will appear here after you send your first campaign.
+            Send your first campaign to see analytics here.
           </p>
           {allCampaigns.length > 0 && (
             <div className="inline-flex items-center gap-4 text-sm text-gray-600 bg-gray-50 rounded-lg px-4 py-2">
@@ -983,13 +1091,7 @@ function AnalyticsView({ clientId }: { clientId: string }) {
                     <p className="text-sm font-medium text-gray-900">{c.name}</p>
                     <p className="text-xs text-gray-400">{c.subject}</p>
                   </div>
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${
-                    c.status === 'scheduled' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                    c.status === 'draft' ? 'bg-gray-50 text-gray-600 border-gray-200' :
-                    'bg-gray-50 text-gray-600 border-gray-200'
-                  }`}>
-                    {c.status}
-                  </span>
+                  <StatusBadge status={c.status} />
                 </div>
               ))}
             </div>
@@ -1004,7 +1106,24 @@ function AnalyticsView({ clientId }: { clientId: string }) {
       {/* Summary cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
+          { label: 'Campaigns Sent', value: campaigns.length.toLocaleString(), icon: Mail, color: 'text-gray-900' },
+          { label: 'Total Recipients', value: totals.recipients.toLocaleString(), icon: Users, color: 'text-gray-900' },
+          { label: 'Total Delivered', value: totals.delivered.toLocaleString(), icon: CheckCircle2, color: 'text-green-600' },
           { label: 'Total Sent', value: totals.sent.toLocaleString(), icon: Send, color: 'text-gray-900' },
+        ].map(s => (
+          <div key={s.label} className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <s.icon className="w-4 h-4 text-gray-400" />
+              <p className="text-xs text-gray-500">{s.label}</p>
+            </div>
+            <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Rate cards */}
+      <div className="grid grid-cols-3 gap-4">
+        {[
           { label: 'Open Rate', value: pct(totals.opened, totals.sent), icon: Eye, color: 'text-indigo-600' },
           { label: 'Click Rate', value: pct(totals.clicked, totals.sent), icon: CheckCircle2, color: 'text-blue-600' },
           { label: 'Bounce Rate', value: pct(totals.bounced, totals.sent), icon: AlertTriangle, color: 'text-red-600' },
@@ -1017,6 +1136,31 @@ function AnalyticsView({ clientId }: { clientId: string }) {
             <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
           </div>
         ))}
+      </div>
+
+      {/* Recent campaigns list */}
+      <div className="bg-white rounded-xl border border-gray-200">
+        <div className="p-4 border-b border-gray-100">
+          <h3 className="text-lg font-semibold text-gray-900">Recent Campaigns</h3>
+        </div>
+        <div className="divide-y divide-gray-50">
+          {campaigns.slice(0, 5).map(c => (
+            <div key={c.id} className="flex items-center justify-between px-4 py-3">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium text-gray-900 truncate">{c.name}</p>
+                  <StatusBadge status={c.status} />
+                </div>
+                <p className="text-xs text-gray-400 mt-0.5">{c.subject}</p>
+              </div>
+              <div className="flex items-center gap-4 text-xs text-gray-500 ml-4">
+                <span>{c.total_recipients} recipients</span>
+                <span>{c.total_sent} sent</span>
+                <span>{fmtDate(c.sent_at)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Campaign performance table */}
