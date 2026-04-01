@@ -470,6 +470,12 @@ function CampaignsView({ clientId }: { clientId: string }) {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">From Email</label>
             <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="noreply@kyra.conversionsystem.com" value={form.from_email} onChange={e => setForm(f => ({ ...f, from_email: e.target.value }))} />
+            {form.from_email && (
+              <p className="mt-1 text-xs text-amber-600 flex items-center gap-1">
+                <AlertTriangle className="w-3 h-3 flex-shrink-0" />
+                Sending from unverified domains may fail. Use a verified domain or contact support.
+              </p>
+            )}
           </div>
         </div>
 
