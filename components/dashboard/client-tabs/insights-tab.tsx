@@ -9,6 +9,7 @@ import { SEODashboard } from '@/app/(dashboard)/agency/clients/[id]/seo-dashboar
 import HealthScoreBadge from '@/components/dashboard/health-score-badge';
 import ClientActivityHeatmap from '@/components/dashboard/client-activity-heatmap';
 import RoiSummaryCard from '@/components/dashboard/roi-summary-card';
+import WorkerPerformanceCard from '@/components/dashboard/client-tabs/worker-performance-card';
 
 const SUB_TABS = ['usage', 'memory', 'seo'] as const;
 type SubTab = typeof SUB_TABS[number];
@@ -54,6 +55,7 @@ export default function InsightsTab({ client, defaultSubTab = 'usage', isSeoLock
           <p className="text-sm text-gray-500">
             Messages handled, response times, and costs for this client&apos;s AI worker.
           </p>
+          <WorkerPerformanceCard clientId={client.id} />
           <RoiSummaryCard
             totalConversations={client.usage_this_month ?? 0}
             plan="pro"
