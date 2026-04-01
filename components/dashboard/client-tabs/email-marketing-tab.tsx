@@ -928,6 +928,16 @@ function AnalyticsView({ clientId }: { clientId: string }) {
 
   if (loading) return <div className="flex items-center justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>;
 
+  // Fetch all campaigns (including drafts/scheduled) for the no-data state
+  const [allCampaigns, setAllCampaigns] = useState<Campaign[]>([]);
+  useEffect(() => {
+    (async () => {
+      const res = await fetch(`/api/agency/clients/${clientId}/email/campaigns`);
+      const data = await res.json();
+      setAllCampaigns(data.campaigns || []);
+    })();
+  }, [clientId]);
+
   const totals = campaigns.reduce(
     (acc, c) => ({
       sent: acc.sent + c.total_sent,
@@ -940,6 +950,54 @@ function AnalyticsView({ clientId }: { clientId: string }) {
 
   const recent10 = campaigns.slice(0, 10);
   const maxOpenRate = Math.max(...recent10.map(c => c.total_sent ? (c.total_opened / c.total_sent) * 100 : 0), 1);
+
+  // Show clear no-data state when no campaigns have been sent
+  if (campaigns.length === 0) {
+    const scheduled = allCampaigns.filter(c => c.status === 'scheduled');
+    const drafts = allCampaigns.filter(c => c.status === 'draft');
+    return (
+      <div className="space-y-6">
+        <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+          <BarChart3 className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Analytics Yet</h3>
+          <p className="text-sm text-gray-500 mb-4">
+            Email analytics will appear here after you send your first campaign.
+          </p>
+          {allCampaigns.length > 0 && (
+            <div className="inline-flex items-center gap-4 text-sm text-gray-600 bg-gray-50 rounded-lg px-4 py-2">
+              <span>Total campaigns: <strong>{allCampaigns.length}</strong></span>
+              {scheduled.length > 0 && <span>Scheduled: <strong>{scheduled.length}</strong></span>}
+              {drafts.length > 0 && <span>Drafts: <strong>{drafts.length}</strong></span>}
+            </div>
+          )}
+        </div>
+        {allCampaigns.length > 0 && (
+          <div className="bg-white rounded-xl border border-gray-200">
+            <div className="p-4 border-b border-gray-100">
+              <h3 className="text-sm font-semibold text-gray-900">All Campaigns</h3>
+            </div>
+            <div className="divide-y divide-gray-50">
+              {allCampaigns.map(c => (
+                <div key={c.id} className="flex items-center justify-between px-4 py-3">
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{c.name}</p>
+                    <p className="text-xs text-gray-400">{c.subject}</p>
+                  </div>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${
+                    c.status === 'scheduled' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                    c.status === 'draft' ? 'bg-gray-50 text-gray-600 border-gray-200' :
+                    'bg-gray-50 text-gray-600 border-gray-200'
+                  }`}>
+                    {c.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
