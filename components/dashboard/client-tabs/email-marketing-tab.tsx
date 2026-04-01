@@ -926,8 +926,6 @@ function AnalyticsView({ clientId }: { clientId: string }) {
 
   useEffect(() => { load(); }, [load]);
 
-  if (loading) return <div className="flex items-center justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>;
-
   // Fetch all campaigns (including drafts/scheduled) for the no-data state
   const [allCampaigns, setAllCampaigns] = useState<Campaign[]>([]);
   useEffect(() => {
@@ -937,6 +935,8 @@ function AnalyticsView({ clientId }: { clientId: string }) {
       setAllCampaigns(data.campaigns || []);
     })();
   }, [clientId]);
+
+  if (loading) return <div className="flex items-center justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>;
 
   const totals = campaigns.reduce(
     (acc, c) => ({
