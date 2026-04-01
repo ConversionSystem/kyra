@@ -490,7 +490,11 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
             <SettingsTabMerged client={initialClient} role={role} plan={plan} accountType={accountType} onRefresh={() => router.refresh()} />
           )}
           {activeTab === 'insights' && (
-            <InsightsTab client={initialClient} isSeoLocked={isFreeOrSolo} />
+            <InsightsTab
+              client={initialClient}
+              isSeoLocked={isFreeOrSolo}
+              workerRoleId={((initialClient.container_config as Record<string, unknown>) ?? {}).active_worker_id as string | undefined}
+            />
           )}
           {activeTab === 'share' && (
             <PortalTab client={initialClient} />

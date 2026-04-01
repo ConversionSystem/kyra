@@ -10,12 +10,14 @@ import HealthScoreBadge from '@/components/dashboard/health-score-badge';
 import ClientActivityHeatmap from '@/components/dashboard/client-activity-heatmap';
 import RoiSummaryCard from '@/components/dashboard/roi-summary-card';
 import WorkerPerformanceCard from '@/components/dashboard/client-tabs/worker-performance-card';
+import TasksCard from '@/components/dashboard/client-tabs/tasks-card';
 
-const SUB_TABS = ['usage', 'memory', 'seo'] as const;
+const SUB_TABS = ['usage', 'tasks', 'memory', 'seo'] as const;
 type SubTab = typeof SUB_TABS[number];
 
 const SUB_TAB_LABELS: Record<SubTab, string> = {
   usage: 'Usage',
+  tasks: 'Tasks',
   memory: 'Memory',
   seo: 'SEO',
 };
@@ -24,9 +26,10 @@ interface InsightsTabProps {
   client: AgencyClient;
   defaultSubTab?: SubTab;
   isSeoLocked?: boolean;
+  workerRoleId?: string;
 }
 
-export default function InsightsTab({ client, defaultSubTab = 'usage', isSeoLocked }: InsightsTabProps) {
+export default function InsightsTab({ client, defaultSubTab = 'usage', isSeoLocked, workerRoleId }: InsightsTabProps) {
   const [activeSubTab, setActiveSubTab] = useState<SubTab>(defaultSubTab);
 
   return (
@@ -50,6 +53,12 @@ export default function InsightsTab({ client, defaultSubTab = 'usage', isSeoLock
       </div>
 
       {/* Sub-tab content */}
+      {activeSubTab === 'tasks' && (
+        <div className="space-y-6">
+          <TasksCard clientId={client.id} workerRoleId={workerRoleId} />
+        </div>
+      )}
+
       {activeSubTab === 'usage' && (
         <div className="space-y-6">
           <p className="text-sm text-gray-500">
