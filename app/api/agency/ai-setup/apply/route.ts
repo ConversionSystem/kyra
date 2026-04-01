@@ -13,6 +13,8 @@ import { requireAgencyAdmin } from '@/lib/agency/middleware';
 import { createClient } from '@/lib/supabase/server';
 import { INDUSTRY_TEMPLATES, applySoulTemplate } from '@/lib/templates/industry-templates';
 import { ROLE_WORKERS } from '@/lib/ai-workers/role-workers';
+import { getWorkerCapabilities, getCapabilityProfileName, generateCapabilityRestrictions } from '@/lib/ai-workers/capabilities';
+import { getScopedToolsForWorker } from '@/lib/ai-workers/tool-scoping';
 import { updateClientConfig } from '@/lib/ovh/provisioner';
 import { resolveGHLConfig } from '@/lib/ghl/resolve-ghl-config';
 import { PLANS } from '@/lib/billing/plans';
@@ -5577,6 +5579,15 @@ export async function POST(request: NextRequest) {
       ...securityRules,
     ].join('\n');
 
+    // ── Inject capability restrictions into SOUL.md ──────────────────────
+    const capabilityRestrictions = generateCapabilityRestrictions(templateId);
+    soulMd += `\n\n${capabilityRestrictions}`;
+
+    // ── Use scoped tools instead of full suggested tools ────────────────
+    const scopedTools = getScopedToolsForWorker(templateId);
+    const capabilities = getWorkerCapabilities(templateId);
+    const capabilityProfile = getCapabilityProfileName(templateId);
+
     // Build container config with all role-specific variables
     containerConfigPatch = {
       active_worker_id: templateId,
@@ -5584,8 +5595,18 @@ export async function POST(request: NextRequest) {
       greeting: interpolatedGreeting,
       role_type: templateId,
       business_name: businessName,
-      suggested_tools: role.suggestedTools,
+      suggested_tools: scopedTools.length > 0 ? scopedTools : role.suggestedTools,
       soul_template: soulMd,
+      // Phase 2: Capability profile for runtime enforcement
+      capability_profile: capabilityProfile,
+      capability_config: {
+        allowed: capabilities.allowed,
+        denied: capabilities.denied,
+        maxResponseTokens: capabilities.maxResponseTokens,
+        canInitiateOutbound: capabilities.canInitiateOutbound,
+        canAccessPricing: capabilities.canAccessPricing,
+        riskLevel: capabilities.riskLevel,
+      },
     };
 
     // Save all role-specific variables that were provided
