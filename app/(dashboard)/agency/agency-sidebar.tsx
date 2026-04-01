@@ -15,7 +15,7 @@ import {
   Contact as ContactIcon,
   Target as TargetIcon,
   BarChart3 as CrmChartIcon,
-  Brain as BrainIcon,
+  Brain,
   Settings,
   Terminal,
   ExternalLink,
@@ -55,6 +55,8 @@ interface NavItem {
   icon: LucideIcon;
   iconClassName?: string;
   masterOnly?: boolean;
+  /** If set, item only shows for these plans (master accounts always see it) */
+  requiredPlans?: string[];
   badge?: string;
 }
 
@@ -71,6 +73,7 @@ const navSections: NavSection[] = [
     items: [
       { label: 'Mission Control', href: '/agency', icon: Activity },
       { label: 'Analytics', href: '/agency/analytics', icon: BarChart2 },
+      { label: 'Intelligence', href: '/agency/intelligence', icon: Brain, iconClassName: 'text-purple-400', requiredPlans: ['pro', 'scale'] },
       { label: 'Clients', href: '/agency/clients', icon: Users },
       { label: 'GHL Actions', href: '/agency/audit', icon: ClipboardList },
       { label: 'Websites', href: '/agency/sites', icon: Globe },
@@ -302,7 +305,11 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
               hasBranding={hasBranding}
               storageKey={section.label ? `agency-sidebar:section:${section.label.toLowerCase().replace(/\s+/g, '-')}` : undefined}
             >
-              {section.items.filter(item => !item.masterOnly || isMaster).map((item) => {
+              {section.items.filter(item => {
+                if (item.masterOnly && !isMaster) return false;
+                if (item.requiredPlans && !isMaster && !item.requiredPlans.includes(plan)) return false;
+                return true;
+              }).map((item) => {
                 const isActive =
                   item.href === '/agency'
                     ? pathname === '/agency'
