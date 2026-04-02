@@ -181,6 +181,7 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
   const [copied, setCopied] = useState(false);
   const [testingCall, setTestingCall] = useState(false);
   const [provisioning, setProvisioning] = useState(false);
+  const [syncingKnowledge, setSyncingKnowledge] = useState(false);
   const [dailyMinutesEstimate, setDailyMinutesEstimate] = useState(30);
   const [activeDaysPerMonthEstimate, setActiveDaysPerMonthEstimate] = useState(22);
   const [voiceUsage, setVoiceUsage] = useState<{ minutesUsed: number; minuteLimit: number; percentUsed: number } | null>(null);
@@ -286,6 +287,25 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
       setError(err instanceof Error ? err.message : 'Test call failed');
     }
     setTestingCall(false);
+  };
+
+  const handleGHLKnowledgeSync = async () => {
+    if (!clientId) return;
+    setSyncingKnowledge(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/voice/ghl-sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Sync failed');
+      setSuccess('Training data synced to GHL! Your GHL Voice AI agent now has Kyra\'s latest business knowledge.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Sync failed');
+    }
+    setSyncingKnowledge(false);
   };
 
   const provisionPhone = async () => {
@@ -878,6 +898,43 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
                 {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
               </Button>
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* GHL Knowledge Sync — only shown when provider is GHL */}
+      {config?.provider === 'ghl' && (
+        <Card className="border-green-200 bg-green-50/40">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Zap className="w-5 h-5 text-green-600" />
+              Sync Training Data to GHL
+            </CardTitle>
+            <CardDescription>
+              Push Kyra&apos;s learned business knowledge into your GHL Voice AI agent. Every time Kyra learns something new from conversations, sync it here to keep GHL&apos;s AI up to date.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              onClick={handleGHLKnowledgeSync}
+              disabled={syncingKnowledge || !clientId}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              {syncingKnowledge ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Syncing...
+                </>
+              ) : (
+                <>
+                  <Zap className="w-4 h-4 mr-2" />
+                  Sync Training Data
+                </>
+              )}
+            </Button>
+            <p className="text-xs text-gray-500 mt-2">
+              Requires &quot;Conversation AI&quot; scope enabled on your GHL Private Integration Token.
+            </p>
           </CardContent>
         </Card>
       )}

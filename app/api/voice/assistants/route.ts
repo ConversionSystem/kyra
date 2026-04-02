@@ -6,6 +6,8 @@ import { createClient } from '@/lib/supabase/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { getVoiceProvider, buildVoiceConfig } from '@/lib/voice/provider';
 import type { VoiceProvider } from '@/lib/voice/types';
+import { syncKnowledgeToGHLAgent } from '@/lib/ghl/conversation-ai';
+import { getValidToken } from '@/lib/ghl/api';
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -18,8 +20,8 @@ export async function POST(req: NextRequest) {
     areaCode,
   } = await req.json();
 
-  // Kyra Native (openclaw) doesn't require an external API key
-  if (!clientId || !provider || (!apiKey && provider !== 'openclaw')) {
+  // Kyra Native and GHL don't require an external API key
+  if (!clientId || !provider || (!apiKey && provider !== 'openclaw' && provider !== 'ghl')) {
     return NextResponse.json({ error: 'clientId, provider, and apiKey required' }, { status: 400 });
   }
 
@@ -28,7 +30,7 @@ export async function POST(req: NextRequest) {
   // Verify ownership
   const { data: client } = await svc
     .from('agency_clients')
-    .select('id, name, container_config, agency_id')
+    .select('id, name, container_config, agency_id, ghl_location_id')
     .eq('id', clientId)
     .single();
 
@@ -57,6 +59,19 @@ export async function POST(req: NextRequest) {
   // Create/sync the assistant with the provider
   const providerClient = getVoiceProvider(provider as VoiceProvider, apiKey);
   const { assistantId } = await providerClient.syncAssistant(clientId, voiceAssistantConfig);
+
+  // For GHL: also push Kyra knowledge into GHL's Conversation AI agent
+  if (provider === 'ghl' && client.agency_id) {
+    try {
+      const token = await getValidToken(clientId).catch(() => null);
+      const locationId = (client.ghl_location_id as string) ?? null;
+      if (token && locationId) {
+        await syncKnowledgeToGHLAgent(token, locationId, clientId, client.agency_id);
+      }
+    } catch {
+      // Non-fatal — voice setup proceeds even if knowledge sync fails
+    }
+  }
 
   // Provision a phone number (if not already provisioned)
   const existingVoiceConfig = (cfg.voice_config as Record<string, string>) ?? {};
