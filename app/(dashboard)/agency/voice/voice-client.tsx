@@ -231,6 +231,7 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
     setSaving(true);
     setError(null);
     try {
+      const isGHL = selectedProvider === 'ghl';
       const res = await fetch('/api/voice/assistants', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -239,9 +240,7 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
           provider: selectedProvider,
           apiKey: apiKey.trim(),
           areaCode: areaCode.replace(/\D/g, '').slice(0, 3) || undefined,
-          aiName,
-          voiceId: selectedVoice !== 'default' ? selectedVoice : undefined,
-          language,
+          ...(isGHL ? {} : { aiName, voiceId: selectedVoice !== 'default' ? selectedVoice : undefined, language }),
         }),
       });
       const data = await res.json();
@@ -251,13 +250,23 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
         assistantId: data.assistantId,
         phoneNumber: data.phoneNumber,
         phoneNumberId: data.phoneNumberId,
-        aiName,
-        voiceId: selectedVoice,
-        language,
+        ...(isGHL ? {} : { aiName, voiceId: selectedVoice, language }),
         enabled: true,
         syncedAt: new Date().toISOString(),
       });
-      setSuccess('Voice AI activated! Your AI worker can now handle phone calls.');
+      // For GHL, attempt knowledge sync non-fatally
+      if (isGHL && clientId) {
+        try {
+          await fetch('/api/voice/ghl-sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ clientId }),
+          });
+        } catch { /* non-fatal */ }
+      }
+      setSuccess(isGHL
+        ? 'GHL call logging enabled! Calls from your GHL Voice AI will appear in your inbox.'
+        : 'Voice AI activated! Your AI worker can now handle phone calls.');
       setStep('active');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Setup failed');
@@ -615,86 +624,224 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
           </Card>
         )}
 
-        {/* Step 2: AI Name & Voice */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold">2</span>
-              Customize Your AI
-            </CardTitle>
-            <CardDescription>How should your AI introduce itself on calls?</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <label className="text-sm text-gray-600 mb-1 block">AI Name</label>
-              <Input
-                placeholder="Alex"
-                value={aiName}
-                onChange={(e) => setAiName(e.target.value)}
-              />
-              <p className="text-xs text-gray-400 mt-1">
-                &quot;Hi, thanks for calling {clientName}! This is {aiName || 'Alex'}, how can I help?&quot;
-              </p>
-            </div>
-
-            <div>
-              <label className="text-sm text-gray-600 mb-2 block">Voice</label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                {VOICE_PRESETS.map((v) => (
-                  <button
-                    key={v.id}
-                    onClick={() => setSelectedVoice(v.id)}
-                    className={cn(
-                      'p-3 rounded-lg border text-left transition-all',
-                      selectedVoice === v.id
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 bg-white hover:border-gray-300'
-                    )}
-                  >
-                    <div className="font-medium text-gray-900 text-sm">{v.name}</div>
-                    <div className="text-xs text-gray-500 mt-0.5">{v.gender} · {v.accent}</div>
-                    <div className="text-xs text-gray-400 mt-0.5">{v.description}</div>
-                  </button>
+        {/* Step 2: GHL guide OR AI Name & Voice for other providers */}
+        {provider.id === 'ghl' ? (
+          <Card className="border-green-200">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 text-xs flex items-center justify-center font-bold">2</span>
+                Set Up Voice AI in GoHighLevel
+              </CardTitle>
+              <CardDescription>
+                Voice AI runs inside GHL. Follow these steps to create your agent:
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ol className="space-y-4">
+                {[
+                  {
+                    icon: '🖥️',
+                    title: 'Open GHL',
+                    desc: 'Log into your GHL sub-account, then go to AI Agents → Voice AI tab.',
+                  },
+                  {
+                    icon: '➕',
+                    title: 'Create an agent',
+                    desc: 'Click "+ Create Agent" and choose "Create from scratch".',
+                  },
+                  {
+                    icon: '⚙️',
+                    title: 'Configure your agent',
+                    desc: 'Set the agent name and business name, pick a voice, and choose an LLM model.',
+                  },
+                  {
+                    icon: '🎯',
+                    title: 'Set up goals',
+                    desc: 'Add a Knowledge Base, configure call handling rules (book appointments, qualify leads, transfer to human).',
+                  },
+                  {
+                    icon: '📱',
+                    title: 'Assign a phone number',
+                    desc: 'In the Phone & Availability tab, assign a number from your GHL sub-account.',
+                  },
+                  {
+                    icon: '✅',
+                    title: 'Test it',
+                    desc: 'Use GHL\'s built-in test call feature to verify your agent responds correctly.',
+                  },
+                ].map((step, i) => (
+                  <li key={i} className="flex gap-3">
+                    <div className="flex-shrink-0 w-7 h-7 rounded-full bg-green-100 text-green-700 text-xs font-bold flex items-center justify-center">
+                      {i + 1}
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-900 text-sm">
+                        {step.icon} {step.title}
+                      </div>
+                      <div className="text-sm text-gray-500 mt-0.5">{step.desc}</div>
+                    </div>
+                  </li>
                 ))}
+              </ol>
+              <div className="mt-5">
+                <a
+                  href="https://app.gohighlevel.com"
+                  target="_blank"
+                  rel="noopener"
+                  className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+                >
+                  Open GHL Voice AI <ExternalLink className="w-4 h-4" />
+                </a>
+                <p className="text-xs text-gray-400 mt-2">
+                  Navigate to your sub-account → AI Agents → Voice AI
+                </p>
               </div>
-            </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold">2</span>
+                Customize Your AI
+              </CardTitle>
+              <CardDescription>How should your AI introduce itself on calls?</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="text-sm text-gray-600 mb-1 block">AI Name</label>
+                <Input
+                  placeholder="Alex"
+                  value={aiName}
+                  onChange={(e) => setAiName(e.target.value)}
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  &quot;Hi, thanks for calling {clientName}! This is {aiName || 'Alex'}, how can I help?&quot;
+                </p>
+              </div>
 
-            <div>
-              <label className="text-sm text-gray-600 mb-1 block">Language</label>
-              <select
-                value={language}
-                onChange={(e) => setLanguage(e.target.value)}
-                className="w-full bg-white border border-gray-200 text-gray-900 rounded-md p-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-              >
-                <option value="en">English</option>
-                <option value="es">Spanish</option>
-                <option value="fr">French</option>
-                <option value="de">German</option>
-                <option value="pt">Portuguese</option>
-                <option value="it">Italian</option>
-                <option value="nl">Dutch</option>
-                <option value="hi">Hindi</option>
-                <option value="ja">Japanese</option>
-                <option value="ko">Korean</option>
-                <option value="zh">Chinese (Mandarin)</option>
-                <option value="ar">Arabic</option>
-              </select>
-            </div>
-          </CardContent>
-        </Card>
+              <div>
+                <label className="text-sm text-gray-600 mb-2 block">Voice</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                  {VOICE_PRESETS.map((v) => (
+                    <button
+                      key={v.id}
+                      onClick={() => setSelectedVoice(v.id)}
+                      className={cn(
+                        'p-3 rounded-lg border text-left transition-all',
+                        selectedVoice === v.id
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 bg-white hover:border-gray-300'
+                      )}
+                    >
+                      <div className="font-medium text-gray-900 text-sm">{v.name}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">{v.gender} · {v.accent}</div>
+                      <div className="text-xs text-gray-400 mt-0.5">{v.description}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-        {/* Step 3: Webhook URL (Kyra Native and GHL handle this automatically) */}
-        {provider.id === 'openclaw' || provider.id === 'ghl' ? (
+              <div>
+                <label className="text-sm text-gray-600 mb-1 block">Language</label>
+                <select
+                  value={language}
+                  onChange={(e) => setLanguage(e.target.value)}
+                  className="w-full bg-white border border-gray-200 text-gray-900 rounded-md p-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                >
+                  <option value="en">English</option>
+                  <option value="es">Spanish</option>
+                  <option value="fr">French</option>
+                  <option value="de">German</option>
+                  <option value="pt">Portuguese</option>
+                  <option value="it">Italian</option>
+                  <option value="nl">Dutch</option>
+                  <option value="hi">Hindi</option>
+                  <option value="ja">Japanese</option>
+                  <option value="ko">Korean</option>
+                  <option value="zh">Chinese (Mandarin)</option>
+                  <option value="ar">Arabic</option>
+                </select>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Step 3: GHL intelligence card / Kyra Native auto / others webhook */}
+        {provider.id === 'ghl' ? (
+          <Card className="border-green-200">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 text-xs flex items-center justify-center font-bold">3</span>
+                Supercharge Your GHL Agent with Kyra
+              </CardTitle>
+              <CardDescription>
+                Kyra enhances your GHL Voice AI with business intelligence:
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Training Data Sync */}
+              <div className="rounded-lg border border-green-200 bg-green-50/40 p-4">
+                <div className="flex items-start gap-3">
+                  <span className="text-xl">📚</span>
+                  <div className="flex-1">
+                    <div className="font-medium text-gray-900 text-sm">Training Data Sync</div>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Kyra learns from every customer conversation. Push that knowledge into your GHL Voice AI agent so it gets smarter over time.
+                    </p>
+                    <Button
+                      onClick={handleGHLKnowledgeSync}
+                      disabled={syncingKnowledge || !clientId}
+                      size="sm"
+                      className="mt-3 bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      {syncingKnowledge ? (
+                        <>
+                          <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
+                          Syncing...
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="w-3 h-3 mr-1.5" />
+                          Sync Training Data
+                        </>
+                      )}
+                    </Button>
+                    <p className="text-xs text-gray-400 mt-2">
+                      Optional — you can sync now or any time after enabling.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Unified Call Logging */}
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50/40 p-4">
+                <div className="flex items-start gap-3">
+                  <span className="text-xl">📞</span>
+                  <div className="flex-1">
+                    <div className="font-medium text-gray-900 text-sm">Unified Call Logging</div>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Every call your GHL Voice AI handles is automatically logged in Kyra&apos;s inbox alongside chat and SMS conversations.
+                    </p>
+                    <div className="mt-2">
+                      <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 text-xs">
+                        <CheckCircle2 className="w-3 h-3 mr-1" /> Already active via GHL webhook
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ) : provider.id === 'openclaw' ? (
           <Card className="border-emerald-200 bg-emerald-50/40">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 text-xs flex items-center justify-center font-bold">✓</span>
-                {provider.id === 'ghl' ? 'GHL Webhook Already Configured' : 'Webhooks Handled Automatically'}
+                Webhooks Handled Automatically
               </CardTitle>
               <CardDescription>
-                {provider.id === 'ghl'
-                  ? 'Call events are captured via your existing GHL webhook (/api/webhooks/ghl) — already configured. Every completed call is transcribed and logged to Kyra automatically.'
-                  : 'Because Kyra Native is built into your platform, call events are captured automatically — no webhook setup needed. Every call is transcribed and logged to your CRM in real time.'}
+                Because Kyra Native is built into your platform, call events are captured automatically — no webhook setup needed. Every call is transcribed and logged to your CRM in real time.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -731,6 +878,11 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
           </div>
         )}
 
+        {selectedProvider === 'ghl' && (
+          <p className="text-sm text-gray-500 text-center -mb-2">
+            This activates Kyra&apos;s call logging for this client. GHL Voice AI calls will appear in your inbox.
+          </p>
+        )}
         <Button
           onClick={handleSetup}
           disabled={saving || (selectedProvider !== 'openclaw' && selectedProvider !== 'ghl' && !apiKey.trim())}
@@ -739,12 +891,12 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
           {saving ? (
             <>
               <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-              {selectedProvider === 'ghl' ? 'Syncing knowledge to GHL Voice AI...' : 'Creating voice assistant & provisioning phone number...'}
+              {selectedProvider === 'ghl' ? 'Enabling call logging...' : 'Creating voice assistant & provisioning phone number...'}
             </>
           ) : (
             <>
               <Phone className="w-5 h-5 mr-2" />
-              {selectedProvider === 'ghl' ? 'Enable GHL Voice AI' : 'Activate Voice AI'}
+              {selectedProvider === 'ghl' ? 'Enable Call Logging' : 'Activate Voice AI'}
             </>
           )}
         </Button>
