@@ -61,8 +61,23 @@ export async function GET(
     return NextResponse.json({ error: 'Failed to fetch threads' }, { status: 500 });
   }
 
-  // Group by contact_id into threads
-  const threadMap = new Map<string, {
+  // Also fetch web chat conversations (widget) from client_conversations
+  let webChatQuery = supabase
+    .from('client_conversations')
+    .select('id, user_message, ai_response, session_id, source_url, channel, created_at')
+    .eq('client_id', clientId)
+    .eq('channel', 'web_chat')
+    .order('created_at', { ascending: false });
+
+  if (q) {
+    const escaped = q.replace(/[%_]/g, '\\$&');
+    webChatQuery = webChatQuery.or(`user_message.ilike.%${escaped}%,ai_response.ilike.%${escaped}%`);
+  }
+
+  const { data: webChatMessages } = await webChatQuery.limit(200);
+
+  // Define thread shape
+  type Thread = {
     contactId: string;
     contactName: string | null;
     contactPhone: string | null;
@@ -75,7 +90,10 @@ export async function GET(
     hasEscalation: boolean;
     hasHumanReply: boolean;
     unread: boolean;
-  }>();
+  };
+
+  // Group GHL messages by contact_id into threads
+  const threadMap = new Map<string, Thread>();
 
   for (const msg of allMessages || []) {
     const key = msg.contact_id;
@@ -106,9 +124,36 @@ export async function GET(
     }
   }
 
-  // Sort by most recent message
-  const threads = Array.from(threadMap.values())
-    .sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime());
+  // Group web chat messages by session_id into threads
+  const webChatMap = new Map<string, Thread>();
+
+  for (const msg of webChatMessages || []) {
+    const key = `webchat:${msg.session_id}`;
+    if (!webChatMap.has(key)) {
+      webChatMap.set(key, {
+        contactId: msg.session_id,
+        contactName: 'Web Visitor',
+        contactPhone: null,
+        contactEmail: null,
+        conversationId: msg.session_id,
+        messageType: 'Web Chat',
+        lastMessage: msg.user_message,
+        lastMessageAt: msg.created_at,
+        messageCount: 1,
+        hasEscalation: false,
+        hasHumanReply: false,
+        unread: false,
+      });
+    } else {
+      webChatMap.get(key)!.messageCount++;
+    }
+  }
+
+  // Merge GHL + web chat threads, sort by most recent message
+  const threads = [
+    ...Array.from(threadMap.values()),
+    ...Array.from(webChatMap.values()),
+  ].sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime());
 
   const totalThreads = threads.length;
   const paged = threads.slice(offset, offset + limit);

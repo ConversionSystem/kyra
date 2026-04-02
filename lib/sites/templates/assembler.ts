@@ -365,7 +365,7 @@ export function assemblePage(options: AssemblePageOptions): string {
 
   // Kyra chat widget
   const widgetScript = siteData.widget_client_id
-    ? `<script src="https://widget.kyra.conversionsystem.com/widget.js" data-client-id="${siteData.widget_client_id}" async></script>`
+    ? `<script src="https://kyra.conversionsystem.com/api/widget/${siteData.widget_client_id}/script" defer></script>`
     : '';
 
   // Sticky mobile CTA bar

@@ -15,6 +15,7 @@
 // ============================================================================
 
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { deductCredits } from '@/lib/billing/credit-engine';
 import type { ClientSite, SiteService, SiteCity, ContentSection, FaqItem } from './types';
 import { INDUSTRY_DEFAULTS } from './industry-defaults';
 import {
@@ -202,7 +203,7 @@ export async function generateSiteContent(
     console.log(`[content-engine] Generated ${tasks.length} tasks for site ${siteId}`);
 
     // 4. Execute in batches
-    const results = await executeBatched(tasks, siteId);
+    const results = await executeBatched(tasks, siteId, clientSite.agency_id, clientSite.client_id);
 
     // 5. Generate meta titles/descriptions for pages missing them
     await generateMeta(clientSite, siteId);
@@ -347,7 +348,7 @@ export async function regeneratePage(
     .eq('site_id', siteId)
     .eq('slug', slug);
 
-  const result = await executeTask(task, siteId);
+  const result = await executeTask(task, siteId, clientSite.agency_id, clientSite.client_id);
   return { success: result.success, error: result.error };
 }
 
@@ -608,6 +609,8 @@ function buildTaskList(site: ClientSite): PageTask[] {
 async function executeBatched(
   tasks: PageTask[],
   siteId: string,
+  agencyId?: string | null,
+  clientId?: string | null,
 ): Promise<GenerationResult[]> {
   const results: GenerationResult[] = [];
 
@@ -621,7 +624,7 @@ async function executeBatched(
     );
 
     const settled = await Promise.allSettled(
-      batch.map((task) => executeTask(task, siteId)),
+      batch.map((task) => executeTask(task, siteId, agencyId, clientId)),
     );
 
     for (const result of settled) {
@@ -644,6 +647,8 @@ async function executeBatched(
 async function executeTask(
   task: PageTask,
   siteId: string,
+  agencyId?: string | null,
+  clientId?: string | null,
 ): Promise<GenerationResult> {
   const supabase = createServiceClientWithoutCookies();
 
@@ -718,6 +723,16 @@ async function executeTask(
         cost,
         error: `DB error: ${upsertErr.message}`,
       };
+    }
+
+    // Deduct credits for AI website content generation (non-fatal)
+    if (agencyId && task.model !== 'template') {
+      try {
+        await deductCredits(agencyId, 'website.page_generation', {
+          clientId: clientId || undefined,
+          description: `Website page: ${task.slug}`,
+        });
+      } catch { /* non-fatal */ }
     }
 
     return { slug: task.slug, success: true, cost };
