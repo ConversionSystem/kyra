@@ -80,6 +80,19 @@ interface Props {
 
 const PROVIDERS = [
   {
+    id: 'ghl',
+    name: 'GoHighLevel',
+    logo: '⚡',
+    description: 'Uses your existing GHL sub-account. No new provider account needed — GHL handles calls via Twilio.',
+    pricing: 'Included in your GHL plan',
+    bestFor: 'Agencies already on GHL — zero extra setup',
+    signupUrl: '',
+    docsUrl: '',
+    color: 'border-green-200 bg-green-50/50 hover:border-green-300',
+    badge: '⭐ Recommended',
+    badgeColor: 'bg-green-100 text-green-700',
+  },
+  {
     id: 'openclaw',
     name: 'Kyra Native',
     logo: '🦞',
@@ -114,9 +127,9 @@ const PROVIDERS = [
     bestFor: 'Agencies with 10+ clients',
     signupUrl: 'https://app.synthflow.ai',
     docsUrl: 'https://docs.synthflow.ai',
-    color: 'border-purple-200 bg-purple-50/50 hover:border-purple-300 opacity-60',
-    badge: 'Coming Soon',
-    badgeColor: 'bg-gray-100 text-gray-500',
+    color: 'border-purple-200 bg-purple-50/50 hover:border-purple-300',
+    badge: 'Agency Plan',
+    badgeColor: 'bg-purple-100 text-purple-700',
   },
   {
     id: 'retell',
@@ -127,9 +140,9 @@ const PROVIDERS = [
     bestFor: 'High call volume, enterprise',
     signupUrl: 'https://www.retellai.com',
     docsUrl: 'https://docs.retellai.com',
-    color: 'border-emerald-200 bg-emerald-50/50 hover:border-emerald-300 opacity-60',
-    badge: 'Coming Soon',
-    badgeColor: 'bg-gray-100 text-gray-500',
+    color: 'border-emerald-200 bg-emerald-50/50 hover:border-emerald-300',
+    badge: 'Enterprise',
+    badgeColor: 'bg-emerald-100 text-emerald-700',
   },
 ] as const;
 
@@ -209,8 +222,8 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
       setError('No client configured yet. Please set up your AI worker first.');
       return;
     }
-    // Kyra Native doesn't need an external API key
-    if (selectedProvider !== 'openclaw' && !apiKey.trim()) {
+    // Kyra Native and GHL don't need an external API key
+    if (selectedProvider !== 'openclaw' && selectedProvider !== 'ghl' && !apiKey.trim()) {
       setError('Please enter your API key.');
       return;
     }
@@ -349,20 +362,16 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
         <div>
           <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Choose a Voice Provider</h2>
           <p className="text-gray-500 text-sm mb-4">
-            You&apos;ll need an account with one of these providers. They handle the phone infrastructure — Kyra connects your AI brain.
+            Pick a voice provider. If your client is already on GHL, start there — no new accounts needed.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {PROVIDERS.map((p) => {
-              const comingSoon = p.badge === 'Coming Soon';
-              return (
+            {PROVIDERS.map((p) => (
               <button
                 key={p.id}
-                onClick={() => { if (!comingSoon) { setSelectedProvider(p.id); setStep('setup'); } }}
-                disabled={comingSoon}
+                onClick={() => { setSelectedProvider(p.id); setStep('setup'); }}
                 className={cn(
-                  'text-left p-5 rounded-xl border-2 transition-all',
-                  comingSoon ? 'cursor-not-allowed' : 'hover:shadow-md',
+                  'text-left p-5 rounded-xl border-2 transition-all hover:shadow-md',
                   p.color,
                 )}
               >
@@ -379,11 +388,10 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
                   <div className="text-xs text-gray-500">⭐ Best for: {p.bestFor}</div>
                 </div>
                 <div className="mt-3 flex items-center text-sm text-blue-600 font-medium">
-                  {comingSoon ? 'Coming soon' : <>Select <ArrowRight className="w-4 h-4 ml-1" /></>}
+                  Select <ArrowRight className="w-4 h-4 ml-1" />
                 </div>
               </button>
-              );
-            })}
+            ))}
           </div>
         </div>
 
@@ -418,8 +426,33 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
           </p>
         </div>
 
-        {/* Step 1: API Key (skipped for Kyra Native) */}
-        {provider.id === 'openclaw' ? (
+        {/* Step 1: Account / Connection (skipped for Kyra Native and GHL) */}
+        {provider.id === 'ghl' ? (
+          <Card className="border-green-200 bg-green-50/40">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 text-xs flex items-center justify-center font-bold">✓</span>
+                GHL Already Connected
+              </CardTitle>
+              <CardDescription>
+                Your client&apos;s GHL sub-account is already linked to Kyra. Voice calls from GHL are automatically captured — no API key or extra setup needed.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-3">
+                <div className="flex items-center gap-1.5 text-xs font-medium text-green-700 bg-green-100 rounded-lg px-3 py-1.5">
+                  📞 Twilio-backed numbers from GHL
+                </div>
+                <div className="flex items-center gap-1.5 text-xs font-medium text-green-700 bg-green-100 rounded-lg px-3 py-1.5">
+                  🔗 Zero new accounts required
+                </div>
+                <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-100 rounded-lg px-3 py-1.5">
+                  ✅ Webhooks already configured
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ) : provider.id === 'openclaw' ? (
           <Card className="border-indigo-200 bg-indigo-50/40">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -630,8 +663,8 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
           </CardContent>
         </Card>
 
-        {/* Step 3: Webhook URL (Kyra Native handles this automatically) */}
-        {provider.id === 'openclaw' ? (
+        {/* Step 3: Webhook URL (Kyra Native and GHL handle this automatically) */}
+        {provider.id === 'openclaw' || provider.id === 'ghl' ? (
           <Card className="border-emerald-200 bg-emerald-50/40">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -678,7 +711,7 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
 
         <Button
           onClick={handleSetup}
-          disabled={saving || (selectedProvider !== 'openclaw' && !apiKey.trim())}
+          disabled={saving || (selectedProvider !== 'openclaw' && selectedProvider !== 'ghl' && !apiKey.trim())}
           className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-6 text-lg"
         >
           {saving ? (

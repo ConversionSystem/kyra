@@ -5,6 +5,7 @@ import { VapiClient } from './vapi';
 import { SynthflowClient } from './synthflow';
 import { RetellClient } from './retell';
 import { KyraNativeClient } from './kyra-native';
+import { GHLVoiceClient } from './ghl';
 import type { VoiceProvider, VoiceProviderClient, VoiceAssistantConfig } from './types';
 
 export function getVoiceProvider(provider: VoiceProvider, apiKey: string): VoiceProviderClient {
@@ -13,6 +14,7 @@ export function getVoiceProvider(provider: VoiceProvider, apiKey: string): Voice
     case 'synthflow': return new SynthflowClient(apiKey);
     case 'retell':    return new RetellClient(apiKey);
     case 'openclaw':  return new KyraNativeClient();
+    case 'ghl':       return new GHLVoiceClient(apiKey);
     default: throw new Error(`Unknown voice provider: ${provider}`);
   }
 }
@@ -117,5 +119,13 @@ export const VOICE_PROVIDERS: Record<VoiceProvider, {
     bestFor: 'High call volume, enterprise, custom LLM integrations',
     docsUrl: 'https://docs.retellai.com',
     signupUrl: 'https://www.retellai.com',
+  },
+  ghl: {
+    name: 'GoHighLevel',
+    description: 'Uses your existing GHL sub-account. No extra provider account needed — GHL handles Twilio-backed numbers and AI voice directly.',
+    pricing: 'Included in your GHL subscription',
+    bestFor: 'Agencies already on GHL. Simplest setup — zero new accounts.',
+    docsUrl: '',
+    signupUrl: '',
   },
 };
