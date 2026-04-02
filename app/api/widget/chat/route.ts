@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
   // Look up the client and their gateway
   const { data: client, error: dbErr } = await supabase
     .from('agency_clients')
-    .select('id, name, status, agency_id, gateway_url, gateway_token, gateway_status, container_config')
+    .select('id, name, status, agency_id, gateway_url, gateway_token, gateway_status, container_config, ai_model')
     .eq('id', clientId)
     .single();
 
@@ -141,10 +141,11 @@ export async function POST(request: NextRequest) {
     }, { headers: CORS });
   }
 
+  // Use client's configured model if set, fall back to WIDGET_MODEL
+  const clientModel = (client.container_config as any)?.ai_model || (client as any).ai_model || WIDGET_MODEL;
+
   // ── Model-aware credit check ──────────────────────────────────────────────
-  // Widget always uses WIDGET_MODEL (gpt-4o-mini = 1 cr), but use overrideCost
-  // so the check is consistent and future model changes are auto-respected.
-  const widgetPreflightCost = getCreditsForModel(WIDGET_MODEL);
+  const widgetPreflightCost = getCreditsForModel(clientModel);
   const creditCheck = await requireCredits(client.agency_id, 'chat.message', 1, widgetPreflightCost);
   if (!creditCheck.allowed) {
     return NextResponse.json(
@@ -289,7 +290,7 @@ export async function POST(request: NextRequest) {
   try {
     const llm = getDirectLLMClient();
     const chatRes = await llm.chat.completions.create({
-      model: WIDGET_MODEL,
+      model: clientModel,
       messages: [
         { role: 'system', content: systemPrompt },
         // Inject conversation history so AI has context (last 10 turns)
@@ -337,11 +338,11 @@ export async function POST(request: NextRequest) {
   }
 
   // Deduct credit (also awaited to avoid billing gaps)
-  const widgetCredits = getCreditsForModel(WIDGET_MODEL);
+  const widgetCredits = getCreditsForModel(clientModel);
   await deductCredits(client.agency_id, 'chat.message', {
     override: widgetCredits,
     clientId: client.id,
-    description: `Web chat (gpt-4o-mini): ${message.trim().slice(0, 50)}`,
+    description: `Web chat (${clientModel}): ${message.trim().slice(0, 50)}`,
   });
 
 
