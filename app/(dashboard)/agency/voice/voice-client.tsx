@@ -689,10 +689,12 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 text-xs flex items-center justify-center font-bold">✓</span>
-                Webhooks Handled Automatically
+                {provider.id === 'ghl' ? 'GHL Webhook Already Configured' : 'Webhooks Handled Automatically'}
               </CardTitle>
               <CardDescription>
-                Because Kyra Native is built into your platform, call events are captured automatically — no webhook setup needed. Every call is transcribed and logged to your CRM in real time.
+                {provider.id === 'ghl'
+                  ? 'Call events are captured via your existing GHL webhook (/api/webhooks/ghl) — already configured. Every completed call is transcribed and logged to Kyra automatically.'
+                  : 'Because Kyra Native is built into your platform, call events are captured automatically — no webhook setup needed. Every call is transcribed and logged to your CRM in real time.'}
               </CardDescription>
             </CardHeader>
           </Card>
@@ -737,12 +739,12 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
           {saving ? (
             <>
               <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-              Creating voice assistant & provisioning phone number...
+              {selectedProvider === 'ghl' ? 'Syncing knowledge to GHL Voice AI...' : 'Creating voice assistant & provisioning phone number...'}
             </>
           ) : (
             <>
               <Phone className="w-5 h-5 mr-2" />
-              Activate Voice AI
+              {selectedProvider === 'ghl' ? 'Enable GHL Voice AI' : 'Activate Voice AI'}
             </>
           )}
         </Button>
@@ -842,6 +844,11 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
                     {provisioning ? <Loader2 className="w-3 h-3 animate-spin" /> : <Phone className="w-3 h-3" />}
                     {provisioning ? 'Provisioning...' : 'Get Phone Number'}
                   </button>
+                ) : config?.provider === 'ghl' && (!config?.phoneNumber || config.phoneNumber === 'ghl-managed') ? (
+                  <div>
+                    <div className="text-gray-700 font-medium text-sm">Managed by GHL</div>
+                    <div className="text-gray-400 text-[11px]">Check GHL → Settings → Phone Numbers</div>
+                  </div>
                 ) : (
                   <div className="text-gray-900 font-mono font-bold">
                     {config?.phoneNumber || 'Provisioning...'}
@@ -883,8 +890,8 @@ export function VoiceClient({ agencyId, clientId, clientName, voiceConfig: initi
         </Card>
       </div>
 
-      {/* Webhook URL — only for external providers, not Kyra Native */}
-      {!isKyraNative && (
+      {/* Webhook URL — only for external providers, not Kyra Native or GHL */}
+      {!isKyraNative && config?.provider !== 'ghl' && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm text-gray-500">Webhook URL</CardTitle>
