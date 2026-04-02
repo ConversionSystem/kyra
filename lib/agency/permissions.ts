@@ -31,6 +31,20 @@ export interface ClientPermissions {
     writeCalendar: boolean;
     /** Can trigger workflows */
     triggerWorkflows: boolean;
+    /** Can read Voice AI agents */
+    readVoiceAgents: boolean;
+    /** Can create/update Voice AI agents */
+    writeVoiceAgents: boolean;
+    /** Can read Conversation AI agents */
+    readConversationAI: boolean;
+    /** Can push training data to Conversation AI */
+    writeConversationAI: boolean;
+    /** Can read knowledge bases */
+    readKnowledgeBase: boolean;
+    /** Can write to knowledge bases */
+    writeKnowledgeBase: boolean;
+    /** Can read phone numbers */
+    readPhoneNumbers: boolean;
   };
   
   /** AI behavior permissions */
@@ -60,6 +74,13 @@ export const DEPLOYMENT_PRESETS: Record<DeploymentMode, ClientPermissions> = {
       readCalendar: true,
       writeCalendar: false,
       triggerWorkflows: false,
+      readVoiceAgents: true,
+      writeVoiceAgents: false,
+      readConversationAI: true,
+      writeConversationAI: false,
+      readKnowledgeBase: true,
+      writeKnowledgeBase: false,
+      readPhoneNumbers: true,
     },
     ai: {
       proactiveMessaging: false,
@@ -80,6 +101,13 @@ export const DEPLOYMENT_PRESETS: Record<DeploymentMode, ClientPermissions> = {
       readCalendar: true,
       writeCalendar: false,
       triggerWorkflows: false,
+      readVoiceAgents: true,
+      writeVoiceAgents: false,
+      readConversationAI: true,
+      writeConversationAI: false,
+      readKnowledgeBase: true,
+      writeKnowledgeBase: false,
+      readPhoneNumbers: true,
     },
     ai: {
       proactiveMessaging: false,
@@ -100,6 +128,13 @@ export const DEPLOYMENT_PRESETS: Record<DeploymentMode, ClientPermissions> = {
       readCalendar: true,
       writeCalendar: true,
       triggerWorkflows: true,
+      readVoiceAgents: true,
+      writeVoiceAgents: true,
+      readConversationAI: true,
+      writeConversationAI: true,
+      readKnowledgeBase: true,
+      writeKnowledgeBase: true,
+      readPhoneNumbers: true,
     },
     ai: {
       proactiveMessaging: true,
