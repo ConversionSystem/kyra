@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import {
   Phone, PhoneCall, Settings, Users, Zap, AlertTriangle,
-  CheckCircle2, BarChart3, ExternalLink, Loader2,
+  CheckCircle2, BarChart3, ExternalLink,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SectionNav } from '@/components/dashboard/section-nav';
@@ -54,6 +54,7 @@ function ProviderBadge({ provider }: { provider: string | null }) {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function VoiceHubClient({ clients, usage, totalCallCount, agencyId }: Props) {
   const [filter, setFilter] = useState<'all' | 'enabled' | 'disabled'>('all');
 
