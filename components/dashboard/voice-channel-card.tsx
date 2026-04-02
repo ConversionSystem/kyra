@@ -55,6 +55,7 @@ const PROVIDER_COLORS: Record<VoiceProvider, string> = {
   vapi: 'bg-purple-600',
   synthflow: 'bg-blue-600',
   retell: 'bg-green-600',
+  ghl: 'bg-orange-500',
 };
 
 const PROVIDER_LOGOS: Record<VoiceProvider, string> = {
@@ -62,6 +63,7 @@ const PROVIDER_LOGOS: Record<VoiceProvider, string> = {
   vapi: '🎙️',
   synthflow: '⚡',
   retell: '🔄',
+  ghl: '⚡',
 };
 
 export function VoiceChannelCard({ client }: Props) {
