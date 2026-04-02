@@ -67,31 +67,46 @@ const COMPLEX_KEYWORDS: string[] = [
   'complaint', 'refund', 'legal', 'lawsuit', 'dispute', 'urgent',
   'emergency', 'problem', 'issue', 'broken', 'not working', 'error',
   'cancel my', 'cancellation', 'contract', 'terms', 'conditions',
+  // Technical / dev complexity signals
+  'debug', 'implement', 'refactor', 'code', 'script', 'function',
+  'database', 'integration', 'workflow', 'automate',
 ];
 
 /**
  * Classify the complexity of an incoming message.
+ *
+ * Order of checks (first match wins):
+ *  1. Structural complexity guards (length, code, URLs, multiline) → complex
+ *  2. COMPLEX_KEYWORDS → complex
+ *  3. SIMPLE_PATTERNS (greetings, confirmations) → simple
+ *  4. Very short (≤ 6 words, ≤ 80 chars) → simple
+ *  5. Short-ish (≤ 15 words, ≤ 160 chars) → medium
+ *  6. Default → complex (safe — don't risk quality)
  */
 export function classifyMessage(message: string): MessageComplexity {
   const trimmed = message.trim();
   const lower = trimmed.toLowerCase();
-
-  // Short message check (≤ 6 words) — likely simple
   const wordCount = trimmed.split(/\s+/).filter(Boolean).length;
 
-  // Check for simple patterns first
-  if (SIMPLE_PATTERNS.some((p) => p.test(trimmed))) {
-    return 'simple';
-  }
+  // 1. Structural guards — long/code/URL/multi-line messages always need reasoning
+  if (trimmed.length > 300) return 'complex';
+  if (/```|`/.test(trimmed)) return 'complex';                          // code fences
+  if (/https?:\/\/|www\./i.test(trimmed)) return 'complex';             // URLs
+  if ((trimmed.match(/\n/g) ?? []).length > 2) return 'complex';        // multi-line
 
-  // Check for complex keywords
-  if (COMPLEX_KEYWORDS.some((kw) => lower.includes(kw))) {
-    return 'complex';
-  }
+  // 2. Complex keyword match
+  if (COMPLEX_KEYWORDS.some((kw) => lower.includes(kw))) return 'complex';
 
-  // Length-based classification
-  if (wordCount <= 8) return 'simple';
-  if (wordCount <= 30) return 'medium';
+  // 3. Simple pattern match (greetings, confirmations, etc.)
+  if (SIMPLE_PATTERNS.some((p) => p.test(trimmed))) return 'simple';
+
+  // 4. Very short → simple
+  if (wordCount <= 6 && trimmed.length <= 80) return 'simple';
+
+  // 5. Moderate length → medium (budget model handles it fine)
+  if (wordCount <= 15 && trimmed.length <= 160) return 'medium';
+
+  // 6. Default → complex
   return 'complex';
 }
 

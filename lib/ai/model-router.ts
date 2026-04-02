@@ -14,16 +14,28 @@ import { MODEL_TIERS } from '@/lib/agency/types';
 const ECONOMY_PATTERNS = [
   // Greetings
   /^(hi|hello|hey|good morning|good afternoon|good evening|yo|sup)\b/i,
-  // Simple confirmations  
+  // Simple confirmations
   /^(yes|no|ok|okay|sure|thanks|thank you|got it|sounds good|perfect|great)\b/i,
-  // Single word or very short
-  /^.{1,20}$/,
+  // NOTE: removed /^.{1,20}$/ — it routed high-stakes short messages (e.g. "refund now",
+  //       "cancel order", "I'm angry") to the cheapest model. Dangerous catch-all.
   // Time/availability checks
   /^(what time|when are you|are you open|hours|schedule)\b/i,
   // Simple questions
   /^(where are you|what's your address|location|directions)\b/i,
   // Status checks
   /^(status|update|tracking|order status)\b/i,
+];
+
+// Keywords that signal complexity — short messages containing these must NOT go economy
+const COMPLEX_KEYWORDS = [
+  'explain', 'analyze', 'compare', 'difference between', 'how does',
+  'why does', 'what if', 'step by step', 'detailed', 'breakdown',
+  'calculate', 'strategy', 'plan', 'recommend', 'suggest', 'advice',
+  'complaint', 'refund', 'legal', 'lawsuit', 'dispute', 'urgent',
+  'emergency', 'problem', 'issue', 'broken', 'not working', 'error',
+  'cancel my', 'cancellation', 'contract', 'terms', 'conditions',
+  'debug', 'implement', 'refactor', 'code', 'script', 'function',
+  'database', 'integration', 'workflow', 'automate',
 ];
 
 // Complex patterns that should use premium tier
@@ -98,13 +110,44 @@ export function routeMessage(
     }
   }
 
-  // Check economy patterns
-  for (const pattern of ECONOMY_PATTERNS) {
-    if (pattern.test(message)) {
+  // Hard guards — if any of these are true, skip economy entirely.
+  // Long/code/URL/multiline messages need reasoning even when short in word count.
+  const lower = message.toLowerCase();
+  const wordCount = message.trim().split(/\s+/).filter(Boolean).length;
+  const hasStructuralComplexity =
+    message.length > 300 ||
+    /```|`/.test(message) ||
+    /https?:\/\/|www\./i.test(message) ||
+    (message.match(/\n/g) ?? []).length > 2;
+
+  if (!hasStructuralComplexity) {
+    // Check ECONOMY_PATTERNS (safe to do now that structural guards passed)
+    for (const pattern of ECONOMY_PATTERNS) {
+      if (pattern.test(message)) {
+        return {
+          tier: 'economy',
+          model: MODEL_TIERS.economy.model,
+          reason: `Simple message detected (${pattern.source.substring(0, 40)}...)`,
+        };
+      }
+    }
+
+    // Very short message with no complex keywords → economy
+    const hasComplexKeyword = COMPLEX_KEYWORDS.some((kw) => lower.includes(kw));
+    if (wordCount <= 6 && message.trim().length <= 80 && !hasComplexKeyword) {
       return {
         tier: 'economy',
         model: MODEL_TIERS.economy.model,
-        reason: `Simple message detected (${pattern.source.substring(0, 40)}...)`,
+        reason: 'Short message, no complex signals',
+      };
+    }
+
+    // Moderate length → standard (not worth upgrading to premium)
+    if (wordCount <= 15 && message.trim().length <= 160) {
+      return {
+        tier: 'standard',
+        model: MODEL_TIERS.standard.model,
+        reason: 'Moderate length message',
       };
     }
   }
