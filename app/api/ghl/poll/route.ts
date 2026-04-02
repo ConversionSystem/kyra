@@ -449,6 +449,23 @@ export async function GET(request: NextRequest) {
 
   addLog('Authorized. Starting poll...');
 
+  // ── Quiet Hours: Skip polling 11pm–7am UTC to save API costs ──
+  // Most businesses don't receive customer messages during these hours.
+  // This alone saves ~33% of polling costs (~$145/month).
+  const currentHourUTC = new Date().getUTCHours();
+  const QUIET_START = 23; // 11pm UTC
+  const QUIET_END = 7;    // 7am UTC
+  const isQuietHour = currentHourUTC >= QUIET_START || currentHourUTC < QUIET_END;
+  if (isQuietHour) {
+    return NextResponse.json({
+      ok: true,
+      skipped: true,
+      reason: 'quiet_hours',
+      message: `Quiet hours (${QUIET_START}:00-${QUIET_END}:00 UTC). Polling resumes at ${QUIET_END}:00 UTC.`,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
   try {
     // Step 1: Get clients
     addLog('Querying Supabase for GHL-connected clients...');
@@ -690,7 +707,8 @@ export async function GET(request: NextRequest) {
             const m: Record<string, string> = { TYPE_SMS: 'SMS', TYPE_EMAIL: 'Email', TYPE_WHATSAPP: 'WhatsApp', TYPE_FB_MESSENGER: 'Facebook Messenger', TYPE_INSTAGRAM: 'Instagram DM', TYPE_LIVE_CHAT: 'Live Chat' };
             return m[t] || 'SMS';
           })(),
-          messageBody: latestInbound.body,
+          // Cap message body to prevent bloated context (500K+ token calls cost $2+ each)
+          messageBody: latestInbound.body?.slice(0, 2000) || '',
         });
 
         let aiResponse = smartResult.reply;
