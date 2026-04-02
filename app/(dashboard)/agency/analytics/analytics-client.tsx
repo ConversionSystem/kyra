@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import {
   MessageSquare, Bot, Clock, TrendingUp, Loader2,
-  Users, Zap, DollarSign, ExternalLink, BarChart3,
+  Users, Zap, DollarSign, ExternalLink, BarChart3, Phone,
 } from 'lucide-react';
 import { SectionNav } from '@/components/dashboard/section-nav';
 import { AnalyticsRevenueTab } from './analytics-revenue-tab';
@@ -51,7 +51,8 @@ interface IntelligenceData {
   recent: RecentConvo[];
   roi: { hoursSaved: number; laborCostSaved: number };
   crm?: { pipelineValue: number; openDealCount: number };
-  voice?: { callCount: number };
+  voice?: { callCount: number; totalMinutes: number; avgDurationSeconds: number };
+  channelBreakdown?: Record<string, number>;
   clientNames: Record<string, string>;
 }
 
@@ -258,11 +259,38 @@ export function AnalyticsClient({ agencyPlan, clients }: { agencyPlan: string; c
                 label="Voice Calls"
                 value={String(data.voice.callCount)}
                 sub={`last ${days} days`}
-                icon={MessageSquare}
+                icon={Phone}
                 color="text-blue-600 bg-blue-50 border-blue-200"
               />
             )}
           </div>
+        )}
+
+        {/* Voice detail strip */}
+        {data.voice && data.voice.callCount > 0 && (
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+            <HeroCard
+              label="Voice Minutes"
+              value={String(data.voice.totalMinutes)}
+              sub="total call time"
+              icon={Clock}
+              color="text-blue-600 bg-blue-50 border-blue-200"
+            />
+            <HeroCard
+              label="Avg Call Duration"
+              value={data.voice.avgDurationSeconds > 0
+                ? `${Math.floor(data.voice.avgDurationSeconds / 60)}:${String(data.voice.avgDurationSeconds % 60).padStart(2, '0')}`
+                : '—'}
+              sub="per call"
+              icon={Phone}
+              color="text-indigo-600 bg-indigo-50 border-indigo-200"
+            />
+          </div>
+        )}
+
+        {/* Channel Breakdown */}
+        {data.channelBreakdown && Object.keys(data.channelBreakdown).length > 0 && (
+          <ChannelBreakdown breakdown={data.channelBreakdown} total={hero.totalConversations} />
         )}
 
         {/* Section 2: Conversation Trend Chart */}
@@ -442,6 +470,55 @@ function RoiStat({ label, value, detail }: { label: string; value: string; detai
       <p className="text-xl font-bold text-gray-900">{value}</p>
       <p className="text-[10px] text-gray-400 mt-0.5">{detail}</p>
     </div>
+  );
+}
+
+// ── Channel Breakdown ──
+
+const CHANNEL_COLORS: Record<string, string> = {
+  sms: 'bg-green-500',
+  whatsapp: 'bg-emerald-500',
+  telegram: 'bg-blue-500',
+  web_chat: 'bg-indigo-500',
+  test_chat: 'bg-violet-500',
+  voice: 'bg-orange-500',
+  email: 'bg-amber-500',
+  unknown: 'bg-gray-400',
+};
+
+function ChannelBreakdown({ breakdown, total }: { breakdown: Record<string, number>; total: number }) {
+  const sorted = Object.entries(breakdown).sort((a, b) => b[1] - a[1]);
+  const effectiveTotal = Math.max(total, sorted.reduce((s, [, n]) => s + n, 0));
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base flex items-center gap-2">
+          <BarChart3 className="h-4 w-4 text-indigo-600" />
+          Channel Breakdown
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-2.5">
+          {sorted.map(([channel, count]) => {
+            const pct = effectiveTotal > 0 ? Math.round((count / effectiveTotal) * 100) : 0;
+            const label = CHANNEL_LABELS[channel] ?? channel;
+            const color = CHANNEL_COLORS[channel] ?? 'bg-gray-400';
+            return (
+              <div key={channel}>
+                <div className="flex items-center justify-between text-xs mb-1">
+                  <span className="text-gray-600 font-medium">{label}</span>
+                  <span className="text-gray-500">{count} ({pct}%)</span>
+                </div>
+                <div className="w-full bg-gray-100 rounded-full h-1.5">
+                  <div className={`h-1.5 rounded-full ${color}`} style={{ width: `${pct}%` }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
