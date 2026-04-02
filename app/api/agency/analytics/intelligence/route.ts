@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
   const [convosResult, activeWorkersResult, allWorkersResult, crmPipelineResult, voiceResult] = await Promise.all([
     supabase
       .from('client_conversations')
-      .select('id, client_id, channel, user_message, ai_response, tokens_used, created_at')
+      .select('id, client_id, channel, user_message, ai_response, created_at')
       .eq('agency_id', agency.id)
       .gte('created_at', since.toISOString())
       .order('created_at', { ascending: false }),
@@ -53,10 +53,9 @@ export async function GET(request: NextRequest) {
     // Voice call metrics
     supabase
       .from('voice_call_logs')
-      .select('id, turns, updated_at', { count: 'exact', head: false })
+      .select('id, recording_duration, updated_at', { count: 'exact' })
       .eq('agency_id', agency.id)
-      .gte('updated_at', since.toISOString())
-      .limit(1),
+      .gte('updated_at', since.toISOString()),
   ]);
 
   const convos = convosResult.data ?? [];
@@ -64,7 +63,17 @@ export async function GET(request: NextRequest) {
   const openDeals = crmPipelineResult.data ?? [];
   const pipelineValue = openDeals.reduce((sum, d) => sum + (Number(d.value) || 0), 0);
   const openDealCount = openDeals.length;
-  const voiceCallCount = voiceResult.count ?? 0;
+  const voiceLogs = voiceResult.data ?? [];
+  const voiceCallCount = voiceResult.count ?? voiceLogs.length;
+  const voiceTotalSeconds = voiceLogs.reduce((sum, v) => sum + (Number(v.recording_duration) || 0), 0);
+  const voiceAvgDurationSeconds = voiceCallCount > 0 ? Math.round(voiceTotalSeconds / voiceCallCount) : 0;
+
+  // ── Channel breakdown ──
+  const channelCounts: Record<string, number> = {};
+  for (const c of convos) {
+    const ch = c.channel ?? 'unknown';
+    channelCounts[ch] = (channelCounts[ch] ?? 0) + 1;
+  }
 
   // ── Hero metrics ──
   const totalConversations = convos.length;
@@ -154,7 +163,10 @@ export async function GET(request: NextRequest) {
     },
     voice: {
       callCount: voiceCallCount,
+      totalMinutes: Math.round(voiceTotalSeconds / 60),
+      avgDurationSeconds: voiceAvgDurationSeconds,
     },
+    channelBreakdown: channelCounts,
     clientNames: clientNameMap,
   });
 }

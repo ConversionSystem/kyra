@@ -44,6 +44,7 @@ import {
   Phone,
   Mail,
   CornerDownLeft,
+  Play,
 } from 'lucide-react';
 import type { AgencyClient, AgencyMember } from '@/lib/agency/queries';
 import GHLConnection from './ghl-connection';
@@ -1432,6 +1433,20 @@ function SettingsTabMerged({
 
 // ── Conversations Tab (Writable Inbox) ────────────────────────────────────────
 
+interface VoiceCall {
+  id: string;
+  created_at: string;
+  user_message: string;
+  ai_response: string;
+  metadata: {
+    callerNumber?: string;
+    direction?: string;
+    status?: string;
+    durationSeconds?: number;
+    recordingUrl?: string;
+  };
+}
+
 interface Thread {
   contactId: string;
   contactName: string | null;
@@ -1473,8 +1488,23 @@ function ConversationsTab({ client }: { client: AgencyClient }) {
   const [sending, setSending] = useState(false);
   const [sendSuccess, setSendSuccess] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
+  const [channelFilter, setChannelFilter] = useState<'all' | 'voice'>('all');
+  const [voiceCalls, setVoiceCalls] = useState<VoiceCall[]>([]);
+  const [voiceLoading, setVoiceLoading] = useState(false);
+  const [expandedCall, setExpandedCall] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Load voice calls
+  useEffect(() => {
+    if (channelFilter !== 'voice') return;
+    setVoiceLoading(true);
+    fetch(`/api/voice/call-logs?entityId=${client.id}&limit=50`)
+      .then(r => r.json())
+      .then(d => setVoiceCalls(d.calls ?? []))
+      .catch(err => console.error('[voice-calls] load failed:', err))
+      .finally(() => setVoiceLoading(false));
+  }, [channelFilter, client.id]);
 
   // Load threads
   const loadThreads = useCallback(() => {
@@ -1590,20 +1620,117 @@ function ConversationsTab({ client }: { client: AgencyClient }) {
     );
   }
 
-  if (threads.length === 0 && !searchQuery) {
+  if (channelFilter === 'all' && threads.length === 0 && !searchQuery) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
-        <Inbox className="h-10 w-10 text-gray-300" />
-        <p className="font-medium text-gray-600">No conversations yet</p>
-        <p className="text-sm text-gray-400">
-          Conversations from GHL (SMS, WhatsApp, Email) will appear here once customers start messaging.
-        </p>
+      <div className="space-y-3">
+        <ChannelFilterBar filter={channelFilter} onChange={setChannelFilter} />
+        <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
+          <Inbox className="h-10 w-10 text-gray-300" />
+          <p className="font-medium text-gray-600">No conversations yet</p>
+          <p className="text-sm text-gray-400">
+            Conversations from GHL (SMS, WhatsApp, Email) will appear here once customers start messaging.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Voice calls view
+  if (channelFilter === 'voice') {
+    return (
+      <div className="space-y-3">
+        <ChannelFilterBar filter={channelFilter} onChange={setChannelFilter} />
+        <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+          {voiceLoading ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+            </div>
+          ) : voiceCalls.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
+              <Phone className="h-10 w-10 text-gray-300" />
+              <p className="font-medium text-gray-600">No voice calls yet</p>
+              <p className="text-sm text-gray-400">Inbound and outbound AI phone calls will appear here.</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              {voiceCalls.map(call => {
+                const isExpanded = expandedCall === call.id;
+                const mins = call.metadata.durationSeconds ? Math.floor(call.metadata.durationSeconds / 60) : null;
+                const secs = call.metadata.durationSeconds ? call.metadata.durationSeconds % 60 : null;
+                const duration = mins !== null && secs !== null ? `${mins}:${String(secs).padStart(2, '0')}` : null;
+                const transcript = call.user_message?.replace(/^Transcript\n\n/, '') ?? '';
+                return (
+                  <div key={call.id} className="p-4 hover:bg-gray-50 transition">
+                    <div className="flex items-start gap-3">
+                      <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
+                        <Phone className="h-4 w-4 text-indigo-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-medium text-gray-900">
+                            {call.metadata.callerNumber || 'Unknown Caller'}
+                          </span>
+                          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${
+                            call.metadata.direction === 'outbound'
+                              ? 'bg-blue-50 text-blue-600 border-blue-200'
+                              : 'bg-green-50 text-green-600 border-green-200'
+                          }`}>
+                            {call.metadata.direction === 'outbound' ? 'Outbound' : 'Inbound'}
+                          </span>
+                          {duration && (
+                            <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                              <Clock className="h-2.5 w-2.5" />{duration}
+                            </span>
+                          )}
+                          <span className="text-[10px] text-gray-400 ml-auto">
+                            {formatTime(call.created_at)}
+                          </span>
+                        </div>
+                        {call.ai_response && (
+                          <p className="text-xs text-gray-500 mt-0.5 truncate">Last AI: {call.ai_response}</p>
+                        )}
+                        <div className="flex items-center gap-3 mt-2">
+                          {transcript && (
+                            <button
+                              onClick={() => setExpandedCall(isExpanded ? null : call.id)}
+                              className="text-xs text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
+                            >
+                              {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                              {isExpanded ? 'Hide' : 'View'} Transcript
+                            </button>
+                          )}
+                          {call.metadata.recordingUrl && (
+                            <a
+                              href={call.metadata.recordingUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                            >
+                              <Play className="h-3 w-3" /> Recording
+                            </a>
+                          )}
+                        </div>
+                        {isExpanded && transcript && (
+                          <div className="mt-3 p-3 rounded-lg bg-gray-50 border border-gray-200 text-xs text-gray-700 whitespace-pre-wrap max-h-64 overflow-y-auto">
+                            {transcript}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-[calc(100vh-220px)] min-h-[500px] rounded-xl border border-gray-200 overflow-hidden bg-white">
+    <div className="space-y-3">
+    <ChannelFilterBar filter={channelFilter} onChange={setChannelFilter} />
+    <div className="flex h-[calc(100vh-260px)] min-h-[500px] rounded-xl border border-gray-200 overflow-hidden bg-white">
       {/* ── Thread List (Left Panel) ── */}
       <div className={`${selectedContact ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-80 lg:w-96 border-r border-gray-200 bg-gray-50/50`}>
         {/* Search */}
@@ -1801,6 +1928,35 @@ function ConversationsTab({ client }: { client: AgencyClient }) {
           </div>
         </div>
       )}
+    </div>
+    </div>
+  );
+}
+
+// ── ChannelFilterBar ──────────────────────────────────────────────────────────
+
+function ChannelFilterBar({ filter, onChange }: {
+  filter: 'all' | 'voice';
+  onChange: (f: 'all' | 'voice') => void;
+}) {
+  return (
+    <div className="flex items-center gap-1 border-b border-gray-100 pb-3">
+      {([
+        { id: 'all', label: 'All Channels' },
+        { id: 'voice', label: '📞 Voice Calls' },
+      ] as const).map(f => (
+        <button
+          key={f.id}
+          onClick={() => onChange(f.id)}
+          className={`px-3 py-1.5 text-xs font-medium rounded-lg transition ${
+            filter === f.id
+              ? 'bg-indigo-600 text-white'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+        >
+          {f.label}
+        </button>
+      ))}
     </div>
   );
 }
