@@ -79,9 +79,14 @@ export async function POST(req: NextRequest) {
   let phoneNumberId = existingVoiceConfig.phoneNumberId;
 
   if (!phoneNumber) {
-    const provisioned = await providerClient.provisionPhoneNumber(assistantId, areaCode);
-    phoneNumber = provisioned.number;
-    phoneNumberId = provisioned.id;
+    if (provider === 'ghl') {
+      phoneNumber = 'ghl-managed';
+      phoneNumberId = 'ghl-managed';
+    } else {
+      const provisioned = await providerClient.provisionPhoneNumber(assistantId, areaCode);
+      phoneNumber = provisioned.number;
+      phoneNumberId = provisioned.id;
+    }
   }
 
   // Store voice config in container_config
