@@ -83,6 +83,7 @@ function fmt(n: number): string {
 const CHANNEL_LABELS: Record<string, string> = {
   sms: 'SMS', telegram: 'Telegram', whatsapp: 'WhatsApp',
   test_chat: 'Chat', web_chat: 'Web', voice: 'Voice',
+  email: 'Email', unknown: 'Other', ghl: 'GHL',
 };
 
 // ── Main Component ──

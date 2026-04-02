@@ -77,6 +77,7 @@ const navSections: NavSection[] = [
       { label: 'Clients', href: '/agency/clients', icon: Users },
       { label: 'GHL Actions', href: '/agency/audit', icon: ClipboardList },
       { label: 'Websites', href: '/agency/sites', icon: Globe },
+      { label: 'Voice AI', href: '/agency/voice', icon: Phone, iconClassName: 'text-emerald-400' },
       { label: 'Build Requests', href: '/agency/build-requests', icon: Sparkles, iconClassName: 'text-amber-400' },
     ],
   },
