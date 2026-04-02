@@ -8,6 +8,8 @@ import type {
   PhoneNumber, CallRecord, OutboundCallRequest,
 } from './types';
 import type { GHLCallPayload } from '@/lib/ghl/webhook-types';
+import { syncKnowledgeToGHLAgent } from '@/lib/ghl/conversation-ai';
+import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 
 const GHL_API_BASE = 'https://services.leadconnectorhq.com';
 const GHL_API_VERSION = '2021-04-15';
@@ -18,10 +20,34 @@ export class GHLVoiceClient implements VoiceProviderClient {
   constructor(private accessToken: string) {}
 
   /**
-   * GHL manages its own AI voice agent — no sync needed.
-   * We record a sentinel so callers know GHL is configured.
+   * Sync Kyra's knowledge into GHL's Conversation AI agent for this sub-account.
+   * Falls back gracefully — always returns the sentinel even if sync fails.
    */
-  async syncAssistant(_clientId: string, _config: VoiceAssistantConfig): Promise<{ assistantId: string }> {
+  async syncAssistant(clientId: string, _config: VoiceAssistantConfig): Promise<{ assistantId: string }> {
+    if (!this.accessToken || this.accessToken.length < 10) {
+      return { assistantId: 'ghl-managed' };
+    }
+
+    try {
+      const svc = createServiceClientWithoutCookies();
+      const { data: client } = await svc
+        .from('agency_clients')
+        .select('agency_id, ghl_location_id')
+        .eq('id', clientId)
+        .single();
+
+      if (client?.ghl_location_id) {
+        await syncKnowledgeToGHLAgent(
+          this.accessToken,
+          client.ghl_location_id,
+          clientId,
+          client.agency_id,
+        );
+      }
+    } catch (err) {
+      console.warn('[ghl/voice] syncAssistant failed (non-fatal):', err);
+    }
+
     return { assistantId: 'ghl-managed' };
   }
 
