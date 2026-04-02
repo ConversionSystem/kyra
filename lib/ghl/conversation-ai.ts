@@ -1,16 +1,14 @@
-// GHL Conversation AI API — syncs Kyra knowledge into GHL Voice AI agents
-// API: POST /conversation-ai/agents (create)
-//      PUT  /conversation-ai/agents/:agentId (update)
-//      POST /conversation-ai/agents/search (search by locationId)
+// GHL Voice AI API — syncs Kyra knowledge into GHL Voice AI agents
+// Uses /voice-ai/agents endpoints (NOT /conversation-ai which is for text bots)
 //
-// NOTE: Requires the 'Conversation AI' scope enabled on your GHL Private Integration Token (PIT).
-// If you see 404 errors, go to GHL → Settings → Private Integrations → Edit → enable 'Conversation AI'.
+// NOTE: Requires the 'Voice AI Agents' scope enabled on your GHL Private Integration Token (PIT).
+// If you see 404/403 errors, go to GHL → Settings → Private Integrations → Edit → enable Voice AI scopes.
 
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { getClientKnowledge } from '@/lib/knowledge/extractor';
 
 const GHL_API_BASE = 'https://services.leadconnectorhq.com';
-const GHL_API_VERSION = '2021-04-15';
+const GHL_API_VERSION = '2021-07-28';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -33,20 +31,17 @@ interface GHLAgent {
 // ── API Functions ─────────────────────────────────────────────────────────────
 
 /**
- * Search for existing Conversation AI agents in a GHL sub-account.
+ * Search for existing Voice AI agents in a GHL sub-account.
  */
 export async function searchGHLAgents(
   accessToken: string,
   locationId: string,
 ): Promise<GHLAgent[]> {
-  const res = await fetch(`${GHL_API_BASE}/conversation-ai/agents/search`, {
-    method: 'POST',
+  const res = await fetch(`${GHL_API_BASE}/voice-ai/agents?locationId=${locationId}`, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
       Version: GHL_API_VERSION,
     },
-    body: JSON.stringify({ locationId }),
     signal: AbortSignal.timeout(15_000),
   });
 
@@ -60,13 +55,13 @@ export async function searchGHLAgents(
 }
 
 /**
- * Create a new Conversation AI agent in GHL.
+ * Create a new Voice AI agent in GHL.
  */
 export async function createGHLAgent(
   accessToken: string,
   config: GHLAgentConfig,
 ): Promise<GHLAgent> {
-  const res = await fetch(`${GHL_API_BASE}/conversation-ai/agents`, {
+  const res = await fetch(`${GHL_API_BASE}/voice-ai/agents`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -87,14 +82,14 @@ export async function createGHLAgent(
 }
 
 /**
- * Update an existing Conversation AI agent in GHL.
+ * Update an existing Voice AI agent in GHL.
  */
 export async function updateGHLAgent(
   accessToken: string,
   agentId: string,
   config: Partial<GHLAgentConfig>,
 ): Promise<GHLAgent> {
-  const res = await fetch(`${GHL_API_BASE}/conversation-ai/agents/${agentId}`, {
+  const res = await fetch(`${GHL_API_BASE}/voice-ai/agents/${agentId}`, {
     method: 'PUT',
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -117,7 +112,7 @@ export async function updateGHLAgent(
 // ── Main Sync Function ────────────────────────────────────────────────────────
 
 /**
- * Sync Kyra's learned knowledge into the GHL Conversation AI agent for a location.
+ * Sync Kyra's learned knowledge into the GHL Voice AI agent for a location.
  *
  * 1. Fetches client knowledge from Kyra's knowledge engine
  * 2. Combines with the client's persona/business config
@@ -176,8 +171,8 @@ export async function syncKnowledgeToGHLAgent(
       const errMsg = searchErr instanceof Error ? searchErr.message : String(searchErr);
       if (errMsg.includes('404')) {
         console.warn(
-          '[ghl/conversation-ai] 404 on agent search — Conversation AI scope may not be enabled on your GHL Private Integration Token. ' +
-          'Go to GHL → Settings → Private Integrations → Edit your token → enable "Conversation AI" scope.',
+          '[ghl/conversation-ai] 404 on agent search — Voice AI scope may not be enabled on your GHL Private Integration Token. ' +
+          'Go to GHL → Settings → Private Integrations → Edit your token → enable "Voice AI Agents" scope.',
         );
         return null;
       }
@@ -210,8 +205,8 @@ export async function syncKnowledgeToGHLAgent(
     const errMsg = err instanceof Error ? err.message : String(err);
     if (errMsg.includes('404')) {
       console.warn(
-        '[ghl/conversation-ai] 404 — Conversation AI scope not enabled on GHL PIT. ' +
-        'Go to GHL → Settings → Private Integrations → Edit your token → enable "Conversation AI" scope.',
+        '[ghl/conversation-ai] 404 — Voice AI scope not enabled on GHL PIT. ' +
+        'Go to GHL → Settings → Private Integrations → Edit your token → enable "Voice AI Agents" scope.',
       );
     } else {
       console.error('[ghl/conversation-ai] Sync failed for client', clientId, ':', errMsg);
