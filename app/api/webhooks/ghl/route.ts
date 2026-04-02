@@ -410,7 +410,7 @@ async function handleAppointmentEvent(
 }
 
 /**
- * Handle completed calls — useful for follow-up automation.
+ * Handle completed calls — log to client_conversations and deduct credits.
  */
 async function handleCallCompleted(
   payload: GHLCallPayload,
@@ -419,12 +419,64 @@ async function handleCallCompleted(
   const durationStr = payload.duration ? `${Math.ceil(payload.duration / 60)} min` : 'unknown duration';
   const message = `[GHL] Call completed (${payload.direction}): ${payload.from} → ${payload.to} — ${payload.status}, ${durationStr}`;
 
+  const supabase = createServiceClientWithoutCookies();
+
+  // Log every completed call to client_conversations so it appears in the unified inbox
+  if (payload.status === 'completed' || payload.status === 'no-answer' || payload.status === 'busy') {
+    const userMessage = payload.transcription
+      ? `[${payload.direction.toUpperCase()} CALL from ${payload.from}]\n\n${payload.transcription}`
+      : `[${payload.direction.toUpperCase()} CALL from ${payload.from}] — Duration: ${payload.duration ?? 0}s, Status: ${payload.status}`;
+
+    const aiResponse = payload.status === 'completed'
+      ? `Call handled. Duration: ${payload.duration ?? 0} seconds.`
+      : payload.status === 'no-answer'
+        ? 'Missed call — no answer.'
+        : 'Call could not connect (busy).';
+
+    supabase
+      .from('client_conversations')
+      .insert({
+        client_id: client.id,
+        agency_id: client.agency_id,
+        channel: 'voice',
+        user_message: userMessage,
+        ai_response: aiResponse,
+        metadata: {
+          type: 'call',
+          callId: payload.callSid,
+          provider: 'ghl',
+          phoneNumber: payload.to,
+          callerNumber: payload.from,
+          direction: payload.direction,
+          status: payload.status,
+          durationSeconds: payload.duration,
+          recordingUrl: payload.recordingUrl,
+          contactId: payload.contactId,
+        },
+        created_at: payload.dateAdded ?? new Date().toISOString(),
+      })
+      .then(({ error }) => {
+        if (error) console.warn('[ghl-webhook] Failed to log call conversation:', error.message);
+        else console.log(`[ghl-webhook] 📞 GHL call logged for client ${client.id}`);
+      });
+
+    // Deduct credits for completed calls (non-fatal)
+    if (payload.status === 'completed') {
+      try {
+        const { deductCredits } = await import('@/lib/billing/credit-engine');
+        await deductCredits(client.agency_id, 'channel.voice_call', {
+          clientId: client.id,
+          description: `GHL voice call (${payload.direction}, ${payload.duration ?? 0}s)`,
+        });
+      } catch { /* non-fatal */ }
+    }
+  }
+
+  // Missed call — trigger AI follow-up
   if (payload.direction === 'inbound' && payload.status === 'no-answer') {
-    // Missed call — the AI might want to follow up
     const systemContext = `A call was missed for "${client.name}". Contact ID: ${payload.contactId}. Consider following up with the caller.`;
     await forwardToContainer(client.id, message, systemContext, client.agency_id);
   }
-  // Other call events are logged but don't trigger AI
 }
 
 /**

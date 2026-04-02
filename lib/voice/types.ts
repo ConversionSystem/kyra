@@ -1,6 +1,6 @@
 // Voice AI provider types — shared across VAPI, Synthflow, and Retell
 
-export type VoiceProvider = 'vapi' | 'synthflow' | 'retell' | 'openclaw';
+export type VoiceProvider = 'vapi' | 'synthflow' | 'retell' | 'openclaw' | 'ghl';
 
 export interface VoiceProviderConfig {
   provider: VoiceProvider;
