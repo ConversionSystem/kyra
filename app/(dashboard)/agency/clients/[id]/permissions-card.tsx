@@ -220,10 +220,10 @@ export default function PermissionsCard({ clientId }: PermissionsCardProps) {
       description: 'AI can configure and manage Voice AI agents in GHL',
       enabled: canVoiceAI,
     }] : []),
-    ...(detectedScopes?.includes('conversation_ai') ? [{
+    ...(detectedScopes && detectedScopes.length > 0 ? [{
       key: 'can_conversation_ai',
       label: 'Sync Training Data',
-      description: 'AI can push business knowledge to GHL Conversation AI',
+      description: 'AI can push business knowledge to GHL Conversation AI agents',
       enabled: canConversationAI,
     }] : []),
   ];
