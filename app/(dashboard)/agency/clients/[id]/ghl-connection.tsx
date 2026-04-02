@@ -26,6 +26,20 @@ import {
   Activity,
 } from 'lucide-react';
 
+// ── Scope labels ─────────────────────────────────────────────────────────────
+
+const SCOPE_LABELS: Record<string, string> = {
+  contacts: 'Contacts',
+  conversations: 'Conversations',
+  voice_ai: 'Voice AI',
+  conversation_ai: 'Conversation AI',
+  knowledge_base: 'Knowledge Base',
+  phone_numbers: 'Phone Numbers',
+  calendar: 'Calendar',
+  pipeline: 'Pipeline',
+  workflows: 'Workflows',
+};
+
 // ── Types ────────────────────────────────────────────────────────────────────
 
 interface GHLConnectionProps {
@@ -267,8 +281,10 @@ export default function GHLConnection({
               )}
               <div className="flex justify-between">
                 <span className="text-gray-500">Capabilities</span>
-                <span className="text-gray-700">
-                  Contacts · Conversations · Pipeline · Calendar · Workflows
+                <span className="text-gray-700 text-right">
+                  {testResult?.scopes
+                    ? testResult.scopes.map(s => SCOPE_LABELS[s] ?? s).join(' · ')
+                    : 'Run "Test Connection" to detect'}
                 </span>
               </div>
             </div>

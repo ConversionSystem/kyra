@@ -45,8 +45,10 @@ export async function GET(
     return NextResponse.json({ error: result.error }, { status: result.status });
   }
 
-  const permissions = getClientPermissions(result.client.container_config as Record<string, unknown>);
-  return NextResponse.json({ permissions, presets: DEPLOYMENT_PRESETS });
+  const cfg = (result.client.container_config as Record<string, unknown>) ?? {};
+  const permissions = getClientPermissions(cfg);
+  const detectedScopes = (cfg.ghl_detected_scopes as string[]) ?? null;
+  return NextResponse.json({ permissions, presets: DEPLOYMENT_PRESETS, detectedScopes });
 }
 
 export async function PUT(

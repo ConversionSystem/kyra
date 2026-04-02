@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { getValidToken } from '@/lib/ghl/api';
 import { syncKnowledgeToGHLAgent } from '@/lib/ghl/conversation-ai';
+import { getClientPermissions } from '@/lib/agency/permissions';
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -35,8 +36,17 @@ export async function POST(req: NextRequest) {
 
   if (!member) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-  // Get the GHL location ID
+  // Check permissions
   const cfg = (client.container_config as Record<string, unknown>) ?? {};
+  const permissions = getClientPermissions(cfg);
+  if (!permissions.ghl.writeConversationAI) {
+    return NextResponse.json(
+      { error: 'Conversation AI sync is not enabled for this client. Enable "Sync Training Data" in AI Permissions.' },
+      { status: 403 },
+    );
+  }
+
+  // Get the GHL location ID
   const locationId = (client.ghl_location_id as string) ?? (cfg.ghl_location_id as string) ?? null;
 
   if (!locationId) {

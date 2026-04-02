@@ -54,7 +54,7 @@ export async function POST(
   const db = createServiceClientWithoutCookies();
   const { data: clientData } = await db
     .from('agency_clients')
-    .select('ghl_private_token, ghl_access_token, ghl_location_id')
+    .select('ghl_private_token, ghl_access_token, ghl_location_id, container_config')
     .eq('id', clientId)
     .single();
 
@@ -68,17 +68,17 @@ export async function POST(
     }, { status: 400 });
   }
 
-  // Test: fetch contacts (limit 1) to verify token + scopes
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    Version: GHL_API_VERSION,
+  };
+  const timeout = AbortSignal.timeout(10_000);
+
+  // --- Fatal check: contacts (proves token is valid) ---
   try {
     const contactsRes = await fetch(
       `${GHL_API_BASE}/contacts/?locationId=${locationId}&limit=1`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Version: GHL_API_VERSION,
-        },
-        signal: AbortSignal.timeout(10_000),
-      },
+      { headers, signal: timeout },
     );
 
     if (contactsRes.status === 401) {
@@ -101,32 +101,55 @@ export async function POST(
         error: `GHL API returned ${contactsRes.status}. The connection may need to be refreshed.`,
       });
     }
-
-    // Also check conversations scope
-    const convRes = await fetch(
-      `${GHL_API_BASE}/conversations/search?locationId=${locationId}&limit=1`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Version: GHL_API_VERSION,
-        },
-        signal: AbortSignal.timeout(10_000),
-      },
-    );
-
-    const scopes: string[] = ['contacts'];
-    if (convRes.ok) scopes.push('conversations');
-
-    return NextResponse.json({
-      ok: true,
-      locationId,
-      scopes,
-      message: `Connection verified. Active scopes: ${scopes.join(', ')}.`,
-    });
   } catch (err) {
     return NextResponse.json({
       ok: false,
       error: `Connection test failed: ${err instanceof Error ? err.message : 'Network error'}. Check your connection and try again.`,
     });
   }
+
+  // --- Non-fatal scope checks (run in parallel) ---
+  const scopeChecks = await Promise.allSettled([
+    fetch(`${GHL_API_BASE}/conversations/search?locationId=${locationId}&limit=1`, {
+      headers, signal: AbortSignal.timeout(8_000),
+    }),
+    fetch(`${GHL_API_BASE}/voice-ai/agents?locationId=${locationId}`, {
+      headers, signal: AbortSignal.timeout(8_000),
+    }),
+    fetch(`${GHL_API_BASE}/conversation-ai/agents?locationId=${locationId}`, {
+      headers, signal: AbortSignal.timeout(8_000),
+    }),
+    fetch(`${GHL_API_BASE}/knowledge-base/?locationId=${locationId}`, {
+      headers, signal: AbortSignal.timeout(8_000),
+    }),
+    fetch(`${GHL_API_BASE}/phone-number/?locationId=${locationId}`, {
+      headers, signal: AbortSignal.timeout(8_000),
+    }),
+  ]);
+
+  const [convResult, voiceResult, convAiResult, kbResult, phoneResult] = scopeChecks;
+
+  const scopes: string[] = ['contacts'];
+  if (convResult.status === 'fulfilled' && convResult.value.ok) scopes.push('conversations');
+  if (voiceResult.status === 'fulfilled' && voiceResult.value.ok) scopes.push('voice_ai');
+  if (convAiResult.status === 'fulfilled' && convAiResult.value.ok) scopes.push('conversation_ai');
+  if (kbResult.status === 'fulfilled' && kbResult.value.ok) scopes.push('knowledge_base');
+  if (phoneResult.status === 'fulfilled' && phoneResult.value.ok) scopes.push('phone_numbers');
+
+  // Persist detected scopes to container_config for use in permissions UI
+  const currentConfig = ((clientData?.container_config as Record<string, unknown>) ?? {});
+  await db
+    .from('agency_clients')
+    .update({
+      container_config: { ...currentConfig, ghl_detected_scopes: scopes },
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', clientId);
+
+  return NextResponse.json({
+    ok: true,
+    locationId,
+    scopes,
+    message: `Connection verified. Active scopes: ${scopes.join(', ')}.`,
+  });
 }
