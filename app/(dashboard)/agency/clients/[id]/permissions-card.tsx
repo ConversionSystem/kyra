@@ -76,7 +76,10 @@ export default function PermissionsCard({ clientId }: PermissionsCardProps) {
   const [canBook, setCanBook] = useState(false);
   const [canUpdatePipeline, setCanUpdatePipeline] = useState(false);
   const [canAccessContacts, setCanAccessContacts] = useState(false);
+  const [canVoiceAI, setCanVoiceAI] = useState(false);
+  const [canConversationAI, setCanConversationAI] = useState(false);
   const [monitorOnly, setMonitorOnly] = useState(false);
+  const [detectedScopes, setDetectedScopes] = useState<string[] | null>(null);
 
   // Fetch current permissions
   const fetchPermissions = useCallback(async () => {
@@ -92,6 +95,9 @@ export default function PermissionsCard({ clientId }: PermissionsCardProps) {
       setCanBook(p.ghl?.writeCalendar ?? false);
       setCanUpdatePipeline(p.ghl?.writePipeline ?? false);
       setCanAccessContacts(p.ghl?.readContacts ?? false);
+      setCanVoiceAI(p.ghl?.writeVoiceAgents ?? false);
+      setCanConversationAI(p.ghl?.writeConversationAI ?? false);
+      setDetectedScopes(data.detectedScopes ?? null);
       setMonitorOnly(p.mode === 'readonly');
       setDirty(false);
     } catch (err: unknown) {
@@ -113,6 +119,8 @@ export default function PermissionsCard({ clientId }: PermissionsCardProps) {
       setCanBook(false);
       setCanUpdatePipeline(false);
       setCanAccessContacts(false);
+      setCanVoiceAI(false);
+      setCanConversationAI(false);
     }
     setDirty(true);
     setSuccessMsg(null);
@@ -144,6 +152,13 @@ export default function PermissionsCard({ clientId }: PermissionsCardProps) {
         readCalendar: true, // always allowed
         writeCalendar: monitorOnly ? false : canBook,
         triggerWorkflows: monitorOnly ? false : canRespond, // follows respond
+        readVoiceAgents: true,
+        writeVoiceAgents: monitorOnly ? false : canVoiceAI,
+        readConversationAI: true,
+        writeConversationAI: monitorOnly ? false : canConversationAI,
+        readKnowledgeBase: true,
+        writeKnowledgeBase: monitorOnly ? false : canConversationAI, // follows conversation AI
+        readPhoneNumbers: true,
       },
       ai: {
         proactiveMessaging: monitorOnly ? false : canRespond,
@@ -199,6 +214,18 @@ export default function PermissionsCard({ clientId }: PermissionsCardProps) {
       description: 'AI can read contact details including name, email, phone, and tags',
       enabled: canAccessContacts,
     },
+    ...(detectedScopes?.includes('voice_ai') ? [{
+      key: 'can_voice_ai',
+      label: 'Voice AI',
+      description: 'AI can configure and manage Voice AI agents in GHL',
+      enabled: canVoiceAI,
+    }] : []),
+    ...(detectedScopes?.includes('conversation_ai') ? [{
+      key: 'can_conversation_ai',
+      label: 'Sync Training Data',
+      description: 'AI can push business knowledge to GHL Conversation AI',
+      enabled: canConversationAI,
+    }] : []),
   ];
 
   const toggleSetters: Record<string, (v: boolean) => void> = {
@@ -206,6 +233,8 @@ export default function PermissionsCard({ clientId }: PermissionsCardProps) {
     can_book: setCanBook,
     can_update_pipeline: setCanUpdatePipeline,
     can_access_contacts: setCanAccessContacts,
+    can_voice_ai: setCanVoiceAI,
+    can_conversation_ai: setCanConversationAI,
   };
 
   if (loading) {
