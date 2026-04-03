@@ -107,6 +107,8 @@ function modernDarkNavbar(data: NavbarData, primary: string): string {
   </div>`
     : '';
 
+  const mobileMenuId = 'kyra-mobile-menu';
+
   return `${emergencyBanner}
 <header class="fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-md border-b border-white/10">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -119,10 +121,30 @@ function modernDarkNavbar(data: NavbarData, primary: string): string {
         ${navLinks}
       </nav>
 
-      <!-- CTA -->
-      <div class="flex items-center gap-4 flex-shrink-0">
-        ${phoneCta}
+      <!-- Desktop CTA + Mobile hamburger -->
+      <div class="flex items-center gap-3 flex-shrink-0">
+        <div class="hidden md:flex">${phoneCta}</div>
+        <!-- Mobile: show phone icon link -->
+        ${data.phone ? `<a href="${data.phoneHref || 'tel:' + data.phone}" class="md:hidden flex items-center justify-center w-10 h-10 rounded-lg bg-red-600 text-white no-underline">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        </a>` : ''}
+        <!-- Hamburger -->
+        <button id="kyra-hamburger" onclick="document.getElementById('${mobileMenuId}').classList.toggle('hidden')" class="md:hidden text-white p-2 rounded-lg hover:bg-white/10 transition" aria-label="Menu">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
       </div>
+    </div>
+  </div>
+  <!-- Mobile menu -->
+  <div id="${mobileMenuId}" class="hidden md:hidden bg-black/95 border-t border-white/10">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col gap-1">
+      ${(data.links || [{ label: 'Home', href: '#top' }, { label: 'Services', href: '#services' }, { label: 'About', href: '#about' }, { label: 'Reviews', href: '#testimonials' }, { label: 'Contact', href: '#contact' }]).map(l =>
+        `<a href="${l.href}" onclick="document.getElementById('${mobileMenuId}').classList.add('hidden')" class="text-gray-300 hover:text-white py-3 px-3 rounded-lg hover:bg-white/5 text-sm font-medium transition no-underline border-b border-white/5 last:border-0">${l.label}</a>`
+      ).join('\n      ')}
+      ${data.phone ? `<a href="${data.phoneHref || 'tel:' + data.phone}" class="mt-2 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-semibold transition no-underline">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        Call ${data.phone}
+      </a>` : ''}
     </div>
   </div>
 </header>`;
