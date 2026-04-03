@@ -11,6 +11,7 @@ interface AboutData {
   teamMembers?: Array<{ name: string; role: string; photoUrl?: string }>;
   milestones?: Array<{ year: string; text: string }>;
   colors: { primary: string; secondary: string };
+  designStyle?: string;
 }
 
 export function photoSplitAbout(data: AboutData): string {

@@ -7,17 +7,18 @@ interface TestimonialsData {
     location?: string;
   }>;
   colors: { primary: string; secondary: string };
+  designStyle?: string;
 }
 
-function renderStars(rating: number): string {
+function renderStars(rating: number, isDark = false): string {
   const clamp = Math.max(1, Math.min(5, Math.round(rating)));
+  const emptyColor = isDark ? '#374151' : '#e5e7eb';
   return Array.from({ length: 5 }, (_, i) =>
-    `<svg style="width:20px;height:20px;flex-shrink:0;" viewBox="0 0 20 20"><path fill="${i < clamp ? '#fbbf24' : '#e5e7eb'}" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.957a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.37 2.448a1 1 0 00-.364 1.118l1.287 3.957c.3.921-.755 1.688-1.54 1.118l-3.37-2.448a1 1 0 00-1.176 0l-3.37 2.448c-.784.57-1.838-.197-1.539-1.118l1.287-3.957a1 1 0 00-.364-1.118L2.063 9.384c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.95-.69l1.286-3.957z"/></svg>`
+    `<svg style="width:20px;height:20px;flex-shrink:0;" viewBox="0 0 20 20"><path fill="${i < clamp ? '#fbbf24' : emptyColor}" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.957a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.37 2.448a1 1 0 00-.364 1.118l1.287 3.957c.3.921-.755 1.688-1.54 1.118l-3.37-2.448a1 1 0 00-1.176 0l-3.37 2.448c-.784.57-1.838-.197-1.539-1.118l1.287-3.957a1 1 0 00-.364-1.118L2.063 9.384c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.95-.69l1.286-3.957z"/></svg>`
   ).join('');
 }
 
 function avatarColor(name: string, primary: string): string {
-  // Rotate through a few nice avatar colors
   const palette = [primary, '#7c3aed', '#059669', '#dc2626', '#d97706', '#2563eb'];
   let hash = 0;
   for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
@@ -25,31 +26,83 @@ function avatarColor(name: string, primary: string): string {
 }
 
 export function gridCardsTestimonials(data: TestimonialsData): string {
+  const isDark = data.designStyle === 'modern-dark';
+  if (isDark) return modernDarkTestimonials(data);
+  return lightTestimonials(data);
+}
+
+function modernDarkTestimonials(data: TestimonialsData): string {
   const heading = data.heading || 'What Our Clients Say';
   const { primary } = data.colors;
 
   const cards = data.testimonials.map(t => {
     const initial = t.name.charAt(0).toUpperCase();
     const avatarBg = avatarColor(t.name, primary);
-    const stars = t.rating ? renderStars(t.rating) : renderStars(5);
+    const stars = renderStars(t.rating || 5, true);
+    const displayRating = t.rating || 5;
+
+    return `<div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 1rem; padding: 2rem; display: flex; flex-direction: column; gap: 1rem; transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s; position: relative; overflow: hidden;" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 16px 32px rgba(0,0,0,0.3)';this.style.borderColor='rgba(220,38,38,0.2)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='none';this.style.borderColor='rgba(255,255,255,0.1)'">
+      <!-- Quote mark -->
+      <div style="position: absolute; bottom: 16px; right: 20px; font-size: 5rem; line-height: 1; color: rgba(255,255,255,0.03); font-family: Georgia, serif; pointer-events: none;" aria-hidden="true">&ldquo;</div>
+
+      <!-- Stars -->
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div style="display: flex; gap: 2px;" aria-label="${displayRating} out of 5 stars">${stars}</div>
+      </div>
+
+      <!-- Quote text -->
+      <p style="color: #cbd5e1; font-size: 0.97rem; line-height: 1.75; margin: 0; font-style: italic; flex: 1; position: relative; z-index: 1;">&ldquo;${t.text}&rdquo;</p>
+
+      <!-- Author -->
+      <div style="display: flex; align-items: center; gap: 12px; padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.08);">
+        <div style="width: 44px; height: 44px; border-radius: 50%; background: ${avatarBg}; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #ffffff; font-weight: 800; font-size: 1.1rem;">${initial}</div>
+        <div>
+          <p style="color: #f1f5f9; font-weight: 700; font-size: 0.93rem; margin: 0 0 2px 0;">${t.name}</p>
+          ${t.location ? `<p style="color: #64748b; font-size: 0.8rem; margin: 0;">📍 ${t.location}</p>` : '<p style="color: #64748b; font-size: 0.8rem; margin: 0;">✓ Verified Customer</p>'}
+        </div>
+      </div>
+    </div>`;
+  });
+
+  // Google badge (dark version)
+  const googleBadge = `<div style="display: flex; align-items: center; gap: 10px; justify-content: center; margin-bottom: 2.5rem; padding: 12px 24px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 100px; width: fit-content; margin-left: auto; margin-right: auto;">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+    <span style="font-size: 0.85rem; color: #94a3b8; font-weight: 600;">Google Reviews</span>
+    <div style="display: flex; gap: 2px;">${Array(5).fill(0).map(() => `<svg width="14" height="14" viewBox="0 0 20 20" fill="#fbbf24"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.957a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.37 2.448a1 1 0 00-.364 1.118l1.287 3.957c.3.921-.755 1.688-1.54 1.118l-3.37-2.448a1 1 0 00-1.176 0l-3.37 2.448c-.784.57-1.838-.197-1.539-1.118l1.287-3.957a1 1 0 00-.364-1.118L2.063 9.384c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.95-.69l1.286-3.957z"/></svg>`).join('')}</div>
+  </div>`;
+
+  return `<section id="testimonials" style="padding: 5rem 1.5rem; background: #0f172a;" aria-label="Testimonials">
+  <div style="max-width: 1200px; margin: 0 auto;">
+    <div style="text-align: center; margin-bottom: 3rem;">
+      <div style="display: inline-block; background: ${primary}20; color: ${primary}; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 6px 16px; border-radius: 100px; margin-bottom: 1rem; border: 1px solid ${primary}30;">Reviews</div>
+      <h2 style="font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 900; color: #f1f5f9; margin: 0 0 1.5rem 0; letter-spacing: -0.02em;">${heading}</h2>
+      ${googleBadge}
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
+      ${cards.join('\n      ')}
+    </div>
+  </div>
+</section>`;
+}
+
+function lightTestimonials(data: TestimonialsData): string {
+  const heading = data.heading || 'What Our Clients Say';
+  const { primary } = data.colors;
+
+  const cards = data.testimonials.map(t => {
+    const initial = t.name.charAt(0).toUpperCase();
+    const avatarBg = avatarColor(t.name, primary);
+    const stars = renderStars(t.rating || 5);
     const displayRating = t.rating || 5;
 
     return `<div style="background: #ffffff; border: 1px solid #f0f0f0; border-radius: 20px; padding: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex; flex-direction: column; gap: 1rem; transition: transform 0.25s, box-shadow 0.25s; position: relative; overflow: hidden;" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 16px 32px rgba(0,0,0,0.1)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 2px 8px rgba(0,0,0,0.06)'">
-      <!-- Top accent -->
       <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(to right, ${primary}, ${primary}80);"></div>
-      <!-- Quote mark decoration -->
       <div style="position: absolute; bottom: 16px; right: 20px; font-size: 5rem; line-height: 1; color: ${primary}12; font-family: Georgia, serif; pointer-events: none;" aria-hidden="true">&ldquo;</div>
-
-      <!-- Stars + rating -->
       <div style="display: flex; align-items: center; gap: 8px;">
         <div style="display: flex; gap: 2px;" aria-label="${displayRating} out of 5 stars">${stars}</div>
         <span style="color: #6b7280; font-size: 0.8rem; font-weight: 600;">${displayRating}.0</span>
       </div>
-
-      <!-- Quote text -->
       <p style="color: #374151; font-size: 0.97rem; line-height: 1.75; margin: 0; font-style: italic; flex: 1; position: relative; z-index: 1;">&ldquo;${t.text}&rdquo;</p>
-
-      <!-- Author -->
       <div style="display: flex; align-items: center; gap: 12px; padding-top: 0.75rem; border-top: 1px solid #f3f4f6;">
         <div style="width: 44px; height: 44px; border-radius: 50%; background: ${avatarBg}; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #ffffff; font-weight: 800; font-size: 1.1rem; box-shadow: 0 4px 12px ${avatarBg}60;">${initial}</div>
         <div>
@@ -60,7 +113,6 @@ export function gridCardsTestimonials(data: TestimonialsData): string {
     </div>`;
   });
 
-  // Google badge strip
   const googleBadge = `<div style="display: flex; align-items: center; gap: 10px; justify-content: center; margin-bottom: 2.5rem; padding: 12px 24px; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 100px; width: fit-content; margin-left: auto; margin-right: auto; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
     <span style="font-size: 0.85rem; color: #374151; font-weight: 600;">Google Reviews</span>

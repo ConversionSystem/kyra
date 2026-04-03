@@ -11,10 +11,11 @@ interface HeroData {
   colors: { primary: string; secondary: string };
   ctaText?: string;
   ctaLink?: string;
+  designStyle?: string;
 }
 
-function phoneIcon(): string {
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`;
+function phoneIcon(size = 22): string {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`;
 }
 
 function calendarIcon(): string {
@@ -22,6 +23,83 @@ function calendarIcon(): string {
 }
 
 export function fullBleedHero(data: HeroData): string {
+  const isDark = data.designStyle === 'modern-dark';
+  if (isDark) return modernDarkHero(data);
+  return lightHero(data);
+}
+
+function modernDarkHero(data: HeroData): string {
+  const { primary } = data.colors;
+
+  const trustBadges = `<div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 2.5rem;">
+      <div style="display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 10px 16px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${primary}" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span style="color: #e2e8f0; font-size: 0.85rem; font-weight: 600;">Licensed &amp; Insured</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 10px 16px;">
+        <svg width="18" height="18" fill="#fbbf24" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.957a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.37 2.448a1 1 0 00-.364 1.118l1.287 3.957c.3.921-.755 1.688-1.54 1.118l-3.37-2.448a1 1 0 00-1.176 0l-3.37 2.448c-.784.57-1.838-.197-1.539-1.118l1.287-3.957a1 1 0 00-.364-1.118L2.063 9.384c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.95-.69l1.286-3.957z"/></svg>
+        <span style="color: #e2e8f0; font-size: 0.85rem; font-weight: 600;">5.0 Rating</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 10px 16px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${primary}" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"></polyline></svg>
+        <span style="color: #e2e8f0; font-size: 0.85rem; font-weight: 600;">24/7 Available</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 10px 16px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${primary}" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        <span style="color: #e2e8f0; font-size: 0.85rem; font-weight: 600;">Same-Day Service</span>
+      </div>
+    </div>`;
+
+  const quoteForm = `<div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 1.25rem; padding: 2rem; backdrop-filter: blur(16px);">
+      <h3 style="color: #ffffff; font-size: 1.25rem; font-weight: 800; margin: 0 0 0.5rem 0; text-align: center;">Get a Free Quote</h3>
+      <p style="color: #94a3b8; font-size: 0.85rem; margin: 0 0 1.5rem 0; text-align: center;">Fast response • No obligation</p>
+      <form style="display: flex; flex-direction: column; gap: 0.75rem;" onsubmit="return false;">
+        <input type="text" placeholder="Your Name" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 12px 16px; color: #ffffff; font-size: 0.9rem; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='${primary}'" onblur="this.style.borderColor='rgba(255,255,255,0.12)'">
+        <input type="tel" placeholder="Phone Number" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 12px 16px; color: #ffffff; font-size: 0.9rem; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='${primary}'" onblur="this.style.borderColor='rgba(255,255,255,0.12)'">
+        <input type="email" placeholder="Email Address" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 12px 16px; color: #ffffff; font-size: 0.9rem; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='${primary}'" onblur="this.style.borderColor='rgba(255,255,255,0.12)'">
+        <textarea placeholder="Describe your issue..." rows="3" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 12px 16px; color: #ffffff; font-size: 0.9rem; outline: none; resize: vertical; transition: border-color 0.2s;" onfocus="this.style.borderColor='${primary}'" onblur="this.style.borderColor='rgba(255,255,255,0.12)'"></textarea>
+        <button type="submit" style="background: ${primary}; color: #ffffff; font-weight: 800; font-size: 1rem; padding: 14px 24px; border: none; border-radius: 10px; cursor: pointer; transition: all 0.2s; box-shadow: 0 8px 25px rgba(220,38,38,0.3);" onmouseover="this.style.opacity='0.9';this.style.transform='translateY(-1px)'" onmouseout="this.style.opacity='1';this.style.transform='translateY(0)'">
+          Get Free Estimate →
+        </button>
+      </form>
+    </div>`;
+
+  return `<section class="relative overflow-hidden" style="background: linear-gradient(135deg, #111827 0%, #000000 50%, #111827 100%); min-height: 90vh; display: flex; align-items: center;" aria-label="${data.businessName || ''} hero">
+  <!-- Red radial accent -->
+  <div style="position: absolute; top: -20%; right: -10%; width: 600px; height: 600px; background: radial-gradient(circle, ${primary}20 0%, transparent 70%); pointer-events: none;" aria-hidden="true"></div>
+  <div style="position: absolute; bottom: -30%; left: -10%; width: 500px; height: 500px; background: radial-gradient(circle, ${primary}10 0%, transparent 70%); pointer-events: none;" aria-hidden="true"></div>
+
+  <div style="max-width: 1200px; margin: 0 auto; padding: 4rem 1.5rem; width: 100%; position: relative; z-index: 1;">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: center;">
+      <!-- Left: Content -->
+      <div>
+        ${data.emergencyText ? `<div style="display: inline-flex; align-items: center; gap: 8px; background: ${primary}; color: #ffffff; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 8px 18px; border-radius: 100px; margin-bottom: 1.5rem;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"></polyline></svg>
+          ${data.emergencyText}
+        </div>` : ''}
+        <h1 style="font-size: clamp(2.5rem, 5vw, 4.5rem); font-weight: 900; color: #ffffff; line-height: 1.08; letter-spacing: -0.03em; margin: 0 0 1.25rem 0;">${data.h1}</h1>
+        <p style="font-size: clamp(1rem, 1.8vw, 1.2rem); color: #94a3b8; line-height: 1.7; margin: 0 0 2rem 0; max-width: 500px;">${data.subtitle}</p>
+        <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
+          ${data.phone ? `<a href="${data.phoneHref || `tel:${data.phone}`}" style="display: inline-flex; align-items: center; gap: 10px; font-weight: 800; padding: 16px 32px; border-radius: 12px; text-decoration: none; font-size: 1.1rem; background: ${primary}; color: #ffffff; box-shadow: 0 10px 25px rgba(220,38,38,0.25); transition: all 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 14px 30px rgba(220,38,38,0.35)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 10px 25px rgba(220,38,38,0.25)'">${phoneIcon(20)} ${data.phone}</a>` : ''}
+          <a href="${data.ctaLink || data.bookingUrl || '#contact'}" style="display: inline-flex; align-items: center; gap: 10px; border: 2px solid rgba(255,255,255,0.25); color: #ffffff; font-weight: 700; padding: 16px 32px; border-radius: 12px; text-decoration: none; font-size: 1.05rem; transition: all 0.2s; backdrop-filter: blur(8px);" onmouseover="this.style.background='rgba(255,255,255,0.1)';this.style.borderColor='rgba(255,255,255,0.4)'" onmouseout="this.style.background='transparent';this.style.borderColor='rgba(255,255,255,0.25)'">${calendarIcon()} ${data.ctaText || (data.bookingUrl ? 'Book Online' : 'Get Free Quote')}</a>
+        </div>
+        ${trustBadges}
+      </div>
+      <!-- Right: Quote Form -->
+      <div>
+        ${quoteForm}
+      </div>
+    </div>
+  </div>
+  <style>
+    @media (max-width: 768px) {
+      section[aria-label*="hero"] > div > div { grid-template-columns: 1fr !important; }
+    }
+  </style>
+</section>`;
+}
+
+function lightHero(data: HeroData): string {
   const bg = data.photoUrl
     ? `background-image: url('${data.photoUrl}'); background-size: cover; background-position: center top;`
     : `background: linear-gradient(135deg, ${data.colors.secondary} 0%, ${data.colors.primary}99 60%, ${data.colors.secondary} 100%);`;
@@ -35,7 +113,6 @@ export function fullBleedHero(data: HeroData): string {
 
   return `<section class="relative min-h-[90vh] flex items-center overflow-hidden" style="${bg}" aria-label="${data.businessName || ''} hero">
   <div class="absolute inset-0" style="background: linear-gradient(to right, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.45) 60%, rgba(0,0,0,0.2) 100%);"></div>
-  <!-- Decorative bottom fade -->
   <div class="absolute bottom-0 left-0 right-0 h-32" style="background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.3));"></div>
   <div class="relative z-10 max-w-7xl mx-auto px-6 sm:px-10 py-24 sm:py-32 w-full">
     <div class="max-w-3xl">
@@ -46,7 +123,6 @@ export function fullBleedHero(data: HeroData): string {
         ${data.phone ? `<a href="${data.phoneHref || `tel:${data.phone}`}" class="inline-flex items-center gap-3 font-bold px-8 py-4 rounded-xl text-lg shadow-2xl transition-all hover:scale-105 active:scale-100" style="background: #ffffff; color: ${data.colors.primary}; min-width: 200px; justify-content: center;">${phoneIcon()} ${data.phone}</a>` : ''}
         <a href="${data.ctaLink || data.bookingUrl || '#contact'}" class="inline-flex items-center gap-3 border-2 border-white/80 text-white font-semibold px-8 py-4 rounded-xl text-lg transition-all hover:bg-white/15" style="backdrop-filter: blur(8px);">${calendarIcon()} ${data.ctaText || (data.bookingUrl ? 'Book Online' : 'Get Free Quote')}</a>
       </div>
-      <!-- Trust strip -->
       <div class="flex flex-wrap gap-6 items-center">
         <div class="flex items-center gap-2 text-white/80 text-sm font-medium">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>

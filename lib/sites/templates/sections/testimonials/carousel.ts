@@ -7,6 +7,7 @@ interface TestimonialsData {
     location?: string;
   }>;
   colors: { primary: string; secondary: string };
+  designStyle?: string;
 }
 
 function renderStars(): string {
