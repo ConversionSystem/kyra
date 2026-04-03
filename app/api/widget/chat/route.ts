@@ -146,12 +146,13 @@ export async function POST(request: NextRequest) {
   // Validate: empty/undefined → fall back to WIDGET_MODEL
   const resolvedModel = rawModel && typeof rawModel === 'string' && rawModel.trim() ? rawModel.trim() : WIDGET_MODEL;
   // ── Canonical model ID → valid OpenRouter slug ─────────────────────────
+  // Verified against OpenRouter /v1/models on Apr 3, 2026
   const OPENROUTER_SLUGS: Record<string, string> = {
-    'claude-haiku-3-5':   'anthropic/claude-3-5-haiku-20241022',
-    'claude-haiku-4-5':   'anthropic/claude-4.5-haiku-20251001',
-    'claude-sonnet-3-7':  'anthropic/claude-3-7-sonnet-20250219',
-    'claude-sonnet-4-6':  'anthropic/claude-4.6-sonnet-20260217',
-    'claude-opus-4-6':    'anthropic/claude-opus-4-20250514',
+    'claude-haiku-3-5':   'anthropic/claude-3.5-haiku',
+    'claude-haiku-4-5':   'anthropic/claude-haiku-4.5',
+    'claude-sonnet-3-7':  'anthropic/claude-3.7-sonnet',
+    'claude-sonnet-4-6':  'anthropic/claude-sonnet-4.6',
+    'claude-opus-4-6':    'anthropic/claude-opus-4.6',
     'gpt-4o-mini':        'openai/gpt-4o-mini',
     'gpt-4o':             'openai/gpt-4o',
     'gemini-2.0-flash':   'google/gemini-2.0-flash-001',
@@ -359,7 +360,7 @@ export async function POST(request: NextRequest) {
     }
     console.error(`[widget/chat] LLM error for ${clientId} (model=${clientModel}): ${errMsg}`);
     return NextResponse.json(
-      { response: "Thanks for your message! Our team will get back to you shortly.", error: 'ai_unavailable', _dbg: errMsg },
+      { response: "Thanks for your message! Our team will get back to you shortly.", error: 'ai_unavailable' },
       { headers: CORS },
     );
   }
