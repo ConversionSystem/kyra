@@ -339,7 +339,7 @@ export async function POST(request: NextRequest) {
     }
     console.error(`[widget/chat] LLM error for ${clientId} (model=${clientModel}): ${errMsg}`);
     return NextResponse.json(
-      { response: "Thanks for your message! Our team will get back to you shortly.", error: 'ai_unavailable', debug: process.env.NODE_ENV === 'development' ? errMsg : undefined },
+      { response: "Thanks for your message! Our team will get back to you shortly.", error: 'ai_unavailable', _debug: errMsg },
       { headers: CORS },
     );
   }
