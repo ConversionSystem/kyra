@@ -254,10 +254,10 @@ export default function GrowthEngine() {
     }
   };
 
-  const siteUrl = site?.site_subdomain
-    ? `https://${site.site_subdomain}`
-    : site?.site_domain
-      ? `https://${site.site_domain}`
+  const siteUrl = site?.site_domain
+    ? `https://${site.site_domain}`
+    : site?.site_subdomain
+      ? `https://${site.site_subdomain}`
       : null;
 
   const highPriority = suggestions.filter((s) => s.priority === 'high' && !s.implemented);
