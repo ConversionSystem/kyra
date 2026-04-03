@@ -78,13 +78,11 @@ const navSections: NavSection[] = [
       { label: 'Analytics', href: '/agency/analytics', icon: BarChart2 },
       { label: 'Intelligence', href: '/agency/intelligence', icon: Brain, iconClassName: 'text-purple-400', requiredPlans: ['pro', 'scale'] },
       { label: 'Clients', href: '/agency/clients', icon: Users },
-      { label: 'Pipeline', href: '/agency/pipelines', icon: GitBranch, iconClassName: 'text-indigo-400' },
+
       { label: 'GHL Actions', href: '/agency/audit', icon: ClipboardList },
       { label: 'Websites', href: '/agency/sites', icon: Globe },
       { label: 'Voice AI', href: '/agency/voice', icon: Phone, iconClassName: 'text-emerald-400' },
-      { label: 'Email', href: '/agency/email', icon: Mail, iconClassName: 'text-sky-400' },
-      { label: 'Calendar', href: '/agency/calendar', icon: CalendarDays, iconClassName: 'text-orange-400' },
-      { label: 'Payments', href: '/agency/payments', icon: DollarSign, iconClassName: 'text-emerald-400' },
+
       { label: 'Build Requests', href: '/agency/build-requests', icon: Sparkles, iconClassName: 'text-amber-400' },
     ],
   },
