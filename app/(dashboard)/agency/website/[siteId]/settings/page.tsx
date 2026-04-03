@@ -163,7 +163,7 @@ export default function SiteSettings() {
   };
 
   const subdomain = site?.site_subdomain || '';
-  const siteUrl = subdomain ? `https://${subdomain}` : site?.site_domain ? `https://${site.site_domain}` : null;
+  const siteUrl = site?.site_domain ? `https://${site.site_domain}` : subdomain ? `https://${subdomain}` : null;
   const backHref = site?.client_id ? `/agency/clients/${site.client_id}` : '/agency/website';
 
   if (loading) {
