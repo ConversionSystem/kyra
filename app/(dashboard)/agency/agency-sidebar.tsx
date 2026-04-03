@@ -43,6 +43,7 @@ import {
   ShieldCheck,
   BarChart2,
   ClipboardList,
+  Mail,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AgencySettings } from '@/lib/agency/types';
@@ -79,6 +80,7 @@ const navSections: NavSection[] = [
       { label: 'GHL Actions', href: '/agency/audit', icon: ClipboardList },
       { label: 'Websites', href: '/agency/sites', icon: Globe },
       { label: 'Voice AI', href: '/agency/voice', icon: Phone, iconClassName: 'text-emerald-400' },
+      { label: 'Email', href: '/agency/email', icon: Mail, iconClassName: 'text-sky-400' },
       { label: 'Build Requests', href: '/agency/build-requests', icon: Sparkles, iconClassName: 'text-amber-400' },
     ],
   },
