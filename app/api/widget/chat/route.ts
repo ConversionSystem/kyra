@@ -27,6 +27,7 @@ import {
 } from '@/lib/chat/lead-capture';
 import { deductCredits, requireCredits } from '@/lib/billing/credit-engine';
 import { getCreditsForModel } from '@/lib/billing/model-credits';
+import { classifyMessage } from '@/lib/ghl/model-router';
 import OpenAI from 'openai';
 
 // Direct LLM client for widget chat — bypasses OpenClaw gateway which has agency persona/SOUL.md
@@ -187,8 +188,12 @@ export async function POST(request: NextRequest) {
     clientModel = resolvedModel.includes('/') ? resolvedModel.split('/').slice(1).join('/') : resolvedModel;
   }
 
+  // ── Smart routing: downgrade to mini for simple/medium messages ───────────
+  const complexity = classifyMessage(message.trim());
+  const routedModel = complexity === 'complex' ? clientModel : 'openai/gpt-4o-mini';
+
   // ── Model-aware credit check ──────────────────────────────────────────────
-  const widgetPreflightCost = getCreditsForModel(clientModel);
+  const widgetPreflightCost = getCreditsForModel(routedModel);
   const creditCheck = await requireCredits(client.agency_id, 'chat.message', 1, widgetPreflightCost);
   if (!creditCheck.allowed) {
     return NextResponse.json(
@@ -333,7 +338,7 @@ export async function POST(request: NextRequest) {
   try {
     const llm = getDirectLLMClient();
     const chatRes = await llm.chat.completions.create({
-      model: clientModel,
+      model: routedModel,
       messages: [
         { role: 'system', content: systemPrompt },
         // Inject conversation history so AI has context (last 10 turns)
@@ -358,7 +363,7 @@ export async function POST(request: NextRequest) {
         { headers: CORS },
       );
     }
-    console.error(`[widget/chat] LLM error for ${clientId} (model=${clientModel}): ${errMsg}`);
+    console.error(`[widget/chat] LLM error for ${clientId} (model=${routedModel}): ${errMsg}`);
     return NextResponse.json(
       { response: "Thanks for your message! Our team will get back to you shortly.", error: 'ai_unavailable' },
       { headers: CORS },
@@ -394,11 +399,11 @@ export async function POST(request: NextRequest) {
   }
 
   // Deduct credit (also awaited to avoid billing gaps)
-  const widgetCredits = getCreditsForModel(clientModel);
+  const widgetCredits = getCreditsForModel(routedModel);
   await deductCredits(client.agency_id, 'chat.message', {
     override: widgetCredits,
     clientId: client.id,
-    description: `Web chat (${clientModel}): ${message.trim().slice(0, 50)}`,
+    description: `Web chat (${routedModel}): ${message.trim().slice(0, 50)}`,
   });
 
 
