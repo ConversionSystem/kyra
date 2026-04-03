@@ -626,6 +626,22 @@ async function forwardToContainer(
         });
     }
 
+    // ── Deduct credits for AI response ───────────────────────────────────────
+    if (agencyId) {
+      try {
+        const { deductCredits } = await import('@/lib/billing/credit-engine');
+        const { getCreditsForModel } = await import('@/lib/billing/model-credits');
+        const modelId = 'openrouter/anthropic/claude-haiku-4.5';
+        const tokensUsed = (completion as { usage?: { total_tokens?: number } }).usage?.total_tokens ?? 0;
+        const creditCost = getCreditsForModel(modelId);
+        await deductCredits(agencyId, 'channel.ghl_sms', {
+          clientId,
+          description: `GHL inbound message AI response (${modelId}, ${tokensUsed} tokens)`,
+          override: creditCost,
+        });
+      } catch { /* non-fatal */ }
+    }
+
     // ── Send reply back via GHL ───────────────────────────────────────────────
     if (reply?.contactId) {
       try {

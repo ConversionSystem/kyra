@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { syncIntegrationsToContainer } from '@/lib/integrations/sync';
+import { registerWebhooks, getKyraWebhookUrl } from '@/lib/ghl/webhooks';
 
 const GHL_API_BASE = 'https://services.leadconnectorhq.com';
 const GHL_API_VERSION = '2021-07-28';
@@ -270,6 +271,20 @@ export async function POST(
       { error: 'Failed to save connection. Please try again.' },
       { status: 500 },
     );
+  }
+
+  // Register webhooks so GHL pushes messages to us (no polling needed)
+  if (locationId) {
+    const webhookUrl = getKyraWebhookUrl();
+    registerWebhooks(token, locationId, webhookUrl).then(result => {
+      if (result) {
+        console.log('[ghl/connect-token] Webhooks registered for location', locationId);
+      } else {
+        console.warn('[ghl/connect-token] Webhook registration failed for', locationId);
+      }
+    }).catch(err => {
+      console.error('[ghl/connect-token] Webhook registration error:', err);
+    });
   }
 
   // Sync integrations to container (fire-and-forget)
