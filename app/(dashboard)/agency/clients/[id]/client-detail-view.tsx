@@ -66,6 +66,7 @@ import AIWorkersTab from '@/components/dashboard/client-tabs/ai-workers-tab';
 import MarketingTab from '@/components/dashboard/client-tabs/marketing-tab';
 import ITOperationsTab from '@/components/dashboard/client-tabs/it-operations-tab';
 import BookingConfigTab from '@/components/dashboard/client-tabs/booking-config-tab';
+import WorkflowsTab from '@/components/dashboard/client-tabs/workflows-tab';
 
 // ── GHL Free Sub-Account Sticky Banner ───────────────────────────────────────
 
@@ -188,7 +189,7 @@ interface ChatMessage {
   content: string;
 }
 
-type Tab = 'inbox' | 'chat' | 'train' | 'workers' | 'marketing' | 'operations' | 'crm' | 'website' | 'booking' | 'settings' | 'insights' | 'share';
+type Tab = 'inbox' | 'chat' | 'train' | 'workers' | 'marketing' | 'operations' | 'workflows' | 'crm' | 'website' | 'booking' | 'settings' | 'insights' | 'share';
 
 // Map legacy ?tab= values to new tab IDs
 const LEGACY_TAB_MAP: Record<string, Tab> = {
@@ -219,6 +220,7 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'chat', label: 'Chat', icon: MessageSquare },
   { id: 'marketing', label: 'Marketing', icon: TrendingUp },
   { id: 'operations', label: 'Operations', icon: Cpu },
+  { id: 'workflows' as Tab, label: 'Workflows', icon: Zap },
   { id: 'crm', label: 'CRM', icon: Users },
   { id: 'website', label: 'Website', icon: Globe },
 ];
@@ -477,6 +479,9 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
           )}
           {activeTab === 'operations' && (
             <ITOperationsTab client={initialClient} />
+          )}
+          {activeTab === 'workflows' && (
+            <WorkflowsTab client={initialClient} />
           )}
           {activeTab === 'crm' && (
             <CrmTab client={initialClient} clientId={initialClient.id} />
