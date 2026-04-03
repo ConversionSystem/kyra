@@ -1515,13 +1515,17 @@ function ConversationsTab({ client }: { client: AgencyClient }) {
   }, [loadThreads]);
 
   // Load messages for selected thread
-  const loadThreadMessages = useCallback((contactId: string) => {
+  const loadThreadMessages = useCallback((contactId: string, messageType?: string) => {
     setThreadLoading(true);
-    fetch(`/api/agency/clients/${client.id}/messages?limit=100`)
+    const isWebChat = messageType === 'Web Chat';
+    const url = isWebChat
+      ? `/api/agency/clients/${client.id}/messages?source=webchat&contactId=${encodeURIComponent(contactId)}`
+      : `/api/agency/clients/${client.id}/messages?limit=100`;
+    fetch(url)
       .then(r => r.json())
       .then(d => {
         const msgs = (d.messages || [])
-          .filter((m: GHLMessage) => m.contact_id === contactId)
+          .filter((m: GHLMessage) => isWebChat || m.contact_id === contactId)
           .sort((a: GHLMessage, b: GHLMessage) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
         setThreadMessages(msgs);
         setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
@@ -1532,8 +1536,8 @@ function ConversationsTab({ client }: { client: AgencyClient }) {
 
   useEffect(() => {
     if (selectedContact) {
-      loadThreadMessages(selectedContact.contactId);
-      const interval = setInterval(() => loadThreadMessages(selectedContact.contactId), 10_000);
+      loadThreadMessages(selectedContact.contactId, selectedContact.messageType);
+      const interval = setInterval(() => loadThreadMessages(selectedContact.contactId, selectedContact.messageType), 10_000);
       return () => clearInterval(interval);
     }
   }, [selectedContact, loadThreadMessages]);
@@ -1564,7 +1568,7 @@ function ConversationsTab({ client }: { client: AgencyClient }) {
       setSendSuccess(true);
       setTimeout(() => setSendSuccess(false), 3000);
       // Refresh messages
-      loadThreadMessages(selectedContact.contactId);
+      loadThreadMessages(selectedContact.contactId, selectedContact.messageType);
       loadThreads();
     } catch (err: any) {
       setSendError(err.message || 'Failed to send reply');
