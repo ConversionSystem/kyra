@@ -408,7 +408,7 @@ export default function GHLConnection({
           <div className="space-y-6">
 
             {/* ── Free GHL Sub-Account Banner ───────────────────────── */}
-            <GHLFreeSubAccountBanner clientId={clientId} onRequested={() => onConnected?.()} />
+            {/* GHL free sub-account banner removed — building our own system */}
 
             {/* ── Method 1: Private Integration Token (Recommended) ───── */}
             <div className="rounded-lg border-2 border-indigo-200 bg-indigo-50/30 p-5 space-y-4">
