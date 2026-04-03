@@ -73,13 +73,13 @@ export function stickyWhiteNavbar(data: NavbarData): string {
 
 function modernDarkNavbar(data: NavbarData, primary: string): string {
   const logo = data.logoUrl
-    ? `<img src="${data.logoUrl}" alt="${data.businessName}" style="height: 36px; width: auto;">`
-    : `<span style="display: flex; align-items: center; gap: 10px; font-size: 1.25rem; font-weight: 900; color: #ffffff; letter-spacing: -0.02em;">
-        <span style="width: 36px; height: 36px; background: ${primary}; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+    ? `<img src="${data.logoUrl}" alt="${data.businessName}" class="h-9 w-auto">`
+    : `<a class="flex items-center gap-3" href="/">
+        <div class="h-10 w-10 rounded-lg bg-red-600 flex items-center justify-center">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-        </span>
-        ${data.businessName}
-      </span>`;
+        </div>
+        <div><div class="text-lg font-bold text-white leading-tight">${data.businessName}</div></div>
+      </a>`;
 
   const defaultLinks = [
     { label: 'Home', href: '#top' },
@@ -89,53 +89,43 @@ function modernDarkNavbar(data: NavbarData, primary: string): string {
     { label: 'Contact', href: '#contact' },
   ];
   const navLinks = (data.links || defaultLinks).map(l =>
-    `<a href="${l.href}" style="color: #d1d5db; text-decoration: none; font-size: 0.9rem; font-weight: 500; padding: 6px 2px; transition: color 0.2s;" onmouseover="this.style.color='#ffffff'" onmouseout="this.style.color='#d1d5db'">${l.label}</a>`
+    `<a href="${l.href}" class="text-gray-300 hover:text-white text-sm font-medium transition no-underline">${l.label}</a>`
   ).join('\n        ');
 
   const phoneCta = data.phone
-    ? `<a href="${data.phoneHref || `tel:${data.phone}`}" style="display: flex; align-items: center; gap: 8px; background: ${primary}; color: #ffffff; font-weight: 700; font-size: 0.88rem; padding: 10px 22px; border-radius: 10px; text-decoration: none; transition: all 0.2s; box-shadow: 0 4px 15px rgba(220,38,38,0.3); white-space: nowrap;" onmouseover="this.style.opacity='0.9';this.style.transform='translateY(-1px)'" onmouseout="this.style.opacity='1';this.style.transform='translateY(0)'">
+    ? `<a href="${data.phoneHref || `tel:${data.phone}`}" class="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition no-underline">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
         ${data.phone}
       </a>`
     : '';
 
   const emergencyBanner = data.emergencyText
-    ? `<div style="background: ${primary}; color: #ffffff; text-align: center; padding: 8px 1rem; font-size: 0.82rem; font-weight: 600; letter-spacing: 0.02em;">
-    <a href="${data.phoneHref || (data.phone ? 'tel:' + data.phone : '#')}" style="color: #ffffff; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+    ? `<div class="bg-red-600 text-white text-center py-1.5 text-sm font-medium">
+    <a href="${data.phoneHref || (data.phone ? 'tel:' + data.phone : '#')}" class="hover:underline text-white no-underline">
       ${data.emergencyText}
     </a>
   </div>`
     : '';
 
   return `${emergencyBanner}
-<nav id="kyra-nav" style="position: sticky; top: 0; z-index: 50; background: rgba(0,0,0,0.90); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-bottom: 1px solid rgba(255,255,255,0.08); padding: 0 1.5rem; transition: box-shadow 0.3s;" aria-label="Main navigation">
-  <div style="max-width: 1200px; margin: 0 auto; height: 72px; display: flex; align-items: center; justify-content: space-between; gap: 2rem;">
-    <!-- Logo -->
-    <a href="#top" style="flex-shrink: 0; text-decoration: none;">${logo}</a>
+<header class="fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-md border-b border-white/10">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between h-16">
+      <!-- Logo -->
+      ${data.logoUrl ? `<a href="/" class="flex-shrink-0 no-underline">${logo}</a>` : logo}
 
-    <!-- Nav links (desktop) -->
-    <div style="display: none; align-items: center; gap: 1.75rem; flex: 1; justify-content: center;" class="md-flex">
-      ${navLinks}
-    </div>
+      <!-- Nav links (desktop) -->
+      <nav class="hidden md:flex items-center gap-6">
+        ${navLinks}
+      </nav>
 
-    <!-- CTA -->
-    <div style="display: flex; align-items: center; gap: 1rem; flex-shrink: 0;">
-      ${phoneCta}
+      <!-- CTA -->
+      <div class="flex items-center gap-4 flex-shrink-0">
+        ${phoneCta}
+      </div>
     </div>
   </div>
-  <style>
-    @media (min-width: 768px) { .md-flex { display: flex !important; } }
-  </style>
-  <script>
-    (function() {
-      var nav = document.getElementById('kyra-nav');
-      if (!nav) return;
-      window.addEventListener('scroll', function() {
-        nav.style.boxShadow = window.scrollY > 20 ? '0 4px 30px rgba(0,0,0,0.4)' : 'none';
-      });
-    })();
-  </script>
-</nav>`;
+</header>`;
 }
 
 export default stickyWhiteNavbar;

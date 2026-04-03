@@ -41,20 +41,96 @@ export function fourColumnFooter(data: FooterData): string {
   const { primary } = data.colors;
   const year = new Date().getFullYear();
 
-  const bgColor = isDark ? '#020617' : '#0f172a';
-  const linkColor = isDark ? '#64748b' : '#9ca3af';
-  const linkHover = primary;
-  const borderColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.08)';
+  if (isDark) return modernDarkFooter(data, primary, year);
+  return lightFooter(data, primary, year);
+}
+
+function modernDarkFooter(data: FooterData, primary: string, year: number): string {
+  const serviceLinks = (data.services || []).slice(0, 7).map(s =>
+    `<li><a href="/services/${s.slug}" class="text-gray-500 hover:text-red-400 text-sm transition no-underline">${s.name}</a></li>`
+  ).join('\n          ');
+
+  const cityLinks = (data.cities || []).slice(0, 7).map(c =>
+    `<li><a href="/cities/${c.slug}" class="text-gray-500 hover:text-red-400 text-sm transition no-underline">${c.name}</a></li>`
+  ).join('\n          ');
+
+  const phone = data.phone
+    ? `<div class="text-sm text-gray-400"><a href="${data.phoneHref || `tel:${data.phone}`}" class="text-gray-300 hover:text-red-400 transition no-underline font-semibold">${data.phone}</a></div>`
+    : '';
+
+  const email = data.email
+    ? `<div class="text-sm"><a href="mailto:${data.email}" class="text-gray-500 hover:text-red-400 transition no-underline">${data.email}</a></div>`
+    : '';
+
+  const address = data.address
+    ? `<div class="text-sm text-gray-500">${data.address}</div>`
+    : '';
+
+  const hours = data.formattedHours
+    ? `<div class="text-sm text-gray-500 whitespace-pre-line">${data.formattedHours}</div>`
+    : '';
+
+  return `<footer class="border-t border-white/10 bg-gray-900/50" aria-label="${data.businessName} footer">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div class="grid md:grid-cols-4 gap-8">
+      <!-- Col 1: Brand -->
+      <div>
+        <div class="flex items-center gap-3 mb-4">
+          <div class="h-8 w-8 rounded-lg bg-red-600 flex items-center justify-center">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+          </div>
+          <span class="text-lg font-bold text-white">${data.businessName}</span>
+        </div>
+        <p class="text-sm text-gray-500 leading-relaxed max-w-[240px]">${data.footerTagline || 'Proudly serving our community with quality, integrity, and care on every job.'}</p>
+      </div>
+
+      <!-- Col 2: Services -->
+      <div>
+        <h4 class="text-sm font-semibold text-white uppercase tracking-wider mb-3">Services</h4>
+        <ul class="space-y-2 list-none p-0 m-0">
+          ${serviceLinks || '<li class="text-sm text-gray-500">Coming soon</li>'}
+        </ul>
+      </div>
+
+      <!-- Col 3: Service Areas -->
+      <div>
+        <h4 class="text-sm font-semibold text-white uppercase tracking-wider mb-3">Service Areas</h4>
+        <ul class="space-y-2 list-none p-0 m-0">
+          ${cityLinks || '<li class="text-sm text-gray-500">Local &amp; Surrounding Areas</li>'}
+        </ul>
+      </div>
+
+      <!-- Col 4: Contact -->
+      <div>
+        <h4 class="text-sm font-semibold text-white uppercase tracking-wider mb-3">Contact</h4>
+        <div class="space-y-2">
+          ${phone}
+          ${email}
+          ${address}
+          ${hours}
+        </div>
+      </div>
+    </div>
+    <div class="border-t border-white/10 mt-10 pt-6 text-center text-xs text-gray-500">
+      &copy; ${year} ${data.businessName}. All rights reserved. Powered by <a href="https://kyra.conversionsystem.com" target="_blank" class="text-red-500 hover:text-red-400 no-underline font-semibold">Kyra AI</a>
+    </div>
+  </div>
+</footer>`;
+}
+
+function lightFooter(data: FooterData, primary: string, year: number): string {
+  const linkColor = '#9ca3af';
+  const borderColor = 'rgba(255,255,255,0.08)';
 
   const serviceLinks = (data.services || []).slice(0, 7).map(s =>
-    `<li><a href="/services/${s.slug}" style="color: ${linkColor}; text-decoration: none; font-size: 0.9rem; display: flex; align-items: center; gap: 6px; transition: color 0.2s;" onmouseover="this.style.color='${linkHover}'" onmouseout="this.style.color='${linkColor}'">
+    `<li><a href="/services/${s.slug}" style="color: ${linkColor}; text-decoration: none; font-size: 0.9rem; display: flex; align-items: center; gap: 6px; transition: color 0.2s;" onmouseover="this.style.color='${primary}'" onmouseout="this.style.color='${linkColor}'">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
       ${s.name}
     </a></li>`
   ).join('\n          ');
 
   const cityLinks = (data.cities || []).slice(0, 7).map(c =>
-    `<li><a href="/cities/${c.slug}" style="color: ${linkColor}; text-decoration: none; font-size: 0.9rem; display: flex; align-items: center; gap: 6px; transition: color 0.2s;" onmouseover="this.style.color='${linkHover}'" onmouseout="this.style.color='${linkColor}'">
+    `<li><a href="/cities/${c.slug}" style="color: ${linkColor}; text-decoration: none; font-size: 0.9rem; display: flex; align-items: center; gap: 6px; transition: color 0.2s;" onmouseover="this.style.color='${primary}'" onmouseout="this.style.color='${linkColor}'">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.4 7.05 11.5 7.35 11.76a1 1 0 0 0 1.3 0C12.95 21.5 20 15.4 20 10a8 8 0 0 0-8-8z"/></svg>
       ${c.name}
     </a></li>`
@@ -88,45 +164,29 @@ export function fourColumnFooter(data: FooterData): string {
       </div>`
     : '';
 
-  return `<footer style="background: ${bgColor}; padding: 4.5rem 1.5rem 0;" aria-label="${data.businessName} footer">
+  return `<footer style="background: #0f172a; padding: 4.5rem 1.5rem 0;" aria-label="${data.businessName} footer">
   <div style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1.4fr 1fr 1fr 1.2fr; gap: 3rem;">
-
-    <!-- Col 1: Brand -->
     <div>
       <div style="margin-bottom: 1.25rem;">
-        ${isDark
-          ? `<span style="display: flex; align-items: center; gap: 10px; font-size: 1.35rem; font-weight: 900; color: #ffffff;">
-              <span style="width: 32px; height: 32px; background: ${primary}; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-              </span>
-              ${data.businessName}
-            </span>`
-          : `<span style="font-size: 1.5rem; font-weight: 900; color: #ffffff; letter-spacing: -0.02em;">${data.businessName}</span>`
-        }
+        <span style="font-size: 1.5rem; font-weight: 900; color: #ffffff; letter-spacing: -0.02em;">${data.businessName}</span>
       </div>
-      <p style="color: ${isDark ? '#475569' : '#6b7280'}; font-size: 0.9rem; line-height: 1.7; margin: 0 0 1.5rem 0; max-width: 240px;">${data.footerTagline || 'Proudly serving our community with quality, integrity, and care on every job.'}</p>
+      <p style="color: #6b7280; font-size: 0.9rem; line-height: 1.7; margin: 0 0 1.5rem 0; max-width: 240px;">${data.footerTagline || 'Proudly serving our community with quality, integrity, and care on every job.'}</p>
       <div style="display: flex; gap: 10px;">
-        ${buildSocialIcons(data, primary, isDark)}
+        ${buildSocialIcons(data, primary, false)}
       </div>
     </div>
-
-    <!-- Col 2: Services -->
     <div>
       <h4 style="color: #ffffff; font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin: 0 0 1.25rem 0;">Services</h4>
       <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.6rem;">
         ${serviceLinks || '<li style="color: #6b7280; font-size: 0.9rem;">Coming soon</li>'}
       </ul>
     </div>
-
-    <!-- Col 3: Service Areas -->
     <div>
       <h4 style="color: #ffffff; font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin: 0 0 1.25rem 0;">Service Areas</h4>
       <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.6rem;">
-        ${cityLinks || `<li style="color: #6b7280; font-size: 0.9rem;">Local &amp; Surrounding Areas</li>`}
+        ${cityLinks || '<li style="color: #6b7280; font-size: 0.9rem;">Local &amp; Surrounding Areas</li>'}
       </ul>
     </div>
-
-    <!-- Col 4: Contact -->
     <div>
       <h4 style="color: #ffffff; font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin: 0 0 1.25rem 0;">Contact Us</h4>
       ${phone}
@@ -136,8 +196,6 @@ export function fourColumnFooter(data: FooterData): string {
       ${data.bookingUrl ? `<div style="margin-top: 1.25rem;"><a href="${data.bookingUrl}" style="display: inline-flex; align-items: center; gap: 6px; background: ${primary}; color: white; font-weight: 700; font-size: 0.88rem; padding: 10px 20px; border-radius: 8px; text-decoration: none; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Book Appointment →</a></div>` : ''}
     </div>
   </div>
-
-  <!-- Bottom bar -->
   <div style="max-width: 1200px; margin: 3rem auto 0; padding: 1.5rem 0; border-top: 1px solid ${borderColor}; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
     <p style="color: #4b5563; font-size: 0.85rem; margin: 0;">&copy; ${year} ${data.businessName}. All rights reserved.</p>
     <div style="display: flex; gap: 1.5rem;">
