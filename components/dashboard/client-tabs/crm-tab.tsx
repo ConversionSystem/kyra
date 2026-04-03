@@ -215,6 +215,51 @@ function scoreBadge(label: string) {
   return map[label] || 'bg-gray-100 text-gray-600';
 }
 
+function AIScoreButton({ clientId, onComplete }: { clientId: string; onComplete: () => void }) {
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<{ scored: number; errors: number } | null>(null);
+
+  const handleScore = async () => {
+    setLoading(true);
+    setResult(null);
+    try {
+      const res = await fetch(`/api/agency/clients/${clientId}/ai-score`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: 'batch' }),
+      });
+      if (res.ok) {
+        const data = await res.json() as { scored: number; errors: number };
+        setResult(data);
+        onComplete();
+      }
+    } catch { /* silent */ } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="relative">
+      <button
+        onClick={handleScore}
+        disabled={loading}
+        className="flex items-center gap-1.5 border border-indigo-200 bg-indigo-50 text-indigo-700 rounded-lg h-8 px-2.5 text-xs font-medium hover:bg-indigo-100 disabled:opacity-50 transition-colors"
+        title="AI Score All Leads"
+      >
+        {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+        AI Score
+      </button>
+      {result && (
+        <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 p-3 min-w-[180px]">
+          <p className="text-xs text-gray-700">✅ Scored {result.scored} leads</p>
+          {result.errors > 0 && <p className="text-xs text-red-500 mt-0.5">⚠️ {result.errors} errors</p>}
+          <button onClick={() => setResult(null)} className="text-xs text-indigo-600 mt-1 hover:underline">Dismiss</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function priorityBadge(p: string) {
   const map: Record<string, string> = {
     urgent: 'bg-red-50 text-red-700', high: 'bg-orange-50 text-orange-700',
@@ -481,6 +526,7 @@ function ContactsSection({ client, clientId }: { client: AgencyClient; clientId:
           {importing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
         </button>
         <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={handleImport} />
+        <AIScoreButton clientId={clientId} onComplete={() => loadContacts()} />
       </div>
 
       {actionError && (
@@ -559,8 +605,9 @@ function ContactsSection({ client, clientId }: { client: AgencyClient; clientId:
                   </div>
                   <div className="text-gray-600 truncate text-xs">{c.crm_companies?.name || c.company_name || '—'}</div>
                   <div><span className={`inline-block px-1.5 py-0.5 rounded-full text-[10px] font-medium ${stageBadge(c.stage)}`}>{c.stage}</span></div>
-                  <div className="flex justify-center" title={scoreTitle[c.score_label] || 'New'}>
+                  <div className="flex items-center justify-center gap-1" title={`${scoreTitle[c.score_label] || 'New'} (${c.score || 0})`}>
                     <span className={`w-2.5 h-2.5 rounded-full inline-block ${scoreDot[c.score_label] || 'bg-gray-300'}`} />
+                    {c.score > 0 && <span className="text-[10px] text-gray-500">{c.score}</span>}
                   </div>
                   <div className="flex gap-0.5 flex-wrap">
                     {c.tags.slice(0, 2).map(t => (
