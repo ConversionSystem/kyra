@@ -14,6 +14,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { getSchedule } from '@/lib/autopilot/autopilot-engine';
+import { deductCredits } from '@/lib/billing/credit-engine';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -163,6 +164,12 @@ export async function GET(req: NextRequest) {
           .from('agency_clients')
           .update({ settings: { ...settings, scheduled_tasks: updatedTasks } })
           .eq('id', client.id);
+        try {
+          await deductCredits(client.agency_id, 'chat.message', {
+            clientId: client.id,
+            description: `Scheduled task: ${task.name}`,
+          });
+        } catch { /* non-fatal */ }
         log.push(`    ✅ Done`);
       } else {
         log.push(`    ❌ Failed: ${result.error}`);
@@ -222,6 +229,12 @@ export async function GET(req: NextRequest) {
             }
           })
           .eq('id', client.id);
+        try {
+          await deductCredits(client.agency_id, 'chat.message', {
+            clientId: client.id,
+            description: `Autopilot action: ${action.name}`,
+          });
+        } catch { /* non-fatal */ }
         log.push(`    ✅ Done`);
       } else {
         log.push(`    ❌ Failed: ${result.error}`);

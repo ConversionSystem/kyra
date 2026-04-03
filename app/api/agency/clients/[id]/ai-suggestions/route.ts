@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import OpenAI from 'openai';
+import { deductCredits } from '@/lib/billing/credit-engine';
 
 type Context = { params: Promise<{ id: string }> };
 
@@ -74,6 +75,13 @@ Only return the JSON array. No other text.`,
     // Strip markdown code blocks if present
     const cleaned = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
     const suggestions = JSON.parse(cleaned);
+
+    try {
+      await deductCredits(agency.agency_id, 'chat.message', {
+        clientId,
+        description: 'AI suggestions analysis',
+      });
+    } catch { /* non-fatal */ }
 
     return NextResponse.json({ suggestions, analyzed: convs.length });
   } catch (err) {

@@ -427,6 +427,7 @@ export async function generateSiteHTML(
             colorPrimary,
             colorSecondary,
             photos,
+            agencyId: clientSite.agency_id || undefined,
           });
 
           // Store HTML in the html_content column

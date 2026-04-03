@@ -13,6 +13,8 @@
 import { NextRequest } from 'next/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { resolveClientGateway } from '@/lib/ovh/provisioner';
+import { deductCredits } from '@/lib/billing/credit-engine';
+import { getCreditsForModel } from '@/lib/billing/model-credits';
 
 // Simple in-memory rate limiting (IP-based) — 20 req/min per IP
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -49,7 +51,7 @@ export async function POST(
     // 1. Fetch client using service role (no auth needed)
     const { data: client, error } = await supabase
       .from('agency_clients')
-      .select('id, name, industry, gateway_url, gateway_token, gateway_status')
+      .select('id, name, industry, agency_id, gateway_url, gateway_token, gateway_status')
       .eq('id', clientId)
       .single();
 
@@ -111,6 +113,14 @@ export async function POST(
         { status: 502, headers: { 'Content-Type': 'application/json' } }
       );
     }
+
+    // Deduct credits after successful LLM response
+    const portalModel = 'openrouter/anthropic/claude-haiku-4.5';
+    void deductCredits(client.agency_id as string, 'chat.message', {
+      clientId,
+      description: 'Portal chat message',
+      override: getCreditsForModel(portalModel),
+    }).catch(() => {});
 
     // 5. Stream back to client
     const encoder = new TextEncoder();
