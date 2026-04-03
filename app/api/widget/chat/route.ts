@@ -171,8 +171,8 @@ export async function POST(request: NextRequest) {
   const creditCheck = await requireCredits(client.agency_id, 'chat.message', 1, widgetPreflightCost);
   if (!creditCheck.allowed) {
     return NextResponse.json(
-      { error: 'AI unavailable — account credits depleted' },
-      { status: 503, headers: CORS },
+      { response: 'Thanks for reaching out! Please give us a call for immediate assistance.', error: 'credits_depleted' },
+      { headers: CORS },
     );
   }
 
@@ -319,7 +319,7 @@ export async function POST(request: NextRequest) {
         ...(Array.isArray(history) ? (history as Array<{role: 'user'|'assistant', content: string}>).slice(-10) : []),
         { role: 'user', content: safeMessage },
       ],
-    });
+    }, { signal: AbortSignal.timeout(15000) });
     aiResponse = chatRes.choices[0]?.message?.content || '';
 
     // ── Output scan — catch prompt leaks ──────────────────────────────────
@@ -330,12 +330,25 @@ export async function POST(request: NextRequest) {
     }
   } catch (err: unknown) {
     const errMsg = err instanceof Error ? err.message : String(err);
+    if (err instanceof Error && (err.name === 'AbortError' || err.name === 'TimeoutError')) {
+      console.error(`[widget/chat] LLM timeout for client ${clientId}`);
+      return NextResponse.json(
+        { response: "Thanks for your message! Our team is a bit busy right now. We'll get back to you shortly.", sessionId: resolvedSessionId },
+        { headers: CORS },
+      );
+    }
     console.error(`[widget/chat] LLM error: ${errMsg}`);
-    return NextResponse.json({ error: 'AI unavailable' }, { status: 503, headers: CORS });
+    return NextResponse.json(
+      { response: "Thanks for your message! Our team will get back to you shortly.", error: 'ai_unavailable' },
+      { headers: CORS },
+    );
   }
 
   if (!aiResponse.trim()) {
-    return NextResponse.json({ error: 'Empty AI response' }, { status: 503, headers: CORS });
+    return NextResponse.json(
+      { response: "I didn't quite catch that. Could you rephrase your question?", error: 'empty_response', sessionId: resolvedSessionId },
+      { headers: CORS },
+    );
   }
 
   // ── Log conversation to DB (awaited — must complete before response) ────────
