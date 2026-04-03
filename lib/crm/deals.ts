@@ -10,9 +10,21 @@ export const DEAL_STAGES = ['prospect', 'qualified', 'proposal', 'negotiation', 
 
 export async function getDeals(
   agencyId: string,
-  opts: { stage?: string; contactId?: string; search?: string } = {},
+  opts: { stage?: string; contactId?: string; clientId?: string; search?: string } = {},
 ): Promise<CrmDeal[]> {
   const svc = createServiceClientWithoutCookies();
+
+  // If clientId provided, scope to contacts belonging to that client
+  let clientContactIds: string[] | null = null;
+  if (opts.clientId) {
+    const { data: contacts } = await svc
+      .from('crm_contacts')
+      .select('id')
+      .eq('agency_id', agencyId)
+      .eq('client_id', opts.clientId);
+    clientContactIds = (contacts || []).map((c: { id: string }) => c.id);
+    if (clientContactIds.length === 0) return [];
+  }
 
   let query = svc
     .from('crm_deals')
@@ -21,6 +33,7 @@ export async function getDeals(
 
   if (opts.stage) query = query.eq('stage', opts.stage);
   if (opts.contactId) query = query.eq('contact_id', opts.contactId);
+  if (clientContactIds !== null) query = query.in('contact_id', clientContactIds);
   if (opts.search) {
     const s = `%${opts.search}%`;
     query = query.ilike('name', s);

@@ -1189,20 +1189,24 @@ function AddTaskModal({ contactId, onClose, onSaved }: { contactId?: string; onC
 // 3. DEALS SECTION
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function DealsSection() {
+function DealsSection({ clientId }: { clientId?: string }) {
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [editDeal, setEditDeal] = useState<Deal | null>(null);
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [viewMode, setViewMode] = useState<'list' | 'board'>('board');
+  const [draggingId, setDraggingId] = useState<string | null>(null);
 
   const loadDeals = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/agency/crm/deals?sort=value&order=desc');
+      const params = new URLSearchParams({ sort: 'value', order: 'desc' });
+      if (clientId) params.set('clientId', clientId);
+      const res = await fetch(`/api/agency/crm/deals?${params}`);
       if (res.ok) { const data = await res.json(); setDeals(Array.isArray(data) ? data : data.deals || []); }
     } catch (err) { console.error('[crm-tab]', err); } finally { setLoading(false); }
-  }, []);
+  }, [clientId]);
 
   const loadContacts = useCallback(async () => {
     try {
@@ -1238,48 +1242,108 @@ function DealsSection() {
         ))}
       </div>
 
-      {/* Add button + automation hint */}
+      {/* Toolbar */}
       <div className="flex items-center justify-between">
         <p className="text-xs text-gray-400 flex items-center gap-1.5">
           <GitBranch className="w-3.5 h-3.5" />
-          Stage automations are configured in <button onClick={() => {/* parent will handle */}} className="text-indigo-600 hover:underline">Tools → Scoring</button>
+          Stage automations in <button className="text-indigo-600 hover:underline">Tools → Scoring</button>
         </p>
-        <button onClick={() => setShowAdd(true)} className={btnPrimary}><Plus className="w-4 h-4 mr-1 inline" />Add Deal</button>
+        <div className="flex items-center gap-2">
+          <div className="flex rounded-lg border border-gray-200 overflow-hidden text-xs">
+            <button onClick={() => setViewMode('list')} className={`px-3 py-1.5 font-medium transition-colors ${viewMode === 'list' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>List View</button>
+            <button onClick={() => setViewMode('board')} className={`px-3 py-1.5 font-medium transition-colors ${viewMode === 'board' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>Board View</button>
+          </div>
+          <button onClick={() => setShowAdd(true)} className={btnPrimary}><Plus className="w-4 h-4 mr-1 inline" />Add Deal</button>
+        </div>
       </div>
 
-      {/* Pipeline columns */}
-      <div className="flex gap-3 overflow-x-auto pb-4">
-        {DEAL_STAGES.map(stage => {
-          const stageDeals = dealsByStage(stage);
-          return (
-            <div key={stage} className="min-w-[220px] flex-shrink-0">
-              <div className="bg-gray-50 rounded-t-lg px-3 py-2 border border-gray-200 border-b-0">
-                <div className="flex items-center justify-between">
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${stageBadge(stage)}`}>{stage.charAt(0).toUpperCase() + stage.slice(1)}</span>
-                  <span className="text-xs text-gray-400">{stageDeals.length}</span>
+      {/* List View */}
+      {viewMode === 'list' && (
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          {deals.length === 0 ? (
+            <div className="flex items-center justify-center py-16 text-gray-400 text-sm">No deals</div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Deal</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Contact</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Stage</th>
+                  <th className="text-right px-4 py-3 text-xs font-medium text-gray-500">Value</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Close Date</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {deals.map(d => (
+                  <tr key={d.id} onClick={() => setEditDeal(d)} className="hover:bg-gray-50 cursor-pointer transition-colors">
+                    <td className="px-4 py-3 font-medium text-gray-900">{d.name}</td>
+                    <td className="px-4 py-3 text-gray-500">{d.contact ? contactName(d.contact) : '—'}</td>
+                    <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full ${stageBadge(d.stage)}`}>{d.stage.charAt(0).toUpperCase() + d.stage.slice(1)}</span></td>
+                    <td className="px-4 py-3 text-right font-semibold text-indigo-600">{formatCurrency(d.value, d.currency)}</td>
+                    <td className="px-4 py-3 text-gray-400">{d.close_date ? new Date(d.close_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {/* Board View — Kanban with drag and drop */}
+      {viewMode === 'board' && (
+        <div className="flex gap-3 overflow-x-auto pb-4">
+          {DEAL_STAGES.map(stage => {
+            const stageDeals = dealsByStage(stage);
+            return (
+              <div key={stage} className="min-w-[220px] flex-shrink-0"
+                onDragOver={e => e.preventDefault()}
+                onDrop={() => {
+                  if (!draggingId) return;
+                  const deal = deals.find(d => d.id === draggingId);
+                  if (!deal || deal.stage === stage) { setDraggingId(null); return; }
+                  setDeals(prev => prev.map(d => d.id === draggingId ? { ...d, stage } : d));
+                  const id = draggingId;
+                  setDraggingId(null);
+                  fetch(`/api/agency/crm/deals/${id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ stage }),
+                  });
+                }}
+              >
+                <div className="bg-gray-50 rounded-t-lg px-3 py-2 border border-gray-200 border-b-0">
+                  <div className="flex items-center justify-between">
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${stageBadge(stage)}`}>{stage.charAt(0).toUpperCase() + stage.slice(1)}</span>
+                    <span className="text-xs text-gray-400">{stageDeals.length}</span>
+                  </div>
+                </div>
+                <div className="bg-white border border-gray-200 rounded-b-lg min-h-[200px] space-y-2 p-2">
+                  {stageDeals.length === 0 ? (
+                    <div className="flex items-center justify-center py-8 text-gray-300 text-xs">No deals</div>
+                  ) : (
+                    stageDeals.map(d => (
+                      <div key={d.id}
+                        draggable
+                        onDragStart={() => setDraggingId(d.id)}
+                        onDragEnd={() => setDraggingId(null)}
+                        onClick={() => setEditDeal(d)}
+                        className={`bg-white border rounded-lg p-3 cursor-grab active:cursor-grabbing hover:border-gray-300 transition-colors shadow-sm ${draggingId === d.id ? 'opacity-50 border-indigo-300' : 'border-gray-100'}`}
+                      >
+                        <div className="text-sm font-medium text-gray-900 mb-1">{d.name}</div>
+                        {d.contact && <div className="text-xs text-gray-500 mb-1">{contactName(d.contact)}</div>}
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-semibold text-indigo-600">{formatCurrency(d.value, d.currency)}</span>
+                          {d.close_date && <span className="text-xs text-gray-400">{new Date(d.close_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
-              <div className="bg-white border border-gray-200 rounded-b-lg min-h-[200px] space-y-2 p-2">
-                {stageDeals.length === 0 ? (
-                  <div className="flex items-center justify-center py-8 text-gray-300 text-xs">No deals</div>
-                ) : (
-                  stageDeals.map(d => (
-                    <div key={d.id} onClick={() => setEditDeal(d)}
-                      className="bg-white border border-gray-100 rounded-lg p-3 hover:border-gray-300 cursor-pointer transition-colors shadow-sm">
-                      <div className="text-sm font-medium text-gray-900 mb-1">{d.name}</div>
-                      {d.contact && <div className="text-xs text-gray-500 mb-1">{contactName(d.contact)}</div>}
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-semibold text-indigo-600">{formatCurrency(d.value, d.currency)}</span>
-                        {d.close_date && <span className="text-xs text-gray-400">{new Date(d.close_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Add/Edit Deal Modal */}
       {(showAdd || editDeal) && (
@@ -2724,7 +2788,7 @@ export default function CrmTab({ client, clientId }: { client: AgencyClient; cli
       {/* Section content */}
       {section === 'ai' && <AIInsightsSection setSection={setSection} />}
       {section === 'contacts' && <ContactsSection client={client} clientId={scopedClientId} />}
-      {section === 'deals' && <DealsSection />}
+      {section === 'deals' && <DealsSection clientId={scopedClientId} />}
       {section === 'tasks' && <TasksSection />}
       {section === 'analytics' && <AnalyticsSection />}
       {section === 'activity' && <ActivitySection />}
