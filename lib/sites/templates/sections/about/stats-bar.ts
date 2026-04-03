@@ -60,91 +60,64 @@ function buildStats(data: AboutData): Array<{ value: string; label: string; icon
 }
 
 function modernDarkStats(data: AboutData): string {
-  const { primary } = data.colors;
   const stats = buildStats(data);
 
-  const cells = stats.map((s, i) => {
-    const isLast = i === 3;
-    return `<div style="text-align: center; padding: 2rem 1.5rem; ${!isLast ? 'border-right: 1px solid rgba(255,255,255,0.08);' : ''}">
-      <div style="font-size: clamp(2.5rem, 5vw, 3.5rem); font-weight: 900; color: ${primary}; line-height: 1; letter-spacing: -0.02em; margin-bottom: 0.5rem;">${s.value}</div>
-      <div style="color: #94a3b8; font-size: 0.82rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;">${s.label}</div>
+  const cells = stats.map(s => {
+    return `<div class="text-center">
+      <div class="text-3xl sm:text-4xl font-bold text-red-500">${s.value}</div>
+      <div class="text-sm text-gray-400 mt-1">${s.label}</div>
     </div>`;
   });
 
-  // "Why Choose" section — 6-item feature grid
+  // "Why Choose" section
   const whyChooseItems = data.whyChoose || [];
   const whyChooseHtml = whyChooseItems.length > 0 ? `
-<section style="padding: 5rem 1.5rem; background: rgba(17,24,39,0.5);" aria-label="Why choose us">
-  <div style="max-width: 1200px; margin: 0 auto;">
-    <div style="text-align: center; margin-bottom: 3.5rem;">
-      <h2 style="font-size: clamp(1.8rem, 4vw, 2.5rem); font-weight: 900; color: #f1f5f9; margin: 0 0 0.75rem 0; letter-spacing: -0.02em;">${data.heading || 'Why Choose Us?'}</h2>
-      ${data.body ? `<p style="color: #94a3b8; font-size: 1.05rem; max-width: 560px; margin: 0 auto; line-height: 1.6;">${data.body}</p>` : ''}
+<section class="py-20 sm:py-28 bg-gray-900/50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-14">
+      <h2 class="text-3xl sm:text-4xl font-bold text-white">${data.heading || 'Why Choose Us?'}</h2>
+      ${data.body ? `<p class="text-gray-400 mt-4 max-w-xl mx-auto">${data.body}</p>` : ''}
     </div>
-    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem;">
-      ${whyChooseItems.map(item => `<div style="display: flex; gap: 1rem;">
-        <div style="width: 40px; height: 40px; border-radius: 10px; background: ${primary}15; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${primary}" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      ${whyChooseItems.map(item => `<div class="flex gap-4">
+        <div class="h-10 w-10 rounded-lg bg-red-600/10 flex items-center justify-center shrink-0">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-red-500"><polyline points="20 6 9 17 4 12"></polyline></svg>
         </div>
         <div>
-          <h3 style="font-size: 1rem; font-weight: 700; color: #ffffff; margin: 0 0 0.25rem 0;">${item.title}</h3>
-          <p style="color: #94a3b8; font-size: 0.875rem; margin: 0; line-height: 1.6;">${item.description}</p>
+          <h3 class="font-semibold text-white mb-1">${item.title}</h3>
+          <p class="text-sm text-gray-400">${item.description}</p>
         </div>
       </div>`).join('\n      ')}
     </div>
   </div>
-  <style>
-    @media (max-width: 768px) {
-      section[aria-label="Why choose us"] > div > div:last-child { grid-template-columns: 1fr !important; }
-    }
-    @media (min-width: 769px) and (max-width: 1024px) {
-      section[aria-label="Why choose us"] > div > div:last-child { grid-template-columns: repeat(2, 1fr) !important; }
-    }
-  </style>
 </section>` : '';
 
-  // "Service Areas" section — city links + map embed
+  // "Service Areas" section
   const cities = data.cities || [];
   const serviceAreasHtml = cities.length > 0 ? `
-<section style="padding: 5rem 1.5rem; background: rgba(17,24,39,0.5);" aria-label="Service areas">
-  <div style="max-width: 1200px; margin: 0 auto;">
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: start;">
+<section class="py-20 sm:py-28 bg-gray-900/50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="grid lg:grid-cols-2 gap-12 items-center">
       <div>
-        <h2 style="font-size: clamp(1.8rem, 4vw, 2.5rem); font-weight: 900; color: #f1f5f9; margin: 0 0 0.75rem 0; letter-spacing: -0.02em;">${data.serviceAreasHeading || 'Serving All of San Mateo County'}</h2>
-        <p style="color: #94a3b8; font-size: 1rem; margin: 0 0 2rem 0; line-height: 1.6;">${data.serviceAreasSubtitle || 'We provide expert services to homes and businesses throughout the area.'}</p>
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem;">
-          ${cities.map(c => `<a href="/cities/${c.slug}" style="display: flex; align-items: center; gap: 6px; color: #d1d5db; font-size: 0.875rem; text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='${primary}'" onmouseout="this.style.color='#d1d5db'">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${primary}" stroke-width="2"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path><circle cx="12" cy="10" r="3"></circle></svg>
-            ${c.name}
-          </a>`).join('\n          ')}
+        <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">${data.serviceAreasHeading || 'Serving All of San Mateo County'}</h2>
+        <p class="text-gray-400 mb-8">${data.serviceAreasSubtitle || 'We provide expert services to homes and businesses throughout the area.'}</p>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          ${cities.map(c => `<a class="flex items-center gap-2 text-sm text-gray-300 hover:text-red-400 transition no-underline" href="/cities/${c.slug}">📍 ${c.name}</a>`).join('\n          ')}
         </div>
       </div>
-      ${data.mapEmbedUrl ? `<div style="border-radius: 1rem; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); height: 320px;">
+      ${data.mapEmbedUrl ? `<div class="rounded-2xl overflow-hidden border border-white/10 h-80">
         <iframe src="${data.mapEmbedUrl}" width="100%" height="100%" style="border:0" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
       </div>` : ''}
     </div>
   </div>
-  <style>
-    @media (max-width: 768px) {
-      section[aria-label="Service areas"] > div > div { grid-template-columns: 1fr !important; }
-      section[aria-label="Service areas"] > div > div > div:first-child > div:last-child { grid-template-columns: repeat(2, 1fr) !important; }
-    }
-  </style>
 </section>` : '';
 
-  return `<section id="about" style="background: #0f172a; border-top: 1px solid rgba(255,255,255,0.06); border-bottom: 1px solid rgba(255,255,255,0.06); position: relative; overflow: hidden;" aria-label="Business stats">
-  <div style="position: absolute; inset: 0; opacity: 0.03; background-image: radial-gradient(circle, rgba(255,255,255,0.6) 1px, transparent 1px); background-size: 24px 24px;" aria-hidden="true"></div>
-  <div style="max-width: 1100px; margin: 0 auto; padding: 3.5rem 1.5rem; position: relative; z-index: 1;">
-    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;">
+  return `<section id="about" class="border-y border-white/10 bg-gray-900/50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
       ${cells.join('\n      ')}
     </div>
   </div>
-  <style>
-    @media (max-width: 640px) {
-      #about > div > div { grid-template-columns: repeat(2, 1fr) !important; }
-      #about > div > div > div { border-right: none !important; border-bottom: 1px solid rgba(255,255,255,0.08); }
-      #about > div > div > div:nth-child(odd) { border-right: 1px solid rgba(255,255,255,0.08) !important; }
-    }
-  </style>
 </section>
 ${whyChooseHtml}
 ${serviceAreasHtml}`;

@@ -37,87 +37,55 @@ export function grid3colServices(data: ServicesData): string {
 
 function modernDarkServices(data: ServicesData): string {
   const heading = data.heading || 'Our Services';
-  const { primary } = data.colors;
   const displayServices = data.services.slice(0, 9);
-
-  const checkIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${primary}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
 
   const cards = displayServices.map((s, i) => {
     const icon = getServiceIcon(s.name, s.icon);
     const description = s.description || `Professional ${s.name.toLowerCase()} services delivered with care and expertise.`;
     const isEmergency = i === displayServices.length - 1 && displayServices.length >= 3;
 
-    // Build bullet-style description — split on sentences or commas
+    // Build bullet-style description
     const bullets = description.split(/[.!,;]+/).filter(b => b.trim().length > 5).slice(0, 4);
-    // Ensure at least 1 bullet
     if (bullets.length === 0) bullets.push(description);
     const bulletList = bullets.map(b =>
-      `<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-        ${checkIcon}
-        <span style="color: #d1d5db; font-size: 0.875rem; line-height: 1.5;">${b.trim()}</span>
-      </div>`
-    ).join('');
+      `<li class="flex items-center gap-2 text-sm text-gray-300">✓ ${b.trim()}</li>`
+    ).join('\n');
 
     if (isEmergency) {
-      // Last card: red gradient emergency card
-      return `<article style="position: relative; background: linear-gradient(135deg, ${primary}, #991b1b); border-radius: 1rem; padding: 2rem; transition: transform 0.25s ease, box-shadow 0.25s ease; overflow: hidden;" onmouseover="this.style.transform='translateY(-6px)';this.style.boxShadow='0 20px 40px rgba(220,38,38,0.3)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='none'">
-        <div style="position: absolute; top: -20px; right: -20px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%;" aria-hidden="true"></div>
-        <div style="width: 56px; height: 56px; border-radius: 14px; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; margin-bottom: 1.25rem;">
-          ${icon}
-        </div>
-        <h3 style="font-size: 1.2rem; font-weight: 800; color: #ffffff; margin: 0 0 0.75rem 0; line-height: 1.3;">
-          <a href="/services/${s.slug}" style="color: inherit; text-decoration: none;">${s.name}</a>
-        </h3>
-        <p style="color: rgba(255,255,255,0.85); font-size: 0.93rem; line-height: 1.7; margin: 0 0 1.5rem 0;">${description}</p>
-        <a href="/services/${s.slug}" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; color: ${primary}; background: #ffffff; font-weight: 700; font-size: 0.9rem; text-decoration: none; padding: 10px 20px; border-radius: 10px; transition: background 0.2s; width: 100%;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='#ffffff'">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-          Get Help Now
-        </a>
-      </article>`;
+      return `<div class="bg-gradient-to-br from-red-600 to-red-800 rounded-2xl p-6 flex flex-col justify-center">
+        <h3 class="text-lg font-semibold text-white mb-2">${s.name}</h3>
+        <p class="text-sm text-red-100 mb-6">${description}</p>
+        <a href="/services/${s.slug}" class="flex items-center justify-center gap-2 bg-white text-red-600 px-4 py-3 rounded-xl font-semibold hover:bg-red-50 transition no-underline">Get Help Now</a>
+      </div>`;
     }
 
-    return `<article style="position: relative; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 1rem; padding: 2rem; transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease; overflow: hidden;" onmouseover="this.style.transform='translateY(-6px)';this.style.boxShadow='0 20px 40px rgba(0,0,0,0.3)';this.style.borderColor='rgba(220,38,38,0.3)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='none';this.style.borderColor='rgba(255,255,255,0.1)'">
-      <div style="width: 56px; height: 56px; border-radius: 14px; background: ${primary}; display: flex; align-items: center; justify-content: center; margin-bottom: 1.25rem; box-shadow: 0 8px 20px ${primary}40;">
-        ${icon}
-      </div>
-      <h3 style="font-size: 1.2rem; font-weight: 800; color: #f1f5f9; margin: 0 0 0.75rem 0; line-height: 1.3;">
-        <a href="/services/${s.slug}" style="color: inherit; text-decoration: none;">${s.name}</a>
-      </h3>
-      <div style="margin-bottom: 1.25rem;">
+    return `<a class="group bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-red-500/30 hover:bg-white/[0.07] transition-all no-underline block" href="/services/${s.slug}">
+      <div class="h-12 w-12 rounded-xl bg-red-600/10 flex items-center justify-center mb-4 group-hover:bg-red-600/20 transition">${icon}</div>
+      <h3 class="text-lg font-semibold text-white mb-2">${s.name}</h3>
+      <p class="text-sm text-gray-400 mb-4">${description}</p>
+      <ul class="space-y-1.5">
         ${bulletList}
-      </div>
-      <a href="/services/${s.slug}" style="display: inline-flex; align-items: center; gap: 6px; color: ${primary}; font-weight: 700; font-size: 0.9rem; text-decoration: none; transition: gap 0.2s;" onmouseover="this.querySelector('span').style.transform='translateX(4px)'" onmouseout="this.querySelector('span').style.transform='translateX(0)'">
-        Learn More <span style="transition: transform 0.2s;">→</span>
-      </a>
-    </article>`;
+      </ul>
+      <div class="flex items-center gap-1 mt-4 text-red-400 text-sm font-medium group-hover:text-red-300 transition">Learn More →</div>
+    </a>`;
   });
 
   const moreLink = data.services.length > 9
-    ? `<div style="text-align: center; margin-top: 2.5rem;">
-        <a href="/services" style="display: inline-flex; align-items: center; gap: 8px; border: 2px solid rgba(255,255,255,0.2); color: #ffffff; font-weight: 700; font-size: 1rem; padding: 12px 28px; border-radius: 10px; text-decoration: none; transition: background 0.2s, border-color 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.08)';this.style.borderColor='${primary}'" onmouseout="this.style.background='transparent';this.style.borderColor='rgba(255,255,255,0.2)'">View All Services →</a>
+    ? `<div class="text-center mt-10">
+        <a href="/services" class="inline-flex items-center gap-2 border-2 border-white/20 text-white font-semibold px-7 py-3 rounded-xl hover:bg-white/5 transition no-underline">View All Services →</a>
       </div>`
     : '';
 
-  return `<section id="services" style="padding: 5rem 1.5rem; background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);" aria-label="${heading}">
-  <div style="max-width: 1200px; margin: 0 auto;">
-    <div style="text-align: center; margin-bottom: 3.5rem;">
-      <div style="display: inline-block; background: ${primary}20; color: ${primary}; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 6px 16px; border-radius: 100px; margin-bottom: 1rem; border: 1px solid ${primary}30;">What We Offer</div>
-      <h2 style="font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 900; color: #f1f5f9; margin: 0 0 1rem 0; letter-spacing: -0.02em;">${heading}</h2>
-      <p style="color: #94a3b8; font-size: 1.05rem; max-width: 480px; margin: 0 auto; line-height: 1.6;">Everything you need from a team you can trust.</p>
+  return `<section id="services" class="py-20 sm:py-28" aria-label="${heading}">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-14">
+      <h2 class="text-3xl sm:text-4xl font-bold text-white">${heading}</h2>
     </div>
-    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem;">
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
       ${cards.join('\n      ')}
     </div>
     ${moreLink}
   </div>
-  <style>
-    @media (max-width: 1024px) {
-      #services > div > div:last-of-type { grid-template-columns: repeat(2, 1fr) !important; }
-    }
-    @media (max-width: 640px) {
-      #services > div > div:last-of-type { grid-template-columns: 1fr !important; }
-    }
-  </style>
 </section>`;
 }
 
