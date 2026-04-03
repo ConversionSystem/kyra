@@ -319,7 +319,7 @@ export async function POST(request: NextRequest) {
         ...(Array.isArray(history) ? (history as Array<{role: 'user'|'assistant', content: string}>).slice(-10) : []),
         { role: 'user', content: safeMessage },
       ],
-    }, { signal: AbortSignal.timeout(15000) });
+    }, { signal: AbortSignal.timeout(25000) });
     aiResponse = chatRes.choices[0]?.message?.content || '';
 
     // ── Output scan — catch prompt leaks ──────────────────────────────────
@@ -337,9 +337,9 @@ export async function POST(request: NextRequest) {
         { headers: CORS },
       );
     }
-    console.error(`[widget/chat] LLM error: ${errMsg}`);
+    console.error(`[widget/chat] LLM error for ${clientId} (model=${clientModel}): ${errMsg}`);
     return NextResponse.json(
-      { response: "Thanks for your message! Our team will get back to you shortly.", error: 'ai_unavailable' },
+      { response: "Thanks for your message! Our team will get back to you shortly.", error: 'ai_unavailable', debug: process.env.NODE_ENV === 'development' ? errMsg : undefined },
       { headers: CORS },
     );
   }
