@@ -150,8 +150,10 @@ export async function POST(request: NextRequest) {
   const useOpenRouter = !!process.env.OPENROUTER_API_KEY;
   let clientModel: string;
   if (useOpenRouter) {
-    if (resolvedModel.includes('/')) {
-      clientModel = resolvedModel;
+    // Strip 'openrouter/' prefix — OpenRouter expects 'anthropic/...' not 'openrouter/anthropic/...'
+    const stripped = resolvedModel.startsWith('openrouter/') ? resolvedModel.slice('openrouter/'.length) : resolvedModel;
+    if (stripped.includes('/')) {
+      clientModel = stripped;
     } else if (resolvedModel.startsWith('gpt-')) {
       clientModel = `openai/${resolvedModel}`;
     } else if (resolvedModel.startsWith('claude-')) {
@@ -339,7 +341,7 @@ export async function POST(request: NextRequest) {
     }
     console.error(`[widget/chat] LLM error for ${clientId} (model=${clientModel}): ${errMsg}`);
     return NextResponse.json(
-      { response: "Thanks for your message! Our team will get back to you shortly.", error: 'ai_unavailable', _debug: errMsg },
+      { response: "Thanks for your message! Our team will get back to you shortly.", error: 'ai_unavailable' },
       { headers: CORS },
     );
   }
