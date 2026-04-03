@@ -84,14 +84,14 @@ export const PLANS: Record<Plan, PlanConfig> = {
     name: 'Lite',
     price: 99,
     maxClients: 4,       // 3 plan workers + 1 free worker they bring from Free tier
-    monthlyCredits: 10000,
+    monthlyCredits: 5000,
     monthlyWebScrapes: 500,
     maxTeamMembers: 2,   // Primary + 2 specialists
     trialDays: 0,
     description: 'Launch your AI agency with your first 3 clients + 1 free.',
     features: [
       '4 AI workers (3 + 1 free)',
-      '10,000 platform credits / month',
+      '5,000 platform credits / month',
       '500 web scrapes/mo — AI workers can read the internet',
       'Client management dashboard',
       '21 industry templates',
@@ -112,14 +112,14 @@ export const PLANS: Record<Plan, PlanConfig> = {
     name: 'Pro',
     price: 299,
     maxClients: 11,      // 10 plan workers + 1 free worker they bring from Free tier
-    monthlyCredits: 25000,
+    monthlyCredits: 15000,
     monthlyWebScrapes: 2000,
     maxTeamMembers: 4,   // Primary + 4 specialists
     trialDays: 0,
     description: 'For growing agencies managing multiple clients.',
     features: [
       '11 AI workers (10 + 1 free)',
-      '25,000 platform credits / month',
+      '15,000 platform credits / month',
       '2,000 web scrapes/mo — full web intelligence',
       'Everything in Lite',
       'White-label branding',
@@ -141,14 +141,14 @@ export const PLANS: Record<Plan, PlanConfig> = {
     name: 'Scale',
     price: 499,
     maxClients: 21,      // 20 plan workers + 1 free worker they bring from Free tier
-    monthlyCredits: 50000,
+    monthlyCredits: 30000,
     monthlyWebScrapes: 5000,
     maxTeamMembers: 6,   // Primary + 6 specialists
     trialDays: 0,
     description: 'Built for high-volume agencies — up to 20 clients + 1 free, full Business in a Box.',
     features: [
       '21 AI workers (20 + 1 free)',
-      '50,000 platform credits / month',
+      '30,000 platform credits / month',
       '5,000 web scrapes/mo — full automation stack',
       'Everything in Pro',
       'Dedicated infrastructure',

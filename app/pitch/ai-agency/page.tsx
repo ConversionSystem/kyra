@@ -492,17 +492,17 @@ const SLIDES = [
             },
             {
               name: 'Lite', price: '$99', clients: '4 clients', annual: '$79/mo billed annually', highlight: false,
-              features: ['4 AI workers', '10,000 credits/mo', '500 web scrapes/mo', 'AI Teams (2 specialists)', '50+ industry templates', 'Weekly performance reports'],
+              features: ['4 AI workers', '5,000 credits/mo', '500 web scrapes/mo', 'AI Teams (2 specialists)', '50+ industry templates', 'Weekly performance reports'],
               cta: 'Start Lite',
             },
             {
               name: 'Pro', price: '$299', clients: '11 clients', annual: '$239/mo billed annually', highlight: true,
-              features: ['11 AI workers', '25,000 credits/mo', '2,000 web scrapes/mo', 'AI Teams (4 specialists)', 'White-label branding', 'Lead discovery & enrichment', 'Revenue tracking dashboard'],
+              features: ['11 AI workers', '15,000 credits/mo', '2,000 web scrapes/mo', 'AI Teams (4 specialists)', 'White-label branding', 'Lead discovery & enrichment', 'Revenue tracking dashboard'],
               cta: 'Start Pro',
             },
             {
               name: 'Scale', price: '$499', clients: '21 clients', annual: '$399/mo billed annually', highlight: false,
-              features: ['21 AI workers', '50,000 credits/mo', '5,000 web scrapes/mo', 'AI Teams (6 specialists)', 'Dedicated infrastructure', 'Custom domain', 'SLA uptime guarantee', 'API access'],
+              features: ['21 AI workers', '30,000 credits/mo', '5,000 web scrapes/mo', 'AI Teams (6 specialists)', 'Dedicated infrastructure', 'Custom domain', 'SLA uptime guarantee', 'API access'],
               cta: 'Start Scale',
             },
           ].map(({ name, price, clients, annual, highlight, features, cta }) => (
