@@ -142,7 +142,29 @@ export async function POST(request: NextRequest) {
   }
 
   // Use client's configured model if set, fall back to WIDGET_MODEL
-  const clientModel = (client.container_config as any)?.ai_model || (client as any).ai_model || WIDGET_MODEL;
+  const rawModel = (client.container_config as any)?.ai_model || (client as any).ai_model;
+  // Validate: empty/undefined → fall back to WIDGET_MODEL
+  const resolvedModel = rawModel && typeof rawModel === 'string' && rawModel.trim() ? rawModel.trim() : WIDGET_MODEL;
+  // Normalize model name for OpenRouter (needs 'provider/model' format)
+  // If already has '/' assume it's correctly prefixed
+  const useOpenRouter = !!process.env.OPENROUTER_API_KEY;
+  let clientModel: string;
+  if (useOpenRouter) {
+    if (resolvedModel.includes('/')) {
+      clientModel = resolvedModel;
+    } else if (resolvedModel.startsWith('gpt-')) {
+      clientModel = `openai/${resolvedModel}`;
+    } else if (resolvedModel.startsWith('claude-')) {
+      clientModel = `anthropic/${resolvedModel}`;
+    } else if (resolvedModel.startsWith('gemini-')) {
+      clientModel = `google/${resolvedModel}`;
+    } else {
+      clientModel = resolvedModel;
+    }
+  } else {
+    // Direct OpenAI — strip any provider prefix
+    clientModel = resolvedModel.includes('/') ? resolvedModel.split('/').slice(1).join('/') : resolvedModel;
+  }
 
   // ── Model-aware credit check ──────────────────────────────────────────────
   const widgetPreflightCost = getCreditsForModel(clientModel);
