@@ -77,27 +77,11 @@ body {
 /* Section alternation */
 section { background-color: #0f172a; }
 section:nth-child(even) { background-color: #1e293b; }
-/* Glassmorphism cards */
-.kyra-card, [class*="rounded-2xl"]:not(section):not(nav):not(footer) {
-  background: rgba(255, 255, 255, 0.04) !important;
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.09) !important;
-}
-/* Headings */
-h1, h2, h3, h4, h5, h6 { color: #f1f5f9; font-weight: 800; letter-spacing: -0.02em; }
-h2 { font-size: clamp(1.7rem, 3.5vw, 2.5rem); }
-h3 { font-size: 1.2rem; }
+/* Do NOT override Tailwind classes with !important — let templates handle their own styles */
 /* Body text */
 p { color: #94a3b8; line-height: 1.75; }
-/* Links */
-a { color: var(--color-primary); }
-/* Service section bg */
-section[aria-label*="Services"], section[aria-label*="service"] { background-color: #1e293b; }
-/* Testimonials bg */
-section[aria-label*="Testimonial"] { background-color: #0f172a; }
-/* Stats section already uses gradient */
-/* Footer */
-footer { background-color: #020617 !important; }
+/* Keep links unstyled so Tailwind classes work */
+a { color: inherit; text-decoration: none; }
 /* Override Tailwind gray text in dark mode */
 [style*="color: #6b7280"], [style*="color: #374151"], [style*="color: #4b5563"] { color: #94a3b8 !important; }
 [style*="color: #1f2937"], [style*="color: #111827"] { color: #f1f5f9 !important; }
