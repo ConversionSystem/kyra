@@ -198,6 +198,17 @@ const MODEL_ID_ALIASES: Record<string, string> = {
   'claude-sonnet-3.7': 'claude-sonnet-3-7',
   'claude-opus-4.6': 'claude-opus-4-6',
   'claude-haiku-3.5': 'claude-haiku-3-5',
+  // Dash-notation with provider prefix (widget sends these)
+  'anthropic/claude-haiku-4-5': 'claude-haiku-4-5',
+  'anthropic/claude-haiku-3-5': 'claude-haiku-3-5',
+  'anthropic/claude-sonnet-4-6': 'claude-sonnet-4-6',
+  'anthropic/claude-opus-4-6': 'claude-opus-4-6',
+  // OpenRouter prefix + dash notation
+  'openrouter/anthropic/claude-haiku-4-5': 'claude-haiku-4-5',
+  'openrouter/anthropic/claude-haiku-3-5': 'claude-haiku-3-5',
+  'openrouter/anthropic/claude-sonnet-4-6': 'claude-sonnet-4-6',
+  'openrouter/anthropic/claude-sonnet-3-7': 'claude-sonnet-3-7',
+  'openrouter/anthropic/claude-opus-4-6': 'claude-opus-4-6',
 };
 
 /** Map of model ID → router max tier */
@@ -215,8 +226,16 @@ export const DEFAULT_CREDITS_PER_TURN = 1;
  */
 export function normalizeModelId(modelId: string | null | undefined): string {
   if (!modelId) return DEFAULT_MODEL_ID;
-  // Try exact match first, then lowercased
-  return MODEL_ID_ALIASES[modelId] ?? MODEL_ID_ALIASES[modelId.toLowerCase()] ?? modelId;
+  // Exact match
+  if (MODEL_ID_ALIASES[modelId]) return MODEL_ID_ALIASES[modelId];
+  // Case-insensitive
+  if (MODEL_ID_ALIASES[modelId.toLowerCase()]) return MODEL_ID_ALIASES[modelId.toLowerCase()];
+  // Dash→dot conversion for version numbers: 'claude-haiku-4-5' → 'claude-haiku-4.5'
+  const dotVariant = modelId.replace(/(\d+)-(\d+)/g, '$1.$2');
+  if (MODEL_ID_ALIASES[dotVariant]) return MODEL_ID_ALIASES[dotVariant];
+  // Direct lookup in MODEL_CREDITS (already canonical)
+  if (MODEL_CREDITS[modelId]) return modelId;
+  return modelId;
 }
 
 /**
