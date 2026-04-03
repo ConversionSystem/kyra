@@ -9,6 +9,7 @@ import type { ClientSite, ContentSection, FaqItem, SitePhoto, DesignStyle } from
 import { getHTMLPromptForPageType } from './ai-html-prompts';
 import { validateGeneratedHTML } from './html-quality-checker';
 import { sanitizeGeneratedHTML } from './html-sanitizer';
+import { deductCredits } from '@/lib/billing/credit-engine';
 
 // ---------- Constants ----------
 
@@ -48,6 +49,7 @@ export interface GeneratePageHTMLOptions {
   colorPrimary: string;
   colorSecondary: string;
   photos: SitePhoto[];
+  agencyId?: string;
 }
 
 export interface GeneratePageHTMLResult {
@@ -60,7 +62,7 @@ export interface GeneratePageHTMLResult {
 export async function generatePageHTML(
   options: GeneratePageHTMLOptions,
 ): Promise<GeneratePageHTMLResult> {
-  const { site, page, designStyle, colorPrimary, colorSecondary, photos } = options;
+  const { site, page, designStyle, colorPrimary, colorSecondary, photos, agencyId } = options;
 
   // Build the prompt using the page-type-specific prompt builder
   const prompt = getHTMLPromptForPageType(page.pageType, {
@@ -102,6 +104,14 @@ export async function generatePageHTML(
   // Estimate cost
   const totalTokens = (prompt.length / 4) + (html.length / 4);
   const cost = (totalTokens / 1000) * COST_PER_1K;
+
+  if (agencyId) {
+    try {
+      await deductCredits(agencyId, 'website.page_generation', {
+        description: `AI HTML generation: ${page.slug}`,
+      });
+    } catch { /* non-fatal */ }
+  }
 
   return { html, cost };
 }

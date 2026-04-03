@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAgencyMember } from '@/lib/agency/middleware';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { deductCredits } from '@/lib/billing/credit-engine';
 
 export const dynamic = 'force-dynamic';
 
@@ -93,6 +94,13 @@ Generate a professional AI assistant personality for this business.`;
     const raw = data?.choices?.[0]?.message?.content || '';
     const clean = raw.replace(/```json?\s*/gi, '').replace(/```/g, '').trim();
     const parsed = JSON.parse(clean);
+
+    try {
+      await deductCredits(agency.id, 'chat.message', {
+        clientId,
+        description: `Generate personality for ${name}`,
+      });
+    } catch { /* non-fatal */ }
 
     return NextResponse.json({
       persona: typeof parsed.persona === 'string' ? parsed.persona : '',

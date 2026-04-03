@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAgencyMember } from '@/lib/agency/middleware';
 import OpenAI from "openai";
+import { deductCredits } from '@/lib/billing/credit-engine';
 
 // SECURITY: Added auth check — this endpoint was previously unauthenticated,
 // allowing anyone to exhaust OpenAI API credits without authorization.
@@ -55,6 +56,11 @@ Return ONLY a JSON array: ["tagline 1", "tagline 2", "tagline 3"]`,
     });
     const text = res.choices[0]?.message?.content || "[]";
     const suggestions = JSON.parse(text.match(/\[[\s\S]*?\]/)?.[0] || "[]");
+    try {
+      await deductCredits(auth.data.agency.id, 'chat.message', {
+        description: `Site suggest: ${type} for ${businessName}`,
+      });
+    } catch { /* non-fatal */ }
     return NextResponse.json({ suggestions });
   } catch {
     return NextResponse.json({ suggestions: [] });

@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAgencyAdmin } from '@/lib/agency/middleware';
 import { createClient } from '@/lib/supabase/server';
+import { deductCredits } from '@/lib/billing/credit-engine';
 import { runGeoTest } from '@/templates/vet-seo-worker/skills/geo-tester/run';
 import { runNAPAudit } from '@/templates/vet-seo-worker/skills/nap-auditor/run';
 
@@ -183,6 +184,13 @@ export async function POST(request: NextRequest, { params }: PageParams) {
     } else {
       return NextResponse.json({ error: `Unknown task: ${task}. Valid: geo_test, nap_audit, content_draft, reddit_scan, weekly_report` }, { status: 400 });
     }
+
+    try {
+      await deductCredits(agency.id, 'website.page_generation', {
+        clientId,
+        description: `SEO task: ${task}`,
+      });
+    } catch { /* non-fatal */ }
 
     return NextResponse.json({ ok: true, task, result });
 
