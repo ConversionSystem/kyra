@@ -78,10 +78,15 @@ function modernDarkTestimonials(data: TestimonialsData): string {
       <h2 style="font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 900; color: #f1f5f9; margin: 0 0 1.5rem 0; letter-spacing: -0.02em;">${heading}</h2>
       ${googleBadge}
     </div>
-    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
+    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem;">
       ${cards.join('\n      ')}
     </div>
   </div>
+  <style>
+    @media (max-width: 768px) {
+      #testimonials > div > div:last-child { grid-template-columns: 1fr !important; }
+    }
+  </style>
 </section>`;
 }
 

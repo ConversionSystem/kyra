@@ -31,36 +31,47 @@ export function fullBleedHero(data: HeroData): string {
 function modernDarkHero(data: HeroData): string {
   const { primary } = data.colors;
 
-  const trustBadges = `<div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 2.5rem;">
-      <div style="display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 10px 16px;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${primary}" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        <span style="color: #e2e8f0; font-size: 0.85rem; font-weight: 600;">Licensed &amp; Insured</span>
+  const trustBadges = `<div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1.5rem;">
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <svg width="16" height="16" fill="#fbbf24" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.957a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.37 2.448a1 1 0 00-.364 1.118l1.287 3.957c.3.921-.755 1.688-1.54 1.118l-3.37-2.448a1 1 0 00-1.176 0l-3.37 2.448c-.784.57-1.838-.197-1.539-1.118l1.287-3.957a1 1 0 00-.364-1.118L2.063 9.384c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.95-.69l1.286-3.957z"/></svg>
+        <span style="color: #d1d5db; font-size: 0.875rem;"><strong style="color: #ffffff;">5.0</strong> Google Rating</span>
       </div>
-      <div style="display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 10px 16px;">
-        <svg width="18" height="18" fill="#fbbf24" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.957a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.37 2.448a1 1 0 00-.364 1.118l1.287 3.957c.3.921-.755 1.688-1.54 1.118l-3.37-2.448a1 1 0 00-1.176 0l-3.37 2.448c-.784.57-1.838-.197-1.539-1.118l1.287-3.957a1 1 0 00-.364-1.118L2.063 9.384c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.95-.69l1.286-3.957z"/></svg>
-        <span style="color: #e2e8f0; font-size: 0.85rem; font-weight: 600;">5.0 Rating</span>
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${primary}" stroke-width="2"><path d="m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526"></path><circle cx="12" cy="8" r="6"></circle></svg>
+        <span style="color: #d1d5db; font-size: 0.875rem;">36+ Years Experience</span>
       </div>
-      <div style="display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 10px 16px;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${primary}" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"></polyline></svg>
-        <span style="color: #e2e8f0; font-size: 0.85rem; font-weight: 600;">24/7 Available</span>
-      </div>
-      <div style="display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 10px 16px;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${primary}" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
-        <span style="color: #e2e8f0; font-size: 0.85rem; font-weight: 600;">Same-Day Service</span>
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"></path></svg>
+        <span style="color: #d1d5db; font-size: 0.875rem;">Same-Day Service</span>
       </div>
     </div>`;
 
-  const quoteForm = `<div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 1.25rem; padding: 2rem; backdrop-filter: blur(16px);">
-      <h3 style="color: #ffffff; font-size: 1.25rem; font-weight: 800; margin: 0 0 0.5rem 0; text-align: center;">Get a Free Quote</h3>
-      <p style="color: #94a3b8; font-size: 0.85rem; margin: 0 0 1.5rem 0; text-align: center;">Fast response • No obligation</p>
+  const inputStyle = `background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 12px 16px; color: #ffffff; font-size: 0.9rem; outline: none; transition: border-color 0.2s; width: 100%; box-sizing: border-box;`;
+  const focusHandler = `onfocus="this.style.borderColor='${primary}'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'"`;  
+
+  const quoteForm = `<div id="quote" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 1.25rem; padding: 2rem; backdrop-filter: blur(16px);">
+      <h3 style="color: #ffffff; font-size: 1.25rem; font-weight: 800; margin: 0 0 0.25rem 0;">Get a Free Quote</h3>
+      <p style="color: #94a3b8; font-size: 0.85rem; margin: 0 0 1.5rem 0;">We'll respond within 1 hour during business hours</p>
       <form style="display: flex; flex-direction: column; gap: 0.75rem;" onsubmit="return false;">
-        <input type="text" placeholder="Your Name" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 12px 16px; color: #ffffff; font-size: 0.9rem; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='${primary}'" onblur="this.style.borderColor='rgba(255,255,255,0.12)'">
-        <input type="tel" placeholder="Phone Number" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 12px 16px; color: #ffffff; font-size: 0.9rem; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='${primary}'" onblur="this.style.borderColor='rgba(255,255,255,0.12)'">
-        <input type="email" placeholder="Email Address" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 12px 16px; color: #ffffff; font-size: 0.9rem; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='${primary}'" onblur="this.style.borderColor='rgba(255,255,255,0.12)'">
-        <textarea placeholder="Describe your issue..." rows="3" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 12px 16px; color: #ffffff; font-size: 0.9rem; outline: none; resize: vertical; transition: border-color 0.2s;" onfocus="this.style.borderColor='${primary}'" onblur="this.style.borderColor='rgba(255,255,255,0.12)'"></textarea>
-        <button type="submit" style="background: ${primary}; color: #ffffff; font-weight: 800; font-size: 1rem; padding: 14px 24px; border: none; border-radius: 10px; cursor: pointer; transition: all 0.2s; box-shadow: 0 8px 25px rgba(220,38,38,0.3);" onmouseover="this.style.opacity='0.9';this.style.transform='translateY(-1px)'" onmouseout="this.style.opacity='1';this.style.transform='translateY(0)'">
-          Get Free Estimate →
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+          <input type="text" placeholder="Your Name *" required style="${inputStyle}" ${focusHandler}>
+          <input type="tel" placeholder="Phone Number *" required style="${inputStyle}" ${focusHandler}>
+        </div>
+        <input type="email" placeholder="Email Address" style="${inputStyle}" ${focusHandler}>
+        <select style="${inputStyle} color: #94a3b8; appearance: none; cursor: pointer;" ${focusHandler}>
+          <option value="" selected>Select Service Needed</option>
+          <option value="ac-repair">AC Repair</option>
+          <option value="heating">Heating Repair</option>
+          <option value="refrigeration">Refrigeration</option>
+          <option value="installation">New Installation</option>
+          <option value="maintenance">Maintenance</option>
+          <option value="emergency">Emergency Service</option>
+        </select>
+        <textarea placeholder="Describe your issue..." rows="3" style="${inputStyle} resize: none; font-family: inherit;" ${focusHandler}></textarea>
+        <button type="submit" style="width: 100%; background: ${primary}; color: #ffffff; font-weight: 700; font-size: 1rem; padding: 14px 24px; border: none; border-radius: 10px; cursor: pointer; transition: all 0.2s; box-shadow: 0 8px 25px rgba(220,38,38,0.3);" onmouseover="this.style.opacity='0.9';this.style.transform='translateY(-1px)'" onmouseout="this.style.opacity='1';this.style.transform='translateY(0)'">
+          Request Free Quote
         </button>
+        <p style="color: #64748b; font-size: 0.75rem; text-align: center; margin: 0;">No spam, no obligation. We respect your privacy.</p>
       </form>
     </div>`;
 
@@ -73,15 +84,15 @@ function modernDarkHero(data: HeroData): string {
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: center;">
       <!-- Left: Content -->
       <div>
-        ${data.emergencyText ? `<div style="display: inline-flex; align-items: center; gap: 8px; background: ${primary}; color: #ffffff; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 8px 18px; border-radius: 100px; margin-bottom: 1.5rem;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"></polyline></svg>
-          ${data.emergencyText}
+        ${data.emergencyText ? `<div style="display: inline-flex; align-items: center; gap: 8px; color: ${primary}; font-size: 0.875rem; font-weight: 500; margin-bottom: 1rem;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${primary}" stroke-width="2"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path></svg>
+          <span style="color: ${primary};">${data.emergencyText}</span>
         </div>` : ''}
         <h1 style="font-size: clamp(2.5rem, 5vw, 4.5rem); font-weight: 900; color: #ffffff; line-height: 1.08; letter-spacing: -0.03em; margin: 0 0 1.25rem 0;">${data.h1}</h1>
         <p style="font-size: clamp(1rem, 1.8vw, 1.2rem); color: #94a3b8; line-height: 1.7; margin: 0 0 2rem 0; max-width: 500px;">${data.subtitle}</p>
-        <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
-          ${data.phone ? `<a href="${data.phoneHref || `tel:${data.phone}`}" style="display: inline-flex; align-items: center; gap: 10px; font-weight: 800; padding: 16px 32px; border-radius: 12px; text-decoration: none; font-size: 1.1rem; background: ${primary}; color: #ffffff; box-shadow: 0 10px 25px rgba(220,38,38,0.25); transition: all 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 14px 30px rgba(220,38,38,0.35)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 10px 25px rgba(220,38,38,0.25)'">${phoneIcon(20)} ${data.phone}</a>` : ''}
-          <a href="${data.ctaLink || data.bookingUrl || '#contact'}" style="display: inline-flex; align-items: center; gap: 10px; border: 2px solid rgba(255,255,255,0.25); color: #ffffff; font-weight: 700; padding: 16px 32px; border-radius: 12px; text-decoration: none; font-size: 1.05rem; transition: all 0.2s; backdrop-filter: blur(8px);" onmouseover="this.style.background='rgba(255,255,255,0.1)';this.style.borderColor='rgba(255,255,255,0.4)'" onmouseout="this.style.background='transparent';this.style.borderColor='rgba(255,255,255,0.25)'">${calendarIcon()} ${data.ctaText || (data.bookingUrl ? 'Book Online' : 'Get Free Quote')}</a>
+        <div style="display: flex; flex-direction: column; gap: 0.75rem; max-width: 380px;">
+          ${data.phone ? `<a href="${data.phoneHref || `tel:${data.phone}`}" style="display: inline-flex; align-items: center; justify-content: center; gap: 10px; font-weight: 700; padding: 14px 24px; border-radius: 12px; text-decoration: none; font-size: 1.1rem; background: ${primary}; color: #ffffff; box-shadow: 0 8px 20px rgba(220,38,38,0.25); transition: all 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 12px 25px rgba(220,38,38,0.35)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 8px 20px rgba(220,38,38,0.25)'">${phoneIcon(20)} Call Now - ${data.phone}</a>` : ''}
+          <a href="${data.ctaLink || data.bookingUrl || '#quote'}" style="display: inline-flex; align-items: center; justify-content: center; gap: 10px; border: 1px solid rgba(255,255,255,0.2); color: #ffffff; font-weight: 600; padding: 14px 24px; border-radius: 12px; text-decoration: none; font-size: 1.05rem; transition: all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">Get Free Quote <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
         </div>
         ${trustBadges}
       </div>

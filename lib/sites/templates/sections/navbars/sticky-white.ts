@@ -101,10 +101,9 @@ function modernDarkNavbar(data: NavbarData, primary: string): string {
 
   const emergencyBanner = data.emergencyText
     ? `<div style="background: ${primary}; color: #ffffff; text-align: center; padding: 8px 1rem; font-size: 0.82rem; font-weight: 600; letter-spacing: 0.02em;">
-    <span style="display: inline-flex; align-items: center; gap: 8px;">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"></polyline></svg>
+    <a href="${data.phoneHref || (data.phone ? 'tel:' + data.phone : '#')}" style="color: #ffffff; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
       ${data.emergencyText}
-    </span>
+    </a>
   </div>`
     : '';
 

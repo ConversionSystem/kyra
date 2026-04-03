@@ -47,12 +47,14 @@ function modernDarkServices(data: ServicesData): string {
     const description = s.description || `Professional ${s.name.toLowerCase()} services delivered with care and expertise.`;
     const isEmergency = i === displayServices.length - 1 && displayServices.length >= 3;
 
-    // Build bullet-style description
-    const bullets = description.split(/[.!]+/).filter(b => b.trim()).slice(0, 3);
+    // Build bullet-style description — split on sentences or commas
+    const bullets = description.split(/[.!,;]+/).filter(b => b.trim().length > 5).slice(0, 4);
+    // Ensure at least 1 bullet
+    if (bullets.length === 0) bullets.push(description);
     const bulletList = bullets.map(b =>
-      `<div style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 6px;">
+      `<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
         ${checkIcon}
-        <span style="color: #94a3b8; font-size: 0.88rem; line-height: 1.5;">${b.trim()}</span>
+        <span style="color: #d1d5db; font-size: 0.875rem; line-height: 1.5;">${b.trim()}</span>
       </div>`
     ).join('');
 
@@ -67,8 +69,9 @@ function modernDarkServices(data: ServicesData): string {
           <a href="/services/${s.slug}" style="color: inherit; text-decoration: none;">${s.name}</a>
         </h3>
         <p style="color: rgba(255,255,255,0.85); font-size: 0.93rem; line-height: 1.7; margin: 0 0 1.5rem 0;">${description}</p>
-        <a href="/services/${s.slug}" style="display: inline-flex; align-items: center; gap: 6px; color: #ffffff; font-weight: 700; font-size: 0.9rem; text-decoration: none; background: rgba(255,255,255,0.2); padding: 8px 18px; border-radius: 8px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
-          Get Help Now <span>→</span>
+        <a href="/services/${s.slug}" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; color: ${primary}; background: #ffffff; font-weight: 700; font-size: 0.9rem; text-decoration: none; padding: 10px 20px; border-radius: 10px; transition: background 0.2s; width: 100%;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='#ffffff'">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          Get Help Now
         </a>
       </article>`;
     }
@@ -102,11 +105,19 @@ function modernDarkServices(data: ServicesData): string {
       <h2 style="font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 900; color: #f1f5f9; margin: 0 0 1rem 0; letter-spacing: -0.02em;">${heading}</h2>
       <p style="color: #94a3b8; font-size: 1.05rem; max-width: 480px; margin: 0 auto; line-height: 1.6;">Everything you need from a team you can trust.</p>
     </div>
-    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.75rem;">
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem;">
       ${cards.join('\n      ')}
     </div>
     ${moreLink}
   </div>
+  <style>
+    @media (max-width: 1024px) {
+      #services > div > div:last-of-type { grid-template-columns: repeat(2, 1fr) !important; }
+    }
+    @media (max-width: 640px) {
+      #services > div > div:last-of-type { grid-template-columns: 1fr !important; }
+    }
+  </style>
 </section>`;
 }
 

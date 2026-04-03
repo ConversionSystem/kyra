@@ -309,7 +309,13 @@ export function assemblePage(options: AssemblePageOptions): string {
     license: siteData.license,
     colors,
     designStyle: activeDesignStyle,
-  });
+    // Pass-through for stats-bar "Why Choose" + "Service Areas" sections
+    ...('whyChoose' in siteData ? { whyChoose: (siteData as Record<string, unknown>).whyChoose } : {}),
+    ...('cities' in siteData && siteData.cities ? { cities: siteData.cities } : {}),
+    ...('mapEmbedUrl' in siteData ? { mapEmbedUrl: (siteData as Record<string, unknown>).mapEmbedUrl } : {}),
+    ...('serviceAreasHeading' in siteData ? { serviceAreasHeading: (siteData as Record<string, unknown>).serviceAreasHeading } : {}),
+    ...('serviceAreasSubtitle' in siteData ? { serviceAreasSubtitle: (siteData as Record<string, unknown>).serviceAreasSubtitle } : {}),
+  } as Parameters<typeof aboutFn>[0]);
 
   // Use real reviews when available; fall back to business-specific placeholders
   const reviewData = siteData.reviews?.length
