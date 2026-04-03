@@ -449,19 +449,7 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
           {/* Status banners — gateway errors, GHL disconnect, missing API key */}
           <ClientStatusBanner client={initialClient} />
 
-          {/* GHL free sub-account sticky banner — shown when GHL not connected */}
-          {!initialClient.ghl_location_id && !(initialClient as any).ghl_private_token && (
-            <GHLStickyBanner
-              clientId={initialClient.id}
-              onGoToGHL={() => {
-                handleTabChange('settings');
-                // Small delay so tab renders before scrolling sub-nav
-                setTimeout(() => {
-                  document.getElementById('settings-subtab-integrations')?.click();
-                }, 50);
-              }}
-            />
-          )}
+          {/* GHL free sub-account banner removed — building our own system */}
 
           {/* Setup nudge — only shown on setup-relevant tabs */}
           {['chat', 'train', 'settings'].includes(activeTab) && (
