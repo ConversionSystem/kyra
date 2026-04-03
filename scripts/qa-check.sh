@@ -401,9 +401,11 @@ if [[ "$FAIL_COUNT" -gt 0 ]]; then
   done
   
   WARN_TEXT=""
-  for w in "${WARNINGS[@]}"; do
-    WARN_TEXT+="⚠️ $w%0A"
-  done
+  if [[ ${#WARNINGS[@]} -gt 0 ]]; then
+    for w in "${WARNINGS[@]}"; do
+      WARN_TEXT+="⚠️ $w%0A"
+    done
+  fi
   
   MSG="<b>🚨 Kyra QA Alert — $(date '+%Y-%m-%d %H:%M %Z')</b>%0A%0A"
   MSG+="<b>$FAIL_COUNT FAILURE(S) DETECTED</b>%0A%0A"
