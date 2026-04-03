@@ -1,7 +1,5 @@
-import { redirect } from 'next/navigation';
+import { PipelineKanban } from './pipeline-kanban';
 
-// Pipelines merged into Proactive AI (automations).
-// Visual pipeline builder was UI-only with no execution engine.
 export default function PipelinesPage() {
-  redirect('/agency/automations');
+  return <PipelineKanban />;
 }
