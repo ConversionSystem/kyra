@@ -390,7 +390,7 @@ const SLIDES: Slide[] = [
             name="Lite"
             price={99}
             clients={3}
-            credits="10,000"
+            credits="5,000"
             features={['3 AI workers + websites', '34+ industry templates', 'Analytics dashboard', 'Escalation alerts', 'Performance reports']}
             cta="Start Lite →"
           />
@@ -398,7 +398,7 @@ const SLIDES: Slide[] = [
             name="Pro"
             price={299}
             clients={10}
-            credits="25,000"
+            credits="15,000"
             highlighted
             features={['10 AI workers + websites', 'White-label branding', 'Custom templates', 'Revenue tracking', 'Priority support']}
             cta="Start Pro →"
@@ -407,7 +407,7 @@ const SLIDES: Slide[] = [
             name="Scale"
             price={499}
             clients={20}
-            credits="50,000"
+            credits="30,000"
             features={['20 AI workers + websites', 'Dedicated infrastructure', 'Custom domains', 'Advanced analytics', 'Phone support']}
             cta="Start Scale →"
           />
