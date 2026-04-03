@@ -145,23 +145,41 @@ export async function POST(request: NextRequest) {
   const rawModel = (client.container_config as any)?.ai_model || (client as any).ai_model;
   // Validate: empty/undefined → fall back to WIDGET_MODEL
   const resolvedModel = rawModel && typeof rawModel === 'string' && rawModel.trim() ? rawModel.trim() : WIDGET_MODEL;
-  // Normalize model name for OpenRouter (needs 'provider/model' format)
-  // If already has '/' assume it's correctly prefixed
+  // ── Canonical model ID → valid OpenRouter slug ─────────────────────────
+  const OPENROUTER_SLUGS: Record<string, string> = {
+    'claude-haiku-3-5':   'anthropic/claude-3-5-haiku-20241022',
+    'claude-haiku-4-5':   'anthropic/claude-4.5-haiku-20251001',
+    'claude-sonnet-3-7':  'anthropic/claude-3-7-sonnet-20250219',
+    'claude-sonnet-4-6':  'anthropic/claude-4.6-sonnet-20260217',
+    'claude-opus-4-6':    'anthropic/claude-opus-4-20250514',
+    'gpt-4o-mini':        'openai/gpt-4o-mini',
+    'gpt-4o':             'openai/gpt-4o',
+    'gemini-2.0-flash':   'google/gemini-2.0-flash-001',
+    'gemini-2.5-pro':     'google/gemini-2.5-pro',
+    'o3-mini':            'openai/o3-mini',
+    'o3':                 'openai/o3',
+    'o1':                 'openai/o1',
+  };
+
   const useOpenRouter = !!process.env.OPENROUTER_API_KEY;
   let clientModel: string;
   if (useOpenRouter) {
-    // Strip 'openrouter/' prefix — OpenRouter expects 'anthropic/...' not 'openrouter/anthropic/...'
+    // Strip 'openrouter/' prefix first
     const stripped = resolvedModel.startsWith('openrouter/') ? resolvedModel.slice('openrouter/'.length) : resolvedModel;
-    if (stripped.includes('/')) {
-      clientModel = stripped;
-    } else if (resolvedModel.startsWith('gpt-')) {
-      clientModel = `openai/${resolvedModel}`;
-    } else if (resolvedModel.startsWith('claude-')) {
-      clientModel = `anthropic/${resolvedModel}`;
-    } else if (resolvedModel.startsWith('gemini-')) {
-      clientModel = `google/${resolvedModel}`;
+    // 1. Try direct slug mapping (most reliable — handles dash/dot variations)
+    if (OPENROUTER_SLUGS[stripped]) {
+      clientModel = OPENROUTER_SLUGS[stripped];
+    } else if (stripped.includes('/')) {
+      // 2. Already has provider prefix — check if it's a known valid slug
+      const maybeCanonical = stripped.split('/').pop() || '';
+      clientModel = OPENROUTER_SLUGS[maybeCanonical] || stripped;
+    } else if (stripped.startsWith('gpt-') || stripped.startsWith('o1') || stripped.startsWith('o3')) {
+      clientModel = `openai/${stripped}`;
+    } else if (stripped.startsWith('gemini-')) {
+      clientModel = `google/${stripped}`;
     } else {
-      clientModel = resolvedModel;
+      // Unknown — fall back to default widget model
+      clientModel = WIDGET_MODEL;
     }
   } else {
     // Direct OpenAI — strip any provider prefix
@@ -341,7 +359,7 @@ export async function POST(request: NextRequest) {
     }
     console.error(`[widget/chat] LLM error for ${clientId} (model=${clientModel}): ${errMsg}`);
     return NextResponse.json(
-      { response: "Thanks for your message! Our team will get back to you shortly.", error: 'ai_unavailable', _dbg: errMsg },
+      { response: "Thanks for your message! Our team will get back to you shortly.", error: 'ai_unavailable' },
       { headers: CORS },
     );
   }
