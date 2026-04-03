@@ -27,6 +27,7 @@ export async function GET(req: NextRequest) {
   const deals = await getDeals(agencyId, {
     stage: url.searchParams.get('stage') || undefined,
     contactId: url.searchParams.get('contactId') || undefined,
+    clientId: url.searchParams.get('clientId') || undefined,
     search: url.searchParams.get('search') || undefined,
   });
 
