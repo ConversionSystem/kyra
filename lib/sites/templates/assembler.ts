@@ -217,6 +217,9 @@ export function assemblePage(options: AssemblePageOptions): string {
     secondary: siteData.colorSecondary || '#111827',
   };
 
+  // Resolve design style early so section templates can branch on it
+  const activeDesignStyle = designStyle || 'clean-light';
+
   // Format hours for footer: handles both wizard format { days, start, end }
   // and day-keyed format { Monday: "8AM-6PM", Tuesday: "8AM-6PM" }
   let formattedHours: string | undefined;
@@ -251,6 +254,8 @@ export function assemblePage(options: AssemblePageOptions): string {
     bookingUrl: siteData.booking_url,
     colors,
     links: (siteData.navLinks && siteData.navLinks.length > 0) ? siteData.navLinks : defaultNavLinks,
+    designStyle: activeDesignStyle,
+    emergencyText: siteData.emergencyText,
   });
 
   const heroHtml = heroFn({
@@ -266,6 +271,7 @@ export function assemblePage(options: AssemblePageOptions): string {
     colors,
     ctaText: pageData.hero_cta_text || undefined,
     ctaLink: pageData.hero_cta_link || undefined,
+    designStyle: activeDesignStyle,
   });
 
   const servicesHtml = servicesFn({
@@ -277,6 +283,7 @@ export function assemblePage(options: AssemblePageOptions): string {
     })),
     businessName: siteData.business_name,
     colors,
+    designStyle: activeDesignStyle,
   });
 
   // Build about section from content_sections if available
@@ -301,6 +308,7 @@ export function assemblePage(options: AssemblePageOptions): string {
     reviewCount: siteData.reviewCount,
     license: siteData.license,
     colors,
+    designStyle: activeDesignStyle,
   });
 
   // Use real reviews when available; fall back to business-specific placeholders
@@ -321,6 +329,7 @@ export function assemblePage(options: AssemblePageOptions): string {
     heading: 'What Our Customers Say',
     testimonials: reviewData,
     colors,
+    designStyle: activeDesignStyle,
   });
 
   const ctaHtml = ctaFn({
@@ -333,6 +342,7 @@ export function assemblePage(options: AssemblePageOptions): string {
     emergencyText: siteData.emergencyText,
     clientId: siteData.widget_client_id,
     colors,
+    designStyle: activeDesignStyle,
   });
 
   const faqHtml = pageData.faq?.length
@@ -340,6 +350,7 @@ export function assemblePage(options: AssemblePageOptions): string {
         heading: 'Frequently Asked Questions',
         faqs: pageData.faq,
         colors,
+        designStyle: activeDesignStyle,
       })
     : '';
 
@@ -356,6 +367,7 @@ export function assemblePage(options: AssemblePageOptions): string {
     colors,
     footerTagline: siteData.footerTagline || undefined,
     socialLinks: siteData.socialLinks || undefined,
+    designStyle: activeDesignStyle,
   });
 
   // Schema markup
@@ -393,7 +405,6 @@ export function assemblePage(options: AssemblePageOptions): string {
   // colorPrimary/Secondary come from the :root vars already set in colorVars.
   const colorPrimary = colorVars.match(/--color-primary:\s*([^;]+);/)?.[1]?.trim() || '#4f46e5';
   const colorSecondary = colorVars.match(/--color-secondary:\s*([^;]+);/)?.[1]?.trim() || '#111827';
-  const activeDesignStyle = designStyle || 'clean-light';
   // getDesignCSS returns a full block starting with :root { ... } — we only want the rules after that
   const fullDesignCSS = getDesignCSS(activeDesignStyle, colorPrimary, colorSecondary);
   // Strip the :root block (already handled by colorVars) to avoid duplication

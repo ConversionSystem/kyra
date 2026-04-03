@@ -8,6 +8,7 @@ interface ServicesData {
   }>;
   businessName?: string;
   colors: { primary: string; secondary: string };
+  designStyle?: string;
 }
 
 const SERVICE_ICONS: Record<string, string> = {
@@ -29,9 +30,90 @@ function getServiceIcon(serviceName: string, customIcon?: string): string {
 }
 
 export function grid3colServices(data: ServicesData): string {
+  const isDark = data.designStyle === 'modern-dark';
+  if (isDark) return modernDarkServices(data);
+  return lightServices(data);
+}
+
+function modernDarkServices(data: ServicesData): string {
   const heading = data.heading || 'Our Services';
   const { primary } = data.colors;
-  const displayServices = data.services.slice(0, 9); // max 9
+  const displayServices = data.services.slice(0, 9);
+
+  const checkIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${primary}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+
+  const cards = displayServices.map((s, i) => {
+    const icon = getServiceIcon(s.name, s.icon);
+    const description = s.description || `Professional ${s.name.toLowerCase()} services delivered with care and expertise.`;
+    const isEmergency = i === displayServices.length - 1 && displayServices.length >= 3;
+
+    // Build bullet-style description
+    const bullets = description.split(/[.!]+/).filter(b => b.trim()).slice(0, 3);
+    const bulletList = bullets.map(b =>
+      `<div style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 6px;">
+        ${checkIcon}
+        <span style="color: #94a3b8; font-size: 0.88rem; line-height: 1.5;">${b.trim()}</span>
+      </div>`
+    ).join('');
+
+    if (isEmergency) {
+      // Last card: red gradient emergency card
+      return `<article style="position: relative; background: linear-gradient(135deg, ${primary}, #991b1b); border-radius: 1rem; padding: 2rem; transition: transform 0.25s ease, box-shadow 0.25s ease; overflow: hidden;" onmouseover="this.style.transform='translateY(-6px)';this.style.boxShadow='0 20px 40px rgba(220,38,38,0.3)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='none'">
+        <div style="position: absolute; top: -20px; right: -20px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%;" aria-hidden="true"></div>
+        <div style="width: 56px; height: 56px; border-radius: 14px; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; margin-bottom: 1.25rem;">
+          ${icon}
+        </div>
+        <h3 style="font-size: 1.2rem; font-weight: 800; color: #ffffff; margin: 0 0 0.75rem 0; line-height: 1.3;">
+          <a href="/services/${s.slug}" style="color: inherit; text-decoration: none;">${s.name}</a>
+        </h3>
+        <p style="color: rgba(255,255,255,0.85); font-size: 0.93rem; line-height: 1.7; margin: 0 0 1.5rem 0;">${description}</p>
+        <a href="/services/${s.slug}" style="display: inline-flex; align-items: center; gap: 6px; color: #ffffff; font-weight: 700; font-size: 0.9rem; text-decoration: none; background: rgba(255,255,255,0.2); padding: 8px 18px; border-radius: 8px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+          Get Help Now <span>→</span>
+        </a>
+      </article>`;
+    }
+
+    return `<article style="position: relative; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 1rem; padding: 2rem; transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease; overflow: hidden;" onmouseover="this.style.transform='translateY(-6px)';this.style.boxShadow='0 20px 40px rgba(0,0,0,0.3)';this.style.borderColor='rgba(220,38,38,0.3)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='none';this.style.borderColor='rgba(255,255,255,0.1)'">
+      <div style="width: 56px; height: 56px; border-radius: 14px; background: ${primary}; display: flex; align-items: center; justify-content: center; margin-bottom: 1.25rem; box-shadow: 0 8px 20px ${primary}40;">
+        ${icon}
+      </div>
+      <h3 style="font-size: 1.2rem; font-weight: 800; color: #f1f5f9; margin: 0 0 0.75rem 0; line-height: 1.3;">
+        <a href="/services/${s.slug}" style="color: inherit; text-decoration: none;">${s.name}</a>
+      </h3>
+      <div style="margin-bottom: 1.25rem;">
+        ${bulletList}
+      </div>
+      <a href="/services/${s.slug}" style="display: inline-flex; align-items: center; gap: 6px; color: ${primary}; font-weight: 700; font-size: 0.9rem; text-decoration: none; transition: gap 0.2s;" onmouseover="this.querySelector('span').style.transform='translateX(4px)'" onmouseout="this.querySelector('span').style.transform='translateX(0)'">
+        Learn More <span style="transition: transform 0.2s;">→</span>
+      </a>
+    </article>`;
+  });
+
+  const moreLink = data.services.length > 9
+    ? `<div style="text-align: center; margin-top: 2.5rem;">
+        <a href="/services" style="display: inline-flex; align-items: center; gap: 8px; border: 2px solid rgba(255,255,255,0.2); color: #ffffff; font-weight: 700; font-size: 1rem; padding: 12px 28px; border-radius: 10px; text-decoration: none; transition: background 0.2s, border-color 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.08)';this.style.borderColor='${primary}'" onmouseout="this.style.background='transparent';this.style.borderColor='rgba(255,255,255,0.2)'">View All Services →</a>
+      </div>`
+    : '';
+
+  return `<section id="services" style="padding: 5rem 1.5rem; background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);" aria-label="${heading}">
+  <div style="max-width: 1200px; margin: 0 auto;">
+    <div style="text-align: center; margin-bottom: 3.5rem;">
+      <div style="display: inline-block; background: ${primary}20; color: ${primary}; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 6px 16px; border-radius: 100px; margin-bottom: 1rem; border: 1px solid ${primary}30;">What We Offer</div>
+      <h2 style="font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 900; color: #f1f5f9; margin: 0 0 1rem 0; letter-spacing: -0.02em;">${heading}</h2>
+      <p style="color: #94a3b8; font-size: 1.05rem; max-width: 480px; margin: 0 auto; line-height: 1.6;">Everything you need from a team you can trust.</p>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.75rem;">
+      ${cards.join('\n      ')}
+    </div>
+    ${moreLink}
+  </div>
+</section>`;
+}
+
+function lightServices(data: ServicesData): string {
+  const heading = data.heading || 'Our Services';
+  const { primary } = data.colors;
+  const displayServices = data.services.slice(0, 9);
 
   const cards = displayServices.map((s, i) => {
     const icon = getServiceIcon(s.name, s.icon);
@@ -40,18 +122,14 @@ export function grid3colServices(data: ServicesData): string {
 
     return `<article style="position: relative; background: var(--color-surface, #ffffff); border: 1px solid rgba(0,0,0,0.08); border-radius: 20px; padding: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06); transition: transform 0.25s ease, box-shadow 0.25s ease; overflow: hidden;" onmouseover="this.style.transform='translateY(-6px)';this.style.boxShadow='0 20px 40px rgba(0,0,0,0.12)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 1px 3px rgba(0,0,0,0.06)'">
       ${isPopular ? `<div style="position: absolute; top: 16px; right: 16px; background: ${primary}; color: white; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 10px; border-radius: 100px;">Popular</div>` : ''}
-      <!-- Top accent line -->
       <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: ${primary}; border-radius: 20px 20px 0 0;"></div>
-      <!-- Icon -->
       <div style="width: 60px; height: 60px; border-radius: 16px; background: ${primary}; display: flex; align-items: center; justify-content: center; margin-bottom: 1.25rem; box-shadow: 0 8px 20px ${primary}40;">
         ${icon}
       </div>
-      <!-- Content -->
       <h3 style="font-size: 1.2rem; font-weight: 800; color: #1f2937; margin: 0 0 0.75rem 0; line-height: 1.3;">
         <a href="/services/${s.slug}" style="color: inherit; text-decoration: none;">${s.name}</a>
       </h3>
       <p style="color: #6b7280; font-size: 0.93rem; line-height: 1.7; margin: 0 0 1.5rem 0;">${description}</p>
-      <!-- CTA link -->
       <a href="/services/${s.slug}" style="display: inline-flex; align-items: center; gap: 6px; color: ${primary}; font-weight: 700; font-size: 0.9rem; text-decoration: none; transition: gap 0.2s;" onmouseover="this.querySelector('span').style.transform='translateX(4px)'" onmouseout="this.querySelector('span').style.transform='translateX(0)'">
         Learn More <span style="transition: transform 0.2s;">→</span>
       </a>
