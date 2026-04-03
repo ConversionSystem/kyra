@@ -1551,10 +1551,10 @@ export default function PageEditor() {
   const [activeTab, setActiveTab] = useState<'content' | 'design' | 'site'>('content');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const siteUrl = site?.site_subdomain
-    ? `https://${site.site_subdomain}`
-    : site?.site_domain
-      ? `https://${site.site_domain}`
+  const siteUrl = site?.site_domain
+    ? `https://${site.site_domain}`
+    : site?.site_subdomain
+      ? `https://${site.site_subdomain}`
       : null;
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
@@ -2251,7 +2251,7 @@ export default function PageEditor() {
                     )}
                     {siteUrl && (
                       <a
-                        href={`${siteUrl}${selectedPage.slug}`}
+                        href={`${siteUrl}/${selectedPage.slug === 'index' ? '' : selectedPage.slug}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="min-h-[44px] sm:min-h-0 px-2 sm:px-3 py-2 sm:py-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center gap-1.5"
