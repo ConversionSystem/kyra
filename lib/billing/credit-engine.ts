@@ -82,6 +82,12 @@ export const CREDIT_COSTS = {
   // Website builder
   'website.page_generation': 5,   // Per AI-generated page (content engine)
 
+  // AI Campaign & Funnel
+  'campaign.generate': 3,         // Per AI campaign generation
+  'funnel.generate': 3,           // Per AI funnel generation
+  'ai_lead_scoring': 1,           // Per individual AI lead score
+  'ai_report': 1,                 // Per AI analytics report
+
   // Free actions (logged but cost 0)
   'system.calendar': 0,
   'system.reminder': 0,

@@ -28,10 +28,12 @@ import {
 } from 'lucide-react';
 import type { AgencyClient } from '@/lib/agency/queries';
 import EmailMarketingTab from './email-marketing-tab';
+import CampaignsSubTab from './campaigns-sub-tab';
+import FunnelsSubTab from './funnels-sub-tab';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-type SubTab = 'dashboard' | 'seo' | 'content' | 'competitors' | 'social' | 'email' | 'sequences';
+type SubTab = 'dashboard' | 'seo' | 'content' | 'competitors' | 'social' | 'email' | 'sequences' | 'campaigns' | 'funnels';
 
 interface Keyword {
   keyword: string;
@@ -1941,6 +1943,8 @@ const SUB_TABS: { id: SubTab; label: string; icon: React.ElementType }[] = [
   { id: 'social', label: 'Social', icon: Smartphone },
   { id: 'email', label: 'Email', icon: Mail },
   { id: 'sequences', label: 'Sequences', icon: Mail },
+  { id: 'campaigns', label: 'Campaigns', icon: Zap },
+  { id: 'funnels', label: 'Funnels', icon: Target },
 ];
 
 export default function MarketingTab({ client }: { client: AgencyClient }) {
@@ -1979,6 +1983,8 @@ export default function MarketingTab({ client }: { client: AgencyClient }) {
       {subTab === 'social' && <SocialView client={client} />}
       {subTab === 'email' && <EmailMarketingTab client={client} />}
       {subTab === 'sequences' && <SequencesView client={client} />}
+      {subTab === 'campaigns' && <CampaignsSubTab client={client} />}
+      {subTab === 'funnels' && <FunnelsSubTab client={client} />}
     </div>
   );
 }
