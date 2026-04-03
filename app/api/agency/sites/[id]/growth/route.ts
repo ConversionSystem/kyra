@@ -3,6 +3,7 @@ import { waitUntil } from '@vercel/functions';
 import { requireAgencyMember } from '@/lib/agency/middleware';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import OpenAI from 'openai';
+import { deductCredits } from '@/lib/billing/credit-engine';
 
 export const maxDuration = 120; // Growth analysis takes up to 2 min
 
@@ -198,6 +199,12 @@ async function runGrowthAnalysis(
     suggestions = suggestions.filter(
       (s) => !s.slug || !existingSlugs.includes(s.slug),
     );
+    try {
+      await deductCredits(site.agency_id, 'chat.message', {
+        clientId: site.client_id || null,
+        description: `Growth analysis for site ${siteId}`,
+      });
+    } catch { /* non-fatal */ }
   } catch (err) {
     console.error('[growth] AI analysis failed:', err);
     suggestions = generateFallbackSuggestions(site.industry, services, cities, existingSlugs);

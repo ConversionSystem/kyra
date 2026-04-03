@@ -20,6 +20,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { deductCredits } from '@/lib/billing/credit-engine';
 import { getGatewayByClientId } from '@/lib/ovh/gateway-resolver';
 import { logAndFire } from '@/lib/pipeline/webhooks';
 import { syncLeadToCrm } from '@/lib/pipeline/crm-sync';
@@ -123,6 +124,12 @@ export async function POST(request: NextRequest) {
   if (FORWARDABLE_EVENTS.has(type)) {
     try {
       await forwardToContainer(agencyClient.id, agencyClient.agency_id, payload);
+      try {
+        await deductCredits(agencyClient.agency_id, 'channel.ghl_sms', {
+          clientId: agencyClient.id,
+          description: `CRM webhook AI response: ${type}`,
+        });
+      } catch { /* non-fatal */ }
     } catch (forwardError) {
       console.error(
         `[ghl/webhook] Failed to forward to container for client ${agencyClient.id}:`,

@@ -20,6 +20,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createSupabase } from '@supabase/supabase-js';
+import { deductCredits } from '@/lib/billing/credit-engine';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -105,6 +106,12 @@ export async function POST(request: NextRequest) {
               user_message: `[VOICEMAIL from ${callerNumber}] ${transcriptionText}`,
               ai_response: `[SMS FOLLOW-UP SENT] ${aiReply}`,
             });
+            try {
+              await deductCredits(client.agency_id, 'channel.voice_call', {
+                clientId: client.id,
+                description: `AI voice follow-up SMS to ${callerNumber}`,
+              });
+            } catch { /* non-fatal */ }
           }
         }
       } catch (err: any) {

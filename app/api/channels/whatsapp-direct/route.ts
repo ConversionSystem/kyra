@@ -22,6 +22,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createSupabase } from '@supabase/supabase-js';
+import { deductCredits } from '@/lib/billing/credit-engine';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -193,6 +194,12 @@ export async function POST(request: NextRequest) {
             user_message: `[${contactName}] ${msgText}`,
             ai_response: aiResponse,
           });
+          try {
+            await deductCredits(client.agency_id, 'channel.ghl_sms', {
+              clientId: client.id,
+              description: `AI WhatsApp reply to ${from}`,
+            });
+          } catch { /* non-fatal */ }
         } else {
           const err = await sendRes.text().catch(() => '');
           console.error(`[whatsapp-direct] Send failed: ${sendRes.status} ${err.slice(0, 100)}`);

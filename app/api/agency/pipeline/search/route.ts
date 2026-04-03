@@ -13,6 +13,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { deductCredits } from '@/lib/billing/credit-engine';
 
 async function getAgencyId(userId: string): Promise<string | null> {
   const svc = createServiceClientWithoutCookies();
@@ -220,6 +221,12 @@ Return JSON: { "companies": [
   const { data: leads, error: insertErr } = await svc
     .from('pipeline_leads').insert(rows).select();
   if (insertErr) return NextResponse.json({ error: insertErr.message }, { status: 500 });
+
+  try {
+    await deductCredits(agencyId, 'pipeline.find_leads', {
+      description: `Lead search: ${industry} in ${location}`,
+    });
+  } catch { /* non-fatal */ }
 
   await svc.from('pipeline_campaigns').update({
     leads_found: (campaign.leads_found ?? 0) + (leads?.length ?? 0),

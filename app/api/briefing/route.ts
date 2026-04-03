@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { generateBriefingData, formatBriefing } from '@/lib/briefing/daily-briefing';
+import { deductCredits } from '@/lib/billing/credit-engine';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -127,6 +128,11 @@ export async function POST(req: NextRequest) {
             }),
             signal: AbortSignal.timeout(15_000),
           });
+          try {
+            await deductCredits(agency.id, 'chat.message', {
+              description: 'Daily briefing delivery',
+            });
+          } catch { /* non-fatal */ }
           results.push({ agencyId: agency.id, name: agency.name, status: 'sent' });
         } catch (err) {
           results.push({ agencyId: agency.id, name: agency.name, status: `gateway-error: ${(err as Error).message}` });

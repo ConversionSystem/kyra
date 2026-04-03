@@ -13,6 +13,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { requireAgencyMember } from '@/lib/agency/middleware';
+import { deductCredits } from '@/lib/billing/credit-engine';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -311,6 +312,13 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
+
+  try {
+    await deductCredits(agency.id, 'chat.message', {
+      clientId,
+      description: `Auto-train knowledge extraction: ${url.origin}`,
+    });
+  } catch { /* non-fatal */ }
 
   // Step 4: Create knowledge documents from extracted data
   const docsToCreate: Array<{ title: string; content: string; source_type: string; source_url: string }> = [];
