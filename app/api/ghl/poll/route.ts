@@ -1,5 +1,10 @@
+// ⚠️ DEPRECATED — This poller is replaced by webhook-only mode.
+// GHL now pushes InboundMessage events to /api/webhooks/ghl instead.
+// The Vercel cron for this route has been removed from vercel.json.
+// This file is kept as a fallback — can be re-enabled if webhooks fail.
+// Disabled: Apr 3, 2026 — saves ~$200/month in LLM costs.
 // ============================================================================
-// GET /api/ghl/poll — Message Polling Endpoint
+// GET /api/ghl/poll — Message Polling Endpoint (DEPRECATED)
 //
 // Replaces webhook dependency. Polls GHL Conversations API for new inbound
 // messages and processes them through AI. Called by Vercel Cron every minute.
