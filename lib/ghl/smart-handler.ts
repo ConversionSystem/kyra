@@ -20,6 +20,7 @@ import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
 import { resolveGHLConfig } from './resolve-ghl-config';
 import { ROLE_WORKERS } from '@/lib/ai-workers/role-workers';
 import { getClientKnowledge } from '@/lib/knowledge/extractor';
+import { handleBookingRequest, detectBookingIntent, getBookingConfig } from '@/lib/booking/ai-booker';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -77,6 +78,57 @@ export async function processWithSmartEngine(
 ): Promise<SmartHandlerResult> {
   const startTime = Date.now();
   const cc = (ctx.client.container_config || {}) as ContainerConfig;
+
+  // ── 0. AI Booking Intercept ───────────────────────────────────────────
+  // Check if this message is a booking request and handle it conversationally
+  try {
+    const bookingConfig = await getBookingConfig(ctx.client.id);
+    if (bookingConfig?.enabled && detectBookingIntent(ctx.messageBody)) {
+      const bookingResult = await handleBookingRequest({
+        clientId: ctx.client.id,
+        agencyId: ctx.client.agency_id,
+        contactPhone: ctx.contactPhone || '',
+        contactName: ctx.contactName,
+        contactEmail: ctx.contactEmail || undefined,
+        contactId: ctx.contactId,
+        message: ctx.messageBody,
+        conversationHistory: [],
+      });
+
+      if (bookingResult.isBookingIntent && bookingResult.reply) {
+        // Strip internal booking state markers from customer-facing reply
+        const cleanReply = bookingResult.reply
+          .replace(/\[BOOKING_CONFIRMING:[^\]]+\]/g, '')
+          .replace(/\[BOOKING_COLLECTING\]/g, '')
+          .trim();
+
+        // Save the full reply (with markers) to conversation for state tracking
+        await saveConversationTurn({
+          clientId: ctx.client.id,
+          agencyId: ctx.client.agency_id,
+          contactId: ctx.contactId,
+          contactName: ctx.contactName,
+          contactPhone: ctx.contactPhone,
+          contactEmail: ctx.contactEmail,
+          conversationId: ctx.conversationId || `booking_${ctx.contactId}`,
+          userMessage: ctx.messageBody,
+          aiResponse: bookingResult.reply,
+          channel: ctx.messageType,
+          responseTimeMs: Date.now() - startTime,
+        }).catch(() => {});
+
+        return {
+          reply: cleanReply,
+          toolsUsed: bookingResult.booking ? ['book_appointment'] : [],
+          escalated: false,
+          responseTimeMs: Date.now() - startTime,
+        };
+      }
+    }
+  } catch (bookingErr) {
+    console.warn('[smart-handler] Booking intercept failed (non-fatal):', bookingErr);
+    // Fall through to normal AI processing
+  }
 
   // ── 1. Resolve GHL calendar + pipeline IDs ─────────────────────────────
   const ghlConfig = await resolveGHLConfig(

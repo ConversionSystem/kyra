@@ -45,6 +45,7 @@ import {
   Mail,
   CornerDownLeft,
   Play,
+  Calendar,
 } from 'lucide-react';
 import type { AgencyClient, AgencyMember } from '@/lib/agency/queries';
 import GHLConnection from './ghl-connection';
@@ -64,6 +65,8 @@ import WebsiteTab from '@/components/dashboard/client-tabs/website-tab';
 import AIWorkersTab from '@/components/dashboard/client-tabs/ai-workers-tab';
 import MarketingTab from '@/components/dashboard/client-tabs/marketing-tab';
 import ITOperationsTab from '@/components/dashboard/client-tabs/it-operations-tab';
+import BookingConfigTab from '@/components/dashboard/client-tabs/booking-config-tab';
+import WorkflowsTab from '@/components/dashboard/client-tabs/workflows-tab';
 
 // ── GHL Free Sub-Account Sticky Banner ───────────────────────────────────────
 
@@ -186,7 +189,7 @@ interface ChatMessage {
   content: string;
 }
 
-type Tab = 'inbox' | 'chat' | 'train' | 'workers' | 'marketing' | 'operations' | 'crm' | 'website' | 'settings' | 'insights' | 'share';
+type Tab = 'inbox' | 'chat' | 'train' | 'workers' | 'marketing' | 'operations' | 'workflows' | 'crm' | 'website' | 'booking' | 'settings' | 'insights' | 'share';
 
 // Map legacy ?tab= values to new tab IDs
 const LEGACY_TAB_MAP: Record<string, Tab> = {
@@ -217,6 +220,7 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'chat', label: 'Chat', icon: MessageSquare },
   { id: 'marketing', label: 'Marketing', icon: TrendingUp },
   { id: 'operations', label: 'Operations', icon: Cpu },
+  { id: 'workflows' as Tab, label: 'Workflows', icon: Zap },
   { id: 'crm', label: 'CRM', icon: Users },
   { id: 'website', label: 'Website', icon: Globe },
 ];
@@ -232,6 +236,7 @@ const TAB_GROUPS: { label?: string; tabs: typeof TABS }[] = [
     tabs: [
       { id: 'train' as Tab, label: 'Train', icon: Brain },
       { id: 'workers' as Tab, label: 'AI Workers', icon: Bot },
+      { id: 'booking' as Tab, label: 'Booking', icon: Calendar },
       { id: 'settings' as Tab, label: 'Settings', icon: Settings },
     ],
   },
@@ -475,11 +480,17 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
           {activeTab === 'operations' && (
             <ITOperationsTab client={initialClient} />
           )}
+          {activeTab === 'workflows' && (
+            <WorkflowsTab client={initialClient} />
+          )}
           {activeTab === 'crm' && (
             <CrmTab client={initialClient} clientId={initialClient.id} />
           )}
           {activeTab === 'website' && (
             <WebsiteTab clientId={initialClient.id} clientName={initialClient.name} />
+          )}
+          {activeTab === 'booking' && (
+            <BookingConfigTab clientId={initialClient.id} />
           )}
           {activeTab === 'settings' && (
             <SettingsTabMerged client={initialClient} role={role} plan={plan} accountType={accountType} onRefresh={() => router.refresh()} />
