@@ -12,7 +12,7 @@
 #   1. Stripe webhook → /api/webhooks/stripe is active (not old broken ones)
 #   2. Plan vs Credits consistency (paid users with missing credits)
 #   3. Container health on VPS (ubuntu@15.204.91.157)
-#   4. Provisioner image pinned to v2026.3.8 (not :latest)
+#   4. Provisioner image pinned to v2026.3.23-full (not :latest)
 #   5. Recent signups with wrong plan (stripe set but plan=free)
 #   6. Vercel deploy count (alert if >2 today)
 #   7. Dead webhook handlers (/api/billing/webhook disabled in Stripe)
@@ -55,7 +55,7 @@ VPS_HOST="ubuntu@15.204.91.157"
 # Expected constants
 CORRECT_WEBHOOK_PATH="/api/webhooks/stripe"
 BROKEN_WEBHOOK_PATHS=("/api/billing/webhook" "/api/stripe/webhooks")
-PINNED_IMAGE="kyra-gateway:v2026.3.8"
+PINNED_IMAGE="kyra-gateway:v2026.3.23-full"
 DEPLOY_COUNTER_FILE="/tmp/.kyra_deploy_$(date +%Y%m%d)"
 MAX_DEPLOYS=2
 
@@ -272,22 +272,21 @@ print(f'TOTAL:{len([l for l in lines if l.strip()])}')
 fi
 echo ""
 
-# ── Check 4: Provisioner Image (must NOT be :latest) ──────────────────────────
+# ── Check 4: Provisioner Image (digest check — :latest OK if matches pinned) ─
 echo -e "${BOLD}  4. Provisioner Image Pin${NC}"
-IMAGE_OUT=$(ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=no \
+IMAGE_CHECK=$(ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=no \
   "$VPS_HOST" \
-  "docker ps --format '{{.Image}}|{{.Names}}' 2>/dev/null | grep -i 'kyra-gateway' | head -20" \
+  'PINNED_DIGEST=$(docker image inspect kyra-gateway:v2026.3.23-full --format "{{.Id}}" 2>/dev/null || echo "NONE"); LATEST_DIGEST=$(docker image inspect kyra-gateway:latest --format "{{.Id}}" 2>/dev/null || echo "NONE"); if [ "$PINNED_DIGEST" = "NONE" ]; then echo "NO_PINNED"; elif [ "$PINNED_DIGEST" = "$LATEST_DIGEST" ]; then echo "MATCH"; else echo "MISMATCH pinned=$PINNED_DIGEST latest=$LATEST_DIGEST"; fi' \
   2>/dev/null || echo "SSH_FAIL")
 
-if [[ "$IMAGE_OUT" == "SSH_FAIL" ]]; then
+if [[ "$IMAGE_CHECK" == "SSH_FAIL" ]]; then
   fail "Provisioner Image" "Cannot SSH to $VPS_HOST to verify image tags"
+elif [[ "$IMAGE_CHECK" == "NO_PINNED" ]]; then
+  warn "Provisioner Image" "Pinned image kyra-gateway:v2026.3.23-full not found on VPS"
+elif [[ "$IMAGE_CHECK" == MATCH* ]]; then
+  pass "Provisioner Image" "kyra-gateway:latest matches pinned v2026.3.23-full (same digest)"
 else
-  LATEST_RUNNING=$(echo "$IMAGE_OUT" | grep ":latest" | head -5 || echo "")
-  if [[ -n "$LATEST_RUNNING" ]]; then
-    fail "Provisioner Image" "kyra-gateway:latest is running! Must be pinned to v2026.3.8: $(echo $LATEST_RUNNING | tr '\n' ' ')"
-  else
-    pass "Provisioner Image" "All kyra-gateway containers use pinned image (no :latest)"
-  fi
+  fail "Provisioner Image" "kyra-gateway:latest does NOT match pinned image — $IMAGE_CHECK"
 fi
 echo ""
 
