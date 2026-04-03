@@ -24,6 +24,8 @@ export async function GET(
   const { searchParams } = new URL(request.url);
   const limit = Math.min(parseInt(searchParams.get('limit') || '50', 10), 100);
   const offset = parseInt(searchParams.get('offset') || '0', 10);
+  const source = searchParams.get('source');
+  const contactId = searchParams.get('contactId');
 
   const supabase = createServiceClientWithoutCookies();
 
@@ -37,6 +39,30 @@ export async function GET(
 
   if (!client) {
     return NextResponse.json({ error: 'Client not found' }, { status: 404 });
+  }
+
+  // Web chat threads are stored in client_conversations, not ghl_message_log
+  if (source === 'webchat' && contactId) {
+    const { data: messages, error } = await supabase
+      .from('client_conversations')
+      .select('user_message, ai_response, created_at, session_id')
+      .eq('client_id', clientId)
+      .eq('session_id', contactId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('[api/messages] Error fetching webchat messages:', error);
+      return NextResponse.json({ error: 'Failed to fetch messages' }, { status: 500 });
+    }
+
+    const formatted = (messages || []).map(m => ({
+      user_message: m.user_message,
+      ai_response: m.ai_response,
+      created_at: m.created_at,
+      contact_id: m.session_id,
+    }));
+
+    return NextResponse.json({ messages: formatted, total: formatted.length, limit: 100, offset: 0 });
   }
 
   const { data: messages, error, count } = await supabase
