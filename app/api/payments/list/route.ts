@@ -18,6 +18,7 @@ export async function GET(req: NextRequest) {
   if (!membership) return NextResponse.json({ error: 'No agency' }, { status: 404 });
 
   const status = req.nextUrl.searchParams.get('status');
+  const clientId = req.nextUrl.searchParams.get('clientId');
   const limit = parseInt(req.nextUrl.searchParams.get('limit') || '50', 10);
 
   let query = sb
@@ -26,6 +27,10 @@ export async function GET(req: NextRequest) {
     .eq('agency_id', membership.agency_id)
     .order('created_at', { ascending: false })
     .limit(limit);
+
+  if (clientId) {
+    query = query.eq('client_id', clientId);
+  }
 
   if (status) {
     query = query.eq('status', status);

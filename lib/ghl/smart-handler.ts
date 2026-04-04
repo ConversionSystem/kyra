@@ -21,6 +21,8 @@ import { resolveGHLConfig } from './resolve-ghl-config';
 import { ROLE_WORKERS } from '@/lib/ai-workers/role-workers';
 import { getClientKnowledge } from '@/lib/knowledge/extractor';
 import { handleBookingRequest, detectBookingIntent, getBookingConfig } from '@/lib/booking/ai-booker';
+import { findMatchingWorkflows, executeWorkflow } from '@/lib/automations/workflow-executor';
+import { scoreContacts } from '@/lib/crm/scoring';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -276,6 +278,11 @@ export async function processWithSmartEngine(
       `[smart-handler] Wake word matched: "${wakeWordMatch.keyword}" → ${wakeWordMatch.action}`,
     );
   }
+
+  // ── 11. Fire matching workflows (non-blocking) ────────────────────────
+  firePostConversationHooks(ctx).catch((err) =>
+    console.warn('[smart-handler] Post-conversation hooks failed (non-fatal):', err),
+  );
 
   console.log(
     `[smart-handler] ✅ Processed in ${responseTimeMs}ms | Tools: [${toolsUsed.join(', ')}] | Escalated: ${escalated} | History: ${history.length} turns`,
@@ -634,5 +641,40 @@ function isWithinBusinessHours(
   } catch {
     // If timezone is invalid, assume open
     return true;
+  }
+}
+
+// ── Post-Conversation Hooks ───────────────────────────────────────────────────
+// Non-blocking hooks that run after a conversation turn is processed.
+// Triggers workflow matching and lead scoring in the background.
+async function firePostConversationHooks(ctx: SmartHandlerContext): Promise<void> {
+  const supabase = createServiceClientWithoutCookies();
+  const clientId = ctx.client.id;
+
+  // 1. Check for active workflows with message_received trigger
+  try {
+    const { data: workflows } = await supabase
+      .from('client_workflows')
+      .select('id, trigger, steps')
+      .eq('client_id', clientId)
+      .eq('status', 'active');
+
+    if (workflows?.length) {
+      for (const wf of workflows) {
+        const trigger = wf.trigger as { type?: string; filter?: string } | null;
+        if (trigger?.type === 'message_received') {
+          if (trigger.filter && !ctx.messageBody.toLowerCase().includes(trigger.filter.toLowerCase())) {
+            continue;
+          }
+          await supabase.from('workflow_runs').insert({
+            workflow_id: wf.id,
+            trigger_event: { type: 'message_received', message: ctx.messageBody, contact: ctx.contactPhone || '' },
+            status: 'pending',
+          });
+        }
+      }
+    }
+  } catch (e: unknown) {
+    console.warn('[smart-handler] Workflow trigger check failed:', e);
   }
 }
