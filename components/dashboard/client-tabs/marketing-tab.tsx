@@ -33,10 +33,11 @@ import CampaignsSubTab from './campaigns-sub-tab';
 import FunnelsSubTab from './funnels-sub-tab';
 import SMSCampaignsSubTab from './sms-campaigns-sub-tab';
 import ReviewsSubTab from './reviews-sub-tab';
+import WorkflowsTab from './workflows-tab';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-type SubTab = 'dashboard' | 'seo' | 'content' | 'competitors' | 'social' | 'email' | 'sequences' | 'campaigns' | 'funnels' | 'sms' | 'reviews';
+type SubTab = 'dashboard' | 'seo' | 'content' | 'competitors' | 'social' | 'email' | 'sequences' | 'campaigns' | 'funnels' | 'sms' | 'reviews' | 'workflows';
 
 interface Keyword {
   keyword: string;
@@ -1950,6 +1951,7 @@ const SUB_TABS: { id: SubTab; label: string; icon: React.ElementType }[] = [
   { id: 'campaigns', label: 'Campaigns', icon: Zap },
   { id: 'funnels', label: 'Funnels', icon: Target },
   { id: 'reviews', label: 'Reviews', icon: Star },
+  { id: 'workflows', label: 'Workflows', icon: Zap },
 ];
 
 export default function MarketingTab({ client }: { client: AgencyClient }) {
@@ -1992,6 +1994,7 @@ export default function MarketingTab({ client }: { client: AgencyClient }) {
       {subTab === 'campaigns' && <CampaignsSubTab client={client} />}
       {subTab === 'funnels' && <FunnelsSubTab client={client} />}
       {subTab === 'reviews' && <ReviewsSubTab client={client} />}
+      {subTab === 'workflows' && <WorkflowsTab client={client} />}
     </div>
   );
 }

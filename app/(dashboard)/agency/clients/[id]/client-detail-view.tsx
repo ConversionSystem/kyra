@@ -67,6 +67,7 @@ import MarketingTab from '@/components/dashboard/client-tabs/marketing-tab';
 import ITOperationsTab from '@/components/dashboard/client-tabs/it-operations-tab';
 import BookingConfigTab from '@/components/dashboard/client-tabs/booking-config-tab';
 import WorkflowsTab from '@/components/dashboard/client-tabs/workflows-tab';
+import AiSetupTab from '@/components/dashboard/client-tabs/ai-setup-tab';
 
 // ── GHL Free Sub-Account Sticky Banner ───────────────────────────────────────
 
@@ -142,7 +143,7 @@ function SetupNudgeBanner({
   );
 
   const missing: { label: string; tab: Tab; desc: string }[] = [];
-  if (!hasPersonality) missing.push({ label: 'Add Personality', tab: 'train', desc: 'Train the AI with persona, greeting, and instructions' });
+  if (!hasPersonality) missing.push({ label: 'Add Personality', tab: 'ai-setup', desc: 'Train the AI with persona, greeting, and instructions' });
   // GHL nudge removed from global banner — shown only inside the GHL tab
 
   if (missing.length === 0) return null;
@@ -189,19 +190,26 @@ interface ChatMessage {
   content: string;
 }
 
-type Tab = 'inbox' | 'chat' | 'train' | 'workers' | 'marketing' | 'operations' | 'workflows' | 'crm' | 'website' | 'booking' | 'settings' | 'insights' | 'share';
+type Tab = 'inbox' | 'crm' | 'marketing' | 'website' | 'ai-setup' | 'integrations' | 'settings' | 'insights';
 
 // Map legacy ?tab= values to new tab IDs
 const LEGACY_TAB_MAP: Record<string, Tab> = {
   conversations: 'inbox',
-  terminal: 'chat',
-  personality: 'train',
-  templates: 'workers',
-  'ai-workers': 'workers',
-  skills: 'workers',
-  'it-operations': 'operations',
-  website: 'website',
-  knowledge: 'train',
+  terminal: 'inbox',
+  chat: 'inbox',
+  personality: 'ai-setup',
+  train: 'ai-setup',
+  workers: 'ai-setup',
+  'ai-workers': 'ai-setup',
+  templates: 'ai-setup',
+  skills: 'ai-setup',
+  booking: 'ai-setup',
+  knowledge: 'ai-setup',
+  operations: 'integrations',
+  'it-operations': 'integrations',
+  workflows: 'marketing',
+  share: 'settings',
+  portal: 'settings',
   ghl: 'settings',
   channels: 'settings',
   secrets: 'settings',
@@ -211,17 +219,13 @@ const LEGACY_TAB_MAP: Record<string, Tab> = {
   usage: 'insights',
   memory: 'insights',
   seo: 'insights',
-  portal: 'share',
-  'ai-teams': 'chat',
+  'ai-teams': 'inbox',
 };
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'inbox', label: 'Inbox', icon: Inbox },
-  { id: 'chat', label: 'Chat', icon: MessageSquare },
-  { id: 'marketing', label: 'Marketing', icon: TrendingUp },
-  { id: 'operations', label: 'Operations', icon: Cpu },
-  { id: 'workflows' as Tab, label: 'Workflows', icon: Zap },
   { id: 'crm', label: 'CRM', icon: Users },
+  { id: 'marketing', label: 'Marketing', icon: TrendingUp },
   { id: 'website', label: 'Website', icon: Globe },
 ];
 
@@ -234,17 +238,15 @@ const TAB_GROUPS: { label?: string; tabs: typeof TABS }[] = [
   {
     label: 'Configure',
     tabs: [
-      { id: 'train' as Tab, label: 'Train', icon: Brain },
-      { id: 'workers' as Tab, label: 'AI Workers', icon: Bot },
-      { id: 'booking' as Tab, label: 'Booking', icon: Calendar },
-      { id: 'settings' as Tab, label: 'Settings', icon: Settings },
+      { id: 'ai-setup', label: 'AI Setup', icon: Brain },
+      { id: 'integrations', label: 'Integrations', icon: Cpu },
+      { id: 'settings', label: 'Settings', icon: Settings },
     ],
   },
   {
     label: 'Analyze',
     tabs: [
-      { id: 'insights' as Tab, label: 'Insights', icon: BarChart3 },
-      { id: 'share' as Tab, label: 'Share', icon: Share2 },
+      { id: 'insights', label: 'Insights', icon: BarChart3 },
     ],
   },
 ];
@@ -345,7 +347,7 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
   // Feature gating: Marketing, Operations, Voice, AI Marketing Worker
   const HIDDEN_TABS: string[] = [];
   if (!hasMarketingTab) HIDDEN_TABS.push('marketing');
-  if (!hasOperationsTab) HIDDEN_TABS.push('operations');
+  if (!hasOperationsTab) HIDDEN_TABS.push('integrations');
   const filteredGroups = TAB_GROUPS.map(g => ({
     ...g,
     tabs: g.tabs.filter(t => !HIDDEN_TABS.includes(t.id)),
@@ -457,43 +459,31 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
           {/* GHL free sub-account banner removed — building our own system */}
 
           {/* Setup nudge — only shown on setup-relevant tabs */}
-          {['chat', 'train', 'settings'].includes(activeTab) && (
+          {['inbox', 'ai-setup', 'settings'].includes(activeTab) && (
             <SetupNudgeBanner client={initialClient} onTabChange={handleTabChange} />
           )}
 
           {/* Tab content */}
           {activeTab === 'inbox' && (
-            <ConversationsTab client={initialClient} />
-          )}
-          {activeTab === 'chat' && (
-            <TerminalTab client={initialClient} />
-          )}
-          {activeTab === 'train' && (
-            <TrainTab client={initialClient} />
-          )}
-          {activeTab === 'workers' && (
-            <AIWorkersTab client={initialClient} agencyId={initialClient.agency_id} plan={plan} />
-          )}
-          {activeTab === 'marketing' && (
-            <MarketingTab client={initialClient} />
-          )}
-          {activeTab === 'operations' && (
-            <ITOperationsTab client={initialClient} />
-          )}
-          {activeTab === 'workflows' && (
-            <WorkflowsTab client={initialClient} />
+            <InboxWithTerminal client={initialClient} />
           )}
           {activeTab === 'crm' && (
             <CrmTab client={initialClient} clientId={initialClient.id} />
           )}
+          {activeTab === 'marketing' && (
+            <MarketingTab client={initialClient} />
+          )}
           {activeTab === 'website' && (
             <WebsiteTab clientId={initialClient.id} clientName={initialClient.name} />
           )}
-          {activeTab === 'booking' && (
-            <BookingConfigTab clientId={initialClient.id} />
+          {activeTab === 'ai-setup' && (
+            <AiSetupTab client={initialClient} clientId={initialClient.id} agencyId={initialClient.agency_id} plan={plan} />
+          )}
+          {activeTab === 'integrations' && (
+            <ITOperationsTab client={initialClient} />
           )}
           {activeTab === 'settings' && (
-            <SettingsTabMerged client={initialClient} role={role} plan={plan} accountType={accountType} onRefresh={() => router.refresh()} />
+            <SettingsWithPortal client={initialClient} role={role} plan={plan} accountType={accountType} onRefresh={() => router.refresh()} />
           )}
           {activeTab === 'insights' && (
             <InsightsTab
@@ -502,9 +492,6 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
               workerRoleId={((initialClient.container_config as Record<string, unknown>) ?? {}).active_worker_id as string | undefined}
             />
           )}
-          {activeTab === 'share' && (
-            <PortalTab client={initialClient} />
-          )}
 
         </main>
       </div>{/* end body */}
@@ -512,6 +499,73 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
   );
 }
 
+
+// ── Inbox + Terminal (merged) ─────────────────────────────────────────────────
+
+function InboxWithTerminal({ client }: { client: AgencyClient }) {
+  const [mode, setMode] = useState<'messages' | 'terminal'>('messages');
+
+  return (
+    <div className="space-y-3">
+      {/* Toggle between Messages and Terminal */}
+      <div className="flex items-center gap-1 border-b border-gray-100 pb-3">
+        {([
+          { id: 'messages' as const, label: 'Messages', icon: Inbox },
+          { id: 'terminal' as const, label: 'Terminal', icon: Terminal },
+        ]).map(f => (
+          <button
+            key={f.id}
+            onClick={() => setMode(f.id)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition ${
+              mode === f.id
+                ? 'bg-indigo-600 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            <f.icon className="h-3.5 w-3.5" />
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      {mode === 'messages' && <ConversationsTab client={client} />}
+      {mode === 'terminal' && <TerminalTab client={client} />}
+    </div>
+  );
+}
+
+// ── Settings + Portal (merged) ───────────────────────────────────────────────
+
+function SettingsWithPortal({
+  client,
+  role,
+  plan,
+  accountType,
+  onRefresh,
+}: {
+  client: AgencyClient;
+  role: AgencyMember['role'];
+  plan?: string;
+  accountType?: string;
+  onRefresh: () => void;
+}) {
+  return (
+    <div className="space-y-8">
+      <SettingsTabMerged
+        client={client}
+        role={role}
+        plan={plan}
+        accountType={accountType}
+        onRefresh={onRefresh}
+      />
+
+      {/* Share / Client Portal section */}
+      <div className="border-t border-gray-200 pt-6">
+        <PortalTab client={client} />
+      </div>
+    </div>
+  );
+}
 
 // ── Terminal Tab ──────────────────────────────────────────────────────────────
 
