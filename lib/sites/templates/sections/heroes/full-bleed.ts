@@ -14,6 +14,14 @@ interface HeroData {
   designStyle?: string;
 }
 
+// ─── SVG Icons (Lucide paths from original site) ────────────────────────────
+const ICON_SHIELD = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shield h-4 w-4 text-red-500" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path></svg>`;
+const ICON_STAR = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-star h-4 w-4 text-yellow-500 fill-yellow-500" aria-hidden="true"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"></path></svg>`;
+const ICON_AWARD = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-award h-4 w-4 text-red-500" aria-hidden="true"><path d="m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526"></path><circle cx="12" cy="8" r="6"></circle></svg>`;
+const ICON_ZAP = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-zap h-4 w-4 text-amber-500" aria-hidden="true"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"></path></svg>`;
+const ICON_PHONE_H5 = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-phone h-5 w-5" aria-hidden="true"><path d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384"></path></svg>`;
+const ICON_ARROW_RIGHT = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right h-5 w-5" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>`;
+
 function phoneIcon(size = 22): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`;
 }
@@ -29,72 +37,10 @@ export function fullBleedHero(data: HeroData): string {
 }
 
 function modernDarkHero(data: HeroData): string {
+  const phoneHref = data.phoneHref || (data.phone ? `tel:${data.phone}` : '#');
   const inputClasses = 'w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500/50 text-sm';
 
-  const trustBadges = `<div class="flex flex-wrap items-center gap-4 mt-6">
-      <div class="flex items-center gap-1.5 text-sm text-gray-300">
-        <svg width="16" height="16" fill="#fbbf24" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.957a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.37 2.448a1 1 0 00-.364 1.118l1.287 3.957c.3.921-.755 1.688-1.54 1.118l-3.37-2.448a1 1 0 00-1.176 0l-3.37 2.448c-.784.57-1.838-.197-1.539-1.118l1.287-3.957a1 1 0 00-.364-1.118L2.063 9.384c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.95-.69l1.286-3.957z"/></svg>
-        ★ 5.0 Google Rating
-      </div>
-      <div class="flex items-center gap-1.5 text-sm text-gray-300">🏆 36+ Years</div>
-      <div class="flex items-center gap-1.5 text-sm text-gray-300">⚡ Same-Day Service</div>
-    </div>`;
-
-  const quoteForm = `<div id="quote" class="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6 sm:p-8">
-      <h2 class="text-xl font-bold text-white mb-1">Get a Free Quote</h2>
-      <p class="text-sm text-gray-400 mb-6">We'll respond within 1 hour during business hours</p>
-      <form class="space-y-4" onsubmit="return false;">
-        <div class="grid sm:grid-cols-2 gap-4">
-          <input type="text" placeholder="Your Name *" required class="${inputClasses}"/>
-          <input type="tel" placeholder="Phone Number *" required class="${inputClasses}"/>
-        </div>
-        <input type="email" placeholder="Email Address" class="${inputClasses}"/>
-        <select class="${inputClasses} text-gray-400 appearance-none">
-          <option value="" selected>Select Service Needed</option>
-          <option value="ac-repair">AC Repair</option>
-          <option value="heating">Heating Repair</option>
-          <option value="refrigeration">Refrigeration</option>
-          <option value="installation">New Installation</option>
-          <option value="maintenance">Maintenance</option>
-          <option value="emergency">Emergency Service</option>
-        </select>
-        <textarea placeholder="Describe your issue..." rows="3" class="${inputClasses} resize-none"></textarea>
-        <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white py-3.5 rounded-xl font-semibold text-lg transition shadow-lg shadow-red-600/25">
-          Request Free Quote
-        </button>
-        <p class="text-xs text-gray-500 text-center">No spam, no obligation.</p>
-      </form>
-    </div>`;
-
-  return `<section class="relative pt-32 pb-20 sm:pt-40 sm:pb-28 overflow-hidden" aria-label="${data.businessName || ''} hero">
-  <div class="absolute inset-0 bg-gradient-to-br from-gray-900 via-black to-gray-900"></div>
-  <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(220,38,38,0.15),transparent_60%)]"></div>
-
-  <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="grid lg:grid-cols-2 gap-12 items-center">
-      <!-- Left: Content -->
-      <div>
-        ${data.emergencyText ? `<div class="flex items-center gap-2 mb-4">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-red-400"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path></svg>
-          <span class="text-sm text-red-400 font-medium">${data.emergencyText}</span>
-        </div>` : ''}
-        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight">${data.h1}</h1>
-        <p class="mt-4 text-lg text-gray-400 max-w-xl">${data.subtitle}</p>
-        ${trustBadges}
-        <div class="flex flex-col sm:flex-row gap-3 mt-8">
-          ${data.phone ? `<a href="${data.phoneHref || `tel:${data.phone}`}" class="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3.5 rounded-xl text-lg font-semibold transition shadow-lg shadow-red-600/25 no-underline">
-            ${phoneIcon(20)} Call Now - ${data.phone}
-          </a>` : ''}
-          <a href="${data.ctaLink || data.bookingUrl || '#quote'}" class="flex items-center justify-center gap-2 border border-white/20 hover:bg-white/5 text-white px-6 py-3.5 rounded-xl text-lg font-medium transition no-underline">Get Free Quote →</a>
-        </div>
-      </div>
-      <!-- Right: Quote Form -->
-      <div>
-        ${quoteForm}
-      </div>
-    </div>
-  </div>
-</section>`;
+  return `<section class="relative pt-32 pb-20 sm:pt-40 sm:pb-28 overflow-hidden"><div class="absolute inset-0 bg-gradient-to-br from-gray-900 via-black to-gray-900"></div><div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(220,38,38,0.15),transparent_60%)]"></div><div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div class="grid lg:grid-cols-2 gap-12 items-center"><div>${data.emergencyText ? `<div class="flex items-center gap-2 mb-4">${ICON_SHIELD}<span class="text-sm text-red-400 font-medium">${data.emergencyText}</span></div>` : ''}<h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight">${data.h1}</h1><p class="mt-4 text-lg text-gray-400 max-w-xl">${data.subtitle}</p><div class="flex flex-wrap items-center gap-4 mt-6"><div class="flex items-center gap-1.5 text-sm text-gray-300">${ICON_STAR}<span class="font-semibold">5.0</span> Google Rating</div><div class="flex items-center gap-1.5 text-sm text-gray-300">${ICON_AWARD}36+ Years Experience</div><div class="flex items-center gap-1.5 text-sm text-gray-300">${ICON_ZAP}Same-Day Service</div></div><div class="flex flex-col sm:flex-row gap-3 mt-8">${data.phone ? `<a href="${phoneHref}" class="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3.5 rounded-xl text-lg font-semibold transition shadow-lg shadow-red-600/25">${ICON_PHONE_H5}Call Now - ${data.phone}</a>` : ''}<a href="#quote" class="flex items-center justify-center gap-2 border border-white/20 hover:bg-white/5 text-white px-6 py-3.5 rounded-xl text-lg font-medium transition">Get Free Quote${ICON_ARROW_RIGHT}</a></div></div><div id="quote" class="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6 sm:p-8"><h2 class="text-xl font-bold text-white mb-1">Get a Free Quote</h2><p class="text-sm text-gray-400 mb-6">We&#x27;ll respond within 1 hour during business hours</p><form class="space-y-4"><div class="grid sm:grid-cols-2 gap-4"><input type="text" placeholder="Your Name *" required="" class="${inputClasses}" value=""/><input type="tel" placeholder="Phone Number *" required="" class="${inputClasses}" value=""/></div><input type="email" placeholder="Email Address" class="${inputClasses}" value=""/><select class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500/50 text-sm appearance-none"><option value="" selected="">Select Service Needed</option><option value="ac-repair">AC Repair</option><option value="heating">Heating Repair</option><option value="refrigeration">Refrigeration</option><option value="installation">New Installation</option><option value="maintenance">Maintenance</option><option value="emergency">Emergency Service</option></select><textarea placeholder="Describe your issue..." rows="3" class="${inputClasses} resize-none"></textarea><button type="submit" class="w-full bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white py-3.5 rounded-xl font-semibold text-lg transition shadow-lg shadow-red-600/25">Request Free Quote</button><p class="text-xs text-gray-500 text-center">No spam, no obligation. We respect your privacy.</p></form></div></div></div></section>`;
 }
 
 function lightHero(data: HeroData): string {
