@@ -67,6 +67,13 @@ async function runBuild(siteId: string, supabase: ReturnType<typeof createServic
 
   if (siteErr || !site) throw new Error(`Site not found: ${siteId}`);
 
+  // Block builds for externally-hosted sites (e.g., original HVAC site from Vercel)
+  if (site.deploy_target === 'external') {
+    console.log(`[build-internal] Skipping build for site ${siteId} — deploy_target is 'external'`);
+    await supabase.from('client_sites').update({ status: 'live' }).eq('id', siteId);
+    return;
+  }
+
   const domain = site.site_domain || site.site_subdomain;
   if (!domain) throw new Error(`No domain for site ${siteId}`);
 
