@@ -25,15 +25,18 @@ import {
   Target,
   Sparkles,
   ChevronDown,
+  Star,
 } from 'lucide-react';
 import type { AgencyClient } from '@/lib/agency/queries';
 import EmailMarketingTab from './email-marketing-tab';
 import CampaignsSubTab from './campaigns-sub-tab';
 import FunnelsSubTab from './funnels-sub-tab';
+import SMSCampaignsSubTab from './sms-campaigns-sub-tab';
+import ReviewsSubTab from './reviews-sub-tab';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-type SubTab = 'dashboard' | 'seo' | 'content' | 'competitors' | 'social' | 'email' | 'sequences' | 'campaigns' | 'funnels';
+type SubTab = 'dashboard' | 'seo' | 'content' | 'competitors' | 'social' | 'email' | 'sequences' | 'campaigns' | 'funnels' | 'sms' | 'reviews';
 
 interface Keyword {
   keyword: string;
@@ -1942,9 +1945,11 @@ const SUB_TABS: { id: SubTab; label: string; icon: React.ElementType }[] = [
   { id: 'competitors', label: 'Competitors', icon: Eye },
   { id: 'social', label: 'Social', icon: Smartphone },
   { id: 'email', label: 'Email', icon: Mail },
+  { id: 'sms', label: 'SMS', icon: MessageSquare },
   { id: 'sequences', label: 'Sequences', icon: Mail },
   { id: 'campaigns', label: 'Campaigns', icon: Zap },
   { id: 'funnels', label: 'Funnels', icon: Target },
+  { id: 'reviews', label: 'Reviews', icon: Star },
 ];
 
 export default function MarketingTab({ client }: { client: AgencyClient }) {
@@ -1983,8 +1988,10 @@ export default function MarketingTab({ client }: { client: AgencyClient }) {
       {subTab === 'social' && <SocialView client={client} />}
       {subTab === 'email' && <EmailMarketingTab client={client} />}
       {subTab === 'sequences' && <SequencesView client={client} />}
+      {subTab === 'sms' && <SMSCampaignsSubTab client={client} />}
       {subTab === 'campaigns' && <CampaignsSubTab client={client} />}
       {subTab === 'funnels' && <FunnelsSubTab client={client} />}
+      {subTab === 'reviews' && <ReviewsSubTab client={client} />}
     </div>
   );
 }

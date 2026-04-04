@@ -417,6 +417,7 @@ You have access to the following tools:
 - **get_calendars**: List all calendars for the location.
 - **tag_contact**: Label this contact (e.g., "hot-lead", "interested-in-pricing"). Use proactively based on conversation signals.
 - **create_opportunity**: Create a sales opportunity when the customer shows buying intent.${ghlConfig?.pipelineId ? `\n  Default pipeline_id: ${ghlConfig.pipelineId}` : ''}
+- **send_payment_link**: Send a Stripe payment link to the customer. Use when they ask to pay or you need to collect payment for a service.
 - **escalate_to_human**: Flag for human follow-up when you can't help, the customer is upset, or they ask for a person.
 
 When booking appointments:
@@ -676,5 +677,24 @@ async function firePostConversationHooks(ctx: SmartHandlerContext): Promise<void
     }
   } catch (e: unknown) {
     console.warn('[smart-handler] Workflow trigger check failed:', e);
+  }
+
+  // 2. Auto-score lead after conversation (non-blocking)
+  try {
+    const { scoreLeadWithAI } = await import('@/lib/crm/ai-lead-scorer');
+    await scoreLeadWithAI(
+      {
+        contactId: ctx.contactId,
+        conversationHistory: [ctx.messageBody],
+        engagementMetrics: {
+          messagesCount: 1,
+          lastActive: new Date().toISOString(),
+          channelsUsed: [ctx.messageType],
+        },
+      },
+      ctx.client.agency_id,
+    );
+  } catch (e: unknown) {
+    console.warn('[smart-handler] Auto lead scoring failed (non-fatal):', e);
   }
 }
