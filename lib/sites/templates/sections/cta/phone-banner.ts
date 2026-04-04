@@ -11,6 +11,10 @@ interface CtaData {
   designStyle?: string;
 }
 
+// Lucide SVGs from original site
+const ICON_PHONE_H5 = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-phone h-5 w-5" aria-hidden="true"><path d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384"></path></svg>`;
+const ICON_MESSAGE_SQUARE = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-square h-5 w-5" aria-hidden="true"><path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z"></path></svg>`;
+
 export function phoneBannerCta(data: CtaData): string {
   const isDark = data.designStyle === 'modern-dark';
   if (isDark) return modernDarkCta(data);
@@ -22,23 +26,7 @@ function modernDarkCta(data: CtaData): string {
   const phone = data.phone || '';
   const phoneHref = data.phoneHref || `tel:${phone}`;
 
-  return `<section id="contact" class="py-20 sm:py-28" aria-label="Call to action">
-  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-    <div class="bg-gradient-to-br from-red-600 to-red-800 rounded-3xl p-8 sm:p-14">
-      <h2 class="text-3xl sm:text-4xl font-bold text-white mb-3">${heading}</h2>
-      ${data.subtitle ? `<p class="text-red-100 max-w-lg mx-auto mb-8">${data.subtitle}</p>` : '<div class="mb-8"></div>'}
-      <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        ${phone ? `<a href="${phoneHref}" class="flex items-center justify-center gap-2 bg-white text-red-600 px-6 py-3.5 rounded-xl text-lg font-semibold hover:bg-red-50 transition no-underline" aria-label="Call ${phone}">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-          Call ${phone}
-        </a>` : ''}
-        <a href="${data.bookingUrl || '#quote'}" class="flex items-center justify-center gap-2 border-2 border-white/30 text-white px-6 py-3.5 rounded-xl text-lg font-medium hover:bg-white/10 transition no-underline">
-          Request Quote
-        </a>
-      </div>
-    </div>
-  </div>
-</section>`;
+  return `<section id="contact" class="py-20 sm:py-28"><div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center"><div class="bg-gradient-to-br from-red-600 to-red-800 rounded-3xl p-8 sm:p-14"><h2 class="text-3xl sm:text-4xl font-bold text-white mb-3">${heading}</h2>${data.subtitle ? `<p class="text-red-100 max-w-lg mx-auto mb-8">${data.subtitle}</p>` : '<div class="mb-8"></div>'}<div class="flex flex-col sm:flex-row gap-4 justify-center">${phone ? `<a href="${phoneHref}" class="flex items-center justify-center gap-2 bg-white text-red-600 px-6 py-3.5 rounded-xl text-lg font-semibold hover:bg-red-50 transition">${ICON_PHONE_H5}Call ${phone}</a>` : ''}<a href="#quote" class="flex items-center justify-center gap-2 border-2 border-white/30 text-white px-6 py-3.5 rounded-xl text-lg font-medium hover:bg-white/10 transition">${ICON_MESSAGE_SQUARE}Request Quote</a></div></div></div></section>`;
 }
 
 function lightCta(data: CtaData): string {

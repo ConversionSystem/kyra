@@ -14,6 +14,13 @@ interface FooterData {
   designStyle?: string;
 }
 
+// Lucide SVGs from original site
+const ICON_THERMOMETER_FOOTER = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-thermometer h-5 w-5 text-white" aria-hidden="true"><path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"></path></svg>`;
+const ICON_PHONE_FOOTER = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-phone h-4 w-4 text-red-500" aria-hidden="true"><path d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384"></path></svg>`;
+const ICON_MAIL = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mail h-4 w-4 text-red-500" aria-hidden="true"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"></path><rect x="2" y="4" width="20" height="16" rx="2"></rect></svg>`;
+const ICON_MAP_PIN_FOOTER = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map-pin h-4 w-4 text-red-500" aria-hidden="true"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path><circle cx="12" cy="10" r="3"></circle></svg>`;
+const ICON_CLOCK = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock h-4 w-4 text-red-500" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>`;
+
 const SOCIAL_ICONS: Record<string, string> = {
   facebook: 'M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z',
   twitter: 'M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z',
@@ -45,77 +52,32 @@ export function fourColumnFooter(data: FooterData): string {
   return lightFooter(data, primary, year);
 }
 
-function modernDarkFooter(data: FooterData, primary: string, year: number): string {
+function modernDarkFooter(data: FooterData, _primary: string, year: number): string {
   const serviceLinks = (data.services || []).slice(0, 7).map(s =>
-    `<li><a href="/services/${s.slug}" class="text-gray-500 hover:text-red-400 text-sm transition no-underline">${s.name}</a></li>`
-  ).join('\n          ');
+    `<a class="block text-sm text-gray-400 hover:text-white transition" href="/services/${s.slug}">${s.name}</a>`
+  ).join('');
 
   const cityLinks = (data.cities || []).slice(0, 7).map(c =>
-    `<li><a href="/cities/${c.slug}" class="text-gray-500 hover:text-red-400 text-sm transition no-underline">${c.name}</a></li>`
-  ).join('\n          ');
+    `<a class="block text-sm text-gray-400 hover:text-white transition" href="/${c.slug}">${c.name}</a>`
+  ).join('');
 
   const phone = data.phone
-    ? `<div class="text-sm text-gray-400"><a href="${data.phoneHref || `tel:${data.phone}`}" class="text-gray-300 hover:text-red-400 transition no-underline font-semibold">${data.phone}</a></div>`
+    ? `<a href="${data.phoneHref || `tel:${data.phone}`}" class="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition">${ICON_PHONE_FOOTER} ${data.phone}</a>`
     : '';
 
   const email = data.email
-    ? `<div class="text-sm"><a href="mailto:${data.email}" class="text-gray-500 hover:text-red-400 transition no-underline">${data.email}</a></div>`
+    ? `<a href="mailto:${data.email}" class="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition">${ICON_MAIL} ${data.email}</a>`
     : '';
 
   const address = data.address
-    ? `<div class="text-sm text-gray-500">${data.address}</div>`
+    ? `<div class="flex items-center gap-2 text-sm text-gray-400">${ICON_MAP_PIN_FOOTER} ${data.address}</div>`
     : '';
 
   const hours = data.formattedHours
-    ? `<div class="text-sm text-gray-500 whitespace-pre-line">${data.formattedHours}</div>`
+    ? `<div class="flex items-center gap-2 text-sm text-gray-400">${ICON_CLOCK} ${data.formattedHours}</div>`
     : '';
 
-  return `<footer class="border-t border-white/10 bg-gray-900/50" aria-label="${data.businessName} footer">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    <div class="grid md:grid-cols-4 gap-8">
-      <!-- Col 1: Brand -->
-      <div>
-        <div class="flex items-center gap-3 mb-4">
-          <div class="h-8 w-8 rounded-lg bg-red-600 flex items-center justify-center">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-          </div>
-          <span class="text-lg font-bold text-white">${data.businessName}</span>
-        </div>
-        <p class="text-sm text-gray-500 leading-relaxed max-w-[240px]">${data.footerTagline || 'Proudly serving our community with quality, integrity, and care on every job.'}</p>
-      </div>
-
-      <!-- Col 2: Services -->
-      <div>
-        <h4 class="text-sm font-semibold text-white uppercase tracking-wider mb-3">Services</h4>
-        <ul class="space-y-2 list-none p-0 m-0">
-          ${serviceLinks || '<li class="text-sm text-gray-500">Coming soon</li>'}
-        </ul>
-      </div>
-
-      <!-- Col 3: Service Areas -->
-      <div>
-        <h4 class="text-sm font-semibold text-white uppercase tracking-wider mb-3">Service Areas</h4>
-        <ul class="space-y-2 list-none p-0 m-0">
-          ${cityLinks || '<li class="text-sm text-gray-500">Local &amp; Surrounding Areas</li>'}
-        </ul>
-      </div>
-
-      <!-- Col 4: Contact -->
-      <div>
-        <h4 class="text-sm font-semibold text-white uppercase tracking-wider mb-3">Contact</h4>
-        <div class="space-y-2">
-          ${phone}
-          ${email}
-          ${address}
-          ${hours}
-        </div>
-      </div>
-    </div>
-    <div class="border-t border-white/10 mt-10 pt-6 text-center text-xs text-gray-500">
-      &copy; ${year} ${data.businessName}. All rights reserved. Powered by <a href="https://kyra.conversionsystem.com" target="_blank" class="text-red-500 hover:text-red-400 no-underline font-semibold">Kyra AI</a>
-    </div>
-  </div>
-</footer>`;
+  return `<footer class="border-t border-white/10 bg-gray-900/50"><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12"><div class="grid md:grid-cols-4 gap-8"><div><div class="flex items-center gap-2 mb-3"><div class="h-8 w-8 rounded-lg bg-red-600 flex items-center justify-center">${ICON_THERMOMETER_FOOTER}</div><span class="font-bold text-white">${data.businessName}</span></div><p class="text-sm text-gray-400 mb-3">${data.footerTagline || 'Proudly serving our community.'}</p><p class="text-sm text-gray-400">Serving the area with quality and care.</p></div><div><h4 class="text-sm font-semibold text-white uppercase tracking-wider mb-3">Services</h4><div class="space-y-2">${serviceLinks || '<span class="text-sm text-gray-500">Coming soon</span>'}</div></div><div><h4 class="text-sm font-semibold text-white uppercase tracking-wider mb-3">Service Areas</h4><div class="space-y-2">${cityLinks || '<span class="text-sm text-gray-500">Local &amp; Surrounding Areas</span>'}</div></div><div><h4 class="text-sm font-semibold text-white uppercase tracking-wider mb-3">Contact</h4><div class="space-y-3">${phone}${email}${address}${hours}</div></div></div><div class="border-t border-white/10 mt-10 pt-6 text-center text-xs text-gray-500">&copy; ${year} ${data.businessName}. All rights reserved.</div></div></footer>`;
 }
 
 function lightFooter(data: FooterData, primary: string, year: number): string {
