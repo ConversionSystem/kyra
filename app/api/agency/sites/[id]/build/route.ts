@@ -56,6 +56,10 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ error: 'Site not found' }, { status: 404 });
   }
 
+  if (site.deploy_target === 'external') {
+    return NextResponse.json({ error: 'This site is externally hosted and cannot be rebuilt through Kyra. Edit the site directly or change deploy_target.' }, { status: 400 });
+  }
+
   if (!site.site_domain && !site.site_subdomain) {
     return NextResponse.json({ error: 'No domain configured for this site' }, { status: 400 });
   }
