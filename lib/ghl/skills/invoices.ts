@@ -1,8 +1,9 @@
 // ============================================================================
-// GHL Skills — Invoices & Payments (6 skills)
+// GHL Skills — Invoices & Payments (7 skills)
 // ============================================================================
 
 import type { ToolResult } from '../ghl-tools';
+import { createPaymentLink } from '@/lib/payments/payment-collection';
 
 const GHL_API_BASE = 'https://services.leadconnectorhq.com';
 const GHL_API_VERSION = '2021-04-15';
@@ -131,6 +132,21 @@ export const invoiceToolDefinitions = [
   {
     type: 'function' as const,
     function: {
+      name: 'send_payment_link',
+      description: 'Send a payment link to the customer for a product or service. Creates a Stripe payment link and returns the URL to share with the customer.',
+      parameters: {
+        type: 'object',
+        properties: {
+          amount: { type: 'number', description: 'Amount in dollars (e.g. 275 for $275)' },
+          description: { type: 'string', description: 'What the payment is for (e.g. "Pipe repair - 142 Oak St")' },
+        },
+        required: ['amount', 'description'],
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
       name: 'get_payment_history',
       description: 'Get payment history for a contact.',
       parameters: {
@@ -235,6 +251,38 @@ export async function executeInvoiceTool(
         if (!res.ok) return ghlError(res);
         const data = await res.json();
         return { success: true, data: data.payment ?? data };
+      }
+
+      case 'send_payment_link': {
+        const amountDollars = Number(args.amount) || 0;
+        if (amountDollars <= 0) {
+          return { success: false, error: 'Amount must be greater than 0' };
+        }
+        const amountCents = Math.round(amountDollars * 100);
+        const paymentDescription = String(args.description || 'Payment');
+
+        const link = await createPaymentLink({
+          amount: amountCents,
+          description: paymentDescription,
+          metadata: {
+            contact_id: args.contact_id as string || '',
+            location_id: locId,
+          },
+        });
+
+        if (!link) {
+          return { success: false, error: 'Failed to create payment link. Stripe may not be configured.' };
+        }
+
+        return {
+          success: true,
+          data: {
+            payment_url: link.url,
+            amount: amountDollars,
+            description: paymentDescription,
+            message: `Payment link created for $${amountDollars.toFixed(2)} — ${paymentDescription}`,
+          },
+        };
       }
 
       case 'get_payment_history': {

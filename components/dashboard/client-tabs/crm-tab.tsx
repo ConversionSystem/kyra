@@ -887,6 +887,9 @@ function ContactDetailPanel({ contact: initial, onBack, client }: { contact: Con
         </div>
       </div>
 
+      {/* Custom Fields */}
+      <CustomFieldsSection contact={contact} client={client} onUpdate={(fields) => setContact({ ...contact, custom_fields: fields } as Contact)} />
+
       {/* AI Insights */}
       {(contact.ai_summary || contact.ai_next_action) && (
         <div className="bg-amber-50 rounded-xl border border-amber-200 p-4">
