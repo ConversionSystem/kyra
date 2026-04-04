@@ -204,3 +204,32 @@ export async function getRankingDrops(
   drops.sort((a, b) => b.drop - a.drop);
   return { mock: false, data: drops.slice(0, 20) };
 }
+
+/**
+ * Submit a sitemap URL to Google Search Console via the Webmasters API.
+ * Uses service account auth. Non-fatal — callers should log but not fail on error.
+ */
+export async function submitSitemapToGSC(
+  siteUrl: string,
+  sitemapUrl: string,
+): Promise<{ success: boolean; error?: string }> {
+  if (!isConfigured()) {
+    return { success: false, error: 'GOOGLE_SERVICE_ACCOUNT_JSON not configured' };
+  }
+  try {
+    const token = await getGoogleServiceAccessToken(['https://www.googleapis.com/auth/webmasters']);
+    const encodedSite = encodeURIComponent(siteUrl);
+    const encodedSitemap = encodeURIComponent(sitemapUrl);
+    const res = await fetch(
+      `https://www.googleapis.com/webmasters/v3/sites/${encodedSite}/sitemaps/${encodedSitemap}`,
+      { method: 'PUT', headers: { Authorization: `Bearer ${token}` } },
+    );
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({})) as { error?: { message?: string } };
+      return { success: false, error: body.error?.message || `GSC API ${res.status}` };
+    }
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}

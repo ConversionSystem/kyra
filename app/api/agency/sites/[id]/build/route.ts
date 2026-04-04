@@ -187,6 +187,16 @@ async function buildAndDeploy(site: any, supabase: any) {
       })
       .eq('id', site.id);
 
+    if (site.search_console_connected) {
+      try {
+        const { submitSitemapToGSC } = await import('@/lib/integrations/gsc');
+        const result = await submitSitemapToGSC(`https://${domain}/`, `https://${domain}/sitemap.xml`);
+        console.log(`[sites/build] GSC sitemap submission: ${result.success ? 'ok' : result.error}`);
+      } catch (err) {
+        console.error('[sites/build] GSC submission error:', err);
+      }
+    }
+
     return;
   }
 
@@ -447,4 +457,15 @@ async function buildAndDeploy(site: any, supabase: any) {
       updated_at: now,
     })
     .eq('id', site.id);
+
+  // Submit sitemap to GSC if connected — non-fatal
+  if (site.search_console_connected) {
+    try {
+      const { submitSitemapToGSC } = await import('@/lib/integrations/gsc');
+      const result = await submitSitemapToGSC(`https://${domain}/`, `https://${domain}/sitemap.xml`);
+      console.log(`[sites/build] GSC sitemap submission: ${result.success ? 'ok' : result.error}`);
+    } catch (err) {
+      console.error('[sites/build] GSC submission error:', err);
+    }
+  }
 }

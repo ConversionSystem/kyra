@@ -483,21 +483,59 @@ export function assemblePage(options: AssemblePageOptions): string {
   // Strip the :root block (already handled by colorVars) to avoid duplication
   const designOverrideCSS = fullDesignCSS.replace(/:root\s*\{[^}]*\}\s*/g, '').trim();
 
+  // ── Blog article body — prose-styled content sections ─────────────────────
+  let blogArticleHtml = '';
+  if (pageType === 'blog' && pageData.content_sections?.length) {
+    const articleSections = pageData.content_sections.map(s => {
+      let html = `<h2 style="font-size:1.4rem;font-weight:700;color:#111827;margin:2rem 0 0.75rem;">${s.heading}</h2><p style="margin:0 0 1rem;">${s.body}</p>`;
+      if (s.cta_text && s.cta_link) {
+        html += `<p><a href="${s.cta_link}" style="color:${colors.primary};font-weight:600;text-decoration:underline;">${s.cta_text}</a></p>`;
+      }
+      return html;
+    }).join('');
+    blogArticleHtml = `<article id="article" style="max-width:780px;margin:0 auto;padding:3rem 1.5rem;font-size:1.05rem;line-height:1.85;color:#374151;">${articleSections}</article>`;
+  }
+
+  // ── Blog index — grid of post cards from content_sections ─────────────────
+  let blogIndexHtml = '';
+  if (pageType === 'blog_index' && pageData.content_sections?.length) {
+    const cards = pageData.content_sections.map(post => `
+      <div style="background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:1.5rem;display:flex;flex-direction:column;gap:0.75rem;">
+        <h3 style="font-size:1.05rem;font-weight:700;color:#111827;margin:0;">${post.heading}</h3>
+        <p style="font-size:0.9rem;color:#6b7280;flex:1;margin:0;">${post.body}</p>
+        ${post.cta_link ? `<a href="${post.cta_link}" style="color:${colors.primary};font-weight:600;font-size:0.9rem;text-decoration:none;">Read More →</a>` : ''}
+      </div>`).join('');
+    blogIndexHtml = `<section id="blog" style="padding:3rem 1.5rem;background:#f9fafb;">
+      <div style="max-width:1100px;margin:0 auto;">
+        <h2 style="font-size:1.75rem;font-weight:800;text-align:center;margin:0 0 2rem;color:#111827;">Latest Articles</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1.5rem;">${cards}</div>
+      </div>
+    </section>`;
+  }
+
   // P2: Build section HTML map for ordered assembly
   const sectionHtmlMap: Record<string, string> = {
     hero: heroHtml,
     services: pageType === 'homepage' ? servicesHtml : '',
-    about: aboutHtml,
+    about: pageType !== 'blog' && pageType !== 'blog_index' ? aboutHtml : '',
     testimonials: pageType === 'homepage' ? testimonialsHtml : '',
     faq: faqHtml,
     cta: ctaHtml,
+    blog_article: blogArticleHtml,
+    blog_index: blogIndexHtml,
   };
 
   // Default section order (matches original hardcoded order)
   const defaultOrder = ['hero', 'services', 'about', 'testimonials', 'faq', 'cta'];
 
-  // Use custom order if provided, fall back to default
-  const order = sectionOrder && sectionOrder.length > 0 ? sectionOrder : defaultOrder;
+  // Use custom order if provided, fall back to default; blog pages have their own order
+  const order = sectionOrder && sectionOrder.length > 0
+    ? sectionOrder
+    : pageType === 'blog'
+      ? ['hero', 'blog_article', 'faq', 'cta']
+      : pageType === 'blog_index'
+        ? ['hero', 'blog_index', 'cta']
+        : defaultOrder;
 
   // Assemble main content sections in the specified order
   const mainSectionsHtml = order
