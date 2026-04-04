@@ -224,7 +224,7 @@ export default function EmailMarketingTab({ client }: EmailMarketingTabProps) {
   return (
     <div className="space-y-6">
       {/* Sub-tab navigation */}
-      <div className="flex gap-1 border-b border-gray-200">
+      <div className="flex gap-1 border-b border-gray-200 overflow-x-auto scrollbar-hide">
         {subTabs.map(t => (
           <button
             key={t.id}

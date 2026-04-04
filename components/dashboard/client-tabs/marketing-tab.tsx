@@ -1748,7 +1748,7 @@ Make them feel authentic, not salesy. Each should offer genuine value.`;
         <div className="rounded-xl border border-gray-200 bg-white p-5">
           <h3 className="text-sm font-semibold text-gray-900 mb-1">Weekly Calendar</h3>
           <p className="text-xs text-gray-500 mb-4">Click a day to generate content. Filled slots show scheduled drafts.</p>
-          <div className="grid grid-cols-7 gap-2">
+          <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
             {weekDays.map(day => (
               <button
                 key={day.label}
@@ -1965,7 +1965,7 @@ export default function MarketingTab({ client }: { client: AgencyClient }) {
       </div>
 
       {/* Sub-tab navigation */}
-      <div className="flex gap-1 border-b border-gray-200 overflow-x-auto">
+      <div className="flex flex-nowrap gap-1 border-b border-gray-200 overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
         {SUB_TABS.map(t => (
           <button
             key={t.id}

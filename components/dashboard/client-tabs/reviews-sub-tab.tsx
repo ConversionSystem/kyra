@@ -211,7 +211,7 @@ export default function ReviewsSubTab({ client }: { client: AgencyClient }) {
       </div>
 
       {/* View Toggle */}
-      <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+      <div className="flex gap-1 bg-gray-100 rounded-lg p-1 overflow-x-auto scrollbar-hide">
         {[
           { id: 'overview' as const, label: 'Overview', icon: TrendingUp },
           { id: 'reviews' as const, label: 'Reviews', icon: Star },
@@ -221,7 +221,7 @@ export default function ReviewsSubTab({ client }: { client: AgencyClient }) {
           <button
             key={v.id}
             onClick={() => setActiveView(v.id)}
-            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
               activeView === v.id ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
             }`}
           >

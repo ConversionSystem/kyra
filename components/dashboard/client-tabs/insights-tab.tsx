@@ -215,7 +215,7 @@ export default function InsightsTab({ client, defaultSubTab = 'usage', isSeoLock
   return (
     <div className="space-y-6">
       {/* Sub-nav pills */}
-      <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+      <div className="flex gap-1 bg-gray-100 rounded-lg p-1 overflow-x-auto scrollbar-hide">
         {SUB_TABS.map((tab) => (
           <button
             key={tab}
