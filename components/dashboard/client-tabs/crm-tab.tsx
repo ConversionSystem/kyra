@@ -8,9 +8,10 @@ import {
   Calendar, Download, Filter, MessageSquare, Target,
   TrendingUp, Zap, CheckSquare, Square, Briefcase, Eye,
   MoreHorizontal, RefreshCw, ChevronLeft, Sparkles, Flame, Bot, Bell,
-  Sliders, GitMerge, Layers, PhoneCall, GitBranch,
+  Sliders, GitMerge, Layers, PhoneCall, GitBranch, CreditCard,
 } from 'lucide-react';
 import type { AgencyClient } from '@/lib/agency/queries';
+import PaymentsSubTab from './payments-sub-tab';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -141,7 +142,7 @@ interface AnalyticsData {
   recent_activities: ActivityItem[];
 }
 
-type Section = 'ai' | 'contacts' | 'deals' | 'tasks' | 'analytics' | 'activity' | 'segments' | 'scoring' | 'merge';
+type Section = 'ai' | 'contacts' | 'deals' | 'tasks' | 'payments' | 'analytics' | 'activity' | 'segments' | 'scoring' | 'merge';
 
 // CommandFeedItem for AI Insights section
 interface CommandFeedItem {
@@ -2765,6 +2766,7 @@ const MAIN_SECTIONS: { key: Section; label: string; icon: React.ComponentType<{ 
   { key: 'contacts', label: 'Contacts', icon: Users },
   { key: 'deals', label: 'Deals', icon: DollarSign },
   { key: 'tasks', label: 'Tasks', icon: CheckSquare },
+  { key: 'payments', label: 'Payments', icon: CreditCard },
   { key: 'analytics', label: 'Analytics', icon: BarChart3 },
   { key: 'activity', label: 'Activity', icon: Activity },
 ];
@@ -2837,6 +2839,7 @@ export default function CrmTab({ client, clientId }: { client: AgencyClient; cli
       {section === 'contacts' && <ContactsSection client={client} clientId={scopedClientId} />}
       {section === 'deals' && <DealsSection clientId={scopedClientId} />}
       {section === 'tasks' && <TasksSection />}
+      {section === 'payments' && <PaymentsSubTab clientId={scopedClientId} />}
       {section === 'analytics' && <AnalyticsSection />}
       {section === 'activity' && <ActivitySection />}
       {section === 'segments' && <SegmentsSection setSection={setSection} />}
