@@ -185,6 +185,10 @@ export interface AssemblePageOptions {
     footerTagline?: string | null;
     /** Social media links from DB */
     socialLinks?: Record<string, string> | null;
+    whyChoose?: Array<{ title: string; description: string }>;
+    mapEmbedUrl?: string;
+    serviceAreasHeading?: string;
+    serviceAreasSubtitle?: string;
   };
   pageType: string;
 }
