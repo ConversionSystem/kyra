@@ -5,6 +5,7 @@ interface ServicesData {
     slug: string;
     description?: string;
     icon?: string;
+    bullets?: string[];
   }>;
   businessName?: string;
   colors: { primary: string; secondary: string };
@@ -40,6 +41,22 @@ function getDarkServiceIcon(name: string, customIcon?: string): string {
   return ICON_WRENCH;
 }
 
+const DARK_SERVICE_BULLETS: Array<{ keywords: string[]; bullets: string[] }> = [
+  { keywords: ['air', 'ac', 'cool', 'conditioning'], bullets: ['Same-day AC repair', 'New system installation', 'Seasonal tune-ups', 'Ductwork inspection'] },
+  { keywords: ['heat', 'furnace', 'warm'], bullets: ['Furnace repair &amp; replacement', 'Heat pump systems', 'Radiant heating', 'Emergency service'] },
+  { keywords: ['refrig', 'cold', 'freeze', 'ice'], bullets: ['Sub-Zero repair', 'Walk-in coolers', 'Commercial refrigeration', 'Preventive maintenance'] },
+  { keywords: ['install'], bullets: ['System design &amp; sizing', 'High-efficiency units', 'Ductwork installation', 'Permit handling'] },
+  { keywords: ['maintain', 'tune', 'prevent'], bullets: ['Annual tune-ups', 'Filter replacement', 'Coil cleaning', 'Performance testing'] },
+];
+
+function getDarkServiceBullets(name: string): string[] {
+  const lower = name.toLowerCase();
+  for (const entry of DARK_SERVICE_BULLETS) {
+    if (entry.keywords.some(k => lower.includes(k))) return entry.bullets;
+  }
+  return [];
+}
+
 const SERVICE_ICONS: Record<string, string> = {
   default: `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.049.58.025 1.193-.14 1.743" /></svg>`,
   cleaning: `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>`,
@@ -71,8 +88,16 @@ function modernDarkServices(data: ServicesData): string {
   const cards = displayServices.map(s => {
     const icon = getDarkServiceIcon(s.name, s.icon);
     const description = s.description || `Professional ${s.name.toLowerCase()} services delivered with care and expertise.`;
-    const bullets = description.split(/[.!]+/).filter(b => b.trim().length > 5).slice(0, 4);
-    if (bullets.length === 0) bullets.push(description);
+    let bullets: string[];
+    if (s.bullets && s.bullets.length > 0) {
+      bullets = s.bullets.slice(0, 4);
+    } else {
+      bullets = getDarkServiceBullets(s.name);
+      if (bullets.length === 0) {
+        bullets = description.split(/[.!]+/).filter(b => b.trim().length > 5).slice(0, 4);
+        if (bullets.length === 0) bullets = [description];
+      }
+    }
 
     return `<a class="group bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-red-500/30 hover:bg-white/[0.07] transition-all" href="/services/${s.slug}"><div class="h-12 w-12 rounded-xl bg-red-600/10 flex items-center justify-center mb-4 group-hover:bg-red-600/20 transition">${icon}</div><h3 class="text-lg font-semibold text-white mb-2">${s.name}</h3><p class="text-sm text-gray-400 mb-4">${description}</p><ul class="space-y-1.5">${bullets.map(b => `<li class="flex items-center gap-2 text-sm text-gray-300">${ICON_CIRCLE_CHECK}${b.trim()}</li>`).join('')}</ul><div class="flex items-center gap-1 mt-4 text-red-400 text-sm font-medium group-hover:text-red-300 transition">Learn More ${ICON_CHEVRON_RIGHT}</div></a>`;
   });
