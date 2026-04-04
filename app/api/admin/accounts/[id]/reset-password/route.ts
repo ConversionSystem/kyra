@@ -26,7 +26,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!email) return NextResponse.json({ error: 'No email for user' }, { status: 404 });
 
   const { error } = await sb.auth.resetPasswordForEmail(email, {
-    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://kyra.conversionsystem.com'}/auth/callback?next=/agency/billing`,
+    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://kyra.conversionsystem.com'}/reset-password`,
   });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
