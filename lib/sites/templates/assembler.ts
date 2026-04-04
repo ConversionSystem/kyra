@@ -3,6 +3,12 @@
 import type { SectionRecipe } from './recipes';
 import type { ContentSection, FaqItem } from '../types';
 import { getDesignCSS } from '../design-system';
+import { buildPageSchemas } from '../schema-generator';
+import { generateKeywords } from '../seo-helpers';
+import {
+  generateLocalBusinessSchemaForPage,
+  generateBreadcrumbSchemaForPage,
+} from '../schema-generator';
 
 // Section imports — heroes
 import { fullBleedHero } from './sections/heroes/full-bleed';
@@ -189,8 +195,18 @@ export interface AssemblePageOptions {
     mapEmbedUrl?: string;
     serviceAreasHeading?: string;
     serviceAreasSubtitle?: string;
+    /** Address parts for schema/geo */
+    addressObj?: { street?: string; city?: string; state?: string; zip?: string; lat?: number; lng?: number } | null;
+    /** Industry for keywords/schema */
+    industry?: string;
+    /** Review count for schema */
+    reviewCount_num?: number;
   };
   pageType: string;
+  /** Service slug for service pages (used in schema generation) */
+  serviceSlug?: string;
+  /** City name for city pages (used in schema generation) */
+  cityName?: string;
 }
 
 export function assemblePage(options: AssemblePageOptions): string {
@@ -380,10 +396,43 @@ export function assemblePage(options: AssemblePageOptions): string {
     designStyle: activeDesignStyle,
   });
 
-  // Schema markup
-  const schemaScript = pageData.schema_markup
-    ? `<script type="application/ld+json">${JSON.stringify(pageData.schema_markup)}</script>`
-    : '';
+  // Schema markup — build comprehensive schemas based on page type
+  const siteForSchema = {
+    business_name: siteData.business_name,
+    industry: siteData.industry || '',
+    phone: siteData.phone || null,
+    address: siteData.addressObj || (siteData.city ? { city: siteData.city, state: siteData.state || '' } : null),
+    site_domain: siteData.domain || null,
+    site_subdomain: null as string | null,
+    logo_url: siteData.logoUrl || null,
+    rating: siteData.rating || null,
+    review_count: siteData.reviewCount || null,
+    hours: siteData.hours ? Object.fromEntries(
+      Object.entries(siteData.hours).filter(([k]) => ['mon','tue','wed','thu','fri','sat','sun'].includes(k))
+    ) as Record<string, string> : null,
+    services: (siteData.services || []).map(s => ({ name: s.name, slug: s.slug, description: s.description })),
+    cities: (siteData.cities || []).map(c => ({ name: c.name, slug: c.slug, state: siteData.state || '' })),
+    tagline: siteData.tagline || null,
+    owner_name: siteData.ownerName || null,
+  };
+
+  // Extract service slug from page type context
+  const serviceSlug = options.serviceSlug;
+  const cityName = options.cityName;
+
+  const pageSchemas = buildPageSchemas({
+    pageType,
+    site: siteForSchema as Parameters<typeof buildPageSchemas>[0]['site'],
+    pageTitle: pageData.title,
+    serviceSlug,
+    cityName,
+    faq: pageData.faq as { question: string; answer: string }[] | undefined,
+    existingSchema: pageData.schema_markup || undefined,
+  });
+
+  const schemaScript = pageSchemas
+    .map(s => `<script type="application/ld+json">${JSON.stringify(s)}</script>`)
+    .join('\n  ');
 
   // Kyra chat widget
   const widgetScript = siteData.widget_client_id
@@ -409,6 +458,20 @@ export function assemblePage(options: AssemblePageOptions): string {
   const metaDesc = pageData.metaDescription || pageData.hero_subtitle;
   const siteUrl = siteData.domain ? `https://${siteData.domain}` : '';
   const heroImage = siteData.photos?.[0]?.url || '';
+  const heroImageAlt = `${siteData.business_name} - ${pageData.title}`;
+
+  // SEO: Auto-generate keywords
+  const keywords = generateKeywords({
+    business_name: siteData.business_name,
+    industry: siteData.industry,
+    city: siteData.city,
+    state: siteData.state,
+    services: siteData.services,
+  });
+
+  // GEO: Lat/lng for geo.position and ICBM tags
+  const geoLat = siteData.addressObj?.lat;
+  const geoLng = siteData.addressObj?.lng;
 
   // Get design-style-specific CSS overrides (body bg, card styles, button styles, typography)
   // This is what makes modern-dark look different from clean-light, bold, and minimal.
@@ -455,13 +518,20 @@ export function assemblePage(options: AssemblePageOptions): string {
   <meta property="og:description" content="${escapeHtml(metaDesc)}">
   <meta property="og:type" content="website">
   ${siteUrl ? `<meta property="og:url" content="${siteUrl}">` : ''}
-  ${heroImage ? `<meta property="og:image" content="${escapeHtml(heroImage)}">` : ''}
+  ${heroImage ? `<meta property="og:image" content="${escapeHtml(heroImage)}">
+  <meta property="og:image:alt" content="${escapeHtml(heroImageAlt)}">` : ''}
+  ${siteData.business_name ? `<meta property="og:site_name" content="${escapeHtml(siteData.business_name)}">` : ''}
+  <meta property="og:locale" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="${escapeHtml(metaTitle)}">
   <meta name="twitter:description" content="${escapeHtml(metaDesc)}">
-  ${heroImage ? `<meta name="twitter:image" content="${escapeHtml(heroImage)}">` : ''}
+  ${heroImage ? `<meta name="twitter:image" content="${escapeHtml(heroImage)}">
+  <meta name="twitter:image:alt" content="${escapeHtml(heroImageAlt)}">` : ''}
+  ${keywords ? `<meta name="keywords" content="${escapeHtml(keywords)}">` : ''}
   ${siteData.state ? `<meta name="geo.region" content="US-${escapeHtml(siteData.state)}">` : ''}
   ${siteData.city ? `<meta name="geo.placename" content="${escapeHtml(siteData.city)}">` : ''}
+  ${geoLat && geoLng ? `<meta name="geo.position" content="${geoLat};${geoLng}">
+  <meta name="ICBM" content="${geoLat}, ${geoLng}">` : ''}
   <script src="https://cdn.tailwindcss.com"></script>
   ${schemaScript}
   <style>
