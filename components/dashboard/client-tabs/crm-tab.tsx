@@ -478,7 +478,7 @@ function ContactsSection({ client, clientId }: { client: AgencyClient; clientId:
     <div className="space-y-3">
       {/* Row 1: Stage tabs + Add Contact */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+        <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1 overflow-x-auto scrollbar-hide">
           {['all', ...CONTACT_STAGES].map(s => (
             <button key={s} onClick={() => setStageFilter(s)}
               className={`px-3 py-1 text-xs rounded-md transition-colors ${stageFilter === s ? 'bg-white shadow-sm text-gray-900 font-medium' : 'text-gray-500 hover:text-gray-700'}`}>
@@ -493,7 +493,7 @@ function ContactsSection({ client, clientId }: { client: AgencyClient; clientId:
 
       {/* Row 2: Search + filters + sort + actions */}
       <div className="flex items-center gap-2 flex-wrap">
-        <div className="relative min-w-[180px] max-w-[280px] flex-1">
+        <div className="relative min-w-0 sm:min-w-[180px] max-w-[280px] flex-1">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
           <input className="w-full border border-gray-200 rounded-lg pl-8 pr-2 h-8 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Search contacts..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
@@ -575,18 +575,19 @@ function ContactsSection({ client, clientId }: { client: AgencyClient; clientId:
         ) : (
           <>
             {/* Header row */}
-            <div className="grid grid-cols-[32px_1fr_1fr_100px_80px_28px_90px_80px] gap-1.5 px-3 py-2 bg-gray-50 border-b border-gray-100 text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+            <div className="grid grid-cols-[32px_1fr_1fr_100px_80px_28px_90px_80px] gap-1.5 px-3 py-2 bg-gray-50 border-b border-gray-100 text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[640px]">
               <div><button onClick={toggleAll} className="text-gray-400 hover:text-gray-600">
                 {selected.size === contacts.length ? <CheckSquare className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />}
               </button></div>
-              <div>Contact</div><div>Email / Phone</div><div>Company</div><div>Stage</div><div></div><div>Tags</div><div>Activity</div>
+              <div>Contact</div><div>Email / Phone</div><div className="hidden sm:block">Company</div><div>Stage</div><div></div><div className="hidden sm:block">Tags</div><div className="hidden sm:block">Activity</div>
             </div>
             {contacts.map(c => {
               const scoreDot: Record<string, string> = { hot: 'bg-green-500', warm: 'bg-yellow-400', cold: 'bg-gray-400', new: 'bg-blue-400' };
               const scoreTitle: Record<string, string> = { hot: 'Hot', warm: 'Warm', cold: 'Cold', new: 'New' };
               return (
                 <div key={c.id}
-                  className="grid grid-cols-[32px_1fr_1fr_100px_80px_28px_90px_80px] gap-1.5 px-3 py-2 border-b border-gray-50 hover:bg-gray-50 cursor-pointer items-center text-sm"
+                  className="grid grid-cols-[32px_1fr_1fr_100px_80px_28px_90px_80px] gap-1.5 px-3 py-2 border-b border-gray-50 hover:bg-gray-50 cursor-pointer items-center text-sm min-w-[640px]"
                   onClick={() => setSelectedContact(c)}>
                   <div onClick={e => { e.stopPropagation(); toggleSelect(c.id); }}>
                     {selected.has(c.id) ? <CheckSquare className="w-3.5 h-3.5 text-indigo-600" /> : <Square className="w-3.5 h-3.5 text-gray-300" />}
@@ -620,9 +621,10 @@ function ContactsSection({ client, clientId }: { client: AgencyClient; clientId:
                 </div>
               );
             })}
+          </div>
           </>
         )}
-      </div>
+        </div>
 
       {/* Pagination */}
       {totalPages > 1 && (
@@ -666,7 +668,7 @@ function AddContactModal({ clientId, onClose, onSaved }: { clientId: string; onC
     <Modal onClose={onClose}>
       <ModalHeader title="Add Contact" onClose={onClose} />
       <div className="p-5 space-y-4">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <FormField label="First Name"><input className={inputClass} value={form.first_name} onChange={e => setForm(f => ({ ...f, first_name: e.target.value }))} /></FormField>
           <FormField label="Last Name"><input className={inputClass} value={form.last_name} onChange={e => setForm(f => ({ ...f, last_name: e.target.value }))} /></FormField>
         </div>
@@ -1097,7 +1099,7 @@ function ContactDetailPanel({ contact: initial, onBack, client }: { contact: Con
           <div className="flex-1 min-w-0">
             {editing ? (
               <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <input className={inputClass} placeholder="First name" value={editForm.first_name} onChange={e => setEditForm(f => ({ ...f, first_name: e.target.value }))} />
                   <input className={inputClass} placeholder="Last name" value={editForm.last_name} onChange={e => setEditForm(f => ({ ...f, last_name: e.target.value }))} />
                 </div>
@@ -1432,7 +1434,7 @@ function LogCallModal({ contactId, onClose, onSaved }: { contactId: string; onCl
     <Modal onClose={onClose}>
       <ModalHeader title="Log Call" onClose={onClose} />
       <div className="p-5 space-y-4">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <FormField label="Outcome">
             <select className={inputClass} value={outcome} onChange={e => setOutcome(e.target.value)}>
               <option value="connected">Connected</option>
@@ -1494,7 +1496,7 @@ function AddTaskModal({ contactId, onClose, onSaved }: { contactId?: string; onC
       <div className="p-5 space-y-4">
         <FormField label="Title"><input className={inputClass} value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} /></FormField>
         <FormField label="Description"><textarea className={inputClass + ' h-20 resize-none'} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} /></FormField>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <FormField label="Priority">
             <select className={inputClass} value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value as CrmTask['priority'] }))}>
               {PRIORITIES.map(p => <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
@@ -1556,7 +1558,7 @@ function DealsSection({ clientId }: { clientId?: string }) {
   return (
     <div className="space-y-4">
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { label: 'Total Deals', value: deals.length, icon: Briefcase },
           { label: 'Pipeline Value', value: formatCurrency(totalValue), icon: TrendingUp },
@@ -1591,7 +1593,8 @@ function DealsSection({ clientId }: { clientId?: string }) {
           {deals.length === 0 ? (
             <div className="flex items-center justify-center py-16 text-gray-400 text-sm">No deals</div>
           ) : (
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[540px]">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Deal</th>
@@ -1613,6 +1616,7 @@ function DealsSection({ clientId }: { clientId?: string }) {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       )}
@@ -1718,7 +1722,7 @@ function DealModal({ deal, contacts, onClose, onSaved }: { deal: Deal | null; co
       <ModalHeader title={deal ? 'Edit Deal' : 'Add Deal'} onClose={onClose} />
       <div className="p-5 space-y-4">
         <FormField label="Deal Name"><input className={inputClass} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></FormField>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <FormField label="Value"><input className={inputClass} type="number" value={form.value} onChange={e => setForm(f => ({ ...f, value: e.target.value }))} /></FormField>
           <FormField label="Stage">
             <select className={inputClass} value={form.stage} onChange={e => setForm(f => ({ ...f, stage: e.target.value }))}>
@@ -1811,7 +1815,7 @@ function TasksSection() {
   return (
     <div className="space-y-4">
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { label: 'Total', value: tasks.length, icon: CheckSquare, color: 'text-gray-500' },
           { label: 'Overdue', value: overdue, icon: AlertTriangle, color: 'text-red-500' },
@@ -1913,7 +1917,7 @@ function EditTaskModal({ task, onClose, onSaved }: { task: CrmTask; onClose: () 
       <div className="p-5 space-y-4">
         <FormField label="Title"><input className={inputClass} value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} /></FormField>
         <FormField label="Description"><textarea className={inputClass + ' h-20 resize-none'} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} /></FormField>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <FormField label="Priority">
             <select className={inputClass} value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value as CrmTask['priority'] }))}>
               {PRIORITIES.map(p => <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
@@ -1983,7 +1987,7 @@ function AnalyticsSection() {
   return (
     <div className="space-y-6">
       {/* Stats cards */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {stats.map(s => (
           <div key={s.label} className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
             <div className="flex items-center gap-2 text-gray-500 text-xs mb-1"><s.icon className="w-4 h-4" />{s.label}</div>
@@ -1992,7 +1996,7 @@ function AnalyticsSection() {
         ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Pipeline funnel */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
           <h3 className="text-sm font-semibold text-gray-900 mb-4">Pipeline Funnel</h3>
@@ -2223,7 +2227,7 @@ function AIInsightsSection({ setSection }: { setSection: (s: Section) => void })
             </div>
             <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Contacts</span>
           </div>
-          <div className="text-3xl font-bold text-gray-900">{stats.total_contacts}</div>
+          <div className="text-xl sm:text-3xl font-bold text-gray-900">{stats.total_contacts}</div>
         </button>
 
         <button
@@ -2236,7 +2240,7 @@ function AIInsightsSection({ setSection }: { setSection: (s: Section) => void })
             </div>
             <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Pipeline</span>
           </div>
-          <div className="text-3xl font-bold text-gray-900">
+          <div className="text-xl sm:text-3xl font-bold text-gray-900">
             ${stats.pipeline_value >= 1000
               ? `${(stats.pipeline_value / 1000).toFixed(1)}K`
               : stats.pipeline_value}
@@ -2250,7 +2254,7 @@ function AIInsightsSection({ setSection }: { setSection: (s: Section) => void })
             </div>
             <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Hot Leads</span>
           </div>
-          <div className="text-3xl font-bold text-gray-900">{stats.hot_leads}</div>
+          <div className="text-xl sm:text-3xl font-bold text-gray-900">{stats.hot_leads}</div>
         </div>
       </div>
 
@@ -2503,7 +2507,7 @@ function ScoringSection() {
       )}
 
       {/* Score legend */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { label: 'Hot', range: '75–100', color: 'bg-red-50 border-red-200 text-red-700', dot: 'bg-red-500' },
           { label: 'Warm', range: '50–74', color: 'bg-orange-50 border-orange-200 text-orange-700', dot: 'bg-orange-500' },
@@ -2523,7 +2527,7 @@ function ScoringSection() {
       {/* Scoring factors */}
       <div className="bg-white border border-gray-200 rounded-xl p-5">
         <h3 className="text-sm font-semibold text-gray-900 mb-3">How Contacts Are Scored</h3>
-        <div className="grid grid-cols-2 gap-x-8 gap-y-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2">
           {[
             { factor: 'Has email address', points: '+10' },
             { factor: 'Has phone number', points: '+10' },
@@ -3072,7 +3076,7 @@ export default function CrmTab({ client, clientId }: { client: AgencyClient; cli
       {/* Navigation */}
       <div className="flex items-center gap-2 flex-wrap">
         {/* Main section pills */}
-        <div className="flex items-center gap-1 bg-gray-50 rounded-lg p-1 overflow-x-auto flex-1 min-w-0">
+        <div className="flex items-center gap-1 bg-gray-50 rounded-lg p-1 overflow-x-auto flex-1 min-w-0 scrollbar-hide">
           {MAIN_SECTIONS.map(s => (
             <button key={s.key} onClick={() => { setSection(s.key); setShowTools(false); }}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md transition-colors whitespace-nowrap ${
