@@ -142,7 +142,7 @@ interface AnalyticsData {
   recent_activities: ActivityItem[];
 }
 
-type Section = 'ai' | 'contacts' | 'deals' | 'tasks' | 'payments' | 'analytics' | 'activity' | 'segments' | 'scoring' | 'merge';
+type Section = 'ai' | 'contacts' | 'deals' | 'tasks' | 'payments' | 'analytics' | 'activity' | 'segments' | 'scoring' | 'merge' | 'custom-fields';
 
 // CommandFeedItem for AI Insights section
 interface CommandFeedItem {
@@ -688,6 +688,283 @@ function AddContactModal({ clientId, onClose, onSaved }: { clientId: string; onC
         </button>
       </div>
     </Modal>
+  );
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// CUSTOM FIELDS SECTION (inline in contact detail)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+interface CustomFieldSchema {
+  name: string;
+  key: string;
+  type: 'text' | 'number' | 'date' | 'select';
+  required?: boolean;
+  options?: string[]; // for select type
+}
+
+function CustomFieldsSection({ contact, client, onUpdate }: {
+  contact: Contact;
+  client: AgencyClient;
+  onUpdate: (fields: Record<string, unknown>) => void;
+}) {
+  const cfg = (client.container_config || {}) as Record<string, unknown>;
+  const schema = (cfg.custom_fields_schema as CustomFieldSchema[] | undefined) || [];
+  const customFields = (contact as unknown as Record<string, unknown>).custom_fields as Record<string, unknown> || {};
+  const [editingField, setEditingField] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState<string>('');
+  const [saving, setSaving] = useState(false);
+
+  if (schema.length === 0) return null;
+
+  const startEdit = (key: string) => {
+    setEditingField(key);
+    setEditValue(String(customFields[key] ?? ''));
+  };
+
+  const saveField = async (key: string) => {
+    setSaving(true);
+    try {
+      const fieldDef = schema.find(f => f.key === key);
+      let parsedValue: unknown = editValue;
+      if (fieldDef?.type === 'number') parsedValue = Number(editValue) || 0;
+
+      const updatedFields = { ...customFields, [key]: parsedValue };
+      const res = await fetch(`/api/agency/crm/contacts/${contact.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ custom_fields: updatedFields }),
+      });
+      if (res.ok) {
+        onUpdate(updatedFields);
+      }
+    } catch { /* non-fatal */ }
+    finally {
+      setSaving(false);
+      setEditingField(null);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+      <h3 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
+        <Sliders className="w-3.5 h-3.5" />
+        Custom Fields
+      </h3>
+      <div className="space-y-2">
+        {schema.map(field => {
+          const value = customFields[field.key];
+          const isEditing = editingField === field.key;
+
+          return (
+            <div key={field.key} className="flex items-center gap-3">
+              <span className="text-xs font-medium text-gray-500 w-28 shrink-0">
+                {field.name}
+                {field.required && <span className="text-red-400 ml-0.5">*</span>}
+              </span>
+
+              {isEditing ? (
+                <div className="flex items-center gap-1 flex-1">
+                  {field.type === 'select' && field.options ? (
+                    <select
+                      value={editValue}
+                      onChange={e => setEditValue(e.target.value)}
+                      className="flex-1 border border-gray-200 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    >
+                      <option value="">Select...</option>
+                      {field.options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                    </select>
+                  ) : (
+                    <input
+                      type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
+                      value={editValue}
+                      onChange={e => setEditValue(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && saveField(field.key)}
+                      className="flex-1 border border-gray-200 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      autoFocus
+                    />
+                  )}
+                  <button
+                    onClick={() => saveField(field.key)}
+                    disabled={saving}
+                    className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                  >
+                    {saving ? '...' : 'Save'}
+                  </button>
+                  <button
+                    onClick={() => setEditingField(null)}
+                    className="text-xs text-gray-400 hover:text-gray-600"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => startEdit(field.key)}
+                  className="flex-1 text-left text-xs text-gray-700 hover:bg-gray-50 rounded px-2 py-1 -mx-2 transition-colors group"
+                >
+                  {value !== undefined && value !== null && value !== ''
+                    ? String(value)
+                    : <span className="text-gray-300 italic">Click to set</span>
+                  }
+                  <Edit3 className="w-3 h-3 text-gray-300 group-hover:text-gray-500 inline ml-1" />
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// CUSTOM FIELDS SETTINGS (for agency to define fields per client)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function CustomFieldsSettings({ client }: { client: AgencyClient }) {
+  const cfg = (client.container_config || {}) as Record<string, unknown>;
+  const [fields, setFields] = useState<CustomFieldSchema[]>(
+    (cfg.custom_fields_schema as CustomFieldSchema[] | undefined) || []
+  );
+  const [saving, setSaving] = useState(false);
+  const [showAdd, setShowAdd] = useState(false);
+  const [newField, setNewField] = useState({ name: '', type: 'text' as CustomFieldSchema['type'], required: false, options: '' });
+
+  const saveSchema = async (schema: CustomFieldSchema[]) => {
+    setSaving(true);
+    try {
+      await fetch(`/api/agency/clients/${client.id}/container-config`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ custom_fields_schema: schema }),
+      });
+    } catch { /* non-fatal */ }
+    finally { setSaving(false); }
+  };
+
+  const addField = () => {
+    if (!newField.name.trim()) return;
+    const key = newField.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_');
+    if (fields.some(f => f.key === key)) return;
+    const field: CustomFieldSchema = {
+      name: newField.name.trim(),
+      key,
+      type: newField.type,
+      required: newField.required,
+      ...(newField.type === 'select' && newField.options ? { options: newField.options.split(',').map(o => o.trim()).filter(Boolean) } : {}),
+    };
+    const updated = [...fields, field];
+    setFields(updated);
+    saveSchema(updated);
+    setNewField({ name: '', type: 'text', required: false, options: '' });
+    setShowAdd(false);
+  };
+
+  const removeField = (key: string) => {
+    const updated = fields.filter(f => f.key !== key);
+    setFields(updated);
+    saveSchema(updated);
+  };
+
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white p-5">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h3 className="text-sm font-semibold text-gray-900">Custom CRM Fields</h3>
+          <p className="text-xs text-gray-500 mt-0.5">Define custom fields for contacts. Fields are editable inline on each contact.</p>
+        </div>
+        <button
+          onClick={() => setShowAdd(!showAdd)}
+          className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700"
+        >
+          <Plus className="w-3.5 h-3.5" /> Add Field
+        </button>
+      </div>
+
+      {showAdd && (
+        <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-4 mb-4 space-y-3">
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <label className="block text-xs font-medium text-gray-700 mb-1">Field Name</label>
+              <input
+                value={newField.name}
+                onChange={e => setNewField({ ...newField, name: e.target.value })}
+                placeholder="e.g., Budget, Preferred Contact Time"
+                className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Type</label>
+              <select
+                value={newField.type}
+                onChange={e => setNewField({ ...newField, type: e.target.value as CustomFieldSchema['type'] })}
+                className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-white"
+              >
+                <option value="text">Text</option>
+                <option value="number">Number</option>
+                <option value="date">Date</option>
+                <option value="select">Select (Dropdown)</option>
+              </select>
+            </div>
+          </div>
+
+          {newField.type === 'select' && (
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Options (comma-separated)</label>
+              <input
+                value={newField.options}
+                onChange={e => setNewField({ ...newField, options: e.target.value })}
+                placeholder="Option A, Option B, Option C"
+                className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+          )}
+
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 text-xs text-gray-700">
+              <input
+                type="checkbox"
+                checked={newField.required}
+                onChange={e => setNewField({ ...newField, required: e.target.checked })}
+                className="rounded border-gray-300"
+              />
+              Required field
+            </label>
+            <button onClick={addField} className="px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700">
+              Add
+            </button>
+            <button onClick={() => setShowAdd(false)} className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200">
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {fields.length > 0 ? (
+        <div className="space-y-2">
+          {fields.map(field => (
+            <div key={field.key} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-medium text-gray-900">{field.name}</span>
+                <span className="text-xs text-gray-400 bg-gray-200 px-2 py-0.5 rounded-full">{field.type}</span>
+                {field.required && <span className="text-xs text-red-500">Required</span>}
+                {field.options && <span className="text-xs text-gray-400">{field.options.join(', ')}</span>}
+              </div>
+              <button onClick={() => removeField(field.key)} className="text-gray-400 hover:text-red-500">
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-gray-400 text-center py-4">
+          No custom fields defined yet. Add fields to capture additional contact information.
+        </p>
+      )}
+
+      {saving && <p className="text-xs text-indigo-500 mt-2">Saving...</p>}
+    </div>
   );
 }
 
@@ -2778,6 +3055,7 @@ const TOOLS_SECTIONS: { key: Section; label: string; icon: React.ComponentType<{
   { key: 'segments', label: 'Segments', icon: Layers },
   { key: 'scoring', label: 'Scoring', icon: Sliders },
   { key: 'merge', label: 'Duplicates', icon: GitMerge },
+  { key: 'custom-fields', label: 'Custom Fields', icon: Sliders },
 ];
 
 export default function CrmTab({ client, clientId }: { client: AgencyClient; clientId?: string }) {
@@ -2848,6 +3126,7 @@ export default function CrmTab({ client, clientId }: { client: AgencyClient; cli
       {section === 'segments' && <SegmentsSection setSection={setSection} />}
       {section === 'scoring' && <ScoringSection />}
       {section === 'merge' && <MergeSection />}
+      {section === 'custom-fields' && <CustomFieldsSettings client={client} />}
     </div>
   );
 }
