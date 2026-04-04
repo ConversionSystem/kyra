@@ -83,14 +83,14 @@ function lightTestimonials(data: TestimonialsData): string {
     <div style="display: flex; gap: 2px;">${Array(5).fill(0).map(() => `<svg width="14" height="14" viewBox="0 0 20 20" fill="#fbbf24"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.957a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.37 2.448a1 1 0 00-.364 1.118l1.287 3.957c.3.921-.755 1.688-1.54 1.118l-3.37-2.448a1 1 0 00-1.176 0l-3.37 2.448c-.784.57-1.838-.197-1.539-1.118l1.287-3.957a1 1 0 00-.364-1.118L2.063 9.384c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.95-.69l1.286-3.957z"/></svg>`).join('')}</div>
   </div>`;
 
-  return `<section id="testimonials" style="padding: 5rem 1.5rem; background: #f8fafc;" aria-label="Testimonials">
-  <div style="max-width: 1200px; margin: 0 auto;">
-    <div style="text-align: center; margin-bottom: 3rem;">
+  return `<section id="testimonials" class="py-16 sm:py-20 px-4 sm:px-6 lg:px-8" style="background: #f8fafc;" aria-label="Testimonials">
+  <div class="max-w-7xl mx-auto">
+    <div class="text-center mb-12">
       <div style="display: inline-block; background: ${primary}15; color: ${primary}; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 6px 16px; border-radius: 100px; margin-bottom: 1rem;">Reviews</div>
       <h2 style="font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 900; color: #111827; margin: 0 0 1.5rem 0; letter-spacing: -0.02em;">${heading}</h2>
       ${googleBadge}
     </div>
-    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
       ${cards.join('\n      ')}
     </div>
   </div>

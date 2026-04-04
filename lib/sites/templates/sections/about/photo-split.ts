@@ -63,9 +63,9 @@ export function photoSplitAbout(data: AboutData): string {
       </div>`
     : '';
 
-  return `<section style="padding: 5rem 1.5rem; background: #ffffff;" aria-label="About us" id="about">
-  <div style="max-width: 1200px; margin: 0 auto;">
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5rem; align-items: center;">
+  return `<section class="py-16 sm:py-20 px-4 sm:px-6 lg:px-8" style="background: #ffffff;" aria-label="About us" id="about">
+  <div class="max-w-7xl mx-auto">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-20 items-center">
       <!-- Photo panel -->
       <div>
         ${photoPanel}

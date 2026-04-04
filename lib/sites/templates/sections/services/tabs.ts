@@ -55,7 +55,7 @@ export function tabsServices(data: ServicesData): string {
       <nav class="flex flex-wrap gap-2 justify-center" style="margin-bottom: 2rem;" aria-label="Service tabs">
         ${labels}
       </nav>
-      <div class="${uid}-panels rounded-2xl shadow-lg" style="background: var(--color-surface); border: 1px solid #e5e7eb; padding: 2rem 2.5rem;">
+      <div class="${uid}-panels rounded-2xl shadow-lg px-5 py-6 sm:px-10 sm:py-8" style="background: var(--color-surface); border: 1px solid #e5e7eb;">
         ${panels}
       </div>
     </div>

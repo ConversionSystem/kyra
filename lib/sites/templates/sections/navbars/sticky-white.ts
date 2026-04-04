@@ -34,43 +34,74 @@ export function stickyWhiteNavbar(data: NavbarData): string {
     { label: 'Reviews', href: '#testimonials' },
     { label: 'Contact', href: '#contact' },
   ];
-  const navLinks = (data.links || defaultLinks).map(l =>
-    `<a href="${l.href}" style="color: #374151; text-decoration: none; font-size: 0.9rem; font-weight: 600; padding: 6px 2px; border-bottom: 2px solid transparent; transition: color 0.2s, border-color 0.2s;" onmouseover="this.style.color='${primary}';this.style.borderBottomColor='${primary}'" onmouseout="this.style.color='#374151';this.style.borderBottomColor='transparent'">${l.label}</a>`
+  const links = data.links || defaultLinks;
+  const navLinks = links.map(l =>
+    `<a href="${l.href}" class="text-sm font-semibold transition-colors" style="color: #374151; text-decoration: none;" onmouseover="this.style.color='${primary}'" onmouseout="this.style.color='#374151'">${l.label}</a>`
   ).join('\n      ');
 
+  const mobileLinks = links.map(l =>
+    `<a href="${l.href}" class="block py-2.5 px-3 text-sm font-semibold rounded-lg transition-colors" style="color: #374151;" onmouseover="this.style.color='${primary}'" onmouseout="this.style.color='#374151'" onclick="document.getElementById('kyra-mobile-menu').classList.add('hidden')">${l.label}</a>`
+  ).join('\n    ');
+
   const phoneCta = data.phone
-    ? `<a href="${data.phoneHref || `tel:${data.phone}`}" style="display: none; align-items: center; gap: 8px; background: ${primary}; color: #ffffff; font-weight: 700; font-size: 0.88rem; padding: 10px 20px; border-radius: 10px; text-decoration: none; transition: opacity 0.2s; white-space: nowrap;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'" class="sm-flex">
+    ? `<a href="${data.phoneHref || `tel:${data.phone}`}" class="hidden sm:flex items-center gap-2 font-bold text-sm px-5 py-2.5 rounded-lg whitespace-nowrap transition-opacity hover:opacity-85" style="background: ${primary}; color: #ffffff; text-decoration: none;">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
         ${data.phone}
       </a>`
     : '';
 
-  return `<nav id="kyra-nav" style="position: sticky; top: 0; z-index: 50; background: rgba(255,255,255,0.96); backdrop-filter: blur(12px); border-bottom: 1px solid #f1f5f9; padding: 0 1.5rem; transition: box-shadow 0.3s;" aria-label="Main navigation">
-  <div style="max-width: 1200px; margin: 0 auto; height: 68px; display: flex; align-items: center; justify-content: space-between; gap: 2rem;">
-    <!-- Logo -->
-    <a href="#top" style="flex-shrink: 0; text-decoration: none;">${logo}</a>
+  return `<nav id="kyra-nav" class="sticky top-0 z-50 border-b border-slate-100 transition-shadow" style="background: rgba(255,255,255,0.96); backdrop-filter: blur(12px);" aria-label="Main navigation">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between h-16 gap-4">
+      <!-- Logo -->
+      <a href="#top" class="shrink-0" style="text-decoration: none;">${logo}</a>
 
-    <!-- Nav links (desktop) -->
-    <div style="display: flex; align-items: center; gap: 1.75rem; flex: 1; justify-content: center;">
-      ${navLinks}
-    </div>
+      <!-- Nav links (desktop only) -->
+      <div class="hidden md:flex items-center gap-7 flex-1 justify-center">
+        ${navLinks}
+      </div>
 
-    <!-- CTA -->
-    <div style="display: flex; align-items: center; gap: 1rem; flex-shrink: 0;">
-      ${phoneCta}
-      ${data.phone ? `<a href="${data.phoneHref || `tel:${data.phone}`}" style="display: flex; align-items: center; gap: 6px; color: ${primary}; font-weight: 700; font-size: 0.9rem; text-decoration: none;">
+      <!-- CTA + hamburger -->
+      <div class="flex items-center gap-3 shrink-0">
+        ${phoneCta}
+        ${data.phone ? `<a href="${data.phoneHref || `tel:${data.phone}`}" class="flex sm:hidden items-center gap-1.5 font-bold text-sm" style="color: ${primary}; text-decoration: none;">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-          ${data.phone}
+          Call
         </a>` : ''}
+        <button id="kyra-menu-btn" class="md:hidden p-2 rounded-lg" style="color: #374151;" aria-label="Open menu" aria-expanded="false" aria-controls="kyra-mobile-menu">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+      </div>
     </div>
   </div>
+
+  <!-- Mobile menu -->
+  <div id="kyra-mobile-menu" class="hidden border-t border-gray-100 px-4 py-3 space-y-1">
+    ${mobileLinks}
+    ${data.phone ? `<div class="pt-3 border-t border-gray-100 mt-2">
+      <a href="${data.phoneHref || `tel:${data.phone}`}" class="flex items-center gap-2 w-full justify-center py-2.5 rounded-lg font-bold text-sm" style="background: ${primary}; color: #ffffff; text-decoration: none;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        Call ${data.phone}
+      </a>
+    </div>` : ''}
+  </div>
+
   <script>
     (function() {
       var nav = document.getElementById('kyra-nav');
+      var btn = document.getElementById('kyra-menu-btn');
+      var menu = document.getElementById('kyra-mobile-menu');
       if (!nav) return;
       window.addEventListener('scroll', function() {
         nav.style.boxShadow = window.scrollY > 20 ? '0 4px 20px rgba(0,0,0,0.1)' : 'none';
       });
+      if (btn && menu) {
+        btn.addEventListener('click', function() {
+          var isOpen = !menu.classList.contains('hidden');
+          menu.classList.toggle('hidden');
+          btn.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+        });
+      }
     })();
   </script>
 </nav>`;
