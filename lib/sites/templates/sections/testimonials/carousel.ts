@@ -41,8 +41,8 @@ export function carouselTestimonials(data: TestimonialsData): string {
     </div>`;
   }).join('');
 
-  return `<section style="padding: 5rem 1.5rem; background: #f8fafc;" aria-label="Testimonials" id="testimonials">
-  <div style="max-width: 1200px; margin: 0 auto;">
+  return `<section class="py-16 sm:py-20 px-4 sm:px-6 lg:px-8" style="background: #f8fafc;" aria-label="Testimonials" id="testimonials">
+  <div class="max-w-7xl mx-auto">
     <div style="text-align: center; margin-bottom: 3.5rem;">
       <div style="display: inline-block; background: ${primary}15; color: ${primary}; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 6px 16px; border-radius: 100px; margin-bottom: 1rem;">Client Reviews</div>
       <h2 style="font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 900; color: #111827; margin: 0 0 0.5rem 0; letter-spacing: -0.02em;">${heading}</h2>
@@ -50,7 +50,7 @@ export function carouselTestimonials(data: TestimonialsData): string {
     </div>
 
     <!-- Featured testimonial -->
-    <div style="background: linear-gradient(135deg, ${primary} 0%, ${data.colors.secondary} 100%); border-radius: 24px; padding: 3.5rem; margin-bottom: 2rem; position: relative; overflow: hidden; box-shadow: 0 20px 60px ${primary}40;">
+    <div class="px-6 py-10 sm:p-14 mb-8" style="background: linear-gradient(135deg, ${primary} 0%, ${data.colors.secondary} 100%); border-radius: 24px; position: relative; overflow: hidden; box-shadow: 0 20px 60px ${primary}40;">
       <!-- Background quote mark -->
       <div style="position: absolute; top: -20px; right: 30px; font-size: 18rem; line-height: 1; color: rgba(255,255,255,0.07); font-family: Georgia, serif; pointer-events: none;" aria-hidden="true">&ldquo;</div>
 
@@ -68,7 +68,7 @@ export function carouselTestimonials(data: TestimonialsData): string {
     </div>
 
     <!-- Additional reviews grid -->
-    ${rest.length > 0 ? `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.25rem;">
+    ${rest.length > 0 ? `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
       ${restCards}
     </div>` : ''}
   </div>

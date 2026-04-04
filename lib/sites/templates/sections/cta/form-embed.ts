@@ -25,12 +25,12 @@ export function formEmbedCta(data: CtaData): string {
 
   const inputStyle = 'style="width: 100%; box-sizing: border-box; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 10px; font-size: 0.95rem; color: #111827; background: #ffffff; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor=\'' + primary + '\'" onblur="this.style.borderColor=\'#e5e7eb\'"';
 
-  return `<section style="padding: 5rem 1.5rem; background: #f8fafc;" aria-label="Contact form section" id="contact">
-  <div style="max-width: 1100px; margin: 0 auto;">
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0; border-radius: 24px; overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.15);">
+  return `<section class="py-16 sm:py-20 px-4 sm:px-6 lg:px-8" style="background: #f8fafc;" aria-label="Contact form section" id="contact">
+  <div class="max-w-5xl mx-auto">
+    <div class="grid grid-cols-1 md:grid-cols-2" style="border-radius: 24px; overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.15);">
 
       <!-- Left: Benefits panel -->
-      <div style="background: linear-gradient(145deg, ${secondary} 0%, ${primary} 60%, ${primary}cc 100%); padding: 3.5rem; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden;">
+      <div class="px-8 py-10 sm:p-14" style="background: linear-gradient(145deg, ${secondary} 0%, ${primary} 60%, ${primary}cc 100%); display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden;">
         <div style="position: absolute; inset: 0; opacity: 0.06; background-image: radial-gradient(circle, rgba(255,255,255,0.6) 1px, transparent 1px); background-size: 22px 22px;" aria-hidden="true"></div>
         <div style="position: relative; z-index: 1;">
           <div style="display: inline-block; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 5px 14px; border-radius: 100px; margin-bottom: 1.25rem;">Free & No Obligation</div>
@@ -50,7 +50,7 @@ export function formEmbedCta(data: CtaData): string {
       </div>
 
       <!-- Right: Form panel -->
-      <div style="background: #ffffff; padding: 3.5rem;">
+      <div class="px-8 py-10 sm:p-14" style="background: #ffffff;">
         <h3 style="font-size: 1.4rem; font-weight: 800; color: #111827; margin: 0 0 0.5rem 0;">Send Us a Message</h3>
         <p style="color: #6b7280; font-size: 0.9rem; margin: 0 0 2rem 0;">We'll get back to you within 1 hour.</p>
         <form id="kyra-contact-form" onsubmit="kyraSubmitForm(event)" data-client-id="${data.clientId || ''}" data-business-name="${data.businessName || ''}" style="display: flex; flex-direction: column; gap: 1.1rem;">

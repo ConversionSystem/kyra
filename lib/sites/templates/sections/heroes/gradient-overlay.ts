@@ -45,7 +45,7 @@ export function gradientOverlayHero(data: HeroData): string {
     </div>`).join('')}
   </div>`;
 
-  return `<section class="relative overflow-hidden" style="min-height: 88vh; display: flex; align-items: center; ${bgStyle}" aria-label="${data.businessName || ''} hero">
+  return `<section class="relative overflow-hidden flex items-center" style="min-height: 88vh; ${bgStyle}" aria-label="${data.businessName || ''} hero">
   <!-- Multi-layer overlay for depth -->
   ${hasPhoto
     ? `<div class="absolute inset-0" style="background: linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.55) 50%, rgba(0,0,0,0.7) 100%);"></div>
@@ -71,13 +71,13 @@ export function gradientOverlayHero(data: HeroData): string {
 
     <p style="font-size: clamp(1.1rem, 2vw, 1.3rem); color: rgba(255,255,255,0.88); line-height: 1.65; margin: 0 auto 2.5rem; max-width: 38rem; text-shadow: 0 1px 8px rgba(0,0,0,0.3);">${data.subtitle}</p>
 
-    <div style="display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; margin-bottom: 0.5rem;">
+    <div class="flex flex-col sm:flex-row flex-wrap gap-4 justify-center mb-2">
       ${data.phone
-        ? `<a href="${data.phoneHref || `tel:${data.phone}`}" style="display: inline-flex; align-items: center; gap: 10px; background: #ffffff; color: ${data.colors.primary}; font-weight: 800; font-size: 1.1rem; padding: 16px 32px; border-radius: 14px; text-decoration: none; box-shadow: 0 10px 40px rgba(0,0,0,0.3); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform='scale(1)'">${phoneIcon()} ${data.phone}</a>`
+        ? `<a href="${data.phoneHref || `tel:${data.phone}`}" class="inline-flex items-center justify-center gap-2.5 font-extrabold text-lg px-8 py-4 rounded-2xl transition-transform hover:scale-105" style="background: #ffffff; color: ${data.colors.primary}; text-decoration: none; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">${phoneIcon()} ${data.phone}</a>`
         : ''
       }
       ${data.ctaLink || data.bookingUrl
-        ? `<a href="${data.ctaLink || data.bookingUrl}" style="display: inline-flex; align-items: center; gap: 10px; background: ${data.colors.primary}; color: #ffffff; font-weight: 700; font-size: 1.1rem; padding: 16px 32px; border-radius: 14px; text-decoration: none; box-shadow: 0 10px 30px ${data.colors.primary}60; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform='scale(1)'">${data.ctaText || 'Get Free Estimate'} →</a>`
+        ? `<a href="${data.ctaLink || data.bookingUrl}" class="inline-flex items-center justify-center gap-2.5 font-bold text-lg px-8 py-4 rounded-2xl transition-transform hover:scale-105" style="background: ${data.colors.primary}; color: #ffffff; text-decoration: none; box-shadow: 0 10px 30px ${data.colors.primary}60;">${data.ctaText || 'Get Free Estimate'} →</a>`
         : ''
       }
     </div>
