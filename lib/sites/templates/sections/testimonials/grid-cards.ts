@@ -10,9 +10,16 @@ interface TestimonialsData {
   designStyle?: string;
 }
 
+// Lucide star SVG (yellow filled, from original site)
+const ICON_STAR_YELLOW = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-star h-4 w-4 text-yellow-500 fill-yellow-500" aria-hidden="true"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"></path></svg>`;
+const ICON_CHEVRON_RIGHT = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right h-4 w-4" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>`;
+
 function renderStars(rating: number, isDark = false): string {
   const clamp = Math.max(1, Math.min(5, Math.round(rating)));
-  const emptyColor = isDark ? '#374151' : '#e5e7eb';
+  if (isDark) {
+    return Array.from({ length: clamp }, () => ICON_STAR_YELLOW).join('');
+  }
+  const emptyColor = '#e5e7eb';
   return Array.from({ length: 5 }, (_, i) =>
     `<svg style="width:20px;height:20px;flex-shrink:0;" viewBox="0 0 20 20"><path fill="${i < clamp ? '#fbbf24' : emptyColor}" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.957a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.37 2.448a1 1 0 00-.364 1.118l1.287 3.957c.3.921-.755 1.688-1.54 1.118l-3.37-2.448a1 1 0 00-1.176 0l-3.37 2.448c-.784.57-1.838-.197-1.539-1.118l1.287-3.957a1 1 0 00-.364-1.118L2.063 9.384c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.95-.69l1.286-3.957z"/></svg>`
   ).join('');
@@ -36,24 +43,10 @@ function modernDarkTestimonials(data: TestimonialsData): string {
 
   const cards = data.testimonials.map(t => {
     const stars = renderStars(t.rating || 5, true);
-
-    return `<div class="bg-white/5 border border-white/10 rounded-2xl p-6">
-      <div class="flex gap-0.5 mb-3">${stars}</div>
-      <p class="text-gray-300 text-sm leading-relaxed mb-4">&ldquo;${t.text}&rdquo;</p>
-      <div class="text-sm font-medium text-white">${t.name}</div>
-    </div>`;
+    return `<div class="bg-white/5 border border-white/10 rounded-2xl p-6"><div class="flex gap-0.5 mb-3">${stars}</div><p class="text-gray-300 text-sm leading-relaxed mb-4">&ldquo;${t.text}&rdquo;</p><div class="text-sm font-medium text-white">${t.name}</div></div>`;
   });
 
-  return `<section id="testimonials" class="py-20 sm:py-28" aria-label="Testimonials">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="text-center mb-14">
-      <h2 class="text-3xl sm:text-4xl font-bold text-white">${heading}</h2>
-    </div>
-    <div class="grid md:grid-cols-2 gap-6">
-      ${cards.join('\n      ')}
-    </div>
-  </div>
-</section>`;
+  return `<section id="testimonials" class="py-20 sm:py-28"><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div class="text-center mb-14"><h2 class="text-3xl sm:text-4xl font-bold text-white">${heading}</h2><p class="mt-3 text-gray-400">Real reviews from real customers</p></div><div class="grid md:grid-cols-2 gap-6">${cards.join('')}</div><div class="text-center mt-10"><a class="inline-flex items-center gap-2 text-red-400 hover:text-red-300 font-medium transition" href="/reviews">See All Reviews ${ICON_CHEVRON_RIGHT}</a></div></div></section>`;
 }
 
 function lightTestimonials(data: TestimonialsData): string {
