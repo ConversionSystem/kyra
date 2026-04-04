@@ -31,7 +31,7 @@ export default function AiSetupTab({
   return (
     <div>
       {/* Sub-tab navigation */}
-      <div className="flex gap-1 mb-6 border-b border-gray-200 pb-2">
+      <div className="flex flex-nowrap gap-1 mb-6 border-b border-gray-200 pb-2 overflow-x-auto scrollbar-hide">
         {tabs.map(tab => (
           <button
             key={tab.id}

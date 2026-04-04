@@ -166,7 +166,7 @@ function NewPaymentForm({ clientId, onClose, onSuccess }: {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">Contact Name *</label>
           <input
@@ -201,7 +201,7 @@ function NewPaymentForm({ clientId, onClose, onSuccess }: {
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">Email</label>
           <input
@@ -309,8 +309,8 @@ export default function PaymentsSubTab({ clientId }: { clientId: string }) {
       )}
 
       {/* Toolbar */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1 bg-gray-50 rounded-lg p-1">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-1 bg-gray-50 rounded-lg p-1 overflow-x-auto scrollbar-hide">
           {['all', 'sent', 'paid', 'overdue', 'pending'].map(s => (
             <button
               key={s}
