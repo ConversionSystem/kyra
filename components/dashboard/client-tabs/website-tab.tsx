@@ -22,6 +22,9 @@ import {
   Lightbulb,
   ShieldCheck,
   ChevronRight,
+  Plus,
+  BookOpen,
+  Send,
 } from 'lucide-react';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -99,6 +102,8 @@ function StatusBadge({ status }: { status: SiteData['status'] }) {
 // ── SEO Health (compact badges) ───────────────────────────────────────────────
 
 function SEOHealthCompact({ site }: { site: SiteData }) {
+  const [submitting, setSubmitting] = useState(false);
+  const [submitResult, setSubmitResult] = useState<string | null>(null);
   const isDeployed = !!site.last_deployed_at || site.status === 'live';
   const hasSubdomain = !!site.site_subdomain;
 
@@ -155,10 +160,40 @@ function SEOHealthCompact({ site }: { site: SiteData }) {
           </span>
         ))}
       </div>
-      {!site.search_console_connected && (
+      {site.search_console_connected ? (
+        <div className="mt-3 flex items-center justify-between gap-2">
+          <span className="text-xs text-green-700 flex items-center gap-1.5">
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            Search Console connected
+          </span>
+          <button
+            onClick={async () => {
+              setSubmitting(true);
+              setSubmitResult(null);
+              try {
+                const res = await fetch(`/api/agency/sites/${site.id}/submit-sitemap`, { method: 'POST' });
+                const data = await res.json();
+                setSubmitResult(data.ok ? 'Sitemap submitted!' : (data.error || 'Failed'));
+              } catch {
+                setSubmitResult('Failed to submit');
+              } finally {
+                setSubmitting(false);
+              }
+            }}
+            disabled={submitting}
+            className="flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1.5 rounded-lg transition disabled:opacity-50"
+          >
+            {submitting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+            Submit Sitemap
+          </button>
+        </div>
+      ) : (
         <p className="text-xs text-amber-600 mt-3 bg-amber-50 rounded-xl p-2.5 border border-amber-100">
           Connect Google Search Console to unlock Growth Engine data and track real search performance.
         </p>
+      )}
+      {submitResult && (
+        <p className="text-xs mt-2 text-gray-600">{submitResult}</p>
       )}
     </div>
   );
@@ -430,6 +465,181 @@ function OverviewView({
   );
 }
 
+// ── Blog Types ────────────────────────────────────────────────────────────────
+
+interface BlogPage {
+  id: string;
+  title: string;
+  slug: string;
+  meta_description: string | null;
+  created_at: string;
+  page_type: string;
+}
+
+// ── Blog Section ─────────────────────────────────────────────────────────────
+
+function BlogSection({ siteId }: { siteId: string }) {
+  const [posts, setPosts] = useState<BlogPage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({ title: '', slug: '', meta_description: '', content: '' });
+
+  useEffect(() => {
+    fetch(`/api/agency/sites/${siteId}/pages`)
+      .then(r => r.json())
+      .then(data => {
+        const all: BlogPage[] = data.data || [];
+        setPosts(all.filter(p => p.page_type === 'blog'));
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [siteId]);
+
+  const autoSlug = (title: string) =>
+    title.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
+  const handleTitleChange = (title: string) => {
+    setForm(f => ({ ...f, title, slug: f.slug || autoSlug(title) }));
+  };
+
+  const handleSave = async () => {
+    if (!form.title.trim() || !form.slug.trim()) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/agency/sites/${siteId}/pages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: form.title,
+          slug: `/blog/${form.slug}`,
+          page_type: 'blog',
+          meta_description: form.meta_description,
+          hero_h1: form.title,
+          hero_subtitle: form.meta_description,
+          content_sections: form.content
+            ? [{ heading: 'Article', body: form.content }]
+            : [{ heading: 'Introduction', body: '' }],
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPosts(p => [data.data, ...p]);
+        setShowForm(false);
+        setForm({ title: '', slug: '', meta_description: '', content: '' });
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+          <BookOpen className="h-4 w-4 text-gray-400" />
+          Blog Posts
+          {posts.length > 0 && (
+            <span className="text-xs font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{posts.length}</span>
+          )}
+        </h4>
+        <button
+          onClick={() => setShowForm(v => !v)}
+          className="flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1.5 rounded-lg transition"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          Add Post
+        </button>
+      </div>
+
+      {showForm && (
+        <div className="mb-4 p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-3">
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Title</label>
+            <input
+              type="text"
+              value={form.title}
+              onChange={e => handleTitleChange(e.target.value)}
+              placeholder="e.g. 5 Signs You Need a New HVAC System"
+              className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Slug</label>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-gray-400">/blog/</span>
+              <input
+                type="text"
+                value={form.slug}
+                onChange={e => setForm(f => ({ ...f, slug: e.target.value }))}
+                placeholder="my-blog-post"
+                className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Meta Description</label>
+            <input
+              type="text"
+              value={form.meta_description}
+              onChange={e => setForm(f => ({ ...f, meta_description: e.target.value }))}
+              placeholder="Brief description for search engines"
+              className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Content</label>
+            <textarea
+              value={form.content}
+              onChange={e => setForm(f => ({ ...f, content: e.target.value }))}
+              placeholder="Write your article content here..."
+              rows={5}
+              className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y"
+            />
+          </div>
+          <div className="flex gap-2 justify-end">
+            <button
+              onClick={() => setShowForm(false)}
+              className="text-xs font-medium text-gray-600 hover:text-gray-800 px-3 py-1.5 rounded-lg border border-gray-200 bg-white transition"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving || !form.title.trim()}
+              className="flex items-center gap-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 px-3 py-1.5 rounded-lg transition"
+            >
+              {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+              Save Post
+            </button>
+          </div>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="flex justify-center py-4"><Loader2 className="h-4 w-4 animate-spin text-gray-400" /></div>
+      ) : posts.length === 0 ? (
+        <p className="text-xs text-gray-500">No blog posts yet. Add your first post to start a blog.</p>
+      ) : (
+        <div className="space-y-2">
+          {posts.map(post => (
+            <div key={post.id} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
+              <FileText className="h-4 w-4 text-gray-400 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-gray-900 truncate">{post.title}</p>
+                <p className="text-xs text-gray-400 truncate">{post.slug}</p>
+              </div>
+              <span className="text-xs text-gray-400 shrink-0">
+                {new Date(post.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main WebsiteTab ───────────────────────────────────────────────────────────
 
 export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
@@ -677,6 +887,9 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
         actionLoading={actionLoading}
         handleAction={handleAction}
       />
+
+      {/* ── Blog management ──────────────────────────────────────── */}
+      <BlogSection siteId={site.id} />
     </div>
   );
 }

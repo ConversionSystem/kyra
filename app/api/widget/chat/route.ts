@@ -205,6 +205,31 @@ export async function POST(request: NextRequest) {
   // Build session ID (persist conversation across messages)
   const resolvedSessionId = sessionId || `web:${clientId.slice(0, 8)}:${Date.now()}`;
 
+  // ── Session memory for returning visitors ────────────────────────────────
+  // Fetch prior DB history when client sends a known sessionId but no in-memory
+  // history (e.g., returning visitor on a fresh page load).
+  let sessionHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [];
+  if (sessionId && (!Array.isArray(history) || history.length === 0)) {
+    try {
+      const { data: sessionRows } = await supabase
+        .from('client_conversations')
+        .select('user_message, ai_response, created_at')
+        .eq('client_id', client.id)
+        .eq('session_id', resolvedSessionId)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (sessionRows?.length) {
+        for (const row of [...sessionRows].reverse()) {
+          if (row.user_message?.trim()) sessionHistory.push({ role: 'user' as const, content: row.user_message });
+          if (row.ai_response?.trim()) sessionHistory.push({ role: 'assistant' as const, content: row.ai_response });
+        }
+      }
+    } catch (err) {
+      console.error('[widget/chat] Session memory error:', err);
+    }
+  }
+
   const cfg = (client.container_config as Record<string, unknown>) ?? {};
   const persona = (cfg.persona as string) || `AI assistant for ${client.name}`;
   const businessName = (cfg.business_name as string) || client.name;
@@ -328,6 +353,7 @@ export async function POST(request: NextRequest) {
     `If you can't resolve something, say: "Let me connect you with our team — they'll follow up shortly."`,
     knowledgeSection,
     crmContextSection ? `\n${crmContextSection}` : '',
+    sessionHistory.length > 0 ? `\nSESSION MEMORY: This visitor has chatted before. Their prior messages are included at the start of the conversation for context.` : '',
     leadCapturePrompt,
   ].filter(Boolean).join('\n');
 
@@ -341,7 +367,8 @@ export async function POST(request: NextRequest) {
       model: routedModel,
       messages: [
         { role: 'system', content: systemPrompt },
-        // Inject conversation history so AI has context (last 10 turns)
+        // DB session memory (prior page loads), then in-memory history (current session)
+        ...sessionHistory,
         ...(Array.isArray(history) ? (history as Array<{role: 'user'|'assistant', content: string}>).slice(-10) : []),
         { role: 'user', content: safeMessage },
       ],
