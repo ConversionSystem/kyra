@@ -196,6 +196,113 @@ export function generateBreadcrumbSchema(pages: SitePage[]): object {
   };
 }
 
+// ---------- LocalBusiness (flat siteData shape — for assembler) ----------
+
+/**
+ * Generate LocalBusiness schema from the assembler's flat siteData shape.
+ * Use this in the assembler; use generateLocalBusinessSchema() for ClientSite objects.
+ */
+export function generateLocalBusinessSchemaForPage(siteData: {
+  business_name: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  rating?: number;
+  reviewCount?: number;
+  services?: Array<{ name: string; slug: string }>;
+  cities?: Array<{ name: string; slug: string }>;
+  domain?: string;
+  lat?: number;
+  lng?: number;
+  tagline?: string;
+}): object {
+  const schema: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': 'LocalBusiness',
+    name: siteData.business_name,
+    telephone: siteData.phone || undefined,
+    url: siteData.domain ? `https://${siteData.domain}` : undefined,
+    description: siteData.tagline || undefined,
+  };
+
+  if (siteData.city || siteData.state || siteData.address) {
+    schema.address = {
+      '@type': 'PostalAddress',
+      streetAddress: siteData.address || undefined,
+      addressLocality: siteData.city || undefined,
+      addressRegion: siteData.state || undefined,
+      addressCountry: 'US',
+    };
+  }
+
+  if (siteData.lat && siteData.lng) {
+    schema.geo = {
+      '@type': 'GeoCoordinates',
+      latitude: siteData.lat,
+      longitude: siteData.lng,
+    };
+  }
+
+  if (siteData.rating && siteData.reviewCount) {
+    schema.aggregateRating = {
+      '@type': 'AggregateRating',
+      ratingValue: siteData.rating,
+      reviewCount: siteData.reviewCount,
+      bestRating: 5,
+      worstRating: 1,
+    };
+  }
+
+  if (siteData.cities?.length) {
+    schema.areaServed = siteData.cities.map((c) => ({
+      '@type': 'City',
+      name: siteData.state ? `${c.name}, ${siteData.state}` : c.name,
+    }));
+  }
+
+  return schema;
+}
+
+// ---------- Breadcrumb (per-page — for assembler) ----------
+
+/**
+ * Generate a BreadcrumbList schema for a specific page.
+ * Use this in the assembler for page-level breadcrumbs.
+ */
+export function generateBreadcrumbSchemaForPage(
+  domain: string,
+  pageType: string,
+  pageName: string,
+): object {
+  const baseUrl = `https://${domain}`;
+  const items: Array<{ position: number; name: string; item?: string }> = [
+    { position: 1, name: 'Home', item: baseUrl },
+  ];
+
+  if (pageType === 'service') {
+    items.push({ position: 2, name: 'Services', item: `${baseUrl}/services` });
+    items.push({ position: 3, name: pageName });
+  } else if (pageType === 'city') {
+    items.push({ position: 2, name: 'Service Areas', item: `${baseUrl}/service-areas` });
+    items.push({ position: 3, name: pageName });
+  } else if (pageType === 'city_service') {
+    items.push({ position: 2, name: pageName });
+  }
+  // homepage: just Home (single item — still valid BreadcrumbList)
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: items.map((item) => ({
+      '@type': 'ListItem',
+      position: item.position,
+      name: item.name,
+      ...(item.item ? { item: item.item } : {}),
+    })),
+  };
+}
+
 // ---------- AggregateRating ----------
 
 export function generateAggregateRatingSchema(rating: number, count: number): object {
@@ -206,6 +313,129 @@ export function generateAggregateRatingSchema(rating: number, count: number): ob
     reviewCount: count,
     bestRating: 5,
     worstRating: 1,
+  };
+}
+
+// ---------- Combined Page Schema ----------
+
+/**
+ * Build all relevant JSON-LD schemas for a page based on its type.
+ * Returns an array of schema objects to be injected as separate <script> tags.
+ */
+export function buildPageSchemas(opts: {
+  pageType: string;
+  site: ClientSite;
+  pageTitle?: string;
+  serviceSlug?: string;
+  cityName?: string;
+  faq?: { question: string; answer: string }[];
+  existingSchema?: unknown;
+}): object[] {
+  const { pageType, site, pageTitle, serviceSlug, cityName, faq, existingSchema } = opts;
+  const schemas: object[] = [];
+
+  // Always include LocalBusiness on homepage
+  if (pageType === 'homepage') {
+    schemas.push(generateLocalBusinessSchema(site));
+  }
+
+  // Service pages get Service schema + LocalBusiness
+  if (pageType === 'service' && serviceSlug) {
+    const svc = site.services?.find(s => s.slug === serviceSlug);
+    if (svc) {
+      schemas.push(generateServiceSchema(site, svc));
+    }
+    schemas.push(generateLocalBusinessSchema(site));
+  }
+
+  // City pages get LocalBusiness with area focus
+  if (pageType === 'city' || pageType === 'city_service') {
+    const localBiz = generateLocalBusinessSchema(site) as Record<string, unknown>;
+    if (cityName) {
+      localBiz.areaServed = {
+        '@type': 'City',
+        name: `${cityName}${site.address?.state ? `, ${site.address.state}` : ''}`,
+      };
+    }
+    schemas.push(localBiz);
+    // City+service also gets Service schema
+    if (pageType === 'city_service' && serviceSlug) {
+      const svc = site.services?.find(s => s.slug === serviceSlug);
+      if (svc) {
+        schemas.push(generateServiceSchema(site, svc));
+      }
+    }
+  }
+
+  // FAQ schema when FAQ data is present
+  if (faq?.length) {
+    schemas.push(generateFAQSchema(faq));
+  }
+
+  // BreadcrumbList based on page type
+  const domain = site.site_domain || site.site_subdomain;
+  const baseUrl = domain ? `https://${domain}` : '';
+  if (baseUrl) {
+    const breadcrumbs = buildBreadcrumbForPage(pageType, baseUrl, pageTitle, cityName, serviceSlug);
+    if (breadcrumbs) schemas.push(breadcrumbs);
+  }
+
+  // Preserve any existing schema (e.g. manually set)
+  if (existingSchema && typeof existingSchema === 'object') {
+    if (Array.isArray(existingSchema)) {
+      schemas.push(...existingSchema);
+    } else {
+      schemas.push(existingSchema);
+    }
+  }
+
+  return schemas;
+}
+
+/**
+ * Build BreadcrumbList schema for a specific page type.
+ */
+function buildBreadcrumbForPage(
+  pageType: string,
+  baseUrl: string,
+  pageTitle?: string,
+  cityName?: string,
+  serviceSlug?: string,
+): object | null {
+  const items: Array<{ name: string; url?: string }> = [{ name: 'Home', url: baseUrl }];
+
+  switch (pageType) {
+    case 'homepage':
+      // Just Home — single item, still useful
+      break;
+    case 'service':
+      items.push({ name: 'Services', url: `${baseUrl}/services` });
+      if (pageTitle) items.push({ name: pageTitle });
+      break;
+    case 'city':
+      items.push({ name: 'Service Areas', url: `${baseUrl}/areas` });
+      if (cityName || pageTitle) items.push({ name: cityName || pageTitle || '' });
+      break;
+    case 'city_service':
+      if (cityName) items.push({ name: cityName, url: `${baseUrl}/${cityName.toLowerCase().replace(/\s+/g, '-')}` });
+      if (pageTitle) items.push({ name: pageTitle });
+      break;
+    default:
+      if (pageTitle) items.push({ name: pageTitle });
+      break;
+  }
+
+  if (items.length < 2) return null;
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: items.map((item, idx) => ({
+      '@type': 'ListItem',
+      position: idx + 1,
+      name: item.name,
+      ...(item.url ? { item: item.url } : {}),
+    })),
   };
 }
 

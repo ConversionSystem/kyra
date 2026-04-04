@@ -19,6 +19,7 @@ import { getTemplateById } from '@/lib/sites/templates/gallery';
 import { generateSiteHTML } from '@/lib/sites/content-engine';
 import { sanitizeGeneratedHTML } from '@/lib/sites/html-sanitizer';
 import { validateGeneratedHTML } from '@/lib/sites/html-quality-checker';
+import { generateSitemapXml, generateRobotsTxt, generateLlmsTxt } from '@/lib/sites/seo-helpers';
 
 // Build calls VPS provisioner which can take 3-5 min to compile Next.js
 export const maxDuration = 300;
@@ -334,10 +335,58 @@ async function buildAndDeploy(site: any, supabase: any) {
         city: address.city || undefined,
         state: address.state || undefined,
         reviews: siteReviews,
+        // SEO: address object for schema + geo coordinates
+        addressObj: site.address || null,
+        industry: constants.industry,
       },
       pageType: p.type,
+      // SEO: Pass service/city context for schema generation
+      serviceSlug: p.type === 'service' || p.type === 'city_service'
+        ? p.slug.replace(/^\/services\//, '').replace(/^.*\//, '')
+        : undefined,
+      cityName: (p.type === 'city' || p.type === 'city_service') && p.slug !== '/'
+        ? (cities.find(c => p.slug.includes(c.slug))?.name || p.title)
+        : undefined,
     }),
   }));
+
+  // ---------- SEO: Generate sitemap.xml, robots.txt, llms.txt ----------
+  const seoPages = assembledPages.map((p: { slug: string; html: string; type: string }) => ({
+    slug: p.slug,
+    html: p.html,
+    type: p.type,
+  }));
+
+  // Generate SEO files as additional "pages" for the provisioner
+  const sitemapXml = generateSitemapXml(
+    domain,
+    pages.map((p: { slug: string; generated_at?: string }) => ({ slug: p.slug, updated_at: p.generated_at })),
+  );
+  const robotsTxt = generateRobotsTxt(domain);
+  const llmsTxt = generateLlmsTxt({
+    business_name: constants.name,
+    domain,
+    tagline: constants.tagline,
+    industry: constants.industry,
+    services,
+    cities: cities.map(c => ({ name: c.name, slug: c.slug, state: c.state })),
+    phone: constants.phone,
+    email: constants.email,
+    address: constants.address,
+    city: address.city,
+    state: address.state,
+    hours: site.hours || null,
+    rating: constants.rating,
+    review_count: constants.reviewCount,
+    years_in_business: constants.yearsInBusiness,
+  });
+
+  // Append SEO static files to assembled pages
+  seoPages.push(
+    { slug: '/sitemap.xml', html: sitemapXml, type: 'utility' },
+    { slug: '/robots.txt', html: robotsTxt, type: 'utility' },
+    { slug: '/llms.txt', html: llmsTxt, type: 'utility' },
+  );
 
   // Call provisioner with pre-assembled HTML
   const res = await fetch(`${PROVISIONER_URL}/sites/${site.id}/build-and-deploy`, {
@@ -353,7 +402,7 @@ async function buildAndDeploy(site: any, supabase: any) {
       constants,
       theme,
       pages: pagesData,
-      assembledPages,
+      assembledPages: seoPages,
       recipe,
       widgetClientId: site.client_id,
       ga4Id: site.ga4_id || null,
