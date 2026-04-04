@@ -209,6 +209,20 @@ export async function assembleSitePages(
         navLinks: site.nav_links || null,
         footerTagline: site.footer_tagline || null,
         socialLinks: site.social_links || null,
+        // Auto-generate Why Choose items for modern-dark sites
+        whyChoose: [
+          { title: `${constants.yearsInBusiness || 20}+ Years Experience`, description: `Serving the ${address.city || 'local'} area with expertise and dedication.` },
+          { title: 'Licensed & Insured', description: `${constants.license ? `License ${constants.license}. ` : ''}Full coverage and liability protection.` },
+          { title: 'Same-Day Service', description: 'Most repairs completed the same day. Emergency service available.' },
+          { title: 'Family-Owned', description: `${site.owner_name ? `Led by ${site.owner_name} — p` : 'P'}ersonal attention on every job.` },
+          { title: 'Top-Rated', description: `${constants.rating || 5.0} stars${constants.reviewCount ? ` with ${constants.reviewCount} reviews` : ''}. Trusted by the community.` },
+          { title: 'All Brands & Systems', description: 'We work with all major brands and equipment types.' },
+        ],
+        mapEmbedUrl: site.address?.lat && site.address?.lng
+          ? `https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3164!2d${site.address.lng}!3d${site.address.lat}!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2s!5e0!3m2!1sen!2sus`
+          : undefined,
+        serviceAreasHeading: `Serving All of ${address.city || 'Your'} County`,
+        serviceAreasSubtitle: `From ${cities[0]?.name || address.city || 'your area'} to ${cities[cities.length - 1]?.name || 'surrounding areas'}, we provide expert services to homes and businesses.`,
       },
       pageType: p.type,
     }),
