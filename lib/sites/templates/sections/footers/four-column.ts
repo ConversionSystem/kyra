@@ -126,8 +126,8 @@ function lightFooter(data: FooterData, primary: string, year: number): string {
       </div>`
     : '';
 
-  return `<footer style="background: #0f172a; padding: 4.5rem 1.5rem 0;" aria-label="${data.businessName} footer">
-  <div style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1.4fr 1fr 1fr 1.2fr; gap: 3rem;">
+  return `<footer class="px-4 sm:px-6 lg:px-8 pt-16 pb-0" style="background: #0f172a;" aria-label="${data.businessName} footer">
+  <div class="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
     <div>
       <div style="margin-bottom: 1.25rem;">
         <span style="font-size: 1.5rem; font-weight: 900; color: #ffffff; letter-spacing: -0.02em;">${data.businessName}</span>
@@ -158,9 +158,9 @@ function lightFooter(data: FooterData, primary: string, year: number): string {
       ${data.bookingUrl ? `<div style="margin-top: 1.25rem;"><a href="${data.bookingUrl}" style="display: inline-flex; align-items: center; gap: 6px; background: ${primary}; color: white; font-weight: 700; font-size: 0.88rem; padding: 10px 20px; border-radius: 8px; text-decoration: none; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Book Appointment →</a></div>` : ''}
     </div>
   </div>
-  <div style="max-width: 1200px; margin: 3rem auto 0; padding: 1.5rem 0; border-top: 1px solid ${borderColor}; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+  <div class="max-w-7xl mx-auto mt-12 py-6 flex flex-col sm:flex-row justify-between items-center gap-4" style="border-top: 1px solid ${borderColor};">
     <p style="color: #4b5563; font-size: 0.85rem; margin: 0;">&copy; ${year} ${data.businessName}. All rights reserved.</p>
-    <div style="display: flex; gap: 1.5rem;">
+    <div class="flex flex-wrap gap-4 justify-center sm:justify-end">
       <a href="/privacy" style="color: #4b5563; font-size: 0.85rem; text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='#9ca3af'" onmouseout="this.style.color='#4b5563'">Privacy Policy</a>
       <a href="/terms" style="color: #4b5563; font-size: 0.85rem; text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='#9ca3af'" onmouseout="this.style.color='#4b5563'">Terms of Service</a>
       <span style="color: #374151; font-size: 0.85rem;">Powered by <a href="https://kyra.conversionsystem.com" target="_blank" style="color: ${primary}; text-decoration: none; font-weight: 600;">Kyra AI</a></span>

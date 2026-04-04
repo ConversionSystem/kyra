@@ -34,9 +34,9 @@ export function splitScreenHero(data: HeroData): string {
 
   const accentLine = `<div style="width: 60px; height: 5px; background: #ffffff; border-radius: 3px; margin-bottom: 1.5rem; opacity: 0.8;"></div>`;
 
-  return `<section class="min-h-[88vh]" style="display: grid; grid-template-columns: 1fr 1fr;" aria-label="${data.businessName || ''} hero">
+  return `<section class="min-h-[88vh] grid grid-cols-1 lg:grid-cols-2" aria-label="${data.businessName || ''} hero">
   <!-- Left: Text panel -->
-  <div style="background: linear-gradient(145deg, ${data.colors.secondary} 0%, ${data.colors.primary} 60%, ${data.colors.primary}cc 100%); display: flex; align-items: center; padding: 4rem 3rem 4rem 4rem; position: relative; overflow: hidden;">
+  <div style="background: linear-gradient(145deg, ${data.colors.secondary} 0%, ${data.colors.primary} 60%, ${data.colors.primary}cc 100%); display: flex; align-items: center; padding: 4rem 1.5rem; position: relative; overflow: hidden;" class="lg:p-16">
     <!-- Background texture -->
     <div style="position: absolute; inset: 0; opacity: 0.08; background-image: radial-gradient(circle at 20% 80%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px); background-size: 30px 30px;" aria-hidden="true"></div>
     <!-- Glow effect -->
@@ -84,7 +84,7 @@ export function splitScreenHero(data: HeroData): string {
   </div>
 
   <!-- Right: Visual panel -->
-  <div style="position: relative; min-height: 400px; overflow: hidden;">
+  <div style="position: relative; overflow: hidden;" class="min-h-64 lg:min-h-full">
     ${rightContent}
     <!-- Overlay gradient on right edge to blend -->
     <div style="position: absolute; left: 0; top: 0; bottom: 0; width: 60px; background: linear-gradient(to right, ${data.colors.primary}60, transparent); pointer-events: none;" aria-hidden="true"></div>

@@ -140,14 +140,14 @@ function lightServices(data: ServicesData): string {
       </div>`
     : '';
 
-  return `<section id="services" style="padding: 5rem 1.5rem; background: #f9fafb;" aria-label="${heading}">
-  <div style="max-width: 1200px; margin: 0 auto;">
-    <div style="text-align: center; margin-bottom: 3.5rem;">
+  return `<section id="services" class="py-16 sm:py-20 px-4 sm:px-6 lg:px-8" style="background: #f9fafb;" aria-label="${heading}">
+  <div class="max-w-7xl mx-auto">
+    <div class="text-center mb-14">
       <div style="display: inline-block; background: ${primary}15; color: ${primary}; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 6px 16px; border-radius: 100px; margin-bottom: 1rem;">What We Offer</div>
       <h2 style="font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 900; color: #111827; margin: 0 0 1rem 0; letter-spacing: -0.02em;">${heading}</h2>
       <p style="color: #6b7280; font-size: 1.05rem; max-width: 480px; margin: 0 auto; line-height: 1.6;">Everything you need from a team you can trust.</p>
     </div>
-    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.75rem;">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-7">
       ${cards.join('\n      ')}
     </div>
     ${moreLink}

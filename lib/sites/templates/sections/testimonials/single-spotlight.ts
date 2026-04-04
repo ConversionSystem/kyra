@@ -33,7 +33,7 @@ export function singleSpotlightTestimonials(data: TestimonialsData): string {
     </div>`;
   }).join('');
 
-  return `<section style="background: linear-gradient(135deg, ${secondary} 0%, ${primary} 55%, ${secondary}bb 100%); padding: 5rem 1.5rem; position: relative; overflow: hidden;" aria-label="Featured testimonial" id="testimonials">
+  return `<section class="py-16 sm:py-20 px-4 sm:px-6 lg:px-8" style="background: linear-gradient(135deg, ${secondary} 0%, ${primary} 55%, ${secondary}bb 100%); position: relative; overflow: hidden;" aria-label="Featured testimonial" id="testimonials">
   <!-- Giant background quote mark -->
   <div style="position: absolute; top: -40px; left: 50%; transform: translateX(-50%); font-size: 30rem; line-height: 1; color: rgba(255,255,255,0.04); font-family: Georgia, serif; pointer-events: none; user-select: none;" aria-hidden="true">&ldquo;</div>
   <!-- Pattern overlay -->
@@ -63,7 +63,7 @@ export function singleSpotlightTestimonials(data: TestimonialsData): string {
     </div>
 
     <!-- Secondary cards row -->
-    ${secondaryCards ? `<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 2rem; text-align: left;">${secondaryCards}</div>` : ''}
+    ${secondaryCards ? `<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8 text-left">${secondaryCards}</div>` : ''}
   </div>
 </section>`;
 }

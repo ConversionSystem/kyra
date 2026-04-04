@@ -68,8 +68,8 @@ export function alternatingServices(data: ServicesData): string {
       </a>
     </div>`;
 
-    return `<div style="background: ${bgColor}; padding: 4rem 1.5rem;">
-      <div style="max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 5rem; align-items: center;">
+    return `<div style="background: ${bgColor};" class="py-16 sm:py-20 px-4 sm:px-6 lg:px-8">
+      <div class="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center">
         ${isEven ? `<div>${visualPanel}</div><div>${textPanel}</div>` : `<div>${textPanel}</div><div>${visualPanel}</div>`}
       </div>
     </div>`;
