@@ -25,6 +25,9 @@ import type {
 
 import { getGatewayByClientId } from '@/lib/ovh/gateway-resolver';
 import { sendGHLMessage, getValidToken } from '@/lib/ghl/api';
+import { processWithSmartEngine } from '@/lib/ghl/smart-handler';
+import { getClientKnowledge } from '@/lib/knowledge/extractor';
+import { findMatchingWorkflows, executeWorkflow } from '@/lib/automations/workflow-executor';
 
 const API_SECRET = process.env.KYRA_API_SECRET;
 
@@ -95,7 +98,7 @@ export async function POST(request: NextRequest) {
 
   const { data: client, error: clientError } = await supabase
     .from('agency_clients')
-    .select('id, agency_id, name, slug, industry, status, container_config, template_id, settings')
+    .select('id, agency_id, name, slug, industry, status, container_config, template_id, settings, ghl_location_id, ghl_access_token, ghl_refresh_token, ghl_private_token')
     .eq('ghl_location_id', locationId)
     .single();
 
@@ -216,6 +219,10 @@ interface ClientRecord {
   container_config: Record<string, unknown>;
   settings: Record<string, unknown>;
   template_id: string | null;
+  ghl_location_id: string | null;
+  ghl_access_token: string | null;
+  ghl_refresh_token: string | null;
+  ghl_private_token: string | null;
 }
 
 /**
@@ -302,6 +309,13 @@ async function handleInboundMessage(
 
   const conversationHistory = (recentHistory ?? []).reverse(); // oldest first
 
+  // Fetch trained knowledge base for injection into system context (Task 2)
+  let knowledgeContext: string | undefined;
+  try {
+    const kb = await getClientKnowledge(client.id);
+    if (kb) knowledgeContext = kb;
+  } catch { /* non-fatal */ }
+
   // Build system context with business persona + contact info + date
   const systemContext = buildInboundSystemContext({
     clientName: client.name,
@@ -315,17 +329,96 @@ async function handleInboundMessage(
     conversationId,
     channel: channelLabel,
     messageId,
+    knowledgeContext,
   });
 
   console.log(
     `[ghl-webhook] 📨 Inbound ${channelLabel} for "${client.name}" from ${name}: ${messageContent.slice(0, 100)}...`
   );
 
-  // Forward to container and send reply back via GHL
+  // ── Task 1: Smart handler path (GHL tools available) ─────────────────────
+  const hasGHLTools = !!(client.ghl_location_id && (client.ghl_private_token || client.ghl_access_token));
+
+  if (hasGHLTools) {
+    try {
+      const smartResult = await processWithSmartEngine({
+        client: client as any,
+        contactId: contactId ?? '',
+        contactName: name,
+        contactPhone: phone ?? null,
+        contactEmail: email ?? null,
+        conversationId,
+        messageType: channel ?? 'SMS',
+        messageBody: messageContent,
+      });
+
+      // Send reply via GHL
+      if (smartResult.reply && contactId) {
+        const token = await getValidToken(client.id);
+        await sendGHLMessage(client.id, token, contactId, smartResult.reply, channel ?? 'TYPE_SMS');
+      }
+
+      // Log conversation
+      const supabaseSmart = createServiceClientWithoutCookies();
+      await supabaseSmart.from('client_conversations').insert({
+        client_id: client.id,
+        agency_id: client.agency_id,
+        channel: channelLabel.toLowerCase(),
+        user_message: messageContent,
+        ai_response: smartResult.reply,
+        created_at: new Date().toISOString(),
+        metadata: { tools_used: smartResult.toolsUsed, escalated: smartResult.escalated },
+      });
+
+      // Deduct credits
+      if (client.agency_id) {
+        try {
+          const { deductCredits } = await import('@/lib/billing/credit-engine');
+          const { getCreditsForModel } = await import('@/lib/billing/model-credits');
+          await deductCredits(client.agency_id, 'channel.ghl_sms', {
+            clientId: client.id,
+            description: `GHL smart handler response (${smartResult.toolsUsed.length} tools)`,
+            override: getCreditsForModel('gpt-4o-mini'),
+          });
+        } catch { /* non-fatal */ }
+      }
+
+      // ── Task 3: Fire workflow triggers (non-blocking) ───────────────────
+      try {
+        const matchingWorkflows = await findMatchingWorkflows(client.id, 'message.received', {
+          channel, contactId, message: messageContent,
+        });
+        for (const wf of matchingWorkflows) {
+          executeWorkflow(wf, { contactId, message: messageContent, channel }).catch(() => {});
+        }
+      } catch { /* non-fatal */ }
+
+      console.log('[ghl-webhook] Smart handler response sent:', {
+        clientId: client.id, tools: smartResult.toolsUsed,
+        escalated: smartResult.escalated, ms: smartResult.responseTimeMs,
+      });
+
+      return; // Don't also forward to container
+    } catch (smartErr) {
+      console.error('[ghl-webhook] Smart handler failed, falling back to container:', smartErr);
+    }
+  }
+
+  // Forward to container and send reply back via GHL (fallback / no-GHL path)
   await forwardToContainer(client.id, formattedMessage, systemContext, client.agency_id, {
     contactId: contactId ?? undefined,
     messageType: channel ?? 'TYPE_SMS',
   }, conversationHistory);
+
+  // ── Task 3: Fire workflow triggers for container path (non-blocking) ─────
+  try {
+    const matchingWorkflows = await findMatchingWorkflows(client.id, 'message.received', {
+      channel, contactId, message: messageContent,
+    });
+    for (const wf of matchingWorkflows) {
+      executeWorkflow(wf, { contactId, message: messageContent, channel }).catch(() => {});
+    }
+  } catch { /* non-fatal */ }
 }
 
 /**
@@ -682,6 +775,7 @@ function buildInboundSystemContext(info: {
   conversationId: string;
   channel: string;
   messageId: string;
+  knowledgeContext?: string;
 }): string {
   // ── Current date/time ─────────────────────────────────────────────────────
   const now = new Date();
@@ -722,9 +816,10 @@ function buildInboundSystemContext(info: {
   lines.push('');
 
   // ── Business knowledge ────────────────────────────────────────────────────
-  if (instructions) {
+  if (instructions || info.knowledgeContext) {
     lines.push('# Your Business Knowledge & Instructions');
-    lines.push(instructions);
+    if (instructions) lines.push(instructions);
+    if (info.knowledgeContext) lines.push(info.knowledgeContext.slice(0, 3000));
     lines.push('');
   }
 
