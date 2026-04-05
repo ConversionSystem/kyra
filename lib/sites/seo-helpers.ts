@@ -67,6 +67,9 @@ export function generateLlmsTxt(site: {
   rating?: number | null;
   review_count?: number | null;
   years_in_business?: number | null;
+  license?: string | null;
+  lat?: number | null;
+  lng?: number | null;
 }): string {
   const lines: string[] = [];
 
@@ -123,6 +126,25 @@ export function generateLlmsTxt(site: {
   lines.push(`- Website: https://${site.domain}`);
   lines.push('');
 
+  // Expertise
+  if (site.services?.length) {
+    lines.push('## Expertise');
+    const serviceNames = site.services.map(s => s.name).join(' · ');
+    lines.push(`${serviceNames} — serving ${site.city || ''}, ${site.state || ''}.`);
+    lines.push('');
+  }
+
+  // Trust Signals
+  const trustLines: string[] = [];
+  if (site.rating && site.review_count) trustLines.push(`- ${site.rating}/5 stars from ${site.review_count} reviews`);
+  if (site.years_in_business) trustLines.push(`- ${site.years_in_business}+ years in business`);
+  if (site.license) trustLines.push(`- Licensed: ${site.license}`);
+  if (trustLines.length > 0) {
+    lines.push('## Trust Signals');
+    lines.push(...trustLines);
+    lines.push('');
+  }
+
   // Hours
   if (site.hours && Object.keys(site.hours).length > 0) {
     lines.push('## Hours');
@@ -136,6 +158,15 @@ export function generateLlmsTxt(site: {
         lines.push(`- ${dayNames[day]}: ${site.hours[day]}`);
       }
     }
+    lines.push('');
+  }
+
+  // Location
+  if (site.address || site.city) {
+    lines.push('## Location');
+    const fullAddress = [site.address, site.city, site.state].filter(Boolean).join(', ');
+    if (fullAddress) lines.push(fullAddress);
+    if (site.lat && site.lng) lines.push(`Google Maps: https://www.google.com/maps?q=${site.lat},${site.lng}`);
     lines.push('');
   }
 

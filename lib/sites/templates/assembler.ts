@@ -414,6 +414,8 @@ export function assemblePage(options: AssemblePageOptions): string {
     cities: (siteData.cities || []).map(c => ({ name: c.name, slug: c.slug, state: siteData.state || '' })),
     tagline: siteData.tagline || null,
     owner_name: siteData.ownerName || null,
+    social_links: siteData.socialLinks as Record<string, string> | null || null,
+    google_review_url: (siteData as Record<string, unknown>).googleReviewUrl as string | null || null,
   };
 
   // Extract service slug from page type context
@@ -422,8 +424,10 @@ export function assemblePage(options: AssemblePageOptions): string {
 
   const pageSchemas = buildPageSchemas({
     pageType,
-    site: siteForSchema as Parameters<typeof buildPageSchemas>[0]['site'],
+    site: siteForSchema as unknown as Parameters<typeof buildPageSchemas>[0]['site'],
     pageTitle: pageData.title,
+    pageDescription: pageData.metaDescription || pageData.hero_subtitle,
+    pageSlug: pageType === 'blog' ? undefined : undefined,
     serviceSlug,
     cityName,
     faq: pageData.faq as { question: string; answer: string }[] | undefined,
@@ -554,7 +558,9 @@ export function assemblePage(options: AssemblePageOptions): string {
   ${siteUrl ? `<link rel="canonical" href="${siteUrl}">` : ''}
   <meta property="og:title" content="${escapeHtml(metaTitle)}">
   <meta property="og:description" content="${escapeHtml(metaDesc)}">
-  <meta property="og:type" content="website">
+  ${pageType === 'blog' ? `<meta property="og:type" content="article">
+  <meta property="article:published_time" content="${new Date().toISOString()}">
+  <meta property="article:author" content="${escapeHtml(siteData.ownerName || siteData.business_name)}">` : '<meta property="og:type" content="website">'}
   ${siteUrl ? `<meta property="og:url" content="${siteUrl}">` : ''}
   ${heroImage ? `<meta property="og:image" content="${escapeHtml(heroImage)}">
   <meta property="og:image:alt" content="${escapeHtml(heroImageAlt)}">` : ''}
@@ -566,6 +572,11 @@ export function assemblePage(options: AssemblePageOptions): string {
   ${heroImage ? `<meta name="twitter:image" content="${escapeHtml(heroImage)}">
   <meta name="twitter:image:alt" content="${escapeHtml(heroImageAlt)}">` : ''}
   ${keywords ? `<meta name="keywords" content="${escapeHtml(keywords)}">` : ''}
+  ${siteData.ownerName ? `<meta name="author" content="${escapeHtml(siteData.ownerName)}">` : ''}
+  ${siteUrl ? `<link rel="alternate" hreflang="en" href="${siteUrl}">
+  <link rel="alternate" hreflang="x-default" href="${siteUrl}">` : ''}
+  <link rel="preconnect" href="https://cdn.tailwindcss.com">
+  <link rel="dns-prefetch" href="https://cdn.tailwindcss.com">
   ${siteData.state ? `<meta name="geo.region" content="US-${escapeHtml(siteData.state)}">` : ''}
   ${siteData.city ? `<meta name="geo.placename" content="${escapeHtml(siteData.city)}">` : ''}
   ${geoLat && geoLng ? `<meta name="geo.position" content="${geoLat};${geoLng}">

@@ -13,12 +13,42 @@ import type { ClientSite, SiteService, SitePage } from './types';
 
 // ---------- LocalBusiness ----------
 
+function getLocalBusinessType(industry: string): string {
+  const lower = (industry || '').toLowerCase().replace(/[-_\s]/g, '');
+  const map: Record<string, string> = {
+    hvac: 'HVACBusiness', heating: 'HVACBusiness', cooling: 'HVACBusiness',
+    plumbing: 'Plumber', plumber: 'Plumber',
+    electrical: 'Electrician', electrician: 'Electrician',
+    dental: 'Dentist', dentist: 'Dentist',
+    medical: 'MedicalBusiness', doctor: 'Physician', physician: 'Physician',
+    legal: 'LegalService', lawyer: 'LegalService', attorney: 'LegalService',
+    roofing: 'RoofingContractor', roofer: 'RoofingContractor',
+    cleaning: 'HousekeepingBusiness', maid: 'HousekeepingBusiness',
+    landscaping: 'LandscapeService', lawn: 'LandscapeService',
+    locksmith: 'Locksmith', painting: 'PaintContractor', flooring: 'FlooringStore',
+    restaurant: 'Restaurant', cafe: 'CafeOrCoffeeShop', bakery: 'Bakery', hotel: 'Hotel',
+    salon: 'HairSalon', spa: 'DaySpa', medspa: 'MedicalSpa',
+    veterinary: 'VeterinaryCare', vet: 'VeterinaryCare',
+    accounting: 'AccountingService', insurance: 'InsuranceAgency',
+    realestate: 'RealEstateAgent', moving: 'MovingCompany', storage: 'SelfStorage',
+    auto: 'AutoRepair', garage: 'AutoRepair',
+    pest: 'PestControlService', solar: 'SolarEnergyCompany',
+    computer: 'ComputerRepairService', it: 'ComputerRepairService',
+    gym: 'ExerciseGym', fitness: 'ExerciseGym', tattoo: 'TattooParlor',
+    consulting: 'ProfessionalService', financial: 'FinancialService',
+  };
+  for (const [key, type] of Object.entries(map)) {
+    if (lower.includes(key)) return type;
+  }
+  return 'LocalBusiness';
+}
+
 export function generateLocalBusinessSchema(site: ClientSite): object {
   const address = site.address;
 
   const schema: Record<string, unknown> = {
     '@context': 'https://schema.org',
-    '@type': 'LocalBusiness',
+    '@type': getLocalBusinessType(site.industry),
     name: site.business_name,
     description: site.tagline || `${site.industry} services in ${address?.city || 'your area'}`,
     url: site.site_domain
@@ -29,6 +59,55 @@ export function generateLocalBusinessSchema(site: ClientSite): object {
     telephone: site.phone || undefined,
     image: site.logo_url || undefined,
   };
+
+  // Task B: Additional LocalBusiness fields
+  const priceMap: Record<string, string> = {
+    legal: '$$$', medical: '$$$', dental: '$$', hvac: '$$', plumbing: '$$',
+    electrical: '$$', roofing: '$$', cleaning: '$', landscaping: '$',
+    restaurant: '$$', salon: '$$', consulting: '$$$', financial: '$$$',
+  };
+  const lowerInd = (site.industry || '').toLowerCase();
+  schema.priceRange = Object.entries(priceMap).find(([k]) => lowerInd.includes(k))?.[1] || '$$';
+
+  if (site.phone) {
+    schema.contactPoint = {
+      '@type': 'ContactPoint',
+      telephone: site.phone,
+      contactType: 'customer service',
+      areaServed: site.address?.state || 'US',
+      availableLanguage: 'English',
+    };
+  }
+
+  if (site.logo_url) {
+    schema.logo = { '@type': 'ImageObject', url: site.logo_url, width: 200, height: 200 };
+  }
+
+  if (site.years_in_business && site.years_in_business > 0) {
+    schema.foundingDate = (new Date().getFullYear() - site.years_in_business).toString();
+  }
+
+  if (site.owner_name) {
+    schema.founder = { '@type': 'Person', name: site.owner_name };
+    schema.employee = [{ '@type': 'Person', name: site.owner_name, jobTitle: 'Owner', worksFor: { '@type': 'Organization', name: site.business_name } }];
+  }
+
+  const socialLinks = (site as unknown as Record<string, unknown>).social_links as Record<string, string> | null;
+  const googleReviewUrl = (site as unknown as Record<string, unknown>).google_review_url as string | null;
+  const sameAsUrls = [
+    socialLinks?.facebook, socialLinks?.instagram, socialLinks?.yelp,
+    socialLinks?.linkedin, socialLinks?.twitter, googleReviewUrl,
+  ].filter(Boolean) as string[];
+  if (sameAsUrls.length > 0) schema.sameAs = sameAsUrls;
+
+  if (site.address?.lat && site.address?.lng) {
+    schema.hasMap = `https://www.google.com/maps?q=${site.address.lat},${site.address.lng}`;
+  }
+
+  if (site.services?.length) schema.knowsAbout = site.services.map(s => s.name);
+
+  schema.currenciesAccepted = 'USD';
+  schema.paymentAccepted = 'Cash, Credit Card, Debit Card';
 
   if (address) {
     schema.address = {
@@ -100,6 +179,24 @@ export function generateLocalBusinessSchema(site: ClientSite): object {
   }
 
   return schema;
+}
+
+// ---------- Article ----------
+
+export function generateArticleSchema(opts: {
+  title: string; description?: string; url?: string;
+  authorName?: string; publishedDate?: string; imageUrl?: string; siteName?: string;
+}): object {
+  return {
+    '@context': 'https://schema.org', '@type': 'Article',
+    headline: opts.title, description: opts.description || opts.title,
+    url: opts.url,
+    author: { '@type': 'Person', name: opts.authorName || 'Staff Writer' },
+    publisher: opts.siteName ? { '@type': 'Organization', name: opts.siteName } : undefined,
+    datePublished: opts.publishedDate || new Date().toISOString().split('T')[0],
+    dateModified: opts.publishedDate || new Date().toISOString().split('T')[0],
+    image: opts.imageUrl ? { '@type': 'ImageObject', url: opts.imageUrl } : undefined,
+  };
 }
 
 // ---------- Service ----------
@@ -326,17 +423,31 @@ export function buildPageSchemas(opts: {
   pageType: string;
   site: ClientSite;
   pageTitle?: string;
+  pageDescription?: string;
+  pageSlug?: string;
   serviceSlug?: string;
   cityName?: string;
   faq?: { question: string; answer: string }[];
   existingSchema?: unknown;
 }): object[] {
-  const { pageType, site, pageTitle, serviceSlug, cityName, faq, existingSchema } = opts;
+  const { pageType, site, pageTitle, pageDescription, pageSlug, serviceSlug, cityName, faq, existingSchema } = opts;
   const schemas: object[] = [];
+
+  const domain = site.site_domain || site.site_subdomain;
+  const baseUrl = domain ? `https://${domain}` : '';
 
   // Always include LocalBusiness on homepage
   if (pageType === 'homepage') {
     schemas.push(generateLocalBusinessSchema(site));
+    schemas.push({
+      '@context': 'https://schema.org', '@type': 'WebSite',
+      name: site.business_name, url: baseUrl,
+      potentialAction: {
+        '@type': 'SearchAction',
+        target: { '@type': 'EntryPoint', urlTemplate: `${baseUrl}/?s={search_term_string}` },
+        'query-input': 'required name=search_term_string',
+      },
+    });
   }
 
   // Service pages get Service schema + LocalBusiness
@@ -367,14 +478,24 @@ export function buildPageSchemas(opts: {
     }
   }
 
+  // Blog pages get Article schema
+  if (pageType === 'blog') {
+    schemas.push(generateArticleSchema({
+      title: opts.pageTitle || 'Article',
+      description: opts.pageDescription,
+      url: opts.pageSlug && baseUrl ? `${baseUrl}${opts.pageSlug}` : undefined,
+      authorName: site.owner_name || site.business_name,
+      siteName: site.business_name,
+      imageUrl: site.logo_url || undefined,
+    }));
+  }
+
   // FAQ schema when FAQ data is present
   if (faq?.length) {
     schemas.push(generateFAQSchema(faq));
   }
 
   // BreadcrumbList based on page type
-  const domain = site.site_domain || site.site_subdomain;
-  const baseUrl = domain ? `https://${domain}` : '';
   if (baseUrl) {
     const breadcrumbs = buildBreadcrumbForPage(pageType, baseUrl, pageTitle, cityName, serviceSlug);
     if (breadcrumbs) schemas.push(breadcrumbs);
