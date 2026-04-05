@@ -11,6 +11,7 @@ import {
   ArrowLeft,
   Loader2,
   Zap,
+  Sparkles,
   Trash2,
   Save,
   FileDown,
@@ -465,7 +466,7 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
 
           {/* Tab content */}
           {activeTab === 'inbox' && (
-            <InboxWithTerminal client={initialClient} />
+            <InboxWithTerminal client={initialClient} isFree={isFreeOrSolo} />
           )}
           {activeTab === 'crm' && (
             <CrmTab client={initialClient} clientId={initialClient.id} />
@@ -502,7 +503,7 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
 
 // ── Inbox + Terminal (merged) ─────────────────────────────────────────────────
 
-function InboxWithTerminal({ client }: { client: AgencyClient }) {
+function InboxWithTerminal({ client, isFree }: { client: AgencyClient; isFree?: boolean }) {
   const [mode, setMode] = useState<'messages' | 'terminal'>('messages');
 
   return (
@@ -528,8 +529,67 @@ function InboxWithTerminal({ client }: { client: AgencyClient }) {
         ))}
       </div>
 
+      {/* Upgrade nudge — free plan users see this after their first messages */}
+      {isFree && mode === 'messages' && (
+        <UpgradeNudgeBanner />
+      )}
+
       {mode === 'messages' && <ConversationsTab client={client} />}
       {mode === 'terminal' && <TerminalTab client={client} />}
+    </div>
+  );
+}
+
+// ── Upgrade Nudge Banner (Inbox) ─────────────────────────────────────────────
+
+function UpgradeNudgeBanner() {
+  const [dismissed, setDismissed] = useState(false);
+  if (dismissed) return null;
+
+  return (
+    <div className="relative rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white p-4 flex items-center gap-4 shadow-sm">
+      {/* Dismiss */}
+      <button
+        onClick={() => setDismissed(true)}
+        className="absolute top-2 right-2 text-white/60 hover:text-white transition text-lg leading-none"
+        aria-label="Dismiss"
+      >
+        ×
+      </button>
+
+      <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
+        <Sparkles className="h-5 w-5 text-white" />
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-bold leading-tight">
+          Unlock unlimited clients &amp; white-label branding
+        </p>
+        <p className="text-xs text-indigo-200 mt-0.5">
+          Your AI is already working. Upgrade to scale to more clients and bill them under your own brand.
+        </p>
+        {/* Feature bullets */}
+        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
+          {[
+            '10+ AI workers',
+            'White-label dashboard',
+            'Priority support',
+            'Advanced analytics',
+          ].map(f => (
+            <span key={f} className="flex items-center gap-1 text-[11px] text-indigo-100">
+              <CheckCircle2 className="h-3 w-3 text-indigo-300 shrink-0" />
+              {f}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <Link
+        href="/agency/billing"
+        className="shrink-0 bg-white text-indigo-700 hover:bg-indigo-50 transition font-bold text-sm px-4 py-2 rounded-xl whitespace-nowrap"
+      >
+        View Plans →
+      </Link>
     </div>
   );
 }
