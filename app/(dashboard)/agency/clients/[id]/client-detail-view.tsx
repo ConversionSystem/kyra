@@ -1375,7 +1375,7 @@ function IntegrationsTab({ client, onRefresh }: { client: AgencyClient; onRefres
 
 // ── Settings Tab Merged (General + Channels + Integrations + Security + Voice + SMS + Workflows) ──
 
-type SettingsSubTab = 'general' | 'channels' | 'integrations' | 'voice' | 'sms' | 'workflows';
+type SettingsSubTab = 'general' | 'channels' | 'integrations' | 'voice' | 'sms' | 'autopilot';
 
 const SETTINGS_SUB_TABS: { id: SettingsSubTab; label: string }[] = [
   { id: 'general', label: 'General' },
@@ -1383,7 +1383,7 @@ const SETTINGS_SUB_TABS: { id: SettingsSubTab; label: string }[] = [
   { id: 'integrations', label: 'Integrations' },
   { id: 'voice', label: 'Voice' },
   { id: 'sms', label: 'SMS' },
-  { id: 'workflows', label: 'Workflows' },
+  { id: 'autopilot', label: 'Autopilot' },
 ];
 
 function SettingsTabMerged({
@@ -1477,7 +1477,7 @@ function SettingsTabMerged({
           <DeliverySmsTab clientId={client.id} />
         )
       )}
-      {activeSubTab === 'workflows' && (
+      {activeSubTab === 'autopilot' && (
         <AutopilotClient />
       )}
     </div>
