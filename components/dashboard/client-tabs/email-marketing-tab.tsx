@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Mail, Send, Plus, Search, Upload, Trash2, Eye, X, Users,
   BarChart3, FileText, Clock, CheckCircle2, AlertTriangle, Loader2,
-  ArrowLeft, ChevronDown,
+  ArrowLeft, ChevronDown, Pencil,
 } from 'lucide-react';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -789,6 +789,9 @@ function TemplatesView({ clientId }: { clientId: string }) {
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [preview, setPreview] = useState<Template | null>(null);
+  const [editing, setEditing] = useState<Template | null>(null);
+  const [editForm, setEditForm] = useState({ name: '', subject: '', html_body: '' });
+  const [saving, setSaving] = useState(false);
   const [createForm, setCreateForm] = useState({ name: '', subject: '', html_body: '', category: 'custom' });
 
   const load = useCallback(async () => {
@@ -809,6 +812,25 @@ function TemplatesView({ clientId }: { clientId: string }) {
     });
     setShowCreate(false);
     setCreateForm({ name: '', subject: '', html_body: '', category: 'custom' });
+    load();
+  };
+
+  const openEdit = (t: Template, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditing(t);
+    setEditForm({ name: t.name, subject: t.subject, html_body: t.html_body });
+  };
+
+  const handleSave = async () => {
+    if (!editing) return;
+    setSaving(true);
+    await fetch(`/api/agency/clients/${clientId}/email/templates`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ templateId: editing.id, ...editForm }),
+    });
+    setSaving(false);
+    setEditing(null);
     load();
   };
 
@@ -864,7 +886,15 @@ function TemplatesView({ clientId }: { clientId: string }) {
           <div className="bg-white rounded-xl p-6 w-full max-w-2xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h4 className="text-lg font-semibold text-gray-900">{preview.name}</h4>
-              <button onClick={() => setPreview(null)}><X className="w-5 h-5 text-gray-400" /></button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={e => { setPreview(null); openEdit(preview, e); }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50"
+                >
+                  <Pencil className="w-3.5 h-3.5" /> Edit
+                </button>
+                <button onClick={() => setPreview(null)}><X className="w-5 h-5 text-gray-400" /></button>
+              </div>
             </div>
             <p className="text-sm text-gray-500 mb-3">Subject: {preview.subject}</p>
             <iframe
@@ -873,6 +903,64 @@ function TemplatesView({ clientId }: { clientId: string }) {
               sandbox=""
               title="Template preview"
             />
+          </div>
+        </div>
+      )}
+
+      {/* Edit modal */}
+      {editing && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setEditing(null)}>
+          <div className="bg-white rounded-xl w-full max-w-5xl h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 shrink-0">
+              <h4 className="text-lg font-semibold text-gray-900">Edit Template</h4>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setEditing(null)} className="px-4 py-1.5 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50">
+                  Cancel
+                </button>
+                <button onClick={handleSave} disabled={saving} className="flex items-center gap-1.5 px-4 py-1.5 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 disabled:opacity-50">
+                  {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                  Save
+                </button>
+                <button onClick={() => setEditing(null)}><X className="w-5 h-5 text-gray-400" /></button>
+              </div>
+            </div>
+            {/* Fields */}
+            <div className="flex gap-3 px-6 py-3 border-b border-gray-100 shrink-0">
+              <input
+                className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                placeholder="Template Name"
+                value={editForm.name}
+                onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
+              />
+              <input
+                className="flex-[2] border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                placeholder="Subject Line"
+                value={editForm.subject}
+                onChange={e => setEditForm(f => ({ ...f, subject: e.target.value }))}
+              />
+            </div>
+            {/* Split editor / preview */}
+            <div className="flex flex-1 overflow-hidden">
+              <div className="flex-1 flex flex-col border-r border-gray-200">
+                <p className="px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide border-b border-gray-100 shrink-0">HTML</p>
+                <textarea
+                  className="flex-1 p-4 text-xs font-mono resize-none focus:outline-none bg-gray-50"
+                  value={editForm.html_body}
+                  onChange={e => setEditForm(f => ({ ...f, html_body: e.target.value }))}
+                  spellCheck={false}
+                />
+              </div>
+              <div className="flex-1 flex flex-col">
+                <p className="px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide border-b border-gray-100 shrink-0">Preview</p>
+                <iframe
+                  srcDoc={editForm.html_body}
+                  className="flex-1 bg-white"
+                  sandbox=""
+                  title="Live preview"
+                />
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -896,7 +984,16 @@ function TemplatesView({ clientId }: { clientId: string }) {
               <div className="p-3">
                 <div className="flex items-center justify-between mb-1">
                   <p className="text-sm font-medium text-gray-900">{t.name}</p>
-                  <span className={`text-xs px-1.5 py-0.5 rounded ${categoryColors[t.category] || categoryColors.custom}`}>{t.category}</span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={e => openEdit(t, e)}
+                      className="p-1 text-gray-400 hover:text-indigo-600 rounded transition-colors"
+                      title="Edit template"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <span className={`text-xs px-1.5 py-0.5 rounded ${categoryColors[t.category] || categoryColors.custom}`}>{t.category}</span>
+                  </div>
                 </div>
                 <p className="text-xs text-gray-400">{t.is_system ? 'System template' : fmtDate(t.created_at)}</p>
               </div>
