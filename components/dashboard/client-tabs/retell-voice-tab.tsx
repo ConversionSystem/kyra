@@ -419,7 +419,7 @@ export default function RetellVoiceTab({ client }: { client: AgencyClient }) {
                   {buyingNumber ? 'Buying...' : 'Buy Number'}
                 </button>
               </div>
-              <p className="text-xs text-gray-400 mt-3">Phone numbers cost ~$2/mo. The AI answers all calls automatically.</p>
+              <p className="text-xs text-gray-400 mt-3">Phone numbers cost ~$3/mo. The AI answers all calls automatically.</p>
             </div>
           ) : (
             /* Already set up */
