@@ -58,6 +58,10 @@
     {
       "path": "/api/cron/worker-tasks",
       "schedule": "*/30 * * * *"
+    },
+    {
+      "path": "/api/cron/idle-containers",
+      "schedule": "0 4 * * *"
     }
   ]
 }
