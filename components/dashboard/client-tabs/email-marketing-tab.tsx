@@ -794,7 +794,7 @@ function TemplatesView({ clientId }: { clientId: string }) {
   const [createForm, setCreateForm] = useState({ name: '', subject: '', html_body: '', category: 'custom' });
   const editTextareaRef = useRef<HTMLTextAreaElement>(null);
   const visualIframeRef = useRef<HTMLIFrameElement>(null);
-  const visualInitRef = useRef(false);
+  // visualIframeRef used for visual editor mode
 
   const insertAtCursor = (before: string, after = '', placeholder = '') => {
     const el = editTextareaRef.current;
@@ -820,24 +820,22 @@ function TemplatesView({ clientId }: { clientId: string }) {
 
   useEffect(() => { load(); }, [load]);
 
-  // Reset visual init when a different template is opened
-  useEffect(() => { visualInitRef.current = false; }, [editing?.id]);
-
-  // Initialize visual editor iframe when switching to visual mode
+  // Initialize visual editor iframe — fires when editing opens or mode switches to visual
   useEffect(() => {
-    if (editMode !== 'visual' || !visualIframeRef.current || visualInitRef.current) return;
+    if (!editing || editMode !== 'visual' || !visualIframeRef.current) return;
+    // Use the template's html_body directly (not editForm which may be stale)
+    const htmlContent = editForm.html_body || editing.html_body || '<p>Start typing here...</p>';
     const iframe = visualIframeRef.current;
     const timer = setTimeout(() => {
       const doc = iframe.contentDocument || iframe.contentWindow?.document;
       if (!doc) return;
       doc.open();
-      doc.write(editForm.html_body || '<p>Start typing here...</p>');
+      doc.write(htmlContent);
       doc.close();
       (doc as Document & { designMode: string }).designMode = 'on';
-      visualInitRef.current = true;
-    }, 100);
+    }, 150);
     return () => clearTimeout(timer);
-  }, [editMode]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [editing?.id, editMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleCreate = async () => {
     await fetch(`/api/agency/clients/${clientId}/email/templates`, {
