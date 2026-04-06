@@ -39,12 +39,14 @@ interface CallLog {
 }
 
 const VOICES = [
-  { id: 'retell-Cimo', name: 'Cimo', gender: 'Male', accent: 'American', style: 'Professional' },
-  { id: 'retell-Myra', name: 'Myra', gender: 'Female', accent: 'American', style: 'Friendly' },
-  { id: 'retell-Ryan', name: 'Ryan', gender: 'Male', accent: 'American', style: 'Casual' },
-  { id: 'retell-Emma', name: 'Emma', gender: 'Female', accent: 'British', style: 'Professional' },
-  { id: 'retell-Sarah', name: 'Sarah', gender: 'Female', accent: 'American', style: 'Warm' },
-  { id: 'retell-Josh', name: 'Josh', gender: 'Male', accent: 'American', style: 'Energetic' },
+  { id: '11labs-Adrian', name: 'Adrian', gender: 'Male', accent: 'American', style: 'Professional' },
+  { id: '11labs-Marissa', name: 'Marissa', gender: 'Female', accent: 'American', style: 'Friendly' },
+  { id: 'openai-Nova', name: 'Nova', gender: 'Female', accent: 'American', style: 'Warm' },
+  { id: 'openai-Onyx', name: 'Onyx', gender: 'Male', accent: 'American', style: 'Deep & Confident' },
+  { id: '11labs-Dorothy', name: 'Dorothy', gender: 'Female', accent: 'British', style: 'Professional' },
+  { id: '11labs-Billy', name: 'Billy', gender: 'Male', accent: 'American', style: 'Casual' },
+  { id: '11labs-Lily', name: 'Lily', gender: 'Female', accent: 'American', style: 'Gentle' },
+  { id: 'openai-Alloy', name: 'Alloy', gender: 'Neutral', accent: 'American', style: 'Versatile' },
 ];
 
 // ── Main Component ─────────────────────────────────────────────────────────────
@@ -61,7 +63,7 @@ export default function RetellVoiceTab({ client }: { client: AgencyClient }) {
   const [creating, setCreating] = useState(false);
   const [buyingNumber, setBuyingNumber] = useState(false);
   const [calling, setCalling] = useState(false);
-  const [selectedVoice, setSelectedVoice] = useState(voiceConfig.voice_id || 'retell-Cimo');
+  const [selectedVoice, setSelectedVoice] = useState(voiceConfig.voice_id || '11labs-Adrian');
   const [areaCode, setAreaCode] = useState('');
   const [outboundNumber, setOutboundNumber] = useState('');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
