@@ -71,7 +71,7 @@ function modernDarkStats(data: AboutData): string {
   const stats = buildStats(data);
 
   // ── Stats Bar Section ──────────────────────────────────────────────────────
-  const statsHtml = `<section class="border-y border-white/10 bg-gray-900/50"><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10"><div class="grid grid-cols-2 md:grid-cols-4 gap-8">${stats.map(s =>
+  const statsHtml = `<section id="about" class="border-y border-white/10 bg-gray-900/50"><div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10"><div class="grid grid-cols-2 md:grid-cols-4 gap-8">${stats.map(s =>
     `<div class="text-center"><div class="text-3xl sm:text-4xl font-bold text-red-500">${s.value}</div><div class="text-sm text-gray-400 mt-1">${s.label}</div></div>`
   ).join('')}</div></div></section>`;
 

@@ -8,6 +8,7 @@ interface FooterData {
   services?: Array<{ name: string; slug: string }>;
   cities?: Array<{ name: string; slug: string }>;
   bookingUrl?: string;
+  mapEmbedUrl?: string;
   colors: { primary: string; secondary: string };
   footerTagline?: string;
   socialLinks?: Record<string, string>;
@@ -158,6 +159,11 @@ function lightFooter(data: FooterData, primary: string, year: number): string {
       ${data.bookingUrl ? `<div style="margin-top: 1.25rem;"><a href="${data.bookingUrl}" style="display: inline-flex; align-items: center; gap: 6px; background: ${primary}; color: white; font-weight: 700; font-size: 0.88rem; padding: 10px 20px; border-radius: 8px; text-decoration: none; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Book Appointment →</a></div>` : ''}
     </div>
   </div>
+  ${data.mapEmbedUrl ? `<div class="max-w-7xl mx-auto mt-12" style="border-top: 1px solid ${borderColor}; padding-top: 2.5rem;">
+    <div style="border-radius: 14px; overflow: hidden; height: 260px;">
+      <iframe src="${data.mapEmbedUrl}" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="${data.businessName} location map"></iframe>
+    </div>
+  </div>` : ''}
   <div class="max-w-7xl mx-auto mt-12 py-6 flex flex-col sm:flex-row justify-between items-center gap-4" style="border-top: 1px solid ${borderColor};">
     <p style="color: #4b5563; font-size: 0.85rem; margin: 0;">&copy; ${year} ${data.businessName}. All rights reserved.</p>
     <div class="flex flex-wrap gap-4 justify-center sm:justify-end">

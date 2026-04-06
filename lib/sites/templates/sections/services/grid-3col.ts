@@ -75,6 +75,19 @@ function getServiceIcon(serviceName: string, customIcon?: string): string {
   return SERVICE_ICONS.default;
 }
 
+function getServiceFallbackDescription(name: string): string {
+  const lower = name.toLowerCase();
+  if (lower.includes('repair')) return `Fast, reliable ${name} by certified technicians. We diagnose and fix the problem right the first time.`;
+  if (lower.includes('install')) return `Professional ${name} done right — quality materials, expert workmanship, and lasting results.`;
+  if (lower.includes('replac')) return `Quality ${name} using trusted brands and materials built to last.`;
+  if (lower.includes('emerg')) return `Available 24/7 for ${name}. Fast response and reliable results when you need help most.`;
+  if (lower.includes('inspect') || lower.includes('assess')) return `Thorough ${name} to catch issues early and keep your property in top condition.`;
+  if (lower.includes('clean')) return `Professional ${name} using industry-grade equipment for spotless, lasting results.`;
+  if (lower.includes('maint') || lower.includes('tune')) return `Regular ${name} to keep everything running efficiently and extend its lifespan.`;
+  if (lower.includes('consult') || lower.includes('design')) return `Expert ${name} tailored to your specific goals and budget.`;
+  return `Expert ${name} delivered by experienced professionals. Quality results and satisfaction guaranteed on every job.`;
+}
+
 export function grid3colServices(data: ServicesData): string {
   const isDark = data.designStyle === 'modern-dark';
   if (isDark) return modernDarkServices(data);
@@ -115,7 +128,7 @@ function lightServices(data: ServicesData): string {
 
   const cards = displayServices.map((s, i) => {
     const icon = getServiceIcon(s.name, s.icon);
-    const description = s.description || `Professional ${s.name.toLowerCase()} services delivered with care and expertise. We stand behind our work with a satisfaction guarantee.`;
+    const description = s.description || getServiceFallbackDescription(s.name);
     const isPopular = i === 1 || (data.services.length >= 3 && i === Math.floor(data.services.length / 2));
 
     return `<article style="position: relative; background: var(--color-surface, #ffffff); border: 1px solid rgba(0,0,0,0.08); border-radius: 20px; padding: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06); transition: transform 0.25s ease, box-shadow 0.25s ease; overflow: hidden;" onmouseover="this.style.transform='translateY(-6px)';this.style.boxShadow='0 20px 40px rgba(0,0,0,0.12)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 1px 3px rgba(0,0,0,0.06)'">
