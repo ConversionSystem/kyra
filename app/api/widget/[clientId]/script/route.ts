@@ -22,6 +22,59 @@ function getSupabase() {
   );
 }
 
+function getIndustryQuickReplies(industry: string, cfg: Record<string, unknown>): string[] {
+  const lower = (industry || '').toLowerCase();
+  const hasBooking = !!(cfg.calendar_url || cfg.booking_url);
+  const bookBtn = hasBooking ? 'Book an appointment' : 'How can I contact you?';
+
+  // Cannabis / Dispensary
+  if (lower.includes('cannabis') || lower.includes('dispensary')) {
+    return ['What products do you carry?', 'What are your hours?', 'Where are you located?', 'Do you offer delivery?'];
+  }
+  // Dental
+  if (lower.includes('dental') || lower.includes('dentist')) {
+    return ['What services do you offer?', 'Do you accept my insurance?', bookBtn, 'What are your hours?'];
+  }
+  // HVAC / Plumbing / Electrical / Home Services
+  if (lower.includes('hvac') || lower.includes('plumbing') || lower.includes('electrical') || lower.includes('roofing') || lower.includes('cleaning')) {
+    return ['I need a repair', 'Get a free estimate', 'Do you offer emergency service?', 'What areas do you serve?'];
+  }
+  // Legal
+  if (lower.includes('legal') || lower.includes('law') || lower.includes('attorney')) {
+    return ['What areas of law do you practice?', 'Do you offer free consultations?', bookBtn, 'What are your fees?'];
+  }
+  // Real Estate
+  if (lower.includes('real estate') || lower.includes('realty')) {
+    return ['I\'m looking to buy', 'I want to sell my home', 'What areas do you serve?', bookBtn];
+  }
+  // Medical / Med Spa / Healthcare
+  if (lower.includes('medical') || lower.includes('med spa') || lower.includes('medspa') || lower.includes('health')) {
+    return ['What treatments do you offer?', bookBtn, 'What are your hours?', 'Do you accept insurance?'];
+  }
+  // Restaurant / Food
+  if (lower.includes('restaurant') || lower.includes('food') || lower.includes('cafe') || lower.includes('bakery')) {
+    return ['What\'s on your menu?', 'What are your hours?', 'Do you take reservations?', 'Where are you located?'];
+  }
+  // Fitness / Gym
+  if (lower.includes('gym') || lower.includes('fitness') || lower.includes('martial')) {
+    return ['What classes do you offer?', 'How much is a membership?', 'Can I try a free class?', 'What are your hours?'];
+  }
+  // Salon / Spa / Beauty
+  if (lower.includes('salon') || lower.includes('spa') || lower.includes('beauty') || lower.includes('hair')) {
+    return ['What services do you offer?', bookBtn, 'What are your prices?', 'Where are you located?'];
+  }
+  // Consulting / Professional Services
+  if (lower.includes('consulting') || lower.includes('accounting') || lower.includes('financial') || lower.includes('insurance')) {
+    return ['What services do you offer?', bookBtn, 'Tell me about your experience', 'What are your fees?'];
+  }
+  // IT / Tech
+  if (lower.includes('it') || lower.includes('tech') || lower.includes('computer') || lower.includes('software')) {
+    return ['What services do you offer?', 'I need technical support', bookBtn, 'What are your rates?'];
+  }
+  // Generic default — no "get a free quote"
+  return ['What services do you offer?', 'What are your hours?', bookBtn, 'Where are you located?'];
+}
+
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ clientId: string }> }
@@ -37,7 +90,7 @@ export async function GET(
   // Fetch widget config from client (including agency_id for branding)
   const { data: client } = await supabase
     .from('agency_clients')
-    .select('id, name, status, container_config, gateway_status, agency_id')
+    .select('id, name, status, container_config, gateway_status, agency_id, industry')
     .eq('id', clientId)
     .single();
 
@@ -87,7 +140,7 @@ export async function GET(
   var POWERED_BY = ${JSON.stringify(widgetPoweredBy)};
   var POSITION = ${JSON.stringify(widgetPosition)};
   var AVATAR = ${JSON.stringify(widgetAvatarEmoji)};
-  var QUICK_REPLIES = ${JSON.stringify((cfg.widget_quick_replies as string[]) || ["What services do you offer?", "What are your hours?", "How can I contact you?", "Get a free quote"])};
+  var QUICK_REPLIES = ${JSON.stringify((cfg.widget_quick_replies as string[]) || getIndustryQuickReplies((client?.industry as string) || '', cfg))};
   var STORAGE_KEY = 'kyra_session_' + CLIENT_ID;
 
   // Don't init twice
