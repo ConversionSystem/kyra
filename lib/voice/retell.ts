@@ -191,7 +191,7 @@ export async function createWebCall(params: {
   metadata?: Record<string, string>;
   retell_llm_dynamic_variables?: Record<string, string>;
 }): Promise<{ call_id: string; access_token: string }> {
-  return retellFetch('/create-web-call', 'POST', params);
+  return retellFetch('/v2/create-web-call', 'POST', params);
 }
 
 export async function getCall(callId: string): Promise<RetellCall> {

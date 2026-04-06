@@ -97,10 +97,13 @@ export default function RetellVoiceTab({ client }: { client: AgencyClient }) {
       });
       const data = await res.json();
       if (res.ok) {
-        setMessage({ type: 'success', text: `Voice agent created! Agent ID: ${data.agent_id}` });
-        setSection('overview');
-        // Reload page to get updated config
-        setTimeout(() => window.location.reload(), 1500);
+        setMessage({ type: 'success', text: 'Voice agent created! Setting up...' });
+        // Reload with voice tab preserved via URL hash
+        setTimeout(() => {
+          const url = new URL(window.location.href);
+          url.searchParams.set('settingsTab', 'voice');
+          window.location.href = url.toString();
+        }, 1500);
       } else {
         setMessage({ type: 'error', text: data.error || 'Failed to create agent' });
       }
@@ -121,7 +124,11 @@ export default function RetellVoiceTab({ client }: { client: AgencyClient }) {
       const data = await res.json();
       if (res.ok) {
         setMessage({ type: 'success', text: `Phone number assigned: ${data.phone_number}` });
-        setTimeout(() => window.location.reload(), 1500);
+        setTimeout(() => {
+          const url = new URL(window.location.href);
+          url.searchParams.set('settingsTab', 'voice');
+          window.location.href = url.toString();
+        }, 1500);
       } else {
         setMessage({ type: 'error', text: data.error || 'Failed to buy number' });
       }
@@ -297,10 +304,8 @@ export default function RetellVoiceTab({ client }: { client: AgencyClient }) {
 
           {/* Agent Info */}
           <div className="bg-gray-50 rounded-xl border border-gray-200 p-4 text-xs text-gray-500 space-y-1">
-            <p><span className="font-medium text-gray-700">Agent ID:</span> {voiceConfig.retell_agent_id}</p>
             <p><span className="font-medium text-gray-700">Voice:</span> {VOICES.find(v => v.id === voiceConfig.voice_id)?.name || voiceConfig.voice_id || 'Default'}</p>
             <p><span className="font-medium text-gray-700">Phone:</span> {voiceConfig.phone_number || 'No number assigned'}</p>
-            <p><span className="font-medium text-gray-700">Provider:</span> Retell AI (white-label)</p>
           </div>
         </div>
       )}
