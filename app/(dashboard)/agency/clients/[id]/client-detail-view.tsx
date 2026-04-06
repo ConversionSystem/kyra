@@ -1467,7 +1467,9 @@ function SettingsTabMerged({
   accountType?: string;
   onRefresh: () => void;
 }) {
-  const [activeSubTab, setActiveSubTab] = useState<SettingsSubTab>('general');
+  // Read settingsTab from URL params to preserve tab across reloads (e.g., after voice agent creation)
+  const initialSubTab = typeof window !== 'undefined' ? (new URLSearchParams(window.location.search).get('settingsTab') as SettingsSubTab) || 'general' : 'general';
+  const [activeSubTab, setActiveSubTab] = useState<SettingsSubTab>(initialSubTab);
   const isFreeOrSolo = !plan || plan === 'free' || plan === 'solo_pro' || (plan === 'free' && accountType === 'solo');
   const isPaidPlan = plan === 'pro' || plan === 'scale';
   const isMasterOrKyra = ADVANCED_TABS_AGENCIES.has(client.agency_id ?? '');
