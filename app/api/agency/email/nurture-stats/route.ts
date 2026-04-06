@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
 import { requireAgencyMember } from '@/lib/agency/middleware';
 
 /**
@@ -12,13 +11,12 @@ export async function GET() {
     return NextResponse.json({ error: result.error.message }, { status: result.error.status });
   }
 
-  const { agency } = result.data;
-  const supabase = await createClient();
-
-  const { data: rows, error } = await supabase
+  // Use service client (platform-wide stats — not scoped to one agency) to see all agencies' nurture data (platform-wide stats for Kyra dashboard)
+  const { createServiceClientWithoutCookies } = await import('@/lib/supabase/server');
+  const svc = createServiceClientWithoutCookies();
+  const { data: rows, error } = await svc
     .from('email_nurture_queue')
-    .select('sequence_step, status')
-    .eq('agency_id', agency.id);
+    .select('sequence_step, status');
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
