@@ -8,6 +8,7 @@ interface FooterData {
   services?: Array<{ name: string; slug: string }>;
   cities?: Array<{ name: string; slug: string }>;
   bookingUrl?: string;
+  mapEmbedUrl?: string;
   colors: { primary: string; secondary: string };
   footerTagline?: string;
   socialLinks?: Record<string, string>;

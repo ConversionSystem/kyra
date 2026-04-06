@@ -35,7 +35,16 @@ export function alternatingServices(data: ServicesData): string {
   const rows = displayServices.map((s, i) => {
     const isEven = i % 2 === 0;
     const bgColor = isEven ? '#ffffff' : '#f9fafb';
-    const descText = s.description || `Professional ${s.name.toLowerCase()} services delivered with expertise and care. We bring years of experience and industry-best practices to every job, ensuring results you'll be proud of.`;
+    const lower = s.name.toLowerCase();
+    const descText = s.description || (
+      lower.includes('repair') ? `Fast, reliable ${s.name} by certified professionals. We diagnose and fix the problem right the first time.` :
+      lower.includes('install') ? `Professional ${s.name} done right — quality materials, expert workmanship, and lasting results.` :
+      lower.includes('replac') ? `Quality ${s.name} using trusted brands and materials built to last.` :
+      lower.includes('emerg') ? `Available 24/7 for ${s.name}. Fast response and reliable results when you need help most.` :
+      lower.includes('clean') ? `Professional ${s.name} using industry-grade equipment for spotless, consistent results.` :
+      lower.includes('maint') ? `Regular ${s.name} to keep systems running efficiently and extend their lifespan.` :
+      `Expert ${s.name} delivered by experienced professionals. Quality results and satisfaction guaranteed.`
+    );
     const iconPath = ICON_SHAPES[i % ICON_SHAPES.length];
 
     // Feature bullets from description or generic
