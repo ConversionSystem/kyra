@@ -1542,7 +1542,7 @@ function DealModal({ deal, contacts, onClose, onSaved }: { deal: Deal | null; co
 // 5. TASKS SECTION
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function TasksSection() {
+function TasksSection({ clientId }: { clientId: string }) {
   const [tasks, setTasks] = useState<CrmTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
@@ -1556,6 +1556,7 @@ function TasksSection() {
       const params = new URLSearchParams();
       if (filter === 'completed') params.set('status', 'completed');
       else if (filter !== 'all') params.set('status', 'pending');
+      params.set('clientId', clientId);
       const res = await fetch(`/api/agency/crm/tasks?${params}`);
       if (res.ok) { const data = await res.json(); setTasks(Array.isArray(data) ? data : data.tasks || []); }
     } catch (err) { console.error('[crm-tab]', err); } finally { setLoading(false); }
@@ -1735,7 +1736,7 @@ function EditTaskModal({ task, onClose, onSaved }: { task: CrmTask; onClose: () 
 // 6. ANALYTICS SECTION
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function AnalyticsSection() {
+function AnalyticsSection({ clientId }: { clientId: string }) {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [feed, setFeed] = useState<FeedResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1746,15 +1747,15 @@ function AnalyticsSection() {
       setLoading(true);
       try {
         const [aRes, fRes] = await Promise.all([
-          fetch('/api/agency/crm/analytics'),
-          fetch('/api/agency/crm/feed'),
+          fetch(`/api/agency/crm/analytics?clientId=${clientId}`),
+          fetch(`/api/agency/crm/feed?clientId=${clientId}`),
         ]);
         if (mounted && aRes.ok) setAnalytics(await aRes.json());
         if (mounted && fRes.ok) setFeed(await fRes.json());
       } catch (err) { console.error('[crm-tab]', err); } finally { if (mounted) setLoading(false); }
     })();
     return () => { mounted = false; };
-  }, []);
+  }, [clientId]);
 
   if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>;
   if (!analytics) return <div className="flex flex-col items-center py-20 text-gray-400"><BarChart3 className="w-10 h-10 mb-2 opacity-50" /><p className="text-sm">No analytics data</p></div>;
@@ -1765,11 +1766,11 @@ function AnalyticsSection() {
     { label: 'Pipeline Value', value: formatCurrency(analytics.pipeline_value), icon: TrendingUp },
     { label: 'Deals Won', value: analytics.deals_won, icon: DollarSign },
     { label: 'Tasks Due', value: analytics.tasks_pending, icon: CheckSquare },
-    { label: 'Email Open Rate', value: `${analytics.email_open_rate.toFixed(1)}%`, icon: Mail },
+    { label: 'Email Open Rate', value: `${(analytics.email_open_rate ?? 0).toFixed(1)}%`, icon: Mail },
   ];
 
-  const maxFunnel = Math.max(...analytics.pipeline_funnel.map(f => f.count), 1);
-  const maxSource = Math.max(...analytics.source_breakdown.map(s => s.count), 1);
+  const maxFunnel = Math.max(...(analytics.pipeline_funnel ?? []).map(f => f.count), 1);
+  const maxSource = Math.max(...(analytics.source_breakdown ?? []).map(s => s.count), 1);
 
   return (
     <div className="space-y-6">
@@ -1788,7 +1789,7 @@ function AnalyticsSection() {
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
           <h3 className="text-sm font-semibold text-gray-900 mb-4">Pipeline Funnel</h3>
           <div className="space-y-3">
-            {analytics.pipeline_funnel.map(f => (
+            {(analytics.pipeline_funnel ?? []).map(f => (
               <div key={f.stage}>
                 <div className="flex items-center justify-between text-sm mb-1">
                   <span className="text-gray-700">{f.stage.charAt(0).toUpperCase() + f.stage.slice(1)}</span>
@@ -1799,7 +1800,7 @@ function AnalyticsSection() {
                 </div>
               </div>
             ))}
-            {analytics.pipeline_funnel.length === 0 && <p className="text-sm text-gray-400">No deals in pipeline</p>}
+            {(analytics.pipeline_funnel ?? []).length === 0 && <p className="text-sm text-gray-400">No deals in pipeline</p>}
           </div>
         </div>
 
@@ -1807,7 +1808,7 @@ function AnalyticsSection() {
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
           <h3 className="text-sm font-semibold text-gray-900 mb-4">Contact Sources</h3>
           <div className="space-y-3">
-            {analytics.source_breakdown.map(s => (
+            {(analytics.source_breakdown ?? []).map(s => (
               <div key={s.source}>
                 <div className="flex items-center justify-between text-sm mb-1">
                   <span className="text-gray-700">{s.source || 'Unknown'}</span>
@@ -1818,7 +1819,7 @@ function AnalyticsSection() {
                 </div>
               </div>
             ))}
-            {analytics.source_breakdown.length === 0 && <p className="text-sm text-gray-400">No source data</p>}
+            {(analytics.source_breakdown ?? []).length === 0 && <p className="text-sm text-gray-400">No source data</p>}
           </div>
         </div>
       </div>
@@ -1826,11 +1827,11 @@ function AnalyticsSection() {
       {/* Recent activities */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
         <h3 className="text-sm font-semibold text-gray-900 mb-4">Recent Activities</h3>
-        {analytics.recent_activities.length === 0 ? (
+        {(analytics.recent_activities ?? []).length === 0 ? (
           <p className="text-sm text-gray-400">No recent activities</p>
         ) : (
           <div className="space-y-2">
-            {analytics.recent_activities.slice(0, 20).map(a => (
+            {(analytics.recent_activities ?? []).slice(0, 20).map(a => (
               <div key={a.id} className="flex items-center gap-3 py-2">
                 {activityIcon(a.type)}
                 <div className="flex-1 min-w-0">
@@ -1851,17 +1852,17 @@ function AnalyticsSection() {
 // 7. ACTIVITY SECTION
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function ActivitySection() {
+function ActivitySection({ clientId }: { clientId: string }) {
   const [feed, setFeed] = useState<FeedResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState('all');
 
   const loadFeed = useCallback(async () => {
     try {
-      const res = await fetch('/api/agency/crm/feed');
+      const res = await fetch(`/api/agency/crm/feed?clientId=${clientId}`);
       if (res.ok) setFeed(await res.json());
     } catch (err) { console.error('[crm-tab]', err); } finally { setLoading(false); }
-  }, []);
+  }, [clientId]);
 
   useEffect(() => { loadFeed(); }, [loadFeed]);
 
@@ -1945,7 +1946,7 @@ function ActivitySection() {
 // AI INSIGHTS SECTION — Default CRM Home
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function AIInsightsSection({ setSection }: { setSection: (s: Section) => void }) {
+function AIInsightsSection({ setSection, clientId }: { setSection: (s: Section) => void; clientId: string }) {
   const [feed, setFeed] = useState<FeedResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [aiHandledOpen, setAiHandledOpen] = useState(false);
@@ -1953,10 +1954,10 @@ function AIInsightsSection({ setSection }: { setSection: (s: Section) => void })
 
   const fetchFeed = useCallback(async () => {
     try {
-      const res = await fetch('/api/agency/crm/feed');
+      const res = await fetch(`/api/agency/crm/feed?clientId=${clientId}`);
       if (res.ok) setFeed(await res.json());
     } catch (err) { console.error('[crm-ai]', err); } finally { setLoading(false); }
-  }, []);
+  }, [clientId]);
 
   useEffect(() => {
     fetchFeed();
@@ -2905,12 +2906,12 @@ export default function CrmTab({ client, clientId }: { client: AgencyClient; cli
       </div>
 
       {/* Section content */}
-      {section === 'ai' && <AIInsightsSection setSection={setSection} />}
+      {section === 'ai' && <AIInsightsSection setSection={setSection} clientId={scopedClientId} />}
       {section === 'contacts' && <ContactsSection client={client} clientId={scopedClientId} />}
       {section === 'deals' && <DealsSection clientId={scopedClientId} />}
-      {section === 'tasks' && <TasksSection />}
-      {section === 'analytics' && <AnalyticsSection />}
-      {section === 'activity' && <ActivitySection />}
+      {section === 'tasks' && <TasksSection clientId={scopedClientId} />}
+      {section === 'analytics' && <AnalyticsSection clientId={scopedClientId} />}
+      {section === 'activity' && <ActivitySection clientId={scopedClientId} />}
       {section === 'segments' && <SegmentsSection setSection={setSection} />}
       {section === 'scoring' && <ScoringSection />}
       {section === 'merge' && <MergeSection />}

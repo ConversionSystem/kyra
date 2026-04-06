@@ -68,11 +68,31 @@ export async function getTimeline(
   return (data || []) as CrmActivity[];
 }
 
-export async function getCommandFeed(agencyId: string): Promise<CrmFeedResponse> {
+export async function getCommandFeed(agencyId: string, clientId?: string): Promise<CrmFeedResponse> {
   const svc = createServiceClientWithoutCookies();
 
+  // If clientId scoped, resolve contact IDs for that client
+  let contactIds: string[] | undefined;
+  if (clientId) {
+    const { data: cc } = await svc
+      .from('crm_contacts')
+      .select('id')
+      .eq('agency_id', agencyId)
+      .eq('client_id', clientId);
+    contactIds = (cc || []).map((c: { id: string }) => c.id);
+    if (contactIds.length === 0) {
+      return {
+        attention_items: [],
+        ai_handled_today: [],
+        recent_activities: [],
+        stats: { total_contacts: 0, pipeline_value: 0, hot_leads: 0, ai_handled_count: 0 },
+      };
+    }
+  }
+
   // 1. Items needing attention
-  const { data: attentionRaw } = await svc
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let q1: any = svc
     .from('crm_activities')
     .select('*, crm_contacts!crm_activities_contact_id_fkey(id, first_name, last_name)')
     .eq('agency_id', agencyId)
@@ -80,6 +100,8 @@ export async function getCommandFeed(agencyId: string): Promise<CrmFeedResponse>
     .eq('resolved', false)
     .order('created_at', { ascending: false })
     .limit(20);
+  if (contactIds) q1 = q1.in('contact_id', contactIds);
+  const { data: attentionRaw } = await q1;
 
   const attention_items: CommandFeedItem[] = (attentionRaw || []).map((row: Record<string, unknown>) => {
     const contact = row.crm_contacts as Record<string, unknown> | null;
@@ -99,7 +121,8 @@ export async function getCommandFeed(agencyId: string): Promise<CrmFeedResponse>
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
 
-  const { data: aiHandled } = await svc
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let q2: any = svc
     .from('crm_activities')
     .select('*')
     .eq('agency_id', agencyId)
@@ -107,14 +130,19 @@ export async function getCommandFeed(agencyId: string): Promise<CrmFeedResponse>
     .gte('created_at', todayStart.toISOString())
     .order('created_at', { ascending: false })
     .limit(50);
+  if (contactIds) q2 = q2.in('contact_id', contactIds);
+  const { data: aiHandled } = await q2;
 
   // 3. Recent activities
-  const { data: recentRaw } = await svc
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let q3: any = svc
     .from('crm_activities')
     .select('*, crm_contacts!crm_activities_contact_id_fkey(first_name, last_name), crm_companies!crm_activities_company_id_fkey(name)')
     .eq('agency_id', agencyId)
     .order('created_at', { ascending: false })
     .limit(20);
+  if (contactIds) q3 = q3.in('contact_id', contactIds);
+  const { data: recentRaw } = await q3;
 
   const recent_activities = (recentRaw || []).map((row: Record<string, unknown>) => {
     const contact = row.crm_contacts as Record<string, unknown> | null;
@@ -130,10 +158,13 @@ export async function getCommandFeed(agencyId: string): Promise<CrmFeedResponse>
   });
 
   // 4. Stats
-  const { count: totalContacts } = await svc
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let contactsQuery: any = svc
     .from('crm_contacts')
     .select('id', { count: 'exact', head: true })
     .eq('agency_id', agencyId);
+  if (clientId) contactsQuery = contactsQuery.eq('client_id', clientId);
+  const { count: totalContacts } = await contactsQuery;
 
   const { data: dealStats } = await svc
     .from('crm_deals')
@@ -143,11 +174,14 @@ export async function getCommandFeed(agencyId: string): Promise<CrmFeedResponse>
 
   const pipelineValue = (dealStats || []).reduce((sum, d: Record<string, unknown>) => sum + (Number(d.value) || 0), 0);
 
-  const { count: hotLeads } = await svc
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let hotQuery: any = svc
     .from('crm_contacts')
     .select('id', { count: 'exact', head: true })
     .eq('agency_id', agencyId)
     .gte('score', 70);
+  if (clientId) hotQuery = hotQuery.eq('client_id', clientId);
+  const { count: hotLeads } = await hotQuery;
 
   return {
     attention_items,
@@ -172,8 +206,27 @@ export async function resolveActivity(agencyId: string, activityId: string): Pro
   return !error;
 }
 
-export async function getRecentActivities(agencyId: string, limit = 20): Promise<CrmActivity[]> {
+export async function getRecentActivities(agencyId: string, limit = 20, clientId?: string): Promise<CrmActivity[]> {
   const svc = createServiceClientWithoutCookies();
+
+  if (clientId) {
+    const { data: cc } = await svc
+      .from('crm_contacts')
+      .select('id')
+      .eq('agency_id', agencyId)
+      .eq('client_id', clientId);
+    const contactIds = (cc || []).map((c: { id: string }) => c.id);
+    if (contactIds.length === 0) return [];
+    const { data } = await svc
+      .from('crm_activities')
+      .select('*')
+      .eq('agency_id', agencyId)
+      .in('contact_id', contactIds)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    return (data || []) as CrmActivity[];
+  }
+
   const { data } = await svc
     .from('crm_activities')
     .select('*')

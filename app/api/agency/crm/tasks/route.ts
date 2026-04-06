@@ -18,6 +18,7 @@ export async function GET(req: NextRequest) {
     priority: url.searchParams.get('priority') || undefined,
     contact_id: url.searchParams.get('contact_id') || undefined,
     deal_id: url.searchParams.get('deal_id') || undefined,
+    client_id: url.searchParams.get('clientId') || undefined,
     overdue: url.searchParams.get('overdue') === 'true',
     sort: (url.searchParams.get('sort') as TaskFilters['sort']) || undefined,
     order: (url.searchParams.get('order') as 'asc' | 'desc') || undefined,

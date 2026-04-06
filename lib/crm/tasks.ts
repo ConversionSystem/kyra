@@ -41,6 +41,7 @@ export interface TaskFilters {
   priority?: string;
   contact_id?: string;
   deal_id?: string;
+  client_id?: string;
   overdue?: boolean;
   sort?: 'due_date' | 'priority' | 'created' | 'status';
   order?: 'asc' | 'desc';
@@ -69,6 +70,34 @@ function activityToTask(act: Record<string, unknown>): CrmTask {
 
 export async function listTasks(agencyId: string, filters: TaskFilters = {}): Promise<{ tasks: CrmTask[]; counts: Record<string, number> }> {
   const supabase = await createServiceClient();
+
+  // If client_id filter, resolve contact IDs for that client
+  if (filters.client_id) {
+    const { data: cc } = await supabase
+      .from('crm_contacts')
+      .select('id')
+      .eq('agency_id', agencyId)
+      .eq('client_id', filters.client_id);
+    const contactIds = (cc || []).map((c: { id: string }) => c.id);
+    if (contactIds.length === 0) return { tasks: [], counts: {} };
+    filters = { ...filters, contact_id: undefined };
+    // We'll apply the IN filter below
+    let query = supabase
+      .from('crm_activities')
+      .select('*')
+      .eq('agency_id', agencyId)
+      .eq('type', 'task')
+      .in('contact_id', contactIds);
+    if (filters.status && filters.status !== 'all') query = query.eq('metadata->>task_status', filters.status);
+    if (filters.priority) query = query.eq('metadata->>priority', filters.priority);
+    if (filters.deal_id) query = query.eq('deal_id', filters.deal_id);
+    if (filters.overdue) query = query.not('metadata->>task_status', 'eq', 'done').lt('metadata->>due_date', new Date().toISOString().split('T')[0]);
+    const { data } = await query.order('created_at', { ascending: false }).limit(200);
+    const tasks = (data || []).map(activityToTask);
+    const counts: Record<string, number> = {};
+    for (const t of tasks) counts[t.status] = (counts[t.status] || 0) + 1;
+    return { tasks, counts };
+  }
 
   let query = supabase
     .from('crm_activities')
