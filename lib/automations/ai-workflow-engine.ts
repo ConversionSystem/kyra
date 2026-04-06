@@ -5,7 +5,7 @@
  * Uses gpt-4o-mini for cost efficiency.
  *
  * KEY PRINCIPLE: "GHL gives you 50 tools and expects you to learn them all.
- * Kyra gives you one AI employee that runs all 50."
+ * Kyra gives you one AI worker that runs all 50."
  */
 
 import type { WorkflowTrigger, WorkflowStep } from './workflow-types';

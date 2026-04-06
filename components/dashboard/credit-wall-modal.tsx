@@ -14,7 +14,7 @@ interface CreditPack {
 }
 
 const PACKS: CreditPack[] = [
-  { id: 'starter',  name: 'Starter',  credits: 500,   price: 10 },
+  { id: 'starter',  name: 'Lite',     credits: 500,   price: 10 },
   { id: 'pro',      name: 'Pro',      credits: 1500,  price: 25, highlight: true },
   { id: 'growth',   name: 'Growth',   credits: 3500,  price: 50 },
 ];
