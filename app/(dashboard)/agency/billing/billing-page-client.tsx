@@ -534,7 +534,7 @@ export function BillingPageClient({
       {/* ── Footer note ── */}
       <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-500">
         <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
-        All plans include a 7-day free trial. Cancel or change your plan anytime. No setup fees.
+        Start free, upgrade anytime. Cancel or change your plan anytime. No setup fees.
       </div>
     </div>
   );

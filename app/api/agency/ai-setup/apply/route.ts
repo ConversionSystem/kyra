@@ -2690,7 +2690,7 @@ Write conversion-focused copy for ads, landing pages, and emails. Test different
 **Variant C (Social proof):**
 "Join 2,400+ businesses that doubled their close rate."
 
-CTA for all: "Start your free trial →"
+CTA for all: "Get Started Free →"
 
 ### When to Escalate to a Human
 - Legal claims that need compliance review

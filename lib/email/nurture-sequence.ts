@@ -214,8 +214,8 @@ function email6(email: string): { subject: string; preview: string; html: string
         <td style="padding:12px;color:#6b7280;font-size:14px;">$499/mo</td>
       </tr>
     </table>
-    ${p('Every paid plan includes a <strong>7-day free trial</strong>. White-label means your clients see <em>your</em> brand, not Kyra. That\'s how you build a real agency — not a reseller.')}
-    ${btn('Start Your 7-Day Free Trial →', `${APP_URL}/agency/billing`)}
+    ${p('Start free — upgrade when you are ready. White-label means your clients see <em>your</em> brand, not Kyra. That is how you build a real agency — not a reseller.')}
+    ${btn('Get Started Free →', `${APP_URL}/agency/billing`)}
     ${p('Questions? Reply to this email — I read every one.', true)}`;
 
   return {

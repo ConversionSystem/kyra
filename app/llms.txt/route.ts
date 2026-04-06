@@ -34,7 +34,7 @@ Kyra is a white-label AI workforce platform built for agencies. Agencies use it 
 - **Lite** ($99/mo): 3 clients, AI website builder, AI workers, CRM, web chat
 - **Pro** ($299/mo): 10 clients, priority support, advanced analytics
 - **Scale** ($499/mo): 20 clients, white-label portals, dedicated infrastructure
-- 7-day free trial on all plans
+- Free plan available — no credit card required
 
 ## Company
 
