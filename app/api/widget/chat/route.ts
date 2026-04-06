@@ -233,6 +233,7 @@ export async function POST(request: NextRequest) {
   const cfg = (client.container_config as Record<string, unknown>) ?? {};
   const persona = (cfg.persona as string) || `AI assistant for ${client.name}`;
   const businessName = (cfg.business_name as string) || client.name;
+  const customInstructions = (cfg.instructions as string) || '';
 
   // ── Fetch site config for tone + capabilities ─────────────────────────────
   const { data: siteData } = await supabase
@@ -338,10 +339,12 @@ export async function POST(request: NextRequest) {
     languageInstruction,
     `IDENTITY: Your name is ${aiName}. When someone asks "who are you?" or "what is your name?", always introduce yourself by name: "I'm ${aiName}" and explain your role at ${businessName}. Never be evasive about your identity.`,
     `RESPONSE QUALITY RULES:`,
-    `- Give specific, useful answers. NEVER use filler phrases like "If you need more specific details, just let me know" or "How can I help you today?" at the end of responses.`,
-    `- If you know the answer, give it directly. If you don't have the information, say so honestly and offer to connect them with the team.`,
+    `- Give specific, useful answers. If you know the answer, give it directly. If you don't have the information, say so honestly and offer to connect them with the team.`,
     `- Keep replies to 2-4 sentences unless more detail is needed.`,
     `- Be conversational and natural, not robotic.`,
+    `BANNED CLOSING PHRASES — NEVER end your response with any of these or anything similar:`,
+    `"If you have any other questions..." / "feel free to ask" / "don't hesitate to reach out" / "How can I help you today?" / "Is there anything else I can help with?" / "Let me know if you need anything else" / "just let me know" / "Happy to help!" / "Hope that helps!"`,
+    `END your response naturally after giving the answer. Stop talking. Do NOT add a closing invitation phrase.`,
     `CRITICAL FORMATTING RULES — you are in a plain-text chat widget, NOT a document editor:`,
     `- NEVER use markdown: no **bold**, no *italic*, no # headers, no bullet dashes (- or *), no numbered lists (1. 2. 3.)`,
     `- NEVER use markdown links like [text](url) — write URLs as plain text or say "visit our website at URL"`,
@@ -359,6 +362,7 @@ export async function POST(request: NextRequest) {
     cfg.services ? `Services offered: ${cfg.services}` : '',
     cfg.website_url ? `Website: ${cfg.website_url}` : '',
     `If you can't resolve something, say: "Let me connect you with our team — they'll follow up shortly."`,
+    customInstructions ? `BUSINESS KNOWLEDGE AND RULES (use this information to answer customer questions accurately):\n${customInstructions}` : '',
     knowledgeSection,
     crmContextSection ? `\n${crmContextSection}` : '',
     sessionHistory.length > 0 ? `\nSESSION MEMORY: This visitor has chatted before. Their prior messages are included at the start of the conversation for context.` : '',
