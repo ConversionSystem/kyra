@@ -793,6 +793,21 @@ function TemplatesView({ clientId }: { clientId: string }) {
   const [editForm, setEditForm] = useState({ name: '', subject: '', html_body: '' });
   const [saving, setSaving] = useState(false);
   const [createForm, setCreateForm] = useState({ name: '', subject: '', html_body: '', category: 'custom' });
+  const editTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const insertAtCursor = (before: string, after = '', placeholder = '') => {
+    const el = editTextareaRef.current;
+    if (!el) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const selected = el.value.slice(start, end) || placeholder;
+    const newValue = el.value.slice(0, start) + before + selected + after + el.value.slice(end);
+    setEditForm(f => ({ ...f, html_body: newValue }));
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(start + before.length, start + before.length + selected.length);
+    });
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -944,7 +959,30 @@ function TemplatesView({ clientId }: { clientId: string }) {
             <div className="flex flex-1 overflow-hidden">
               <div className="flex-1 flex flex-col border-r border-gray-200">
                 <p className="px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide border-b border-gray-100 shrink-0">HTML</p>
+                <div className="flex flex-wrap items-center gap-1 px-3 py-2 border-b border-gray-200 bg-white shrink-0">
+                  {[
+                    { label: 'B', title: 'Bold', action: () => insertAtCursor('<strong>', '</strong>', 'Bold text') },
+                    { label: 'I', title: 'Italic', action: () => insertAtCursor('<em>', '</em>', 'Italic text') },
+                    { label: '🔗', title: 'Link', action: () => insertAtCursor("<a href='https://'>", '</a>', 'Link text') },
+                    { label: 'H', title: 'Heading', action: () => insertAtCursor("<h2 style='font-size:22px;font-weight:700;color:#111827;margin:0 0 12px;'>", '</h2>', 'Heading') },
+                    { label: '⬜', title: 'CTA Button', action: () => insertAtCursor("<a href='https://' style='display:inline-block;background:#4f46e5;color:#fff;padding:14px 28px;border-radius:8px;font-weight:700;font-size:15px;text-decoration:none;'>", '</a>', 'Click Here') },
+                    { label: '🖼', title: 'Image', action: () => insertAtCursor('', '', "<img src='https://' style='max-width:100%;border-radius:8px;' />") },
+                    { label: '—', title: 'Divider', action: () => insertAtCursor("<hr style='border:none;border-top:1px solid #e5e7eb;margin:24px 0;' />", '') },
+                    { label: '¶', title: 'Paragraph', action: () => insertAtCursor("<p style='color:#374151;font-size:15px;line-height:1.7;margin:0 0 16px;'>", '</p>', 'Paragraph text') },
+                  ].map(({ label, title, action }) => (
+                    <button
+                      key={title}
+                      type="button"
+                      title={title}
+                      onClick={action}
+                      className="px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 rounded border border-transparent hover:border-gray-200 transition-colors"
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
                 <textarea
+                  ref={editTextareaRef}
                   className="flex-1 p-4 text-xs font-mono resize-none focus:outline-none bg-gray-50"
                   value={editForm.html_body}
                   onChange={e => setEditForm(f => ({ ...f, html_body: e.target.value }))}
@@ -1009,9 +1047,18 @@ function TemplatesView({ clientId }: { clientId: string }) {
 // ANALYTICS VIEW
 // ══════════════════════════════════════════════════════════════════════════════
 
+interface NurtureStats {
+  total: number;
+  sent: number;
+  pending: number;
+  failed: number;
+  byStep: { step: number; sent: number; pending: number; failed: number }[];
+}
+
 function AnalyticsView({ clientId }: { clientId: string }) {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
+  const [nurtureStats, setNurtureStats] = useState<NurtureStats | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -1022,6 +1069,13 @@ function AnalyticsView({ clientId }: { clientId: string }) {
   }, [clientId]);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    fetch('/api/agency/email/nurture-stats')
+      .then(r => r.json())
+      .then(d => { if (!d.error) setNurtureStats(d); })
+      .catch(() => {});
+  }, []);
 
   // Fetch all campaigns (including drafts/scheduled) for the no-data state
   const [allCampaigns, setAllCampaigns] = useState<Campaign[]>([]);
@@ -1048,12 +1102,57 @@ function AnalyticsView({ clientId }: { clientId: string }) {
   const recent10 = campaigns.slice(0, 10);
   const maxOpenRate = Math.max(...recent10.map(c => c.total_sent ? (c.total_opened / c.total_sent) * 100 : 0), 1);
 
+  const NurtureSection = nurtureStats && nurtureStats.total > 0 ? (
+    <div className="bg-white rounded-xl border border-gray-200">
+      <div className="p-4 border-b border-gray-100">
+        <h3 className="text-sm font-semibold text-gray-900">Onboarding Sequence</h3>
+        <p className="text-xs text-gray-400 mt-0.5">Emails sent via the nurture sequence</p>
+      </div>
+      <div className="grid grid-cols-4 divide-x divide-gray-100 border-b border-gray-100">
+        {[
+          { label: 'Enrolled', value: nurtureStats.total, color: 'text-gray-900' },
+          { label: 'Sent', value: nurtureStats.sent, color: 'text-green-600' },
+          { label: 'Pending', value: nurtureStats.pending, color: 'text-amber-600' },
+          { label: 'Failed', value: nurtureStats.failed, color: 'text-red-600' },
+        ].map(s => (
+          <div key={s.label} className="p-4 text-center">
+            <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
+            <p className="text-xs text-gray-500 mt-0.5">{s.label}</p>
+          </div>
+        ))}
+      </div>
+      {nurtureStats.byStep.length > 0 && (
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="border-b border-gray-100 text-gray-500">
+              <th className="px-4 py-2 text-left font-medium">Step</th>
+              <th className="px-4 py-2 text-right font-medium">Sent</th>
+              <th className="px-4 py-2 text-right font-medium">Pending</th>
+              <th className="px-4 py-2 text-right font-medium">Failed</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-50">
+            {nurtureStats.byStep.map(row => (
+              <tr key={row.step}>
+                <td className="px-4 py-2 text-gray-700">Step {row.step}</td>
+                <td className="px-4 py-2 text-right text-green-600">{row.sent}</td>
+                <td className="px-4 py-2 text-right text-amber-600">{row.pending}</td>
+                <td className="px-4 py-2 text-right text-red-600">{row.failed}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  ) : null;
+
   // Show clear no-data state when no campaigns have been sent
   if (campaigns.length === 0) {
     const scheduled = allCampaigns.filter(c => c.status === 'scheduled');
     const drafts = allCampaigns.filter(c => c.status === 'draft');
     return (
       <div className="space-y-6">
+        {NurtureSection}
         <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
           <BarChart3 className="w-12 h-12 mx-auto mb-4 text-gray-300" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">No Analytics Yet</h3>
@@ -1098,6 +1197,7 @@ function AnalyticsView({ clientId }: { clientId: string }) {
 
   return (
     <div className="space-y-6">
+      {NurtureSection}
       {/* Summary cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
