@@ -54,6 +54,7 @@ import GHLConnection from './ghl-connection';
 import PermissionsCard from './permissions-card';
 import ClientStatusBanner from '@/components/dashboard/client-status-banner';
 import { VoiceClient } from '@/app/(dashboard)/agency/voice/voice-client';
+import RetellVoiceTab from '@/components/dashboard/client-tabs/retell-voice-tab';
 import { ModelSelector } from '@/components/dashboard/model-selector';
 import QuickAnswersEditor from '@/components/dashboard/quick-answers-editor';
 import DeliverySmsTab from '@/components/dashboard/client-tabs/delivery-sms-tab';
@@ -1515,13 +1516,7 @@ function SettingsTabMerged({
         </div>
       )}
       {activeSubTab === 'voice' && (
-        <VoiceClient
-          agencyId={client.agency_id}
-          clientId={client.id}
-          clientName={client.name ?? 'Client'}
-          voiceConfig={(client.container_config as Record<string, unknown>)?.voice_config as Record<string, string> | null ?? null}
-          isSolo={false}
-        />
+        <RetellVoiceTab client={client} />
       )}
       {activeSubTab === 'sms' && (
         isFreeOrSolo ? (
