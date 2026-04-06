@@ -34,6 +34,7 @@ import FunnelsSubTab from './funnels-sub-tab';
 import SMSCampaignsSubTab from './sms-campaigns-sub-tab';
 import ReviewsSubTab from './reviews-sub-tab';
 import WorkflowsTab from './workflows-tab';
+import { EmailSequencesDashboard } from '@/app/(dashboard)/agency/email/email-sequences-dashboard';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -1989,7 +1990,7 @@ export default function MarketingTab({ client }: { client: AgencyClient }) {
       {subTab === 'competitors' && <CompetitorsView client={client} />}
       {subTab === 'social' && <SocialView client={client} />}
       {subTab === 'email' && <EmailMarketingTab client={client} />}
-      {subTab === 'sequences' && <SequencesView client={client} />}
+      {subTab === 'sequences' && <EmailSequencesDashboard />}
       {subTab === 'sms' && <SMSCampaignsSubTab client={client} />}
       {subTab === 'campaigns' && <CampaignsSubTab client={client} />}
       {subTab === 'funnels' && <FunnelsSubTab client={client} />}
