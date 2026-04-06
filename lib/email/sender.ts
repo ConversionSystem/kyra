@@ -107,7 +107,7 @@ ${digestBody}
         <p style="text-align: center; margin-top: 20px;">
           <a href="https://kyra.conversionsystem.com/agency/crm" style="display: inline-block; background: #4f46e5; color: white; padding: 10px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px;">Open CRM Dashboard →</a>
         </p>
-        <p style="text-align: center; color: #9ca3af; font-size: 12px; margin-top: 16px;">Kyra AI — Your CRM on autopilot</p>
+        <p style="text-align: center; color: #9ca3af; font-size: 12px; margin-top: 16px;">Kyra AI — Your AI Workforce Platform</p>
       </div>
     `,
     fromName: `${agencyName} via Kyra`,

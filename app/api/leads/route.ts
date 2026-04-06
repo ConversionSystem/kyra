@@ -45,15 +45,31 @@ export async function POST(request: NextRequest) {
     sendPlatformEmail({
       to: 'angel@conversionsystem.com',
       subject: body.source === 'get-demo' ? `🎯 Demo request: ${body.name || email}` : `🔔 New lead: ${email}`,
-      html: `<b>${body.source === 'get-demo' ? '🎯 Demo Request' : '🔔 New Lead'}</b><br><br>
-<b>Email:</b> ${email}<br>
-${body.name ? `<b>Name:</b> ${body.name}<br>` : ''}
-${body.company ? `<b>Company:</b> ${body.company}<br>` : ''}
-${body.industry ? `<b>Industry:</b> ${body.industry}<br>` : ''}
-${body.size ? `<b>GHL clients:</b> ${body.size}<br>` : ''}
-${body.how ? `<b>How they heard:</b> ${body.how}<br>` : ''}
-${body.message ? `<b>Message:</b> ${body.message}<br>` : ''}
-<b>Source:</b> ${body.source || 'landing'}`,
+      html: `
+        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:560px;margin:0 auto;">
+          <div style="background:linear-gradient(135deg,#4f46e5,#7c3aed);color:white;padding:20px 24px;border-radius:10px 10px 0 0;">
+            <h2 style="margin:0;font-size:18px;font-weight:700;">${body.source === 'get-demo' ? '🎯 Demo Request' : '🔔 New Lead'}</h2>
+            <p style="margin:4px 0 0;opacity:0.85;font-size:13px;">Kyra Leads · kyra.conversionsystem.com</p>
+          </div>
+          <div style="border:1px solid #e5e7eb;border-top:none;padding:24px;border-radius:0 0 10px 10px;background:#f9fafb;">
+            <table style="width:100%;border-collapse:collapse;font-size:14px;">
+              <tr style="border-bottom:1px solid #e5e7eb;">
+                <td style="padding:10px 8px;color:#6b7280;font-weight:600;width:140px;">Email</td>
+                <td style="padding:10px 8px;color:#111827;font-weight:700;">${email}</td>
+              </tr>
+              ${body.name ? `<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:10px 8px;color:#6b7280;font-weight:600;">Name</td><td style="padding:10px 8px;color:#111827;">${body.name}</td></tr>` : ''}
+              ${body.company ? `<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:10px 8px;color:#6b7280;font-weight:600;">Company</td><td style="padding:10px 8px;color:#111827;">${body.company}</td></tr>` : ''}
+              ${body.industry ? `<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:10px 8px;color:#6b7280;font-weight:600;">Industry</td><td style="padding:10px 8px;color:#111827;">${body.industry}</td></tr>` : ''}
+              ${body.size ? `<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:10px 8px;color:#6b7280;font-weight:600;">GHL clients</td><td style="padding:10px 8px;color:#111827;">${body.size}</td></tr>` : ''}
+              ${body.how ? `<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:10px 8px;color:#6b7280;font-weight:600;">How they heard</td><td style="padding:10px 8px;color:#111827;">${body.how}</td></tr>` : ''}
+              ${body.message ? `<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:10px 8px;color:#6b7280;font-weight:600;vertical-align:top;">Message</td><td style="padding:10px 8px;color:#111827;">${body.message}</td></tr>` : ''}
+              <tr>
+                <td style="padding:10px 8px;color:#6b7280;font-weight:600;">Source</td>
+                <td style="padding:10px 8px;color:#111827;">${body.source || 'landing'}</td>
+              </tr>
+            </table>
+          </div>
+        </div>`,
       fromName: 'Kyra Leads',
     }).catch(() => {})
   );

@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
 
   // Validate plan — 'free' is NOT allowed for agency accounts.
   // Free accounts are solo-only (created via /api/auth/solo-signup with account_type=solo).
-  const validPlans = ['starter', 'pro', 'scale', 'beta', 'free']; // 'free' allowed only for internal/master use
+  const validPlans = ['lite', 'pro', 'scale', 'beta', 'free']; // 'free' allowed only for internal/master use
   if (!validPlans.includes(plan)) {
     return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });
   }

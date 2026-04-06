@@ -7,15 +7,15 @@
 
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 
-/** Day offsets for each nurture step */
+/** Day offsets for each nurture step (unified sequence) */
 const STEP_DAYS: Record<number, number> = {
-  1: 0,   // Immediate
-  2: 2,   // Day 2
-  3: 4,   // Day 4
-  4: 7,   // Day 7
-  5: 10,  // Day 10
-  6: 14,  // Day 14
-  7: 21,  // Day 21
+  1: 0,   // Day 0  — Welcome + deploy first AI worker
+  2: 1,   // Day 1  — Did you connect? Check-in
+  3: 3,   // Day 3  — Social proof (HVAC case study)
+  4: 5,   // Day 5  — Feature spotlight (website builder + Growth Engine)
+  5: 7,   // Day 7  — Connect GHL guide
+  6: 14,  // Day 14 — Trial recap + upgrade nudge
+  7: 21,  // Day 21 — Win-back
 };
 
 export async function enrollInNurtureSequence(agencyId: string, email: string): Promise<void> {

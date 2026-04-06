@@ -321,20 +321,35 @@ async function sendEscalationAlert(opts: {
   if (!opts.notifyEmail) return;
 
   const html = `
-    <div style="font-family:sans-serif;max-width:600px;margin:0 auto">
-      <div style="background:#ef4444;color:white;padding:16px 20px;border-radius:8px 8px 0 0">
-        <h2 style="margin:0">🚨 Kyra AI Escalation Alert</h2>
+    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;">
+      <div style="background:linear-gradient(135deg,#dc2626,#b91c1c);color:white;padding:20px 24px;border-radius:10px 10px 0 0;">
+        <h2 style="margin:0;font-size:18px;font-weight:700;">🚨 Human takeover needed</h2>
+        <p style="margin:4px 0 0;opacity:0.85;font-size:13px;">${opts.clientName} · ${opts.agencyName}</p>
       </div>
-      <div style="border:1px solid #fca5a5;border-top:none;padding:20px;border-radius:0 0 8px 8px">
-        <p><strong>Client AI:</strong> ${opts.clientName}</p>
-        <p><strong>Contact:</strong> ${opts.contactName} (${opts.contactPhone})</p>
-        <p><strong>Reason:</strong> ${opts.reason}</p>
-        <hr style="border-color:#fee2e2"/>
-        <p><strong>Conversation summary:</strong><br/>${opts.conversationSummary}</p>
-        <hr style="border-color:#fee2e2"/>
-        <p style="color:#6b7280;font-size:12px">
+      <div style="border:1px solid #fca5a5;border-top:none;padding:24px;border-radius:0 0 10px 10px;background:#fff;">
+        <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:16px;">
+          <tr>
+            <td style="padding:8px 0;color:#6b7280;font-weight:600;width:120px;">Contact</td>
+            <td style="padding:8px 0;color:#111827;font-weight:700;">${opts.contactName} · ${opts.contactPhone}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:#6b7280;font-weight:600;">Reason</td>
+            <td style="padding:8px 0;color:#374151;">${opts.reason}</td>
+          </tr>
+        </table>
+        <div style="background:#fef2f2;border-left:3px solid #ef4444;border-radius:4px;padding:12px 16px;margin-bottom:20px;">
+          <p style="margin:0 0 4px;font-size:12px;font-weight:600;color:#7f1d1d;text-transform:uppercase;letter-spacing:0.5px;">Last message snippet</p>
+          <p style="margin:0;font-size:14px;color:#374151;line-height:1.5;">${opts.conversationSummary}</p>
+        </div>
+        <div style="text-align:center;margin-bottom:16px;">
+          <a href="https://kyra.conversionsystem.com/agency/conversations"
+             style="display:inline-block;background:#4f46e5;color:white;text-decoration:none;font-weight:600;font-size:14px;padding:11px 24px;border-radius:8px;">
+            Open Conversation →
+          </a>
+        </div>
+        <p style="margin:0;color:#9ca3af;font-size:11px;text-align:center;">
           This contact has been tagged <em>needs-human</em> in GHL.<br/>
-          Sent by Kyra AI (${opts.agencyName})
+          Kyra AI — Your AI Workforce Platform
         </p>
       </div>
     </div>`;

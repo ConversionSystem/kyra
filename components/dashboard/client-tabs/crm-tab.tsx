@@ -8,10 +8,9 @@ import {
   Calendar, Download, Filter, MessageSquare, Target,
   TrendingUp, Zap, CheckSquare, Square, Briefcase, Eye,
   MoreHorizontal, RefreshCw, ChevronLeft, Sparkles, Flame, Bot, Bell,
-  Sliders, GitMerge, Layers, PhoneCall, GitBranch, CreditCard,
+  Sliders, GitMerge, Layers, PhoneCall, GitBranch,
 } from 'lucide-react';
 import type { AgencyClient } from '@/lib/agency/queries';
-import PaymentsSubTab from './payments-sub-tab';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -142,7 +141,7 @@ interface AnalyticsData {
   recent_activities: ActivityItem[];
 }
 
-type Section = 'ai' | 'contacts' | 'deals' | 'tasks' | 'payments' | 'analytics' | 'activity' | 'segments' | 'scoring' | 'merge' | 'custom-fields';
+type Section = 'ai' | 'contacts' | 'deals' | 'tasks' | 'analytics' | 'activity' | 'segments' | 'scoring' | 'merge';
 
 // CommandFeedItem for AI Insights section
 interface CommandFeedItem {
@@ -214,51 +213,6 @@ function scoreBadge(label: string) {
     cold: 'bg-blue-50 text-blue-700', new: 'bg-gray-100 text-gray-600',
   };
   return map[label] || 'bg-gray-100 text-gray-600';
-}
-
-function AIScoreButton({ clientId, onComplete }: { clientId: string; onComplete: () => void }) {
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ scored: number; errors: number } | null>(null);
-
-  const handleScore = async () => {
-    setLoading(true);
-    setResult(null);
-    try {
-      const res = await fetch(`/api/agency/clients/${clientId}/ai-score`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode: 'batch' }),
-      });
-      if (res.ok) {
-        const data = await res.json() as { scored: number; errors: number };
-        setResult(data);
-        onComplete();
-      }
-    } catch { /* silent */ } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="relative">
-      <button
-        onClick={handleScore}
-        disabled={loading}
-        className="flex items-center gap-1.5 border border-indigo-200 bg-indigo-50 text-indigo-700 rounded-lg h-8 px-2.5 text-xs font-medium hover:bg-indigo-100 disabled:opacity-50 transition-colors"
-        title="AI Score All Leads"
-      >
-        {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-        AI Score
-      </button>
-      {result && (
-        <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 p-3 min-w-[180px]">
-          <p className="text-xs text-gray-700">✅ Scored {result.scored} leads</p>
-          {result.errors > 0 && <p className="text-xs text-red-500 mt-0.5">⚠️ {result.errors} errors</p>}
-          <button onClick={() => setResult(null)} className="text-xs text-indigo-600 mt-1 hover:underline">Dismiss</button>
-        </div>
-      )}
-    </div>
-  );
 }
 
 function priorityBadge(p: string) {
@@ -478,7 +432,7 @@ function ContactsSection({ client, clientId }: { client: AgencyClient; clientId:
     <div className="space-y-3">
       {/* Row 1: Stage tabs + Add Contact */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1 overflow-x-auto scrollbar-hide">
+        <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
           {['all', ...CONTACT_STAGES].map(s => (
             <button key={s} onClick={() => setStageFilter(s)}
               className={`px-3 py-1 text-xs rounded-md transition-colors ${stageFilter === s ? 'bg-white shadow-sm text-gray-900 font-medium' : 'text-gray-500 hover:text-gray-700'}`}>
@@ -493,7 +447,7 @@ function ContactsSection({ client, clientId }: { client: AgencyClient; clientId:
 
       {/* Row 2: Search + filters + sort + actions */}
       <div className="flex items-center gap-2 flex-wrap">
-        <div className="relative min-w-0 sm:min-w-[180px] max-w-[280px] flex-1">
+        <div className="relative min-w-[180px] max-w-[280px] flex-1">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
           <input className="w-full border border-gray-200 rounded-lg pl-8 pr-2 h-8 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Search contacts..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
@@ -527,7 +481,6 @@ function ContactsSection({ client, clientId }: { client: AgencyClient; clientId:
           {importing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
         </button>
         <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={handleImport} />
-        <AIScoreButton clientId={clientId} onComplete={() => loadContacts()} />
       </div>
 
       {actionError && (
@@ -575,19 +528,18 @@ function ContactsSection({ client, clientId }: { client: AgencyClient; clientId:
         ) : (
           <>
             {/* Header row */}
-            <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
-            <div className="grid grid-cols-[32px_1fr_1fr_100px_80px_28px_90px_80px] gap-1.5 px-3 py-2 bg-gray-50 border-b border-gray-100 text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[640px]">
+            <div className="grid grid-cols-[32px_1fr_1fr_100px_80px_28px_90px_80px] gap-1.5 px-3 py-2 bg-gray-50 border-b border-gray-100 text-xs font-medium text-gray-500 uppercase tracking-wider">
               <div><button onClick={toggleAll} className="text-gray-400 hover:text-gray-600">
                 {selected.size === contacts.length ? <CheckSquare className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />}
               </button></div>
-              <div>Contact</div><div>Email / Phone</div><div className="hidden sm:block">Company</div><div>Stage</div><div></div><div className="hidden sm:block">Tags</div><div className="hidden sm:block">Activity</div>
+              <div>Contact</div><div>Email / Phone</div><div>Company</div><div>Stage</div><div></div><div>Tags</div><div>Activity</div>
             </div>
             {contacts.map(c => {
               const scoreDot: Record<string, string> = { hot: 'bg-green-500', warm: 'bg-yellow-400', cold: 'bg-gray-400', new: 'bg-blue-400' };
               const scoreTitle: Record<string, string> = { hot: 'Hot', warm: 'Warm', cold: 'Cold', new: 'New' };
               return (
                 <div key={c.id}
-                  className="grid grid-cols-[32px_1fr_1fr_100px_80px_28px_90px_80px] gap-1.5 px-3 py-2 border-b border-gray-50 hover:bg-gray-50 cursor-pointer items-center text-sm min-w-[640px]"
+                  className="grid grid-cols-[32px_1fr_1fr_100px_80px_28px_90px_80px] gap-1.5 px-3 py-2 border-b border-gray-50 hover:bg-gray-50 cursor-pointer items-center text-sm"
                   onClick={() => setSelectedContact(c)}>
                   <div onClick={e => { e.stopPropagation(); toggleSelect(c.id); }}>
                     {selected.has(c.id) ? <CheckSquare className="w-3.5 h-3.5 text-indigo-600" /> : <Square className="w-3.5 h-3.5 text-gray-300" />}
@@ -607,9 +559,8 @@ function ContactsSection({ client, clientId }: { client: AgencyClient; clientId:
                   </div>
                   <div className="text-gray-600 truncate text-xs">{c.crm_companies?.name || c.company_name || '—'}</div>
                   <div><span className={`inline-block px-1.5 py-0.5 rounded-full text-[10px] font-medium ${stageBadge(c.stage)}`}>{c.stage}</span></div>
-                  <div className="flex items-center justify-center gap-1" title={`${scoreTitle[c.score_label] || 'New'} (${c.score || 0})`}>
+                  <div className="flex justify-center" title={scoreTitle[c.score_label] || 'New'}>
                     <span className={`w-2.5 h-2.5 rounded-full inline-block ${scoreDot[c.score_label] || 'bg-gray-300'}`} />
-                    {c.score > 0 && <span className="text-[10px] text-gray-500">{c.score}</span>}
                   </div>
                   <div className="flex gap-0.5 flex-wrap">
                     {c.tags.slice(0, 2).map(t => (
@@ -621,10 +572,9 @@ function ContactsSection({ client, clientId }: { client: AgencyClient; clientId:
                 </div>
               );
             })}
-          </div>
           </>
         )}
-        </div>
+      </div>
 
       {/* Pagination */}
       {totalPages > 1 && (
@@ -668,7 +618,7 @@ function AddContactModal({ clientId, onClose, onSaved }: { clientId: string; onC
     <Modal onClose={onClose}>
       <ModalHeader title="Add Contact" onClose={onClose} />
       <div className="p-5 space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <FormField label="First Name"><input className={inputClass} value={form.first_name} onChange={e => setForm(f => ({ ...f, first_name: e.target.value }))} /></FormField>
           <FormField label="Last Name"><input className={inputClass} value={form.last_name} onChange={e => setForm(f => ({ ...f, last_name: e.target.value }))} /></FormField>
         </div>
@@ -690,283 +640,6 @@ function AddContactModal({ clientId, onClose, onSaved }: { clientId: string; onC
         </button>
       </div>
     </Modal>
-  );
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// CUSTOM FIELDS SECTION (inline in contact detail)
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-interface CustomFieldSchema {
-  name: string;
-  key: string;
-  type: 'text' | 'number' | 'date' | 'select';
-  required?: boolean;
-  options?: string[]; // for select type
-}
-
-function CustomFieldsSection({ contact, client, onUpdate }: {
-  contact: Contact;
-  client: AgencyClient;
-  onUpdate: (fields: Record<string, unknown>) => void;
-}) {
-  const cfg = (client.container_config || {}) as Record<string, unknown>;
-  const schema = (cfg.custom_fields_schema as CustomFieldSchema[] | undefined) || [];
-  const customFields = (contact as unknown as Record<string, unknown>).custom_fields as Record<string, unknown> || {};
-  const [editingField, setEditingField] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState<string>('');
-  const [saving, setSaving] = useState(false);
-
-  if (schema.length === 0) return null;
-
-  const startEdit = (key: string) => {
-    setEditingField(key);
-    setEditValue(String(customFields[key] ?? ''));
-  };
-
-  const saveField = async (key: string) => {
-    setSaving(true);
-    try {
-      const fieldDef = schema.find(f => f.key === key);
-      let parsedValue: unknown = editValue;
-      if (fieldDef?.type === 'number') parsedValue = Number(editValue) || 0;
-
-      const updatedFields = { ...customFields, [key]: parsedValue };
-      const res = await fetch(`/api/agency/crm/contacts/${contact.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ custom_fields: updatedFields }),
-      });
-      if (res.ok) {
-        onUpdate(updatedFields);
-      }
-    } catch { /* non-fatal */ }
-    finally {
-      setSaving(false);
-      setEditingField(null);
-    }
-  };
-
-  return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-      <h3 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
-        <Sliders className="w-3.5 h-3.5" />
-        Custom Fields
-      </h3>
-      <div className="space-y-2">
-        {schema.map(field => {
-          const value = customFields[field.key];
-          const isEditing = editingField === field.key;
-
-          return (
-            <div key={field.key} className="flex items-center gap-3">
-              <span className="text-xs font-medium text-gray-500 w-28 shrink-0">
-                {field.name}
-                {field.required && <span className="text-red-400 ml-0.5">*</span>}
-              </span>
-
-              {isEditing ? (
-                <div className="flex items-center gap-1 flex-1">
-                  {field.type === 'select' && field.options ? (
-                    <select
-                      value={editValue}
-                      onChange={e => setEditValue(e.target.value)}
-                      className="flex-1 border border-gray-200 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                    >
-                      <option value="">Select...</option>
-                      {field.options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                    </select>
-                  ) : (
-                    <input
-                      type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
-                      value={editValue}
-                      onChange={e => setEditValue(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && saveField(field.key)}
-                      className="flex-1 border border-gray-200 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                      autoFocus
-                    />
-                  )}
-                  <button
-                    onClick={() => saveField(field.key)}
-                    disabled={saving}
-                    className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
-                  >
-                    {saving ? '...' : 'Save'}
-                  </button>
-                  <button
-                    onClick={() => setEditingField(null)}
-                    className="text-xs text-gray-400 hover:text-gray-600"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => startEdit(field.key)}
-                  className="flex-1 text-left text-xs text-gray-700 hover:bg-gray-50 rounded px-2 py-1 -mx-2 transition-colors group"
-                >
-                  {value !== undefined && value !== null && value !== ''
-                    ? String(value)
-                    : <span className="text-gray-300 italic">Click to set</span>
-                  }
-                  <Edit3 className="w-3 h-3 text-gray-300 group-hover:text-gray-500 inline ml-1" />
-                </button>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// CUSTOM FIELDS SETTINGS (for agency to define fields per client)
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function CustomFieldsSettings({ client }: { client: AgencyClient }) {
-  const cfg = (client.container_config || {}) as Record<string, unknown>;
-  const [fields, setFields] = useState<CustomFieldSchema[]>(
-    (cfg.custom_fields_schema as CustomFieldSchema[] | undefined) || []
-  );
-  const [saving, setSaving] = useState(false);
-  const [showAdd, setShowAdd] = useState(false);
-  const [newField, setNewField] = useState({ name: '', type: 'text' as CustomFieldSchema['type'], required: false, options: '' });
-
-  const saveSchema = async (schema: CustomFieldSchema[]) => {
-    setSaving(true);
-    try {
-      await fetch(`/api/agency/clients/${client.id}/container-config`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ custom_fields_schema: schema }),
-      });
-    } catch { /* non-fatal */ }
-    finally { setSaving(false); }
-  };
-
-  const addField = () => {
-    if (!newField.name.trim()) return;
-    const key = newField.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_');
-    if (fields.some(f => f.key === key)) return;
-    const field: CustomFieldSchema = {
-      name: newField.name.trim(),
-      key,
-      type: newField.type,
-      required: newField.required,
-      ...(newField.type === 'select' && newField.options ? { options: newField.options.split(',').map(o => o.trim()).filter(Boolean) } : {}),
-    };
-    const updated = [...fields, field];
-    setFields(updated);
-    saveSchema(updated);
-    setNewField({ name: '', type: 'text', required: false, options: '' });
-    setShowAdd(false);
-  };
-
-  const removeField = (key: string) => {
-    const updated = fields.filter(f => f.key !== key);
-    setFields(updated);
-    saveSchema(updated);
-  };
-
-  return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h3 className="text-sm font-semibold text-gray-900">Custom CRM Fields</h3>
-          <p className="text-xs text-gray-500 mt-0.5">Define custom fields for contacts. Fields are editable inline on each contact.</p>
-        </div>
-        <button
-          onClick={() => setShowAdd(!showAdd)}
-          className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700"
-        >
-          <Plus className="w-3.5 h-3.5" /> Add Field
-        </button>
-      </div>
-
-      {showAdd && (
-        <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-4 mb-4 space-y-3">
-          <div className="flex gap-3">
-            <div className="flex-1">
-              <label className="block text-xs font-medium text-gray-700 mb-1">Field Name</label>
-              <input
-                value={newField.name}
-                onChange={e => setNewField({ ...newField, name: e.target.value })}
-                placeholder="e.g., Budget, Preferred Contact Time"
-                className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Type</label>
-              <select
-                value={newField.type}
-                onChange={e => setNewField({ ...newField, type: e.target.value as CustomFieldSchema['type'] })}
-                className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-white"
-              >
-                <option value="text">Text</option>
-                <option value="number">Number</option>
-                <option value="date">Date</option>
-                <option value="select">Select (Dropdown)</option>
-              </select>
-            </div>
-          </div>
-
-          {newField.type === 'select' && (
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Options (comma-separated)</label>
-              <input
-                value={newField.options}
-                onChange={e => setNewField({ ...newField, options: e.target.value })}
-                placeholder="Option A, Option B, Option C"
-                className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-          )}
-
-          <div className="flex items-center gap-4">
-            <label className="flex items-center gap-2 text-xs text-gray-700">
-              <input
-                type="checkbox"
-                checked={newField.required}
-                onChange={e => setNewField({ ...newField, required: e.target.checked })}
-                className="rounded border-gray-300"
-              />
-              Required field
-            </label>
-            <button onClick={addField} className="px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700">
-              Add
-            </button>
-            <button onClick={() => setShowAdd(false)} className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200">
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-
-      {fields.length > 0 ? (
-        <div className="space-y-2">
-          {fields.map(field => (
-            <div key={field.key} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-medium text-gray-900">{field.name}</span>
-                <span className="text-xs text-gray-400 bg-gray-200 px-2 py-0.5 rounded-full">{field.type}</span>
-                {field.required && <span className="text-xs text-red-500">Required</span>}
-                {field.options && <span className="text-xs text-gray-400">{field.options.join(', ')}</span>}
-              </div>
-              <button onClick={() => removeField(field.key)} className="text-gray-400 hover:text-red-500">
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p className="text-sm text-gray-400 text-center py-4">
-          No custom fields defined yet. Add fields to capture additional contact information.
-        </p>
-      )}
-
-      {saving && <p className="text-xs text-indigo-500 mt-2">Saving...</p>}
-    </div>
   );
 }
 
@@ -1099,7 +772,7 @@ function ContactDetailPanel({ contact: initial, onBack, client }: { contact: Con
           <div className="flex-1 min-w-0">
             {editing ? (
               <div className="space-y-3">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   <input className={inputClass} placeholder="First name" value={editForm.first_name} onChange={e => setEditForm(f => ({ ...f, first_name: e.target.value }))} />
                   <input className={inputClass} placeholder="Last name" value={editForm.last_name} onChange={e => setEditForm(f => ({ ...f, last_name: e.target.value }))} />
                 </div>
@@ -1165,9 +838,6 @@ function ContactDetailPanel({ contact: initial, onBack, client }: { contact: Con
           </div>
         </div>
       </div>
-
-      {/* Custom Fields */}
-      <CustomFieldsSection contact={contact} client={client} onUpdate={(fields) => setContact({ ...contact, custom_fields: fields } as Contact)} />
 
       {/* AI Insights */}
       {(contact.ai_summary || contact.ai_next_action) && (
@@ -1434,7 +1104,7 @@ function LogCallModal({ contactId, onClose, onSaved }: { contactId: string; onCl
     <Modal onClose={onClose}>
       <ModalHeader title="Log Call" onClose={onClose} />
       <div className="p-5 space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <FormField label="Outcome">
             <select className={inputClass} value={outcome} onChange={e => setOutcome(e.target.value)}>
               <option value="connected">Connected</option>
@@ -1496,7 +1166,7 @@ function AddTaskModal({ contactId, onClose, onSaved }: { contactId?: string; onC
       <div className="p-5 space-y-4">
         <FormField label="Title"><input className={inputClass} value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} /></FormField>
         <FormField label="Description"><textarea className={inputClass + ' h-20 resize-none'} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} /></FormField>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <FormField label="Priority">
             <select className={inputClass} value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value as CrmTask['priority'] }))}>
               {PRIORITIES.map(p => <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
@@ -1516,17 +1186,166 @@ function AddTaskModal({ contactId, onClose, onSaved }: { contactId?: string; onC
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 3. DEALS SECTION
+// 3a. CLIENT PIPELINE KANBAN (Board View for Deals)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function DealsSection({ clientId }: { clientId?: string }) {
+interface KanbanDeal extends Deal {
+  contact: { id: string; first_name: string | null; last_name: string | null; email: string | null; avatar_color: string | null } | null;
+  company: { id: string; name: string } | null;
+}
+
+const KANBAN_STAGES = [
+  { id: 'prospect', label: 'Prospect', color: 'text-blue-600', bgColor: 'bg-blue-50', borderColor: 'border-blue-200' },
+  { id: 'qualified', label: 'Qualified', color: 'text-indigo-600', bgColor: 'bg-indigo-50', borderColor: 'border-indigo-200' },
+  { id: 'proposal', label: 'Proposal', color: 'text-purple-600', bgColor: 'bg-purple-50', borderColor: 'border-purple-200' },
+  { id: 'negotiation', label: 'Negotiation', color: 'text-amber-600', bgColor: 'bg-amber-50', borderColor: 'border-amber-200' },
+  { id: 'won', label: 'Won', color: 'text-emerald-600', bgColor: 'bg-emerald-50', borderColor: 'border-emerald-200' },
+  { id: 'lost', label: 'Lost', color: 'text-gray-500', bgColor: 'bg-gray-50', borderColor: 'border-gray-200' },
+];
+
+function ClientPipelineKanban({ clientId }: { clientId: string }) {
+  const [deals, setDeals] = useState<KanbanDeal[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [dragOverStage, setDragOverStage] = useState<string | null>(null);
+  const [draggedDealId, setDraggedDealId] = useState<string | null>(null);
+
+  const fetchDeals = useCallback(async () => {
+    try {
+      const params = new URLSearchParams();
+      if (clientId) params.set('clientId', clientId);
+      const res = await fetch(`/api/agency/crm/deals?${params}`);
+      if (res.ok) {
+        const data = await res.json();
+        setDeals(data.deals || []);
+      }
+    } catch (err) {
+      console.error('[kanban] fetch deals failed:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [clientId]);
+
+  useEffect(() => { fetchDeals(); }, [fetchDeals]);
+
+  const handleDragStart = (e: React.DragEvent, dealId: string) => {
+    e.dataTransfer.setData('text/plain', dealId);
+    e.dataTransfer.effectAllowed = 'move';
+    setDraggedDealId(dealId);
+  };
+
+  const handleDragOver = (e: React.DragEvent, stageId: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverStage(stageId);
+  };
+
+  const handleDrop = async (e: React.DragEvent, newStage: string) => {
+    e.preventDefault();
+    setDragOverStage(null);
+    const dealId = e.dataTransfer.getData('text/plain');
+    if (!dealId) return;
+    const deal = deals.find(d => d.id === dealId);
+    if (!deal || deal.stage === newStage) { setDraggedDealId(null); return; }
+
+    // Optimistic update
+    setDeals(prev => prev.map(d => d.id === dealId ? { ...d, stage: newStage as Deal['stage'] } : d));
+    setDraggedDealId(null);
+
+    try {
+      const res = await fetch(`/api/agency/crm/deals/${dealId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stage: newStage }),
+      });
+      if (!res.ok) {
+        setDeals(prev => prev.map(d => d.id === dealId ? { ...d, stage: deal.stage } : d));
+      }
+    } catch {
+      setDeals(prev => prev.map(d => d.id === dealId ? { ...d, stage: deal.stage } : d));
+    }
+  };
+
+  const dealsByStage = KANBAN_STAGES.reduce<Record<string, KanbanDeal[]>>((acc, stage) => {
+    acc[stage.id] = deals.filter(d => d.stage === stage.id);
+    return acc;
+  }, {});
+
+  if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>;
+
+  return (
+    <div className="overflow-x-auto pb-4">
+      <div className="flex gap-4 min-w-max">
+        {KANBAN_STAGES.map(stage => {
+          const stageDeals = dealsByStage[stage.id] || [];
+          const isDragOver = dragOverStage === stage.id;
+          const totalValue = stageDeals.reduce((sum, d) => sum + Number(d.value), 0);
+
+          return (
+            <div
+              key={stage.id}
+              onDragOver={e => handleDragOver(e, stage.id)}
+              onDragLeave={() => setDragOverStage(null)}
+              onDrop={e => handleDrop(e, stage.id)}
+              className={`flex flex-col min-w-[260px] w-[260px] shrink-0 rounded-xl transition-colors duration-150 ${
+                isDragOver ? `${stage.bgColor} ${stage.borderColor} border-2` : 'bg-gray-50/50 border-2 border-transparent'
+              }`}
+            >
+              {/* Column Header */}
+              <div className="px-3 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className={`text-sm font-semibold ${stage.color}`}>{stage.label}</span>
+                  <span className="text-xs text-gray-400 bg-gray-200/60 rounded-full px-1.5 py-0.5 font-medium">{stageDeals.length}</span>
+                </div>
+                <span className="text-xs text-gray-500 font-medium">{formatCurrency(totalValue)}</span>
+              </div>
+
+              {/* Cards */}
+              <div className="flex-1 px-2 pb-2 space-y-2 overflow-y-auto max-h-[calc(100vh-380px)] scrollbar-hide">
+                {stageDeals.map(deal => (
+                  <div
+                    key={deal.id}
+                    draggable
+                    onDragStart={e => handleDragStart(e, deal.id)}
+                    className="bg-white border border-gray-200 rounded-lg p-3 cursor-grab active:cursor-grabbing hover:shadow-md hover:border-gray-300 transition-all duration-150"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <h4 className="text-sm font-medium text-gray-900 truncate flex-1">{deal.name}</h4>
+                      <span className="text-sm font-semibold text-gray-900 shrink-0">{formatCurrency(Number(deal.value))}</span>
+                    </div>
+                    {deal.contact && (
+                      <p className="text-xs text-gray-500 mt-1 truncate">{contactName(deal.contact)}</p>
+                    )}
+                    {deal.close_date && (
+                      <p className="text-[10px] text-gray-400 mt-1 flex items-center gap-0.5">
+                        <Calendar className="h-3 w-3" />
+                        {new Date(deal.close_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </p>
+                    )}
+                  </div>
+                ))}
+                {stageDeals.length === 0 && (
+                  <div className="text-center py-8 text-gray-400"><p className="text-xs">No deals</p></div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 3b. DEALS SECTION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function DealsSection({ clientId }: { clientId: string }) {
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [editDeal, setEditDeal] = useState<Deal | null>(null);
   const [contacts, setContacts] = useState<Contact[]>([]);
-  const [viewMode, setViewMode] = useState<'list' | 'board'>('board');
-  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'list' | 'board'>('list');
 
   const loadDeals = useCallback(async () => {
     setLoading(true);
@@ -1558,7 +1377,7 @@ function DealsSection({ clientId }: { clientId?: string }) {
   return (
     <div className="space-y-4">
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-4 gap-3">
         {[
           { label: 'Total Deals', value: deals.length, icon: Briefcase },
           { label: 'Pipeline Value', value: formatCurrency(totalValue), icon: TrendingUp },
@@ -1572,77 +1391,45 @@ function DealsSection({ clientId }: { clientId?: string }) {
         ))}
       </div>
 
-      {/* Toolbar */}
+      {/* Add button + view toggle + automation hint */}
       <div className="flex items-center justify-between">
-        <p className="text-xs text-gray-400 flex items-center gap-1.5">
-          <GitBranch className="w-3.5 h-3.5" />
-          Stage automations in <button className="text-indigo-600 hover:underline">Tools → Scoring</button>
-        </p>
+        <div className="flex items-center gap-3">
+          <p className="text-xs text-gray-400 flex items-center gap-1.5">
+            <GitBranch className="w-3.5 h-3.5" />
+            Stage automations are configured in <button onClick={() => {/* parent will handle */}} className="text-indigo-600 hover:underline">Tools → Scoring</button>
+          </p>
+        </div>
         <div className="flex items-center gap-2">
-          <div className="flex rounded-lg border border-gray-200 overflow-hidden text-xs">
-            <button onClick={() => setViewMode('list')} className={`px-3 py-1.5 font-medium transition-colors ${viewMode === 'list' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>List View</button>
-            <button onClick={() => setViewMode('board')} className={`px-3 py-1.5 font-medium transition-colors ${viewMode === 'board' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>Board View</button>
+          {/* View Toggle */}
+          <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+            <button
+              onClick={() => setViewMode('list')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                viewMode === 'list' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5 inline mr-1" />List
+            </button>
+            <button
+              onClick={() => setViewMode('board')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                viewMode === 'board' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <Briefcase className="w-3.5 h-3.5 inline mr-1" />Board
+            </button>
           </div>
           <button onClick={() => setShowAdd(true)} className={btnPrimary}><Plus className="w-4 h-4 mr-1 inline" />Add Deal</button>
         </div>
       </div>
 
-      {/* List View */}
+      {/* Pipeline columns (List View) */}
       {viewMode === 'list' && (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          {deals.length === 0 ? (
-            <div className="flex items-center justify-center py-16 text-gray-400 text-sm">No deals</div>
-          ) : (
-            <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[540px]">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Deal</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Contact</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Stage</th>
-                  <th className="text-right px-4 py-3 text-xs font-medium text-gray-500">Value</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Close Date</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {deals.map(d => (
-                  <tr key={d.id} onClick={() => setEditDeal(d)} className="hover:bg-gray-50 cursor-pointer transition-colors">
-                    <td className="px-4 py-3 font-medium text-gray-900">{d.name}</td>
-                    <td className="px-4 py-3 text-gray-500">{d.contact ? contactName(d.contact) : '—'}</td>
-                    <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full ${stageBadge(d.stage)}`}>{d.stage.charAt(0).toUpperCase() + d.stage.slice(1)}</span></td>
-                    <td className="px-4 py-3 text-right font-semibold text-indigo-600">{formatCurrency(d.value, d.currency)}</td>
-                    <td className="px-4 py-3 text-gray-400">{d.close_date ? new Date(d.close_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Board View — Kanban with drag and drop */}
-      {viewMode === 'board' && (
         <div className="flex gap-3 overflow-x-auto pb-4">
           {DEAL_STAGES.map(stage => {
             const stageDeals = dealsByStage(stage);
             return (
-              <div key={stage} className="min-w-[220px] flex-shrink-0"
-                onDragOver={e => e.preventDefault()}
-                onDrop={() => {
-                  if (!draggingId) return;
-                  const deal = deals.find(d => d.id === draggingId);
-                  if (!deal || deal.stage === stage) { setDraggingId(null); return; }
-                  setDeals(prev => prev.map(d => d.id === draggingId ? { ...d, stage } : d));
-                  const id = draggingId;
-                  setDraggingId(null);
-                  fetch(`/api/agency/crm/deals/${id}`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ stage }),
-                  });
-                }}
-              >
+              <div key={stage} className="min-w-[220px] flex-shrink-0">
                 <div className="bg-gray-50 rounded-t-lg px-3 py-2 border border-gray-200 border-b-0">
                   <div className="flex items-center justify-between">
                     <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${stageBadge(stage)}`}>{stage.charAt(0).toUpperCase() + stage.slice(1)}</span>
@@ -1654,13 +1441,8 @@ function DealsSection({ clientId }: { clientId?: string }) {
                     <div className="flex items-center justify-center py-8 text-gray-300 text-xs">No deals</div>
                   ) : (
                     stageDeals.map(d => (
-                      <div key={d.id}
-                        draggable
-                        onDragStart={() => setDraggingId(d.id)}
-                        onDragEnd={() => setDraggingId(null)}
-                        onClick={() => setEditDeal(d)}
-                        className={`bg-white border rounded-lg p-3 cursor-grab active:cursor-grabbing hover:border-gray-300 transition-colors shadow-sm ${draggingId === d.id ? 'opacity-50 border-indigo-300' : 'border-gray-100'}`}
-                      >
+                      <div key={d.id} onClick={() => setEditDeal(d)}
+                        className="bg-white border border-gray-100 rounded-lg p-3 hover:border-gray-300 cursor-pointer transition-colors shadow-sm">
                         <div className="text-sm font-medium text-gray-900 mb-1">{d.name}</div>
                         {d.contact && <div className="text-xs text-gray-500 mb-1">{contactName(d.contact)}</div>}
                         <div className="flex items-center justify-between">
@@ -1675,6 +1457,11 @@ function DealsSection({ clientId }: { clientId?: string }) {
             );
           })}
         </div>
+      )}
+
+      {/* Pipeline Kanban (Board View) */}
+      {viewMode === 'board' && (
+        <ClientPipelineKanban clientId={clientId} />
       )}
 
       {/* Add/Edit Deal Modal */}
@@ -1722,7 +1509,7 @@ function DealModal({ deal, contacts, onClose, onSaved }: { deal: Deal | null; co
       <ModalHeader title={deal ? 'Edit Deal' : 'Add Deal'} onClose={onClose} />
       <div className="p-5 space-y-4">
         <FormField label="Deal Name"><input className={inputClass} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></FormField>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <FormField label="Value"><input className={inputClass} type="number" value={form.value} onChange={e => setForm(f => ({ ...f, value: e.target.value }))} /></FormField>
           <FormField label="Stage">
             <select className={inputClass} value={form.stage} onChange={e => setForm(f => ({ ...f, stage: e.target.value }))}>
@@ -1815,7 +1602,7 @@ function TasksSection() {
   return (
     <div className="space-y-4">
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-4 gap-3">
         {[
           { label: 'Total', value: tasks.length, icon: CheckSquare, color: 'text-gray-500' },
           { label: 'Overdue', value: overdue, icon: AlertTriangle, color: 'text-red-500' },
@@ -1917,7 +1704,7 @@ function EditTaskModal({ task, onClose, onSaved }: { task: CrmTask; onClose: () 
       <div className="p-5 space-y-4">
         <FormField label="Title"><input className={inputClass} value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} /></FormField>
         <FormField label="Description"><textarea className={inputClass + ' h-20 resize-none'} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} /></FormField>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <FormField label="Priority">
             <select className={inputClass} value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value as CrmTask['priority'] }))}>
               {PRIORITIES.map(p => <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
@@ -1987,7 +1774,7 @@ function AnalyticsSection() {
   return (
     <div className="space-y-6">
       {/* Stats cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         {stats.map(s => (
           <div key={s.label} className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
             <div className="flex items-center gap-2 text-gray-500 text-xs mb-1"><s.icon className="w-4 h-4" />{s.label}</div>
@@ -1996,7 +1783,7 @@ function AnalyticsSection() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         {/* Pipeline funnel */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
           <h3 className="text-sm font-semibold text-gray-900 mb-4">Pipeline Funnel</h3>
@@ -2227,7 +2014,7 @@ function AIInsightsSection({ setSection }: { setSection: (s: Section) => void })
             </div>
             <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Contacts</span>
           </div>
-          <div className="text-xl sm:text-3xl font-bold text-gray-900">{stats.total_contacts}</div>
+          <div className="text-3xl font-bold text-gray-900">{stats.total_contacts}</div>
         </button>
 
         <button
@@ -2240,7 +2027,7 @@ function AIInsightsSection({ setSection }: { setSection: (s: Section) => void })
             </div>
             <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Pipeline</span>
           </div>
-          <div className="text-xl sm:text-3xl font-bold text-gray-900">
+          <div className="text-3xl font-bold text-gray-900">
             ${stats.pipeline_value >= 1000
               ? `${(stats.pipeline_value / 1000).toFixed(1)}K`
               : stats.pipeline_value}
@@ -2254,7 +2041,7 @@ function AIInsightsSection({ setSection }: { setSection: (s: Section) => void })
             </div>
             <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Hot Leads</span>
           </div>
-          <div className="text-xl sm:text-3xl font-bold text-gray-900">{stats.hot_leads}</div>
+          <div className="text-3xl font-bold text-gray-900">{stats.hot_leads}</div>
         </div>
       </div>
 
@@ -2507,7 +2294,7 @@ function ScoringSection() {
       )}
 
       {/* Score legend */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-4 gap-3">
         {[
           { label: 'Hot', range: '75–100', color: 'bg-red-50 border-red-200 text-red-700', dot: 'bg-red-500' },
           { label: 'Warm', range: '50–74', color: 'bg-orange-50 border-orange-200 text-orange-700', dot: 'bg-orange-500' },
@@ -2527,7 +2314,7 @@ function ScoringSection() {
       {/* Scoring factors */}
       <div className="bg-white border border-gray-200 rounded-xl p-5">
         <h3 className="text-sm font-semibold text-gray-900 mb-3">How Contacts Are Scored</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2">
+        <div className="grid grid-cols-2 gap-x-8 gap-y-2">
           {[
             { factor: 'Has email address', points: '+10' },
             { factor: 'Has phone number', points: '+10' },
@@ -3050,7 +2837,6 @@ const MAIN_SECTIONS: { key: Section; label: string; icon: React.ComponentType<{ 
   { key: 'contacts', label: 'Contacts', icon: Users },
   { key: 'deals', label: 'Deals', icon: DollarSign },
   { key: 'tasks', label: 'Tasks', icon: CheckSquare },
-  { key: 'payments', label: 'Payments', icon: CreditCard },
   { key: 'analytics', label: 'Analytics', icon: BarChart3 },
   { key: 'activity', label: 'Activity', icon: Activity },
 ];
@@ -3059,7 +2845,6 @@ const TOOLS_SECTIONS: { key: Section; label: string; icon: React.ComponentType<{
   { key: 'segments', label: 'Segments', icon: Layers },
   { key: 'scoring', label: 'Scoring', icon: Sliders },
   { key: 'merge', label: 'Duplicates', icon: GitMerge },
-  { key: 'custom-fields', label: 'Custom Fields', icon: Sliders },
 ];
 
 export default function CrmTab({ client, clientId }: { client: AgencyClient; clientId?: string }) {
@@ -3076,7 +2861,7 @@ export default function CrmTab({ client, clientId }: { client: AgencyClient; cli
       {/* Navigation */}
       <div className="flex items-center gap-2 flex-wrap">
         {/* Main section pills */}
-        <div className="flex items-center gap-1 bg-gray-50 rounded-lg p-1 overflow-x-auto flex-1 min-w-0 scrollbar-hide">
+        <div className="flex items-center gap-1 bg-gray-50 rounded-lg p-1 overflow-x-auto flex-1 min-w-0">
           {MAIN_SECTIONS.map(s => (
             <button key={s.key} onClick={() => { setSection(s.key); setShowTools(false); }}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md transition-colors whitespace-nowrap ${
@@ -3124,13 +2909,11 @@ export default function CrmTab({ client, clientId }: { client: AgencyClient; cli
       {section === 'contacts' && <ContactsSection client={client} clientId={scopedClientId} />}
       {section === 'deals' && <DealsSection clientId={scopedClientId} />}
       {section === 'tasks' && <TasksSection />}
-      {section === 'payments' && <PaymentsSubTab clientId={scopedClientId} />}
       {section === 'analytics' && <AnalyticsSection />}
       {section === 'activity' && <ActivitySection />}
       {section === 'segments' && <SegmentsSection setSection={setSection} />}
       {section === 'scoring' && <ScoringSection />}
       {section === 'merge' && <MergeSection />}
-      {section === 'custom-fields' && <CustomFieldsSettings client={client} />}
     </div>
   );
 }
