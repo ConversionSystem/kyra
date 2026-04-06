@@ -79,9 +79,7 @@ const navSections: NavSection[] = [
       { label: 'Intelligence', href: '/agency/intelligence', icon: Brain, iconClassName: 'text-purple-400', requiredPlans: ['pro', 'scale'] },
       { label: 'Clients', href: '/agency/clients', icon: Users },
 
-      { label: 'GHL Actions', href: '/agency/audit', icon: ClipboardList },
       { label: 'Websites', href: '/agency/sites', icon: Globe },
-      { label: 'Voice AI', href: '/agency/voice', icon: Phone, iconClassName: 'text-emerald-400' },
 
       { label: 'Build Requests', href: '/agency/build-requests', icon: Sparkles, iconClassName: 'text-amber-400' },
     ],
@@ -92,7 +90,6 @@ const navSections: NavSection[] = [
     collapsible: true,
     items: [
       { label: 'Billing', href: '/agency/billing', icon: CreditCard },
-      { label: 'Credits', href: '/agency/credits', icon: Coins },
       { label: 'Referrals', href: '/agency/referrals', icon: Gift },
       { label: 'API Keys', href: '/agency/api-keys', icon: KeyRound },
       { label: 'Settings', href: '/agency/settings', icon: Settings },
