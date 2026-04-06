@@ -1,7 +1,7 @@
 // ============================================================================
-// Smart AI Employee Engine
+// Smart AI Worker Engine
 //
-// The brain that transforms a dumb chat relay into a real AI employee.
+// The brain that transforms a dumb chat relay into a real AI worker.
 // Wires together: persona injection + conversation memory + relationship memory
 // + function calling (GHL tools) + business hours awareness + escalation.
 //
@@ -65,7 +65,7 @@ export interface SmartHandlerResult {
 // ── Main Entry Point ──────────────────────────────────────────────────────────
 
 /**
- * Process an inbound message with full AI employee capabilities:
+ * Process an inbound message with full AI worker capabilities:
  * 1. Build rich system prompt (persona + instructions + business hours + language)
  * 2. Fetch conversation history (last 10 messages)
  * 3. Fetch relationship memories from CRM

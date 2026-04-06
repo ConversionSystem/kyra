@@ -18,7 +18,7 @@
  * - TOOLS: Agent can check calendars, look up info, take notes between conversations
  * - 24/7: Agent is always running in an isolated container — no cold starts
  *
- * This is the difference between a chatbot and an AI employee.
+ * This is the difference between a chatbot and an AI worker.
  */
 
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
