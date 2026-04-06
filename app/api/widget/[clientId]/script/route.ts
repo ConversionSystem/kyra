@@ -87,6 +87,7 @@ export async function GET(
   var POWERED_BY = ${JSON.stringify(widgetPoweredBy)};
   var POSITION = ${JSON.stringify(widgetPosition)};
   var AVATAR = ${JSON.stringify(widgetAvatarEmoji)};
+  var QUICK_REPLIES = ${JSON.stringify((cfg.widget_quick_replies as string[]) || ["What services do you offer?", "What are your hours?", "How can I contact you?", "Get a free quote"])};
   var STORAGE_KEY = 'kyra_session_' + CLIENT_ID;
 
   // Don't init twice
@@ -99,7 +100,7 @@ export async function GET(
     '#kyra-widget-btn { position:fixed; bottom:24px; ' + (POSITION === 'bottom-left' ? 'left:24px;' : 'right:24px;') + ' width:60px; height:60px; border-radius:50%; background:' + COLOR + '; border:none; cursor:pointer; box-shadow:0 4px 20px rgba(0,0,0,0.25); z-index:99999; display:flex; align-items:center; justify-content:center; transition:transform 0.2s; }',
     '#kyra-widget-btn:hover { transform:scale(1.08); }',
     '#kyra-widget-btn svg { width:28px; height:28px; fill:white; }',
-    '#kyra-widget-badge { position:absolute; top:-2px; right:-2px; width:16px; height:16px; background:#ef4444; border-radius:50%; display:none; }',
+    '#kyra-widget-badge { position:absolute; top:-2px; right:-2px; min-width:18px; height:18px; background:#ef4444; border-radius:9px; display:none; align-items:center; justify-content:center; font-size:10px; color:#fff; font-weight:700; font-family:system-ui,sans-serif; padding:0 3px; box-sizing:border-box; }',
     '#kyra-widget-backdrop { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:99997; }',
     '#kyra-widget-panel { position:fixed; bottom:96px; ' + (POSITION === 'bottom-left' ? 'left:24px; transform-origin:bottom left;' : 'right:24px; transform-origin:bottom right;') + ' width:380px; max-width:calc(100vw - 32px); height:540px; max-height:calc(100vh - 120px); background:#fff; color:#111; border-radius:20px; box-shadow:0 8px 40px rgba(0,0,0,0.22); z-index:99998; display:flex; flex-direction:column; overflow:hidden; transition:opacity 0.22s,transform 0.22s; }',
     '#kyra-widget-panel.hidden { opacity:0; transform:scale(0.9) translateY(8px); pointer-events:none; }',
@@ -135,6 +136,12 @@ export async function GET(
     '#kyra-widget-powered { text-align:center; padding:6px 12px; background:#f8f7ff; border-top:1px solid #e5e3ff; }',
     '#kyra-widget-powered a { font-size:11px; color:#6366f1; text-decoration:none; font-weight:500; opacity:0.85; transition:opacity 0.2s; }',
     '#kyra-widget-powered a:hover { opacity:1; text-decoration:underline; }',
+    '.kyra-quick-replies { display:flex; flex-wrap:wrap; gap:6px; padding:4px 16px 8px; }',
+    '.kyra-quick-btn { background:#f3f4f6; color:#374151; border:1px solid #e5e7eb; border-radius:20px; padding:7px 14px; font-size:13px; font-family:system-ui,sans-serif; cursor:pointer; transition:all 0.15s; white-space:nowrap; }',
+    '.kyra-quick-btn:hover { background:' + COLOR + '15; color:' + COLOR + '; border-color:' + COLOR + '40; }',
+    '#kyra-proactive { position:fixed; bottom:96px; ' + (POSITION === 'bottom-left' ? 'left:24px;' : 'right:24px;') + ' background:#fff; padding:12px 16px; border-radius:16px 16px 4px 16px; box-shadow:0 4px 20px rgba(0,0,0,0.15); font-size:14px; color:#1a1a1a; font-family:system-ui,sans-serif; max-width:280px; z-index:99996; cursor:pointer; animation:kyra-fade-in 0.3s; }',
+    '#kyra-proactive .close { position:absolute; top:4px; right:8px; cursor:pointer; color:#9ca3af; font-size:14px; }',
+    '@keyframes kyra-fade-in { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }',
   ].join('');
   document.head.appendChild(style);
 
@@ -144,7 +151,10 @@ export async function GET(
   var isOpen = false;
   var isLoading = false;
   var greeted = false;
+  var unreadCount = 0;
   var history = []; // [{role:'user'|'assistant', content:string}] — last 10 turns
+  var CHIME = null;
+  try { CHIME = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgkKmsi2I3OGiUrKuJYjo6aJSrqodjOzlqla2qimM6Ommdsp+EXkI/b5+zoYReQEB0obOhhF5CP3ies6CFXEI/cKCznYReQT9xo7WjhV9BPm6grKCEXkJAcaO1pIVfQD1un6ufg1xBQHOkt6aHYEA+b6Csn4JcQj9xo7amh19APG2fq5+DW0I/caS3pohhQD5uoKufhFxBPnCjt6aGX0A+baCqnoNcQUFzprioh2FAP26fqZuAWkJAdqe7qopiQT1snaecgFpCP3GkuKqJYkE9bZ6nm39YQT9zp7uqi2NAFG2dp5p9VkI/'); } catch(e) {}
 
   // ── DOM ─────────────────────────────────────────────────────────────────────
   // Backdrop (mobile only)
@@ -160,6 +170,11 @@ export async function GET(
   btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>';
   document.body.appendChild(btn);
 
+  // Unread badge
+  var badge = document.createElement('div');
+  badge.id = 'kyra-widget-badge';
+  btn.appendChild(badge);
+
   // Panel
   var panel = document.createElement('div');
   panel.id = 'kyra-widget-panel';
@@ -167,7 +182,7 @@ export async function GET(
   panel.innerHTML = [
     '<div id="kyra-widget-header">',
     '  <div class="avatar">' + AVATAR + '</div>',
-    '  <div class="info"><div class="title">' + TITLE + '</div><div class="subtitle"><span class="online-dot"></span>Online · Typically replies instantly</div></div>',
+    '  <div class="info"><div class="title">' + TITLE + '</div><div class="subtitle"><span class="online-dot"></span>Online · Viewing: ' + (location.pathname === '/' ? 'Home' : location.pathname) + '</div></div>',
     '  <button class="close-btn" aria-label="Close chat">✕</button>',
     '</div>',
     '<div id="kyra-widget-messages"></div>',
@@ -203,6 +218,14 @@ export async function GET(
     }
     messagesEl.appendChild(msgEl);
     scrollToBottom();
+    if (role === 'bot' && !isOpen) {
+      unreadCount++;
+      badge.textContent = unreadCount;
+      badge.style.display = 'flex';
+      try {
+        if (!localStorage.getItem('kyra_sound_muted') && CHIME) CHIME.play().catch(function(){});
+      } catch(e) {}
+    }
     return msgEl;
   }
 
@@ -217,6 +240,30 @@ export async function GET(
 
   function hideTyping() {
     var el = document.getElementById('kyra-typing');
+    if (el) el.remove();
+  }
+
+  function showQuickReplies() {
+    hideQuickReplies();
+    var container = document.createElement('div');
+    container.className = 'kyra-quick-replies';
+    container.id = 'kyra-quick-replies';
+    QUICK_REPLIES.forEach(function(reply) {
+      var qbtn = document.createElement('button');
+      qbtn.className = 'kyra-quick-btn';
+      qbtn.textContent = reply;
+      qbtn.addEventListener('click', function() {
+        inputEl.value = reply;
+        sendMessage();
+      });
+      container.appendChild(qbtn);
+    });
+    messagesEl.appendChild(container);
+    scrollToBottom();
+  }
+
+  function hideQuickReplies() {
+    var el = document.getElementById('kyra-quick-replies');
     if (el) el.remove();
   }
 
@@ -277,9 +324,13 @@ export async function GET(
       btn.style.display = 'none';
       backdrop.style.display = 'block';
     }
+    unreadCount = 0;
+    badge.style.display = 'none';
+    badge.textContent = '';
     if (!greeted && messagesEl.children.length === 0) {
       greeted = true;
       addMessage('bot', GREETING);
+      showQuickReplies();
     }
     applyMobileLayout();
     setTimeout(function() {
@@ -362,6 +413,7 @@ export async function GET(
   async function sendMessage() {
     var text = inputEl.value.trim();
     if (!text || isLoading) return;
+    hideQuickReplies();
 
     isLoading = true;
     sendBtn.disabled = true;
@@ -423,6 +475,30 @@ export async function GET(
     this.style.height = 'auto';
     this.style.height = Math.min(this.scrollHeight, 100) + 'px';
   });
+
+  // Proactive auto-open (first visit only, after 8s)
+  try {
+    var PROACTIVE_KEY = 'kyra_proactive_shown_' + CLIENT_ID;
+    if (!localStorage.getItem(PROACTIVE_KEY)) {
+      setTimeout(function() {
+        if (isOpen) return;
+        var pro = document.createElement('div');
+        pro.id = 'kyra-proactive';
+        pro.innerHTML = '<span class="close">✕</span>' + escHtml(GREETING);
+        pro.addEventListener('click', function(e) {
+          if (e.target.classList.contains('close')) {
+            pro.remove();
+          } else {
+            pro.remove();
+            openPanel();
+          }
+        });
+        document.body.appendChild(pro);
+        try { localStorage.setItem(PROACTIVE_KEY, '1'); } catch(ignore) {}
+        setTimeout(function() { if (pro.parentNode) pro.remove(); }, 15000);
+      }, 8000);
+    }
+  } catch(e) {}
 
 })();
 `.trim();
