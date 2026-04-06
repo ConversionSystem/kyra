@@ -47,6 +47,7 @@ import {
   CornerDownLeft,
   Play,
   Calendar,
+  Monitor,
 } from 'lucide-react';
 import type { AgencyClient, AgencyMember } from '@/lib/agency/queries';
 import GHLConnection from './ghl-connection';
@@ -191,7 +192,7 @@ interface ChatMessage {
   content: string;
 }
 
-type Tab = 'inbox' | 'crm' | 'marketing' | 'website' | 'ai-setup' | 'integrations' | 'settings' | 'insights';
+type Tab = 'inbox' | 'crm' | 'marketing' | 'website' | 'ai-setup' | 'integrations' | 'it-operations' | 'settings' | 'insights';
 
 // Map legacy ?tab= values to new tab IDs
 const LEGACY_TAB_MAP: Record<string, Tab> = {
@@ -206,8 +207,8 @@ const LEGACY_TAB_MAP: Record<string, Tab> = {
   skills: 'ai-setup',
   booking: 'ai-setup',
   knowledge: 'ai-setup',
-  operations: 'integrations',
-  'it-operations': 'integrations',
+  operations: 'it-operations',
+  'it-operations': 'it-operations',
   workflows: 'marketing',
   share: 'settings',
   portal: 'settings',
@@ -241,6 +242,7 @@ const TAB_GROUPS: { label?: string; tabs: typeof TABS }[] = [
     tabs: [
       { id: 'ai-setup', label: 'AI Setup', icon: Brain },
       { id: 'integrations', label: 'Integrations', icon: Cpu },
+      { id: 'it-operations', label: 'IT Operations', icon: Monitor },
       { id: 'settings', label: 'Settings', icon: Settings },
     ],
   },
@@ -345,10 +347,12 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
   const searchParams = useSearchParams();
   const rawTab = searchParams.get('tab') || 'inbox';
   const resolvedTab = (LEGACY_TAB_MAP[rawTab] ?? rawTab) as Tab;
+  const hasItOps = ((initialClient.container_config as Record<string, unknown>) ?? {}).active_worker_id === 'it-operations-specialist';
   // Feature gating: Marketing, Operations, Voice, AI Marketing Worker
   const HIDDEN_TABS: string[] = [];
   if (!hasMarketingTab) HIDDEN_TABS.push('marketing');
   if (!hasOperationsTab) HIDDEN_TABS.push('integrations');
+  if (!hasItOps) HIDDEN_TABS.push('it-operations');
   const filteredGroups = TAB_GROUPS.map(g => ({
     ...g,
     tabs: g.tabs.filter(t => !HIDDEN_TABS.includes(t.id)),
@@ -481,6 +485,9 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
             <AiSetupTab client={initialClient} clientId={initialClient.id} agencyId={initialClient.agency_id} plan={plan} />
           )}
           {activeTab === 'integrations' && (
+            <IntegrationsTab client={initialClient} onRefresh={() => router.refresh()} />
+          )}
+          {activeTab === 'it-operations' && (
             <ITOperationsTab client={initialClient} />
           )}
           {activeTab === 'settings' && (
