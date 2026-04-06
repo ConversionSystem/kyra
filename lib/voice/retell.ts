@@ -307,7 +307,7 @@ export async function provisionRetellAgent(
   // 3. Voice agent
   const agent = await createAgent({
     agent_name: `${params.clientName} AI`,
-    voice_id: params.voiceId || 'retell-Cimo',
+    voice_id: params.voiceId || '11labs-Adrian',
     response_engine: { type: 'retell-llm', llm_id: llm.llm_id },
     language: params.language || 'en-US',
     voice_speed: 1.0,
@@ -347,7 +347,7 @@ export class RetellClient implements VoiceProviderClient {
 
     const agent = await createAgent({
       agent_name: config.name,
-      voice_id: config.voiceId || 'retell-Cimo',
+      voice_id: config.voiceId || '11labs-Adrian',
       response_engine: { type: 'retell-llm', llm_id: llm.llm_id },
       language: config.language || 'en-US',
       enable_backchannel: true,
