@@ -60,7 +60,7 @@ interface EmailMarketingTabProps {
   client: { id: string; name?: string };
 }
 
-type SubTab = 'campaigns' | 'contacts' | 'templates' | 'analytics';
+type SubTab = 'campaigns' | 'templates' | 'analytics';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -216,7 +216,6 @@ export default function EmailMarketingTab({ client }: EmailMarketingTabProps) {
   const [subTab, setSubTab] = useState<SubTab>('campaigns');
   const subTabs: { id: SubTab; label: string; icon: React.ElementType }[] = [
     { id: 'campaigns', label: 'Campaigns', icon: Send },
-    { id: 'contacts', label: 'Contacts', icon: Users },
     { id: 'templates', label: 'Templates', icon: FileText },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
   ];
@@ -242,7 +241,6 @@ export default function EmailMarketingTab({ client }: EmailMarketingTabProps) {
       </div>
 
       {subTab === 'campaigns' && <CampaignsView clientId={client.id} />}
-      {subTab === 'contacts' && <ContactsView clientId={client.id} />}
       {subTab === 'templates' && <TemplatesView clientId={client.id} />}
       {subTab === 'analytics' && <AnalyticsView clientId={client.id} />}
     </div>
@@ -796,6 +794,7 @@ function TemplatesView({ clientId }: { clientId: string }) {
   const [createForm, setCreateForm] = useState({ name: '', subject: '', html_body: '', category: 'custom' });
   const editTextareaRef = useRef<HTMLTextAreaElement>(null);
   const visualIframeRef = useRef<HTMLIFrameElement>(null);
+  const visualInitRef = useRef(false);
 
   const insertAtCursor = (before: string, after = '', placeholder = '') => {
     const el = editTextareaRef.current;
@@ -820,6 +819,25 @@ function TemplatesView({ clientId }: { clientId: string }) {
   }, [clientId]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Reset visual init when a different template is opened
+  useEffect(() => { visualInitRef.current = false; }, [editing?.id]);
+
+  // Initialize visual editor iframe when switching to visual mode
+  useEffect(() => {
+    if (editMode !== 'visual' || !visualIframeRef.current || visualInitRef.current) return;
+    const iframe = visualIframeRef.current;
+    const timer = setTimeout(() => {
+      const doc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (!doc) return;
+      doc.open();
+      doc.write(editForm.html_body || '<p>Start typing here...</p>');
+      doc.close();
+      (doc as Document & { designMode: string }).designMode = 'on';
+      visualInitRef.current = true;
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [editMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleCreate = async () => {
     await fetch(`/api/agency/clients/${clientId}/email/templates`, {
@@ -850,15 +868,6 @@ function TemplatesView({ clientId }: { clientId: string }) {
   };
 
   const switchToVisual = () => setEditMode('visual');
-
-  const handleVisualLoad = () => {
-    const doc = visualIframeRef.current?.contentDocument;
-    if (!doc) return;
-    doc.open();
-    doc.write(editForm.html_body);
-    doc.close();
-    (doc as Document & { designMode: string }).designMode = 'on';
-  };
 
   const execVisual = (cmd: string, val?: string) => {
     const doc = visualIframeRef.current?.contentDocument;
@@ -1035,7 +1044,6 @@ function TemplatesView({ clientId }: { clientId: string }) {
                 </div>
                 <iframe
                   ref={visualIframeRef}
-                  onLoad={handleVisualLoad}
                   className="flex-1 bg-white"
                   title="Visual editor"
                 />

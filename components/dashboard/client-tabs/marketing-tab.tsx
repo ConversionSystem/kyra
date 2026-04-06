@@ -22,7 +22,6 @@ import {
   Zap,
   TrendingUp,
   MessageSquare,
-  Target,
   Sparkles,
   ChevronDown,
   Star,
@@ -30,7 +29,6 @@ import {
 import type { AgencyClient } from '@/lib/agency/queries';
 import EmailMarketingTab from './email-marketing-tab';
 import CampaignsSubTab from './campaigns-sub-tab';
-import FunnelsSubTab from './funnels-sub-tab';
 import SMSCampaignsSubTab from './sms-campaigns-sub-tab';
 import ReviewsSubTab from './reviews-sub-tab';
 import WorkflowsTab from './workflows-tab';
@@ -38,7 +36,7 @@ import { EmailSequencesDashboard } from '@/app/(dashboard)/agency/email/email-se
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-type SubTab = 'dashboard' | 'seo' | 'content' | 'competitors' | 'social' | 'email' | 'sequences' | 'campaigns' | 'funnels' | 'sms' | 'reviews' | 'workflows';
+type SubTab = 'dashboard' | 'seo' | 'content' | 'competitors' | 'social' | 'email' | 'sequences' | 'campaigns' | 'sms' | 'reviews' | 'workflows';
 
 interface Keyword {
   keyword: string;
@@ -1950,7 +1948,6 @@ const SUB_TABS: { id: SubTab; label: string; icon: React.ElementType }[] = [
   { id: 'sms', label: 'SMS', icon: MessageSquare },
   { id: 'sequences', label: 'Sequences', icon: Mail },
   { id: 'campaigns', label: 'Campaigns', icon: Zap },
-  { id: 'funnels', label: 'Funnels', icon: Target },
   { id: 'reviews', label: 'Reviews', icon: Star },
   { id: 'workflows', label: 'Workflows', icon: Zap },
 ];
@@ -1993,7 +1990,6 @@ export default function MarketingTab({ client }: { client: AgencyClient }) {
       {subTab === 'sequences' && <EmailSequencesDashboard />}
       {subTab === 'sms' && <SMSCampaignsSubTab client={client} />}
       {subTab === 'campaigns' && <CampaignsSubTab client={client} />}
-      {subTab === 'funnels' && <FunnelsSubTab client={client} />}
       {subTab === 'reviews' && <ReviewsSubTab client={client} />}
       {subTab === 'workflows' && <WorkflowsTab client={client} />}
     </div>

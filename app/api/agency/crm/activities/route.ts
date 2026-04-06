@@ -17,6 +17,7 @@ export async function GET(req: NextRequest) {
   if (!agencyId) return NextResponse.json({ error: 'No agency' }, { status: 404 });
 
   const contactId = req.nextUrl.searchParams.get('contactId');
+  const clientId = req.nextUrl.searchParams.get('clientId') || undefined;
   const limit = Number(req.nextUrl.searchParams.get('limit')) || 20;
 
   if (contactId) {
@@ -24,7 +25,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ activities: timeline });
   }
 
-  const activities = await getRecentActivities(agencyId, limit);
+  const activities = await getRecentActivities(agencyId, limit, clientId);
   return NextResponse.json({ activities });
 }
 

@@ -1,7 +1,7 @@
 /**
  * GET /api/agency/crm/analytics — Enhanced CRM Analytics
  */
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
 
 async function getAgencyId(userId: string): Promise<string | null> {
@@ -10,7 +10,7 @@ async function getAgencyId(userId: string): Promise<string | null> {
   return data?.agency_id ?? null;
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -18,15 +18,20 @@ export async function GET() {
   const agencyId = await getAgencyId(user.id);
   if (!agencyId) return NextResponse.json({ error: 'No agency' }, { status: 404 });
 
+  const clientId = req.nextUrl.searchParams.get('clientId') || undefined;
   const svc = createServiceClientWithoutCookies();
 
   // ─── Contacts ───
-  const { data: allContacts } = await svc
+  type ContactRow = { id: string; first_name: string | null; last_name: string | null; stage: string; score: number; score_label: string | null; source: string | null };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let contactsQuery: any = svc
     .from('crm_contacts')
     .select('id, first_name, last_name, stage, score, score_label, source')
     .eq('agency_id', agencyId);
+  if (clientId) contactsQuery = contactsQuery.eq('client_id', clientId);
+  const { data: allContacts } = await contactsQuery as { data: ContactRow[] | null };
 
-  const contacts = allContacts || [];
+  const contacts: ContactRow[] = allContacts || [];
   const byStage: Record<string, number> = {};
   const bySource: Record<string, number> = {};
   const byScore: Record<string, number> = {};
@@ -71,11 +76,21 @@ export async function GET() {
 
   // ─── Activities (last 14 days) ───
   const fourteenDaysAgo = new Date(Date.now() - 14 * 86400000).toISOString();
-  const { data: recentActivities } = await svc
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let activitiesQuery: any = svc
     .from('crm_activities')
     .select('type, created_at')
     .eq('agency_id', agencyId)
     .gte('created_at', fourteenDaysAgo);
+  if (clientId) {
+    const contactIds = contacts.map(c => c.id);
+    if (contactIds.length === 0) {
+      activitiesQuery = activitiesQuery.eq('id', 'no-match');
+    } else {
+      activitiesQuery = activitiesQuery.in('contact_id', contactIds);
+    }
+  }
+  const { data: recentActivities } = await activitiesQuery;
 
   const actByType: Record<string, number> = {};
   const actByDay: Map<string, number> = new Map();

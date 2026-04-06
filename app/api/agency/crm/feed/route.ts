@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { getCommandFeed } from '@/lib/crm/activities';
 
@@ -8,7 +8,7 @@ async function getAgencyId(userId: string): Promise<string | null> {
   return data?.agency_id ?? null;
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -17,7 +17,8 @@ export async function GET() {
     const agencyId = await getAgencyId(user.id);
     if (!agencyId) return NextResponse.json({ error: 'No agency' }, { status: 404 });
 
-    const feed = await getCommandFeed(agencyId);
+    const clientId = req.nextUrl.searchParams.get('clientId') || undefined;
+    const feed = await getCommandFeed(agencyId, clientId);
     return NextResponse.json(feed);
   } catch (err) {
     console.error('[crm/feed] GET error:', err);
