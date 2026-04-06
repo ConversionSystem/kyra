@@ -301,12 +301,6 @@ export async function provisionRetellAgent(
         name: 'end_call',
         description: 'End the call when the conversation is complete or the caller says goodbye.',
       },
-      {
-        type: 'transfer_call',
-        name: 'transfer_to_human',
-        description: 'Transfer the caller to a human team member when they request it or you cannot resolve their issue.',
-        number: '', // Will be configured per client
-      },
     ],
   });
 
