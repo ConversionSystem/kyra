@@ -66,3 +66,38 @@ export async function POST(request: NextRequest, context: RouteContext) {
   if (error) return NextResponse.json({ error: 'Failed to create template' }, { status: 500 });
   return NextResponse.json({ template: data }, { status: 201 });
 }
+
+/**
+ * PATCH /api/agency/clients/[id]/email/templates
+ * Update a template's name, subject, and/or html_body.
+ */
+export async function PATCH(request: NextRequest, context: RouteContext) {
+  const result = await requireAgencyAdmin();
+  if (result.error) return NextResponse.json({ error: result.error.message }, { status: result.error.status });
+
+  const { agency } = result.data;
+  const body = await request.json();
+  const { templateId, name, subject, html_body } = body;
+
+  if (!templateId) {
+    return NextResponse.json({ error: 'Missing required field: templateId' }, { status: 400 });
+  }
+
+  const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  if (name !== undefined) updates.name = name;
+  if (subject !== undefined) updates.subject = subject;
+  if (html_body !== undefined) updates.html_body = html_body;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('email_templates')
+    .update(updates)
+    .eq('id', templateId)
+    .eq('agency_id', agency.id)
+    .select()
+    .single();
+
+  if (error) return NextResponse.json({ error: 'Failed to update template' }, { status: 500 });
+  if (!data) return NextResponse.json({ error: 'Template not found' }, { status: 404 });
+  return NextResponse.json({ template: data });
+}
