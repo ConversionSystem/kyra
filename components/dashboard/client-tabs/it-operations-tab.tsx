@@ -17,14 +17,12 @@ import {
   CheckCircle2,
   ExternalLink,
   Zap,
-  Phone,
 } from 'lucide-react';
 import type { AgencyClient } from '@/lib/agency/queries';
-import VoiceSubTab from './voice-sub-tab';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-type SubTab = 'dashboard' | 'email' | 'files' | 'teams' | 'meetings' | 'code' | 'research' | 'voice';
+type SubTab = 'dashboard' | 'email' | 'files' | 'teams' | 'meetings' | 'code' | 'research';
 
 // ── Connection helpers ────────────────────────────────────────────────────────
 
@@ -521,7 +519,6 @@ const SUB_TABS: { id: SubTab; label: string; icon: React.ElementType }[] = [
   { id: 'meetings', label: 'Meetings', icon: Mic },
   { id: 'code', label: 'Code', icon: GitBranch },
   { id: 'research', label: 'Research', icon: Search },
-  { id: 'voice', label: 'Voice AI', icon: Phone },
 ];
 
 // ── Main Component ────────────────────────────────────────────────────────────
@@ -562,7 +559,6 @@ export default function ITOperationsTab({ client }: { client: AgencyClient }) {
       {subTab === 'meetings' && <MeetingsView client={client} />}
       {subTab === 'code' && <CodeView client={client} />}
       {subTab === 'research' && <ResearchView />}
-      {subTab === 'voice' && <VoiceSubTab client={client} />}
     </div>
   );
 }
