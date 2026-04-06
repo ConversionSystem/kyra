@@ -25,19 +25,15 @@ import {
   Target,
   Sparkles,
   ChevronDown,
-  Star,
 } from 'lucide-react';
+import { Workflow } from 'lucide-react';
 import type { AgencyClient } from '@/lib/agency/queries';
 import EmailMarketingTab from './email-marketing-tab';
-import CampaignsSubTab from './campaigns-sub-tab';
-import FunnelsSubTab from './funnels-sub-tab';
-import SMSCampaignsSubTab from './sms-campaigns-sub-tab';
-import ReviewsSubTab from './reviews-sub-tab';
-import WorkflowsTab from './workflows-tab';
+import { EmailSequencesDashboard } from '@/app/(dashboard)/agency/email/email-sequences-dashboard';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-type SubTab = 'dashboard' | 'seo' | 'content' | 'competitors' | 'social' | 'email' | 'sequences' | 'campaigns' | 'funnels' | 'sms' | 'reviews' | 'workflows';
+type SubTab = 'dashboard' | 'seo' | 'content' | 'competitors' | 'social' | 'email' | 'sequences';
 
 interface Keyword {
   keyword: string;
@@ -1748,7 +1744,7 @@ Make them feel authentic, not salesy. Each should offer genuine value.`;
         <div className="rounded-xl border border-gray-200 bg-white p-5">
           <h3 className="text-sm font-semibold text-gray-900 mb-1">Weekly Calendar</h3>
           <p className="text-xs text-gray-500 mb-4">Click a day to generate content. Filled slots show scheduled drafts.</p>
-          <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
+          <div className="grid grid-cols-7 gap-2">
             {weekDays.map(day => (
               <button
                 key={day.label}
@@ -1855,88 +1851,6 @@ Make them feel authentic, not salesy. Each should offer genuine value.`;
   );
 }
 
-// ── Sequences View ───────────────────────────────────────────────────────────
-
-interface EmailSequence {
-  id: string;
-  name: string;
-  status: string;
-  step_count: number;
-  created_at: string;
-}
-
-function SequencesView({ client }: { client: AgencyClient }) {
-  const [sequences, setSequences] = useState<EmailSequence[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/agency/email/sequences');
-      if (res.ok) { const data = await res.json(); setSequences(Array.isArray(data) ? data : data.sequences || []); }
-    } catch (err) { console.error('[marketing-tab] sequences', err); } finally { setLoading(false); }
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
-
-  const statusBadge = (status: string) => {
-    if (status === 'active') return 'bg-green-100 text-green-700';
-    if (status === 'paused') return 'bg-yellow-100 text-yellow-700';
-    return 'bg-gray-100 text-gray-500';
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-base font-semibold text-gray-900">Email Sequences</h3>
-          <p className="text-xs text-gray-500 mt-0.5">Automated multi-step email campaigns for {client.name}.</p>
-        </div>
-        <button className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
-          <Plus className="w-4 h-4" />Create Sequence
-        </button>
-      </div>
-
-      {loading ? (
-        <div className="flex items-center justify-center py-20"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>
-      ) : sequences.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-200 flex flex-col items-center justify-center py-16 text-center">
-          <Mail className="w-8 h-8 text-gray-300 mb-3" />
-          <p className="text-sm font-medium text-gray-500">No sequences yet</p>
-          <p className="text-xs text-gray-400 mt-1">Create a sequence to start automating your email outreach.</p>
-        </div>
-      ) : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Sequence</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Status</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Steps</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Created</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {sequences.map(seq => (
-                <tr key={seq.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3 font-medium text-gray-900">{seq.name}</td>
-                  <td className="px-4 py-3">
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusBadge(seq.status)}`}>
-                      {seq.status.charAt(0).toUpperCase() + seq.status.slice(1)}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-gray-500">{seq.step_count} steps</td>
-                  <td className="px-4 py-3 text-gray-400">{new Date(seq.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ── Main Component ───────────────────────────────────────────────────────────
 
 const SUB_TABS: { id: SubTab; label: string; icon: React.ElementType }[] = [
@@ -1946,12 +1860,7 @@ const SUB_TABS: { id: SubTab; label: string; icon: React.ElementType }[] = [
   { id: 'competitors', label: 'Competitors', icon: Eye },
   { id: 'social', label: 'Social', icon: Smartphone },
   { id: 'email', label: 'Email', icon: Mail },
-  { id: 'sms', label: 'SMS', icon: MessageSquare },
-  { id: 'sequences', label: 'Sequences', icon: Mail },
-  { id: 'campaigns', label: 'Campaigns', icon: Zap },
-  { id: 'funnels', label: 'Funnels', icon: Target },
-  { id: 'reviews', label: 'Reviews', icon: Star },
-  { id: 'workflows', label: 'Workflows', icon: Zap },
+  { id: 'sequences', label: 'Sequences', icon: Workflow },
 ];
 
 export default function MarketingTab({ client }: { client: AgencyClient }) {
@@ -1965,7 +1874,7 @@ export default function MarketingTab({ client }: { client: AgencyClient }) {
       </div>
 
       {/* Sub-tab navigation */}
-      <div className="flex flex-nowrap gap-1 border-b border-gray-200 overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
+      <div className="flex gap-1 border-b border-gray-200 overflow-x-auto">
         {SUB_TABS.map(t => (
           <button
             key={t.id}
@@ -1989,12 +1898,7 @@ export default function MarketingTab({ client }: { client: AgencyClient }) {
       {subTab === 'competitors' && <CompetitorsView client={client} />}
       {subTab === 'social' && <SocialView client={client} />}
       {subTab === 'email' && <EmailMarketingTab client={client} />}
-      {subTab === 'sequences' && <SequencesView client={client} />}
-      {subTab === 'sms' && <SMSCampaignsSubTab client={client} />}
-      {subTab === 'campaigns' && <CampaignsSubTab client={client} />}
-      {subTab === 'funnels' && <FunnelsSubTab client={client} />}
-      {subTab === 'reviews' && <ReviewsSubTab client={client} />}
-      {subTab === 'workflows' && <WorkflowsTab client={client} />}
+      {subTab === 'sequences' && <EmailSequencesDashboard />}
     </div>
   );
 }
