@@ -7,6 +7,7 @@ import {
   BarChart3, Globe, Volume2, Plus, RefreshCw, Zap,
 } from 'lucide-react';
 import type { AgencyClient } from '@/lib/agency/queries';
+import { RetellWebClient } from 'retell-client-js-sdk';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -68,6 +69,9 @@ export default function RetellVoiceTab({ client }: { client: AgencyClient }) {
   const [outboundNumber, setOutboundNumber] = useState('');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [expandedCall, setExpandedCall] = useState<string | null>(null);
+  const [webCallActive, setWebCallActive] = useState(false);
+  const [webCallStatus, setWebCallStatus] = useState<string>('');
+  const [retellClient] = useState(() => typeof window !== 'undefined' ? new RetellWebClient() : null);
 
   // Load call logs
   const loadCalls = useCallback(async () => {
@@ -84,6 +88,16 @@ export default function RetellVoiceTab({ client }: { client: AgencyClient }) {
   }, [client.id, hasAgent]);
 
   useEffect(() => { loadCalls(); }, [loadCalls]);
+
+  // Set up Retell web call event listeners
+  useEffect(() => {
+    if (!retellClient) return;
+    retellClient.on('call_started', () => { setWebCallStatus('Connected \u2014 speak now'); });
+    retellClient.on('call_ended', () => { setWebCallActive(false); setWebCallStatus('Call ended'); setTimeout(() => setWebCallStatus(''), 3000); loadCalls(); });
+    retellClient.on('agent_start_talking', () => { setWebCallStatus('Agent speaking...'); });
+    retellClient.on('agent_stop_talking', () => { setWebCallStatus('Listening...'); });
+    retellClient.on('error', (error) => { console.error('[retell-web]', error); setWebCallActive(false); setWebCallStatus('Call error'); });
+  }, [retellClient, loadCalls]);
 
   // Create agent
   const handleCreateAgent = async () => {
@@ -159,10 +173,17 @@ export default function RetellVoiceTab({ client }: { client: AgencyClient }) {
     finally { setCalling(false); }
   };
 
-  // Web call test
+  // Web call — start real browser-based voice call
   const handleWebCall = async () => {
+    if (webCallActive && retellClient) {
+      retellClient.stopCall();
+      setWebCallActive(false);
+      setWebCallStatus('');
+      return;
+    }
     setCalling(true);
     setMessage(null);
+    setWebCallStatus('Connecting...');
     try {
       const res = await fetch('/api/voice/retell/calls', {
         method: 'POST',
@@ -170,12 +191,14 @@ export default function RetellVoiceTab({ client }: { client: AgencyClient }) {
         body: JSON.stringify({ clientId: client.id, webCall: true }),
       });
       const data = await res.json();
-      if (res.ok) {
-        setMessage({ type: 'success', text: `Web call created! Use access token to connect: ${data.access_token?.substring(0, 30)}...` });
+      if (res.ok && data.access_token && retellClient) {
+        await retellClient.startCall({ accessToken: data.access_token });
+        setWebCallActive(true);
       } else {
-        setMessage({ type: 'error', text: data.error || 'Failed' });
+        setMessage({ type: 'error', text: data.error || 'Failed to start web call' });
+        setWebCallStatus('');
       }
-    } catch { setMessage({ type: 'error', text: 'Network error' }); }
+    } catch { setMessage({ type: 'error', text: 'Network error — check microphone permissions' }); setWebCallStatus(''); }
     finally { setCalling(false); }
   };
 
@@ -286,18 +309,28 @@ export default function RetellVoiceTab({ client }: { client: AgencyClient }) {
             </div>
 
             {/* Web Call Test */}
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <div className={`bg-white rounded-xl border p-5 ${webCallActive ? 'border-emerald-300 ring-2 ring-emerald-100' : 'border-gray-200'}`}>
               <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <Globe className="w-4 h-4 text-indigo-600" /> Test Voice Agent
+                <Globe className={`w-4 h-4 ${webCallActive ? 'text-emerald-600' : 'text-indigo-600'}`} /> Test Voice Agent
               </h3>
-              <p className="text-xs text-gray-500 mb-3">Start a browser-based voice call to test your AI agent.</p>
+              {webCallStatus && (
+                <div className={`text-xs font-medium mb-3 flex items-center gap-2 ${webCallActive ? 'text-emerald-700' : 'text-gray-500'}`}>
+                  {webCallActive && <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />}
+                  {webCallStatus}
+                </div>
+              )}
+              {!webCallActive && <p className="text-xs text-gray-500 mb-3">Start a browser-based voice call to test your AI agent.</p>}
               <button
                 onClick={handleWebCall}
                 disabled={calling}
-                className="w-full px-4 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                className={`w-full px-4 py-2.5 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
+                  webCallActive
+                    ? 'bg-red-600 text-white hover:bg-red-700'
+                    : 'bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50'
+                }`}
               >
-                {calling ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mic className="w-4 h-4" />}
-                Start Web Call
+                {calling ? <Loader2 className="w-4 h-4 animate-spin" /> : webCallActive ? <Phone className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                {webCallActive ? 'End Call' : 'Start Web Call'}
               </button>
             </div>
           </div>
