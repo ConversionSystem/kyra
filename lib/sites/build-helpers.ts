@@ -225,6 +225,7 @@ export async function assembleSitePages(
         serviceAreasSubtitle: `From ${cities[0]?.name || address.city || 'your area'} to ${cities[cities.length - 1]?.name || 'surrounding areas'}, we provide expert services to homes and businesses.`,
       },
       pageType: p.type,
+      allPages: visiblePages.map(vp => ({ slug: vp.slug, type: vp.type })),
     }),
   }));
 

@@ -207,10 +207,12 @@ export interface AssemblePageOptions {
   serviceSlug?: string;
   /** City name for city pages (used in schema generation) */
   cityName?: string;
+  /** All pages in the site — used to build real nav links for multi-page sites */
+  allPages?: Array<{ slug: string; type: string }>;
 }
 
 export function assemblePage(options: AssemblePageOptions): string {
-  const { recipe, colorVars, designStyle, pageData, siteData, pageType, sectionOrder, sectionOverrides } = options;
+  const { recipe, colorVars, designStyle, pageData, siteData, pageType, sectionOrder, sectionOverrides, allPages } = options;
 
   // P2: Merge variant overrides with recipe defaults
   const effectiveRecipe = { ...recipe };
@@ -259,13 +261,24 @@ export function assemblePage(options: AssemblePageOptions): string {
 
   // Build section HTML
   // Use custom nav links from DB, fall back to defaults
-  const defaultNavLinks = [
-    { label: 'Home', href: '#top' },
-    { label: 'Services', href: '#services' },
-    { label: 'About', href: '#about' },
-    { label: 'Reviews', href: '#testimonials' },
-    { label: 'Contact', href: '#contact' },
-  ];
+  // For multi-page sites, use real page paths; for single-page, use anchors
+  const isMultiPage = allPages && allPages.length > 1;
+  const defaultNavLinks = isMultiPage
+    ? [
+        { label: 'Home', href: '/' },
+        ...(allPages.some(p => p.slug === '/about') ? [{ label: 'About', href: '/about' }] : []),
+        { label: 'Services', href: '/#services' },
+        { label: 'Reviews', href: '/#testimonials' },
+        ...(allPages.some(p => p.type === 'blog' || p.type === 'blog_index') ? [{ label: 'Blog', href: '/blog' }] : []),
+        { label: 'Contact', href: '/#contact' },
+      ]
+    : [
+        { label: 'Home', href: '#top' },
+        { label: 'Services', href: '#services' },
+        { label: 'About', href: '#about' },
+        { label: 'Reviews', href: '#testimonials' },
+        { label: 'Contact', href: '#contact' },
+      ];
   const navbarHtml = navbarFn({
     businessName: siteData.business_name,
     logoUrl: siteData.logoUrl,
