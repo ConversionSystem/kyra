@@ -272,20 +272,11 @@ export interface ProvisionRetellAgentResult {
 export async function provisionRetellAgent(
   params: ProvisionRetellAgentParams,
 ): Promise<ProvisionRetellAgentResult> {
-  // 1. Knowledge base (optional)
-  let knowledgeBaseId: string | undefined;
-  if (params.knowledgeText && params.knowledgeText.length > 50) {
-    const kb = await createKnowledgeBase({
-      knowledge_base_name: `${params.clientName} Knowledge`,
-    });
-    knowledgeBaseId = kb.knowledge_base_id;
+  // Knowledge is injected directly into the system prompt (simpler + more reliable
+  // than Retell's knowledge base API which requires multipart form uploads).
+  // All business info from container_config.instructions goes into the prompt.
 
-    await addKnowledgeBaseSources(knowledgeBaseId, [
-      { type: 'text', content: params.knowledgeText, title: `${params.clientName} Business Info` },
-    ]);
-  }
-
-  // 2. Retell LLM (response engine)
+  // 1. Retell LLM (response engine)
   const systemPrompt = [
     params.persona,
     '',
@@ -303,7 +294,7 @@ export async function provisionRetellAgent(
     model: 'gpt-4o-mini',
     general_prompt: systemPrompt,
     begin_message: params.greeting || `Hi, thanks for calling ${params.clientName}! How can I help you?`,
-    ...(knowledgeBaseId ? { knowledge_base_ids: [knowledgeBaseId] } : {}),
+    // Knowledge is in the system prompt, not a separate KB
     general_tools: [
       {
         type: 'end_call',
@@ -336,7 +327,7 @@ export async function provisionRetellAgent(
   return {
     agentId: agent.agent_id,
     llmId: llm.llm_id,
-    knowledgeBaseId,
+    knowledgeBaseId: undefined,
   };
 }
 
