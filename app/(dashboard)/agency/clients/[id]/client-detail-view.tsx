@@ -639,15 +639,55 @@ function SettingsWithPortal({
 
 function TerminalTab({ client }: { client: AgencyClient }) {
   const hasGateway = !!(client.gateway_url && client.gateway_status === 'running');
+  const [activating, setActivating] = useState(false);
+  const [activateError, setActivateError] = useState<string | null>(null);
+  const router = useRouter();
+
+  const handleActivate = async () => {
+    setActivating(true);
+    setActivateError(null);
+    try {
+      const res = await fetch(`/api/agency/clients/${client.id}/container-config`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'provision' }),
+      });
+      if (res.ok) {
+        // Reload to pick up new gateway status
+        setTimeout(() => router.refresh(), 2000);
+        setTimeout(() => window.location.reload(), 4000);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setActivateError(data.error || 'Failed to activate. Try again.');
+      }
+    } catch {
+      setActivateError('Network error. Please try again.');
+    } finally {
+      setActivating(false);
+    }
+  };
 
   if (!hasGateway) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <Terminal className="h-12 w-12 text-gray-300 mb-4" />
         <h3 className="text-lg font-semibold text-gray-900 mb-2">Terminal Not Available</h3>
-        <p className="text-sm text-gray-500 max-w-md">
-          This client&apos;s AI worker hasn&apos;t been provisioned yet. The terminal will appear once the gateway is running.
+        <p className="text-sm text-gray-500 max-w-md mb-6">
+          This client&apos;s AI worker isn&apos;t running. Activate it to start the terminal.
         </p>
+        <button
+          onClick={handleActivate}
+          disabled={activating}
+          className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+        >
+          {activating ? (
+            <><Loader2 className="h-4 w-4 animate-spin" /> Activating...</>
+          ) : (
+            <><Zap className="h-4 w-4" /> Activate Terminal</>
+          )}
+        </button>
+        {activateError && <p className="text-sm text-red-600 mt-3">{activateError}</p>}
+        {activating && <p className="text-xs text-gray-400 mt-2">This may take 30-60 seconds...</p>}
       </div>
     );
   }
