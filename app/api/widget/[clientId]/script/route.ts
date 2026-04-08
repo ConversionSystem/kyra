@@ -356,50 +356,50 @@ export async function GET(
   }
 
   // Convert AI response to safe HTML — strips markdown, renders links and newlines cleanly
+  // Uses runtime-generated null char placeholders to prevent double-linking
   function formatMsg(raw) {
     var s = raw || '';
-    var linkStore = [];
+    var links = [];
+    var PH = String.fromCharCode(0);
 
-    // 1. Convert markdown links [text](url) → placeholder (to prevent double-linking)
+    // 1. Convert markdown links [text](url) → null-char placeholder
     s = s.replace(/\\[([^\\]]+)\\]\\(([^)]+)\\)/g, function(_, txt, url) {
-      var label = txt.toLowerCase().indexOf('http') === 0 ? 'View Product →' : escHtml(txt);
-      var html = '<a href="' + escHtml(url) + '" target="_blank" rel="noopener" class="kyra-product-link">' + label + '</a>';
-      linkStore.push(html);
-      return '\x01KYRALINK' + (linkStore.length - 1) + '\x01';
+      var label = txt.toLowerCase().indexOf('http') === 0 ? 'View Product \\u2192' : escHtml(txt);
+      links.push('<a href="' + escHtml(url) + '" target="_blank" rel="noopener" class="kyra-product-link">' + label + '</a>');
+      return PH + 'L' + (links.length - 1) + PH;
     });
 
-    // 2. Auto-link bare URLs that weren't already converted in step 1
+    // 2. Auto-link bare URLs not already captured above
     s = s.replace(/(https?:\\/\\/[^\\s<>"]+[^\\s<>.,!?;:"'\\)])/g, function(url) {
-      var label = url.indexOf('/product/') > -1 ? 'View Product →' : 'View →';
-      var html = '<a href="' + url + '" target="_blank" rel="noopener" class="kyra-product-link">' + label + '</a>';
-      linkStore.push(html);
-      return '\x01KYRALINK' + (linkStore.length - 1) + '\x01';
+      var label = url.indexOf('/product/') > -1 ? 'View Product \\u2192' : 'View \\u2192';
+      links.push('<a href="' + escHtml(url) + '" target="_blank" rel="noopener" class="kyra-product-link">' + label + '</a>');
+      return PH + 'L' + (links.length - 1) + PH;
     });
 
-    // 3. Bold → actual bold (product names), Italic → em
+    // 3. Bold and italic (placeholders use null chars — safe from these regexes)
     s = s.replace(/\\*\\*([^*]+)\\*\\*/g, '<strong>$1</strong>');
     s = s.replace(/__([^_]+)__/g, '<strong>$1</strong>');
     s = s.replace(/\\*([^*]+)\\*/g, '<em>$1</em>');
     s = s.replace(/_([^_]+)_/g, '<em>$1</em>');
 
-    // 4. Strip markdown headers (# ## ###)
+    // 4. Strip markdown headers
     s = s.replace(/^#{1,6}\\s+/gm, '');
 
-    // 5. Strip leading bullet dashes/asterisks
-    s = s.replace(/^[\\-\\*•]\\s+/gm, '');
+    // 5. Strip bullet markers
+    s = s.replace(/^[\\-\\*\\u2022]\\s+/gm, '');
 
-    // 6. Strip numbered list markers (1. 2. 3.)
+    // 6. Strip numbered list markers
     s = s.replace(/^\\d+\\.\\s+/gm, '');
 
-    // 7. Collapse 3+ consecutive newlines to 2
+    // 7. Collapse 3+ newlines to 2
     s = s.replace(/\\n{3,}/g, '\\n\\n');
 
-    // 8. Convert newlines to <br>
+    // 8. Newlines to <br>
     s = s.replace(/\\n/g, '<br>');
 
-    // 9. Restore link placeholders with actual HTML
-    for (var i = 0; i < linkStore.length; i++) {
-      s = s.replace('\x01KYRALINK' + i + '\x01', linkStore[i]);
+    // 9. Restore link placeholders
+    for (var i = 0; i < links.length; i++) {
+      s = s.replace(PH + 'L' + i + PH, links[i]);
     }
 
     return s;
