@@ -65,6 +65,8 @@ const CATEGORY_MAP: Record<string, string> = {
   'edibles': 'edible',
   'gummy': 'edible',
   'gummies': 'edible',
+  'gumm': 'edible',
+  'gummie': 'edible',
   'chocolate': 'edible',
   'vape': 'vape',
   'vapes': 'vape',
@@ -311,7 +313,7 @@ export function parseProductIntent(message: string): ProductSearchParams {
   const params: ProductSearchParams = { query: message };
 
   // Category detection
-  const categoryWords = lower.match(/\b(pre.?roll|preroll|joint|blunt|flower|bud|nug|weed|edible|gumm|chocolate|vape|cart|cartridge|extract|concentrate|dab|wax|shatter|rosin|tincture|topical|cream|balm|drink|beverage)\w*/i);
+  const categoryWords = lower.match(/\b(pre.?roll|preroll|joint|blunt|flower|bud|nug|weed|edible|gummy|gummies|gumm\w*|chocolate|vape|cart|cartridge|extract|concentrate|dab|wax|shatter|rosin|tincture|topical|cream|balm|drink|beverage)\w*/i);
   if (categoryWords) {
     const word = categoryWords[1].toLowerCase().replace(/s$/, '');
     params.category = word;
