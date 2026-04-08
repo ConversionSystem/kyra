@@ -397,7 +397,7 @@ export async function POST(request: NextRequest) {
         const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 12000));
         const results = await Promise.race([searchPromise, timeoutPromise]);
         if (results && results.products.length > 0) {
-          productContext = `\n\nPRODUCT SEARCH RESULTS (from live inventory):\n${formatProductsForAI(results.products)}\n\nFORMATTING RULES (STRICT):\n- Recommend 3 products (or all if fewer found)\n- For EACH product use this EXACT compact format:\n  **Product Name** by Brand — $Price\n  Strain type · THC% · One short sentence why it matches\n  [View Product](URL)\n- Keep each product to 2-3 lines MAX. No paragraphs.\n- Start with one short intro sentence, then list products.\n- Total response MUST be under 150 words.`;
+          productContext = `\n\nPRODUCT SEARCH RESULTS (from live inventory):\n${formatProductsForAI(results.products)}\n\nYou MUST format your response EXACTLY like this example (use markdown bold and links):\n\nHere are our top matches:\n\n**Apple Drip** by Caviar Gold — $22.99\nHybrid · THC: 48.1% · Potent and fruity.\n[View Product →](https://plpcsanjose.com/product/143411/caviar-gold-hybrid-apple-drip-1-5g?weight=each)\n\nRULES:\n- Show 3 products minimum\n- Use **bold** for product names\n- Use [View Product →](url) for EVERY product link — NEVER paste raw URLs\n- Each product max 3 lines: name+price, details, link\n- Total response under 120 words\n- One short intro line then products`;
         }
       }
     } catch (e) {
