@@ -358,17 +358,22 @@ export async function GET(
   // Convert AI response to safe HTML — strips markdown, renders links and newlines cleanly
   function formatMsg(raw) {
     var s = raw || '';
+    var linkStore = [];
 
-    // 1. Convert markdown links [text](url) → clickable styled buttons
+    // 1. Convert markdown links [text](url) → placeholder (to prevent double-linking)
     s = s.replace(/\\[([^\\]]+)\\]\\(([^)]+)\\)/g, function(_, txt, url) {
       var label = txt.toLowerCase().indexOf('http') === 0 ? 'View Product →' : escHtml(txt);
-      return '<a href="' + escHtml(url) + '" target="_blank" rel="noopener" class="kyra-product-link">' + label + '</a>';
+      var html = '<a href="' + escHtml(url) + '" target="_blank" rel="noopener" class="kyra-product-link">' + label + '</a>';
+      linkStore.push(html);
+      return '@@KYRA_LINK_' + (linkStore.length - 1) + '@@';
     });
 
-    // 2. Auto-link bare URLs → clickable styled buttons
+    // 2. Auto-link bare URLs that weren't already converted in step 1
     s = s.replace(/(https?:\\/\\/[^\\s<>"]+[^\\s<>.,!?;:"'\\)])/g, function(url) {
       var label = url.indexOf('/product/') > -1 ? 'View Product →' : 'View →';
-      return '<a href="' + url + '" target="_blank" rel="noopener" class="kyra-product-link">' + label + '</a>';
+      var html = '<a href="' + url + '" target="_blank" rel="noopener" class="kyra-product-link">' + label + '</a>';
+      linkStore.push(html);
+      return '@@KYRA_LINK_' + (linkStore.length - 1) + '@@';
     });
 
     // 3. Bold → actual bold (product names), Italic → em
@@ -391,6 +396,11 @@ export async function GET(
 
     // 8. Convert newlines to <br>
     s = s.replace(/\\n/g, '<br>');
+
+    // 9. Restore link placeholders with actual HTML
+    for (var i = 0; i < linkStore.length; i++) {
+      s = s.replace('@@KYRA_LINK_' + i + '@@', linkStore[i]);
+    }
 
     return s;
   }
