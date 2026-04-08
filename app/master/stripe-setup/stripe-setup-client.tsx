@@ -14,6 +14,7 @@ interface EnvStatus {
   STRIPE_PRO_PRICE_ID: boolean;
   STRIPE_SCALE_PRICE_ID: boolean;
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: boolean;
+  STRIPE_WEBHOOK_REGISTERED: boolean;
 }
 
 interface TestResult {
@@ -112,7 +113,7 @@ export default function StripeSetupClient() {
       case 1: return env.STRIPE_SECRET_KEY;
       case 2: return env.STRIPE_LITE_PRICE_ID && env.STRIPE_PRO_PRICE_ID && env.STRIPE_SCALE_PRICE_ID;
       case 3: return env.STRIPE_SECRET_KEY && env.STRIPE_WEBHOOK_SECRET && env.STRIPE_LITE_PRICE_ID && env.STRIPE_PRO_PRICE_ID && env.STRIPE_SCALE_PRICE_ID && env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-      case 4: return env.STRIPE_WEBHOOK_SECRET;
+      case 4: return env.STRIPE_WEBHOOK_SECRET && env.STRIPE_WEBHOOK_REGISTERED;
       case 5: return testResult?.ok ?? false;
       default: return false;
     }
@@ -242,7 +243,7 @@ export default function StripeSetupClient() {
             </p>
             <div className="mt-2">
               <span className="text-[10px] text-gray-500 uppercase tracking-wider">Endpoint URL</span>
-              <CopyBox text="https://kyra.conversionsystem.com/api/stripe/webhooks" />
+              <CopyBox text="https://kyra.conversionsystem.com/api/webhooks/stripe" />
             </div>
             <div className="mt-3">
               <span className="text-[10px] text-gray-500 uppercase tracking-wider">Events to listen for</span>
@@ -258,6 +259,26 @@ export default function StripeSetupClient() {
             <p className="text-xs text-gray-500 mt-3">
               After creating the webhook, copy the <strong className="text-gray-400">Signing Secret</strong> and set it as <code className="text-indigo-400">STRIPE_WEBHOOK_SECRET</code>.
             </p>
+            {env && (
+              <div className="mt-3 space-y-1">
+                <div className="flex items-center gap-2 text-xs">
+                  {env.STRIPE_WEBHOOK_REGISTERED
+                    ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                    : <Circle className="h-3.5 w-3.5 text-gray-600" />}
+                  <span className={env.STRIPE_WEBHOOK_REGISTERED ? 'text-emerald-300' : 'text-gray-500'}>
+                    {env.STRIPE_WEBHOOK_REGISTERED
+                      ? 'Webhook endpoint active in Stripe'
+                      : 'Webhook not yet registered in Stripe'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  {env.STRIPE_WEBHOOK_SECRET
+                    ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                    : <Circle className="h-3.5 w-3.5 text-gray-600" />}
+                  <span className={env.STRIPE_WEBHOOK_SECRET ? 'text-gray-300' : 'text-gray-500'}>STRIPE_WEBHOOK_SECRET</span>
+                </div>
+              </div>
+            )}
             <ExtLink href="https://dashboard.stripe.com/webhooks">Open Stripe Webhooks</ExtLink>
           </StepCard>
 
