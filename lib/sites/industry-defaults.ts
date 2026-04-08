@@ -597,6 +597,23 @@ export const INDUSTRY_DEFAULTS: Record<string, IndustryDefault> = {
     defaultPageCount: 15,
     nearbyCities: [],
   },
+  telecom: {
+    label: 'Telecom / IT Services',
+    services: [
+      { name: 'POTS Replacement', slug: 'pots-replacement' },
+      { name: 'Voice Solutions', slug: 'voice-solutions' },
+      { name: 'Internet Connectivity', slug: 'internet-connectivity' },
+      { name: 'Mobility Solutions', slug: 'mobility-solutions' },
+      { name: 'Fleet Management', slug: 'fleet-management' },
+      { name: 'IP-PBX', slug: 'ip-pbx' },
+    ],
+    designStyle: 'modern-dark',
+    colors: { primary: '#2563eb', secondary: '#1e3a5f' },
+    aiName: 'Nex',
+    needsGeoPages: false,
+    defaultPageCount: 15,
+    nearbyCities: [],
+  },
 };
 
 export const DESIGN_STYLES = [

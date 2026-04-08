@@ -230,6 +230,24 @@ export const TEMPLATE_GALLERY: TemplatePreview[] = [
     previewColors: { primary: '#1d4ed8', secondary: '#eff6ff' },
     previewHtml: '<div style="background:#eff6ff;padding:16px;font-family:system-ui;height:100%"><div style="background:#fff;border:1px solid #bfdbfe;border-radius:8px;padding:10px;margin-bottom:6px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><div style="width:28px;height:28px;background:#1d4ed8;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0"><div style="color:#fff;font-size:11px;font-weight:800">✓</div></div><div><div style="color:#1e3a8a;font-size:11px;font-weight:700">Licensed &amp; Certified</div><div style="color:#3b82f6;font-size:8px">⭐⭐⭐⭐⭐ 4.9 · 300+ reviews</div></div></div><div style="color:#374151;font-size:9px;margin-bottom:8px;line-height:1.4">Trusted professionals protecting what matters most.</div><div style="background:#1d4ed8;color:#fff;display:inline-block;padding:5px 12px;border-radius:4px;font-size:9px;font-weight:600">Free Consultation</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px"><div style="background:#fff;border:1px solid #bfdbfe;border-radius:4px;padding:5px;text-align:center"><div style="color:#1d4ed8;font-size:9px;font-weight:800">BBB A+</div></div><div style="background:#fff;border:1px solid #bfdbfe;border-radius:4px;padding:5px;text-align:center"><div style="color:#1d4ed8;font-size:9px;font-weight:800">25 Yrs</div></div></div></div>',
   },
+  {
+    id: 'tech-enterprise',
+    name: 'Tech Enterprise',
+    description: 'Professional B2B tech/telecom layout with dark hero, service grid, and partner showcase',
+    industries: ['telecom', 'it-services', 'technology', 'consulting'],
+    recipe: {
+      hero: 'gradient-overlay',
+      services: 'grid-3col',
+      about: 'photo-split',
+      testimonials: 'grid-cards',
+      cta: 'split-offer',
+      faq: 'accordion',
+      footer: 'four-column',
+      navbar: 'sticky-white',
+    },
+    previewColors: { primary: '#2563eb', secondary: '#1e3a5f' },
+    previewHtml: '<div style="background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 50%,#0f172a 100%);padding:16px;font-family:system-ui;height:100%"><div style="background:rgba(37,99,235,0.1);border:1px solid rgba(37,99,235,0.3);border-radius:8px;padding:12px 14px;margin-bottom:8px"><div style="color:rgba(37,99,235,0.8);font-size:8px;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:4px">Enterprise Solutions</div><div style="color:#fff;font-size:14px;font-weight:800;margin-bottom:4px;line-height:1.2">Modern Solutions<br/>for Modern Business</div><div style="color:rgba(255,255,255,0.6);font-size:9px;margin-bottom:10px">Managed telecom &amp; connectivity services</div><div style="display:flex;gap:6px"><div style="background:#2563eb;color:#fff;padding:5px 12px;border-radius:4px;font-size:9px;font-weight:700">Contact Us</div><div style="border:1px solid rgba(255,255,255,0.4);color:#fff;padding:5px 12px;border-radius:4px;font-size:9px">Our Services</div></div></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px"><div style="background:rgba(37,99,235,0.08);border:1px solid rgba(37,99,235,0.2);border-radius:4px;padding:6px;text-align:center"><div style="color:#60a5fa;font-size:9px;font-weight:700">Voice</div><div style="color:rgba(255,255,255,0.4);font-size:7px">Solutions</div></div><div style="background:rgba(37,99,235,0.08);border:1px solid rgba(37,99,235,0.2);border-radius:4px;padding:6px;text-align:center"><div style="color:#60a5fa;font-size:9px;font-weight:700">Internet</div><div style="color:rgba(255,255,255,0.4);font-size:7px">Connectivity</div></div><div style="background:rgba(37,99,235,0.08);border:1px solid rgba(37,99,235,0.2);border-radius:4px;padding:6px;text-align:center"><div style="color:#60a5fa;font-size:9px;font-weight:700">IoT</div><div style="color:rgba(255,255,255,0.4);font-size:7px">Mobility</div></div></div></div>',
+  },
 ];
 
 /** Get templates sorted by relevance to a given industry */

@@ -357,6 +357,16 @@ export const INDUSTRY_RECIPES: Record<string, SectionRecipe> = {
     footer: 'four-column',
     navbar: 'sticky-white',
   },
+  telecom: {
+    hero: 'gradient-overlay',
+    services: 'grid-3col',
+    about: 'photo-split',
+    testimonials: 'grid-cards',
+    cta: 'split-offer',
+    faq: 'accordion',
+    footer: 'four-column',
+    navbar: 'sticky-white',
+  },
 };
 
 /** Get recipe for an industry, falling back to a sensible default */
