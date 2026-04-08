@@ -253,7 +253,7 @@ export async function GET(
   panel.innerHTML = [
     '<div id="kyra-widget-header">',
     '  <div class="avatar">' + AVATAR + '</div>',
-    '  <div class="info"><div class="title">' + TITLE + '</div><div class="subtitle"><span class="online-dot"></span>Online · Viewing: ' + (location.pathname === '/' ? 'Home' : location.pathname) + '</div></div>',
+    '  <div class="info"><div class="title">' + TITLE + '</div><div class="subtitle"><span class="online-dot"></span>Online · Ready to help</div></div>',
     '  <button class="close-btn" aria-label="Close chat">✕</button>',
     '</div>',
     '<div id="kyra-widget-messages"></div>',
