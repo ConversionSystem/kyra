@@ -189,20 +189,10 @@ export async function POST(request: NextRequest) {
     clientModel = resolvedModel.includes('/') ? resolvedModel.split('/').slice(1).join('/') : resolvedModel;
   }
 
-  // ── Smart routing: downgrade to mini for simple/medium messages ───────────
+  // ── Smart routing (initial — may be overridden after cfg is loaded) ──────
   const complexity = classifyMessage(message.trim());
-  // Product queries and escalations always use configured model — GPT-4o-mini can't handle
-  // structured product recommendations or nuanced escalation with phone numbers
-  const janeActive = !!(cfg.jane_api_key || cfg.firecrawl_enabled);
-  let isProduct = false;
-  if (janeActive) {
-    try {
-      const { isProductQuery } = await import('@/lib/integrations/jane');
-      isProduct = isProductQuery(message.trim());
-    } catch { /* ignore */ }
-  }
-  const forceFullModel = isProduct || /delivery.*late|charged|wrong item|missing|refund|complain|cancel|dispute|lawsuit/i.test(message);
-  const routedModel = (complexity === 'complex' || forceFullModel) ? clientModel : 'openai/gpt-4o-mini';
+  const escalationPattern = /delivery.*late|charged|wrong item|missing|refund|complain|cancel|dispute|lawsuit/i.test(message);
+  let routedModel = (complexity === 'complex' || escalationPattern) ? clientModel : 'openai/gpt-4o-mini';
 
   // ── Model-aware credit check ──────────────────────────────────────────────
   const widgetPreflightCost = getCreditsForModel(routedModel);
@@ -243,6 +233,18 @@ export async function POST(request: NextRequest) {
   }
 
   const cfg = (client.container_config as Record<string, unknown>) ?? {};
+
+  // ── Override smart routing for product queries (needs configured model, not mini) ──
+  const janeActive = !!(cfg.jane_api_key || cfg.firecrawl_enabled);
+  if (janeActive && routedModel !== clientModel) {
+    try {
+      const { isProductQuery } = await import('@/lib/integrations/jane');
+      if (isProductQuery(message.trim())) {
+        routedModel = clientModel;
+      }
+    } catch { /* ignore */ }
+  }
+
   const persona = (cfg.persona as string) || `AI assistant for ${client.name}`;
   const businessName = (cfg.business_name as string) || client.name;
   const customInstructions = (cfg.instructions as string) || '';
