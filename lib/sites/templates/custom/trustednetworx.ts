@@ -129,9 +129,8 @@ function renderNavbar(site: Record<string, any>, allPages: Record<string, any>[]
     ? `<img src="${esc(logoUrl)}" alt="${esc(name)} Logo" class="h-8 w-8" />`
     : SVG.logo;
 
-  const desktopLinks = navLinks
-    ? navLinks.map(l => `<a href="${esc(l.href)}" class="text-gray-700 hover:text-blue-600">${esc(l.label)}</a>`).join('\n            ')
-    : `<a href="/" class="text-gray-700 hover:text-blue-600">Home</a>
+  // Desktop: always 4 items — Home, Solutions (dropdown), About, Contact
+  const desktopLinks = `<a href="/" class="text-gray-700 hover:text-blue-600">Home</a>
             <div class="relative" id="solutions-dropdown">
               <button class="text-gray-700 hover:text-blue-600" onclick="toggleDropdown()" onmouseenter="openDropdown()">Solutions</button>
               <div id="solutions-menu" class="hidden absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 animate-fadeIn" onmouseleave="closeDropdown()">
@@ -141,6 +140,7 @@ function renderNavbar(site: Record<string, any>, allPages: Record<string, any>[]
             <a href="/about" class="text-gray-700 hover:text-blue-600">About</a>
             <a href="/contact" class="text-gray-700 hover:text-blue-600">Contact</a>`;
 
+  // Mobile: all links flat (no dropdown)
   const mobileLinks = navLinks
     ? navLinks.map(l => `<a href="${esc(l.href)}" class="block px-3 py-2 text-gray-700 hover:bg-blue-50">${esc(l.label)}</a>`).join('\n          ')
     : [
