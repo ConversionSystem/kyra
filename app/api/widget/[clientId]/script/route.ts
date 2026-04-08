@@ -365,7 +365,7 @@ export async function GET(
       var label = txt.toLowerCase().indexOf('http') === 0 ? 'View Product →' : escHtml(txt);
       var html = '<a href="' + escHtml(url) + '" target="_blank" rel="noopener" class="kyra-product-link">' + label + '</a>';
       linkStore.push(html);
-      return '@@KYRA_LINK_' + (linkStore.length - 1) + '@@';
+      return '\x01KYRALINK' + (linkStore.length - 1) + '\x01';
     });
 
     // 2. Auto-link bare URLs that weren't already converted in step 1
@@ -373,7 +373,7 @@ export async function GET(
       var label = url.indexOf('/product/') > -1 ? 'View Product →' : 'View →';
       var html = '<a href="' + url + '" target="_blank" rel="noopener" class="kyra-product-link">' + label + '</a>';
       linkStore.push(html);
-      return '@@KYRA_LINK_' + (linkStore.length - 1) + '@@';
+      return '\x01KYRALINK' + (linkStore.length - 1) + '\x01';
     });
 
     // 3. Bold → actual bold (product names), Italic → em
@@ -399,7 +399,7 @@ export async function GET(
 
     // 9. Restore link placeholders with actual HTML
     for (var i = 0; i < linkStore.length; i++) {
-      s = s.replace('@@KYRA_LINK_' + i + '@@', linkStore[i]);
+      s = s.replace('\x01KYRALINK' + i + '\x01', linkStore[i]);
     }
 
     return s;
