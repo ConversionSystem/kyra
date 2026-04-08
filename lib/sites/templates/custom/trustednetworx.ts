@@ -21,6 +21,7 @@ const IMG = {
   mobile:        'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=1920&q=80',
   fleet:         'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=1920&q=80',
   internetFiber: 'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=1920&q=80',
+  telecomDevice: 'https://images.unsplash.com/photo-1606765962248-7ff407b51667?w=800&q=80',
 };
 
 // ---------------------------------------------------------------------------
@@ -39,6 +40,8 @@ const SVG = {
   users32: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
   zap32: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>`,
   award32: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526"/><circle cx="12" cy="8" r="6"/></svg>`,
+  // Inline logo SVG (simplified shield+check — replaces /logo.svg which won't exist on hosted pages)
+  logo: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="currentColor" class="h-8 w-8"><path d="M12 2L3 7v5c0 6.5 3.6 12.4 9 15 5.4-2.6 9-8.5 9-15V7l-9-5zm-1 15.9l-3.5-3.5 1.4-1.4L11 15.1l5.1-5.1 1.4 1.4L11 17.9z"/></svg>`,
   // Small 24px icon used in benefits lists
   icon24: (name: string) => `<i data-lucide="${name}" class="h-6 w-6 text-blue-600 flex-shrink-0"></i>`,
   // 32px for feature cards via Lucide CDN
@@ -124,7 +127,7 @@ function renderNavbar(site: Record<string, any>, allPages: Record<string, any>[]
 
   const logoHtml = logoUrl
     ? `<img src="${esc(logoUrl)}" alt="${esc(name)} Logo" class="h-8 w-8" />`
-    : `<img src="/logo.svg" alt="${esc(name)} Logo" class="h-8 w-8" />`;
+    : SVG.logo;
 
   const desktopLinks = navLinks
     ? navLinks.map(l => `<a href="${esc(l.href)}" class="text-gray-700 hover:text-blue-600">${esc(l.label)}</a>`).join('\n            ')
@@ -187,7 +190,7 @@ function renderFooter(site: Record<string, any>, allPages: Record<string, any>[]
 
   const logoHtml = logoUrl
     ? `<img src="${esc(logoUrl)}" alt="${esc(name)} Logo" class="h-8 w-8" />`
-    : `<img src="/logo.svg" alt="${esc(name)} Logo" class="h-8 w-8" />`;
+    : SVG.logo;
 
   const solutionLinks = services.length
     ? services.map(s => `<li><a href="/${esc(s.slug)}" class="text-gray-400 hover:text-white">${esc(s.name)}</a></li>`).join('\n              ')
@@ -354,7 +357,7 @@ function getFaq(page: Record<string, any>): { question: string; answer: string }
 // ---------------------------------------------------------------------------
 function homeContent(site: Record<string, any>, page: Record<string, any>, allPages: Record<string, any>[]): string {
   const name = (site.business_name as string) || 'TrustedNetworx';
-  const h1 = (page.hero_h1 as string) || 'Modern Solutions for<br/>Modern Business';
+  const h1 = (page.hero_h1 as string) || '<span class="block">Modern Solutions for</span><span class="block text-blue-200">Modern Business</span>';
   const subtitle = (page.hero_subtitle as string) || `${name} Managed Solution Provider`;
   const ctaText = (page.hero_cta_text as string) || 'Learn More';
   const ctaLink = (page.hero_cta_link as string) || '/contact';
@@ -384,7 +387,7 @@ function homeContent(site: Record<string, any>, page: Record<string, any>, allPa
                       <h3 class="text-xl font-bold text-gray-900">${esc(s.name)}</h3>
                       <p class="mt-2 text-gray-600 flex-grow">${esc(s.description)}</p>
                       <div class="mt-4 flex items-center justify-center text-blue-600">
-                        Learn more ${SVG.arrowRight}
+                        Learn more <i data-lucide="arrow-right" class="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform"></i>
                       </div>
                     </div>
                   </a>`).join('');
@@ -478,6 +481,25 @@ function homeContent(site: Record<string, any>, page: Record<string, any>, allPa
           </div>
         </div>
 
+        <!-- Our Trusted Partners -->
+        <div class="relative py-16 bg-white-50">
+          <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-6">
+              <h2 class="text-3xl font-extrabold text-gray-900 sm:text-4xl">Our Trusted Partners</h2>
+            </div>
+            <div class="w-full">
+              <div class="glass-morphism rounded-2xl p-8">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-8 items-center justify-items-center">
+                  <div class="text-center"><span class="text-xl font-bold text-gray-700">DataRemote</span></div>
+                  <div class="text-center"><span class="text-xl font-bold text-gray-700">MetTel</span></div>
+                  <div class="text-center"><span class="text-xl font-bold text-gray-700">Mix Networks</span></div>
+                  <div class="text-center"><span class="text-xl font-bold text-gray-700">Velocity</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- CTA -->
         <div class="relative bg-blue-600">
           <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:py-16 lg:px-8 lg:flex lg:items-center lg:justify-between">
@@ -502,7 +524,7 @@ function aboutContent(site: Record<string, any>, page: Record<string, any>): str
   const subtitle = (page.hero_subtitle as string) || 'Connecting Businesses with Cutting-Edge Telecommunication Services';
   const sections = getSections(page);
 
-  const leadingFutureBody = sections[0]?.body || `With over 25 years of experience in the telecom and IoT industries, <a href="/" class="text-blue-600 hover:text-blue-800 font-semibold">${esc(name)}</a> specializes in delivering advanced connectivity solutions that drive business success. Our expertise spans IoT, M2M, cloud computing, and enterprise communication solutions, enabling organizations to modernize their infrastructure, optimize operations, and stay ahead in a rapidly evolving digital landscape.`;
+  const leadingFutureBody = sections[0]?.body || `With over 25 years of experience in the telecom and IoT industries, <a href="https://trustednetworx.com" class="text-blue-600 hover:text-blue-800 font-semibold"> ${esc(name)}</a> specializes in delivering advanced connectivity solutions that drive business success. Our expertise spans IoT, M2M, cloud computing, and enterprise communication solutions, enabling organizations to modernize their infrastructure, optimize operations, and stay ahead in a rapidly evolving digital landscape.`;
   const partnerBody = sections[1]?.body || `Having worked with industry leaders such as AT&amp;T, Verizon, T-Mobile, US Cellular, MetTel Fusion Connect, Xirgo Technologies, DataRemote and many more, we have a proven track record of expanding market presence, forming strategic partnerships, and delivering scalable telecom solutions. From POTS line replacement and enterprise mobility to IoT connectivity and managed services, we help businesses transition to next-generation networks with confidence.`;
 
   return `
@@ -535,6 +557,16 @@ function aboutContent(site: Record<string, any>, page: Record<string, any>): str
             <div class="glass-morphism rounded-2xl p-8 text-center">
               <h2 class="text-3xl font-extrabold text-gray-900 sm:text-4xl mb-8">${sections[1]?.heading || 'Your Trusted Telecom Partner'}</h2>
               <p class="mt-4 text-lg text-gray-600 pe-12">${partnerBody}</p>
+              <div class="my-8 glass-morphism rounded-2xl p-8">
+                <div class="w-full">
+                  <div class="grid grid-cols-2 md:grid-cols-4 gap-8 items-center justify-items-center">
+                    <div class="text-center"><span class="text-xl font-bold text-gray-700">DataRemote</span></div>
+                    <div class="text-center"><span class="text-xl font-bold text-gray-700">MetTel</span></div>
+                    <div class="text-center"><span class="text-xl font-bold text-gray-700">Mix Networks</span></div>
+                    <div class="text-center"><span class="text-xl font-bold text-gray-700">Velocity</span></div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -585,9 +617,11 @@ function potsContent(site: Record<string, any>, page: Record<string, any>): stri
   const subtitle = (page.hero_subtitle as string) || 'Modern alternatives to traditional phone lines for your business';
   const ctaText = (page.hero_cta_text as string) || 'Learn More';
 
+  const potsBoxHtml = `<div class="w-48 mx-auto mb-4 text-white font-extrabold text-2xl tracking-wider">POTS IN A BOX<sup>&reg;</sup></div>`;
+
   return `
     <div class="bg-white">
-      ${heroSection(IMG.serverRoom, h1, subtitle, ctaText, '/contact')}
+      ${heroSection(IMG.serverRoom, h1, subtitle, ctaText, '/contact', potsBoxHtml)}
 
       <div class="relative">
         ${decorativeBg()}
@@ -628,10 +662,10 @@ function potsContent(site: Record<string, any>, page: Record<string, any>): stri
               <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
                 <div class="prose prose-lg">
                   <h3 class="text-3xl font-bold text-left">POTS IN A BOX&reg;</h3>
-                  <p class="mt-4 text-lg text-gray-600">POTS IN A BOX&reg; is a cutting-edge POTS line replacement solution that enables seamless migration of legacy PSTN-based analog systems to modern IP and cellular data networks, supporting voice, fax, alarm signals, and emergency communications. Featuring cost-effective, plug-and-play cellular routers, it delivers versatile business continuity and reliable telecommunications for today&#8217;s evolving industry.</p>
+                  <p class="mt-4 text-lg text-gray-600"><a href="https://dataremote.com/pots-line-replacement/" target="_blank" class="text-blue-600 hover:text-blue-800 font-semibold" title="DataRemote POTS IN A BOX&reg;">POTS IN A BOX&reg;</a> is a cutting-edge POTS line replacement solution that enables seamless migration of legacy PSTN-based analog systems to modern IP and cellular data networks, supporting voice, fax, alarm signals, and emergency communications. Featuring cost-effective, plug-and-play cellular routers, it delivers versatile business continuity and reliable telecommunications for today&#8217;s evolving industry.</p>
                 </div>
                 <div class="flex justify-center rounded-2xl">
-                  <img src="${IMG.circuitBoard}" alt="POTS IN A BOX Solution Diagram" class="max-w-full h-auto rounded-lg" />
+                  <img src="${IMG.telecomDevice}" alt="POTS IN A BOX Solution Diagram" class="max-w-full h-auto rounded-lg" />
                 </div>
               </div>
             </div>
@@ -804,7 +838,7 @@ function internetContent(site: Record<string, any>, page: Record<string, any>): 
 
   return `
     <div class="bg-gray-50">
-      ${heroSection(IMG.internetFiber, h1, subtitle, 'Learn More', '/contact')}
+      ${heroSection(IMG.internetFiber, h1, subtitle, 'Learn More', 'mailto:carter@trustednetworx.com')}
 
       <div class="relative">
         ${decorativeBg()}
@@ -832,7 +866,7 @@ function internetContent(site: Record<string, any>, page: Record<string, any>): 
                 </div>
                 <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
                   <div class="flex items-center"><i data-lucide="globe" class="h-8 w-8 text-blue-600 flex-shrink-0"></i><h3 class="text-xl font-bold text-gray-900 ml-4">Satellite Broadband</h3></div>
-                  <p class="mt-4 text-gray-600">As an authorized reseller of Starlink services and equipment, we provide high-speed, low-latency broadband internet access, even in remote locations. This ensures your business remains connected, regardless of geography.</p>
+                  <p class="mt-4 text-gray-600">As an authorized reseller of <a href="https://www.starlink.com" target="_blank"><b>Starlink</b></a> services and equipment, we provide high-speed, low-latency broadband internet access, even in remote locations. This ensures your business remains connected, regardless of geography.</p>
                 </div>
                 <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
                   <div class="flex items-center"><i data-lucide="signal" class="h-8 w-8 text-blue-600 flex-shrink-0"></i><h3 class="text-xl font-bold text-gray-900 ml-4">IoT Single SIM</h3></div>
