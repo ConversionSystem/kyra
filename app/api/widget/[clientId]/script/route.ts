@@ -29,7 +29,7 @@ function getIndustryQuickReplies(industry: string, cfg: Record<string, unknown>)
 
   // Cannabis / Dispensary — Terpli-style effect buttons
   if (lower.includes('cannabis') || lower.includes('dispensary')) {
-    return ['😌 Relaxation', '😴 Sleep', '⚡ Energy', '💆 Pain Relief', '🎨 Creativity'];
+    return ['😌 Products for relaxation', '😴 Products for sleep', '⚡ Energizing products', '💆 Pain relief products', '🎨 Products for creativity'];
   }
   // Dental
   if (lower.includes('dental') || lower.includes('dentist')) {
