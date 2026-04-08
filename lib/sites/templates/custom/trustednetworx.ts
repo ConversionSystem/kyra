@@ -357,7 +357,13 @@ function getFaq(page: Record<string, any>): { question: string; answer: string }
 // ---------------------------------------------------------------------------
 function homeContent(site: Record<string, any>, page: Record<string, any>, allPages: Record<string, any>[]): string {
   const name = (site.business_name as string) || 'TrustedNetworx';
-  const h1 = (page.hero_h1 as string) || '<span class="block">Modern Solutions for</span><span class="block text-blue-200">Modern Business</span>';
+  let h1 = (page.hero_h1 as string) || 'Modern Solutions for Modern Business';
+  // Split the original two-line hero format
+  if (h1.includes('Modern Solutions for Modern Business')) {
+    h1 = '<span class="block">Modern Solutions for</span><span class="block text-blue-200">Modern Business</span>';
+  } else if (!h1.includes('<span')) {
+    h1 = esc(h1);
+  }
   const subtitle = (page.hero_subtitle as string) || `${name} Managed Solution Provider`;
   const ctaText = (page.hero_cta_text as string) || 'Learn More';
   const ctaLink = (page.hero_cta_link as string) || '/contact';
