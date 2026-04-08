@@ -25,54 +25,66 @@ function getSupabase() {
 function getIndustryQuickReplies(industry: string, cfg: Record<string, unknown>): string[] {
   const lower = (industry || '').toLowerCase();
   const hasBooking = !!(cfg.calendar_url || cfg.booking_url);
-  const bookBtn = hasBooking ? 'Book an appointment' : 'How can I contact you?';
+  const bookBtn = hasBooking ? '📅 Book Now' : '📞 Contact Us';
 
-  // Cannabis / Dispensary
+  // Cannabis / Dispensary — Terpli-style effect buttons
   if (lower.includes('cannabis') || lower.includes('dispensary')) {
-    return ['What products do you carry?', 'What are your hours?', 'Where are you located?', 'Do you offer delivery?'];
+    return ['😌 Relaxation', '😴 Sleep', '⚡ Energy', '💆 Pain Relief', '🎨 Creativity'];
   }
   // Dental
   if (lower.includes('dental') || lower.includes('dentist')) {
-    return ['What services do you offer?', 'Do you accept my insurance?', bookBtn, 'What are your hours?'];
+    return ['🦷 Services', '🏥 Insurance', bookBtn, '🕐 Hours'];
   }
   // HVAC / Plumbing / Electrical / Home Services
   if (lower.includes('hvac') || lower.includes('plumbing') || lower.includes('electrical') || lower.includes('roofing') || lower.includes('cleaning')) {
-    return ['I need a repair', 'Get a free estimate', 'Do you offer emergency service?', 'What areas do you serve?'];
+    return ['🔧 Need a Repair', '💰 Free Estimate', '🚨 Emergency', '📍 Service Areas'];
   }
   // Legal
   if (lower.includes('legal') || lower.includes('law') || lower.includes('attorney')) {
-    return ['What areas of law do you practice?', 'Do you offer free consultations?', bookBtn, 'What are your fees?'];
+    return ['⚖️ Practice Areas', '🆓 Free Consult', bookBtn, '💰 Fees'];
   }
   // Real Estate
   if (lower.includes('real estate') || lower.includes('realty')) {
-    return ['I\'m looking to buy', 'I want to sell my home', 'What areas do you serve?', bookBtn];
+    return ['🏠 Buy a Home', '💵 Sell My Home', '📍 Areas', bookBtn];
   }
   // Medical / Med Spa / Healthcare
   if (lower.includes('medical') || lower.includes('med spa') || lower.includes('medspa') || lower.includes('health')) {
-    return ['What treatments do you offer?', bookBtn, 'What are your hours?', 'Do you accept insurance?'];
+    return ['💊 Treatments', bookBtn, '🕐 Hours', '🏥 Insurance'];
   }
   // Restaurant / Food
   if (lower.includes('restaurant') || lower.includes('food') || lower.includes('cafe') || lower.includes('bakery')) {
-    return ['What\'s on your menu?', 'What are your hours?', 'Do you take reservations?', 'Where are you located?'];
+    return ['🍽️ Menu', '🕐 Hours', '📅 Reservations', '📍 Location'];
   }
   // Fitness / Gym
   if (lower.includes('gym') || lower.includes('fitness') || lower.includes('martial')) {
-    return ['What classes do you offer?', 'How much is a membership?', 'Can I try a free class?', 'What are your hours?'];
+    return ['🏋️ Classes', '💰 Membership', '🆓 Free Trial', '🕐 Hours'];
   }
   // Salon / Spa / Beauty
   if (lower.includes('salon') || lower.includes('spa') || lower.includes('beauty') || lower.includes('hair')) {
-    return ['What services do you offer?', bookBtn, 'What are your prices?', 'Where are you located?'];
+    return ['💇 Services', bookBtn, '💰 Prices', '📍 Location'];
+  }
+  // Automotive
+  if (lower.includes('auto') || lower.includes('car') || lower.includes('mechanic') || lower.includes('body shop')) {
+    return ['🔧 Services', '💰 Get a Quote', '🚗 Drop-off', '🕐 Hours'];
+  }
+  // Pet / Vet
+  if (lower.includes('pet') || lower.includes('vet') || lower.includes('animal') || lower.includes('grooming')) {
+    return ['🐾 Services', bookBtn, '🆘 Emergency', '🕐 Hours'];
+  }
+  // Education / Tutoring
+  if (lower.includes('school') || lower.includes('tutor') || lower.includes('education') || lower.includes('training')) {
+    return ['📚 Programs', '💰 Pricing', '🆓 Free Session', bookBtn];
   }
   // Consulting / Professional Services
   if (lower.includes('consulting') || lower.includes('accounting') || lower.includes('financial') || lower.includes('insurance')) {
-    return ['What services do you offer?', bookBtn, 'Tell me about your experience', 'What are your fees?'];
+    return ['💼 Services', bookBtn, '📊 Experience', '💰 Fees'];
   }
   // IT / Tech
   if (lower.includes('it') || lower.includes('tech') || lower.includes('computer') || lower.includes('software')) {
-    return ['What services do you offer?', 'I need technical support', bookBtn, 'What are your rates?'];
+    return ['💻 Services', '🆘 Tech Support', bookBtn, '💰 Rates'];
   }
-  // Generic default — no "get a free quote"
-  return ['What services do you offer?', 'What are your hours?', bookBtn, 'Where are you located?'];
+  // Generic default
+  return ['💼 Services', '🕐 Hours', bookBtn, '📍 Location'];
 }
 
 export async function GET(
