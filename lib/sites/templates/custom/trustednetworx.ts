@@ -40,8 +40,8 @@ const SVG = {
   users32: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
   zap32: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>`,
   award32: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526"/><circle cx="12" cy="8" r="6"/></svg>`,
-  // Inline logo SVG (simplified shield+check — replaces /logo.svg which won't exist on hosted pages)
-  logo: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="currentColor" class="h-8 w-8"><path d="M12 2L3 7v5c0 6.5 3.6 12.4 9 15 5.4-2.6 9-8.5 9-15V7l-9-5zm-1 15.9l-3.5-3.5 1.4-1.4L11 15.1l5.1-5.1 1.4 1.4L11 17.9z"/></svg>`,
+  // Inline logo SVG (globe-with-nodes — matches telecom/network branding)
+  logo: `<svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" stroke="#2563eb" stroke-width="1.5"/><ellipse cx="12" cy="12" rx="4" ry="10" stroke="#2563eb" stroke-width="1.5"/><path d="M2 12h20" stroke="#2563eb" stroke-width="1.5"/><path d="M4 7h16" stroke="#2563eb" stroke-width="1"/><path d="M4 17h16" stroke="#2563eb" stroke-width="1"/></svg>`,
   // Small 24px icon used in benefits lists
   icon24: (name: string) => `<i data-lucide="${name}" class="h-6 w-6 text-blue-600 flex-shrink-0"></i>`,
   // 32px for feature cards via Lucide CDN
@@ -408,22 +408,22 @@ function homeContent(site: Record<string, any>, page: Record<string, any>, allPa
                 </div>`).join('')
     : `
                 <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
-                  <div class="text-blue-600 mb-4 flex justify-center">${SVG.handshake32}</div>
+                  <div class="text-blue-600 mb-4 flex justify-center"><i data-lucide="shield-check" class="w-8 h-8"></i></div>
                   <h3 class="text-xl font-bold text-gray-900 mb-2">Proven Expertise</h3>
                   <p class="text-gray-600">With decades of experience in telecom and enterprise solutions, we understand the unique challenges businesses face in connectivity and infrastructure modernization.</p>
                 </div>
                 <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
-                  <div class="text-blue-600 mb-4 flex justify-center">${SVG.users32}</div>
+                  <div class="text-blue-600 mb-4 flex justify-center"><i data-lucide="handshake" class="w-8 h-8"></i></div>
                   <h3 class="text-xl font-bold text-gray-900 mb-2">Strategic Partnerships</h3>
                   <p class="text-gray-600">We have successfully led high-profile projects with global telecom providers, government agencies, and Fortune 500 companies.</p>
                 </div>
                 <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
-                  <div class="text-blue-600 mb-4 flex justify-center">${SVG.zap32}</div>
+                  <div class="text-blue-600 mb-4 flex justify-center"><i data-lucide="zap" class="w-8 h-8"></i></div>
                   <h3 class="text-xl font-bold text-gray-900 mb-2">Innovative Solutions</h3>
                   <p class="text-gray-600">From cellular data technology to cloud-based communication systems, we offer future-proof solutions tailored to your needs.</p>
                 </div>
                 <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
-                  <div class="text-blue-600 mb-4 flex justify-center">${SVG.shield}</div>
+                  <div class="text-blue-600 mb-4 flex justify-center"><i data-lucide="shield" class="w-8 h-8"></i></div>
                   <h3 class="text-xl font-bold text-gray-900 mb-2">Reliable &amp; Scalable</h3>
                   <p class="text-gray-600">Our solutions are designed for long-term success, helping businesses reduce costs, improve efficiency, and enhance communication capabilities.</p>
                 </div>`;
@@ -495,11 +495,14 @@ function homeContent(site: Record<string, any>, page: Record<string, any>, allPa
             </div>
             <div class="w-full">
               <div class="glass-morphism rounded-2xl p-8">
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-8 items-center justify-items-center">
-                  <div class="text-center"><span class="text-xl font-bold text-gray-700">DataRemote</span></div>
-                  <div class="text-center"><span class="text-xl font-bold text-gray-700">MetTel</span></div>
-                  <div class="text-center"><span class="text-xl font-bold text-gray-700">Mix Networks</span></div>
-                  <div class="text-center"><span class="text-xl font-bold text-gray-700">Velocity</span></div>
+                <div class="flex flex-wrap items-center justify-center gap-8 md:gap-12 py-8">
+                  <div class="text-2xl font-bold text-gray-600 tracking-tight"><span class="text-blue-500">AT&amp;T</span></div>
+                  <div class="text-2xl font-bold text-gray-700 tracking-tight" style="font-family:'Georgia',serif">MetTel</div>
+                  <div class="text-2xl font-bold tracking-tight" style="color:#cd040b">verizon</div>
+                  <div class="text-2xl font-bold tracking-tight"><span style="color:#e20074">T</span><span class="text-gray-800"> Mobile</span></div>
+                  <div class="text-xl font-bold text-gray-600 tracking-widest italic">VELOCITY</div>
+                  <div class="text-xl font-bold text-gray-700 tracking-wide">DATA<span class="text-blue-600">REMOTE</span></div>
+                  <div class="text-xl font-bold text-gray-600">MIX <span class="text-green-600 text-sm">NETWORKS</span></div>
                 </div>
               </div>
             </div>
@@ -564,13 +567,14 @@ function aboutContent(site: Record<string, any>, page: Record<string, any>): str
               <h2 class="text-3xl font-extrabold text-gray-900 sm:text-4xl mb-8">${sections[1]?.heading || 'Your Trusted Telecom Partner'}</h2>
               <p class="mt-4 text-lg text-gray-600 pe-12">${partnerBody}</p>
               <div class="my-8 glass-morphism rounded-2xl p-8">
-                <div class="w-full">
-                  <div class="grid grid-cols-2 md:grid-cols-4 gap-8 items-center justify-items-center">
-                    <div class="text-center"><span class="text-xl font-bold text-gray-700">DataRemote</span></div>
-                    <div class="text-center"><span class="text-xl font-bold text-gray-700">MetTel</span></div>
-                    <div class="text-center"><span class="text-xl font-bold text-gray-700">Mix Networks</span></div>
-                    <div class="text-center"><span class="text-xl font-bold text-gray-700">Velocity</span></div>
-                  </div>
+                <div class="flex flex-wrap items-center justify-center gap-8 md:gap-12 py-8">
+                  <div class="text-2xl font-bold text-gray-600 tracking-tight"><span class="text-blue-500">AT&amp;T</span></div>
+                  <div class="text-2xl font-bold text-gray-700 tracking-tight" style="font-family:'Georgia',serif">MetTel</div>
+                  <div class="text-2xl font-bold tracking-tight" style="color:#cd040b">verizon</div>
+                  <div class="text-2xl font-bold tracking-tight"><span style="color:#e20074">T</span><span class="text-gray-800"> Mobile</span></div>
+                  <div class="text-xl font-bold text-gray-600 tracking-widest italic">VELOCITY</div>
+                  <div class="text-xl font-bold text-gray-700 tracking-wide">DATA<span class="text-blue-600">REMOTE</span></div>
+                  <div class="text-xl font-bold text-gray-600">MIX <span class="text-green-600 text-sm">NETWORKS</span></div>
                 </div>
               </div>
             </div>
