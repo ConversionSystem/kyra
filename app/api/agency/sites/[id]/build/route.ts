@@ -14,6 +14,7 @@ function stripMarkdown(text: string): string {
     .trim();
 }
 import { assemblePage } from '@/lib/sites/templates/assembler';
+import { assembleTrustedNetworxPage } from '@/lib/sites/templates/custom/trustednetworx';
 import { getRecipeForIndustry } from '@/lib/sites/templates/recipes';
 import { getTemplateById } from '@/lib/sites/templates/gallery';
 import { generateSiteHTML } from '@/lib/sites/content-engine';
@@ -295,6 +296,9 @@ async function buildAndDeploy(site: any, supabase: any) {
     `--color-accent: ${theme.colorPrimary};`,
   ].join('\n      ');
 
+  // ---------- Custom assembler for tech-enterprise (TrustedNetworx) ----------
+  const useCustomAssembler = site.template_id === 'tech-enterprise';
+
   // Assemble full HTML for each page
   const assembledPages = pagesData.map((p: {
     slug: string; type: string; title: string;
@@ -304,7 +308,33 @@ async function buildAndDeploy(site: any, supabase: any) {
   }) => ({
     slug: p.slug,
     type: p.type,
-    html: assemblePage({
+    html: useCustomAssembler
+      ? assembleTrustedNetworxPage(
+          {
+            business_name: constants.name,
+            phone: constants.phone,
+            email: constants.email,
+            address: site.address || null,
+            color_primary: theme.colorPrimary,
+            tagline: constants.tagline,
+            logo_url: site.logo_url || null,
+            nav_links: site.nav_links || null,
+            services,
+          },
+          {
+            slug: p.slug,
+            page_type: p.type,
+            title: p.title,
+            hero_h1: stripMarkdown(p.heroH1 || '') || null,
+            hero_subtitle: p.heroSubtitle || null,
+            hero_cta_text: null,
+            hero_cta_link: null,
+            content_sections: (p.sections || []) as { heading: string; body: string; bullets?: string[] }[],
+            faq: (p.faq || []) as { question: string; answer: string }[],
+          },
+          pagesData.map((pg: { slug: string; title: string }) => ({ slug: pg.slug, title: pg.title })),
+        )
+      : assemblePage({
       recipe,
       colorVars,
       designStyle: theme.designStyle,
