@@ -53,7 +53,7 @@ const CORS = {
 };
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 30;
+export const maxDuration = 45;
 
 // Simple in-memory rate limiter (resets on cold start — good enough for edge)
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -374,15 +374,23 @@ export async function POST(request: NextRequest) {
   let productContext = '';
   const janeEnabled = !!(cfg.jane_api_key || cfg.firecrawl_enabled);
   if (janeEnabled) {
-    const { isProductQuery, parseProductIntent, searchProducts, formatProductsForAI } = await import('@/lib/integrations/jane');
-    if (isProductQuery(safeMessage)) {
-      const intent = parseProductIntent(safeMessage);
-      intent.storeId = storeId || (cfg.jane_default_store_id as string) || '117';
-      const firecrawlKey = process.env.FIRECRAWL_API_KEY;
-      const results = await searchProducts(intent, firecrawlKey || undefined);
-      if (results.products.length > 0) {
-        productContext = `\n\nPRODUCT SEARCH RESULTS (from live inventory - use these to answer):\n${formatProductsForAI(results.products)}\n\nIMPORTANT: Recommend AT LEAST 3 products (or all if fewer than 3 found). For EACH product include: product name, why it matches, key details (THC/CBD/price/effects), and the direct URL. Format cleanly with numbered list.`;
+    try {
+      const { isProductQuery, parseProductIntent, searchProducts, formatProductsForAI } = await import('@/lib/integrations/jane');
+      if (isProductQuery(safeMessage)) {
+        const intent = parseProductIntent(safeMessage);
+        intent.storeId = storeId || (cfg.jane_default_store_id as string) || '117';
+        const firecrawlKey = process.env.FIRECRAWL_API_KEY;
+        // 6s timeout — if Firecrawl is slow, skip product search and answer from knowledge
+        const searchPromise = searchProducts(intent, firecrawlKey || undefined);
+        const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 6000));
+        const results = await Promise.race([searchPromise, timeoutPromise]);
+        if (results && results.products.length > 0) {
+          productContext = `\n\nPRODUCT SEARCH RESULTS (from live inventory - use these to answer):\n${formatProductsForAI(results.products)}\n\nIMPORTANT: Recommend AT LEAST 3 products (or all if fewer than 3 found). For EACH product include: product name, why it matches, key details (THC/CBD/price/effects), and the direct URL. Format cleanly with numbered list.`;
+        }
       }
+    } catch (e) {
+      console.error(`[widget/chat] Product search failed for ${clientId}:`, e);
+      // Continue without product context — AI will answer from knowledge
     }
   }
 

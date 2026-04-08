@@ -498,6 +498,7 @@ export async function GET(
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ clientId: CLIENT_ID, message: text, sessionId: sessionId, history: history.slice(-10), sourceUrl: window.location.href, storeId: window.__kyraStoreId || STORE_ID }),
+        signal: AbortSignal.timeout(40000),
       });
       var data = await res.json();
       hideTyping();
@@ -524,7 +525,7 @@ export async function GET(
       }
     } catch(e) {
       hideTyping();
-      addMessage('bot', 'Connection error. Please check your internet and try again.');
+      addMessage('bot', 'Sorry, that took too long. Please try again or ask a different question.');
     }
 
     isLoading = false;
