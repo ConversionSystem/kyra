@@ -8,6 +8,7 @@
 // ============================================================================
 
 import { assemblePage } from './templates/assembler';
+import { assembleTrustedNetworxPage } from './templates/custom/trustednetworx';
 
 /** Generate a decent H1 when the LLM parser fails to extract one */
 function generateFallbackH1(businessName: string, industry: string, city?: string): string {
@@ -160,11 +161,16 @@ export async function assembleSitePages(
   // Filter out hidden pages (P1: section visibility)
   const visiblePages = pagesData.filter(p => !p.hidden);
 
+  // Custom assembler for tech-enterprise (TrustedNetworx) template
+  const useCustomAssembler = site.template_id === 'tech-enterprise';
+
   // Assemble full HTML for every visible page
   const assembledPages = visiblePages.map((p) => ({
     slug: p.slug,
     type: p.type,
-    html: assemblePage({
+    html: useCustomAssembler
+      ? assembleTrustedNetworxPage(site, pages.find((pg: { slug: string }) => pg.slug === p.slug) || p, pages)
+      : assemblePage({
       recipe,
       colorVars,
       designStyle: theme.designStyle,
