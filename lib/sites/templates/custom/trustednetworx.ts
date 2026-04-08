@@ -286,11 +286,18 @@ function renderScripts(): string {
 }
 
 function wrapPage(site: Record<string, any>, page: Record<string, any>, allPages: Record<string, any>[], bodyContent: string): string {
+  // Kyra chat widget injection
+  const clientId = (site.client_id as string) || '';
+  const widgetScript = clientId
+    ? `\n<script src="https://kyra.conversionsystem.com/api/widget/${clientId}/script" defer></script>`
+    : '';
+
   return renderHead(site, page)
     + renderNavbar(site, allPages)
     + bodyContent
     + renderFooter(site, allPages)
     + renderScripts()
+    + widgetScript
     + '\n</body>\n</html>';
 }
 
