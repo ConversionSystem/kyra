@@ -96,6 +96,7 @@ export async function POST(request: NextRequest) {
   const sessionId = body.sessionId as string | undefined;
   const history = body.history as Array<{ role: 'user' | 'assistant'; content: string }> | undefined;
   const sourceUrl = body.sourceUrl as string | undefined;
+  const storeId = body.storeId as string | undefined; // Jane store ID from embed param
 
   if (!clientId || !message?.trim()) {
     return NextResponse.json({ error: 'clientId and message are required' }, { status: 400, headers: CORS });
@@ -369,6 +370,22 @@ export async function POST(request: NextRequest) {
     leadCapturePrompt,
   ].filter(Boolean).join('\n');
 
+  // ── Product Search (Jane API integration for cannabis dispensaries) ────────
+  let productContext = '';
+  const janeEnabled = !!(cfg.jane_api_key || cfg.firecrawl_enabled);
+  if (janeEnabled) {
+    const { isProductQuery, parseProductIntent, searchProducts, formatProductsForAI } = await import('@/lib/integrations/jane');
+    if (isProductQuery(safeMessage)) {
+      const intent = parseProductIntent(safeMessage);
+      intent.storeId = storeId || (cfg.jane_default_store_id as string) || '117';
+      const firecrawlKey = process.env.FIRECRAWL_API_KEY;
+      const results = await searchProducts(intent, firecrawlKey || undefined);
+      if (results.products.length > 0) {
+        productContext = `\n\nPRODUCT SEARCH RESULTS (from live inventory - use these to answer):\n${formatProductsForAI(results.products)}\n\nUse these REAL products to make your recommendation. Include the URLs.`;
+      }
+    }
+  }
+
   // ── Call LLM directly (bypasses OpenClaw gateway + agency persona) ─────────
   // Widget visitors are CUSTOMERS — they should talk to a business-specific assistant,
   // NOT the agency's OpenClaw container which has SOUL.md / CEO persona.
@@ -378,7 +395,7 @@ export async function POST(request: NextRequest) {
     const chatRes = await llm.chat.completions.create({
       model: routedModel,
       messages: [
-        { role: 'system', content: systemPrompt },
+        { role: 'system', content: systemPrompt + productContext },
         // DB session memory (prior page loads), then in-memory history (current session)
         ...sessionHistory,
         ...(Array.isArray(history) ? (history as Array<{role: 'user'|'assistant', content: string}>).slice(-10) : []),
