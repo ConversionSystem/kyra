@@ -380,9 +380,9 @@ export async function POST(request: NextRequest) {
         const intent = parseProductIntent(safeMessage);
         intent.storeId = storeId || (cfg.jane_default_store_id as string) || '117';
         const firecrawlKey = process.env.FIRECRAWL_API_KEY;
-        // 6s timeout — if Firecrawl is slow, skip product search and answer from knowledge
+        // 12s timeout — Firecrawl scrape takes ~8s. If too slow, skip and answer from knowledge
         const searchPromise = searchProducts(intent, firecrawlKey || undefined);
-        const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 6000));
+        const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 12000));
         const results = await Promise.race([searchPromise, timeoutPromise]);
         if (results && results.products.length > 0) {
           productContext = `\n\nPRODUCT SEARCH RESULTS (from live inventory - use these to answer):\n${formatProductsForAI(results.products)}\n\nIMPORTANT: Recommend AT LEAST 3 products (or all if fewer than 3 found). For EACH product include: product name, why it matches, key details (THC/CBD/price/effects), and the direct URL. Format cleanly with numbered list.`;
