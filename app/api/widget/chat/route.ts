@@ -191,7 +191,18 @@ export async function POST(request: NextRequest) {
 
   // ── Smart routing: downgrade to mini for simple/medium messages ───────────
   const complexity = classifyMessage(message.trim());
-  const routedModel = complexity === 'complex' ? clientModel : 'openai/gpt-4o-mini';
+  // Product queries and escalations always use configured model — GPT-4o-mini can't handle
+  // structured product recommendations or nuanced escalation with phone numbers
+  const janeActive = !!(cfg.jane_api_key || cfg.firecrawl_enabled);
+  let isProduct = false;
+  if (janeActive) {
+    try {
+      const { isProductQuery } = await import('@/lib/integrations/jane');
+      isProduct = isProductQuery(message.trim());
+    } catch { /* ignore */ }
+  }
+  const forceFullModel = isProduct || /delivery.*late|charged|wrong item|missing|refund|complain|cancel|dispute|lawsuit/i.test(message);
+  const routedModel = (complexity === 'complex' || forceFullModel) ? clientModel : 'openai/gpt-4o-mini';
 
   // ── Model-aware credit check ──────────────────────────────────────────────
   const widgetPreflightCost = getCreditsForModel(routedModel);
@@ -372,8 +383,7 @@ export async function POST(request: NextRequest) {
 
   // ── Product Search (Jane API integration for cannabis dispensaries) ────────
   let productContext = '';
-  const janeEnabled = !!(cfg.jane_api_key || cfg.firecrawl_enabled);
-  if (janeEnabled) {
+  if (janeActive) {
     try {
       const { isProductQuery, parseProductIntent, searchProducts, formatProductsForAI } = await import('@/lib/integrations/jane');
       if (isProductQuery(safeMessage)) {
