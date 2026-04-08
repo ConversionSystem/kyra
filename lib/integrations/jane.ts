@@ -343,7 +343,7 @@ export function parseProductIntent(message: string): ProductSearchParams {
  * Check if a message is asking for product recommendations
  */
 export function isProductQuery(message: string): boolean {
-  const lower = message.toLowerCase();
+  const lower = message.toLowerCase().replace(/[\u{1F300}-\u{1FAD6}\u{2600}-\u{27BF}]/gu, '').trim();
   const productSignals = [
     /recommend/i, /suggest/i, /best.*(?:for|product|strain)/i,
     /highest.*thc/i, /strongest/i, /what.*(?:edible|flower|vape|preroll|pre.?roll|gumm)/i,
@@ -359,6 +359,8 @@ export function isProductQuery(message: string): boolean {
     /headache|nausea|appetite|mood|depression/i,
     /potent|mellow|strong|mild|light|heavy/i,
     /what.*(?:strain|brand)/i,
+    // Short effect keywords (from quick reply buttons)
+    /^(?:pain\s*relief|relaxation|relax|sleep|energy|creativity|creative|calm|uplifting|euphoria|focus|recovery)$/i,
   ];
   return productSignals.some(r => r.test(lower));
 }
