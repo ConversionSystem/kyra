@@ -141,6 +141,7 @@ export async function GET(
   var POSITION = ${JSON.stringify(widgetPosition)};
   var AVATAR = ${JSON.stringify(widgetAvatarEmoji)};
   var QUICK_REPLIES = ${JSON.stringify((cfg.widget_quick_replies as string[]) || getIndustryQuickReplies((client?.industry as string) || '', cfg))};
+  var STORE_ID = ${JSON.stringify((cfg.jane_default_store_id as string) || '')};
   var STORAGE_KEY = 'kyra_session_' + CLIENT_ID;
 
   // Don't init twice
@@ -479,7 +480,7 @@ export async function GET(
       var res = await fetch(API_BASE + '/api/widget/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clientId: CLIENT_ID, message: text, sessionId: sessionId, history: history.slice(-10), sourceUrl: window.location.href }),
+        body: JSON.stringify({ clientId: CLIENT_ID, message: text, sessionId: sessionId, history: history.slice(-10), sourceUrl: window.location.href, storeId: window.__kyraStoreId || STORE_ID }),
       });
       var data = await res.json();
       hideTyping();
