@@ -180,8 +180,9 @@ export async function GET(
     '@keyframes kyra-msg-in { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }',
     '.kyra-msg-bubble { padding:12px 16px; border-radius:20px; font-size:14.5px; line-height:1.6; font-family:system-ui,-apple-system,"SF Pro Text",sans-serif; word-wrap:break-word; word-break:break-word; }',
     '.kyra-msg.bot .kyra-msg-bubble { background:#fff; color:#1a1a1a; border-bottom-left-radius:6px; box-shadow:0 1px 4px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.03); }',
-    '.kyra-msg.bot .kyra-msg-bubble a { color:' + COLOR + '; text-decoration:none; font-weight:600; display:inline-block; margin-top:4px; padding:6px 14px; background:' + COLOR + '10; border-radius:10px; border:1px solid ' + COLOR + '25; transition:background 0.15s; }',
-    '.kyra-msg.bot .kyra-msg-bubble a:hover { background:' + COLOR + '20; }',
+    '.kyra-product-link { color:' + COLOR + '; text-decoration:none; font-weight:600; display:inline-block; margin-top:6px; padding:8px 16px; background:' + COLOR + '10; border-radius:12px; border:1px solid ' + COLOR + '25; transition:all 0.15s; font-size:13px; }',
+    '.kyra-product-link:hover { background:' + COLOR + '20; transform:translateY(-1px); box-shadow:0 2px 6px ' + COLOR + '22; }',
+    '.kyra-msg.bot .kyra-msg-bubble a:not(.kyra-product-link) { color:' + COLOR + '; text-decoration:underline; }',
     '.kyra-msg.user .kyra-msg-bubble { background:linear-gradient(135deg, ' + COLOR + ', ' + COLOR + 'dd); color:#fff; border-bottom-right-radius:6px; box-shadow:0 2px 8px ' + COLOR + '33; }',
     '.kyra-msg.user .kyra-msg-bubble a { color:#fff; text-decoration:underline; }',
     '.kyra-msg-avatar { width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg, ' + COLOR + ', ' + COLOR + 'aa); display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; box-shadow:0 2px 6px rgba(0,0,0,0.1); }',
@@ -346,30 +347,28 @@ export async function GET(
   function formatMsg(raw) {
     var s = raw || '';
 
-    // 1. Strip markdown links [text](url) → just show the text (URL is noise in chat)
+    // 1. Convert markdown links [text](url) → clickable styled buttons
     s = s.replace(/\\[([^\\]]+)\\]\\(([^)]+)\\)/g, function(_, txt, url) {
-      // If the text IS the URL or looks like a link label, just show the URL as plain text
-      if (txt.toLowerCase().indexOf('http') === 0 || txt === url) return escHtml(url);
-      // Otherwise show "text (url)"
-      return escHtml(txt) + ' (' + escHtml(url) + ')';
+      var label = txt.toLowerCase().indexOf('http') === 0 ? 'View Product →' : escHtml(txt);
+      return '<a href="' + escHtml(url) + '" target="_blank" rel="noopener" class="kyra-product-link">' + label + '</a>';
     });
 
-    // 2. Auto-link bare URLs so they're clickable
+    // 2. Auto-link bare URLs → clickable styled buttons
     s = s.replace(/(https?:\\/\\/[^\\s<>"]+[^\\s<>.,!?;:"'\\)])/g, function(url) {
-      return '<a href="' + url + '" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;">' + url + '</a>';
+      var label = url.indexOf('/product/') > -1 ? 'View Product →' : 'View →';
+      return '<a href="' + url + '" target="_blank" rel="noopener" class="kyra-product-link">' + label + '</a>';
     });
 
-    // 3. Strip bold/italic markers (**text** → text, *text* → text, __text__ → text)
-    s = s.replace(/\\*\\*([^*]+)\\*\\*/g, '$1');
-    s = s.replace(/__([^_]+)__/g, '$1');
-    s = s.replace(/\\*([^*]+)\\*/g, '$1');
-    s = s.replace(/_([^_]+)_/g, '$1');
+    // 3. Bold → actual bold (product names), Italic → em
+    s = s.replace(/\\*\\*([^*]+)\\*\\*/g, '<strong>$1</strong>');
+    s = s.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+    s = s.replace(/\\*([^*]+)\\*/g, '<em>$1</em>');
+    s = s.replace(/_([^_]+)_/g, '<em>$1</em>');
 
     // 4. Strip markdown headers (# ## ###)
     s = s.replace(/^#{1,6}\\s+/gm, '');
 
-    // 5. Strip leading bullet dashes/asterisks (- item or * item or • item)
-    //    Replace with a soft indent so the list still reads naturally
+    // 5. Strip leading bullet dashes/asterisks
     s = s.replace(/^[\\-\\*•]\\s+/gm, '');
 
     // 6. Strip numbered list markers (1. 2. 3.)

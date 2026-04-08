@@ -397,7 +397,7 @@ export async function POST(request: NextRequest) {
         const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 12000));
         const results = await Promise.race([searchPromise, timeoutPromise]);
         if (results && results.products.length > 0) {
-          productContext = `\n\nPRODUCT SEARCH RESULTS (from live inventory - use these to answer):\n${formatProductsForAI(results.products)}\n\nIMPORTANT: Recommend AT LEAST 3 products (or all if fewer than 3 found). For EACH product include: product name, why it matches, key details (THC/CBD/price/effects), and the direct URL. Format cleanly with numbered list.`;
+          productContext = `\n\nPRODUCT SEARCH RESULTS (from live inventory):\n${formatProductsForAI(results.products)}\n\nFORMATTING RULES (STRICT):\n- Recommend 3 products (or all if fewer found)\n- For EACH product use this EXACT compact format:\n  **Product Name** by Brand — $Price\n  Strain type · THC% · One short sentence why it matches\n  [View Product](URL)\n- Keep each product to 2-3 lines MAX. No paragraphs.\n- Start with one short intro sentence, then list products.\n- Total response MUST be under 150 words.`;
         }
       }
     } catch (e) {
