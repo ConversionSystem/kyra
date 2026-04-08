@@ -114,9 +114,9 @@ async function scrapeMenuWithFirecrawl(
   params: ProductSearchParams,
   apiKey: string,
 ): Promise<JaneProduct[]> {
-  // Build the menu URL based on category
+  // Build the menu URL — Purple Lotus uses plpcsanjose.com (NOT purplelotuspatientcenter.com)
   const categorySlug = params.category ? `/${params.category.toLowerCase().replace(/\s+/g, '-')}` : '';
-  const menuUrl = `https://purplelotuspatientcenter.com/pickup/store/${storeId}${categorySlug}`;
+  const menuUrl = `https://plpcsanjose.com/shop${categorySlug}`;
 
   const res = await fetch('https://api.firecrawl.dev/v1/scrape', {
     method: 'POST',
@@ -152,7 +152,7 @@ async function scrapeMenuWithFirecrawl(
             },
           },
         },
-        prompt: `Extract all cannabis products visible on this page. For each product, get the name, brand, category (flower/preroll/edible/vape/etc), THC percentage, CBD percentage, price, strain type (indica/sativa/hybrid), effects if listed, description, product URL, and stock status.${params.query ? ` Focus on products matching: ${params.query}` : ''}`,
+        prompt: `Extract all cannabis products visible on this page. For each product get: name, brand, category (flower/pre-roll/edible/vape/concentrate/tincture/topical), THC percentage, CBD percentage, price, strain type (indica/sativa/hybrid), any listed effects, short description, full product page URL, and whether it appears in stock. Return up to 20 products.${params.query ? ` Prioritize products matching this request: "${params.query}"` : ''}${params.category ? ` Focus on the ${params.category} category.` : ''}${params.effects?.length ? ` Look for products with these effects: ${params.effects.join(', ')}` : ''}`,
       },
     }),
     signal: AbortSignal.timeout(30000),
@@ -255,6 +255,13 @@ export function isProductQuery(message: string): boolean {
     /indica|sativa|hybrid/i, /thc|cbd/i,
     /menu|product|inventory|stock|available/i,
     /preroll|pre-roll|edible|gumm|vape|cart|flower|concentrate|tincture|topical/i,
+    // Vague effect-based requests that imply product recommendation
+    /feel.*(?:good|cool|great|relaxed|mellow|euphoric|happy|creative|focused|sleepy|energi)/i,
+    /something.*(?:for|to|that|can).*(?:sleep|relax|pain|stress|anxiety|chill|unwind|uplift|focus|creative)/i,
+    /want.*(?:smoke|try|buy|get)/i,
+    /what.*(?:do you have|should i|can i|would you)/i,
+    /headache|nausea|appetite|mood|depression/i,
+    /potent|mellow|strong|mild|light|heavy/i,
   ];
   return productSignals.some(r => r.test(lower));
 }
