@@ -152,7 +152,7 @@ export async function GET(
   var POWERED_BY = ${JSON.stringify(widgetPoweredBy)};
   var POSITION = ${JSON.stringify(widgetPosition)};
   var AVATAR = ${JSON.stringify(widgetAvatarEmoji)};
-  var QUICK_REPLIES = ${JSON.stringify((cfg.widget_quick_replies as string[]) || getIndustryQuickReplies((client?.industry as string) || '', cfg))};
+  var QUICK_REPLIES = ${JSON.stringify((cfg.widget_quick_replies as string[]) || getIndustryQuickReplies((cfg.industry as string) || (client?.industry as string) || '', cfg))};
   var STORE_ID = ${JSON.stringify((cfg.jane_default_store_id as string) || '')};
   var STORAGE_KEY = 'kyra_session_' + CLIENT_ID;
 
