@@ -381,7 +381,7 @@ export async function POST(request: NextRequest) {
       const firecrawlKey = process.env.FIRECRAWL_API_KEY;
       const results = await searchProducts(intent, firecrawlKey || undefined);
       if (results.products.length > 0) {
-        productContext = `\n\nPRODUCT SEARCH RESULTS (from live inventory - use these to answer):\n${formatProductsForAI(results.products)}\n\nUse these REAL products to make your recommendation. Include the URLs.`;
+        productContext = `\n\nPRODUCT SEARCH RESULTS (from live inventory - use these to answer):\n${formatProductsForAI(results.products)}\n\nIMPORTANT: Recommend AT LEAST 3 products (or all if fewer than 3 found). For EACH product include: product name, why it matches, key details (THC/CBD/price/effects), and the direct URL. Format cleanly with numbered list.`;
       }
     }
   }
