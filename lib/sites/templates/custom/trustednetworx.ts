@@ -400,13 +400,8 @@ function homeContent(site: Record<string, any>, page: Record<string, any>, allPa
 
   // Content sections from CMS or hardcoded
   const sections = getSections(page);
-  const whyChooseHtml = sections.length > 0
-    ? sections.map(s => `
-                <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
-                  <h3 class="text-xl font-bold text-gray-900 mb-2">${esc(s.heading)}</h3>
-                  <p class="text-gray-600">${esc(s.body)}</p>
-                </div>`).join('')
-    : `
+  // Always use hardcoded Why Choose Us cards (DB content_sections are generic headings)
+  const whyChooseHtml = `
                 <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
                   <div class="text-blue-600 mb-4 flex justify-center"><i data-lucide="shield-check" class="w-8 h-8"></i></div>
                   <h3 class="text-xl font-bold text-gray-900 mb-2">Proven Expertise</h3>
