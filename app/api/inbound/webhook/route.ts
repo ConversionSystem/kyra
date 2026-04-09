@@ -97,7 +97,11 @@ export async function POST(req: NextRequest) {
   // Token verification (webhook_token stored in container_config)
   const cfg = (client.container_config as Record<string, unknown>) ?? {};
   const expectedToken = cfg.webhook_token as string | undefined;
-  if (expectedToken && token !== expectedToken) {
+  if (!expectedToken) {
+    console.warn('[inbound/webhook] No webhook_token configured for client', clientId);
+    return NextResponse.json({ error: 'Webhook not configured' }, { status: 403 });
+  }
+  if (token !== expectedToken) {
     return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
   }
 

@@ -18,6 +18,7 @@ interface UsePollingResult<T> {
 
 interface CacheEntry<T = unknown> {
   data: T | null;
+  error: Error | null;
   timestamp: number;
   listeners: Set<() => void>;
   intervalId: ReturnType<typeof setInterval> | null;
@@ -47,10 +48,12 @@ export function usePolling<T>({ key, fetcher, intervalMs, enabled = true }: UseP
     try {
       const result = await fetcherRef.current();
       entry.data = result;
+      entry.error = null;
       entry.timestamp = Date.now();
       notify(entry);
     } catch (err) {
-      // Listeners will read from cache — error is per-component via the local state
+      entry.error = err instanceof Error ? err : new Error(String(err));
+      notify(entry);
     } finally {
       entry.fetching = false;
     }
@@ -59,11 +62,12 @@ export function usePolling<T>({ key, fetcher, intervalMs, enabled = true }: UseP
   // Sync local state from cache
   const syncFromCache = useCallback(() => {
     const entry = cache.get(key) as CacheEntry<T> | undefined;
-    if (entry && entry.data !== null) {
+    if (!entry) return;
+    if (entry.data !== null) {
       setData(entry.data);
       setLoading(false);
-      setError(null);
     }
+    setError(entry.error);
   }, [key]);
 
   useEffect(() => {
@@ -78,6 +82,7 @@ export function usePolling<T>({ key, fetcher, intervalMs, enabled = true }: UseP
       // First subscriber — create cache entry and start polling
       entry = {
         data: null,
+        error: null,
         timestamp: 0,
         listeners: new Set(),
         intervalId: null,
@@ -120,10 +125,15 @@ export function usePolling<T>({ key, fetcher, intervalMs, enabled = true }: UseP
         fetcherRef.current()
           .then((result) => {
             e.data = result;
+            e.error = null;
             e.timestamp = Date.now();
             notify(e);
           })
-          .catch(() => {})
+          .catch((err) => {
+            console.warn(`[usePolling] ${key} interval fetch failed:`, err instanceof Error ? err.message : err);
+            e.error = err instanceof Error ? err : new Error(String(err));
+            notify(e);
+          })
           .finally(() => { e.fetching = false; });
       }, intervalMs);
     }

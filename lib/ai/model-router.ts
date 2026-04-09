@@ -1,10 +1,16 @@
 // ============================================================================
-// Model Router — Smart routing between cheap and expensive models
+// Model Router — Smart routing between cheap and expensive models (Dashboard)
 //
 // Analyzes message complexity to decide which model to use.
 // Simple messages (greetings, confirmations, FAQs) → Haiku (economy)
-// Standard conversations → Sonnet (standard)  
+// Standard conversations → Sonnet (standard)
 // Complex queries (sales objections, multi-step, detailed analysis) → Opus (premium)
+//
+// NOTE: There is a separate widget model router at lib/ghl/model-router.ts
+// which is provider-aware (anthropic/openai/google/openrouter) and used by
+// the widget chat endpoint. That router classifies into simple/medium/complex
+// and selects provider-specific models. The two routers serve different use
+// cases and should be kept in sync when classification logic changes.
 // ============================================================================
 
 import type { ModelTier, ModelRoutingConfig } from '@/lib/agency/types';

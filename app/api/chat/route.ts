@@ -22,7 +22,7 @@ import { scanMessage, getBlockResponse, logSecurityEvent } from '@/lib/security/
 import { truncateHistory } from '@/lib/ai/truncate';
 
 const CORS = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_APP_URL || 'https://kyra.conversionsystem.com',
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };

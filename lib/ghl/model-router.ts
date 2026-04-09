@@ -1,5 +1,11 @@
 // ============================================================================
-// Smart Model Router
+// Smart Model Router — Provider-aware routing (Widget / GHL)
+//
+// NOTE: There is a separate dashboard model router at lib/ai/model-router.ts
+// which uses a tier system (economy/standard/premium) with agency config.
+// The two routers share similar classification logic but serve different
+// use cases. Keep classification heuristics in sync when updating either.
+//
 // Classifies message complexity → selects cheapest model that can handle it
 // Saves 60-87% on API costs vs always using the top model
 //

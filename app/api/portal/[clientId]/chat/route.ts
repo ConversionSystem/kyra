@@ -15,20 +15,7 @@ import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { resolveClientGateway } from '@/lib/ovh/provisioner';
 import { deductCredits } from '@/lib/billing/credit-engine';
 import { getCreditsForModel } from '@/lib/billing/model-credits';
-
-// Simple in-memory rate limiting (IP-based) — 20 req/min per IP
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-function isRateLimited(ip: string): boolean {
-  const now = Date.now();
-  const entry = rateLimitMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + 60_000 });
-    return false;
-  }
-  if (entry.count >= 20) return true;
-  entry.count++;
-  return false;
-}
+import { isRateLimited } from '@/lib/rate-limit';
 
 export async function POST(
   request: NextRequest,
@@ -36,9 +23,9 @@ export async function POST(
 ) {
   const { clientId } = await params;
 
-  // Rate limit by IP
+  // Rate limit by IP — 20 req/min per IP (Supabase-backed, persists across cold starts)
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-  if (isRateLimited(ip)) {
+  if (await isRateLimited(`portal:${ip}`, 20, 60_000)) {
     return new Response(
       JSON.stringify({ error: 'Too many requests. Please slow down.' }),
       { status: 429, headers: { 'Content-Type': 'application/json' } }

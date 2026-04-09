@@ -74,15 +74,18 @@ export async function POST(request: NextRequest) {
     authUser: null as string | null,
     agency: null as string | null,
     member: false,
+    credits: false,
     client: null as string | null,
   };
 
   async function rollback() {
     console.error('[solo-signup] Rolling back created resources...');
-    if (created.client) await supabase.from('agency_clients').delete().eq('id', created.client).then(() => {}, () => {});
-    if (created.member && created.agency) await supabase.from('agency_members').delete().eq('agency_id', created.agency).eq('user_id', created.authUser!).then(() => {}, () => {});
-    if (created.agency) await supabase.from('agencies').delete().eq('id', created.agency).then(() => {}, () => {});
-    if (created.authUser) await supabase.auth.admin.deleteUser(created.authUser).catch(() => {});
+    if (created.client) await supabase.from('agency_clients').delete().eq('id', created.client).then(({ error }) => { if (error) console.error('[solo-signup] Rollback failed (client):', error); });
+    if (created.credits && created.agency) await supabase.from('agency_credits').delete().eq('agency_id', created.agency).then(({ error }) => { if (error) console.error('[solo-signup] Rollback failed (credits):', error); });
+    if (created.credits && created.agency) await supabase.from('credit_transactions').delete().eq('agency_id', created.agency).then(({ error }) => { if (error) console.error('[solo-signup] Rollback failed (credit_transactions):', error); });
+    if (created.member && created.agency) await supabase.from('agency_members').delete().eq('agency_id', created.agency).eq('user_id', created.authUser!).then(({ error }) => { if (error) console.error('[solo-signup] Rollback failed (member):', error); });
+    if (created.agency) await supabase.from('agencies').delete().eq('id', created.agency).then(({ error }) => { if (error) console.error('[solo-signup] Rollback failed (agency):', error); });
+    if (created.authUser) await supabase.auth.admin.deleteUser(created.authUser).catch((err: unknown) => console.error('[solo-signup] Rollback failed (auth):', err));
   }
 
   let agency: Record<string, unknown>;
@@ -180,6 +183,7 @@ export async function POST(request: NextRequest) {
     // ── 5. Add 50 welcome credits ────────────────────────────────────────
     try {
       await addCredits(agency.id as string, SOLO_WELCOME_CREDITS, 'bonus', SOLO_WELCOME_DESCRIPTION);
+      created.credits = true;
       console.log(`[solo-signup] Granted ${SOLO_WELCOME_CREDITS} credits to ${agency.id}`);
     } catch (err) {
       console.warn('[solo-signup] Failed to grant credits (non-fatal):', err);

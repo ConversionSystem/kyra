@@ -58,10 +58,7 @@ export async function isRateLimited(
     const supabase = getSupabase();
     const windowStart = new Date(Date.now() - windowMs).toISOString();
 
-    // Insert the current hit
-    await supabase.from('rate_limit_hits').insert({ key });
-
-    // Count hits in window
+    // Count hits in window FIRST (avoids race where insert inflates count)
     const { count, error } = await supabase
       .from('rate_limit_hits')
       .select('*', { count: 'exact', head: true })
@@ -73,7 +70,20 @@ export async function isRateLimited(
       return false;
     }
 
-    return (count ?? 0) > limit;
+    if ((count ?? 0) >= limit) {
+      return true;
+    }
+
+    // Only insert if under limit
+    await supabase.from('rate_limit_hits').insert({ key });
+
+    // Probabilistic cleanup: 1% chance per request to prune old rows
+    if (Math.random() < 0.01) {
+      const cutoff = new Date(Date.now() - 3600000).toISOString();
+      await supabase.from('rate_limit_hits').delete().lt('ts', cutoff).then(() => {}, () => {});
+    }
+
+    return false;
   } catch {
     // DB unavailable — rely on in-memory check (already done above)
     return false;

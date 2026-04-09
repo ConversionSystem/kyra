@@ -4,9 +4,14 @@ import { deductCredits } from "@/lib/billing/credit-engine";
 import { resolveAgencyApiKey } from "@/lib/billing/byok";
 import { getCreditsForModel, DEFAULT_MODEL_ID } from "@/lib/billing/model-credits";
 
-const WEBHOOK_SECRET = "kyra-usage-2026";
-
 export async function POST(req: NextRequest) {
+  const WEBHOOK_SECRET = process.env.OPENCLAW_USAGE_WEBHOOK_SECRET || '';
+
+  if (!WEBHOOK_SECRET) {
+    console.error('[openclaw-usage] OPENCLAW_USAGE_WEBHOOK_SECRET is not set — rejecting all requests');
+    return NextResponse.json({ error: "webhook not configured" }, { status: 500 });
+  }
+
   const auth = req.headers.get("authorization") || "";
   const xSecret = req.headers.get("x-kyra-secret") || "";
 

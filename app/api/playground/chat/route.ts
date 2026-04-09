@@ -1,33 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { INDUSTRY_TEMPLATES } from '@/lib/templates/industry-templates';
-
-// Rate limit: 20 messages per IP per hour
-const rateLimits = new Map<string, { count: number; resetAt: number }>();
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const entry = rateLimits.get(ip);
-  if (!entry || now > entry.resetAt) {
-    rateLimits.set(ip, { count: 1, resetAt: now + 3600_000 });
-    return true;
-  }
-  if (entry.count >= 20) return false;
-  entry.count++;
-  return true;
-}
-
-// Clean up old entries every 10 minutes
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, val] of rateLimits) {
-    if (now > val.resetAt) rateLimits.delete(key);
-  }
-}, 600_000);
+import { isRateLimited } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
+  // Rate limit: 20 messages per IP per hour (Supabase-backed)
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
 
-  if (!checkRateLimit(ip)) {
+  if (await isRateLimited(`playground:${ip}`, 20, 3600_000)) {
     return NextResponse.json(
       { error: 'Rate limit reached. Sign up for unlimited access!', upgrade: true },
       { status: 429 },
@@ -82,20 +61,11 @@ export async function POST(req: NextRequest) {
     const data = await response.json();
     const reply = data.choices?.[0]?.message?.content || 'I apologize, could you try again?';
 
-    return NextResponse.json({
-      reply,
-      messagesLeft: getMessagesLeft(ip),
-    });
+    return NextResponse.json({ reply });
   } catch (err) {
     console.error('Playground chat error:', err);
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }
-}
-
-function getMessagesLeft(ip: string): number {
-  const entry = rateLimits.get(ip);
-  if (!entry) return 20;
-  return Math.max(0, 20 - entry.count);
 }
 
 function buildSystemPrompt(template: (typeof INDUSTRY_TEMPLATES)[number]): string {

@@ -71,6 +71,31 @@ export async function GET(request: NextRequest) {
     }),
   );
 
+  // ── Check for clients stuck in 'setup' > 10 minutes ──────────────────────
+  const tenMinutesAgo = new Date(Date.now() - 10 * 60_000).toISOString();
+  const { data: stuckClients } = await supabase
+    .from('agency_clients')
+    .select('id, name, created_at')
+    .eq('status', 'setup')
+    .lt('created_at', tenMinutesAgo);
+
+  if (stuckClients && stuckClients.length > 0) {
+    // Mark stuck clients as 'failed' so the dashboard can show a retry button
+    for (const sc of stuckClients) {
+      await supabase
+        .from('agency_clients')
+        .update({ status: 'failed', gateway_status: 'failed' })
+        .eq('id', sc.id)
+        .eq('status', 'setup'); // guard against race
+      console.warn(`[container-health] Client ${sc.id} (${sc.name}) stuck in setup > 10min — marked as failed`);
+    }
+
+    // Include stuck clients in the alert
+    for (const sc of stuckClients) {
+      failures.push({ name: sc.name, id: sc.id, reason: 'Stuck in setup > 10 minutes (marked failed)' });
+    }
+  }
+
   // If all healthy, silent success
   if (failures.length === 0) {
     return NextResponse.json({ ok: true, checked: clients.length, failures: 0 });

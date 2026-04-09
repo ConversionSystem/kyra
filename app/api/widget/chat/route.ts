@@ -35,6 +35,7 @@ import {
   saveConversation,
 } from '@/lib/chat/core';
 import { isRateLimited } from '@/lib/rate-limit';
+import { classifyUsage } from '@/lib/billing/classify-usage';
 
 const WIDGET_MODEL = 'openai/gpt-4o-mini'; // Fast, cheap, good enough for customer service
 
@@ -137,8 +138,9 @@ export async function POST(request: NextRequest) {
   let routedModel = (complexity === 'complex' || escalationPattern) ? clientModel : 'openai/gpt-4o-mini';
 
   // ── Model-aware credit check ──────────────────────────────────────────────
+  const preflightAction = classifyUsage(message.trim());
   const widgetPreflightCost = getCreditsForModel(routedModel);
-  const creditCheck = await requireCredits(client.agency_id, 'chat.message', 1, widgetPreflightCost);
+  const creditCheck = await requireCredits(client.agency_id, preflightAction, 1, widgetPreflightCost);
   if (!creditCheck.allowed) {
     return NextResponse.json(
       { response: 'Thanks for reaching out! Please give us a call for immediate assistance.', error: 'credits_depleted' },
@@ -409,7 +411,8 @@ export async function POST(request: NextRequest) {
   });
 
   // Deduct credit (also awaited to avoid billing gaps)
-  await checkAndDeductCredits(client.agency_id, routedModel, 'chat.message', {
+  const widgetCreditAction = classifyUsage(message.trim());
+  await checkAndDeductCredits(client.agency_id, routedModel, widgetCreditAction, {
     clientId: client.id,
     description: `Web chat (${routedModel}): ${message.trim().slice(0, 50)}`,
   });

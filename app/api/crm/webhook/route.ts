@@ -44,6 +44,15 @@ const FORWARDABLE_EVENTS: Set<GHLWebhookEventType> = new Set([
 ]);
 
 export async function POST(request: NextRequest) {
+  // ── Webhook authentication ────────────────────────────────────────────
+  const webhookSecret = process.env.GHL_WEBHOOK_SECRET;
+  if (webhookSecret) {
+    const providedSecret = request.headers.get('x-webhook-secret') || request.nextUrl.searchParams.get('secret');
+    if (providedSecret !== webhookSecret) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+  }
+
   let payload: GHLWebhookPayload;
 
   try {
