@@ -243,3 +243,97 @@ Build a step-by-step checklist page at `/master/stripe-setup` that walks through
 1. `app/master/master-dashboard.tsx` — add link to Quick Links
 
 *Last Updated: March 22, 2026*
+
+---
+
+## Arana Painting Template (April 9, 2026)
+
+### Goal
+Clone the Arana Painting website (ConversionSystem/aranapainting) as a custom template in Kyra's website builder — 100% identical to the original.
+
+### How Kyra's Template System Works
+
+Kyra has two template approaches:
+
+1. **Recipe-Based (modular)** — Combines section variants (hero, services, about, etc.) from `lib/sites/templates/sections/`. Good for generic templates, but limited in achieving pixel-perfect clones.
+
+2. **Custom Assembler (hardcoded)** — A single `.ts` file that returns complete static HTML. Used by TrustedNetworx (`lib/sites/templates/custom/trustednetworx.ts`). Full control over every pixel. **This is what we need.**
+
+### Strategy: Custom Assembler Approach
+
+We'll follow the exact same pattern as TrustedNetworx to create a pixel-perfect Arana Painting template.
+
+### Files to Create
+1. `lib/sites/templates/custom/arana-painting.ts` — Custom page assembler (~800-1200 lines)
+
+### Files to Modify
+1. `lib/sites/templates/gallery.ts` — Add `arana-painting` template to `TEMPLATE_GALLERY`
+2. `lib/sites/build-helpers.ts` — Import + register custom assembler (check `template_id === 'arana-painting'`)
+
+### Implementation Steps
+
+- [ ] **Step 1: Access Source** — Clone aranapainting repo locally & analyze the full HTML/CSS/JS structure
+- [ ] **Step 2: Extract Design System** — Document from the source:
+  - Color palette (primary, secondary, accent, backgrounds, text)
+  - Typography (font families, weights, sizes for headings/body)
+  - Spacing patterns and section layouts
+  - Button styles, hover effects, animations
+  - Image sizing, placement, and aspect ratios
+  - Navigation structure (desktop + mobile)
+  - Footer layout
+- [ ] **Step 3: Map Pages** — Identify all pages and their sections:
+  - Homepage (hero, services, about, gallery, testimonials, CTA, footer)
+  - Service pages (interior painting, exterior painting, etc.)
+  - About page
+  - Gallery/portfolio page
+  - Contact page
+  - Any city/geo pages
+- [ ] **Step 4: Create Custom Assembler** — Build `lib/sites/templates/custom/arana-painting.ts`:
+  - Define IMG map (Unsplash URLs matching painting industry photos)
+  - Define SVG icons (paintbrush, roller, house, palette, etc.)
+  - Implement helper functions (esc, navHref, getAddr)
+  - Build shared fragments:
+    - `renderHead()` — DOCTYPE, meta, Tailwind CDN, custom CSS matching Arana's exact styles
+    - `renderNavbar()` — Exact replica of Arana's navigation (desktop + mobile)
+    - `renderFooter()` — Exact replica of Arana's footer
+    - `renderScripts()` — Mobile menu, form handler, Kyra widget injection
+    - `wrapPage()` — Assembles all fragments
+  - Build page content functions:
+    - `homeContent()` — Hero + services + about + gallery + testimonials + CTA
+    - `aboutContent()` — Company story, team, values
+    - `galleryContent()` — Portfolio/project showcase
+    - `contactContent()` — Contact form + info
+    - `serviceContent()` — Individual service detail pages
+    - `genericContent()` — Fallback for unknown slugs using content_sections
+  - Export main function: `assembleAranaPaintingPage(site, page, allPages)`
+- [ ] **Step 5: Register Template** — Wire it into the system:
+  - Add to `TEMPLATE_GALLERY` in `gallery.ts` with:
+    - `id: 'arana-painting'`
+    - `industries: ['painting', 'remodeling', 'flooring']`
+    - Matching `previewColors` and `previewHtml` thumbnail
+  - Add import + condition in `build-helpers.ts`:
+    ```typescript
+    import { assembleAranaPaintingPage } from './templates/custom/arana-painting';
+    const useCustomAssembler = site.template_id === 'tech-enterprise'
+      ? 'trustednetworx'
+      : site.template_id === 'arana-painting'
+      ? 'arana-painting'
+      : null;
+    ```
+- [ ] **Step 6: Test** — Verify output HTML matches the original Arana Painting site visually
+
+### Key Design Decisions
+- **Custom Assembler over Recipe**: The recipe system can't achieve 100% identical clones because it assembles from generic section templates. A custom assembler gives us full HTML control.
+- **Tailwind CSS**: Continue using Tailwind CDN (same as TrustedNetworx) for styling.
+- **Data-Driven Content**: All text, phone, address, services come from the `site` database object — making the template reusable for any painting business.
+- **Unsplash Images**: Use high-quality painting/home improvement stock photos as defaults; real photos override via `site.photos`.
+
+### Blocker
+- **⚠️ Cannot access the aranapainting repo** — It's private (403). Need either:
+  1. The repo cloned locally / code shared directly
+  2. Access to the live website URL
+  3. Screenshots + design documentation
+  
+  Without seeing the actual Arana Painting design, we can't achieve "100% identical."
+
+*Last Updated: April 9, 2026*
