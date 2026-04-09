@@ -54,3 +54,7 @@ next-env.d.ts
 site-templates/generic/node_modules/
 site-templates/generic/.next/
 site-templates/generic/out/
+
+# PII exports - never commit
+fly-export*/
+kyra-router/
