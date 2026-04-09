@@ -79,7 +79,9 @@ const MASTER_AGENCY_IDS = ['1511e077-77ef-4c47-81fd-06a3bc9f1dbb'];
 export default function AIWorkersTab({ client, agencyId, plan }: AIWorkersTabProps) {
   const [view, setView] = useState<'workers' | 'skills'>('workers');
   const isMasterAgency = MASTER_AGENCY_IDS.includes(agencyId);
-  const canUseMarketingWorker = isMasterAgency || plan === 'pro' || plan === 'scale';
+  // Marketing Worker is locked for all except Kyra's main agency (private beta)
+  const KYRA_MAIN_AGENCY_ID = '1511e077-77ef-4c47-81fd-06a3bc9f1dbb';
+  const canUseMarketingWorker = agencyId === KYRA_MAIN_AGENCY_ID;
   // Filter workers by visibility — private workers shown to allowed agencies + master admin
   const visibleWorkers = ROLE_WORKERS.filter(w => {
     if (!w.visibility || w.visibility === 'public') return true;
@@ -823,7 +825,7 @@ function WorkerCard({
       {/* Apply button */}
       {locked ? (
         <div className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 bg-gray-100 text-gray-400 text-sm font-medium rounded-lg cursor-not-allowed">
-          🔒 Pro or Scale plan required
+          🔒 Coming Soon — Private Beta
         </div>
       ) : (
         <button

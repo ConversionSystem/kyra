@@ -1952,8 +1952,28 @@ const SUB_TABS: { id: SubTab; label: string; icon: React.ElementType }[] = [
   { id: 'workflows', label: 'Workflows', icon: Zap },
 ];
 
+// Only Kyra's main agency (ConversionSystem) gets full Marketing access
+const KYRA_MAIN_AGENCY_ID = '1511e077-77ef-4c47-81fd-06a3bc9f1dbb';
+
 export default function MarketingTab({ client }: { client: AgencyClient }) {
   const [subTab, setSubTab] = useState<SubTab>('dashboard');
+
+  // Lock Marketing for all agencies except Kyra's main account
+  const isKyraMain = client.agency_id === KYRA_MAIN_AGENCY_ID;
+
+  if (!isKyraMain) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 text-center">
+        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center mb-6">
+          <Sparkles className="w-8 h-8 text-indigo-500" />
+        </div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Marketing Command Center</h2>
+        <p className="text-gray-500 max-w-md mb-1">AI-powered SEO, content creation, competitor intelligence, social media, email campaigns, and more.</p>
+        <span className="inline-block mt-4 px-5 py-2 bg-indigo-50 text-indigo-600 text-sm font-semibold rounded-full border border-indigo-200">Coming Soon</span>
+        <p className="text-xs text-gray-400 mt-4 max-w-sm">The Marketing Command Center is currently in private beta. It will be available to all agencies in an upcoming release.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
