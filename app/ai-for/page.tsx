@@ -38,14 +38,14 @@ export default function AiForIndexPage() {
         {/* Hero */}
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 bg-white/10 border border-white/10 rounded-full px-4 py-1.5 text-sm font-medium mb-6">
-            <span className="bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full">Beta</span>
+            <span className="bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full">New</span>
             50+ industry templates
           </div>
           <h1 className="text-4xl sm:text-5xl font-black mb-4">
             AI workers for <span className="text-indigo-400">every industry</span>
           </h1>
           <p className="text-slate-400 text-lg max-w-2xl mx-auto">
-            Each template comes pre-configured with the right personality, tools, conversation flows, and automations for your industry. Deploy in minutes. Free during beta.
+            Each template comes pre-configured with the right personality, tools, conversation flows, and automations for your industry. Deploy in minutes. Start with 1 free account.
           </p>
         </div>
 
@@ -98,7 +98,7 @@ export default function AiForIndexPage() {
             >
               Try Kyra Free →
             </Link>
-            <p className="text-indigo-300 text-sm mt-3">Free during beta · No credit card required</p>
+            <p className="text-indigo-300 text-sm mt-3">1 free account included · No credit card required</p>
           </div>
         </div>
       </div>

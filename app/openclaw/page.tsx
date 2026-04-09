@@ -34,6 +34,21 @@ const OPENCLAW_FEATURES = [
     title: 'Every channel',
     desc: 'SMS, WhatsApp, Instagram + Telegram, Discord, web chat. One AI worker, every touchpoint.',
   },
+  {
+    icon: '🧠',
+    title: 'Memory graph',
+    desc: 'Vector-powered memory that tracks relationships between people, companies, and conversations. Your AI workers remember everything.',
+  },
+  {
+    icon: '🛠️',
+    title: '50+ GHL tools',
+    desc: 'Contacts, calendar, conversations, opportunities, tasks, invoices, marketing — your AI workers take real actions inside GoHighLevel.',
+  },
+  {
+    icon: '📊',
+    title: '15+ intelligence features',
+    desc: 'Lead scoring, deal autopilot, A/B testing, competitive intelligence, review management, payment collection — all built in.',
+  },
 ];
 
 export default function OpenClawPage() {
@@ -139,7 +154,7 @@ export default function OpenClawPage() {
               {
                 icon: '✅',
                 title: '5-min onboarding — template → live instantly',
-                desc: "25+ industry AI worker templates. Pick the industry, connect your CRM, and your client's AI worker is operating in under 10 minutes.",
+                desc: "50+ industry AI worker templates. Pick the industry, connect your CRM, and your client's AI worker is operating in under 10 minutes.",
               },
               {
                 icon: '✅',
@@ -220,7 +235,7 @@ export default function OpenClawPage() {
             {[
               { value: '24/7', label: 'Coverage across channels', emoji: '🌙' },
               { value: '< 60s', label: 'Average first response time', emoji: '⚡' },
-              { value: '40+', label: 'Messages handled in one rush', emoji: '📲' },
+              { value: '72', label: 'AI worker roles available', emoji: '📲' },
             ].map((s) => (
               <div key={s.label} className="bg-white/5 border border-white/10 rounded-2xl p-6">
                 <div className="text-2xl mb-2">{s.emoji}</div>

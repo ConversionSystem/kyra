@@ -87,7 +87,7 @@ export default function WebIntelligencePage() {
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
-            href="/signup"
+            href="/solo"
             className="bg-indigo-500 hover:bg-indigo-600 text-white font-bold px-8 py-4 rounded-xl text-lg transition-colors"
           >
             Get started
@@ -207,7 +207,7 @@ export default function WebIntelligencePage() {
               <div className="text-sm text-slate-400 mb-2">web scrapes/month</div>
               <div className="text-sm text-slate-400 mb-6">{plan.clients} client accounts</div>
               <Link
-                href="/signup"
+                href="/solo"
                 className={`block w-full py-3 rounded-xl font-bold text-sm transition-colors ${
                   plan.highlight
                     ? 'bg-white text-indigo-600 hover:bg-indigo-50'
@@ -231,7 +231,7 @@ export default function WebIntelligencePage() {
           Web Intelligence is live today on every Kyra paid plan.
         </p>
         <Link
-          href="/signup"
+          href="/solo"
           className="inline-block bg-indigo-500 hover:bg-indigo-600 text-white font-bold px-10 py-4 rounded-xl text-lg transition-colors"
         >
           Get started →

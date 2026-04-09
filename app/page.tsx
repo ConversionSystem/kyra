@@ -49,7 +49,7 @@ const FEATURES = [
   { icon: '📊', title: 'CRM Built-In', desc: 'Every lead from the website, chat, and GHL flows into one inbox. Nothing falls through the cracks.' },
   { icon: '📈', title: 'Growth Engine', desc: 'AI suggests new pages to grow your search presence. One click to generate and publish. Sites that keep growing with AI-generated content.' },
   { icon: '🏢', title: 'One Dashboard', desc: 'Manage 20 clients from one login. See every site, every lead, every conversation. White-label everything.' },
-  { icon: '🔗', title: 'GHL Integration', desc: 'Connects to GoHighLevel in 2 minutes. AI replies to every SMS, email, and DM. AI booking, connected to your GHL Calendar.' },
+  { icon: '🔗', title: 'GHL Integration', desc: '50+ native GHL tools across 7 domains — contacts, calendar, conversations, opportunities, tasks, invoices, marketing. AI takes real actions, not just replies.', badge: 'Deep' },
 ];
 
 export default function HomePage() {
@@ -88,8 +88,8 @@ export default function HomePage() {
               {[
                 { value: '15–25', label: 'SEO pages per client site' },
                 { value: 'Free', label: '1 account free — no card needed' },
-                { value: '3x–10x', label: 'Agency resale markup' },
-                { value: '$99/mo', label: 'Lite plan — 3 clients' },
+                { value: '72', label: 'AI worker roles available' },
+                { value: '50+', label: 'Industry templates' },
               ].map((s) => (
                 <div key={s.label} className="bg-white/10 border border-white/10 rounded-xl p-3 text-center">
                   <p className="text-xl font-black text-white">{s.value}</p>
@@ -172,7 +172,7 @@ export default function HomePage() {
               <span className="text-indigo-400">Not Just Another Chatbot</span>
             </h2>
             <p className="text-slate-400 text-lg max-w-2xl mx-auto">
-              Every AI worker comes loaded with capabilities most platforms charge extra for.
+              15+ intelligence features built into every AI worker — not add-ons.
             </p>
           </div>
 
@@ -237,7 +237,7 @@ export default function HomePage() {
                   { value: '< 10 min', label: 'Site + AI worker live', sub: 'From signup to deployed' },
                   { value: '15–25', label: 'Pages per site', sub: 'Auto-generated SEO content' },
                   { value: '24/7', label: 'AI worker coverage', sub: 'Never misses a lead' },
-                  { value: '5x–10x', label: 'Resale markup', sub: '$99 cost → $500–2,000 revenue' },
+                  { value: '7', label: 'Channels', sub: 'SMS, WhatsApp, Telegram, Discord, voice, email, web chat' },
                 ].map((s) => (
                   <div key={s.label} className="bg-white/5 border border-white/10 rounded-2xl p-5">
                     <p className="text-3xl font-black text-white">{s.value}</p>

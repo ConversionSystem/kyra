@@ -51,7 +51,7 @@ const USE_CASES = [
 const FEATURES = [
   { icon: MessageSquareIcon, title: 'Instant product Q&A', desc: 'Ingredients, allergens, caffeine content, sizing, shipping — answered in under 60 seconds on every channel. Nothing goes unanswered.' },
   { icon: SmartphoneIcon, title: 'Every channel, one brain', desc: 'SMS, website chat, WhatsApp, Telegram, email. One AI with your full product knowledge — everywhere your customers are.' },
-  { icon: RefreshCwIcon, title: 'Abandoned cart follow-up (coming soon)', desc: 'Customer showed interest but never bought? Your AI will follow up with a personalised message, handle objections, and offer the right nudge.' },
+  { icon: RefreshCwIcon, title: 'Payment collection', desc: 'Send Stripe payment links via SMS — collect deposits, invoices, and fees directly in conversation. No separate payment flow needed.' },
   { icon: MegaphoneIcon, title: 'Content drafting', desc: 'Product descriptions, FAQ answers, email copy — drafted in your brand voice. You review and post.' },
   { icon: PackageIcon, title: 'Wholesale & retail buyer intake', desc: 'Retail buyers asking about your product get a polished response instantly. AI gathers their details and routes a warm lead to your inbox.' },
   { icon: GlobeIcon, title: 'SEO website included', desc: 'A full multi-page website built by AI — product pages, ingredient breakdowns, FAQ, blog — optimised to rank when people search your category.' },
@@ -91,7 +91,7 @@ export default function EcommercePage() {
             See Brand Examples
           </Link>
         </div>
-        <p className="text-sm text-slate-500 mt-4">Free during beta · Live in 48 hours · Cancel anytime</p>
+        <p className="text-sm text-slate-500 mt-4">1 free account included · No credit card needed · Cancel anytime</p>
       </section>
 
       {/* ── Stats bar ─────────────────────────────────────────────────── */}
@@ -102,7 +102,7 @@ export default function EcommercePage() {
               { value: '24/7', label: 'Customer support', sub: 'Every DM and question answered' },
               { value: '< 60s', label: 'Response time', sub: 'Faster than any human team' },
               { value: '100%', label: 'Leads captured', sub: 'No inquiry goes unanswered' },
-              { value: '5+', label: 'Channels at once', sub: 'SMS, web, email, WhatsApp, Telegram' },
+              { value: '7', label: 'Channels at once', sub: 'SMS, WhatsApp, Telegram, Discord, voice, email, web chat' },
             ].map(s => (
               <div key={s.label} className="bg-white/5 border border-white/10 rounded-2xl p-5 text-center">
                 <p className="text-3xl font-black text-white">{s.value}</p>
@@ -235,7 +235,7 @@ export default function EcommercePage() {
               { step: '1', title: 'Tell us about your brand', desc: 'Products, ingredients, brand voice, common questions, shipping policy. 15 minutes with a form.' },
               { step: '2', title: 'Your AI worker is configured', desc: 'Built on our e-commerce template. It knows your product range, can compare items, answer FAQs, and draft content in your voice.' },
               { step: '3', title: 'Test every scenario', desc: '"Is this vegan?" "How is this different from [competitor]?" "Can I wholesale?" Test until you\'re satisfied. We adjust until it\'s right.' },
-              { step: '4', title: 'Connect your channels', desc: 'Website chat, SMS, Instagram DMs, email. Each takes under 10 minutes to connect.' },
+              { step: '4', title: 'Connect your channels', desc: 'Website chat, SMS, WhatsApp, Telegram, email, voice, Discord. 7 channels, each takes under 10 minutes to connect.' },
               { step: '5', title: 'Your AI worker goes live', desc: 'Every inquiry handled instantly. You see every conversation. Content drafts land in your inbox weekly.' },
             ].map(item => (
               <div key={item.step} className="flex gap-4 items-start">
@@ -264,11 +264,11 @@ export default function EcommercePage() {
           </p>
           <div className="bg-white/5 border border-white/10 rounded-2xl p-8 mb-8">
             <div className="flex items-baseline justify-center gap-2 mb-2">
-              <span className="text-5xl font-black text-white">Free</span>
-              <span className="text-slate-400">during beta</span>
+              <span className="text-5xl font-black text-white">$99</span>
+              <span className="text-slate-400">/mo — Lite plan</span>
             </div>
             <p className="text-slate-400 text-sm mb-6">
-              Bring your own AI key (Anthropic or OpenAI). Full platform. No limits during beta.
+              Full AI worker platform. 4 AI workers, 5,000 credits/month, 7 channels. Start with 1 free account.
             </p>
             <ul className="space-y-2 text-left max-w-xs mx-auto mb-6">
               {[
@@ -277,7 +277,7 @@ export default function EcommercePage() {
                 'Content drafting (blog, social, email)',
                 'SEO website with product & FAQ pages',
                 'Full conversation history & analytics',
-                'Setup support included',
+                'Review management + lead scoring',
               ].map(f => (
                 <li key={f} className="flex items-center gap-2 text-sm text-slate-300">
                   <CheckCircleIcon className="h-4 w-4 text-indigo-400 shrink-0" />
@@ -292,7 +292,7 @@ export default function EcommercePage() {
               Deploy Your Brand AI — Free
               <ArrowRightIcon className="h-5 w-5" />
             </Link>
-            <p className="text-xs text-slate-600 mt-3">Beta is free · Paid plans from $79/mo · Early adopters get 50% off forever</p>
+            <p className="text-xs text-slate-600 mt-3">1 free account included · No credit card needed · Plans from $99/mo</p>
           </div>
           <p className="text-sm text-slate-500">
             Questions?{' '}

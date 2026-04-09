@@ -40,8 +40,8 @@ const features = [
   },
   {
     icon: TrendingUp,
-    title: 'Growth Engine',
-    desc: 'AI suggests new pages to grow your search presence. One click to generate and publish. Sites keep growing with AI-generated content.',
+    title: 'Built-in Intelligence',
+    desc: 'Memory graph, lead scoring, deal autopilot, A/B message testing, and competitive intelligence — all working inside GHL automatically.',
   },
 ];
 
@@ -59,6 +59,9 @@ const comparison = [
   { feature: 'Built-in CRM per client', kyra: true, ghl: false },
   { feature: 'Client billing management', kyra: true, ghl: false },
   { feature: 'Custom AI personality per client', kyra: true, ghl: false },
+  { feature: 'Memory graph across conversations', kyra: true, ghl: false },
+  { feature: 'AI lead scoring', kyra: true, ghl: false },
+  { feature: 'Payment collection via SMS', kyra: true, ghl: false },
 ];
 
 export default function GHLPage() {

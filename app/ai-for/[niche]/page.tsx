@@ -276,7 +276,7 @@ export default async function AiForNichePage({ params }: Props) {
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <Link href="/solo" className="inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-lg px-8 py-4 rounded-xl transition text-center">
-                Start Free — $2 in Credits
+                Start Free — 50 Credits Included
               </Link>
               <Link href={`/try/${data.demoSlug}`} className="inline-block border-2 border-gray-200 hover:border-indigo-300 text-gray-700 font-semibold text-lg px-6 py-4 rounded-xl transition text-center">
                 {data.emoji} See live demo →
@@ -372,7 +372,7 @@ export default async function AiForNichePage({ params }: Props) {
       {/* Other niches */}
       <section className="bg-gray-50 py-16 px-4">
         <div className="max-w-4xl mx-auto text-center">
-          <p className="text-sm font-semibold text-gray-500 mb-6">Kyra AI works for 21+ industries</p>
+          <p className="text-sm font-semibold text-gray-500 mb-6">Kyra AI works for 50+ industries</p>
           <div className="flex flex-wrap justify-center gap-3">
             {NICHE_SLUGS.filter(s => s !== niche).map(s => (
               <Link key={s} href={`/ai-for/${s}`}
@@ -391,7 +391,7 @@ export default async function AiForNichePage({ params }: Props) {
             Deploy your first {data.emoji} AI worker today.
           </h2>
           <p className="text-indigo-200 mb-8 text-lg">
-            Free to start. Setup in under 10 minutes. $2 in credits included.
+            Free to start. Setup in under 10 minutes. 50 credits included.
           </p>
           <Link href="/solo" className="inline-block bg-white text-indigo-900 font-black text-xl px-10 py-5 rounded-xl hover:bg-indigo-50 transition">
             Get Started Free →

@@ -32,7 +32,7 @@ const PERKS = [
   {
     icon: '🎁',
     title: '100 credits per referral',
-    desc: 'Worth $10 in AI usage. Credits are added automatically when your referral activates.',
+    desc: 'Worth $10 in AI usage. Credits added automatically. Your referrals get access to all 15+ intelligence features — memory graph, lead scoring, deal autopilot, and more.',
   },
   {
     icon: '🚀',
@@ -93,7 +93,7 @@ export default function PartnersPage() {
             </span>
           </h1>
           <p className="text-xl text-gray-300 max-w-xl mx-auto mb-10 leading-relaxed">
-            Refer agencies. Earn credits for every referral. Help them deploy AI workers for their clients.
+            Refer agencies to the AI workforce platform with 72 worker roles, 50+ GHL tools, and 15+ intelligence features. Earn credits for every referral.
           </p>
           <Link
             href="/agency/referrals"

@@ -70,7 +70,7 @@ const PLANS = [
     desc: '3 clients — each gets website + AI worker + CRM',
     revenue: '$1,500–2,400/mo charging $500–800/client',
     features: [
-      '3 client AI workers',
+      '4 AI workers (3 + 1 free)',
       '15-25 page website per client',
       '5,000 credits/month',
       '500 web scrapes/month',
@@ -89,7 +89,7 @@ const PLANS = [
     desc: '10 clients — full AI workforce with white-label',
     revenue: '$8,000–12,000/mo charging $800–1,200/client',
     features: [
-      '10 client AI workers',
+      '11 AI workers (10 + 1 free)',
       'Everything in Lite',
       '15,000 credits/month',
       '2,000 web scrapes/month',
@@ -109,7 +109,7 @@ const PLANS = [
     desc: '20 clients — dedicated infrastructure, full API access',
     revenue: '$20,000–40,000/mo charging $1,000–2,000/client',
     features: [
-      '20 client AI workers',
+      '21 AI workers (20 + 1 free)',
       'Everything in Pro',
       '30,000 credits/month',
       '5,000 web scrapes/month',
@@ -339,20 +339,6 @@ export default function LaunchPage() {
               {' '}
               <Link href="/pricing" className="text-indigo-600 hover:underline">See all options →</Link>
             </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Coming Soon */}
-      <section className="px-4 py-14">
-        <div className="max-w-3xl mx-auto text-center">
-          <p className="text-indigo-600 text-sm font-semibold uppercase tracking-widest mb-3">Coming Soon</p>
-          <div className="flex flex-wrap justify-center gap-3 mt-4">
-            {['AI Voice Calls (in beta)', 'AI Sales Pipeline (in beta)', 'Custom Domains', 'Slack Integration'].map((item) => (
-              <span key={item} className="bg-gray-100 border border-gray-200 text-gray-600 text-sm font-medium px-4 py-2 rounded-full">
-                {item}
-              </span>
-            ))}
           </div>
         </div>
       </section>

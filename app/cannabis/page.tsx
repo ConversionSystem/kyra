@@ -82,7 +82,7 @@ export default function CannabisPage() {
                 See How It Works
               </Link>
             </div>
-            <p className="text-xs text-green-600 mt-4">Free during beta · Live in 72 hours · Cancel anytime</p>
+            <p className="text-xs text-green-600 mt-4">1 free account included · No credit card needed · Cancel anytime</p>
             <p className="text-xs text-green-500 mt-2">
               OpenClaw&apos;s per-client isolation means each cannabis client&apos;s data stays separate. Compliance-aware by design.
             </p>
@@ -97,7 +97,7 @@ export default function CannabisPage() {
             <StatCard stat="24/7" label="Availability" sub="Always on — no missed texts" />
             <StatCard stat="70%" label="Fewer phone calls" sub="Staff handles 30% vs 100%" />
             <StatCard stat="< 60s" label="Response time" sub="SMS, Telegram, web chat" />
-            <StatCard stat="100%" label="Designed coverage" sub="Built to catch every inbound lead" />
+            <StatCard stat="7" label="Channels" sub="SMS, WhatsApp, Telegram, voice, email, web, Discord" />
           </div>
         </div>
       </section>
@@ -143,7 +143,7 @@ export default function CannabisPage() {
               <FeatureRow
                 icon={UsersIcon}
                 title="Consultation booking"
-                desc="Customers wanting a private consultation get booked with a budtender or manager. New patient intake handled before they arrive."
+                desc="Customers wanting a private consultation get booked with a budtender. Plus: AI product recommendation engine suggests strains by effect, and Firecrawl-powered live inventory search lets your AI check real-time stock."
               />
             </div>
           </div>
@@ -249,17 +249,17 @@ export default function CannabisPage() {
             </p>
             <div className="rounded-2xl bg-green-900 border border-green-700 p-8 mb-6">
               <div className="flex items-baseline justify-center gap-2 mb-2">
-                <span className="text-5xl font-black text-green-300">Free</span>
-                <span className="text-green-400">during beta</span>
+                <span className="text-5xl font-black text-green-300">$99</span>
+                <span className="text-green-400">/mo — Lite plan</span>
               </div>
-              <p className="text-green-200 text-sm mb-6">Bring your own AI key (Anthropic or OpenAI). Full platform. No limits.</p>
+              <p className="text-green-200 text-sm mb-6">Full AI worker platform. 4 AI workers, 5,000 credits/month, 7 channels. Start with 1 free account.</p>
               <ul className="space-y-2 text-left max-w-xs mx-auto mb-6">
                 {[
                   'Cannabis-trained AI responses',
                   'SMS + Telegram + web chat',
                   'Cannabis industry best practice guardrails',
                   'Full conversation history',
-                  'Setup support included',
+                  'AI product recommendation engine',
                 ].map((f) => (
                   <li key={f} className="flex items-center gap-2 text-sm text-green-100">
                     <CheckCircleIcon className="h-4 w-4 text-green-400 shrink-0" />
@@ -274,7 +274,7 @@ export default function CannabisPage() {
                 Deploy Your Dispensary AI — Free
                 <ArrowRightIcon className="h-5 w-5" />
               </Link>
-              <p className="text-xs text-green-600 mt-3">Beta is free · Paid plans coming soon · Early adopters get 50% off forever</p>
+              <p className="text-xs text-green-600 mt-3">1 free account included · No credit card needed · Plans from $99/mo</p>
             </div>
           </div>
         </div>

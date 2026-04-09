@@ -20,12 +20,12 @@ const PLANS = [
     badge: 'Start here',
     revenueCallout: 'Charge $500–800/mo per client = $1,500–2,400/mo revenue on $99 cost',
     features: [
-      '3 client AI workers',
+      '4 AI workers (3 + 1 free)',
       'AI Website Builder — 15-25 SEO-optimized pages per client',
       'Lead capture forms + CRM sync',
       '5,000 platform credits / month',
       '🌍 500 web scrapes/mo — AI workers can read the internet',
-      '21 industry templates',
+      '50 industry templates',
       'Telegram, SMS, web chat',
       'CRM integration',
       'AI Sales Pipeline',
@@ -46,7 +46,7 @@ const PLANS = [
     badge: 'Best for growing agencies',
     revenueCallout: 'Charge $800–1,200/mo per client = $8,000–12,000/mo revenue on $299 cost',
     features: [
-      '10 client AI workers',
+      '11 AI workers (10 + 1 free)',
       'AI Website Builder — 15-25 SEO-optimized pages per client',
       'Lead capture forms + CRM sync',
       'Growth Engine — AI-powered SEO page generation',
@@ -73,7 +73,7 @@ const PLANS = [
     badge: 'For high-volume agencies',
     revenueCallout: 'Charge $1,000–2,000/mo per client = $20,000–40,000/mo revenue on $499 cost',
     features: [
-      '20 client AI workers',
+      '21 AI workers (20 + 1 free)',
       'AI Website Builder — 15-25 SEO-optimized pages per client',
       'Lead capture forms + CRM sync',
       'Growth Engine — AI-powered SEO page generation',
@@ -102,7 +102,7 @@ const FAQ = [
   },
   {
     q: 'How do agencies make money with Kyra?',
-    a: 'You pay $99–$499/mo for Kyra. You charge each client $500–$2,000/mo for their website + AI worker + CRM. At Pro ($299/mo, 10 clients) billing $1,000/client = $10,000/mo revenue — $9,751/mo margin. The math works from day one.',
+    a: 'You pay $99–$499/mo for Kyra. You charge each client $500–$2,000/mo for their website + AI worker + CRM. At Pro ($299/mo, 10 clients) billing $1,000/client = $10,000/mo revenue — $9,701/mo margin. The math works from day one.',
   },
   {
     q: 'How long does it take to set up a new client?',

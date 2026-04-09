@@ -11,8 +11,8 @@ const COMPARISON = [
   { feature: 'Technical skills needed', kyra: 'None. Point-and-click dashboard', mc: 'CLI, Docker, environment variables', winner: 'kyra' },
   { feature: 'Hosting', kyra: 'Fully managed cloud (we handle it)', mc: 'Self-hosted (you manage servers)', winner: 'kyra' },
   { feature: 'Updates', kyra: 'Automatic — always on latest version', mc: 'Manual — git pull, rebuild, restart', winner: 'kyra' },
-  { feature: 'AI worker templates', kyra: '15 industry templates pre-built', mc: 'Build from scratch', winner: 'kyra' },
-  { feature: 'Multi-agent routing', kyra: '6 specialized agents + smart routing', mc: 'Manual agent setup', winner: 'kyra' },
+  { feature: 'AI worker templates', kyra: '50 industry templates pre-built', mc: 'Build from scratch', winner: 'kyra' },
+  { feature: 'Multi-agent routing', kyra: '72 AI worker roles + multi-agent routing', mc: 'Manual agent setup', winner: 'kyra' },
   { feature: 'CRM', kyra: 'Full CRM built in — contacts, deals, tasks, tags', mc: 'No CRM — use external tools', winner: 'kyra' },
   { feature: 'CRM integration', kyra: 'Native — SMS, webhooks, contacts sync', mc: 'Manual webhook setup', winner: 'kyra' },
   { feature: 'SMS / WhatsApp', kyra: 'Built-in channels, one-click connect', mc: 'Configure yourself', winner: 'kyra' },
@@ -71,7 +71,7 @@ export default function CompareMissionControl() {
               <li>✅ Run an agency and manage multiple clients</li>
               <li>✅ Need built-in CRM, billing, and white-label</li>
               <li>✅ Don&apos;t want to manage servers or Docker</li>
-              <li>✅ Want pre-built templates and autopilot</li>
+              <li>✅ Want 50+ templates + 15 intelligence features</li>
             </ul>
           </div>
           <div className="bg-slate-900/50 border border-slate-700/40 rounded-xl p-6">

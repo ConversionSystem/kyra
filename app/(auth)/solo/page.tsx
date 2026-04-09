@@ -380,7 +380,7 @@ function SoloSignupPageInner() {
               { icon: Bot, title: 'Your Own OpenClaw Agent', desc: 'A dedicated OpenClaw AI worker — trained on your business, running 24/7' },
               { icon: MessageSquare, title: 'Web Chat', desc: 'Embed on your site — customers chat with your AI 24/7' },
               { icon: BookOpen, title: 'Train from Website', desc: 'Drop your URL — AI learns your business instantly' },
-              { icon: Coins, title: '50 Free Credits/Month', desc: 'Enough for 50 AI conversations — on the house' },
+              { icon: Coins, title: '50 Free Credits', desc: 'Welcome gift — enough to try 50+ AI conversations. No credit card needed.' },
             ].map((item) => (
               <div key={item.title} className="flex items-start gap-3">
                 <div className="h-9 w-9 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0">

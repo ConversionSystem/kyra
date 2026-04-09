@@ -89,7 +89,7 @@ export default async function IndustryPage({
       <section className="max-w-6xl mx-auto px-4 pt-16 pb-16">
         <div className="flex justify-center mb-6">
           <div className="inline-flex items-center gap-2 bg-white/10 border border-white/10 rounded-full px-4 py-1.5 text-sm font-medium">
-            <span className="bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full">Beta</span>
+            <span className="bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full">New</span>
             {template.emoji} {template.industry} AI Worker
           </div>
         </div>
@@ -132,7 +132,7 @@ export default async function IndustryPage({
                 Browse All 50+ Templates
               </Link>
             </div>
-            <p className="text-sm text-slate-500 mt-3">Free during beta · No credit card required</p>
+            <p className="text-sm text-slate-500 mt-3">1 free account included · No credit card required</p>
           </div>
 
           {/* Demo chat */}
@@ -243,7 +243,7 @@ export default async function IndustryPage({
               Deploy your {template.industry.toLowerCase()} AI worker now
             </h2>
             <p className="text-indigo-200 mb-6">
-              Free during beta. Live in under 5 minutes. No code needed.
+              Free to start. Live in under 5 minutes. No code needed.
             </p>
             <Link
               href="/solo"
