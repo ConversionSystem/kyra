@@ -58,3 +58,10 @@ site-templates/generic/out/
 # PII exports - never commit
 fly-export*/
 kyra-router/
+
+# Env files with secrets (NEVER commit)
+.env.local.ghl
+.env.vercel-check
+.env.openai
+.env.secrets
+.env.fc
