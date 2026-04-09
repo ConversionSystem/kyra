@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
   // Get all running containers with their gateway URLs
   const { data: clients, error: clientErr } = await supabase
     .from('agency_clients')
-    .select('id, name, container_config, gateway_status')
+    .select('id, name, container_config, gateway_status, gateway_url')
     .eq('gateway_status', 'running');
 
   if (clientErr || !clients) {
@@ -46,8 +46,8 @@ export async function GET(request: NextRequest) {
 
   await Promise.all(
     clients.map(async (client) => {
-      const cfg = (client.container_config as Record<string, unknown>) ?? {};
-      const gatewayUrl = cfg.gateway_url as string | undefined;
+      // gateway_url is a column on agency_clients, NOT in container_config
+      const gatewayUrl = (client as Record<string, unknown>).gateway_url as string | undefined;
 
       if (!gatewayUrl) {
         failures.push({ name: client.name, id: client.id, reason: 'No gateway_url configured' });
