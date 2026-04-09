@@ -10,6 +10,7 @@ import { Sparkles, Menu } from 'lucide-react';
 import { ReminderNotification } from '@/components/reminders/ReminderNotification';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 import { CreditWarningBanner } from './CreditBadge';
+import { usePolling } from '@/hooks/use-polling';
 
 interface ChatInterfaceProps {
   initialConversation?: Conversation;
@@ -60,22 +61,20 @@ export function ChatInterface({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, streamingContent]);
 
-  // Refresh conversations periodically
+  // Refresh conversations periodically via shared polling
+  const { data: polledConversations } = usePolling<Conversation[]>({
+    key: 'conversations',
+    fetcher: async () => {
+      const response = await fetch('/api/conversations');
+      if (!response.ok) return [];
+      return response.json();
+    },
+    intervalMs: 30_000,
+  });
+
   useEffect(() => {
-    const fetchConversations = async () => {
-      try {
-        const response = await fetch('/api/conversations');
-        if (response.ok) {
-          const data = await response.json() as Conversation[];
-          setConversations(data);
-        }
-      } catch (error) {
-        console.error('Error fetching conversations:', error);
-      }
-    };
-    const interval = setInterval(fetchConversations, 30000);
-    return () => clearInterval(interval);
-  }, []);
+    if (polledConversations) setConversations(polledConversations);
+  }, [polledConversations]);
 
   const handleSelectConversation = useCallback(async (id: string) => {
     try {

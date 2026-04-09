@@ -62,6 +62,10 @@
     {
       "path": "/api/cron/idle-containers",
       "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/container-health",
+      "schedule": "*/5 * * * *"
     }
   ]
 }

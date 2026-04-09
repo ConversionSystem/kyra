@@ -1,43 +1,34 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { Coins, AlertTriangle, Zap } from 'lucide-react';
 import Link from 'next/link';
+import { usePolling } from '@/hooks/use-polling';
 
 interface CreditBadgeProps {
   className?: string;
 }
 
+async function fetchCredits(): Promise<number> {
+  const res = await fetch('/api/agency/credits');
+  if (!res.ok) return 0;
+  const data = await res.json();
+  return data.balance ?? 0;
+}
+
 export function CreditBadge({ className = '' }: CreditBadgeProps) {
-  const [balance, setBalance] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: balance, loading, refetch } = usePolling<number>({
+    key: 'credits',
+    fetcher: fetchCredits,
+    intervalMs: 15_000,
+  });
 
+  // Also listen for custom credit-update events (fired by chat components)
   useEffect(() => {
-    async function fetchBalance() {
-      try {
-        const res = await fetch('/api/agency/credits');
-        if (!res.ok) return;
-        const data = await res.json();
-        setBalance(data.balance ?? 0);
-      } catch {
-        // Silently fail — badge just won't show
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchBalance();
-    // Poll every 15 seconds for near-real-time updates
-    const interval = setInterval(fetchBalance, 15_000);
-
-    // Also listen for custom credit-update events (fired by chat components)
-    const handleCreditUpdate = () => fetchBalance();
+    const handleCreditUpdate = () => { refetch(); };
     window.addEventListener('kyra:credit-update', handleCreditUpdate);
-
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('kyra:credit-update', handleCreditUpdate);
-    };
-  }, []);
+    return () => window.removeEventListener('kyra:credit-update', handleCreditUpdate);
+  }, [refetch]);
 
   if (loading || balance === null) return null;
 
@@ -68,14 +59,11 @@ export function CreditBadge({ className = '' }: CreditBadgeProps) {
 }
 
 export function CreditWarningBanner() {
-  const [balance, setBalance] = useState<number | null>(null);
-
-  useEffect(() => {
-    fetch('/api/agency/credits')
-      .then(r => r.ok ? r.json() : null)
-      .then(data => data && setBalance(data.balance ?? 0))
-      .catch(() => {});
-  }, []);
+  const { data: balance } = usePolling<number>({
+    key: 'credits',
+    fetcher: fetchCredits,
+    intervalMs: 15_000,
+  });
 
   if (balance === null || balance > 0) return null;
 
