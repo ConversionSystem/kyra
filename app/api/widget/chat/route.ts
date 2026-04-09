@@ -25,23 +25,15 @@ import {
   notifyLeadWebhook,
   getLeadCapturePrompt,
 } from '@/lib/chat/lead-capture';
-import { deductCredits, requireCredits } from '@/lib/billing/credit-engine';
+import { requireCredits } from '@/lib/billing/credit-engine';
 import { getCreditsForModel } from '@/lib/billing/model-credits';
 import { classifyMessage } from '@/lib/ghl/model-router';
-import OpenAI from 'openai';
-
-// Direct LLM client for widget chat — bypasses OpenClaw gateway which has agency persona/SOUL.md
-// Widget visitors should NEVER interact with the agency owner's AI persona
-function getDirectLLMClient() {
-  const openrouterKey = process.env.OPENROUTER_API_KEY;
-  if (openrouterKey) {
-    return new OpenAI({
-      baseURL: 'https://openrouter.ai/api/v1',
-      apiKey: openrouterKey,
-    });
-  }
-  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
-}
+import {
+  getDirectLLMClient,
+  resolveModel,
+  checkAndDeductCredits,
+  saveConversation,
+} from '@/lib/chat/core';
 
 const WIDGET_MODEL = 'openai/gpt-4o-mini'; // Fast, cheap, good enough for customer service
 
@@ -147,47 +139,10 @@ export async function POST(request: NextRequest) {
   const rawModel = (client.container_config as any)?.ai_model || (client as any).ai_model;
   // Validate: empty/undefined → fall back to WIDGET_MODEL
   const resolvedModel = rawModel && typeof rawModel === 'string' && rawModel.trim() ? rawModel.trim() : WIDGET_MODEL;
-  // ── Canonical model ID → valid OpenRouter slug ─────────────────────────
-  // Verified against OpenRouter /v1/models on Apr 3, 2026
-  const OPENROUTER_SLUGS: Record<string, string> = {
-    'claude-haiku-3-5':   'anthropic/claude-3.5-haiku',
-    'claude-haiku-4-5':   'anthropic/claude-haiku-4.5',
-    'claude-sonnet-3-7':  'anthropic/claude-3.7-sonnet',
-    'claude-sonnet-4-6':  'anthropic/claude-sonnet-4.6',
-    'claude-opus-4-6':    'anthropic/claude-opus-4.6',
-    'gpt-4o-mini':        'openai/gpt-4o-mini',
-    'gpt-4o':             'openai/gpt-4o',
-    'gemini-2.0-flash':   'google/gemini-2.0-flash-001',
-    'gemini-2.5-pro':     'google/gemini-2.5-pro',
-    'o3-mini':            'openai/o3-mini',
-    'o3':                 'openai/o3',
-    'o1':                 'openai/o1',
-  };
-
   const useOpenRouter = !!process.env.OPENROUTER_API_KEY;
-  let clientModel: string;
-  if (useOpenRouter) {
-    // Strip 'openrouter/' prefix first
-    const stripped = resolvedModel.startsWith('openrouter/') ? resolvedModel.slice('openrouter/'.length) : resolvedModel;
-    // 1. Try direct slug mapping (most reliable — handles dash/dot variations)
-    if (OPENROUTER_SLUGS[stripped]) {
-      clientModel = OPENROUTER_SLUGS[stripped];
-    } else if (stripped.includes('/')) {
-      // 2. Already has provider prefix — check if it's a known valid slug
-      const maybeCanonical = stripped.split('/').pop() || '';
-      clientModel = OPENROUTER_SLUGS[maybeCanonical] || stripped;
-    } else if (stripped.startsWith('gpt-') || stripped.startsWith('o1') || stripped.startsWith('o3')) {
-      clientModel = `openai/${stripped}`;
-    } else if (stripped.startsWith('gemini-')) {
-      clientModel = `google/${stripped}`;
-    } else {
-      // Unknown — fall back to default widget model
-      clientModel = WIDGET_MODEL;
-    }
-  } else {
-    // Direct OpenAI — strip any provider prefix
-    clientModel = resolvedModel.includes('/') ? resolvedModel.split('/').slice(1).join('/') : resolvedModel;
-  }
+  const resolved = resolveModel(resolvedModel, useOpenRouter);
+  // If resolveModel returns a bare unknown string, fall back to WIDGET_MODEL
+  const clientModel = (useOpenRouter && !resolved.includes('/')) ? WIDGET_MODEL : resolved;
 
   // ── Smart routing (initial — may be overridden after cfg is loaded) ──────
   const complexity = classifyMessage(message.trim());
@@ -457,27 +412,17 @@ export async function POST(request: NextRequest) {
   // NOTE: fire-and-forget was causing silent data loss on Vercel serverless —
   // the function can be killed right after sending the response, before async
   // operations complete. We await the insert so it always persists.
-  const { error: insertError } = await supabase
-    .from('client_conversations')
-    .insert({
-      client_id: client.id,
-      agency_id: client.agency_id,
-      channel: 'web_chat',
-      user_message: message.trim(),
-      ai_response: aiResponse,
-      session_id: resolvedSessionId,
-      source_url: sourceUrl || null,
-    });
-
-  if (insertError) {
-    // Log but don't fail the request — user should still get their response
-    console.error('[widget/chat] DB insert failed:', insertError.message, insertError.code);
-  }
+  await saveConversation({
+    clientId: client.id,
+    agencyId: client.agency_id,
+    sessionId: resolvedSessionId,
+    userMessage: message.trim(),
+    aiResponse: aiResponse,
+    sourceUrl: sourceUrl || null,
+  });
 
   // Deduct credit (also awaited to avoid billing gaps)
-  const widgetCredits = getCreditsForModel(routedModel);
-  await deductCredits(client.agency_id, 'chat.message', {
-    override: widgetCredits,
+  await checkAndDeductCredits(client.agency_id, routedModel, 'chat.message', {
     clientId: client.id,
     description: `Web chat (${routedModel}): ${message.trim().slice(0, 50)}`,
   });

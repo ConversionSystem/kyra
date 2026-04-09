@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Bell, X, Check, CheckCheck, Sparkles, Calendar, Target, Brain, TrendingUp, Clock } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { usePolling } from '@/hooks/use-polling';
 
 interface Notification {
   id: string;
@@ -61,25 +62,24 @@ export function NotificationCenter() {
   const [unreadCount, setUnreadCount] = useState(0);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  const fetchNotifications = useCallback(async () => {
-    try {
+  const { data: polledData, refetch: fetchNotifications } = usePolling<{ notifications: Notification[]; unreadCount: number }>({
+    key: 'notifications',
+    fetcher: async () => {
       const res = await fetch('/api/notifications?limit=15');
-      if (res.ok) {
-        const data = (await res.json()) as any;
-        setNotifications(data.notifications || []);
-        setUnreadCount(data.unreadCount || 0);
-      }
-    } catch (e) {
-      console.error('Failed to fetch notifications:', e);
-    }
-  }, []);
+      if (!res.ok) return { notifications: [], unreadCount: 0 };
+      const data = await res.json();
+      return { notifications: data.notifications || [], unreadCount: data.unreadCount || 0 };
+    },
+    intervalMs: 30_000,
+  });
 
-  // Poll every 30s
+  // Sync polled data into local state (local state is also mutated by mark-read/dismiss)
   useEffect(() => {
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
-  }, [fetchNotifications]);
+    if (polledData) {
+      setNotifications(polledData.notifications);
+      setUnreadCount(polledData.unreadCount);
+    }
+  }, [polledData]);
 
   // Close on click outside
   useEffect(() => {
