@@ -6,6 +6,7 @@ import { provisionClientGateway } from '@/lib/ovh/provisioner';
 import { buildInjectionDefensePromptSuffix } from '@/lib/security/prompt-injection';
 import { syncLeadToCRM } from '@/lib/crm/lead-sync';
 import { activateReferral } from '@/lib/billing/referral-activation';
+import { isRateLimited } from '@/lib/rate-limit';
 
 const SOLO_WELCOME_CREDITS = 50;
 const SOLO_WELCOME_DESCRIPTION = 'Kyra Solo Free — 50 welcome credits';
@@ -39,6 +40,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
+  // Rate limit signups: 5 per IP per minute
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
+  if (await isRateLimited(`signup:${ip}`, 5, 60_000)) {
+    return NextResponse.json({ error: 'Too many signup attempts. Please try again later.' }, { status: 429 });
+  }
+
   const { businessName, fullName, email, password, websiteUrl } = body as typeof body & { referralId?: string };
   // Referral: prefer body value (from URL param), fall back to cookie (survives navigation + tab closes)
   const cookieRef = request.cookies.get('kyra_ref')?.value;
@@ -62,100 +69,152 @@ export async function POST(request: NextRequest) {
 
   const supabase = getServiceSupabase();
 
-  // ── 1. Create Supabase auth user ────────────────────────────────────────
-  const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true, // Auto-confirm for solo — no email verification friction
-    user_metadata: { full_name: fullName, signup_type: 'solo' },
-  });
+  // ── Saga tracker — rollback on failure ──────────────────────────────────
+  const created = {
+    authUser: null as string | null,
+    agency: null as string | null,
+    member: false,
+    client: null as string | null,
+  };
 
-  if (authError || !authData.user) {
-    console.error('[solo-signup] Auth error:', authError?.message);
-    // Supabase returns "User already registered" for duplicates
-    if (authError?.message?.toLowerCase().includes('already')) {
+  async function rollback() {
+    console.error('[solo-signup] Rolling back created resources...');
+    if (created.client) await supabase.from('agency_clients').delete().eq('id', created.client).then(() => {}, () => {});
+    if (created.member && created.agency) await supabase.from('agency_members').delete().eq('agency_id', created.agency).eq('user_id', created.authUser!).then(() => {}, () => {});
+    if (created.agency) await supabase.from('agencies').delete().eq('id', created.agency).then(() => {}, () => {});
+    if (created.authUser) await supabase.auth.admin.deleteUser(created.authUser).catch(() => {});
+  }
+
+  let agency: Record<string, unknown>;
+  let client: Record<string, unknown> | null = null;
+
+  try {
+    // ── 1. Create Supabase auth user ──────────────────────────────────────
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { full_name: fullName, signup_type: 'solo' },
+    });
+
+    if (authError || !authData.user) {
+      console.error('[solo-signup] Auth error:', authError?.message);
+      if (authError?.message?.toLowerCase().includes('already')) {
+        return NextResponse.json(
+          { error: 'This email is already registered. Try logging in instead.' },
+          { status: 409 },
+        );
+      }
       return NextResponse.json(
-        { error: 'This email is already registered. Try logging in instead.' },
+        { error: authError?.message || 'Failed to create account' },
+        { status: 500 },
+      );
+    }
+
+    const userId = authData.user.id;
+    created.authUser = userId;
+
+    // ── 2. Check slug uniqueness ──────────────────────────────────────────
+    const { data: existingAgency } = await supabase
+      .from('agencies')
+      .select('id')
+      .eq('slug', slug)
+      .limit(1)
+      .single();
+
+    if (existingAgency) {
+      await rollback();
+      return NextResponse.json(
+        { error: 'This business name is taken. Try a different one.' },
         { status: 409 },
       );
     }
-    return NextResponse.json(
-      { error: authError?.message || 'Failed to create account' },
-      { status: 500 },
-    );
+
+    // ── 3. Create agency with account_type = "solo" ───────────────────────
+    const { data: agencyData, error: agencyError } = await supabase
+      .from('agencies')
+      .insert({
+        owner_id: userId,
+        name: businessName,
+        slug,
+        plan: 'free',
+        settings: {
+          account_type: 'solo',
+          owner_name: fullName,
+          website_url: websiteUrl || null,
+        },
+      })
+      .select()
+      .single();
+
+    if (agencyError || !agencyData) {
+      console.error('[solo-signup] Agency creation failed:', agencyError?.message);
+      await rollback();
+      return NextResponse.json(
+        { error: 'Failed to create your workspace. Please try again.' },
+        { status: 500 },
+      );
+    }
+
+    agency = agencyData;
+    created.agency = agency.id as string;
+
+    // ── 4. Create owner membership ────────────────────────────────────────
+    const { error: memberError } = await supabase.from('agency_members').insert({
+      agency_id: agency.id,
+      user_id: userId,
+      role: 'owner',
+    });
+
+    if (memberError) {
+      console.error('[solo-signup] Member creation failed:', memberError.message);
+      await rollback();
+      return NextResponse.json(
+        { error: 'Failed to set up your account. Please try again.' },
+        { status: 500 },
+      );
+    }
+
+    created.member = true;
+
+    // ── 5. Add 50 welcome credits ────────────────────────────────────────
+    try {
+      await addCredits(agency.id as string, SOLO_WELCOME_CREDITS, 'bonus', SOLO_WELCOME_DESCRIPTION);
+      console.log(`[solo-signup] Granted ${SOLO_WELCOME_CREDITS} credits to ${agency.id}`);
+    } catch (err) {
+      console.warn('[solo-signup] Failed to grant credits (non-fatal):', err);
+    }
+
+    // ── 6. Create a client record (owner IS the client) ──────────────────
+    const { data: clientData, error: clientError } = await supabase
+      .from('agency_clients')
+      .insert({
+        agency_id: agency.id,
+        name: businessName,
+        slug,
+        industry: 'General',
+        status: 'setup',
+        settings: { is_solo_client: true },
+      })
+      .select()
+      .single();
+
+    if (clientError || !clientData) {
+      console.error('[solo-signup] Client creation failed:', clientError?.message);
+      // Non-fatal — user can still access dashboard, just no container yet
+    } else {
+      client = clientData;
+      created.client = clientData.id as string;
+    }
+  } catch (error) {
+    console.error('[solo-signup] Unexpected failure, rolling back:', error);
+    await rollback();
+    return NextResponse.json({ error: 'Signup failed, please try again' }, { status: 500 });
   }
 
-  const userId = authData.user.id;
+  // ── Fire-and-forget side effects (outside saga — failures don't roll back) ──
 
-  // ── 2. Check slug uniqueness ────────────────────────────────────────────
-  const { data: existingAgency } = await supabase
-    .from('agencies')
-    .select('id')
-    .eq('slug', slug)
-    .limit(1)
-    .single();
-
-  if (existingAgency) {
-    // Cleanup: delete the just-created auth user
-    await supabase.auth.admin.deleteUser(userId);
-    return NextResponse.json(
-      { error: 'This business name is taken. Try a different one.' },
-      { status: 409 },
-    );
-  }
-
-  // ── 3. Create agency with account_type = "solo" ─────────────────────────
-  const { data: agency, error: agencyError } = await supabase
-    .from('agencies')
-    .insert({
-      owner_id: userId,
-      name: businessName,
-      slug,
-      plan: 'free',
-      settings: {
-        account_type: 'solo',
-        owner_name: fullName,
-        website_url: websiteUrl || null,
-      },
-    })
-    .select()
-    .single();
-
-  if (agencyError || !agency) {
-    console.error('[solo-signup] Agency creation failed:', agencyError?.message);
-    await supabase.auth.admin.deleteUser(userId);
-    return NextResponse.json(
-      { error: 'Failed to create your workspace. Please try again.' },
-      { status: 500 },
-    );
-  }
-
-  // ── 4. Create owner membership ──────────────────────────────────────────
-  const { error: memberError } = await supabase.from('agency_members').insert({
-    agency_id: agency.id,
-    user_id: userId,
-    role: 'owner',
-  });
-
-  if (memberError) {
-    console.error('[solo-signup] Member creation failed:', memberError.message);
-    await supabase.from('agencies').delete().eq('id', agency.id);
-    await supabase.auth.admin.deleteUser(userId);
-    return NextResponse.json(
-      { error: 'Failed to set up your account. Please try again.' },
-      { status: 500 },
-    );
-  }
-
-  // ── 5. Add 50 welcome credits ──────────────────────────────────────────
-  try {
-    await addCredits(agency.id, SOLO_WELCOME_CREDITS, 'bonus', SOLO_WELCOME_DESCRIPTION);
-    console.log(`[solo-signup] 🎁 Granted ${SOLO_WELCOME_CREDITS} credits to ${agency.id}`);
-  } catch (err) {
-    console.warn('[solo-signup] Failed to grant credits (non-fatal):', err);
-  }
-
-  // ── 5b. Sync lead to master CRM ────────────────────────────────────────
+  // 5b. Sync lead to master CRM
   void syncLeadToCRM({
     fullName,
     email,
@@ -163,12 +222,12 @@ export async function POST(request: NextRequest) {
     websiteUrl: websiteUrl || null,
     accountType: 'solo',
     plan: 'free',
-    agencyId: agency.id,
+    agencyId: agency.id as string,
     referredBy: referralId,
   });
 
-  // ── 5c. Referral Machine — double-sided rewards ─────────────────────────
-  if (referralId && referralId !== agency.id) {
+  // 5c. Referral Machine — double-sided rewards
+  if (referralId && referralId !== (agency.id as string)) {
     void (async () => {
       try {
         const { data: referrerAgency } = await supabase
@@ -185,7 +244,6 @@ export async function POST(request: NextRequest) {
         const hoursElapsed = (Date.now() - new Date(referrerAgency.created_at).getTime()) / 3_600_000;
         const isEarlyBird = hoursElapsed < 48;
 
-        // Log referral row (status: signed_up — activateReferral flips it immediately)
         const { data: referralRow } = await supabase.from('agency_referrals').insert({
           referrer_id: referralId,
           referred_id: agency.id,
@@ -196,7 +254,6 @@ export async function POST(request: NextRequest) {
           friend_credits_granted: 0,
         }).select('id').single();
 
-        // ✅ Increment invite_signups on referrer's agency settings
         const referrerSettings = (referrerAgency.settings ?? {}) as Record<string, unknown>;
         const currentSignups = (referrerSettings.invite_signups as number) ?? 0;
         await supabase
@@ -209,9 +266,8 @@ export async function POST(request: NextRequest) {
           })
           .eq('id', referralId);
 
-        // 🎁 Activate immediately — grant referrer + friend credits now (no email gate)
         if (referralRow?.id) {
-          await activateReferral(referralRow.id, referralId, agency.id, isEarlyBird);
+          await activateReferral(referralRow.id, referralId, agency.id as string, isEarlyBird);
         }
 
         console.log(`[solo-signup] Referral activated: ${referralId} → ${agency.id} (earlyBird: ${isEarlyBird})`);
@@ -221,63 +277,41 @@ export async function POST(request: NextRequest) {
     })();
   }
 
-  // ── 6. Create a client record (owner IS the client) ────────────────────
-  const { data: client, error: clientError } = await supabase
-    .from('agency_clients')
-    .insert({
-      agency_id: agency.id,
-      name: businessName,
-      slug,
-      industry: 'General',
-      status: 'setup',
-      settings: { is_solo_client: true },
-    })
-    .select()
-    .single();
-
-  if (clientError || !client) {
-    console.error('[solo-signup] Client creation failed:', clientError?.message);
-    // Non-fatal — user can still access dashboard, just no container yet
-  }
-
-  // ── 7. Auto-provision container (fire-and-forget) ───────────────────────
+  // ── 7. Auto-provision container (fire-and-forget — own try/catch) ───────
   if (client) {
-    const soulLines = [
-      `# SOUL.md — ${businessName}`,
-      '',
-      '## Who You Are',
-      `You are the AI assistant for **${businessName}**.`,
-      `You help the business owner, ${fullName}, manage their business and communicate with customers.`,
-      '',
-      '## Your Role',
-      '- Answer customer questions about the business',
-      '- Help schedule appointments and manage inquiries',
-      '- Be friendly, professional, and helpful',
-      '- If you don\'t know something specific, offer to connect them with the owner',
-      '',
-      '## Communication Style',
-      '- Keep replies concise and clear',
-      '- Be warm and professional',
-      '- Ask one focused question if you need more info',
-    ];
-
-    const soulMd = soulLines.join('\n') + buildInjectionDefensePromptSuffix();
-    const userMd = `# ${businessName}\n\nOwner: ${fullName}\nType: Solo business\n${websiteUrl ? `Website: ${websiteUrl}` : ''}`;
-
-    // Provision with retry (fire-and-forget — don't block signup response)
     void (async () => {
       try {
+        const soulLines = [
+          `# SOUL.md — ${businessName}`,
+          '',
+          '## Who You Are',
+          `You are the AI assistant for **${businessName}**.`,
+          `You help the business owner, ${fullName}, manage their business and communicate with customers.`,
+          '',
+          '## Your Role',
+          '- Answer customer questions about the business',
+          '- Help schedule appointments and manage inquiries',
+          '- Be friendly, professional, and helpful',
+          '- If you don\'t know something specific, offer to connect them with the owner',
+          '',
+          '## Communication Style',
+          '- Keep replies concise and clear',
+          '- Be warm and professional',
+          '- Ask one focused question if you need more info',
+        ];
+
+        const soulMd = soulLines.join('\n') + buildInjectionDefensePromptSuffix();
+        const userMd = `# ${businessName}\n\nOwner: ${fullName}\nType: Solo business\n${websiteUrl ? `Website: ${websiteUrl}` : ''}`;
+
         const result = await provisionClientGateway(
-          client.id,
-          agency.id,
+          client.id as string,
+          agency.id as string,
           { soulMd, userMd },
           { memoryMb: 1024, cpuShares: 256 },
           businessName,
         );
         if (result.success) {
-          console.log(`[solo-signup] ✅ Container provisioned for ${client.id}: ${result.gatewayUrl}`);
-
-          // Store clientId in agency settings for quick lookup
+          console.log(`[solo-signup] Container provisioned for ${client.id}: ${result.gatewayUrl}`);
           await supabase
             .from('agencies')
             .update({
@@ -291,14 +325,14 @@ export async function POST(request: NextRequest) {
           console.warn(`[solo-signup] Container provision failed: ${result.error}. Retrying...`);
           await new Promise(r => setTimeout(r, 5000));
           const retry = await provisionClientGateway(
-            client.id,
-            agency.id,
+            client.id as string,
+            agency.id as string,
             { soulMd, userMd },
             { memoryMb: 1024, cpuShares: 256 },
             businessName,
           );
           if (retry.success) {
-            console.log(`[solo-signup] ✅ Container provisioned on retry for ${client.id}`);
+            console.log(`[solo-signup] Container provisioned on retry for ${client.id}`);
             await supabase
               .from('agencies')
               .update({
@@ -309,7 +343,7 @@ export async function POST(request: NextRequest) {
               })
               .eq('id', agency.id);
           } else {
-            console.error(`[solo-signup] ❌ Container provision failed after retry: ${retry.error}`);
+            console.error(`[solo-signup] Container provision failed after retry: ${retry.error}`);
           }
         }
       } catch (err) {
@@ -321,27 +355,20 @@ export async function POST(request: NextRequest) {
     if (websiteUrl) {
       void (async () => {
         try {
-          // Wait a bit for the container to start
           await new Promise(r => setTimeout(r, 15000));
-
-          // Use the knowledge base training endpoint if it exists
           const trainRes = await fetch(
-            `${process.env.NEXT_PUBLIC_APP_URL || 'https://kyra.conversionsystem.com'}/api/agency/clients/${client.id}/knowledge`,
+            `${process.env.NEXT_PUBLIC_APP_URL || 'https://kyra.conversionsystem.com'}/api/agency/clients/${client!.id}/knowledge`,
             {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                // Use service-level auth — internal call
                 'x-service-key': process.env.SUPABASE_SERVICE_ROLE_KEY || '',
               },
-              body: JSON.stringify({
-                type: 'website',
-                url: websiteUrl,
-              }),
+              body: JSON.stringify({ type: 'website', url: websiteUrl }),
             },
           );
           if (trainRes.ok) {
-            console.log(`[solo-signup] 📚 Started website training for ${client.id}: ${websiteUrl}`);
+            console.log(`[solo-signup] Started website training for ${client!.id}: ${websiteUrl}`);
           } else {
             console.warn(`[solo-signup] Website training failed: ${trainRes.status}`);
           }
@@ -359,7 +386,7 @@ export async function POST(request: NextRequest) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        text: `🚀 *New Kyra Solo signup!*\n*Business:* ${businessName}\n*Owner:* ${fullName}\n*Email:* ${email}\n*Plan:* Solo Free\n*Website:* ${websiteUrl || 'none'}\n*Time:* ${new Date().toLocaleString('en-US', { timeZone: 'Europe/Bratislava' })} CET`,
+        text: `New Kyra Solo signup!\n*Business:* ${businessName}\n*Owner:* ${fullName}\n*Email:* ${email}\n*Plan:* Solo Free\n*Website:* ${websiteUrl || 'none'}\n*Time:* ${new Date().toLocaleString('en-US', { timeZone: 'Europe/Bratislava' })} CET`,
         embeds: [{
           title: `New Solo signup: ${businessName}`,
           description: `${fullName} (${email}) signed up for Kyra Solo Free`,
@@ -374,8 +401,8 @@ export async function POST(request: NextRequest) {
   return NextResponse.json(
     {
       success: true,
-      agencyId: agency.id,
-      clientId: client?.id || null,
+      agencyId: agency.id as string,
+      clientId: (client?.id as string) || null,
       message: 'Account created! Your AI worker is being set up.',
     },
     { status: 201 },

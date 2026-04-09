@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
-import { randomBytes } from 'crypto';
 
 const MASTER_EMAILS = ['hello@conversionsystem.com', 'angel@conversionsystem.com'];
 
@@ -38,27 +37,28 @@ export async function POST(request: Request) {
     .eq('owner_id', userId)
     .single();
 
-  // 5. Set a temporary password and return login credentials
-  // This is the most reliable approach — magic links have redirect issues with PKCE
-  const tempPassword = 'KyraAdmin_' + randomBytes(12).toString('hex');
-  const { error: pwErr } = await db.auth.admin.updateUserById(userId, {
-    password: tempPassword,
+  // 5. Generate a one-time magic login link (non-destructive — doesn't touch user's password)
+  const origin = process.env.NEXT_PUBLIC_APP_URL || 'https://kyra.conversionsystem.com';
+  const { data: linkData, error: linkErr } = await db.auth.admin.generateLink({
+    type: 'magiclink',
+    email: targetEmail,
+    options: { redirectTo: `${origin}/agency` },
   });
 
-  if (pwErr) {
-    console.error('[IMPERSONATE] Failed to set temp password:', pwErr.message);
-    return NextResponse.json({ error: 'Failed to prepare login' }, { status: 500 });
+  if (linkErr || !linkData?.properties?.action_link) {
+    console.error('[IMPERSONATE] Failed to generate magic link:', linkErr?.message);
+    return NextResponse.json({ error: 'Failed to generate login link' }, { status: 500 });
   }
 
   // 6. Log impersonation
   console.log(
-    `[IMPERSONATE] admin ${user.email} logged in as ${targetEmail} (agency: ${agency?.name ?? 'unknown'}, id: ${agency?.id ?? userId})`
+    `[IMPERSONATE] admin ${user.email} generated login link for ${targetEmail} (agency: ${agency?.name ?? 'unknown'}, id: ${agency?.id ?? userId})`
   );
 
-  // Return credentials — the frontend will auto-login
+  // Return magic link — the frontend opens it in a new tab
   return NextResponse.json({
     email: targetEmail,
-    password: tempPassword,
+    loginUrl: linkData.properties.action_link,
     agencyName: agency?.name || 'Unknown',
   });
 }
