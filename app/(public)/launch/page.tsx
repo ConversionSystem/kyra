@@ -348,7 +348,7 @@ export default function LaunchPage() {
         <div className="max-w-3xl mx-auto text-center">
           <p className="text-indigo-600 text-sm font-semibold uppercase tracking-widest mb-3">Coming Soon</p>
           <div className="flex flex-wrap justify-center gap-3 mt-4">
-            {['AI Voice Calls (in beta)', 'AI Sales Pipeline (in beta)', 'Instagram DMs', 'Facebook Messenger'].map((item) => (
+            {['AI Voice Calls (in beta)', 'AI Sales Pipeline (in beta)', 'Custom Domains', 'Slack Integration'].map((item) => (
               <span key={item} className="bg-gray-100 border border-gray-200 text-gray-600 text-sm font-medium px-4 py-2 rounded-full">
                 {item}
               </span>
