@@ -11,8 +11,9 @@ import { buildSkillsPrompt } from '@/lib/skills/registry';
 import { generateConversationTitle } from '@/lib/utils';
 import { Message, Conversation, MemoryType, User } from '@/types';
 import { Plan } from '@/lib/billing/plans';
-import { getAgencyCredits, deductCredits, type CreditAction } from '@/lib/billing/credit-engine';
+import { getAgencyCredits, type CreditAction } from '@/lib/billing/credit-engine';
 import { getCreditsForModel } from '@/lib/billing/model-credits';
+import { checkAndDeductCredits } from '@/lib/chat/core';
 import { processMessageForGraph } from '@/lib/memory/graph';
 import { resolveModelPreference } from '@/lib/ai/model-router';
 import { v4 as uuid } from 'uuid';
@@ -370,10 +371,9 @@ export async function POST(request: NextRequest) {
     else if (hasWebSearch || hasUrls || hasToolSkills) creditAction = 'chat.web_search';
     const creditCost = getCreditsForModel(modelConfig.id);
 
-    // Deduct credits via unified engine
+    // Deduct credits via shared core
     if (agencyId) {
-      await deductCredits(agencyId, creditAction, {
-        override: creditCost,
+      await checkAndDeductCredits(agencyId, modelConfig.id, creditAction, {
         description: `Chat (${modelConfig.id}): ${message.slice(0, 60)}`,
       });
     }

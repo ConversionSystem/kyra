@@ -34,6 +34,7 @@ import {
   checkAndDeductCredits,
   saveConversation,
 } from '@/lib/chat/core';
+import { isRateLimited } from '@/lib/rate-limit';
 
 const WIDGET_MODEL = 'openai/gpt-4o-mini'; // Fast, cheap, good enough for customer service
 
@@ -47,20 +48,6 @@ const CORS = {
 export const dynamic = 'force-dynamic';
 export const maxDuration = 45;
 
-// Simple in-memory rate limiter (resets on cold start — good enough for edge)
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-
-function isRateLimited(ip: string): boolean {
-  const now = Date.now();
-  const entry = rateLimitMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + 60_000 });
-    return false;
-  }
-  entry.count++;
-  return entry.count > 60; // 60 messages/min per IP
-}
-
 function getSupabase() {
   return createSupabase(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -70,9 +57,9 @@ function getSupabase() {
 }
 
 export async function POST(request: NextRequest) {
-  // Rate limit by IP
+  // Rate limit by IP (Supabase-backed, persists across cold starts)
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
-  if (isRateLimited(ip)) {
+  if (await isRateLimited(`widget:${ip}`, 60, 60_000)) {
     return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429, headers: CORS });
   }
 
