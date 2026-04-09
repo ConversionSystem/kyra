@@ -26,7 +26,7 @@ const USE_CASES = [
     emoji: '☕',
     brand: 'Instant Coffee Brand',
     problem: '"How does this taste vs Nespresso?" answered manually 50x a day.',
-    solution: 'AI answers brew methods, product comparisons, and flavour profiles instantly — on Instagram DMs, SMS, and web chat.',
+    solution: 'AI answers brew methods, product comparisons, and flavour profiles instantly — on SMS, email, and web chat.',
   },
   {
     emoji: '💄',
@@ -50,9 +50,9 @@ const USE_CASES = [
 
 const FEATURES = [
   { icon: MessageSquareIcon, title: 'Instant product Q&A', desc: 'Ingredients, allergens, caffeine content, sizing, shipping — answered in under 60 seconds on every channel. Nothing goes unanswered.' },
-  { icon: SmartphoneIcon, title: 'Every channel, one brain', desc: 'Instagram DMs, SMS, website chat, WhatsApp, Facebook Messenger. One AI with your full product knowledge — everywhere your customers are.' },
-  { icon: RefreshCwIcon, title: 'Abandoned cart recovery', desc: 'Customer added to cart but never bought? Your AI follows up with a personalised message, handles objections, and offers the right nudge.' },
-  { icon: MegaphoneIcon, title: 'Content on autopilot', desc: 'Weekly blog posts, Instagram captions, product descriptions, email newsletters — drafted in your brand voice. You review and post.' },
+  { icon: SmartphoneIcon, title: 'Every channel, one brain', desc: 'SMS, website chat, WhatsApp, Telegram, email. One AI with your full product knowledge — everywhere your customers are.' },
+  { icon: RefreshCwIcon, title: 'Abandoned cart follow-up (coming soon)', desc: 'Customer showed interest but never bought? Your AI will follow up with a personalised message, handle objections, and offer the right nudge.' },
+  { icon: MegaphoneIcon, title: 'Content drafting', desc: 'Product descriptions, FAQ answers, email copy — drafted in your brand voice. You review and post.' },
   { icon: PackageIcon, title: 'Wholesale & retail buyer intake', desc: 'Retail buyers asking about your product get a polished response instantly. AI gathers their details and routes a warm lead to your inbox.' },
   { icon: GlobeIcon, title: 'SEO website included', desc: 'A full multi-page website built by AI — product pages, ingredient breakdowns, FAQ, blog — optimised to rank when people search your category.' },
 ];
@@ -73,7 +73,7 @@ export default function EcommercePage() {
           <span className="text-indigo-400">sells for you 24/7.</span>
         </h1>
         <p className="text-slate-300 text-lg sm:text-xl leading-relaxed mb-8 max-w-2xl mx-auto">
-          Instant product answers on every channel. Abandoned cart recovery. Content that ranks.
+          Instant product answers on every channel. Content that ranks. Lead capture on autopilot.
           An AI worker trained on your brand — working while you sleep.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -102,7 +102,7 @@ export default function EcommercePage() {
               { value: '24/7', label: 'Customer support', sub: 'Every DM and question answered' },
               { value: '< 60s', label: 'Response time', sub: 'Faster than any human team' },
               { value: '100%', label: 'Leads captured', sub: 'No inquiry goes unanswered' },
-              { value: '5+', label: 'Channels at once', sub: 'SMS, IG, web, email, WhatsApp' },
+              { value: '5+', label: 'Channels at once', sub: 'SMS, web, email, WhatsApp, Telegram' },
             ].map(s => (
               <div key={s.label} className="bg-white/5 border border-white/10 rounded-2xl p-5 text-center">
                 <p className="text-3xl font-black text-white">{s.value}</p>
@@ -206,10 +206,10 @@ export default function EcommercePage() {
               </div>
               <ul className="space-y-2.5">
                 {[
-                  'Every DM answered in under 60 seconds — any time of day',
+                  'Every message answered in under 60 seconds — any time of day',
                   'Product comparisons handled with your exact copy, instantly',
                   'Retail buyers get a polished response immediately — warm lead in your inbox',
-                  'AI drafts weekly blog posts, captions, emails — you review and post',
+                  'AI drafts product copy, FAQ answers, emails — you review and post',
                   'Full conversation history showing exactly what customers ask most',
                 ].map(item => (
                   <li key={item} className="flex items-start gap-2 text-sm text-slate-300">
@@ -273,7 +273,7 @@ export default function EcommercePage() {
             <ul className="space-y-2 text-left max-w-xs mx-auto mb-6">
               {[
                 'E-commerce AI worker trained on your products',
-                'SMS + Instagram DMs + web chat + email',
+                'SMS + web chat + email + WhatsApp',
                 'Content drafting (blog, social, email)',
                 'SEO website with product & FAQ pages',
                 'Full conversation history & analytics',

@@ -160,6 +160,44 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ── Built-in Intelligence ──────────────────────────────────────── */}
+      <section className="border-t border-white/10 py-20">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 text-sm font-medium mb-4">
+              Under the hood
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-black mb-4">
+              Built-in Intelligence —{' '}
+              <span className="text-indigo-400">Not Just Another Chatbot</span>
+            </h2>
+            <p className="text-slate-400 text-lg max-w-2xl mx-auto">
+              Every AI worker comes loaded with capabilities most platforms charge extra for.
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[
+              { icon: '🧠', title: 'Memory Graph', desc: 'AI remembers relationships between people, companies, and projects across every conversation.' },
+              { icon: '📊', title: 'AI Lead Scoring', desc: 'Automatically scores and prioritizes hot leads based on conversation signals and engagement.' },
+              { icon: '🔄', title: 'Deal Autopilot', desc: 'Drafts follow-ups for stale pipeline deals so nothing goes cold without a nudge.' },
+              { icon: '🧪', title: 'A/B Testing', desc: 'Tests message variants with real conversation data to find what converts best.' },
+              { icon: '🕵️', title: 'Competitive Intelligence', desc: 'Tracks competitor mentions in conversations and surfaces patterns you can act on.' },
+              { icon: '🤖', title: 'Multi-Agent Routing', desc: '5 department agents route conversations by customer intent — sales, support, billing, scheduling, escalation.' },
+              { icon: '💳', title: 'Payment Collection', desc: 'Send Stripe payment links directly via SMS — collect deposits, invoices, and fees in-conversation.' },
+              { icon: '⭐', title: 'Review Management', desc: 'Automated review requests after service completion + AI-drafted responses to incoming reviews.' },
+              { icon: '📈', title: 'Performance Tracking', desc: 'Per-worker metrics — response time, conversion rate, escalation rate, revenue influenced.' },
+            ].map((f) => (
+              <div key={f.title} className="bg-white/5 border border-white/10 rounded-2xl p-5">
+                <div className="text-2xl mb-3">{f.icon}</div>
+                <h3 className="font-bold mb-1.5">{f.title}</h3>
+                <p className="text-slate-400 text-sm leading-relaxed">{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── Agency Command Center ─────────────────────────────────────────── */}
       <section className="border-t border-white/10 py-20">
         <div className="max-w-6xl mx-auto px-4">

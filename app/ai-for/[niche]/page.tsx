@@ -71,7 +71,7 @@ const NICHES: Record<string, NicheData> = {
     title: 'AI Worker for Cannabis Dispensaries',
     metaTitle: 'AI Worker for Cannabis Dispensaries | Proven SMS Automation',
     metaDesc:
-      'Kyra AI was originally built for high-volume cannabis dispensary clients. Handles every inbound SMS — product questions, compliance FAQs, pickup status — in under 60 seconds. Compliance-aware, 24/7.',
+      'Kyra AI was originally built for high-volume cannabis dispensary clients. Handles every inbound SMS — product questions, FAQs, pickup status — in under 60 seconds. Trained to follow cannabis industry best practices, 24/7.',
     emoji: '🌿',
     hero: 'AI Worker for Cannabis Dispensaries',
     subhero:
@@ -84,7 +84,7 @@ const NICHES: Record<string, NicheData> = {
     resultStat: 'High-volume cannabis deployments',
     features: [
       { icon: '📋', title: 'Full menu knowledge', desc: 'AI knows your entire menu — strains, edibles, concentrates, current specials. Recommends products based on customer preference.' },
-      { icon: '⚖️', title: 'Compliance-aware messaging', desc: 'Pre-configured to avoid prohibited language and stay within state-specific SMS marketing regulations.' },
+      { icon: '⚖️', title: 'Industry-aware messaging', desc: 'AI trained to follow cannabis industry best practices — avoids prohibited language and stays within responsible messaging guidelines.' },
       { icon: '🔁', title: 'Repeat customer engagement', desc: 'Re-engages customers who haven\'t visited in 30, 60, or 90 days with personalized product recommendations.' },
       { icon: '🏷️', title: 'Loyalty program integration', desc: 'Answers loyalty points questions, promotes deals to VIP customers, drives repeat visits automatically.' },
       { icon: '📍', title: 'Multi-location support', desc: 'Multiple dispensary locations? The AI knows each location\'s hours, inventory, and staff contacts.' },

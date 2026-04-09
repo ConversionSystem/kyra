@@ -185,6 +185,32 @@ export default async function IndustryPage({
         </div>
       </section>
 
+      {/* Built-in capabilities */}
+      <section className="border-t border-white/10 py-16">
+        <div className="max-w-4xl mx-auto px-4">
+          <h2 className="text-2xl sm:text-3xl font-black text-center mb-3">
+            Every AI worker also includes
+          </h2>
+          <p className="text-slate-400 text-center mb-10">
+            Built-in capabilities that work across all industries.
+          </p>
+          <div className="grid sm:grid-cols-2 gap-4">
+            {[
+              { icon: '⭐', title: 'Review Management', desc: 'Automated review requests after service + AI-drafted responses to incoming reviews.' },
+              { icon: '💳', title: 'Payment Collection', desc: 'Send Stripe payment links via SMS — collect deposits, invoices, and fees in-conversation.' },
+              { icon: '📊', title: 'Lead Scoring', desc: 'AI scores leads based on conversation signals so your team focuses on the hottest prospects.' },
+              { icon: '🌐', title: 'Funnel Building', desc: 'AI-generated landing pages and lead capture forms tailored to your industry.' },
+            ].map((cap) => (
+              <div key={cap.title} className="bg-white/5 border border-white/10 rounded-xl p-5">
+                <div className="text-2xl mb-2">{cap.icon}</div>
+                <h3 className="font-bold text-white mb-1">{cap.title}</h3>
+                <p className="text-slate-400 text-sm leading-relaxed">{cap.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Related templates */}
       {relatedTemplates.length > 0 && (
         <section className="border-t border-white/10 py-16">

@@ -161,7 +161,7 @@ export default async function WorkerProfilePage(
               Want an AI worker like this?
             </h2>
             <p className="text-gray-500 text-sm mb-4">
-              Deploy your own AI worker in 60 seconds. Free to start.
+              Deploy your own AI worker in under 2 minutes. Free to start.
             </p>
             <Link
               href="/solo"

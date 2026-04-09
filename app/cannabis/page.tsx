@@ -64,8 +64,8 @@ export default function CannabisPage() {
               <span className="text-green-300">an autonomous AI worker that never sleeps</span>
             </h1>
             <p className="text-lg text-green-100 max-w-2xl mx-auto mb-8 leading-relaxed">
-              Handle hundreds of daily product inquiries, recommend strains by effect, answer compliance questions, 
-              and book consultations — automatically. Compliance-aware. Cannabis-trained.
+              Handle hundreds of daily product inquiries, recommend strains by effect, answer common questions,
+              and book consultations — automatically. Trained to follow cannabis industry best practices.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link
@@ -137,8 +137,8 @@ export default function CannabisPage() {
               />
               <FeatureRow
                 icon={ShieldCheckIcon}
-                title="Compliance-aware responses"
-                desc="Never makes health or medical claims. Knows not to discuss delivery in restricted areas. Stays within legal boundaries automatically."
+                title="Industry-aware responses"
+                desc="AI trained to follow cannabis industry best practices — avoids health claims, respects delivery restrictions, and stays within responsible messaging guidelines."
               />
               <FeatureRow
                 icon={UsersIcon}
@@ -257,7 +257,7 @@ export default function CannabisPage() {
                 {[
                   'Cannabis-trained AI responses',
                   'SMS + Telegram + web chat',
-                  'Compliance-aware guardrails',
+                  'Cannabis industry best practice guardrails',
                   'Full conversation history',
                   'Setup support included',
                 ].map((f) => (

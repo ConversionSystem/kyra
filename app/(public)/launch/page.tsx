@@ -56,7 +56,7 @@ const CAPABILITIES = [
 ];
 
 const HOW_IT_WORKS = [
-  { step: '1', title: 'Create account', desc: 'Free. No credit card. 60 seconds.' },
+  { step: '1', title: 'Create account', desc: 'Free. No credit card. Under 2 minutes.' },
   { step: '2', title: 'Add a client', desc: 'Enter business name, industry, location. Pick a template.' },
   { step: '3', title: 'AI builds everything', desc: '15-25 page SEO website, trained AI worker, CRM, lead capture. Under 10 minutes.' },
   { step: '4', title: 'Go live', desc: 'AI worker starts responding to every inbound message. You bill the client.' },

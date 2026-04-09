@@ -64,11 +64,11 @@ const rows = [
     kyra: true, chatbot: false, ghlAutomation: 'partial',
   },
   {
-    feature: 'Responds in any of 15 languages (Spanish, Portuguese, etc.)',
+    feature: 'Multi-language support (responds in your customer\'s language)',
     kyra: true, chatbot: false, ghlAutomation: false,
   },
   {
-    feature: 'Works across SMS, WhatsApp, Instagram, Facebook, Live Chat, Email',
+    feature: 'Works across SMS, WhatsApp, Telegram, Discord, Live Chat, Email',
     kyra: true, chatbot: false, ghlAutomation: 'partial',
   },
   {

@@ -192,8 +192,35 @@ export default function GHLPage() {
             ))}
           </div>
           <p className="text-sm text-indigo-200">
-            Setup: Agency Settings → GHL Workflow Trigger → paste webhook URL. Done in 60 seconds.
+            OAuth connects in one click. Webhook URL requires a simple one-time setup in Agency Settings → GHL Workflow Trigger.
           </p>
+        </div>
+      </section>
+
+      {/* What AI workers can do in GHL */}
+      <section className="max-w-4xl mx-auto px-6 pb-20">
+        <h2 className="text-2xl font-bold text-gray-900 text-center mb-3">
+          What your AI workers do inside GHL
+        </h2>
+        <p className="text-gray-500 text-center max-w-xl mx-auto mb-10">
+          50+ tools your AI workers use to take real actions — not just reply to messages.
+        </p>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[
+            { icon: '👤', title: 'Contact Management', items: 'Create, update, tag, search, and score contacts automatically from conversations.' },
+            { icon: '📅', title: 'Calendar', items: 'Book appointments, reschedule, and check availability — all via natural language.' },
+            { icon: '💬', title: 'Conversations', items: 'Send messages, add internal notes, transfer between agents, close threads.' },
+            { icon: '💰', title: 'Opportunities', items: 'Create deals, move pipeline stages, update values — triggered by conversation outcomes.' },
+            { icon: '✅', title: 'Tasks', items: 'Create follow-up tasks, assign to team members, mark complete when done.' },
+            { icon: '🧾', title: 'Invoices', items: 'Create invoices, send Stripe payment links, track payment status.' },
+            { icon: '📣', title: 'Marketing', items: 'Trigger GHL workflows, fire automations, tag for campaign enrollment.' },
+          ].map((tool) => (
+            <div key={tool.title} className="rounded-xl bg-white border border-gray-200 p-5 space-y-2">
+              <div className="text-2xl">{tool.icon}</div>
+              <h3 className="font-semibold text-gray-900">{tool.title}</h3>
+              <p className="text-sm text-gray-500 leading-relaxed">{tool.items}</p>
+            </div>
+          ))}
         </div>
       </section>
 

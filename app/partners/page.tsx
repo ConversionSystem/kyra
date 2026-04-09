@@ -55,26 +55,26 @@ const TIERS = [
   {
     name: 'Starter',
     referrals: '1–5 active referrals',
-    commission: '20%',
+    commission: '100 credits',
     color: 'border-gray-200',
     badge: null,
-    perks: ['Monthly recurring commission', 'Kyra co-branded pitch deck', 'Priority support'],
+    perks: ['100 credits per active referral/month', 'Kyra co-branded pitch deck', 'Priority support'],
   },
   {
     name: 'Growth',
     referrals: '6–20 active referrals',
-    commission: '22%',
+    commission: '150 credits',
     color: 'border-indigo-400',
     badge: 'Most popular',
-    perks: ['Everything in Starter', 'Case study co-creation opportunity', 'Joint LinkedIn content', 'Dedicated partner Slack channel'],
+    perks: ['Everything in Starter', '150 credits per active referral/month', 'Case study co-creation opportunity', 'Dedicated partner Slack channel'],
   },
   {
     name: 'Elite',
     referrals: '21+ active referrals',
-    commission: '25%',
+    commission: '200 credits',
     color: 'border-amber-400',
     badge: 'Elite',
-    perks: ['Everything in Growth', 'Revenue share bump to 25%', 'Featured on kyra.conversionsystem.com', 'Direct line to product team', 'Custom integrations on request'],
+    perks: ['Everything in Growth', '200 credits per active referral/month', 'Featured on kyra.conversionsystem.com', 'Direct line to product team', 'Custom integrations on request'],
   },
 ];
 
@@ -93,7 +93,7 @@ export default function PartnersPage() {
             </span>
           </h1>
           <p className="text-xl text-gray-300 max-w-xl mx-auto mb-10 leading-relaxed">
-            Refer agencies. Earn recurring revenue. Help them deploy AI workers for their clients.
+            Refer agencies. Earn credits for every referral. Help them deploy AI workers for their clients.
           </p>
           <Link
             href="/agency/referrals"
@@ -143,7 +143,7 @@ export default function PartnersPage() {
       <section className="py-20 px-4">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-3xl font-black text-center mb-3">Partner tiers</h2>
-          <p className="text-center text-gray-500 mb-12">More referrals = higher commission. Tiers unlock automatically.</p>
+          <p className="text-center text-gray-500 mb-12">More referrals = more credits. Tiers unlock automatically.</p>
           <div className="grid sm:grid-cols-3 gap-6">
             {TIERS.map(tier => (
               <div key={tier.name} className={`border-2 ${tier.color} rounded-2xl p-6`}>
@@ -155,7 +155,7 @@ export default function PartnersPage() {
                 <h3 className="text-xl font-black text-gray-900">{tier.name}</h3>
                 <p className="text-sm text-gray-500 mt-1 mb-3">{tier.referrals}</p>
                 <p className="text-4xl font-black text-indigo-600 mb-4">{tier.commission}</p>
-                <p className="text-xs text-gray-500 mb-5">monthly recurring commission</p>
+                <p className="text-xs text-gray-500 mb-5">per active referral / month</p>
                 <ul className="space-y-2">
                   {tier.perks.map(p => (
                     <li key={p} className="flex items-start gap-2 text-sm text-gray-600">
@@ -174,7 +174,7 @@ export default function PartnersPage() {
         <div className="max-w-xl mx-auto">
           <h2 className="text-3xl font-black text-center mb-3">Apply to become a partner</h2>
           <p className="text-center text-gray-500 mb-10">
-            Free to join. Approved within 24 hours. Commission starts on your first referral.
+            Free to join. Approved within 24 hours. Credits start on your first referral.
           </p>
           <PartnerApplicationForm />
         </div>

@@ -305,6 +305,43 @@ export default function PricingPage() {
         </div>
       </section>
 
+      {/* Feature comparison */}
+      <section className="max-w-4xl mx-auto px-4 pb-20">
+        <h2 className="text-2xl font-black text-center mb-3">What&apos;s included at each tier</h2>
+        <p className="text-slate-400 text-sm text-center mb-10">Higher tiers unlock more built-in intelligence features.</p>
+        <div className="rounded-2xl border border-white/10 overflow-hidden">
+          <div className="grid grid-cols-4 bg-white/5 border-b border-white/10 px-4 py-3">
+            <span className="text-sm font-semibold text-slate-300">Feature</span>
+            <span className="text-sm font-semibold text-slate-300 text-center">Lite</span>
+            <span className="text-sm font-semibold text-indigo-400 text-center">Pro</span>
+            <span className="text-sm font-semibold text-slate-300 text-center">Scale</span>
+          </div>
+          {[
+            { feature: 'AI chat + CRM', lite: true, pro: true, scale: true },
+            { feature: '50 credits welcome gift', lite: true, pro: true, scale: true },
+            { feature: 'AI Website Builder', lite: true, pro: true, scale: true },
+            { feature: 'Lead scoring', lite: false, pro: true, scale: true },
+            { feature: 'A/B testing', lite: false, pro: true, scale: true },
+            { feature: 'Deal autopilot', lite: false, pro: true, scale: true },
+            { feature: 'Multi-agent routing', lite: false, pro: true, scale: true },
+            { feature: 'Competitive intelligence', lite: false, pro: true, scale: true },
+            { feature: 'Review management', lite: false, pro: true, scale: true },
+            { feature: 'Payment collection', lite: false, pro: true, scale: true },
+            { feature: 'Dedicated infrastructure', lite: false, pro: false, scale: true },
+            { feature: 'API access', lite: false, pro: false, scale: true },
+            { feature: 'Priority support', lite: false, pro: true, scale: true },
+            { feature: 'Custom integrations', lite: false, pro: false, scale: true },
+          ].map((row, i) => (
+            <div key={i} className={`grid grid-cols-4 px-4 py-3 border-b border-white/5 last:border-0 ${!row.lite && row.pro ? 'bg-indigo-950/20' : ''}`}>
+              <span className="text-sm text-slate-300">{row.feature}</span>
+              <span className="text-center">{row.lite ? <Check className="h-4 w-4 text-green-400 inline" /> : <span className="text-slate-600">—</span>}</span>
+              <span className="text-center">{row.pro ? <Check className="h-4 w-4 text-indigo-400 inline" /> : <span className="text-slate-600">—</span>}</span>
+              <span className="text-center">{row.scale ? <Check className="h-4 w-4 text-green-400 inline" /> : <span className="text-slate-600">—</span>}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* Belief Shifts */}
       <section className="max-w-3xl mx-auto px-4 pb-20">
         <h2 className="text-2xl font-black text-center mb-3">Still on the fence?</h2>

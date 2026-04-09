@@ -151,7 +151,7 @@ export default function WorkersDirectoryPage() {
             Deploy your own AI worker
           </h2>
           <p className="text-gray-500 mb-6">
-            Get your AI worker live in 60 seconds. No credit card required.
+            Get your AI worker live in under 2 minutes. No credit card required.
           </p>
           <Link
             href="/solo"
