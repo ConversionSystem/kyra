@@ -647,10 +647,9 @@ function TerminalTab({ client }: { client: AgencyClient }) {
     setActivating(true);
     setActivateError(null);
     try {
-      const res = await fetch(`/api/agency/clients/${client.id}/container-config`, {
+      const res = await fetch(`/api/agency/clients/${client.id}/reprovision`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'provision' }),
       });
       if (res.ok) {
         // Reload to pick up new gateway status
