@@ -323,7 +323,7 @@ async function buildAndDeploy(site: any, supabase: any) {
             tagline: constants.tagline,
             logo_url: site.logo_url || null,
             services,
-            cities: cities.map(c => ({ name: c.name, slug: c.slug, description: c.description, zip: c.zip, county: c.county, population: c.population })),
+            cities: cities.map(c => ({ name: c.name, slug: c.slug, ...('description' in c ? { description: (c as any).description } : {}) })),
             reviews: siteReviews,
             rating: constants.rating,
             reviewCount: constants.reviewCount,
