@@ -1,11 +1,23 @@
 // GET /api/admin/health-check
-// Returns a list of pending action items for the admin.
-// Only callable by admin users (checked via service key header).
+// Returns action items + VPS provisioner health for the admin dashboard.
 
 import { NextResponse } from 'next/server';
 import { createClient as createSupabase } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
+
+interface VpsHealth {
+  ok: boolean;
+  status?: string;
+  hostname?: string;
+  docker?: string;
+  containers?: { total: number; running: number; stopped: number };
+  memory?: { totalMb: number; availableMb: number; usedMb: number; usagePercent: number };
+  disk?: { totalMb: number; usedMb: number; availableMb: number; usagePercent: number };
+  cpus?: number;
+  uptime?: number;
+  error?: string;
+}
 
 function getSupabase() {
   return createSupabase(
@@ -16,7 +28,7 @@ function getSupabase() {
 }
 
 async function tableExists(sb: ReturnType<typeof getSupabase>, name: string): Promise<boolean> {
-  const { data, error } = await sb
+  const { error } = await sb
     .from(name)
     .select('id')
     .limit(0);
@@ -103,5 +115,23 @@ ALTER TABLE kyra_waitlist ENABLE ROW LEVEL SECURITY;`,
     severity: 'warning',
   });
 
-  return NextResponse.json({ checks, timestamp: new Date().toISOString() });
+  // 5. VPS Provisioner health
+  const PROVISIONER_URL = process.env.OVH_PROVISIONER_URL || 'http://15.204.91.157:9090';
+  let vps: VpsHealth = { ok: false };
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const res = await fetch(`${PROVISIONER_URL}/health`, { signal: controller.signal });
+    clearTimeout(timeout);
+    if (res.ok) {
+      const body = await res.json();
+      vps = { ok: true, ...body };
+    } else {
+      vps = { ok: false, error: `HTTP ${res.status}` };
+    }
+  } catch (e: unknown) {
+    vps = { ok: false, error: e instanceof Error ? e.message : 'Unreachable' };
+  }
+
+  return NextResponse.json({ checks, vps, timestamp: new Date().toISOString() });
 }

@@ -6,9 +6,32 @@ import {
   DollarSign, Zap, Gift, Building2, BarChart3, Activity,
   ArrowUpRight, ArrowDownRight, Minus, CreditCard, Flame,
   UserCheck, Globe, Phone, DatabaseZap, CheckCircle2, AlertCircle,
+  Server, HardDrive, Cpu, Container, TriangleAlert, Info,
 } from 'lucide-react';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
+
+interface HealthCheck {
+  id: string;
+  title: string;
+  desc: string;
+  link: string;
+  linkLabel: string;
+  severity: 'critical' | 'warning' | 'info';
+  sql?: string;
+}
+
+interface VpsHealth {
+  ok: boolean;
+  hostname?: string;
+  docker?: string;
+  containers?: { total: number; running: number; stopped: number };
+  memory?: { totalMb: number; availableMb: number; usedMb: number; usagePercent: number };
+  disk?: { totalMb: number; usedMb: number; availableMb: number; usagePercent: number };
+  cpus?: number;
+  uptime?: number;
+  error?: string;
+}
 
 interface SyncResult {
   ok: boolean;
@@ -142,6 +165,9 @@ export default function AdminDashboardClient() {
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<SyncResult | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
+  const [healthChecks, setHealthChecks] = useState<HealthCheck[]>([]);
+  const [vpsHealth, setVpsHealth] = useState<VpsHealth | null>(null);
+  const [healthLoading, setHealthLoading] = useState(false);
 
   const fetchStats = async () => {
     setLoading(true);
@@ -174,10 +200,26 @@ export default function AdminDashboardClient() {
     }
   };
 
+  const fetchHealth = async () => {
+    setHealthLoading(true);
+    try {
+      const res = await fetch('/api/admin/health-check');
+      if (res.ok) {
+        const data = await res.json();
+        setHealthChecks(data.checks || []);
+        setVpsHealth(data.vps || null);
+      }
+    } catch { /* ignore */ } finally {
+      setHealthLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchStats();
+    fetchHealth();
     const interval = setInterval(fetchStats, 60_000);
-    return () => clearInterval(interval);
+    const healthInterval = setInterval(fetchHealth, 120_000);
+    return () => { clearInterval(interval); clearInterval(healthInterval); };
   }, []);
 
   if (loading && !stats) {
@@ -561,6 +603,152 @@ export default function AdminDashboardClient() {
             </div>
           )}
         </div>
+
+        {/* ── VPS Provisioner Health ──────────────────────────────────── */}
+        <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-bold text-gray-900 flex items-center gap-2">
+              <Server className="h-4 w-4 text-indigo-500" /> VPS Provisioner
+            </h2>
+            <button
+              onClick={fetchHealth}
+              disabled={healthLoading}
+              className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 border border-gray-200 rounded-lg px-2.5 py-1 transition"
+            >
+              <RefreshCw className={`h-3 w-3 ${healthLoading ? 'animate-spin' : ''}`} /> Refresh
+            </button>
+          </div>
+          {vpsHealth === null ? (
+            <p className="text-sm text-gray-400">Loading…</p>
+          ) : !vpsHealth.ok ? (
+            <div className="flex items-start gap-2 rounded-xl bg-red-50 border border-red-200 p-4">
+              <AlertCircle className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold text-red-800 text-sm">Provisioner unreachable</p>
+                <p className="text-xs text-red-600 mt-0.5">{vpsHealth.error}</p>
+                <p className="text-xs text-gray-500 mt-1">Sites cannot be built or deployed until this is resolved.</p>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="rounded-xl bg-green-50 border border-green-100 p-3 col-span-2 sm:col-span-1">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  <p className="text-xs font-semibold text-green-700">Healthy</p>
+                </div>
+                <p className="text-sm font-bold text-gray-900">{vpsHealth.hostname}</p>
+                <p className="text-[10px] text-gray-400">Docker {vpsHealth.docker}</p>
+                {vpsHealth.uptime !== undefined && (
+                  <p className="text-[10px] text-gray-400">Up {Math.floor(vpsHealth.uptime / 3600)}h {Math.floor((vpsHealth.uptime % 3600) / 60)}m</p>
+                )}
+              </div>
+              {vpsHealth.containers && (
+                <div className="rounded-xl bg-gray-50 border border-gray-100 p-3">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <Container className="h-3.5 w-3.5 text-indigo-500" />
+                    <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-wide">Containers</p>
+                  </div>
+                  <p className="text-xl font-black text-gray-900">{vpsHealth.containers.running}<span className="text-xs text-gray-400">/{vpsHealth.containers.total}</span></p>
+                  {vpsHealth.containers.stopped > 0 && (
+                    <p className="text-[10px] text-amber-500 font-medium">{vpsHealth.containers.stopped} stopped</p>
+                  )}
+                </div>
+              )}
+              {vpsHealth.memory && (
+                <div className="rounded-xl bg-gray-50 border border-gray-100 p-3">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <Cpu className="h-3.5 w-3.5 text-purple-500" />
+                    <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-wide">Memory</p>
+                  </div>
+                  <p className="text-xl font-black text-gray-900">{vpsHealth.memory.usagePercent}%</p>
+                  <p className="text-[10px] text-gray-400">{Math.round(vpsHealth.memory.usedMb / 1024)}GB / {Math.round(vpsHealth.memory.totalMb / 1024)}GB</p>
+                  <div className="mt-1.5 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${vpsHealth.memory.usagePercent > 80 ? 'bg-red-500' : vpsHealth.memory.usagePercent > 60 ? 'bg-amber-400' : 'bg-green-500'}`}
+                      style={{ width: `${vpsHealth.memory.usagePercent}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+              {vpsHealth.disk && (
+                <div className="rounded-xl bg-gray-50 border border-gray-100 p-3">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <HardDrive className="h-3.5 w-3.5 text-blue-500" />
+                    <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-wide">Disk</p>
+                  </div>
+                  <p className="text-xl font-black text-gray-900">{vpsHealth.disk.usagePercent}%</p>
+                  <p className="text-[10px] text-gray-400">{Math.round(vpsHealth.disk.usedMb / 1024)}GB / {Math.round(vpsHealth.disk.totalMb / 1024)}GB</p>
+                  <div className="mt-1.5 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${vpsHealth.disk.usagePercent > 80 ? 'bg-red-500' : vpsHealth.disk.usagePercent > 60 ? 'bg-amber-400' : 'bg-blue-500'}`}
+                      style={{ width: `${vpsHealth.disk.usagePercent}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* ── Action Items ─────────────────────────────────────────────── */}
+        {healthChecks.length > 0 && (
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <h2 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <TriangleAlert className="h-4 w-4 text-amber-500" /> Action Items
+              <span className="ml-auto text-xs font-semibold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+                {healthChecks.filter(c => c.severity === 'critical').length} critical
+              </span>
+            </h2>
+            <div className="space-y-3">
+              {healthChecks.map(check => {
+                const isCritical = check.severity === 'critical';
+                const isWarning = check.severity === 'warning';
+                return (
+                  <div
+                    key={check.id}
+                    className={`rounded-xl border p-4 ${
+                      isCritical ? 'bg-red-50 border-red-200' :
+                      isWarning ? 'bg-amber-50 border-amber-200' :
+                      'bg-blue-50 border-blue-200'
+                    }`}
+                  >
+                    <div className="flex items-start gap-2">
+                      {isCritical
+                        ? <AlertCircle className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
+                        : isWarning
+                        ? <TriangleAlert className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                        : <Info className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />}
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm font-bold ${
+                          isCritical ? 'text-red-800' : isWarning ? 'text-amber-800' : 'text-blue-800'
+                        }`}>{check.title}</p>
+                        <p className={`text-xs mt-0.5 ${
+                          isCritical ? 'text-red-600' : isWarning ? 'text-amber-600' : 'text-blue-600'
+                        }`}>{check.desc}</p>
+                        {check.sql && (
+                          <details className="mt-2">
+                            <summary className="text-[11px] text-gray-500 cursor-pointer font-medium">View SQL migration ▸</summary>
+                            <pre className="mt-1.5 text-[10px] bg-white border border-gray-200 rounded-lg p-2 overflow-x-auto text-gray-700 font-mono whitespace-pre-wrap">{check.sql}</pre>
+                          </details>
+                        )}
+                        <a
+                          href={check.link}
+                          target={check.link.startsWith('http') ? '_blank' : '_self'}
+                          rel="noreferrer"
+                          className={`inline-block mt-2 text-xs font-semibold underline ${
+                            isCritical ? 'text-red-700' : isWarning ? 'text-amber-700' : 'text-blue-700'
+                          }`}
+                        >
+                          {check.linkLabel}
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* ── Lead Sync ────────────────────────────────────────────────── */}
         <div className="bg-white rounded-xl border border-gray-200 p-5">
