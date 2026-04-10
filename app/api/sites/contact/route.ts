@@ -36,22 +36,78 @@ export async function POST(req: NextRequest) {
       agencyId = client?.agency_id ?? null;
     }
 
+    if (!agencyId) {
+      console.error('[sites/contact] No agency_id found for clientId:', clientId);
+      return NextResponse.json(
+        { ok: false, error: 'Invalid client configuration' },
+        { status: 400, headers: CORS },
+      );
+    }
+
     const firstName = name.split(' ')[0] ?? name;
     const lastName = name.split(' ').slice(1).join(' ') || '';
 
-    await supabase.from('crm_contacts').insert({
-      client_id: clientId || null,
-      agency_id: agencyId,
-      first_name: firstName,
-      last_name: lastName,
-      email,
-      phone: phone || null,
-      source: source || 'website_form',
-      stage: 'new',
-      notes: message || null,
-      tags: ['website-lead'],
-      custom_fields: { website_message: message, business_name: businessName },
-    });
+    // Check if contact already exists for this client
+    const { data: existing } = await supabase
+      .from('crm_contacts')
+      .select('id, tags')
+      .eq('email', email)
+      .eq('client_id', clientId)
+      .maybeSingle();
+
+    if (existing) {
+      // Update existing contact with new form data
+      const existingTags = (existing.tags || []) as string[];
+      const newTags = Array.from(new Set([...existingTags, 'website-lead']));
+      await supabase.from('crm_contacts').update({
+        phone: phone || undefined,
+        notes: message || undefined,
+        tags: newTags,
+        custom_fields: { website_message: message, business_name: businessName },
+        stage: 'new',
+      }).eq('id', existing.id);
+    } else {
+      // Check if contact exists under a different client (cross-client)
+      const { data: crossClient } = await supabase
+        .from('crm_contacts')
+        .select('id')
+        .eq('email', email)
+        .maybeSingle();
+
+      if (crossClient) {
+        // Create a new contact for THIS client (different client_id)
+        const { error: insertErr } = await supabase.from('crm_contacts').insert({
+          client_id: clientId,
+          agency_id: agencyId,
+          first_name: firstName,
+          last_name: lastName,
+          email: email + '+' + clientId.slice(0, 8),  // Dedupe email with client suffix
+          phone: phone || null,
+          source: source || 'website_form',
+          stage: 'new',
+          notes: `Original email: ${email}. ${message || ''}`,
+          tags: ['website-lead'],
+          custom_fields: { website_message: message, business_name: businessName, original_email: email },
+        });
+        if (insertErr) console.error('[sites/contact] Cross-client insert error:', insertErr);
+      } else {
+        // Brand new contact
+        const { error: insertErr } = await supabase.from('crm_contacts').insert({
+          client_id: clientId,
+          agency_id: agencyId,
+          first_name: firstName,
+          last_name: lastName,
+          email,
+          phone: phone || null,
+          source: source || 'website_form',
+          stage: 'new',
+          notes: message || null,
+          tags: ['website-lead'],
+          custom_fields: { website_message: message, business_name: businessName },
+        });
+        if (insertErr) console.error('[sites/contact] Insert error:', insertErr);
+      }
+    }
 
     return NextResponse.json({ ok: true }, { headers: CORS });
   } catch (err) {
