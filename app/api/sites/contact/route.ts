@@ -112,6 +112,30 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Log activity in CRM timeline
+    const contactId = existing?.id || (await supabase
+      .from('crm_contacts')
+      .select('id')
+      .eq('email', email)
+      .eq('client_id', clientId)
+      .maybeSingle()
+    ).data?.id;
+
+    if (contactId) {
+      await supabase.from('crm_activities').insert({
+        agency_id: agencyId,
+        contact_id: contactId,
+        type: 'website_form',
+        subject: 'Website Quote Request',
+        body: `New website lead from ${businessName || 'Website'}\nName: ${name}\nPhone: ${phone || 'N/A'}\nEmail: ${email}\nMessage: ${message || 'N/A'}`,
+        direction: 'inbound',
+        channel: 'website',
+        actor: 'system',
+        actor_name: 'Website Form',
+        metadata: { source: source || 'website_form', clientId, businessName },
+      }).then(() => {}, (e) => console.error('[sites/contact] Activity insert error:', e));
+    }
+
     return NextResponse.json({ ok: true }, { headers: CORS });
   } catch (err) {
     console.error('[sites/contact] Error:', err);
