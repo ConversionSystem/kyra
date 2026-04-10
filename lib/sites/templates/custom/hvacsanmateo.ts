@@ -75,7 +75,7 @@ function slugify(s: string): string {
 const DEFAULT_SERVICES = [
   { name: 'Air Conditioning', slug: 'ac-repair', description: 'Expert AC repair, installation & maintenance for homes and businesses across San Mateo County.', icon: 'Wind', features: ['Same-day AC repair', 'New system installation', 'Seasonal tune-ups', 'Ductwork inspection'] },
   { name: 'Heating', slug: 'heating-repair', description: 'Furnace repair, heat pump installation, and heating system maintenance to keep you warm all winter.', icon: 'Thermometer', features: ['Furnace repair & replacement', 'Heat pump systems', 'Radiant heating', 'Emergency service'] },
-  { name: 'Refrigeration', slug: 'refrigeration', description: 'Commercial and residential refrigeration repair - Sub-Zero, walk-in coolers, and more.', icon: 'Snowflake', features: ['Sub-Zero repair', 'Walk-in coolers', 'Commercial refrigeration', 'Preventive maintenance'] },
+  { name: 'Refrigeration', slug: 'refrigeration', description: 'Commercial and residential refrigeration repair - walk-in coolers, reach-in units, and more.', icon: 'Snowflake', features: ['Walk-in coolers', 'Reach-in coolers', 'Commercial refrigeration', 'Preventive maintenance'] },
   { name: 'Installation', slug: 'installation', description: 'New HVAC system design and installation. High-efficiency and green-friendly packages available.', icon: 'Settings', features: ['System design & sizing', 'High-efficiency units', 'Ductwork installation', 'Permit handling'] },
   { name: 'Maintenance', slug: 'maintenance', description: 'Preventive maintenance packages that save you money. 90% of costly repairs are preventable.', icon: 'Wrench', features: ['Annual tune-ups', 'Filter replacement', 'Coil cleaning', 'Performance testing'] },
 ];
@@ -313,7 +313,13 @@ function renderFooter(site: Record<string, any>): string {
         </div>
       </div>
 
-      <div class="border-t border-white/10 mt-10 pt-6 text-center text-xs text-gray-500">
+      <!-- Brands banner -->
+      <div class="border-t border-white/10 mt-8 pt-6">
+        <p class="text-center text-sm font-semibold text-white tracking-wide uppercase mb-2">We Service and Repair All Major Brands</p>
+        <p class="text-center text-xs text-gray-500">Carrier &middot; Lennox &middot; Trane &middot; Daikin &middot; Goodman &middot; Rheem &middot; Bryant &middot; Mitsubishi &middot; Ruud &middot; York &middot; Amana &middot; and more</p>
+      </div>
+
+      <div class="border-t border-white/10 mt-6 pt-6 text-center text-xs text-gray-500">
         &copy; ${year} ${esc(ownerCompany)}. All rights reserved. ${esc(license)} (Electrical, HVAC, Refrigeration)
       </div>
     </div>
@@ -323,8 +329,8 @@ function renderFooter(site: Record<string, any>): string {
 function renderCTASection(site: Record<string, any>, ctaSection?: { heading?: string; body?: string; cta_text?: string; cta_link?: string }): string {
   const phone = site.phone || '';
   const heading = ctaSection?.heading || 'Ready to Get Comfortable?';
-  const body = ctaSection?.body || "Whether it's a repair, installation, or maintenance - we're here to help. Free estimates on all new installations.";
-  const ctaText = ctaSection?.cta_text || 'Request Quote';
+  const body = ctaSection?.body || "Whether it's a repair, installation, or maintenance - we're here to help. Free quotes with every repair or installation.";
+  const ctaText = ctaSection?.cta_text || 'Free Quote with Repair or Installation';
   const ctaLink = ctaSection?.cta_link || '/#quote';
   return `
   <section class="py-20 sm:py-28">
@@ -416,7 +422,7 @@ function renderQuoteForm(site: Record<string, any>): string {
   const services = getServices(site);
   return `
       <div id="quote" class="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6 sm:p-8">
-        <h2 class="text-xl font-bold text-white mb-1">Get a Free Quote</h2>
+        <h2 class="text-xl font-bold text-white mb-1">Free Quote with Repair or Installation</h2>
         <p class="text-sm text-gray-400 mb-6">We'll respond within 1 hour during business hours</p>
         <form onsubmit="handleQuoteSubmit(event)" class="space-y-4">
           <div class="grid sm:grid-cols-2 gap-4">
@@ -430,7 +436,7 @@ function renderQuoteForm(site: Record<string, any>): string {
             <option value="emergency">Emergency Service</option>
           </select>
           <textarea name="message" placeholder="Describe your issue..." rows="3" class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500/50 text-sm resize-none"></textarea>
-          <button type="submit" class="w-full bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white py-3.5 rounded-xl font-semibold text-lg transition shadow-lg shadow-red-600/25">Request Free Quote</button>
+          <button type="submit" class="w-full bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white py-3.5 rounded-xl font-semibold text-lg transition shadow-lg shadow-red-600/25">Get Your Free Quote</button>
           <p class="text-xs text-gray-500 text-center">No spam, no obligation. We respect your privacy.</p>
         </form>
       </div>`;
@@ -579,7 +585,7 @@ function homeContent(site: Record<string, any>, page: Record<string, any>): stri
   const subtitle = (page.hero_subtitle as string) || `${yearsExp} years of expert heating, air conditioning, and refrigeration services for homes and businesses. Same-day service available.`;
 
   // Hero CTA button text/link from DB
-  const heroCTAText = (page.hero_cta_text as string) || 'Get Free Quote';
+  const heroCTAText = (page.hero_cta_text as string) || 'Free Quote with Repair or Installation';
   const heroCTALink = (page.hero_cta_link as string) || '#quote';
 
   // Stats — use parsed from content_sections, fall back to computed defaults
@@ -863,7 +869,7 @@ function serviceContent(site: Record<string, any>, page: Record<string, any>): s
               Call for Service - ${esc(phone)}
             </a>
             <a href="/contact" class="inline-flex items-center justify-center gap-2 border border-white/20 hover:bg-white/5 text-white px-6 py-3.5 rounded-xl font-medium transition">
-              Request Quote
+              Free Quote with Repair or Installation
             </a>
           </div>
         </div>
@@ -966,7 +972,7 @@ function cityContent(site: Record<string, any>, page: Record<string, any>): stri
             Call ${esc(phone)}
           </a>
           <a href="/#quote" class="flex items-center justify-center gap-2 border border-white/20 hover:bg-white/5 text-white px-6 py-3.5 rounded-xl text-lg font-medium transition">
-            Get Free Quote
+            Free Quote with Repair or Installation
           </a>
         </div>
       </div>
