@@ -320,24 +320,28 @@ function renderFooter(site: Record<string, any>): string {
   </footer>`;
 }
 
-function renderCTASection(site: Record<string, any>): string {
+function renderCTASection(site: Record<string, any>, ctaSection?: { heading?: string; body?: string; cta_text?: string; cta_link?: string }): string {
   const phone = site.phone || '';
+  const heading = ctaSection?.heading || 'Ready to Get Comfortable?';
+  const body = ctaSection?.body || "Whether it's a repair, installation, or maintenance - we're here to help. Free estimates on all new installations.";
+  const ctaText = ctaSection?.cta_text || 'Request Quote';
+  const ctaLink = ctaSection?.cta_link || '/#quote';
   return `
   <section class="py-20 sm:py-28">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
       <div class="bg-gradient-to-br from-red-600 to-red-800 rounded-3xl p-8 sm:p-14">
-        <h2 class="text-3xl sm:text-4xl font-bold text-white mb-3">Ready to Get Comfortable?</h2>
+        <h2 class="text-3xl sm:text-4xl font-bold text-white mb-3">${esc(heading)}</h2>
         <p class="text-red-100 max-w-lg mx-auto mb-8">
-          Whether it's a repair, installation, or maintenance - we're here to help. Free estimates on all new installations.
+          ${esc(body)}
         </p>
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
           <a href="${phoneHref(phone)}" class="flex items-center justify-center gap-2 bg-white text-red-600 px-6 py-3.5 rounded-xl text-lg font-semibold hover:bg-red-50 transition">
             ${SVG.phone('h-5 w-5')}
             Call ${esc(phone)}
           </a>
-          <a href="/#quote" class="flex items-center justify-center gap-2 border-2 border-white/30 text-white px-6 py-3.5 rounded-xl text-lg font-medium hover:bg-white/10 transition">
+          <a href="${esc(ctaLink)}" class="flex items-center justify-center gap-2 border-2 border-white/30 text-white px-6 py-3.5 rounded-xl text-lg font-medium hover:bg-white/10 transition">
             ${SVG.messageSquare('h-5 w-5')}
-            Request Quote
+            ${esc(ctaText)}
           </a>
         </div>
       </div>
@@ -405,6 +409,9 @@ function renderScripts(site: Record<string, any>): string {
   ${widgetScript}`;
 }
 
+/* NOTE: The quote form HTML is NOT editable through the page builder.
+ * Form fields, validation, and submission logic live here in the assembler.
+ * To change form fields, edit this function directly. */
 function renderQuoteForm(site: Record<string, any>): string {
   const services = getServices(site);
   return `
@@ -433,6 +440,99 @@ function renderQuoteForm(site: Record<string, any>): string {
 // Page assemblers
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Helpers to parse content_sections bullets into structured data
+// ---------------------------------------------------------------------------
+
+/** Parse stats from Section 0 bullets. Format: "36+ Years Experience" */
+function parseStatsBullets(bullets: string[]): { value: string; label: string }[] {
+  try {
+    return bullets.map(b => {
+      // Try to split on first space-separated boundary between value and label
+      // e.g. "36+ Years Experience" → value="36+", label="Years Experience"
+      // e.g. "5,000+ Jobs Completed" → value="5,000+", label="Jobs Completed"
+      // e.g. "5.0 Google Rating" → value="5.0", label="Google Rating"
+      // e.g. "24/7 Emergency Service" → value="24/7", label="Emergency Service"
+      const match = b.match(/^([\d,.+/]+)\s+(.+)$/);
+      if (match) return { value: match[1], label: match[2] };
+      return { value: b, label: '' };
+    });
+  } catch {
+    return [];
+  }
+}
+
+/** Parse service bullets from Section 1. Format: "Service Name — Description. Feature1, Feature2." */
+function parseServiceBullets(bullets: string[]): { name: string; slug: string; description: string; icon: string; features: string[] }[] {
+  try {
+    const parsed = bullets.map(b => {
+      const dashIdx = b.indexOf(' — ');
+      if (dashIdx === -1) return null;
+      const name = b.substring(0, dashIdx).trim();
+      const rest = b.substring(dashIdx + 3).trim();
+      // Split at first period followed by space to separate description from features
+      const dotIdx = rest.indexOf('. ');
+      let description: string;
+      let features: string[] = [];
+      if (dotIdx !== -1) {
+        description = rest.substring(0, dotIdx + 1);
+        const featureStr = rest.substring(dotIdx + 2).replace(/\.$/, '');
+        features = featureStr.split(',').map(f => f.trim()).filter(Boolean);
+      } else {
+        description = rest;
+      }
+      const slug = slugify(name);
+      // Try to match icon from DEFAULT_SERVICES
+      const def = DEFAULT_SERVICES.find(d => d.name.toLowerCase() === name.toLowerCase());
+      return { name, slug, description, icon: def?.icon || 'Wind', features };
+    }).filter(Boolean) as { name: string; slug: string; description: string; icon: string; features: string[] }[];
+    return parsed.length > 0 ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Parse Why Choose bullets from Section 2. Format: "Title — Description" */
+function parseReasonBullets(bullets: string[]): { title: string; desc: string }[] {
+  try {
+    const iconPool = [
+      SVG.award('h-5 w-5 text-red-500'),
+      SVG.shield('h-5 w-5 text-red-500'),
+      SVG.zap('h-5 w-5 text-red-500'),
+      SVG.users('h-5 w-5 text-red-500'),
+      SVG.star('h-5 w-5 text-red-500', false),
+      SVG.wrench('h-5 w-5 text-red-500'),
+    ];
+    const parsed = bullets.map((b, i) => {
+      const dashIdx = b.indexOf(' — ');
+      if (dashIdx === -1) return null;
+      return {
+        icon: iconPool[i % iconPool.length],
+        title: b.substring(0, dashIdx).trim(),
+        desc: b.substring(dashIdx + 3).trim(),
+      };
+    }).filter(Boolean) as { icon: string; title: string; desc: string }[];
+    return parsed.length > 0 ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Parse review bullets from Section 3. Format: 'Name: "review text"' */
+function parseReviewBullets(bullets: string[]): { name: string; text: string; rating: number }[] {
+  try {
+    const parsed = bullets.map(b => {
+      // Match: Name: "review text" or Name: review text
+      const match = b.match(/^(.+?):\s*"?(.+?)"?$/);
+      if (!match) return null;
+      return { name: match[1].trim(), text: match[2].trim(), rating: 5 };
+    }).filter(Boolean) as { name: string; text: string; rating: number }[];
+    return parsed.length > 0 ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 function homeContent(site: Record<string, any>, page: Record<string, any>): string {
   const dba = site.dba || site.business_name || 'HVAC San Mateo';
   const phone = site.phone || '';
@@ -446,6 +546,31 @@ function homeContent(site: Record<string, any>, page: Record<string, any>): stri
   const reviews = getReviews(site);
   const addr = getAddr(site);
 
+  // --- Read content_sections from page (DB-driven) ---
+  const contentSections = (page.content_sections || []) as { heading: string; body: string; bullets?: string[]; cta_text?: string; cta_link?: string }[];
+
+  // Section 0: Stats ("By The Numbers")
+  const statsSection = contentSections[0];
+  const parsedStats = statsSection?.bullets ? parseStatsBullets(statsSection.bullets) : [];
+
+  // Section 1: Services ("Our HVAC Services")
+  const servicesSection = contentSections[1];
+  const parsedServices = servicesSection?.bullets ? parseServiceBullets(servicesSection.bullets) : [];
+
+  // Section 2: Why Choose ("Why Choose Air Temp Co?")
+  const whyChooseSection = contentSections[2];
+  const parsedReasons = whyChooseSection?.bullets ? parseReasonBullets(whyChooseSection.bullets) : [];
+
+  // Section 3: Reviews ("What Our Customers Say")
+  const reviewsSection = contentSections[3];
+  const parsedReviews = reviewsSection?.bullets ? parseReviewBullets(reviewsSection.bullets) : [];
+
+  // Section 4: Service Areas ("Serving All of San Mateo County")
+  const serviceAreasSection = contentSections[4];
+
+  // Section 5: CTA ("Ready to Get Comfortable?")
+  const ctaSection = contentSections[5] || contentSections.find(s => s.heading?.toLowerCase().includes('ready')) || contentSections[contentSections.length - 1];
+
   // For the homepage hero, always apply the red accent to "HVAC Experts"
   const rawH1 = (page.hero_h1 as string) || "San Mateo's Most Trusted HVAC Experts";
   const h1 = rawH1.includes('HVAC Experts')
@@ -453,16 +578,21 @@ function homeContent(site: Record<string, any>, page: Record<string, any>): stri
     : `${esc(rawH1)}`;
   const subtitle = (page.hero_subtitle as string) || `${yearsExp} years of expert heating, air conditioning, and refrigeration services for homes and businesses. Same-day service available.`;
 
-  // Stats
-  const stats = [
+  // Hero CTA button text/link from DB
+  const heroCTAText = (page.hero_cta_text as string) || 'Get Free Quote';
+  const heroCTALink = (page.hero_cta_link as string) || '#quote';
+
+  // Stats — use parsed from content_sections, fall back to computed defaults
+  const defaultStats = [
     { value: `${yearsExp}`, label: 'Years Experience' },
     { value: jobsCompleted, label: 'Jobs Completed' },
     { value: rating, label: 'Google Rating' },
     { value: '24/7', label: 'Emergency Service' },
   ];
+  const stats = parsedStats.length > 0 ? parsedStats : defaultStats;
 
-  // Why Choose reasons
-  const reasons = [
+  // Why Choose reasons — use parsed from content_sections, fall back to hardcoded defaults
+  const defaultReasons = [
     { icon: SVG.award('h-5 w-5 text-red-500'), title: `${yearsExp} Years Experience`, desc: `Serving San Mateo County since ${site.year_founded || 1990}. We know the local climate and building codes.` },
     { icon: SVG.shield('h-5 w-5 text-red-500'), title: 'Licensed &amp; Insured', desc: `CA License - C10, C20, C38, B. Full workers comp and liability coverage.` },
     { icon: SVG.zap('h-5 w-5 text-red-500'), title: 'Same-Day Service', desc: 'Most repairs completed the same day. Emergency service available after hours.' },
@@ -470,6 +600,39 @@ function homeContent(site: Record<string, any>, page: Record<string, any>): stri
     { icon: SVG.star('h-5 w-5 text-red-500', false), title: 'Top-Rated', desc: `${rating} stars on Google. Trusted by homeowners and businesses alike.` },
     { icon: SVG.wrench('h-5 w-5 text-red-500'), title: 'All Brands &amp; Systems', desc: 'We repair and install all major HVAC brands - Carrier, Lennox, Trane, Daikin, and more.' },
   ];
+  const iconPool = [
+    SVG.award('h-5 w-5 text-red-500'),
+    SVG.shield('h-5 w-5 text-red-500'),
+    SVG.zap('h-5 w-5 text-red-500'),
+    SVG.users('h-5 w-5 text-red-500'),
+    SVG.star('h-5 w-5 text-red-500', false),
+    SVG.wrench('h-5 w-5 text-red-500'),
+  ];
+  const reasons = parsedReasons.length > 0
+    ? parsedReasons.map((r, i) => ({ icon: iconPool[i % iconPool.length], title: r.title, desc: r.desc }))
+    : defaultReasons;
+
+  // Reviews — use parsed from content_sections, fall back to site reviews / DEFAULT_REVIEWS
+  const displayReviews = parsedReviews.length > 0 ? parsedReviews : reviews;
+
+  // Service cards — use parsed from content_sections if available, else site services
+  const displayServices = parsedServices.length > 0 ? parsedServices : services;
+
+  // Service areas heading/body from content_sections
+  const serviceAreasHeading = serviceAreasSection?.heading || 'Serving All of San Mateo County';
+  const serviceAreasBody = serviceAreasSection?.body || 'From Daly City to Redwood City, we provide expert HVAC services to homes and businesses throughout the Peninsula.';
+
+  // Why Choose heading/body from content_sections
+  const whyChooseHeading = whyChooseSection?.heading || `Why Choose ${esc(site.owner_company || 'Air Temp Co')}?`;
+  const whyChooseBody = whyChooseSection?.body || 'More than just HVAC contractors - we\'re your neighbors, committed to keeping San Mateo comfortable.';
+
+  // Services heading/body from content_sections
+  const servicesHeading = servicesSection?.heading || 'Our HVAC Services';
+  const servicesBody = servicesSection?.body || 'Complete heating, cooling, and refrigeration solutions for residential and commercial properties in San Mateo County.';
+
+  // Reviews heading/body from content_sections
+  const reviewsHeading = reviewsSection?.heading || 'What Our Customers Say';
+  const reviewsBody = reviewsSection?.body || 'Real reviews from real San Mateo residents';
 
   // Map embed
   const geo = site.geo || {};
@@ -513,8 +676,8 @@ function homeContent(site: Record<string, any>, page: Record<string, any>): stri
                 ${SVG.phone('h-5 w-5')}
                 Call Now - ${esc(phone)}
               </a>
-              <a href="#quote" class="flex items-center justify-center gap-2 border border-white/20 hover:bg-white/5 text-white px-6 py-3.5 rounded-xl text-lg font-medium transition">
-                Get Free Quote
+              <a href="${esc(heroCTALink)}" class="flex items-center justify-center gap-2 border border-white/20 hover:bg-white/5 text-white px-6 py-3.5 rounded-xl text-lg font-medium transition">
+                ${esc(heroCTAText)}
                 ${SVG.arrowRight('h-5 w-5')}
               </a>
             </div>
@@ -541,11 +704,11 @@ function homeContent(site: Record<string, any>, page: Record<string, any>): stri
     <section class="py-20 sm:py-28">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center mb-14">
-          <h2 class="text-3xl sm:text-4xl font-bold text-white">Our HVAC Services</h2>
-          <p class="mt-3 text-gray-400 max-w-2xl mx-auto">Complete heating, cooling, and refrigeration solutions for residential and commercial properties in San Mateo County.</p>
+          <h2 class="text-3xl sm:text-4xl font-bold text-white">${esc(servicesHeading)}</h2>
+          <p class="mt-3 text-gray-400 max-w-2xl mx-auto">${esc(servicesBody)}</p>
         </div>
         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          ${services.map(svc => {
+          ${displayServices.map(svc => {
             const iconFn = ICON_MAP[svc.icon || 'Wind'] || SVG.wind;
             const features = (svc.features || []).slice(0, 4);
             return `
@@ -584,8 +747,8 @@ function homeContent(site: Record<string, any>, page: Record<string, any>): stri
     <section class="py-20 sm:py-28 bg-gray-900/50">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center mb-14">
-          <h2 class="text-3xl sm:text-4xl font-bold text-white">Why Choose ${esc(site.owner_company || 'Air Temp Co')}?</h2>
-          <p class="mt-3 text-gray-400 max-w-2xl mx-auto">More than just HVAC contractors - we're your neighbors, committed to keeping San Mateo comfortable.</p>
+          <h2 class="text-3xl sm:text-4xl font-bold text-white">${esc(whyChooseHeading)}</h2>
+          <p class="mt-3 text-gray-400 max-w-2xl mx-auto">${esc(whyChooseBody)}</p>
         </div>
         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           ${reasons.map(r => `
@@ -606,11 +769,11 @@ function homeContent(site: Record<string, any>, page: Record<string, any>): stri
     <section class="py-20 sm:py-28">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center mb-14">
-          <h2 class="text-3xl sm:text-4xl font-bold text-white">What Our Customers Say</h2>
-          <p class="mt-3 text-gray-400">Real reviews from real San Mateo residents</p>
+          <h2 class="text-3xl sm:text-4xl font-bold text-white">${esc(reviewsHeading)}</h2>
+          <p class="mt-3 text-gray-400">${esc(reviewsBody)}</p>
         </div>
         <div class="grid md:grid-cols-2 gap-6">
-          ${reviews.slice(0, 4).map(t => `
+          ${displayReviews.slice(0, 4).map(t => `
           <div class="bg-white/5 border border-white/10 rounded-2xl p-6">
             <div class="flex gap-0.5 mb-3">${starsHtml(t.rating || 5)}</div>
             <p class="text-gray-300 text-sm leading-relaxed mb-4">&ldquo;${esc(t.text)}&rdquo;</p>
@@ -630,8 +793,8 @@ function homeContent(site: Record<string, any>, page: Record<string, any>): stri
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="grid lg:grid-cols-2 gap-12 items-center">
           <div>
-            <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">Serving All of San Mateo County</h2>
-            <p class="text-gray-400 mb-8">From Daly City to Redwood City, we provide expert HVAC services to homes and businesses throughout the Peninsula.</p>
+            <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">${esc(serviceAreasHeading)}</h2>
+            <p class="text-gray-400 mb-8">${esc(serviceAreasBody)}</p>
             <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
               ${cities.map(c => `
               <a href="/${esc(c.slug)}" class="flex items-center gap-2 text-sm text-gray-300 hover:text-red-400 transition">
@@ -647,7 +810,7 @@ function homeContent(site: Record<string, any>, page: Record<string, any>): stri
       </div>
     </section>
 
-    ${renderCTASection(site)}
+    ${renderCTASection(site, ctaSection)}
   </main>`;
 }
 
