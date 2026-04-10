@@ -16,6 +16,7 @@ function stripMarkdown(text: string): string {
 import { assemblePage } from '@/lib/sites/templates/assembler';
 import { assembleTrustedNetworxPage } from '@/lib/sites/templates/custom/trustednetworx';
 import { assembleHvacSanMateoPage } from '@/lib/sites/templates/custom/hvacsanmateo';
+import { assembleAranaPaintingPage } from '@/lib/sites/templates/custom/arana-painting';
 import { getRecipeForIndustry } from '@/lib/sites/templates/recipes';
 import { getTemplateById } from '@/lib/sites/templates/gallery';
 import { generateSiteHTML } from '@/lib/sites/content-engine';
@@ -300,6 +301,7 @@ async function buildAndDeploy(site: any, supabase: any) {
   // ---------- Custom assemblers ----------
   const useCustomAssembler = site.template_id === 'tech-enterprise';
   const useHvacAssembler = site.template_id === 'hvac-dark-red';
+  const useAranaAssembler = site.template_id === 'arana-painting';
 
   // Assemble full HTML for each page
   const assembledPages = pagesData.map((p: {
@@ -310,7 +312,50 @@ async function buildAndDeploy(site: any, supabase: any) {
   }) => ({
     slug: p.slug,
     type: p.type,
-    html: useHvacAssembler
+    html: useAranaAssembler
+      ? assembleAranaPaintingPage(
+          {
+            business_name: constants.name,
+            dba: site.dba || constants.name,
+            owner_company: site.owner_company || constants.name,
+            phone: constants.phone,
+            email: constants.email,
+            address: site.address || null,
+            color_primary: theme.colorPrimary,
+            tagline: constants.tagline,
+            logo_url: site.logo_url || null,
+            services,
+            cities: cities.map(c => ({ name: c.name, slug: c.slug, ...('description' in c ? { description: (c as any).description } : {}) })),
+            reviews: siteReviews,
+            rating: constants.rating,
+            reviewCount: constants.reviewCount,
+            yearsInBusiness: constants.yearsInBusiness,
+            license: constants.license,
+            license_types: site.license_types || '',
+            ownerName: site.owner_name || '',
+            year_founded: site.year_founded || '',
+            hours_display: site.hours_display || '',
+            widget_client_id: site.client_id || '',
+            domain: domain,
+            geo: site.geo || null,
+            google_place_id: site.google_place_id || '',
+          },
+          {
+            slug: p.slug,
+            page_type: p.type,
+            title: p.title,
+            meta_title: p.metaTitle,
+            meta_description: p.metaDescription,
+            hero_h1: stripMarkdown(p.heroH1 || '') || null,
+            hero_subtitle: p.heroSubtitle || null,
+            content_sections: (p.sections || []) as { heading: string; body: string; bullets?: string[] }[],
+            faq: (p.faq || []) as { question: string; answer: string }[],
+            city_name: (p.type === 'city' || p.type === 'city_service') ? (cities.find(c => p.slug.includes(c.slug))?.name || '') : '',
+            service_name: (p.type === 'service' || p.type === 'city_service') ? (services.find(s => p.slug.includes(s.slug))?.name || p.title) : '',
+          },
+          pagesData.map((pg: { slug: string; title: string }) => ({ slug: pg.slug, title: pg.title })),
+        )
+      : useHvacAssembler
       ? assembleHvacSanMateoPage(
           {
             business_name: constants.name,
