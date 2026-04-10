@@ -61,7 +61,6 @@ export async function POST(req: NextRequest) {
       const newTags = Array.from(new Set([...existingTags, 'website-lead']));
       await supabase.from('crm_contacts').update({
         phone: phone || undefined,
-        notes: message || undefined,
         tags: newTags,
         custom_fields: { website_message: message, business_name: businessName },
         stage: 'new',
@@ -81,15 +80,17 @@ export async function POST(req: NextRequest) {
           agency_id: agencyId,
           first_name: firstName,
           last_name: lastName,
-          email: email + '+' + clientId.slice(0, 8),  // Dedupe email with client suffix
+          email: email + '+' + clientId.slice(0, 8),
           phone: phone || null,
           source: source || 'website_form',
           stage: 'new',
-          notes: `Original email: ${email}. ${message || ''}`,
           tags: ['website-lead'],
           custom_fields: { website_message: message, business_name: businessName, original_email: email },
         });
-        if (insertErr) console.error('[sites/contact] Cross-client insert error:', insertErr);
+        if (insertErr) {
+          console.error('[sites/contact] Cross-client insert error:', insertErr);
+          return NextResponse.json({ ok: false, error: 'Failed to save lead' }, { status: 500, headers: CORS });
+        }
       } else {
         // Brand new contact
         const { error: insertErr } = await supabase.from('crm_contacts').insert({
@@ -101,11 +102,13 @@ export async function POST(req: NextRequest) {
           phone: phone || null,
           source: source || 'website_form',
           stage: 'new',
-          notes: message || null,
           tags: ['website-lead'],
           custom_fields: { website_message: message, business_name: businessName },
         });
-        if (insertErr) console.error('[sites/contact] Insert error:', insertErr);
+        if (insertErr) {
+          console.error('[sites/contact] Insert error:', insertErr);
+          return NextResponse.json({ ok: false, error: 'Failed to save lead' }, { status: 500, headers: CORS });
+        }
       }
     }
 
