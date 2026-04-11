@@ -56,10 +56,10 @@ const DEFAULTS = {
 };
 
 const DEFAULT_SERVICES = [
-  { name: 'Residential Painting', slug: 'residential-painting', description: 'Transform your home with our expert residential painting services.', icon: 'fa-home', image: IMG.residential },
-  { name: 'Commercial Painting', slug: 'commercial-painting', description: 'Enhance your commercial property with professional painting.', icon: 'fa-building', image: IMG.commercial },
-  { name: 'Kitchen Cabinets', slug: 'kitchen-cabinets', description: 'Repainting your cabinets transforms your kitchen and home.', icon: 'fa-utensils', image: IMG.kitchen },
-  { name: 'HOA Painting', slug: 'hoa-painting', description: 'Revitalize your community with fresh paint and expert services.', icon: 'fa-city', image: IMG.hoa },
+  { name: 'Residential Painting', slug: 'residential-painting', description: 'Transform your home with our expert residential painting services. Our skilled team refreshes your living spaces with vibrant aesthetics.', icon: 'fa-home', image: IMG.residential },
+  { name: 'Commercial Painting', slug: 'commercial-painting', description: "Enhance your commercial property's appeal with our expert services. We ensure professional and outstanding results for your business.", icon: 'fa-building', image: IMG.commercial },
+  { name: 'Kitchen Cabinets', slug: 'kitchen-cabinets', description: 'Repainting your cabinets transforms your kitchen and home. Contact us today for your free custom quote!', icon: 'fa-utensils', image: IMG.kitchen },
+  { name: 'HOA Painting', slug: 'hoa-painting', description: 'Revitalize your community with fresh paint and expert services, creating an inviting environment for all residents.', icon: 'fa-city', image: IMG.hoa },
 ];
 
 const DEFAULT_CITIES = [
@@ -71,6 +71,16 @@ const DEFAULT_CITIES = [
   { name: 'Menlo Park', slug: 'menlo-park' }, { name: 'Atherton', slug: 'atherton' },
   { name: 'Woodside', slug: 'woodside' }, { name: 'Daly City', slug: 'daly-city' },
   { name: 'South San Francisco', slug: 'south-san-francisco' }, { name: 'Half Moon Bay', slug: 'half-moon-bay' },
+];
+
+const DEFAULT_FAQ = [
+  { question: 'How much does it cost to paint a house in Burlingame?', answer: 'House painting costs in Burlingame typically range from $3,000-$15,000 for interior and $4,000-$20,000 for exterior, depending on size, condition, and paint quality. Factors include square footage, number of rooms, prep work needed, and paint grade. Contact us for a free, detailed estimate tailored to your specific project.' },
+  { question: 'Is Arana Painting licensed and insured?', answer: 'Yes, Arana Painting is fully licensed with the California Contractors State License Board (License #1015308) and carries comprehensive insurance including general liability and workers\u2019 compensation coverage. This protects you and your property throughout the project.' },
+  { question: 'What areas does Arana Painting serve?', answer: 'We serve Burlingame and the entire San Mateo County including San Mateo, Hillsborough, Millbrae, San Bruno, Foster City, Belmont, San Carlos, Redwood City, Palo Alto, Menlo Park, Atherton, and surrounding Bay Area communities.' },
+  { question: 'How long does a typical painting project take?', answer: 'Project timelines vary based on scope: a single room typically takes 1-2 days, whole house interiors 5-10 days, and exterior projects 3-7 days depending on size, weather conditions, and prep work required. We\'ll provide an accurate timeline during your free consultation.' },
+  { question: 'Do you offer free estimates?', answer: 'Absolutely! We offer free, no-obligation estimates for all projects. Our team will visit your property, discuss your vision and requirements, assess the scope of work, and provide a detailed written quote. Call (650) 532-4879 or fill out our contact form to schedule.' },
+  { question: 'What type of paint do you use?', answer: 'We use premium paints from trusted brands like Sherwin-Williams, Benjamin Moore, and Dunn-Edwards. We also offer eco-friendly, low-VOC and zero-VOC options for healthier indoor air quality. Our team will recommend the best paint type for your specific project needs.' },
+  { question: 'Do you provide color consultation services?', answer: 'Yes! Our experienced team offers color consultation to help you choose the perfect colors that complement your space, lighting, and personal style. We can provide sample swatches and recommendations based on current design trends and your preferences.' },
 ];
 
 const DEFAULT_REVIEWS = [
@@ -129,7 +139,7 @@ function navLink(slug: string): string {
 // ---------------------------------------------------------------------------
 function renderCSS(): string {
   return `<style>
-:root{--primary:#1a365d;--primary-dark:#0d1f3c;--primary-light:#2a4a7a;--secondary:#c9a227;--secondary-light:#d4b341;--secondary-dark:#a88920;--teal:#007690;--teal-light:#0091b3;--teal-dark:#005a6e;--accent:#e8d5a3;--text:#1f2937;--text-light:#6b7280;--text-muted:#9ca3af;--bg-white:#fff;--bg-light:#f9fafb;--bg-gray:#f3f4f6;--bg-dark:#111827;--shadow-sm:0 1px 2px 0 rgba(0,0,0,.05);--shadow:0 4px 6px -1px rgba(0,0,0,.1),0 2px 4px -1px rgba(0,0,0,.06);--shadow-md:0 10px 15px -3px rgba(0,0,0,.1),0 4px 6px -2px rgba(0,0,0,.05);--shadow-lg:0 25px 50px -12px rgba(0,0,0,.25);--radius-sm:6px;--radius:12px;--radius-lg:20px;--radius-xl:30px;--transition:all .3s cubic-bezier(.4,0,.2,1);--transition-slow:all .5s cubic-bezier(.4,0,.2,1)}
+:root{--primary:#1a365d;--primary-dark:#0d1f3c;--primary-light:#2a4a7a;--secondary:#c9a227;--secondary-light:#d4b341;--secondary-dark:#a88920;--teal:#007690;--teal-light:#0091b3;--teal-dark:#005a6e;--accent:#e8d5a3;--brand-navy:#1B2D4F;--brand-gold:#C8A97E;--brand-teal:#2E8B8B;--text:#1f2937;--text-light:#6b7280;--text-muted:#9ca3af;--bg-white:#fff;--bg-light:#f9fafb;--bg-gray:#f3f4f6;--bg-dark:#111827;--shadow-sm:0 1px 2px 0 rgba(0,0,0,.05);--shadow:0 4px 6px -1px rgba(0,0,0,.1),0 2px 4px -1px rgba(0,0,0,.06);--shadow-md:0 10px 15px -3px rgba(0,0,0,.1),0 4px 6px -2px rgba(0,0,0,.05);--shadow-lg:0 25px 50px -12px rgba(0,0,0,.25);--radius-sm:6px;--radius:12px;--radius-lg:20px;--radius-xl:30px;--transition:all .3s cubic-bezier(.4,0,.2,1);--transition-slow:all .5s cubic-bezier(.4,0,.2,1)}
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth;overflow-x:hidden}
 html,body{max-width:100vw;overflow-x:hidden}
@@ -510,7 +520,7 @@ function renderNavbar(site: Record<string, any>, page: Record<string, any>, allP
   const navItems = allPages.length > 0
     ? allPages.filter(p => {
         const s = ((p.slug as string) || '').replace(/^\/+/, '');
-        return ['home', '', 'services', 'about', 'portfolio', 'blog', 'contact'].includes(s);
+        return ['home', '', 'index', 'services', 'about', 'portfolio', 'blog', 'contact'].includes(s);
       }).map(p => ({
         slug: ((p.slug as string) || '').replace(/^\/+/, '') || 'home',
         title: p.title as string,
@@ -520,6 +530,7 @@ function renderNavbar(site: Record<string, any>, page: Record<string, any>, allP
         { slug: 'services', title: 'Services' },
         { slug: 'about', title: 'About' },
         { slug: 'portfolio', title: 'Portfolio' },
+        { slug: 'blog', title: 'Blog' },
         { slug: 'contact', title: 'Contact' },
       ];
 
@@ -604,6 +615,7 @@ function renderFooter(site: Record<string, any>): string {
               <li><a href="/about">About Us</a></li>
               <li><a href="/services">Services</a></li>
               <li><a href="/portfolio">Portfolio</a></li>
+              <li><a href="/blog">Blog</a></li>
               <li><a href="/contact">Contact</a></li>
             </ul>
           </div>
@@ -632,7 +644,7 @@ function renderFooter(site: Record<string, any>): string {
     </div>
     <div class="footer-bottom">
       <div class="container">
-        <p>&copy; ${new Date().getFullYear()} ${esc(dba)}. All rights reserved.</p>
+        <p>&copy; ${new Date().getFullYear()} ${esc(dba)}. All rights reserved. | <a href="/terms">Terms &amp; Conditions</a> | <a href="/privacy">Privacy Policy</a></p>
       </div>
     </div>
   </footer>`;
@@ -696,7 +708,7 @@ function renderWhyDifferent(): string {
     <div class="container">
       <div class="section-header" data-aos="fade-up">
         <span class="section-badge">Why Choose Us</span>
-        <h2>Transform Your Space with Expert Painting</h2>
+        <h2>Transform Your Space with ${esc(DEFAULTS.businessName)}</h2>
         <p class="section-desc">Experience the difference of working with true professionals</p>
       </div>
       <div class="benefits-grid">
@@ -748,10 +760,8 @@ function renderTestimonials(site: Record<string, any>): string {
         <p class="section-desc">Real reviews from real clients</p>
       </div>
       <div class="reviews-widget-container" data-aos="fade-up">
-        <div style="text-align:center;padding:40px">
-          <p style="font-size:18px;color:var(--text)">⭐⭐⭐⭐⭐</p>
-          <p style="font-size:16px;color:var(--text-light);margin-top:8px">Rated ${esc(site.rating || DEFAULTS.rating)} based on ${esc(site.reviewCount || DEFAULTS.reviewCount)}+ reviews</p>
-        </div>
+        <script type="text/javascript" src="https://reputationhub.site/reputation/assets/review-widget.js"></script>
+        <iframe class="lc_reviews_widget" src="https://reputationhub.site/reputation/widgets/review_widget/eH9EceMluUOqJLXfRPf1" frameborder="0" scrolling="no" style="min-width:100%;width:100%;"></iframe>
       </div>
     </div>
   </section>`;
@@ -812,6 +822,26 @@ function renderFAQ(faq: { question: string; answer: string }[]): string {
           <div class="faq-answer">${esc(f.answer)}</div>
         </div>`).join('')}
       </div>
+    </div>
+  </section>`;
+}
+
+function renderMapSection(site: Record<string, any>): string {
+  const phone = site.phone || DEFAULTS.phone;
+  const email = site.email || DEFAULTS.email;
+  const addr = getAddr(site);
+  return `
+  <section class="map-section">
+    <div class="map-container">
+      <div class="map-info" data-aos="fade-right">
+        <h3>Visit Our Location</h3>
+        <div class="map-info-item"><i class="fas fa-map-marker-alt"></i><p>${esc(addr.street)}<br>${esc(addr.city)}, ${esc(addr.state)} ${esc(addr.zip)}</p></div>
+        <div class="map-info-item"><i class="fas fa-phone-alt"></i><p><a href="${phoneHref(phone)}">${esc(phone)}</a></p></div>
+        <div class="map-info-item"><i class="fas fa-envelope"></i><p><a href="mailto:${esc(email)}">${esc(email)}</a></p></div>
+        <div class="map-info-item"><i class="fas fa-clock"></i><p>Mon-Fri: 7AM - 6PM<br>Sat: 8AM - 4PM</p></div>
+        <a href="/contact" class="btn btn-primary" style="margin-top:20px;width:100%"><i class="fas fa-calendar-check"></i> Get Free Quote</a>
+      </div>
+      <iframe class="map-iframe" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3162.5!2d-122.366!3d37.584!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x808f9!2sBurlingame%2C%20CA!5e0!3m2!1sen!2sus!4v1" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="${esc(site.business_name || DEFAULTS.businessName)} Location"></iframe>
     </div>
   </section>`;
 }
@@ -1051,7 +1081,7 @@ function homeContent(site: Record<string, any>, page: Record<string, any>): stri
           <div class="about-content" data-aos="fade-left">
             <span class="section-badge">About Us</span>
             <h2>Transforming Spaces with Vision &amp; Expertise</h2>
-            <p>${esc(biz)}, a leading service provider in ${esc(addr.city || 'Burlingame')}, is renowned for exceptional quality and unmatched customer satisfaction.</p>
+            <p>${esc(biz)}, a leading service provider in ${esc(addr.city || 'Burlingame')}, is renowned for exceptional quality and unmatched customer satisfaction. With years of expertise in both residential and commercial painting, our highly skilled team delivers flawless results.</p>
             <p>Whether you're refreshing your home or revamping a commercial space, we take pride in transforming your vision into reality with precision and care.</p>
             <div class="about-features">
               <div class="about-feature"><i class="fas fa-check-circle"></i><span>Licensed &amp; Insured</span></div>
@@ -1069,7 +1099,8 @@ function homeContent(site: Record<string, any>, page: Record<string, any>): stri
     ${renderWhyDifferent()}
     ${renderTrustBadges(site)}
     ${renderServiceAreas(site)}
-    ${renderFAQ((page.faq || []) as { question: string; answer: string }[])}
+    ${renderFAQ(((page.faq && (page.faq as any[]).length > 0) ? page.faq : DEFAULT_FAQ) as { question: string; answer: string }[])}
+    ${renderMapSection(site)}
     ${renderCTA(site)}`;
 }
 
