@@ -101,6 +101,11 @@ function phoneHref(phone: string): string {
   return 'tel:+1' + phone.replace(/\D/g, '');
 }
 
+/** Strip "CA LIC:" prefix from license — the templates add it themselves */
+function normalizeLicense(raw: string): string {
+  return String(raw).replace(/^CA\s*LIC[:#]?\s*/i, '').trim();
+}
+
 function slugify(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 }
@@ -534,9 +539,15 @@ function renderNavbar(site: Record<string, any>, page: Record<string, any>, allP
         { slug: 'contact', title: 'Contact' },
       ];
 
+  // Map long page titles to short nav labels
+  const NAV_LABELS: Record<string, string> = {
+    'home': 'Home', 'index': 'Home', 'services': 'Services', 'about': 'About',
+    'portfolio': 'Portfolio', 'blog': 'Blog', 'contact': 'Contact',
+  };
   const linkHtml = navItems.map(n => {
-    const active = (n.slug === currentSlug || (n.slug === 'home' && currentSlug === '')) ? ' active' : '';
-    return `<a href="${navLink(n.slug)}" class="${active}">${esc(n.title)}</a>`;
+    const active = (n.slug === currentSlug || (n.slug === 'home' && currentSlug === '') || (n.slug === 'index' && currentSlug === '')) ? ' active' : '';
+    const label = NAV_LABELS[n.slug] || n.title;
+    return `<a href="${navLink(n.slug)}" class="${active}">${esc(label)}</a>`;
   }).join('\n          ');
 
   const mobileLinkHtml = navItems.map(n => {
@@ -586,7 +597,7 @@ function renderFooter(site: Record<string, any>): string {
   const email = site.email || DEFAULTS.email;
   const logoUrl = site.logo_url || IMG.logo;
   const tagline = site.tagline || DEFAULTS.tagline;
-  const license = site.license || DEFAULTS.license;
+  const license = normalizeLicense(site.license || DEFAULTS.license);
   const addr = getAddr(site);
   const services = getServices(site);
   const cities = getCities(site);
@@ -768,7 +779,7 @@ function renderTestimonials(site: Record<string, any>): string {
 }
 
 function renderTrustBadges(site: Record<string, any>): string {
-  const license = site.license || DEFAULTS.license;
+  const license = normalizeLicense(site.license || DEFAULTS.license);
   const reviewCount = site.reviewCount || DEFAULTS.reviewCount;
   const years = site.yearsInBusiness || DEFAULTS.yearsInBusiness;
   return `
@@ -956,7 +967,7 @@ function buildLocalBusinessSchema(site: Record<string, any>): string {
   const cities = getCities(site);
   const rating = site.rating || DEFAULTS.rating;
   const reviewCount = site.reviewCount || DEFAULTS.reviewCount;
-  const license = site.license || DEFAULTS.license;
+  const license = normalizeLicense(site.license || DEFAULTS.license);
   const yearFounded = site.year_founded || DEFAULTS.yearFounded;
 
   return JSON.stringify({
@@ -1012,7 +1023,7 @@ function buildLocalBusinessSchema(site: Record<string, any>): string {
 function homeContent(site: Record<string, any>, page: Record<string, any>): string {
   const biz = site.business_name || DEFAULTS.businessName;
   const phone = site.phone || DEFAULTS.phone;
-  const license = site.license || DEFAULTS.license;
+  const license = normalizeLicense(site.license || DEFAULTS.license);
   const rating = site.rating || DEFAULTS.rating;
   const reviewCount = site.reviewCount || DEFAULTS.reviewCount;
   const years = site.yearsInBusiness || DEFAULTS.yearsInBusiness;
@@ -1107,7 +1118,7 @@ function homeContent(site: Record<string, any>, page: Record<string, any>): stri
 function aboutContent(site: Record<string, any>, page: Record<string, any>): string {
   const biz = site.business_name || DEFAULTS.businessName;
   const addr = getAddr(site);
-  const license = site.license || DEFAULTS.license;
+  const license = normalizeLicense(site.license || DEFAULTS.license);
   const years = site.yearsInBusiness || DEFAULTS.yearsInBusiness;
   const heroH1 = (page.hero_h1 as string) || 'Transforming Spaces with Vision';
   const heroSub = (page.hero_subtitle as string) || 'All the trusted painting services you need for your property.';
@@ -1189,7 +1200,7 @@ function servicesContent(site: Record<string, any>, page: Record<string, any>): 
 function contactContent(site: Record<string, any>, page: Record<string, any>): string {
   const phone = site.phone || DEFAULTS.phone;
   const email = site.email || DEFAULTS.email;
-  const license = site.license || DEFAULTS.license;
+  const license = normalizeLicense(site.license || DEFAULTS.license);
   const addr = getAddr(site);
   const heroH1 = (page.hero_h1 as string) || 'Get in Touch';
 
