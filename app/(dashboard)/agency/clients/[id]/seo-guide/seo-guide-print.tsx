@@ -286,10 +286,10 @@ export function SEOGuidePrint({ clientName, setup, agencyName, agencyEmail }: Pr
 
           {/* ── Header ── */}
           <div className="header">
-            <div className="header-badge">🐾 Veterinary AI SEO Worker</div>
+            <div className="header-badge">🚀 AI SEO Command Center</div>
             <h1>Your practice is now being ranked<br />by <span>AI search assistants.</span></h1>
             <p className="header-sub">
-              Welcome to the future of local veterinary marketing — fully automated, no guesswork.
+              Welcome to the future of local marketing — fully automated, no guesswork.
             </p>
             <div className="header-meta">
               {clinicName && <span>🏥 {clinicName}</span>}
@@ -309,7 +309,7 @@ export function SEOGuidePrint({ clientName, setup, agencyName, agencyEmail }: Pr
                   <span className="what-emoji">🔍</span>
                   <div>
                     <div className="what-title">GEO Visibility Testing</div>
-                    <div className="what-desc">Asks ChatGPT &amp; Perplexity "{city ? `best vet in ${city}` : 'best vet near me'}" and 24 similar queries every week. Tracks if you're being recommended.</div>
+                    <div className="what-desc">Asks ChatGPT &amp; Perplexity &quot;{city ? `best ${(setup?.industry as string) || 'business'} in ${city}` : `best ${(setup?.industry as string) || 'business'} near me`}&quot; and 24 similar queries every week. Tracks if you&apos;re being recommended.</div>
                   </div>
                 </div>
                 <div className="what-item">
@@ -330,7 +330,7 @@ export function SEOGuidePrint({ clientName, setup, agencyName, agencyEmail }: Pr
                   <span className="what-emoji">💬</span>
                   <div>
                     <div className="what-title">Community Monitoring</div>
-                    <div className="what-desc">Monitors Reddit and local communities for vet questions. Drafts helpful replies for your approval — never posts without you.</div>
+                    <div className="what-desc">Monitors Reddit and local communities for industry-related questions. Drafts helpful replies for your approval — never posts without you.</div>
                   </div>
                 </div>
               </div>

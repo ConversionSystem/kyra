@@ -12,6 +12,7 @@
 // ============================================================================
 
 import type { ClientSite, SiteService, SiteCity } from './types';
+import type { CityData } from '@/lib/seo/city-data';
 
 // ---------- Shared anti-pattern block ----------
 
@@ -284,7 +285,10 @@ Be specific. Use numbers. Reference the actual business, not generic industry cl
 // CITY PAGE PROMPT (GPT-4o)
 // ============================================================================
 
-export function cityPrompt(site: ClientSite, targetCity: SiteCity): string {
+export function cityPrompt(site: ClientSite, targetCity: SiteCity, cityData?: CityData | null): string {
+  // Build real data context if available
+  const dataBlock = cityData ? buildCityDataBlock(cityData) : '';
+
   return `Write a city-specific service page for a local business expanding into a nearby city.
 
 Business: ${site.business_name} | Based in: ${city(site)}
@@ -293,10 +297,10 @@ Services offered: ${formatServices(site.services)}
 Owner: ${site.owner_name || 'the owner'}
 Years in business: ${site.years_in_business || 'established'}
 Industry: ${site.industry}
-
-CRITICAL: This page must be genuinely about ${targetCity.name}, not just "${city(site)}"
-with the city name swapped. The content must feel like it was written specifically for
-residents of ${targetCity.name}.
+${dataBlock}
+Use the real data above to write genuinely differentiated content. Reference specific
+demographics, neighborhoods, climate factors, or landmarks that make ${targetCity.name}
+different from other cities. Do NOT invent facts — only use what is provided.
 
 Write the page with these sections:
 
@@ -305,13 +309,14 @@ Write the page with these sections:
 Natural, includes the city name.
 
 ## Opening
-A paragraph that actually mentions something specific about ${targetCity.name}.
-Reference the community character, neighborhoods, or what makes it distinct from ${city(site)}.
+A paragraph that references real data about ${targetCity.name} — population, home age,
+neighborhoods, or climate. Explain why this matters for the services offered.
 2-3 sentences.
 
 ## Services Available in ${targetCity.name}
 For each service (${formatServices(site.services)}):
-- 1-2 sentence description tailored to ${targetCity.name} residents
+- 1-2 sentence description connecting the service to ${targetCity.name}'s specific needs
+  (e.g., older homes need more maintenance, hot climate increases AC demand)
 
 ## Our Commitment to ${targetCity.name}
 - Response time and service commitment
@@ -346,7 +351,10 @@ export function cityServicePrompt(
   site: ClientSite,
   targetCity: SiteCity,
   service: SiteService,
+  cityData?: CityData | null,
 ): string {
+  const dataBlock = cityData ? buildCityDataBlock(cityData) : '';
+
   return `Write a focused page about ${service.name} in ${targetCity.name}, ${targetCity.state}
 for ${site.business_name}.
 
@@ -357,6 +365,9 @@ Service details: ${service.description || 'Professional service'}
 ${service.price_from ? `Starting at: ${service.price_from}` : ''}
 Target city: ${targetCity.name}, ${targetCity.state}${targetCity.distance_mi ? ` (${targetCity.distance_mi} mi away)` : ''}
 License: ${site.license || 'Licensed'}
+${dataBlock}
+Use the real data above to connect ${service.name} to ${targetCity.name}'s specific
+characteristics (home age, climate, demographics). Do NOT invent facts.
 
 Write the page with these sections:
 
@@ -364,11 +375,11 @@ Write the page with these sections:
 "${service.name} in ${targetCity.name}, ${targetCity.state}" or a natural variation. Max 10 words.
 
 ## Opening
-2-3 sentences about why ${targetCity.name} residents choose ${site.business_name} for ${service.name}.
-Reference something real about the area or the service need.
+2-3 sentences about why ${targetCity.name} residents need ${service.name}.
+Reference real city data (e.g., older homes, climate, population growth).
 
 ## What We Offer
-3-4 bullet points about what this service includes, written for a ${targetCity.name} homeowner or customer.
+3-4 bullet points about what this service includes, tailored to ${targetCity.name}'s specific needs.
 
 ## Why Choose Us for ${service.name} in ${targetCity.name}
 2-3 short reasons: experience (${site.years_in_business || 'years'}), proximity, license (${site.license || 'licensed'}), reputation.
@@ -587,6 +598,32 @@ export interface BlogTopic {
 export function getBlogTopics(site: ClientSite): BlogTopic[] {
   const industry = site.industry?.toLowerCase() || '';
   return BLOG_TOPICS_BY_INDUSTRY[industry] || BLOG_TOPICS_BY_INDUSTRY.default;
+}
+
+// ============================================================================
+// BLOG POST PROMPT
+// ============================================================================
+
+// ============================================================================
+// CITY DATA BLOCK BUILDER (for city/cityService prompts)
+// ============================================================================
+
+function buildCityDataBlock(data: CityData): string {
+  const lines: string[] = ['', '=== REAL CITY DATA (use this to differentiate content) ==='];
+
+  if (data.population) lines.push(`Population: ${data.population.toLocaleString()}`);
+  if (data.median_income) lines.push(`Median household income: $${data.median_income.toLocaleString()}`);
+  if (data.median_home_value) lines.push(`Median home value: $${data.median_home_value.toLocaleString()}`);
+  if (data.median_home_age) lines.push(`Median home age: ${data.median_home_age} years`);
+  if (data.county) lines.push(`County: ${data.county}`);
+  if (data.climate_zone) lines.push(`Climate zone: ${data.climate_zone}`);
+  if (data.climate_notes) lines.push(`Climate: ${data.climate_notes}`);
+  if (data.neighborhoods.length > 0) lines.push(`Key neighborhoods: ${data.neighborhoods.slice(0, 5).join(', ')}`);
+  if (data.local_landmarks.length > 0) lines.push(`Local landmarks: ${data.local_landmarks.slice(0, 3).join(', ')}`);
+  if (data.seasonal_factors.length > 0) lines.push(`Seasonal factors: ${data.seasonal_factors.join('; ')}`);
+
+  lines.push('=== END REAL CITY DATA ===', '');
+  return lines.join('\n');
 }
 
 // ============================================================================

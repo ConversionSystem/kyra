@@ -88,6 +88,12 @@ export const CREDIT_COSTS = {
   'ai_lead_scoring': 1,           // Per individual AI lead score
   'ai_report': 1,                 // Per AI analytics report
 
+  // SEO
+  'seo.geo_test': 5,              // Per GEO visibility test
+  'seo.nap_audit': 3,             // Per NAP consistency audit
+  'seo.gsc_sync': 1,              // Per GSC data sync
+  'seo.content_publish': 2,       // Per off-site content publish
+
   // Free actions (logged but cost 0)
   'system.calendar': 0,
   'system.reminder': 0,

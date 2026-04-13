@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { dispatchGeoTest, dispatchNapAudit, buildClientContext } from '@/lib/seo/worker-dispatcher';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300; // 5 minutes
@@ -7,131 +8,144 @@ export const maxDuration = 300; // 5 minutes
 /**
  * GET /api/cron/seo-worker
  *
- * Scheduled cron job that runs SEO worker tasks for all clients
- * with an active vet-seo-worker premium template.
+ * Scheduled cron job that runs SEO worker tasks for ALL clients
+ * on paid plans with an active site. No longer gated to vet-seo-worker only.
  *
  * Schedule: Daily at 6:00 AM UTC (via Vercel cron)
  *
  * Day-of-week routing:
- *   Monday:    GEO visibility tests
- *   Tuesday:   Content creation triggers
- *   Wednesday: NAP consistency audits
- *   Thursday:  Content creation triggers
- *   Friday:    Weekly report compilation
- *   Daily:     Reddit/UGC monitoring (2x)
+ *   Monday:    GEO visibility tests (via worker-dispatcher)
+ *   Tuesday:   Content creation triggers (via container)
+ *   Wednesday: NAP consistency audits (via worker-dispatcher)
+ *   Thursday:  Content creation triggers (via container)
+ *   Friday:    Weekly report compilation (via container)
+ *   Daily:     Reddit/UGC monitoring (via container, vet-seo-worker clients only)
  */
 export async function GET(request: NextRequest) {
   // Auth check
   const authHeader = request.headers.get('authorization');
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  const cronSecret = process.env.CRON_SECRET;
+  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const supabase = await createClient();
+  const supabase = createServiceClientWithoutCookies();
   const now = new Date();
   const dayOfWeek = now.getUTCDay(); // 0=Sun, 1=Mon, ..., 5=Fri, 6=Sat
 
-  // Find all clients with active vet-seo-worker premium template
-  const { data: clients, error } = await supabase
-    .from('agency_clients')
-    .select('id, name, agency_id, settings')
-    .not('settings', 'is', null);
+  // Find ALL clients with an active site on a paid plan
+  const { data: sites, error } = await supabase
+    .from('client_sites')
+    .select('id, client_id, industry, business_name, agency_id')
+    .in('status', ['live', 'building', 'deploying']);
 
   if (error) {
-    console.error('[seo-worker-cron] Failed to fetch clients:', error);
+    console.error('[seo-worker-cron] Failed to fetch sites:', error);
     return NextResponse.json({ error: 'DB error' }, { status: 500 });
   }
 
-  // Filter to clients with active premium template
-  const seoClients = (clients || []).filter((c) => {
-    const settings = c.settings as Record<string, unknown>;
-    return (
-      settings?.premium_template === 'vet-seo-worker' &&
-      settings?.premium_template_status === 'active'
-    );
-  });
-
-  if (seoClients.length === 0) {
+  if (!sites?.length) {
     return NextResponse.json({
       ok: true,
-      message: 'No active SEO worker clients',
+      message: 'No active sites',
       clients_processed: 0,
     });
   }
 
+  // Deduplicate by client_id (a client may have multiple sites)
+  const clientIds = [...new Set(sites.filter(s => s.client_id).map(s => s.client_id))];
+
   console.log(
-    `[seo-worker-cron] Processing ${seoClients.length} clients, day=${dayOfWeek}`,
+    `[seo-worker-cron] Processing ${clientIds.length} clients from ${sites.length} sites, day=${dayOfWeek}`,
   );
 
-  const results: Array<{ clientId: string; clientName: string; tasks: string[]; errors: string[] }> = [];
+  const results: Array<{ clientId: string; tasks: string[]; errors: string[] }> = [];
 
-  for (const client of seoClients) {
-    const settings = client.settings as Record<string, unknown>;
-    const setup = (settings.premium_template_setup as Record<string, unknown>) || {};
-    const seoData = (settings.seo_data as Record<string, unknown>) || {};
+  for (const clientId of clientIds) {
     const tasks: string[] = [];
     const errors: string[] = [];
 
     try {
-      // ── Daily: Reddit/UGC Monitoring ──
-      tasks.push('ugc_monitor_scheduled');
-      // The actual Reddit scanning runs inside the OpenClaw container.
-      // This cron triggers the container's agent via the provisioner API.
-      await triggerContainerTask(client.id, 'ugc_scan', setup);
+      const ctx = await buildClientContext(clientId);
+      if (!ctx) {
+        errors.push('Could not build client context');
+        results.push({ clientId, tasks, errors });
+        continue;
+      }
 
-      // ── Day-specific tasks ──
+      // ── Legacy vet-seo-worker: still trigger container tasks for UGC monitoring ──
+      const { data: client } = await supabase
+        .from('agency_clients')
+        .select('settings')
+        .eq('id', clientId)
+        .single();
+
+      const settings = (client?.settings || {}) as Record<string, unknown>;
+      const hasVetWorker = settings.premium_template === 'vet-seo-worker' &&
+                           settings.premium_template_status === 'active';
+
+      if (hasVetWorker) {
+        tasks.push('ugc_monitor_scheduled');
+        await triggerContainerTask(clientId, 'ugc_scan', (settings.premium_template_setup || {}) as Record<string, unknown>);
+      }
+
+      // ── Day-specific tasks (ALL clients with sites) ──
       switch (dayOfWeek) {
         case 1: // Monday — GEO Tests
-          tasks.push('geo_test_scheduled');
-          await triggerContainerTask(client.id, 'geo_test', setup);
+          tasks.push('geo_test');
+          const geoResult = await dispatchGeoTest(ctx);
+          if (!geoResult.success) errors.push(`geo_test: ${geoResult.error}`);
           break;
 
-        case 2: // Tuesday — Content Creation
-        case 4: // Thursday — Content Creation
-          tasks.push('content_creation_scheduled');
-          await triggerContainerTask(client.id, 'content_create', setup);
+        case 2: // Tuesday — Content Creation (container only for vet-worker clients)
+        case 4: // Thursday
+          if (hasVetWorker) {
+            tasks.push('content_creation_scheduled');
+            await triggerContainerTask(clientId, 'content_create', (settings.premium_template_setup || {}) as Record<string, unknown>);
+          }
           break;
 
         case 3: // Wednesday — NAP Audit
-          tasks.push('nap_audit_scheduled');
-          await triggerContainerTask(client.id, 'nap_audit', setup);
+          tasks.push('nap_audit');
+          const napResult = await dispatchNapAudit(ctx);
+          if (!napResult.success) errors.push(`nap_audit: ${napResult.error}`);
           break;
 
-        case 5: // Friday — Weekly Report
-          tasks.push('weekly_report_scheduled');
-          await triggerContainerTask(client.id, 'weekly_report', {
-            ...setup,
-            seoData,
-          });
+        case 5: // Friday — Weekly Report (container only for vet-worker clients)
+          if (hasVetWorker) {
+            tasks.push('weekly_report_scheduled');
+            await triggerContainerTask(clientId, 'weekly_report', {
+              ...(settings.premium_template_setup || {}),
+              seoData: settings.seo_data || {},
+            } as Record<string, unknown>);
+          }
           break;
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       errors.push(msg);
-      console.error(`[seo-worker-cron] Error for client ${client.name}:`, msg);
+      console.error(`[seo-worker-cron] Error for client ${clientId}:`, msg);
     }
 
-    results.push({
-      clientId: client.id,
-      clientName: client.name || 'Unknown',
-      tasks,
-      errors,
-    });
+    results.push({ clientId, tasks, errors });
   }
+
+  const totalTasks = results.reduce((sum, r) => sum + r.tasks.length, 0);
+  const totalErrors = results.reduce((sum, r) => sum + r.errors.length, 0);
 
   return NextResponse.json({
     ok: true,
     day: dayOfWeek,
-    clients_processed: seoClients.length,
+    clients_processed: clientIds.length,
+    total_tasks: totalTasks,
+    total_errors: totalErrors,
     results,
   });
 }
 
 /**
  * Trigger a task on the client's OpenClaw container via the VPS provisioner.
- *
- * The provisioner sends a message to the container's agent,
- * which then executes the appropriate skill.
+ * Legacy path — used for vet-seo-worker container skills (UGC, content, reports).
  */
 async function triggerContainerTask(
   clientId: string,
@@ -169,7 +183,6 @@ async function triggerContainerTask(
       throw new Error(`Provisioner returned ${response.status}: ${text}`);
     }
   } catch (err) {
-    // Non-fatal — log and continue
     console.error(
       `[seo-worker-cron] Failed to trigger ${task} on ${containerName}:`,
       err instanceof Error ? err.message : err,
@@ -177,38 +190,30 @@ async function triggerContainerTask(
   }
 }
 
-/**
- * Build the task message that the OpenClaw agent understands.
- */
 function buildTaskMessage(
   task: string,
   context: Record<string, unknown>,
 ): string {
   switch (task) {
     case 'geo_test':
-      return `[CRON] Run weekly GEO visibility test. Query ChatGPT and Perplexity with all 25 query variations. Log results and update the SEO dashboard. Client config: ${JSON.stringify({
+      return `[CRON] Run weekly GEO visibility test. Query ChatGPT and Perplexity with all query variations. Log results and update the SEO dashboard. Client: ${JSON.stringify({
         clinic_name: context.clinic_name,
         city: context.city,
         services: context.services,
       })}`;
-
     case 'nap_audit':
-      return `[CRON] Run weekly NAP consistency audit. Scrape all 15 directories and compare against master NAP data. Flag mismatches. Client config: ${JSON.stringify({
+      return `[CRON] Run weekly NAP consistency audit. Scrape all directories and compare against master NAP data. Flag mismatches. Client: ${JSON.stringify({
         clinic_name: context.clinic_name,
         address: context.address,
         phone: context.phone,
         website: context.website,
       })}`;
-
     case 'content_create':
-      return `[CRON] Content creation day. Generate 1-2 SEO-optimized content pieces based on the content calendar. Check GEO results for weak areas to target. Queue all content for review before publishing. Client: ${context.clinic_name} in ${context.city}.`;
-
+      return `[CRON] Content creation day. Generate 1-2 SEO-optimized content pieces. Check GEO results for weak areas. Queue for review. Client: ${context.clinic_name} in ${context.city}.`;
     case 'ugc_scan':
-      return `[CRON] Reddit/UGC scan. Check configured subreddits for vet-related discussions in ${context.city}. Draft helpful replies for any relevant posts found in the last 48 hours. Queue all drafts for review.`;
-
+      return `[CRON] Reddit/UGC scan. Check configured subreddits for relevant discussions in ${context.city}. Draft helpful replies for posts found in the last 48 hours. Queue all drafts for review.`;
     case 'weekly_report':
-      return `[CRON] Compile weekly SEO report. Include: GEO scores, NAP audit status, content published, outreach pipeline, Reddit activity, and top 3-5 action items for the agency.`;
-
+      return `[CRON] Compile weekly SEO report. Include: GEO scores, NAP status, content published, outreach pipeline, Reddit activity, and top 3-5 action items.`;
     default:
       return `[CRON] Execute task: ${task}`;
   }

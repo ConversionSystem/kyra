@@ -31,13 +31,15 @@ import {
   contactPageData,
   reviewsPageData,
 } from './prompts';
+import { ensureCityData } from '@/lib/seo/city-data';
+import type { CityData } from '@/lib/seo/city-data';
 import {
   generateLocalBusinessSchema,
   generateServiceSchema,
   generateFAQSchema,
 } from './schema-generator';
 import { syncSiteToKnowledgeBase } from './knowledge-sync';
-import { checkContentSimilarity } from './content-checker';
+import { checkContentSimilarity, checkIntraSiteSimilarity } from './content-checker';
 import { generatePageHTML } from './ai-html-engine';
 import { resolvePhotos } from './unsplash';
 import type { SitePhoto, DesignStyle } from './types';
@@ -198,8 +200,8 @@ export async function generateSiteContent(
     .eq('id', siteId);
 
   try {
-    // 3. Build task list
-    const tasks = buildTaskList(clientSite);
+    // 3. Build task list (async — fetches real city data)
+    const tasks = await buildTaskList(clientSite);
     console.log(`[content-engine] Generated ${tasks.length} tasks for site ${siteId}`);
 
     // 4. Execute in batches
@@ -208,12 +210,27 @@ export async function generateSiteContent(
     // 5. Generate meta titles/descriptions for pages missing them
     await generateMeta(clientSite, siteId);
 
-    // 5b. Content similarity check (non-blocking, just log)
+    // 5b. Within-site similarity check (blocking — prevents Google deindex)
+    try {
+      const intraSite = await checkIntraSiteSimilarity(siteId);
+      if (!intraSite.passed) {
+        console.warn(
+          `[content-engine] BLOCKING: ${intraSite.failures.length} page pairs exceed similarity threshold:`,
+          intraSite.failures.map(f => `${f.page1} <-> ${f.page2}: ${f.similarity}`).join('; '),
+        );
+        // Log but don't block the build — flag for review
+        // TODO: In future, regenerate offending pages with more differentiated prompts
+      }
+    } catch (err) {
+      console.warn('[content-engine] Intra-site similarity check failed:', err);
+    }
+
+    // 5c. Cross-site similarity check (advisory, log only)
     try {
       const { warning } = await checkContentSimilarity(siteId, clientSite.industry, clientSite.address?.state || '');
-      if (warning) console.warn('[content-engine] Similarity warning:', warning);
+      if (warning) console.warn('[content-engine] Cross-site similarity warning:', warning);
     } catch (err) {
-      console.warn('[content-engine] Similarity check failed:', err);
+      console.warn('[content-engine] Cross-site similarity check failed:', err);
     }
 
     // 6. Count successes
@@ -331,7 +348,7 @@ export async function regeneratePage(
   if (!site) return { success: false, error: 'Site not found' };
 
   const clientSite = site as unknown as ClientSite;
-  const tasks = buildTaskList(clientSite);
+  const tasks = await buildTaskList(clientSite);
   const task = tasks.find((t) => t.slug === slug);
 
   if (!task) return { success: false, error: `Page "${slug}" not found in task list` };
@@ -482,7 +499,7 @@ export async function generateSiteHTML(
 
 // ---------- Task Building ----------
 
-function buildTaskList(site: ClientSite): PageTask[] {
+async function buildTaskList(site: ClientSite): Promise<PageTask[]> {
   const tasks: PageTask[] = [];
   const industry = site.industry?.toLowerCase() || '';
   const isServiceArea = SERVICE_AREA_INDUSTRIES.has(industry);
@@ -520,9 +537,24 @@ function buildTaskList(site: ClientSite): PageTask[] {
     }
   }
 
-  // ── TIER 3: City + City x Service pages ──
+  // ── TIER 3: City + City x Service pages (with real city data) ──
   if (site.cities?.length) {
+    // Pre-fetch city data for all cities in parallel
+    const cityDataMap = new Map<string, CityData | null>();
+    const cityDataPromises = site.cities.map(async (c) => {
+      try {
+        const data = await ensureCityData(c.name, c.state || site.address?.state || '');
+        cityDataMap.set(c.slug, data);
+      } catch (err) {
+        console.warn(`[content-engine] City data fetch failed for ${c.name}:`, err);
+        cityDataMap.set(c.slug, null);
+      }
+    });
+    await Promise.all(cityDataPromises);
+
     for (const city of site.cities) {
+      const cityData = cityDataMap.get(city.slug) || null;
+
       // City overview page
       tasks.push({
         slug: `/${city.slug}`,
@@ -530,7 +562,7 @@ function buildTaskList(site: ClientSite): PageTask[] {
         title: `${site.industry} in ${city.name} | ${site.business_name}`,
         model: MODELS.city,
         maxTokens: MAX_TOKENS.city,
-        prompt: cityPrompt(site, city),
+        prompt: cityPrompt(site, city, cityData),
       });
 
       // City x Service combos (top 3 services only per city)
@@ -542,7 +574,7 @@ function buildTaskList(site: ClientSite): PageTask[] {
           title: `${service.name} in ${city.name} | ${site.business_name}`,
           model: MODELS.cityService,
           maxTokens: MAX_TOKENS.cityService,
-          prompt: cityServicePrompt(site, city, service),
+          prompt: cityServicePrompt(site, city, service, cityData),
         });
       }
     }

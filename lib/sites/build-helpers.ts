@@ -11,6 +11,7 @@ import { assemblePage } from './templates/assembler';
 import { assembleTrustedNetworxPage } from './templates/custom/trustednetworx';
 import { assembleHvacSanMateoPage } from './templates/custom/hvacsanmateo';
 import { assembleAranaPaintingPage } from './templates/custom/arana-painting';
+import { addInternalLinks } from '@/lib/seo/internal-linker-writer';
 
 /** Generate a decent H1 when the LLM parser fails to extract one */
 function generateFallbackH1(businessName: string, industry: string, city?: string): string {
@@ -243,8 +244,11 @@ export async function assembleSitePages(
     }),
   }));
 
+  // Add hub-and-spoke internal links + breadcrumbs to all pages
+  const linkedPages = addInternalLinks(assembledPages);
+
   // Run design quality check on the homepage (most important page)
-  const homepage = assembledPages.find(p => p.type === 'homepage');
+  const homepage = linkedPages.find(p => p.type === 'homepage');
   if (homepage) {
     const designQuality = checkDesignQuality(homepage.html);
     if (designQuality.issues.length > 0) {
@@ -263,5 +267,5 @@ export async function assembleSitePages(
     }
   }
 
-  return { assembledPages, recipe, constants, theme, resolvedPhotos };
+  return { assembledPages: linkedPages, recipe, constants, theme, resolvedPhotos };
 }
