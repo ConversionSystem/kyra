@@ -2013,9 +2013,9 @@ export default function PageEditor() {
         <div className="flex border-t border-gray-100 px-2 sm:px-4 overflow-x-auto">
           {[
             { href: `/agency/website/${siteId}/editor`, icon: <Edit3 className="h-3.5 w-3.5" />, label: 'Editor', active: true },
-            { href: `/agency/website/${siteId}/growth`, icon: <TrendingUp className="h-3.5 w-3.5" />, label: 'Growth', active: false },
+            { href: `/agency/website/${siteId}/seo?tab=growth`, icon: <TrendingUp className="h-3.5 w-3.5" />, label: 'Growth', active: false },
             { href: `/agency/website/${siteId}/settings`, icon: <Settings className="h-3.5 w-3.5" />, label: 'Settings', active: false },
-            { href: `/agency/website/${siteId}/seo`, icon: <Search className="h-3.5 w-3.5" />, label: 'AI Visibility', active: false },
+            { href: `/agency/website/${siteId}/seo`, icon: <Search className="h-3.5 w-3.5" />, label: 'SEO/GEO', active: false },
           ].map((tab) => (
             <Link
               key={tab.href}

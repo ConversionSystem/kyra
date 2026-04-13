@@ -71,6 +71,7 @@ import ITOperationsTab from '@/components/dashboard/client-tabs/it-operations-ta
 import BookingConfigTab from '@/components/dashboard/client-tabs/booking-config-tab';
 import WorkflowsTab from '@/components/dashboard/client-tabs/workflows-tab';
 import AiSetupTab from '@/components/dashboard/client-tabs/ai-setup-tab';
+import SeoGeoTab from '@/components/dashboard/client-tabs/seo-geo-tab';
 
 // ── GHL Free Sub-Account Sticky Banner ───────────────────────────────────────
 
@@ -193,7 +194,7 @@ interface ChatMessage {
   content: string;
 }
 
-type Tab = 'inbox' | 'crm' | 'marketing' | 'website' | 'ai-setup' | 'integrations' | 'it-operations' | 'settings' | 'insights';
+type Tab = 'inbox' | 'crm' | 'marketing' | 'website' | 'seo-geo' | 'ai-setup' | 'integrations' | 'it-operations' | 'settings' | 'insights';
 
 // Map legacy ?tab= values to new tab IDs
 const LEGACY_TAB_MAP: Record<string, Tab> = {
@@ -221,7 +222,7 @@ const LEGACY_TAB_MAP: Record<string, Tab> = {
   automation: 'settings',
   usage: 'insights',
   memory: 'insights',
-  seo: 'insights',
+  seo: 'seo-geo',
   'ai-teams': 'inbox',
 };
 
@@ -230,6 +231,7 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'crm', label: 'CRM', icon: Users },
   { id: 'marketing', label: 'Marketing', icon: TrendingUp },
   { id: 'website', label: 'Website', icon: Globe },
+  { id: 'seo-geo', label: 'SEO/GEO', icon: Search },
 ];
 
 // Grouped sidebar navigation — desktop only
@@ -482,6 +484,9 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
           {activeTab === 'website' && (
             <WebsiteTab clientId={initialClient.id} clientName={initialClient.name} />
           )}
+          {activeTab === 'seo-geo' && (
+            <SeoGeoTab clientId={initialClient.id} clientName={initialClient.name} />
+          )}
           {activeTab === 'ai-setup' && (
             <AiSetupTab client={initialClient} clientId={initialClient.id} agencyId={initialClient.agency_id} plan={plan} />
           )}
@@ -497,7 +502,6 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
           {activeTab === 'insights' && (
             <InsightsTab
               client={initialClient}
-              isSeoLocked={isFreeOrSolo}
               workerRoleId={((initialClient.container_config as Record<string, unknown>) ?? {}).active_worker_id as string | undefined}
             />
           )}

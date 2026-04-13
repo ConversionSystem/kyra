@@ -75,27 +75,29 @@ export async function dispatchGeoTest(ctx: ClientContext): Promise<DispatchResul
       batch_id: string;
     }> = [];
 
-    // Test each query against ChatGPT (via OpenRouter)
+    // Test each query against ChatGPT and Perplexity (via OpenRouter)
     for (const query of queries) {
-      try {
-        const chatgptResult = await testGeoQuery(query, ctx.businessName, 'chatgpt');
-        results.push({
-          client_id: ctx.clientId,
-          site_id: ctx.siteId || null,
-          tested_at: new Date().toISOString(),
-          provider: 'chatgpt',
-          query,
-          cited: chatgptResult.cited,
-          citation_text: chatgptResult.citation_text,
-          score_pct: chatgptResult.cited ? 100 : 0,
-          batch_id: batchId,
-        });
-      } catch {
-        // Skip failed queries
-      }
+      for (const provider of ['chatgpt', 'perplexity'] as const) {
+        try {
+          const result = await testGeoQuery(query, ctx.businessName, provider);
+          results.push({
+            client_id: ctx.clientId,
+            site_id: ctx.siteId || null,
+            tested_at: new Date().toISOString(),
+            provider,
+            query,
+            cited: result.cited,
+            citation_text: result.citation_text,
+            score_pct: result.cited ? 100 : 0,
+            batch_id: batchId,
+          });
+        } catch {
+          // Skip failed queries
+        }
 
-      // Small delay to avoid rate limits
-      await new Promise((r) => setTimeout(r, 500));
+        // Small delay to avoid rate limits
+        await new Promise((r) => setTimeout(r, 500));
+      }
     }
 
     // Batch insert results

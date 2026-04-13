@@ -203,8 +203,10 @@ ALTER TABLE seo_publish_queue ENABLE ROW LEVEL SECURITY;
 
 -- Service role can do everything (API routes use service client)
 -- Industry packs are read-only for all authenticated users (public config)
+DROP POLICY IF EXISTS "industry_packs_read" ON seo_industry_packs;
 CREATE POLICY "industry_packs_read" ON seo_industry_packs FOR SELECT TO authenticated USING (true);
 -- City data is read-only for all authenticated users (public data)
+DROP POLICY IF EXISTS "city_data_read" ON seo_city_data;
 CREATE POLICY "city_data_read" ON seo_city_data FOR SELECT TO authenticated USING (true);
 
 -- Per-site tables: access via site ownership (through agency_clients → agencies → owner)
