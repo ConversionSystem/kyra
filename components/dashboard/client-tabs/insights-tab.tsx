@@ -8,7 +8,7 @@ import type { AgencyClient } from '@/lib/agency/queries';
 import { UsageAnalytics } from '@/app/(dashboard)/agency/clients/[id]/usage-analytics';
 import { MemoryBrowser } from '@/app/(dashboard)/agency/clients/[id]/memory-browser';
 import { CustomerIntelligence } from '@/app/(dashboard)/agency/clients/[id]/customer-intelligence';
-import { SEODashboard } from '@/app/(dashboard)/agency/clients/[id]/seo-dashboard';
+import SeoGeoCommandCenter from '@/components/dashboard/client-tabs/seo-geo-command-center';
 import HealthScoreBadge from '@/components/dashboard/health-score-badge';
 import ClientActivityHeatmap from '@/components/dashboard/client-activity-heatmap';
 import RoiSummaryCard from '@/components/dashboard/roi-summary-card';
@@ -22,7 +22,7 @@ const SUB_TAB_LABELS: Record<SubTab, string> = {
   usage: 'Usage',
   tasks: 'Tasks',
   memory: 'Memory',
-  seo: 'SEO',
+  seo: 'SEO/GEO',
   'ai-reports': '✨ AI Reports',
 };
 
@@ -298,7 +298,7 @@ export default function InsightsTab({ client, defaultSubTab = 'usage', isSeoLock
             </a>
           </div>
         ) : (
-          <SEODashboard clientId={client.id} clientName={client.name || 'Client'} />
+          <SeoGeoCommandCenter client={client} />
         )
       )}
     </div>

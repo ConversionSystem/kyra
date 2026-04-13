@@ -1945,7 +1945,7 @@ function SequencesView({ client }: { client: AgencyClient }) {
 
 const SUB_TABS: { id: SubTab; label: string; icon: React.ElementType }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'seo', label: 'SEO', icon: Search },
+  { id: 'seo', label: 'Keyword Tools', icon: Search },
   { id: 'content', label: 'Content', icon: PenTool },
   { id: 'competitors', label: 'Competitors', icon: Eye },
   { id: 'social', label: 'Social', icon: Smartphone },

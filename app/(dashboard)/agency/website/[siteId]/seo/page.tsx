@@ -147,7 +147,7 @@ export default function SeoCommandCenter() {
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">AI Visibility &amp; Authority</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Website SEO Performance</h1>
             <p className="text-sm text-gray-500">GEO citation testing, NAP audits &amp; content authority stacking</p>
           </div>
         </div>
@@ -164,7 +164,7 @@ export default function SeoCommandCenter() {
       {/* Cross-reference note */}
       <p className="text-xs text-gray-400">
         For keyword research &amp; rank tracking, see{' '}
-        <Link href={`/agency/clients`} className="text-indigo-600 hover:underline">Marketing → SEO tab</Link>
+        <Link href={`/agency/clients`} className="text-indigo-600 hover:underline">Insights → SEO/GEO tab</Link> or <Link href={`/agency/clients`} className="text-indigo-600 hover:underline">Marketing → Keyword Tools</Link>
       </p>
 
       {/* Tab Navigation — always visible */}
