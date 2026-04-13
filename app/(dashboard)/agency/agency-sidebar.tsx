@@ -86,6 +86,13 @@ const navSections: NavSection[] = [
       { label: 'Build Requests', href: '/agency/build-requests', icon: Sparkles, iconClassName: 'text-amber-400' },
     ],
   },
+  {
+    label: 'Resources',
+    collapsible: true,
+    items: [
+      { label: 'What\'s New', href: '/changelog', icon: Star, iconClassName: 'text-yellow-400', badge: 'New' },
+    ],
+  },
   // CRM now lives inside each client's dashboard (CRM tab)
   {
     label: 'Account',
