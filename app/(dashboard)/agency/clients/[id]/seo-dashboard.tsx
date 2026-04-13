@@ -17,16 +17,16 @@ import { PublishingPlatformsPanel } from './publishing-platforms-panel';
 // ── Getting Started Guide ─────────────────────────────────────────────────────
 
 const SCHEDULE = [
-  { day: 'Every Monday', icon: '🔍', title: 'GEO Visibility Test', desc: 'Tests 25 queries across ChatGPT and Perplexity to measure if your practice is being cited by AI assistants.' },
+  { day: 'Every Monday', icon: '🔍', title: 'GEO Visibility Test', desc: 'Tests 25 queries across ChatGPT and Perplexity to measure if your business is being cited by AI assistants.' },
   { day: 'Every Tuesday + Thursday', icon: '✍️', title: 'Content Batch', desc: 'Publishes Web 2.0 articles and semantic stack pages to Google Docs, GitHub Pages, Notion, and Telegraph.' },
-  { day: 'Every Wednesday', icon: '📍', title: 'NAP Consistency Audit', desc: 'Scrapes 15 major directories (Google, Yelp, Bing, etc.) and flags any mismatches in your business name, address, or phone.' },
-  { day: 'Daily (8 AM + 6 PM)', icon: '💬', title: 'Reddit Monitoring', desc: 'Monitors vet-related subreddits for mentions of your city or services. Drafts replies for your review — never auto-posts.' },
+  { day: 'Every Wednesday', icon: '📍', title: 'NAP Consistency Audit', desc: 'Scrapes major directories (Google, Yelp, Bing, etc.) and flags any mismatches in your business name, address, or phone.' },
+  { day: 'Daily (8 AM + 6 PM)', icon: '💬', title: 'Reddit Monitoring', desc: 'Monitors industry-related subreddits for mentions of your city or services. Drafts replies for your review — never auto-posts.' },
   { day: 'Every Friday', icon: '📊', title: 'Weekly SEO Report', desc: 'Full report with GEO citation trends, NAP status, content published, and outreach pipeline.' },
 ];
 
 const GLOSSARY = [
-  { term: 'GEO Score', def: 'How often your practice is cited when someone asks an AI assistant (ChatGPT, Perplexity) for a vet recommendation in your city. 0% = not found, 100% = always cited.' },
-  { term: 'NAP Consistency', def: 'Name, Address, Phone. All 15 major directories must show identical info. Mismatches hurt local rankings and AI citations.' },
+  { term: 'GEO Score', def: 'How often your business is cited when someone asks an AI assistant (ChatGPT, Perplexity) for a recommendation in your city. 0% = not found, 100% = always cited.' },
+  { term: 'NAP Consistency', def: 'Name, Address, Phone. All major directories must show identical info. Mismatches hurt local rankings and AI citations.' },
   { term: 'Semantic Stack', def: 'Supporting pages on high-authority platforms (Google Docs, GitHub, Notion) that reinforce your main website in AI training data.' },
   { term: 'Web 2.0', def: 'Blog-style content published on WordPress, Blogger, Telegraph. Builds topical authority and backlinks.' },
   { term: 'Review Queue', def: 'Reddit replies drafted by AI and held for your approval. You approve, edit, or discard before anything is posted.' },
@@ -35,7 +35,7 @@ const GLOSSARY = [
 function GettingStartedGuide({ setup }: { setup: Record<string, unknown> }) {
   const [open, setOpen] = useState(true);
 
-  const clinicName = (setup?.clinic_name as string) || (setup?.clinicName as string) || 'your practice';
+  const clinicName = (setup?.clinic_name as string) || (setup?.clinicName as string) || (setup?.business_name as string) || 'your business';
   const city = (setup?.city as string) || '';
   const services = (setup?.services as string[]) || [];
 
@@ -406,11 +406,14 @@ interface ContentEntry {
 
 interface SEOData {
   template: string;
+  industry?: string;
   status: string;
   setup: Record<string, unknown>;
   geo_scores: GeoScore[];
   nap_status: NapEntry[];
   content_published: ContentEntry[];
+  content_gaps: Array<Record<string, unknown>>;
+  competitor_scores: Array<Record<string, unknown>>;
   publishing_platforms: string[];
   outreach_pipeline: Array<Record<string, unknown>>;
   reddit_queue: Array<Record<string, unknown>>;
@@ -421,6 +424,8 @@ interface SEOData {
     content_count: number;
     nap_issues: number;
     pending_reviews: number;
+    content_gaps_count: number;
+    competitor_count: number;
   };
 }
 
@@ -518,7 +523,7 @@ export function SEODashboard({ clientId, clientName }: SEODashboardProps) {
             SEO Dashboard — {clientName}
           </h2>
           <p className="text-sm text-gray-500 mt-1">
-            Veterinary SEO Worker · Premium Template
+            SEO Command Center{data.industry ? ` · ${data.industry.charAt(0).toUpperCase() + data.industry.slice(1).replace(/-/g, ' ')}` : ''}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -718,6 +723,62 @@ export function SEODashboard({ clientId, clientName }: SEODashboardProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* Content Gaps */}
+      {data.content_gaps.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-500" />
+                Content Gaps
+              </CardTitle>
+              <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-xs">
+                {data.content_gaps.length} gaps found
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="space-y-2">
+              {data.content_gaps.slice(0, 10).map((gap, i) => (
+                <div key={i} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-700 truncate">{gap.query as string}</p>
+                    <p className="text-xs text-gray-400">{gap.gap_type as string} gap · priority {gap.priority_score as number}</p>
+                  </div>
+                  <Badge className="text-xs bg-amber-50 text-amber-600 border-amber-200 shrink-0 ml-2">
+                    Not cited
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Competitor Scores */}
+      {data.competitor_scores.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+              <Globe className="w-4 h-4 text-blue-500" />
+              Competitor GEO Scores
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="space-y-2">
+              {data.competitor_scores.slice(0, 10).map((comp, i) => (
+                <div key={i} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                  <p className="text-sm text-gray-700">{comp.competitor_name as string}</p>
+                  <span className="text-sm font-medium text-gray-900">
+                    {comp.geo_score_pct != null ? `${Math.round(comp.geo_score_pct as number)}%` : '—'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* NAP Audit */}
       <NAPAuditPanel

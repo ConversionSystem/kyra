@@ -26,7 +26,9 @@ export default async function SEOGuidePage({ params }: PageProps) {
   if (!client) notFound();
 
   const settings = (client.settings as Record<string, unknown>) ?? {};
-  if (settings.premium_template !== 'vet-seo-worker') notFound();
+  // Allow any client with SEO setup (not just vet-seo-worker)
+  const seoData = settings.seo_data || settings.premium_template_setup;
+  if (!seoData && settings.premium_template !== 'vet-seo-worker') notFound();
 
   const setup = (settings.premium_template_setup as Record<string, unknown>) ?? {};
 

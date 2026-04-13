@@ -13,6 +13,7 @@ import { createClient } from '@/lib/supabase/server';
 import { deductCredits } from '@/lib/billing/credit-engine';
 import { runGeoTest } from '@/templates/vet-seo-worker/skills/geo-tester/run';
 import { runNAPAudit } from '@/templates/vet-seo-worker/skills/nap-auditor/run';
+import { dispatchGeoTest, dispatchNapAudit, buildClientContext } from '@/lib/seo/worker-dispatcher';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -45,10 +46,10 @@ export async function POST(request: NextRequest, { params }: PageParams) {
   }
 
   const settings = (client.settings as Record<string, unknown>) ?? {};
-  if (settings.premium_template !== 'vet-seo-worker') {
-    return NextResponse.json({ error: 'Client does not have SEO worker' }, { status: 400 });
-  }
-
+  // Gate removed: SEO tasks now available for ALL clients with sites.
+  // Legacy vet-seo-worker clients still use container-based skills;
+  // all other clients use the new worker-dispatcher.
+  const hasLegacyVetWorker = settings.premium_template === 'vet-seo-worker';
   const setup = (settings.premium_template_setup as Record<string, unknown>) ?? {};
   const body = await request.json();
   const { task } = body as { task: string };
@@ -94,54 +95,91 @@ export async function POST(request: NextRequest, { params }: PageParams) {
 
     if (task === 'geo_test') {
       console.log(`[seo/run] GEO test starting for ${clinic.clinic_name} in ${clinic.city}`);
-      const existing = (settings.seo_data as Record<string, unknown>) ?? {};
-      const geoHistory = ((existing.geo_history as unknown[]) ?? []) as Array<{ overall_score: number }>;
-      const previousScore = geoHistory[0]?.overall_score ?? null;
-      result = await runGeoTest(clinic, previousScore, openaiKey!, perplexityKey!);
 
-      // Persist to seo_data
-      const updatedHistory = [result, ...geoHistory];
-      if (updatedHistory.length > 12) updatedHistory.splice(12);
+      if (hasLegacyVetWorker) {
+        // Legacy path: vet-seo-worker container-based runner
+        const existing = (settings.seo_data as Record<string, unknown>) ?? {};
+        const geoHistory = ((existing.geo_history as unknown[]) ?? []) as Array<{ overall_score: number }>;
+        const previousScore = geoHistory[0]?.overall_score ?? null;
+        result = await runGeoTest(clinic, previousScore, openaiKey!, perplexityKey!);
 
-      await supabase
-        .from('agency_clients')
-        .update({
-          settings: {
-            ...settings,
-            seo_data: {
-              ...existing,
-              geo_history: updatedHistory,
-              geo_last_run: new Date().toISOString(),
+        const updatedHistory = [result, ...geoHistory];
+        if (updatedHistory.length > 12) updatedHistory.splice(12);
+
+        await supabase
+          .from('agency_clients')
+          .update({
+            settings: {
+              ...settings,
+              seo_data: {
+                ...existing,
+                geo_history: updatedHistory,
+                geo_last_run: new Date().toISOString(),
+              },
             },
-          },
-        })
-        .eq('id', clientId);
+          })
+          .eq('id', clientId);
+      } else {
+        // Universal path: worker-dispatcher writes to normalized tables
+        const ctx = await buildClientContext(clientId);
+        if (!ctx) {
+          return NextResponse.json({ error: 'Could not build client context. Ensure client has a site.' }, { status: 400 });
+        }
+        result = await dispatchGeoTest(ctx);
+
+        // Update last run timestamp in settings
+        const existing = (settings.seo_data as Record<string, unknown>) ?? {};
+        await supabase
+          .from('agency_clients')
+          .update({
+            settings: { ...settings, seo_data: { ...existing, geo_last_run: new Date().toISOString() } },
+          })
+          .eq('id', clientId);
+      }
 
     } else if (task === 'nap_audit') {
       console.log(`[seo/run] NAP audit starting for ${clinic.clinic_name}`);
-      const masterNAP = {
-        name: clinic.clinic_name,
-        address: clinic.address,
-        phone: clinic.phone,
-        website: clinic.website,
-      };
-      result = await runNAPAudit(masterNAP, clinic.city, firecrawlKey!);
 
-      // Persist to seo_data
-      const existing = (settings.seo_data as Record<string, unknown>) ?? {};
-      await supabase
-        .from('agency_clients')
-        .update({
-          settings: {
-            ...settings,
-            seo_data: {
-              ...existing,
-              nap_audit_last: result,
-              nap_last_run: new Date().toISOString(),
+      if (hasLegacyVetWorker) {
+        // Legacy path: vet-seo-worker container-based runner
+        const masterNAP = {
+          name: clinic.clinic_name,
+          address: clinic.address,
+          phone: clinic.phone,
+          website: clinic.website,
+        };
+        result = await runNAPAudit(masterNAP, clinic.city, firecrawlKey!);
+
+        const existing = (settings.seo_data as Record<string, unknown>) ?? {};
+        await supabase
+          .from('agency_clients')
+          .update({
+            settings: {
+              ...settings,
+              seo_data: {
+                ...existing,
+                nap_audit_last: result,
+                nap_last_run: new Date().toISOString(),
+              },
             },
-          },
-        })
-        .eq('id', clientId);
+          })
+          .eq('id', clientId);
+      } else {
+        // Universal path: worker-dispatcher writes to normalized tables
+        const ctx = await buildClientContext(clientId);
+        if (!ctx) {
+          return NextResponse.json({ error: 'Could not build client context. Ensure client has a site.' }, { status: 400 });
+        }
+        result = await dispatchNapAudit(ctx);
+
+        const existing = (settings.seo_data as Record<string, unknown>) ?? {};
+        await supabase
+          .from('agency_clients')
+          .update({
+            settings: { ...settings, seo_data: { ...existing, nap_last_run: new Date().toISOString() } },
+          })
+          .eq('id', clientId);
+      }
 
     } else if (task === 'content_draft') {
       if (!openaiKey) {

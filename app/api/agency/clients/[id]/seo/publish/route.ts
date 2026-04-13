@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAgencyAdmin } from '@/lib/agency/middleware';
 import { createClient } from '@/lib/supabase/server';
-import { generateVetSchema } from '@/lib/seo/schema-markup';
+import { generateBusinessSchema } from '@/lib/seo/schema-markup';
 import { getGoogleServiceAccessToken, provisionPlatforms } from '@/lib/seo/platform-provisioner';
 
 export const dynamic = 'force-dynamic';
@@ -261,14 +261,16 @@ async function publishToGitHubPages(
   if (!owner || !repo) throw new Error('GitHub repo not provisioned');
 
   // Build full HTML page with schema markup
-  const schemaScript = generateVetSchema({
-    name: (setupData.clinic_name || setupData.clinicName || '') as string,
+  const schemaScript = generateBusinessSchema({
+    name: (setupData.clinic_name || setupData.clinicName || setupData.business_name || '') as string,
     address: (setupData.address || '') as string,
     city: (setupData.city || '') as string,
     state: (setupData.state || '') as string,
     zip: (setupData.zip || '') as string,
     phone: (setupData.phone || '') as string,
     website: (setupData.website || '') as string,
+    industry: (setupData.industry || '') as string,
+    services: (setupData.services || []) as string[],
   });
 
   const htmlPage = `<!DOCTYPE html>

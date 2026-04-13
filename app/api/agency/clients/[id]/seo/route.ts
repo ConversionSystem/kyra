@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { getAgencyForUser, getAgencyClient } from '@/lib/agency/queries';
 
 export const dynamic = 'force-dynamic';
@@ -27,41 +27,76 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
   }
 
   const clientSettings = ((client as unknown as Record<string, unknown>).settings as Record<string, unknown>) ?? {};
-
-  if (clientSettings.premium_template !== 'vet-seo-worker') {
-    return NextResponse.json({ error: 'Client does not have SEO worker template' }, { status: 400 });
-  }
-
   const setupData = (clientSettings.premium_template_setup as Record<string, unknown>) ?? {};
-
   const seoData = (clientSettings.seo_data as Record<string, unknown>) ?? {};
+  const redditQueue = (seoData.reddit_queue as Array<Record<string, unknown>>) || [];
+  const publishingPlatforms = (seoData.publishing_platforms as string[]) ?? ['telegraph'];
 
-  // ── Map stored data to display format ────────────────────────────────
-  // GEO: stored as geo_history (array of weekly test reports)
+  // ── Dual-read: normalized tables (preferred) + legacy JSONB fallback ──
+  const service = createServiceClientWithoutCookies();
+  const startDate90 = new Date(Date.now() - 90 * 86400000).toISOString();
+
+  const [geoRes, napRes, gapsRes, competitorRes, publishedRes] = await Promise.all([
+    service.from('seo_geo_results').select('*').eq('client_id', id)
+      .gte('tested_at', startDate90).order('tested_at', { ascending: false }).limit(200),
+    service.from('seo_nap_audits').select('*').eq('client_id', id)
+      .order('audited_at', { ascending: false }).limit(100),
+    service.from('seo_content_gaps').select('*').eq('client_id', id)
+      .eq('resolved', false).order('priority_score', { ascending: false }).limit(20),
+    service.from('seo_competitor_scores').select('*').eq('client_id', id)
+      .order('tested_at', { ascending: false }).limit(50),
+    service.from('seo_published_content').select('*').eq('client_id', id)
+      .order('published_at', { ascending: false }).limit(50),
+  ]);
+
+  const normalizedGeo = geoRes.data || [];
+  const normalizedNap = napRes.data || [];
+  const normalizedGaps = gapsRes.data || [];
+  const normalizedCompetitors = competitorRes.data || [];
+  const normalizedPublished = publishedRes.data || [];
+
+  // GEO: prefer normalized table, fall back to legacy JSONB
   const geoHistory = (seoData.geo_history as Array<Record<string, unknown>>) || [];
   const latestGeo = geoHistory[0] ?? null;
-  const geoScores = latestGeo
+  const legacyGeoScores = latestGeo
     ? (latestGeo.results as unknown[]) || []
-    : (seoData.geo_scores as unknown[]) || []; // legacy key fallback
+    : (seoData.geo_scores as unknown[]) || [];
+  const geoScores = normalizedGeo.length > 0 ? normalizedGeo : legacyGeoScores;
 
-  // NAP: stored as nap_audit_last (single audit object with .results array)
+  // GEO overall score from normalized data
+  const latestBatchId = normalizedGeo[0]?.batch_id;
+  const latestBatch = latestBatchId
+    ? normalizedGeo.filter(r => r.batch_id === latestBatchId) : [];
+  const citedCount = latestBatch.filter(r => r.cited).length;
+  const normalizedGeoScore = latestBatch.length > 0
+    ? Math.round((citedCount / latestBatch.length) * 100) : null;
+
+  // NAP: prefer normalized, fall back to legacy
   const napAuditLast = (seoData.nap_audit_last as Record<string, unknown>) ?? null;
-  const napStatus: unknown[] = napAuditLast
+  const legacyNap = napAuditLast
     ? (napAuditLast.results as unknown[]) || []
-    : (seoData.nap_status as unknown[]) || []; // legacy key fallback
-
+    : (seoData.nap_status as unknown[]) || [];
+  const napStatus = normalizedNap.length > 0 ? normalizedNap : legacyNap;
   const napIssues = (napStatus as Array<Record<string, unknown>>).filter(
     (n) => n.status === 'mismatch',
   ).length;
 
-  const contentPublished = (seoData.content_published as unknown[]) || [];
-  const redditQueue = (seoData.reddit_queue as Array<Record<string, unknown>>) || [];
+  // Content: prefer normalized, fall back to legacy
+  const legacyContent = (seoData.content_published as unknown[]) || [];
+  const contentPublished = normalizedPublished.length > 0 ? normalizedPublished : legacyContent;
 
-  // Publishing platforms: defaults to ['telegraph'] if not set
-  const publishingPlatforms = (seoData.publishing_platforms as string[]) ?? ['telegraph'];
+  // Content gaps + competitors: normalized only (no legacy equivalent)
+  const contentGaps = normalizedGaps;
+  const competitorScores = normalizedCompetitors;
+
+  // Determine industry from site data if available
+  const siteRes = await service.from('client_sites').select('industry')
+    .eq('client_id', id).order('created_at', { ascending: false }).limit(1).single();
+  const industry = siteRes.data?.industry || (setupData.industry as string) || 'general';
 
   return NextResponse.json({
-    template: 'vet-seo-worker',
+    template: 'seo-command-center',
+    industry,
     status: clientSettings.premium_template_status || 'active',
     activated_at: clientSettings.premium_template_activated_at || null,
     setup: setupData,
@@ -74,15 +109,14 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     last_report: seoData.last_report || null,
     geo_last_run: seoData.geo_last_run || null,
     nap_last_run: seoData.nap_last_run || null,
-    // v2 additions
-    competitor_scores: (seoData.competitor_scores as unknown[]) || [],
-    content_gaps: (seoData.content_gaps as unknown[]) || [],
+    content_gaps: contentGaps,
+    competitor_scores: competitorScores,
     directory_submissions: (seoData.directory_submissions as unknown[]) || [],
     backlink_profile: seoData.backlink_profile || null,
     gbp_posts: (seoData.gbp_posts as unknown[]) || [],
     platform_statuses: (seoData.platform_statuses as unknown[]) || [],
     stats: {
-      geo_score_current: latestGeo?.overall_score ?? (seoData.geo_score_current as number) ?? null,
+      geo_score_current: normalizedGeoScore ?? latestGeo?.overall_score ?? (seoData.geo_score_current as number) ?? null,
       geo_score_trend: latestGeo?.trend ?? (seoData.geo_score_trend as string) ?? null,
       content_count: contentPublished.length,
       nap_issues: napIssues,
@@ -90,9 +124,9 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       platforms_ready: ((seoData.platform_statuses as Array<Record<string, unknown>>) || []).filter(
         (p) => p.status === 'ready',
       ).length,
-      competitor_count: ((seoData.competitor_scores as unknown[]) || []).length,
+      competitor_count: competitorScores.length,
       backlink_total: ((seoData.backlink_profile as Record<string, unknown>)?.total_backlinks as number) ?? null,
-      content_gaps_count: ((seoData.content_gaps as unknown[]) || []).length,
+      content_gaps_count: contentGaps.length,
     },
   });
 }

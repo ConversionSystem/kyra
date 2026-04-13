@@ -11,8 +11,54 @@
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 
 const SIMILARITY_THRESHOLD = 0.6;
+const INTRA_SITE_THRESHOLD = 0.65; // stricter for within-site pages
 
 // ---------- Public API ----------
+
+/**
+ * Check content similarity WITHIN a site (page vs page).
+ * Returns failures if any two pages exceed the threshold.
+ * This is a blocking check — sites with high intra-page similarity
+ * should not deploy (Google deindex risk).
+ */
+export async function checkIntraSiteSimilarity(
+  siteId: string,
+): Promise<{
+  passed: boolean;
+  failures: Array<{ page1: string; page2: string; similarity: number }>;
+}> {
+  const supabase = createServiceClientWithoutCookies();
+
+  const { data: pages } = await supabase
+    .from('site_pages')
+    .select('slug, content_sections, hero_h1, hero_subtitle')
+    .eq('site_id', siteId);
+
+  if (!pages || pages.length < 2) return { passed: true, failures: [] };
+
+  // Build text + vector for each page
+  const pageVectors = pages.map((p) => ({
+    slug: p.slug,
+    vector: tfidfVector(extractText([p])),
+  }));
+
+  const failures: Array<{ page1: string; page2: string; similarity: number }> = [];
+
+  for (let i = 0; i < pageVectors.length; i++) {
+    for (let j = i + 1; j < pageVectors.length; j++) {
+      const score = cosineSimilarity(pageVectors[i].vector, pageVectors[j].vector);
+      if (score > INTRA_SITE_THRESHOLD) {
+        failures.push({
+          page1: pageVectors[i].slug,
+          page2: pageVectors[j].slug,
+          similarity: Math.round(score * 100) / 100,
+        });
+      }
+    }
+  }
+
+  return { passed: failures.length === 0, failures };
+}
 
 export async function checkContentSimilarity(
   siteId: string,
