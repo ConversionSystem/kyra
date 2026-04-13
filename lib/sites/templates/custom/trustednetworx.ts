@@ -631,6 +631,14 @@ function potsContent(site: Record<string, any>, page: Record<string, any>): stri
 
   const potsBoxHtml = `<div class="w-48 mx-auto mb-4 text-white font-extrabold text-2xl tracking-wider">POTS IN A BOX<sup>&reg;</sup></div>`;
 
+  const sections = getSections(page);
+  const mainHeading = sections[0]?.heading || '';
+  const mainBody = sections[0]?.body || '';
+  const whyHeading = sections[1]?.heading || '';
+  const whyBody = sections[1]?.body || '';
+  const ctaHeading = sections[2]?.heading || '';
+  const ctaBody = sections[2]?.body || '';
+
   return `
     <div class="bg-white">
       ${heroSection(IMG.serverRoom, h1, subtitle, ctaText, '/contact', potsBoxHtml)}
@@ -643,7 +651,7 @@ function potsContent(site: Record<string, any>, page: Record<string, any>): stri
           <div class="space-y-16">
             <div class="glass-morphism rounded-2xl p-8 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
               <div>
-                <h2 class="text-3xl font-extrabold text-gray-900">Cutting the Landline</h2>
+                <h2 class="text-3xl font-extrabold text-gray-900">${mainHeading || "Cutting the Landline"}</h2>
                 <p class="mt-4 text-lg text-gray-600">As traditional Plain Old Telephone Service (POTS) lines become obsolete and carriers phase out support, businesses need reliable alternatives that offer improved functionality and cost savings.</p>
                 <p class="mt-4 text-lg text-gray-600">Our POTS replacement solutions provide modern, digital alternatives that maintain compatibility with your existing equipment while adding new features and capabilities. We help you transition smoothly from legacy copper lines to IP-based solutions.</p>
               </div>
@@ -777,6 +785,14 @@ function voiceContent(site: Record<string, any>, page: Record<string, any>): str
   const h1 = (page.hero_h1 as string) || 'Voice Solutions';
   const subtitle = (page.hero_subtitle as string) || 'Advanced voice communication systems for modern business';
 
+  const sections = getSections(page);
+  const mainHeading = sections[0]?.heading || '';
+  const mainBody = sections[0]?.body || '';
+  const whyHeading = sections[1]?.heading || '';
+  const whyBody = sections[1]?.body || '';
+  const ctaHeading = sections[2]?.heading || '';
+  const ctaBody = sections[2]?.body || '';
+
   return `
     <div class="bg-gray-50">
       ${heroSection(IMG.officePhones, h1, subtitle, 'Learn More', '/contact')}
@@ -787,7 +803,7 @@ function voiceContent(site: Record<string, any>, page: Record<string, any>): str
         <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div class="space-y-16">
             <div class="glass-morphism rounded-2xl p-8">
-              <h2 class="text-3xl font-extrabold text-gray-900 sm:text-4xl text-center">Enterprise Voice Communications</h2>
+              <h2 class="text-3xl font-extrabold text-gray-900 sm:text-4xl text-center">${mainHeading || "Enterprise Voice Communications"}</h2>
               <p class="mt-4 text-xl text-gray-600 text-center">Comprehensive voice solutions that enhance business communication and collaboration</p>
               <div class="mt-10 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
                 <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
@@ -848,6 +864,14 @@ function internetContent(site: Record<string, any>, page: Record<string, any>): 
   const h1 = (page.hero_h1 as string) || 'Internet Connectivity Solutions';
   const subtitle = (page.hero_subtitle as string) || 'Ensure your business remains agile, efficient, and securely connected with our comprehensive Internet Connectivity solutions';
 
+  const sections = getSections(page);
+  const mainHeading = sections[0]?.heading || '';
+  const mainBody = sections[0]?.body || '';
+  const whyHeading = sections[1]?.heading || '';
+  const whyBody = sections[1]?.body || '';
+  const ctaHeading = sections[2]?.heading || '';
+  const ctaBody = sections[2]?.body || '';
+
   return `
     <div class="bg-gray-50">
       ${heroSection(IMG.internetFiber, h1, subtitle, 'Learn More', 'mailto:carter@trustednetworx.com')}
@@ -860,7 +884,7 @@ function internetContent(site: Record<string, any>, page: Record<string, any>): 
           <div class="space-y-16">
             <div class="glass-morphism rounded-2xl p-8 grid grid-cols-1 lg:grid-cols-2 gap-12">
               <div>
-                <h2 class="text-3xl font-extrabold text-gray-900">Enterprise-Grade Connectivity</h2>
+                <h2 class="text-3xl font-extrabold text-gray-900">${mainHeading || "Enterprise-Grade Connectivity"}</h2>
                 <p class="mt-4 text-lg text-gray-600">In today&#8217;s digital world, reliable internet connectivity is crucial for business success. Our solutions provide the speed, reliability, and security your business needs to stay competitive.</p>
                 <p class="mt-4 text-lg text-gray-600">From dedicated internet access to SD-WAN solutions, we offer a comprehensive suite of connectivity options designed to meet your specific business requirements and ensure maximum uptime.</p>
                 <div class="mt-8 space-y-6">
@@ -936,6 +960,11 @@ function mobilityContent(site: Record<string, any>, page: Record<string, any>): 
   const name = (site.business_name as string) || 'TrustedNetworx';
   const h1 = (page.hero_h1 as string) || 'Mobility Solutions';
   const subtitle = (page.hero_subtitle as string) || `Empower Your Business with ${name} Enterprise Mobility Solutions`;
+  const sections = getSections(page);
+  const mainHeading = sections[0]?.heading || '';
+  const mainBody = sections[0]?.body || '';
+  const whyHeading = sections[1]?.heading || '';
+  const whyBody = sections[1]?.body || '';
 
   return `
     <div class="bg-gray-50">
@@ -947,7 +976,7 @@ function mobilityContent(site: Record<string, any>, page: Record<string, any>): 
         <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div class="space-y-16">
             <div class="glass-morphism rounded-2xl p-8">
-              <h2 class="text-3xl font-extrabold text-gray-900 sm:text-4xl text-center">Enterprise Mobility Management</h2>
+              <h2 class="text-3xl font-extrabold text-gray-900 sm:text-4xl text-center">${mainHeading || "Enterprise Mobility Management"}</h2>
               <p class="mt-4 text-xl text-gray-600 text-center">${esc(name)} delivers comprehensive Enterprise Mobility Solutions designed to streamline device management, enhance security, and improve operational efficiency for your mobile workforce.</p>
               <div class="mt-10 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-2">
                 <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
@@ -996,6 +1025,14 @@ function fleetContent(site: Record<string, any>, page: Record<string, any>): str
   const h1 = (page.hero_h1 as string) || 'Fleet & Fuel Management Solutions';
   const subtitle = (page.hero_subtitle as string) || 'Optimize your fleet operations with real-time tracking and comprehensive management tools';
 
+  const sections = getSections(page);
+  const mainHeading = sections[0]?.heading || '';
+  const mainBody = sections[0]?.body || '';
+  const whyHeading = sections[1]?.heading || '';
+  const whyBody = sections[1]?.body || '';
+  const ctaHeading = sections[2]?.heading || '';
+  const ctaBody = sections[2]?.body || '';
+
   return `
     <div class="bg-gray-50">
       ${heroSection(IMG.fleet, h1, subtitle, 'Learn More', '/contact')}
@@ -1033,7 +1070,7 @@ function fleetContent(site: Record<string, any>, page: Record<string, any>): str
 
               <!-- Benefits -->
               <div class="mt-8 glass-morphism rounded-2xl p-8">
-                <h3 class="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-8 text-center">Benefits of Our Fleet Management Solutions</h3>
+                <h3 class="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-8 text-center">${mainHeading || "Benefits of Our Fleet Management Solutions"}</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div><div class="flex items-center mb-2"><i data-lucide="zap" class="h-6 w-6 text-blue-600 mr-3"></i><h4 class="text-xl font-bold text-gray-900">Enhanced Efficiency</h4></div><p class="text-gray-600">By leveraging real-time data and analytics, streamline operations, reduce downtime, and improve overall fleet performance.</p></div>
                   <div><div class="flex items-center mb-2"><i data-lucide="dollar-sign" class="h-6 w-6 text-blue-600 mr-3"></i><h4 class="text-xl font-bold text-gray-900">Cost Reduction</h4></div><p class="text-gray-600">Identify and eliminate inefficiencies, leading to significant savings on fuel and maintenance.</p></div>
@@ -1054,6 +1091,14 @@ function ipPbxContent(site: Record<string, any>, page: Record<string, any>): str
   const h1 = (page.hero_h1 as string) || 'IP PBX Solutions';
   const subtitle = (page.hero_subtitle as string) || 'Advanced business phone systems for modern communication';
 
+  const sections = getSections(page);
+  const mainHeading = sections[0]?.heading || '';
+  const mainBody = sections[0]?.body || '';
+  const whyHeading = sections[1]?.heading || '';
+  const whyBody = sections[1]?.body || '';
+  const ctaHeading = sections[2]?.heading || '';
+  const ctaBody = sections[2]?.body || '';
+
   return `
     <div class="bg-gray-50">
       ${heroSection(IMG.officePhones, h1, subtitle, 'Learn More', '/contact')}
@@ -1064,7 +1109,7 @@ function ipPbxContent(site: Record<string, any>, page: Record<string, any>): str
         <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div class="space-y-16">
             <div class="glass-morphism rounded-2xl p-8">
-              <h2 class="text-3xl font-extrabold text-gray-900 sm:text-4xl text-center">Transform Your Business Communications</h2>
+              <h2 class="text-3xl font-extrabold text-gray-900 sm:text-4xl text-center">${mainHeading || "Transform Your Business Communications"}</h2>
               <p class="mt-4 text-xl text-gray-600 text-center">Our IP PBX solutions combine traditional telephony with modern IP technology</p>
               <div class="mt-10 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
                 <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
@@ -1091,7 +1136,7 @@ function ipPbxContent(site: Record<string, any>, page: Record<string, any>): str
 
               <!-- Why Choose -->
               <div class="mt-8 glass-morphism rounded-2xl p-8">
-                <h3 class="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-8 text-center">Why Choose Our IP PBX Solution?</h3>
+                <h3 class="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-8 text-center">${whyHeading || "Why Choose Our IP PBX Solution?"}</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div><div class="flex items-center mb-2"><i data-lucide="dollar-sign" class="h-6 w-6 text-blue-600 mr-3"></i><h4 class="text-xl font-bold text-gray-900">Cost Savings</h4></div><p class="text-gray-600">Reduce your communication costs with lower call rates and minimal hardware requirements. Eliminate the need for separate phone lines for each employee.</p></div>
                   <div><div class="flex items-center mb-2"><i data-lucide="network" class="h-6 w-6 text-blue-600 mr-3"></i><h4 class="text-xl font-bold text-gray-900">Scalability</h4></div><p class="text-gray-600">Easily add new users and features as your business grows. No need for expensive hardware upgrades or complex installations.</p></div>
