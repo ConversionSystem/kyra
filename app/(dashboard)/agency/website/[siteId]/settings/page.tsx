@@ -206,7 +206,7 @@ export default function SiteSettings() {
             { href: `/agency/website/${siteId}/editor`, icon: <Edit3 className="h-3.5 w-3.5" />, label: 'Editor', active: false },
             { href: `/agency/website/${siteId}/growth`, icon: <TrendingUp className="h-3.5 w-3.5" />, label: 'Growth', active: false },
             { href: `/agency/website/${siteId}/settings`, icon: <Settings className="h-3.5 w-3.5" />, label: 'Settings', active: true },
-            { href: `/agency/website/${siteId}/seo`, icon: <Search className="h-3.5 w-3.5" />, label: 'SEO', active: false },
+            { href: `/agency/website/${siteId}/seo`, icon: <Search className="h-3.5 w-3.5" />, label: 'AI Visibility', active: false },
           ].map((tab) => (
             <Link
               key={tab.href}
@@ -661,18 +661,7 @@ export default function SiteSettings() {
         {/* ══════════════════════════════════════════════════════════════
             Section 5: SEO Defaults
            ══════════════════════════════════════════════════════════════ */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <FileText className="h-5 w-5 text-indigo-500" />
-            <h3 className="text-sm font-semibold text-gray-900">SEO Defaults</h3>
-            <span className="text-[10px] font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
-              Coming Soon
-            </span>
-          </div>
-          <p className="text-xs text-gray-400">
-            Default meta title templates and descriptions will be configurable here. Currently, SEO metadata is managed per-page in the Editor.
-          </p>
-        </div>
+        <SeoDefaultsSection siteId={siteId} />
 
         {/* ══════════════════════════════════════════════════════════════
             Section 6: Danger Zone
@@ -697,6 +686,114 @@ export default function SiteSettings() {
             Delete This Site
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ── SEO Defaults Section ─────────────────────────────────────────────────────
+
+function SeoDefaultsSection({ siteId }: { siteId: string }) {
+  const [metaTitle, setMetaTitle] = useState('{{page_title}} | {{business_name}} in {{city}}');
+  const [metaDescription, setMetaDescription] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch(`/api/agency/sites/${siteId}/seo?fields=defaults`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.defaults) {
+          if (data.defaults.meta_title_template) setMetaTitle(data.defaults.meta_title_template);
+          if (data.defaults.meta_description_template) setMetaDescription(data.defaults.meta_description_template);
+        }
+      })
+      .catch(() => {});
+  }, [siteId]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/agency/sites/${siteId}/seo`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update_defaults',
+          meta_title_template: metaTitle,
+          meta_description_template: metaDescription,
+        }),
+      });
+      if (!res.ok) {
+        const result = await res.json();
+        setError(result.error || 'Failed to save');
+      } else {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2500);
+      }
+    } catch {
+      setError('Failed to save SEO defaults');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200 p-6">
+      <div className="flex items-center gap-2 mb-4">
+        <FileText className="h-5 w-5 text-indigo-500" />
+        <h3 className="text-sm font-semibold text-gray-900">SEO Defaults</h3>
+      </div>
+
+      <div className="space-y-4">
+        <div>
+          <label className="text-xs font-medium text-gray-500 mb-1.5 block">Default Meta Title Template</label>
+          <p className="text-xs text-gray-400 mb-2">
+            Variables: {'{{page_title}}'}, {'{{business_name}}'}, {'{{city}}'}, {'{{state}}'}
+          </p>
+          <input
+            type="text"
+            value={metaTitle}
+            onChange={(e) => setMetaTitle(e.target.value)}
+            placeholder="{{page_title}} | {{business_name}} in {{city}}"
+            className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+
+        <div>
+          <label className="text-xs font-medium text-gray-500 mb-1.5 block">Default Meta Description Template</label>
+          <p className="text-xs text-gray-400 mb-2">
+            Variables: {'{{business_name}}'}, {'{{city}}'}, {'{{state}}'}, {'{{industry}}'}
+          </p>
+          <textarea
+            value={metaDescription}
+            onChange={(e) => setMetaDescription(e.target.value)}
+            placeholder="{{business_name}} provides top-rated {{industry}} services in {{city}}, {{state}}. Call today for a free estimate."
+            rows={3}
+            className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+          />
+        </div>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-3 flex items-center gap-2 text-sm text-red-700">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            {error}
+          </div>
+        )}
+
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="px-4 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-1.5"
+        >
+          {saving ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : saved ? (
+            <Check className="h-3.5 w-3.5" />
+          ) : null}
+          {saved ? 'Saved!' : 'Save SEO Defaults'}
+        </button>
       </div>
     </div>
   );

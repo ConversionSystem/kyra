@@ -717,6 +717,11 @@ Volume = estimated monthly search volume. KD = keyword difficulty 0-100. CPC = e
         )}
       </div>
 
+      {/* Cross-reference note */}
+      <p className="text-xs text-gray-400">
+        For GEO/AI citation testing &amp; content authority stacking, see your Website → AI Visibility tab
+      </p>
+
       {/* Primary keywords from setup */}
       {!!cfg.primary_keywords && (
         <div className="rounded-xl border border-gray-200 bg-white p-4">
