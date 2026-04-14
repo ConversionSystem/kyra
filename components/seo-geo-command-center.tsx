@@ -104,6 +104,7 @@ export default function SeoGeoCommandCenterInner({ siteId, embedded }: { siteId:
   const [syncing, setSyncing] = useState(false);
   const [running, setRunning] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showGscModal, setShowGscModal] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -165,6 +166,20 @@ export default function SeoGeoCommandCenterInner({ siteId, embedded }: { siteId:
     { id: 'growth', label: 'Growth', icon: Zap },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
+
+  const connectGsc = async (siteUrl: string) => {
+    await fetch(`/api/agency/sites/${siteId}/seo`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'gsc_connect', site_url: siteUrl }),
+    });
+    await fetch(`/api/agency/sites/${siteId}/seo`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'sync_gsc' }),
+    });
+    await fetchData();
+  };
 
   if (loading) {
     return (
@@ -248,15 +263,23 @@ export default function SeoGeoCommandCenterInner({ siteId, embedded }: { siteId:
 
       {/* Tab Content */}
       <div className="min-h-[400px]">
-        {activeTab === 'overview' && <OverviewTab data={data} siteId={siteId} onRunTask={runTask} running={running} />}
-        {activeTab === 'gsc' && <GSCTab data={data} />}
+        {activeTab === 'overview' && <OverviewTab data={data} siteId={siteId} onRunTask={runTask} running={running} onConnectGsc={() => setShowGscModal(true)} />}
+        {activeTab === 'gsc' && <GSCTab data={data} onConnectGsc={() => setShowGscModal(true)} />}
         {activeTab === 'geo' && <GEOTab data={data} siteId={siteId} onRunTask={runTask} running={running} />}
         {activeTab === 'nap' && <NAPTab data={data} siteId={siteId} onRunTask={runTask} running={running} />}
         {activeTab === 'keywords' && <KeywordsTab data={data} clientId={data.client_id} />}
         {activeTab === 'content' && <ContentTab data={data} clientId={data.client_id} />}
         {activeTab === 'growth' && <GrowthTab siteId={siteId} />}
-        {activeTab === 'settings' && <SettingsTab data={data} siteId={siteId} />}
+        {activeTab === 'settings' && <SettingsTab data={data} siteId={siteId} onConnectGsc={() => setShowGscModal(true)} />}
       </div>
+
+      {/* GSC Connect Modal */}
+      {showGscModal && (
+        <GSCConnectModal
+          onClose={() => setShowGscModal(false)}
+          onConnect={connectGsc}
+        />
+      )}
     </div>
   );
 }
@@ -330,9 +353,80 @@ function EmptyState({
   );
 }
 
+// ── GSC Connect Modal ────────────────────────────────────────────────────────
+
+function GSCConnectModal({ onClose, onConnect }: { onClose: () => void; onConnect: (siteUrl: string) => Promise<void> }) {
+  const [siteUrl, setSiteUrl] = useState('https://');
+  const [status, setStatus] = useState<'idle' | 'connecting' | 'success' | 'error'>('idle');
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const handleConnect = async () => {
+    if (!siteUrl.trim() || siteUrl === 'https://') return;
+    setStatus('connecting');
+    setErrorMsg('');
+    try {
+      await onConnect(siteUrl.trim());
+      setStatus('success');
+      setTimeout(() => onClose(), 1500);
+    } catch (err) {
+      setStatus('error');
+      setErrorMsg(err instanceof Error ? err.message : 'Failed to connect');
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6" onClick={e => e.stopPropagation()}>
+        <h2 className="text-lg font-semibold text-gray-900 mb-1">Connect Google Search Console</h2>
+        <p className="text-sm text-gray-500 mb-4">Link your GSC property to track real search performance metrics.</p>
+
+        <label className="block text-sm font-medium text-gray-700 mb-1.5">Site URL</label>
+        <input
+          value={siteUrl}
+          onChange={e => setSiteUrl(e.target.value)}
+          placeholder="https://yourdomain.com"
+          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-2"
+        />
+        <p className="text-xs text-gray-400 mb-5">Enter the URL exactly as it appears in Google Search Console (e.g. https://yourdomain.com)</p>
+
+        {status === 'error' && (
+          <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-sm text-red-700 mb-4 flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            {errorMsg}
+          </div>
+        )}
+
+        {status === 'success' && (
+          <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 text-sm text-emerald-700 mb-4 flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            Connected! Syncing data...
+          </div>
+        )}
+
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            disabled={status === 'connecting'}
+            className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleConnect}
+            disabled={status === 'connecting' || status === 'success' || !siteUrl.trim() || siteUrl === 'https://'}
+            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg disabled:opacity-50 flex items-center gap-2"
+          >
+            {status === 'connecting' ? <><Loader2 className="w-4 h-4 animate-spin" />Connecting...</> : 'Connect'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Overview Tab ──────────────────────────────────────────────────────────────
 
-function OverviewTab({ data, siteId, onRunTask, running }: { data: SeoData; siteId: string; onRunTask: (task: string) => void; running: string | null }) {
+function OverviewTab({ data, siteId, onRunTask, running, onConnectGsc }: { data: SeoData; siteId: string; onRunTask: (task: string) => void; running: string | null; onConnectGsc: () => void }) {
   const { metrics, geo, nap } = data;
   const hasGeoData = geo.total_queries > 0;
   const hasNapData = nap.total > 0;
@@ -441,13 +535,12 @@ function OverviewTab({ data, siteId, onRunTask, running }: { data: SeoData; site
               <Search className="w-6 h-6 text-blue-600" />
             </div>
             <h3 className="text-sm font-semibold text-gray-900 mb-1">GSC not connected</h3>
-            <p className="text-xs text-gray-500 mb-4">Google Search Console integration is coming soon. This feature will connect your GSC data to show real search performance metrics.</p>
+            <p className="text-xs text-gray-500 mb-4">Connect Google Search Console to track real search performance metrics, rankings, and indexing status.</p>
             <button
-              disabled
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-400 border border-gray-200 rounded-lg cursor-not-allowed"
+              onClick={onConnectGsc}
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg"
             >
               Connect Google Search Console
-              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Coming Soon</Badge>
             </button>
           </CardContent>
         </Card>
@@ -505,7 +598,7 @@ function OverviewTab({ data, siteId, onRunTask, running }: { data: SeoData; site
 
 // ── GSC Tab ───────────────────────────────────────────────────────────────────
 
-function GSCTab({ data }: { data: SeoData }) {
+function GSCTab({ data, onConnectGsc }: { data: SeoData; onConnectGsc: () => void }) {
   const { metrics } = data;
 
   if (!data.gsc_connected) {
@@ -516,13 +609,12 @@ function GSCTab({ data }: { data: SeoData }) {
             <Search className="w-8 h-8 text-gray-400" />
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Connect Google Search Console</h3>
-          <p className="text-sm text-gray-500 mb-6 max-w-md mx-auto">Google Search Console integration is coming soon. This feature will connect your GSC data to show real search performance metrics.</p>
+          <p className="text-sm text-gray-500 mb-6 max-w-md mx-auto">Connect your GSC property to see real search performance data — clicks, impressions, CTR, and ranking positions.</p>
           <button
-            disabled
-            className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium text-gray-400 border border-gray-200 rounded-lg cursor-not-allowed"
+            onClick={onConnectGsc}
+            className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg"
           >
             Connect Google Search Console
-            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Coming Soon</Badge>
           </button>
         </CardContent>
       </Card>
@@ -1269,7 +1361,7 @@ function GrowthTab({ siteId }: { siteId: string }) {
 
 // ── Settings Tab ─────────────────────────────────────────────────────────────
 
-function SettingsTab({ data, siteId }: { data: SeoData; siteId: string }) {
+function SettingsTab({ data, siteId, onConnectGsc }: { data: SeoData; siteId: string; onConnectGsc: () => void }) {
   return (
     <div className="space-y-6">
       <Card>
@@ -1281,11 +1373,16 @@ function SettingsTab({ data, siteId }: { data: SeoData; siteId: string }) {
                 <p className="text-sm text-gray-700">Google Search Console</p>
                 <p className="text-xs text-gray-500">Track search performance and indexing</p>
               </div>
-              <span className={`text-xs px-2 py-1 rounded ${
-                data.gsc_connected ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'
-              }`}>
-                {data.gsc_connected ? 'Connected' : 'Not Connected'}
-              </span>
+              {data.gsc_connected ? (
+                <span className="text-xs px-2 py-1 rounded bg-emerald-100 text-emerald-700">Connected</span>
+              ) : (
+                <button
+                  onClick={onConnectGsc}
+                  className="text-xs px-2 py-1 rounded bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors"
+                >
+                  Connect
+                </button>
+              )}
             </div>
 
             <div className="flex items-center justify-between">

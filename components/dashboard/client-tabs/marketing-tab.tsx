@@ -253,7 +253,7 @@ const SETUP_STEPS = [
 
 // ── Dashboard View ───────────────────────────────────────────────────────────
 
-function DashboardView({ client, onNavigate }: { client: AgencyClient; onNavigate: (tab: SubTab) => void }) {
+function DashboardView({ client, onNavigate, onNavigateToTab }: { client: AgencyClient; onNavigate: (tab: SubTab) => void; onNavigateToTab?: (tab: string) => void }) {
   const clientId = client.id;
   const [stats, setStats] = useState({ conversations: 0, pages: 0, contacts: 0, activities: 0 });
   const [activities, setActivities] = useState<Array<{ type: string; subject: string; body: string; created_at: string; actor: string }>>([]);
@@ -335,14 +335,10 @@ function DashboardView({ client, onNavigate }: { client: AgencyClient; onNavigat
                   Apply the AI Marketing Worker to unlock full marketing capabilities — content creation, competitor intel, and social drafting.
                 </p>
                 <button
-                  onClick={() => {
-                    // Navigate to AI Workers tab (parent tab navigation)
-                    const el = document.querySelector('[data-tab-id="ai-workers"]') as HTMLButtonElement;
-                    if (el) el.click();
-                  }}
+                  onClick={() => onNavigateToTab?.('ai-setup')}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 mt-2 text-xs font-medium text-amber-700 bg-amber-100 rounded-lg hover:bg-amber-200 transition-colors"
                 >
-                  Go to AI Workers <ArrowRight className="w-3 h-3" />
+                  Go to AI Setup <ArrowRight className="w-3 h-3" />
                 </button>
               </>
             )}
@@ -422,12 +418,7 @@ function DashboardView({ client, onNavigate }: { client: AgencyClient; onNavigat
         <MetricCard label="AI Actions" value={stats.activities} sub="Actions taken by AI" />
       </div>
 
-      {/* Clarification when worker is not applied */}
-      {!isActive && (
-        <p className="text-xs text-gray-500 bg-gray-50 rounded-lg px-4 py-3">
-          Stats shown reflect actual data from this client. Apply the AI Marketing Worker to unlock content creation, social drafting, and campaign features.
-        </p>
-      )}
+      {/* AI Worker status when not applied */}
 
       {/* Recent Activity — from CRM activities */}
       <div className="rounded-xl border border-gray-200 bg-white p-5">
@@ -1027,7 +1018,7 @@ const SUB_TABS: { id: SubTab; label: string; icon: React.ElementType }[] = [
 // Only Kyra's main agency (ConversionSystem) gets full Marketing access
 const KYRA_MAIN_AGENCY_ID = '1511e077-77ef-4c47-81fd-06a3bc9f1dbb';
 
-export default function MarketingTab({ client }: { client: AgencyClient }) {
+export default function MarketingTab({ client, onNavigateToTab }: { client: AgencyClient; onNavigateToTab?: (tab: string) => void }) {
   const [subTab, setSubTab] = useState<SubTab>('dashboard');
 
   // Lock Marketing for all agencies except Kyra's main account
@@ -1073,7 +1064,7 @@ export default function MarketingTab({ client }: { client: AgencyClient }) {
       </div>
 
       {/* Sub-tab content */}
-      {subTab === 'dashboard' && <DashboardView client={client} onNavigate={setSubTab} />}
+      {subTab === 'dashboard' && <DashboardView client={client} onNavigate={setSubTab} onNavigateToTab={onNavigateToTab} />}
       {subTab === 'social' && <SocialView client={client} />}
       {subTab === 'email' && <EmailMarketingTab client={client} />}
       {subTab === 'sequences' && <EmailSequencesDashboard />}

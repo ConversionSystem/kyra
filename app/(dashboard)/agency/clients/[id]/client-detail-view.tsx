@@ -344,9 +344,9 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
   const isTrustedNetworx = initialClient.agency_id === '18e6e562-ec29-4652-a38b-58f6be2e533f';
   const hasAdvancedTabs = isMasterOrKyra || isPaidPlan;
   // TrustedNetworx gets Operations only (not Marketing) unless they're on a paid plan
-  const hasMarketingTab = isMasterOrKyra || isPaidPlan;
-  const hasWebsiteTab = isMasterOrKyra;
+  const hasMarketingTab = isMasterOrKyra;
   const hasSeoGeoTab = isMasterOrKyra;
+  const hasVoiceSmsTab = isMasterOrKyra;
   const hasOperationsTab = isMasterOrKyra || isPaidPlan || isTrustedNetworx;
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -356,8 +356,8 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
   // Feature gating: Marketing, Operations, Voice, AI Marketing Worker
   const HIDDEN_TABS: string[] = [];
   if (!hasMarketingTab) HIDDEN_TABS.push('marketing');
-  if (!hasWebsiteTab) HIDDEN_TABS.push('website');
   if (!hasSeoGeoTab) HIDDEN_TABS.push('seo-geo');
+  if (!hasVoiceSmsTab) HIDDEN_TABS.push('voice-sms');
   if (!hasOperationsTab) HIDDEN_TABS.push('integrations');
   if (!hasItOps) HIDDEN_TABS.push('it-operations');
   const filteredGroups = TAB_GROUPS.map(g => ({
@@ -486,7 +486,7 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
             <VoiceSmsTab client={initialClient} plan={plan} accountType={accountType} />
           )}
           {activeTab === 'marketing' && (
-            <MarketingTab client={initialClient} />
+            <MarketingTab client={initialClient} onNavigateToTab={(tab: string) => handleTabChange(tab as Tab)} />
           )}
           {activeTab === 'website' && (
             <WebsiteTab clientId={initialClient.id} clientName={initialClient.name} />
