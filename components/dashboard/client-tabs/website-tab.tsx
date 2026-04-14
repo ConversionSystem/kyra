@@ -407,7 +407,7 @@ function OverviewView({
           </h4>
           {suggestionCount > 0 && (
             <Link
-              href={`/agency/website/${site.id}/growth`}
+              href={`/agency/website/${site.id}/seo?tab=growth`}
               className="text-xs font-medium text-indigo-600 hover:text-indigo-700 flex items-center gap-0.5 transition-colors"
             >
               View all {suggestionCount}

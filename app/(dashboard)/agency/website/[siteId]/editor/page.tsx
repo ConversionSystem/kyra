@@ -27,9 +27,7 @@ import {
   Eye,
   EyeOff,
   RotateCcw,
-  TrendingUp,
   Settings,
-  Search,
   BookOpen,
   Building2,
   Mail,
@@ -1581,7 +1579,7 @@ export default function PageEditor() {
         if (Array.isArray(pagesResult.data)) {
           setPages(pagesResult.data);
           if (!selectedPage && pagesResult.data.length > 0) {
-            setSelectedPage(pagesResult.data[0]);
+            setSelectedPage(pagesResult.data.find((p: { slug: string }) => p.slug === '/') || pagesResult.data[0]);
           }
         }
       }
@@ -2013,9 +2011,7 @@ export default function PageEditor() {
         <div className="flex border-t border-gray-100 px-2 sm:px-4 overflow-x-auto">
           {[
             { href: `/agency/website/${siteId}/editor`, icon: <Edit3 className="h-3.5 w-3.5" />, label: 'Editor', active: true },
-            { href: `/agency/website/${siteId}/growth`, icon: <TrendingUp className="h-3.5 w-3.5" />, label: 'Growth', active: false },
             { href: `/agency/website/${siteId}/settings`, icon: <Settings className="h-3.5 w-3.5" />, label: 'Settings', active: false },
-            { href: `/agency/website/${siteId}/seo`, icon: <Search className="h-3.5 w-3.5" />, label: 'AI Visibility', active: false },
           ].map((tab) => (
             <Link
               key={tab.href}

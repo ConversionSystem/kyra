@@ -135,37 +135,6 @@ export async function ensureCityData(city: string, state: string): Promise<CityD
   return data as unknown as CityData;
 }
 
-/**
- * Format city data as a prompt-injectable context block.
- * Used by prompts.ts to inject real data into city page generation.
- */
-export function formatCityContext(data: CityData): string {
-  const lines: string[] = [];
-
-  lines.push(`Real data for ${data.city}, ${data.state}:`);
-
-  if (data.population) lines.push(`- Population: ${data.population.toLocaleString()}`);
-  if (data.median_income) lines.push(`- Median household income: $${data.median_income.toLocaleString()}`);
-  if (data.median_home_value) lines.push(`- Median home value: $${data.median_home_value.toLocaleString()}`);
-  if (data.median_home_age) lines.push(`- Median home age: ${data.median_home_age} years`);
-  if (data.county) lines.push(`- County: ${data.county}`);
-  if (data.climate_zone) lines.push(`- Climate zone: ${data.climate_zone}`);
-  if (data.climate_notes) lines.push(`- Climate: ${data.climate_notes}`);
-
-  if (data.neighborhoods.length > 0) {
-    lines.push(`- Key neighborhoods: ${data.neighborhoods.slice(0, 5).join(', ')}`);
-  }
-
-  if (data.local_landmarks.length > 0) {
-    lines.push(`- Local landmarks: ${data.local_landmarks.slice(0, 3).join(', ')}`);
-  }
-
-  if (data.seasonal_factors.length > 0) {
-    lines.push(`- Seasonal factors: ${data.seasonal_factors.join('; ')}`);
-  }
-
-  return lines.join('\n');
-}
 
 // ── Census API ───────────────────────────────────────────────────────────
 

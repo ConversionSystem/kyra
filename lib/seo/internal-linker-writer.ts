@@ -1,14 +1,11 @@
 /**
  * Internal Linker Writer
  *
- * Wraps lib/seo/internal-linker.ts findInternalLinks() and injects
- * hub-and-spoke internal links into assembled HTML pages.
+ * Injects hub-and-spoke internal links and breadcrumbs into assembled HTML pages.
  *
  * Called after all pages are assembled by build-helpers.ts.
  * Adds a "Related Pages" section before the footer with contextual links.
  */
-
-import { findInternalLinks } from './internal-linker';
 
 interface AssembledPage {
   slug: string;
@@ -31,19 +28,8 @@ interface InternalLink {
 export function addInternalLinks(pages: AssembledPage[]): AssembledPage[] {
   if (pages.length < 2) return pages;
 
-  // Build existing posts lookup for the internal linker
-  const existingPosts = pages.map((p) => ({
-    url: p.slug,
-    title: extractTitle(p.html),
-    content: extractTextContent(p.html),
-  }));
-
   return pages.map((page) => {
-    // Find related pages (exclude self)
-    const otherPosts = existingPosts.filter((p) => p.url !== page.slug);
-    const textContent = extractTextContent(page.html);
-
-    // Use synchronous approach: build links from page type relationships
+    // Build links from page type relationships (hub-and-spoke model)
     const links = buildStructuralLinks(page, pages);
 
     if (links.length === 0) return page;

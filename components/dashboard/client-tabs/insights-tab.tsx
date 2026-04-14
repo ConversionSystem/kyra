@@ -8,22 +8,20 @@ import type { AgencyClient } from '@/lib/agency/queries';
 import { UsageAnalytics } from '@/app/(dashboard)/agency/clients/[id]/usage-analytics';
 import { MemoryBrowser } from '@/app/(dashboard)/agency/clients/[id]/memory-browser';
 import { CustomerIntelligence } from '@/app/(dashboard)/agency/clients/[id]/customer-intelligence';
-import SeoGeoCommandCenter from '@/components/dashboard/client-tabs/seo-geo-command-center';
 import HealthScoreBadge from '@/components/dashboard/health-score-badge';
 import ClientActivityHeatmap from '@/components/dashboard/client-activity-heatmap';
 import RoiSummaryCard from '@/components/dashboard/roi-summary-card';
 import WorkerPerformanceCard from '@/components/dashboard/client-tabs/worker-performance-card';
 import TasksCard from '@/components/dashboard/client-tabs/tasks-card';
 
-const SUB_TABS = ['usage', 'tasks', 'memory', 'seo', 'ai-reports'] as const;
+const SUB_TABS = ['usage', 'tasks', 'memory', 'ai-reports'] as const;
 type SubTab = typeof SUB_TABS[number];
 
 const SUB_TAB_LABELS: Record<SubTab, string> = {
   usage: 'Usage',
   tasks: 'Tasks',
   memory: 'Memory',
-  seo: 'SEO/GEO',
-  'ai-reports': '✨ AI Reports',
+  'ai-reports': 'AI Reports',
 };
 
 // ── AI Reports Chat ────────────────────────────────────────────────────────────
@@ -205,11 +203,10 @@ function AIReportsChat({ client }: { client: AgencyClient }) {
 interface InsightsTabProps {
   client: AgencyClient;
   defaultSubTab?: SubTab;
-  isSeoLocked?: boolean;
   workerRoleId?: string;
 }
 
-export default function InsightsTab({ client, defaultSubTab = 'usage', isSeoLocked, workerRoleId }: InsightsTabProps) {
+export default function InsightsTab({ client, defaultSubTab = 'usage', workerRoleId }: InsightsTabProps) {
   const [activeSubTab, setActiveSubTab] = useState<SubTab>(defaultSubTab);
 
   return (
@@ -227,7 +224,7 @@ export default function InsightsTab({ client, defaultSubTab = 'usage', isSeoLock
             }`}
           >
             {SUB_TAB_LABELS[tab]}
-            {tab === 'seo' && isSeoLocked && <span className="ml-1">🔒</span>}
+
           </button>
         ))}
       </div>
@@ -280,27 +277,6 @@ export default function InsightsTab({ client, defaultSubTab = 'usage', isSeoLock
         <AIReportsChat client={client} />
       )}
 
-      {activeSubTab === 'seo' && (
-        isSeoLocked ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="h-16 w-16 rounded-2xl bg-indigo-50 flex items-center justify-center mb-4">
-              <span className="text-3xl">🔒</span>
-            </div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Premium Feature</h2>
-            <p className="text-gray-500 mb-6 max-w-md">
-              <span className="font-medium">SEO</span> is available on Agency plans. Upgrade to unlock all features.
-            </p>
-            <a
-              href="/agency/billing"
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
-            >
-              Upgrade Plan
-            </a>
-          </div>
-        ) : (
-          <SeoGeoCommandCenter client={client} />
-        )
-      )}
     </div>
   );
 }

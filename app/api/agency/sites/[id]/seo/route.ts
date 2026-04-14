@@ -26,7 +26,7 @@ export async function GET(
   // Verify site ownership via agency
   const { data: site } = await service
     .from('client_sites')
-    .select('id, agency_id, site_domain, site_subdomain, search_console_connected, seo_industry_pack_id, industry')
+    .select('id, agency_id, client_id, site_domain, site_subdomain, search_console_connected, seo_industry_pack_id, industry')
     .eq('id', siteId)
     .single();
 
@@ -79,6 +79,7 @@ export async function GET(
 
   return NextResponse.json({
     site_id: siteId,
+    client_id: site.client_id || null,
     industry: site.industry,
     industry_pack_id: site.seo_industry_pack_id,
     gsc_connected: site.search_console_connected || false,

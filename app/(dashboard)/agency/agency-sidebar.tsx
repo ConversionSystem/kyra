@@ -46,6 +46,7 @@ import {
   Mail,
   DollarSign,
   CalendarDays,
+  Search,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AgencySettings } from '@/lib/agency/types';
@@ -75,11 +76,12 @@ const navSections: NavSection[] = [
   {
     items: [
       { label: 'Mission Control', href: '/agency', icon: Activity },
-      { label: 'Analytics', href: '/agency/analytics', icon: BarChart2 },
+      { label: 'Analytics', href: '/agency/analytics', icon: BarChart2, masterOnly: true },
       { label: 'Intelligence', href: '/agency/intelligence', icon: Brain, iconClassName: 'text-purple-400', requiredPlans: ['pro', 'scale'] },
       { label: 'Clients', href: '/agency/clients', icon: Users },
 
-      { label: 'Websites', href: '/agency/sites', icon: Globe },
+      { label: 'Websites', href: '/agency/sites', icon: Globe, masterOnly: true },
+      { label: 'SEO/GEO', href: '/agency/seo', icon: Search, masterOnly: true },
 
       { label: 'Build Requests', href: '/agency/build-requests', icon: Sparkles, iconClassName: 'text-amber-400' },
     ],
