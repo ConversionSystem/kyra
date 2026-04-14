@@ -303,11 +303,20 @@ export async function POST(request: NextRequest) {
     `BANNED CLOSING PHRASES — NEVER end your response with any of these or anything similar:`,
     `"If you have any other questions..." / "feel free to ask" / "don't hesitate to reach out" / "How can I help you today?" / "Is there anything else I can help with?" / "Let me know if you need anything else" / "just let me know" / "Happy to help!" / "Hope that helps!"`,
     `END your response naturally after giving the answer. Stop talking. Do NOT add a closing invitation phrase.`,
-    `CRITICAL FORMATTING RULES — you are in a plain-text chat widget, NOT a document editor:`,
-    `- NEVER use markdown: no **bold**, no *italic*, no # headers, no bullet dashes (- or *), no numbered lists (1. 2. 3.)`,
-    `- NEVER use markdown links like [text](url) — write URLs as plain text or say "visit our website at URL"`,
-    `- Use plain conversational sentences only. If listing items, write them naturally: "We offer X, Y, and Z."`,
-    `- Line breaks are OK, but keep them minimal. No walls of text.`,
+    // Formatting rules: allow markdown for product recommendations (links + bold), plain text otherwise
+    janeActive
+      ? `FORMATTING RULES — you are in a chat widget that renders markdown:
+- Use **bold** for product names and key info only.
+- Use [Link Text](url) for product links — NEVER paste raw URLs.
+- Keep responses concise: one short intro line, then product cards (max 3 lines each).
+- No # headers, no bullet dashes (- or *), no numbered lists (1. 2. 3.) outside product cards.
+- Line breaks are OK between products. No walls of text.
+- For non-product questions, respond in plain conversational sentences.`
+      : `CRITICAL FORMATTING RULES — you are in a plain-text chat widget, NOT a document editor:
+- NEVER use markdown: no **bold**, no *italic*, no # headers, no bullet dashes (- or *), no numbered lists (1. 2. 3.)
+- NEVER use markdown links like [text](url) — write URLs as plain text or say "visit our website at URL"
+- Use plain conversational sentences only. If listing items, write them naturally: "We offer X, Y, and Z."
+- Line breaks are OK, but keep them minimal. No walls of text.`,
     ...capabilityInstructions,
     `Do not mention you are an AI unless directly asked. But always share your name when asked who you are.`,
     cfg.calendar_url ? `When scheduling is mentioned, share this booking link: ${cfg.calendar_url}` : '',
@@ -320,12 +329,36 @@ export async function POST(request: NextRequest) {
     cfg.services ? `Services offered: ${cfg.services}` : '',
     cfg.website_url ? `Website: ${cfg.website_url}` : '',
     `If you can't resolve something, say: "Let me connect you with our team — they'll follow up shortly."`,
+    // Auto-inject cannabis product recommendation prompt when Jane is active
+    janeActive ? `PRODUCT RECOMMENDATION ENGINE:
+You are also a cannabis product recommendation specialist. When customers ask about products, strains, effects, or inventory:
+- Search the live menu and recommend products based on their needs (effects, potency, price, category).
+- Match customer intent to strain types: Indica → sleep/relax/pain, Sativa → energy/focus/creativity, Hybrid → balanced.
+- Always mention THC%, price, strain type, and brand when available.
+- If a customer describes how they want to feel (e.g., "something to help me sleep"), recommend appropriate products.
+- If no products match, suggest browsing the full menu at the store or trying a different category.
+- Be knowledgeable but not pushy — like a helpful budtender.
+- For general store questions (hours, location, payment), answer from your business knowledge.
+- NEVER recommend specific medical uses or make health claims. Say "many customers find..." instead of "this will help your...".` : '',
     customInstructions ? `BUSINESS KNOWLEDGE AND RULES (use this information to answer customer questions accurately):\n${customInstructions}` : '',
     knowledgeSection,
     crmContextSection ? `\n${crmContextSection}` : '',
     sessionHistory.length > 0 ? `\nSESSION MEMORY: This visitor has chatted before. Their prior messages are included at the start of the conversation for context.` : '',
     leadCapturePrompt,
   ].filter(Boolean).join('\n');
+
+  // ── Store Selection Detection (for multi-store dispensaries) ────────────────
+  // When user picks a store from the widget buttons, detect it and acknowledge
+  const resolvedStoreId = storeId || (cfg.jane_default_store_id as string) || '';
+  let storeContext = '';
+  if (janeActive && resolvedStoreId) {
+    // Load store info from config or defaults
+    const janeStores = (cfg.jane_stores as Array<{ id: string; name: string; address?: string; menuUrl?: string }>) || [];
+    const activeStore = janeStores.find(s => s.id === resolvedStoreId);
+    if (activeStore) {
+      storeContext = `\nCUSTOMER'S SELECTED STORE: ${activeStore.name}${activeStore.address ? ` (${activeStore.address})` : ''}. All product recommendations are for this location's inventory.`;
+    }
+  }
 
   // ── Product Search (Jane API integration for cannabis dispensaries) ────────
   let productContext = '';
@@ -334,14 +367,14 @@ export async function POST(request: NextRequest) {
       const { isProductQuery, parseProductIntent, searchProducts, formatProductsForAI } = await import('@/lib/integrations/jane');
       if (isProductQuery(safeMessage)) {
         const intent = parseProductIntent(safeMessage);
-        intent.storeId = storeId || (cfg.jane_default_store_id as string) || '117';
+        intent.storeId = resolvedStoreId || 'san-jose';
         const firecrawlKey = process.env.FIRECRAWL_API_KEY;
         // 12s timeout — Firecrawl scrape takes ~8s. If too slow, skip and answer from knowledge
         const searchPromise = searchProducts(intent, firecrawlKey || undefined);
         const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 12000));
         const results = await Promise.race([searchPromise, timeoutPromise]);
         if (results && results.products.length > 0) {
-          productContext = `\n\nPRODUCT SEARCH RESULTS (from live inventory):\n${formatProductsForAI(results.products)}\n\nYou MUST format your response EXACTLY like this example (use markdown bold and links):\n\nHere are our top matches:\n\n**Apple Drip** by Caviar Gold — $22.99\nHybrid · THC: 48.1% · Potent and fruity.\n[View Product →](https://plpcsanjose.com/product/143411/caviar-gold-hybrid-apple-drip-1-5g?weight=each)\n\nRULES:\n- Show 3 products minimum\n- Use **bold** for product names\n- Use [View Product →](url) for EVERY product link — NEVER paste raw URLs\n- Each product max 3 lines: name+price, details, link\n- Total response under 120 words\n- One short intro line then products`;
+          productContext = `\n\nPRODUCT SEARCH RESULTS (from live ${results.storeId} inventory — ${results.totalFound} products found, showing top ${results.products.length}):\n${formatProductsForAI(results.products)}\n\nFORMATTING (use markdown bold and links):\n\n**Apple Drip** by Caviar Gold — $22.99\nHybrid · THC: 48.1% · Potent and fruity.\n[View Product →](https://plpcsanjose.com/product/143411/caviar-gold-hybrid-apple-drip-1-5g?weight=each)\n\nRULES:\n- Show 3-5 products (pick the best matches for the customer's request)\n- Use **bold** for product names\n- Use [View Product →](url) for EVERY product link — NEVER paste raw URLs\n- Each product: name+brand+price on line 1, strain·THC·description on line 2, link on line 3\n- One short intro line, then products. Total response under 150 words.`;
         }
       }
     } catch (e) {
@@ -359,7 +392,7 @@ export async function POST(request: NextRequest) {
     const chatRes = await llm.chat.completions.create({
       model: routedModel,
       messages: [
-        { role: 'system', content: systemPrompt + productContext },
+        { role: 'system', content: systemPrompt + storeContext + productContext },
         // DB session memory (prior page loads), then in-memory history (current session)
         ...sessionHistory,
         ...(Array.isArray(history) ? (history as Array<{role: 'user'|'assistant', content: string}>).slice(-10) : []),
@@ -411,8 +444,7 @@ export async function POST(request: NextRequest) {
   });
 
   // Deduct credit (also awaited to avoid billing gaps)
-  const widgetCreditAction = classifyUsage(message.trim());
-  await checkAndDeductCredits(client.agency_id, routedModel, widgetCreditAction, {
+  await checkAndDeductCredits(client.agency_id, routedModel, preflightAction, {
     clientId: client.id,
     description: `Web chat (${routedModel}): ${message.trim().slice(0, 50)}`,
   });

@@ -154,6 +154,7 @@ export async function GET(
   var AVATAR = ${JSON.stringify(widgetAvatarEmoji)};
   var QUICK_REPLIES = ${JSON.stringify((cfg.widget_quick_replies as string[]) || getIndustryQuickReplies((cfg.industry as string) || (client?.industry as string) || '', cfg))};
   var STORE_ID = ${JSON.stringify((cfg.jane_default_store_id as string) || '')};
+  var JANE_STORES = ${JSON.stringify((cfg.jane_stores as Array<{ id: string; name: string; address?: string }>) || [])};
   var STORAGE_KEY = 'kyra_session_' + CLIENT_ID;
 
   // Don't init twice
@@ -237,6 +238,8 @@ export async function GET(
   var greeted = false;
   var unreadCount = 0;
   var history = []; // [{role:'user'|'assistant', content:string}] — last 10 turns
+  var selectedStoreId = STORE_ID; // may be overridden by user picking a store
+  try { var savedStore = localStorage.getItem('kyra_store_' + CLIENT_ID); if (savedStore) selectedStoreId = savedStore; } catch(e) {}
   var CHIME = null;
   try { CHIME = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgkKmsi2I3OGiUrKuJYjo6aJSrqodjOzlqla2qimM6Ommdsp+EXkI/b5+zoYReQEB0obOhhF5CP3ies6CFXEI/cKCznYReQT9xo7WjhV9BPm6grKCEXkJAcaO1pIVfQD1un6ufg1xBQHOkt6aHYEA+b6Csn4JcQj9xo7amh19APG2fq5+DW0I/caS3pohhQD5uoKufhFxBPnCjt6aGX0A+baCqnoNcQUFzprioh2FAP26fqZuAWkJAdqe7qopiQT1snaecgFpCP3GkuKqJYkE9bZ6nm39YQT9zp7uqi2NAFG2dp5p9VkI/'); } catch(e) {}
 
@@ -351,6 +354,34 @@ export async function GET(
     if (el) el.remove();
   }
 
+  function showStoreSelection() {
+    hideQuickReplies();
+    var container = document.createElement('div');
+    container.className = 'kyra-quick-replies';
+    container.id = 'kyra-quick-replies';
+    // Header text
+    var label = document.createElement('div');
+    label.style.cssText = 'width:100%;font-size:13px;color:#6b7280;font-weight:500;padding:0 2px 4px;font-family:system-ui,-apple-system,sans-serif;';
+    label.textContent = 'Which store are you visiting?';
+    container.appendChild(label);
+    JANE_STORES.forEach(function(store) {
+      var sbtn = document.createElement('button');
+      sbtn.className = 'kyra-quick-btn';
+      sbtn.textContent = '📍 ' + store.name;
+      sbtn.addEventListener('click', function() {
+        selectedStoreId = store.id;
+        try { localStorage.setItem('kyra_store_' + CLIENT_ID, store.id); } catch(e) {}
+        hideQuickReplies();
+        addMessage('user', '📍 ' + store.name);
+        addMessage('bot', 'Got it! Showing products from our ' + store.name + ' location.' + (store.address ? ' (' + store.address + ')' : '') + ' What are you looking for today?');
+        showQuickReplies();
+      });
+      container.appendChild(sbtn);
+    });
+    messagesEl.appendChild(container);
+    scrollToBottom();
+  }
+
   function escHtml(str) {
     return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
@@ -422,7 +453,12 @@ export async function GET(
     if (!greeted && messagesEl.children.length === 0) {
       greeted = true;
       addMessage('bot', GREETING);
-      showQuickReplies();
+      // Multi-store dispensary: show store selection first, then quick replies after selection
+      if (JANE_STORES.length > 1 && !selectedStoreId) {
+        showStoreSelection();
+      } else {
+        showQuickReplies();
+      }
     }
     applyMobileLayout();
     setTimeout(function() {
@@ -518,7 +554,7 @@ export async function GET(
       var res = await fetch(API_BASE + '/api/widget/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clientId: CLIENT_ID, message: text, sessionId: sessionId, history: history.slice(-10), sourceUrl: window.location.href, storeId: window.__kyraStoreId || STORE_ID }),
+        body: JSON.stringify({ clientId: CLIENT_ID, message: text, sessionId: sessionId, history: history.slice(-10), sourceUrl: window.location.href, storeId: window.__kyraStoreId || selectedStoreId || STORE_ID }),
         signal: AbortSignal.timeout(40000),
       });
       var data = await res.json();

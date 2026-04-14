@@ -93,6 +93,17 @@ const CATEGORY_MAP: Record<string, string> = {
   'beverage': 'edible:drinks',
 };
 
+// ── Store URL Mapping ──────────────────────────────────────────────────────
+// Maps storeId → base menu URL. Extend this when adding new stores/clients.
+const STORE_URLS: Record<string, string> = {
+  'san-jose': 'https://plpcsanjose.com',
+  '117': 'https://plpcsanjose.com',          // legacy numeric ID
+  'downtown': 'https://plpcdowntown.com',     // Purple Lotus Downtown (if separate domain)
+};
+
+// Default fallback for unknown storeIds
+const DEFAULT_MENU_BASE = 'https://plpcsanjose.com';
+
 // ── Product Search ──────────────────────────────────────────────────────────
 
 /**
@@ -109,7 +120,7 @@ export async function searchProducts(
   }
 
   try {
-    const products = await scrapeMenuPage(params, firecrawlApiKey);
+    const products = await scrapeMenuPage(params, firecrawlApiKey, storeId);
 
     // Sort if requested
     let sorted = products;
@@ -145,17 +156,19 @@ export async function searchProducts(
 }
 
 /**
- * Scrape and parse products from plpcsanjose.com menu page
+ * Scrape and parse products from the store's Jane menu page
  */
 async function scrapeMenuPage(
   params: ProductSearchParams,
   apiKey: string,
+  storeId: string = 'san-jose',
 ): Promise<JaneProduct[]> {
+  const menuBase = STORE_URLS[storeId] || DEFAULT_MENU_BASE;
   // Resolve category slug
   const categorySlug = params.category ? (CATEGORY_MAP[params.category.toLowerCase()] || params.category) : '';
   const menuUrl = categorySlug
-    ? `https://plpcsanjose.com/shop/${categorySlug}`
-    : 'https://plpcsanjose.com/shop/all';
+    ? `${menuBase}/shop/${categorySlug}`
+    : `${menuBase}/shop/all`;
 
   const res = await fetch('https://api.firecrawl.dev/v1/scrape', {
     method: 'POST',
@@ -290,7 +303,7 @@ function parseProductBlock(block: string): JaneProduct | null {
 
 export function formatProductsForAI(products: JaneProduct[]): string {
   if (products.length === 0) {
-    return 'No products found. Suggest browsing the full menu at https://plpcsanjose.com/shop or visiting the store.';
+    return 'No products found matching that request. Suggest the customer browse the full menu online or visit the store.';
   }
 
   return products.map((p, i) => {
