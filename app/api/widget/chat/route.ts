@@ -436,7 +436,10 @@ Be knowledgeable but not pushy. If no products match, suggest browsing the full 
           let browseMoreUrl = `${storeBaseUrl}/shop/all`;
           let browseMoreLabel = 'Full Menu';
           if (intent.brand) {
-            const brandSlug = intent.brand.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+            // Use full brand name from Algolia (e.g., "CBX Cannabiotix") for correct slug
+            // Jane's /brands/ pages require the full name: /brands/cbx-cannabiotix works, /brands/cbx shows 0 products
+            const fullBrand = results.resolvedBrand || intent.brand;
+            const brandSlug = fullBrand.toLowerCase().replace(/[^a-z0-9]+/g, '-');
             browseMoreUrl = `${storeBaseUrl}/brands/${brandSlug}`;
             browseMoreLabel = `${intent.brand} Products`;
           } else if (intent.category) {

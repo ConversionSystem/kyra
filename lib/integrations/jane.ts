@@ -48,6 +48,8 @@ export interface ProductSearchResult {
   totalFound: number;
   storeId: string;
   source: 'algolia' | 'firecrawl' | 'cache';
+  /** Full brand name from Algolia (e.g., "CBX Cannabiotix" even when user searched "CBX") */
+  resolvedBrand?: string;
 }
 
 // ── Category mapping (user terms → PL site slugs) ──────────────────────────
@@ -248,7 +250,13 @@ async function searchViaAlgolia(
   }
   // Note: effect/lineage filtering is done server-side via Algolia's category facet
 
-  return { products: products.slice(0, limit), totalFound, storeId, source: 'algolia' };
+  // Resolve the full brand name from Algolia (e.g., user searched "CBX" → "CBX Cannabiotix")
+  // Used by the route to build correct /brands/{slug} URLs
+  const resolvedBrand = params.brand && hits.length > 0
+    ? (hits[0] as AlgoliaHit).brand || params.brand
+    : undefined;
+
+  return { products: products.slice(0, limit), totalFound, storeId, source: 'algolia', resolvedBrand };
 }
 
 // Map user category terms → Algolia root_types values
