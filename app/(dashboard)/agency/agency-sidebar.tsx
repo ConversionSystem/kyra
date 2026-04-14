@@ -52,6 +52,7 @@ import { cn } from '@/lib/utils';
 import type { AgencySettings } from '@/lib/agency/types';
 import type { LucideIcon } from 'lucide-react';
 import { CreditBadge } from '@/components/chat/CreditBadge';
+import { CommandPaletteTrigger } from '@/components/command-palette';
 
 interface NavItem {
   label: string;
@@ -294,6 +295,11 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
       {/* Upgrade banner removed — clutters collapsed sidebar */}
 
       {/* My AI Worker button removed — access AI via client terminal */}
+
+      {/* Quick Search */}
+      <div className="px-2 pt-2">
+        <CommandPaletteTrigger hasBranding={hasBranding} />
+      </div>
 
       {/* Navigation */}
       <nav className="flex-1 px-2 py-2 space-y-0 overflow-y-auto scrollbar-hide">
