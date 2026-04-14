@@ -332,7 +332,7 @@ function OverviewView({
         </Link>
 
         {/* Secondary row */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <button
             onClick={() => handleAction('regenerate')}
             disabled={!!actionLoading}
@@ -357,6 +357,13 @@ function OverviewView({
             )}
             Redeploy
           </button>
+          <Link
+            href="/agency/widget"
+            className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 hover:border-gray-300 transition-colors"
+          >
+            <Send className="h-3.5 w-3.5" />
+            Chat Widget
+          </Link>
           <Link
             href={`/agency/website/${site.id}/settings`}
             className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 hover:border-gray-300 transition-colors"

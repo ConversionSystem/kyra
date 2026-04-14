@@ -629,20 +629,13 @@ function SettingsWithPortal({
   onRefresh: () => void;
 }) {
   return (
-    <div className="space-y-8">
-      <SettingsTabMerged
-        client={client}
-        role={role}
-        plan={plan}
-        accountType={accountType}
-        onRefresh={onRefresh}
-      />
-
-      {/* Share / Client Portal section */}
-      <div className="border-t border-gray-200 pt-6">
-        <PortalTab client={client} />
-      </div>
-    </div>
+    <SettingsTabMerged
+      client={client}
+      role={role}
+      plan={plan}
+      accountType={accountType}
+      onRefresh={onRefresh}
+    />
   );
 }
 
@@ -1585,12 +1578,13 @@ function VoiceSmsTab({
 
 // ── Settings Tab Merged (General + Channels + Autopilot) ──
 
-type SettingsSubTab = 'general' | 'channels' | 'autopilot';
+type SettingsSubTab = 'general' | 'channels' | 'autopilot' | 'sharing';
 
 const SETTINGS_SUB_TABS: { id: SettingsSubTab; label: string }[] = [
   { id: 'general', label: 'General' },
   { id: 'channels', label: 'Channels' },
   { id: 'autopilot', label: 'Autopilot' },
+  { id: 'sharing', label: 'Sharing' },
 ];
 
 function SettingsTabMerged({
@@ -1637,6 +1631,9 @@ function SettingsTabMerged({
       )}
       {activeSubTab === 'autopilot' && (
         <AutopilotClient />
+      )}
+      {activeSubTab === 'sharing' && (
+        <PortalTab client={client} />
       )}
     </div>
   );

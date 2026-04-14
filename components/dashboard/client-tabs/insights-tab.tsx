@@ -212,19 +212,18 @@ export default function InsightsTab({ client, defaultSubTab = 'usage', workerRol
   return (
     <div className="space-y-6">
       {/* Sub-nav pills */}
-      <div className="flex gap-1 bg-gray-100 rounded-lg p-1 overflow-x-auto scrollbar-hide">
+      <div className="flex flex-wrap gap-2 overflow-x-auto scrollbar-hide">
         {SUB_TABS.map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveSubTab(tab)}
-            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
               activeSubTab === tab
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'bg-indigo-600 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
             {SUB_TAB_LABELS[tab]}
-
           </button>
         ))}
       </div>
