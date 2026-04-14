@@ -300,7 +300,8 @@ async function buildAndDeploy(site: any, supabase: any) {
 
   // ---------- Custom assemblers ----------
   const useCustomAssembler = site.template_id === 'tech-enterprise';
-  const useHvacAssembler = site.template_id === 'hvac-dark-red';
+  const useHvacAssembler = site.template_id === 'hvac-dark-red'
+    || (site.site_domain || site.site_subdomain || '').includes('hvacsanmateo');
   const useAranaAssembler = site.template_id === 'arana-painting';
 
   // Assemble full HTML for each page
@@ -382,6 +383,7 @@ async function buildAndDeploy(site: any, supabase: any) {
             domain: domain,
             geo: site.geo || null,
             jobs_completed: site.jobs_completed || '',
+            ga4_id: site.ga4_id || null,
           },
           {
             slug: p.slug,

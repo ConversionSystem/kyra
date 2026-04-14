@@ -22,6 +22,9 @@ import {
   Target,
   Play,
   Minus,
+  Send,
+  Plus,
+  X,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -92,7 +95,14 @@ interface RankResult {
   change: number;
 }
 
-type TabId = 'overview' | 'gsc' | 'geo' | 'nap' | 'keywords' | 'content' | 'growth' | 'settings';
+interface SubmitResult {
+  engine: string;
+  status: 'submitted' | 'manual_required';
+  url: string;
+  note?: string;
+}
+
+type TabId = 'overview' | 'gsc' | 'geo' | 'nap' | 'keywords' | 'content' | 'growth' | 'submit' | 'settings';
 
 // ── Shared inner component (used by both the page route and the client tab) ──
 
@@ -164,6 +174,7 @@ export default function SeoGeoCommandCenterInner({ siteId, embedded }: { siteId:
     { id: 'keywords', label: 'Keywords', icon: Target },
     { id: 'content', label: 'Content', icon: FileText },
     { id: 'growth', label: 'Growth', icon: Zap },
+    { id: 'submit', label: 'Submit', icon: Send },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
@@ -270,6 +281,7 @@ export default function SeoGeoCommandCenterInner({ siteId, embedded }: { siteId:
         {activeTab === 'keywords' && <KeywordsTab data={data} clientId={data.client_id} />}
         {activeTab === 'content' && <ContentTab data={data} clientId={data.client_id} />}
         {activeTab === 'growth' && <GrowthTab siteId={siteId} />}
+        {activeTab === 'submit' && <SubmitTab siteId={siteId} data={data} onConnectGsc={() => setShowGscModal(true)} />}
         {activeTab === 'settings' && <SettingsTab data={data} siteId={siteId} onConnectGsc={() => setShowGscModal(true)} />}
       </div>
 
@@ -845,12 +857,23 @@ function NAPTab({ data, siteId, onRunTask, running }: { data: SeoData; siteId: s
 
 // ── Keywords Tab (merged: tracked rankings + research) ───────────────────────
 
+// Default HVAC target keywords — shown when no GSC/tracked data is available
+const DEFAULT_HVAC_KEYWORDS = [
+  { keyword: 'HVAC San Mateo', position: null as number | null, source: 'target' },
+  { keyword: 'AC repair San Mateo', position: null as number | null, source: 'target' },
+  { keyword: 'heating repair San Mateo', position: null as number | null, source: 'target' },
+  { keyword: 'HVAC contractor San Mateo', position: null as number | null, source: 'target' },
+  { keyword: 'air conditioning San Mateo', position: null as number | null, source: 'target' },
+];
+
 function KeywordsTab({ data, clientId }: { data: SeoData; clientId: string | null }) {
   const [seedKeyword, setSeedKeyword] = useState('');
   const [researchResults, setResearchResults] = useState<Keyword[]>([]);
   const [loading, setLoading] = useState(false);
   const [aiEstimated, setAiEstimated] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [trackedKeywords, setTrackedKeywords] = useState<Array<{ keyword: string; position: number | null; source: string }>>(DEFAULT_HVAC_KEYWORDS);
+  const [newKeyword, setNewKeyword] = useState('');
 
   const doResearch = useCallback(async () => {
     if (!seedKeyword.trim() || !clientId) return;
@@ -962,6 +985,83 @@ function KeywordsTab({ data, clientId }: { data: SeoData; clientId: string | nul
           </CardContent>
         </Card>
       )}
+
+      {/* Target Keywords */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+              <Target className="w-4 h-4 text-indigo-600" />
+              Target Keywords
+            </p>
+            <Badge className="bg-indigo-50 text-indigo-700 border-indigo-200 text-xs">
+              {trackedKeywords.length} tracked
+            </Badge>
+          </div>
+          <div className="divide-y divide-gray-100">
+            {trackedKeywords.map((kw, i) => {
+              // Try to find a matching GSC keyword
+              const gscMatch = data.keywords.find(k => k.keyword.toLowerCase() === kw.keyword.toLowerCase());
+              const position = gscMatch?.position ?? kw.position;
+              return (
+                <div key={i} className="py-2 flex items-center justify-between">
+                  <span className="text-sm text-gray-700">{kw.keyword}</span>
+                  <div className="flex items-center gap-2">
+                    {position !== null ? (
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded ${
+                        position <= 3 ? 'bg-emerald-100 text-emerald-700' :
+                        position <= 10 ? 'bg-blue-100 text-blue-700' :
+                        position <= 30 ? 'bg-amber-100 text-amber-700' :
+                        'bg-gray-100 text-gray-600'
+                      }`}>
+                        #{position.toFixed(0)}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-gray-400">Not ranked</span>
+                    )}
+                    {kw.source !== 'target' && (
+                      <button
+                        onClick={() => setTrackedKeywords(prev => prev.filter((_, j) => j !== i))}
+                        className="text-gray-300 hover:text-red-500"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {/* Track Keyword input */}
+          <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
+            <input
+              value={newKeyword}
+              onChange={e => setNewKeyword(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && newKeyword.trim()) {
+                  setTrackedKeywords(prev => [...prev, { keyword: newKeyword.trim(), position: null, source: 'custom' }]);
+                  setNewKeyword('');
+                }
+              }}
+              placeholder="Track a keyword..."
+              className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            <Button
+              size="sm"
+              onClick={() => {
+                if (newKeyword.trim()) {
+                  setTrackedKeywords(prev => [...prev, { keyword: newKeyword.trim(), position: null, source: 'custom' }]);
+                  setNewKeyword('');
+                }
+              }}
+              disabled={!newKeyword.trim()}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white"
+            >
+              <Plus className="w-4 h-4" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Tracked Keywords (from seo_keyword_rankings) */}
       {data.keywords.length > 0 && (
@@ -1355,6 +1455,158 @@ function GrowthTab({ siteId }: { siteId: string }) {
           </CardContent>
         </Card>
       ))}
+    </div>
+  );
+}
+
+// ── Submit Tab ───────────────────────────────────────────────────────────────
+
+function SubmitTab({ siteId, data, onConnectGsc }: { siteId: string; data: SeoData; onConnectGsc: () => void }) {
+  const [submitting, setSubmitting] = useState(false);
+  const [results, setResults] = useState<SubmitResult[]>([]);
+  const [lastSubmitted, setLastSubmitted] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async () => {
+    setSubmitting(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/agency/sites/${siteId}/seo/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!res.ok) throw new Error('Failed to submit');
+      const json = await res.json();
+      setResults(json.results || []);
+      setLastSubmitted(json.submitted_at || new Date().toISOString());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Submission failed');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-start gap-4">
+            <div className="rounded-lg bg-indigo-50 p-3">
+              <Send className="w-6 h-6 text-indigo-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">Submit Site to Search Engines & AI</h3>
+              <p className="text-sm text-gray-500 mb-4">Notify Google, Bing, and AI crawlers about your site. This pings their sitemap endpoints and submits via IndexNow where available.</p>
+              <div className="flex items-center gap-3">
+                <Button
+                  onClick={handleSubmit}
+                  disabled={submitting}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                >
+                  {submitting ? (
+                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Submitting...</>
+                  ) : (
+                    <><Send className="w-4 h-4 mr-2" />Submit Now</>
+                  )}
+                </Button>
+                {lastSubmitted && (
+                  <span className="text-xs text-gray-400">Last submitted: {new Date(lastSubmitted).toLocaleString()}</span>
+                )}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700 flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          {error}
+        </div>
+      )}
+
+      {/* Results */}
+      {results.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+              <Globe className="w-4 h-4 text-indigo-600" />
+              Submission Results
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="divide-y divide-gray-100">
+              {results.map((r, i) => (
+                <div key={i} className="py-3 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {r.status === 'submitted' ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                    ) : (
+                      <ExternalLink className="w-4 h-4 text-amber-500 shrink-0" />
+                    )}
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{r.engine}</p>
+                      {r.note && <p className="text-xs text-gray-500 mt-0.5">{r.note}</p>}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge className={`text-xs ${
+                      r.status === 'submitted'
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        : 'bg-amber-50 text-amber-700 border-amber-200'
+                    }`}>
+                      {r.status === 'submitted' ? '✅ Submitted' : '🔗 Manual'}
+                    </Badge>
+                    {r.status === 'manual_required' && (
+                      <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800">
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Quick Links */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* GSC Connection */}
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-900">Google Search Console</p>
+                <p className="text-xs text-gray-500">Monitor indexing status and search performance</p>
+              </div>
+              {data.gsc_connected ? (
+                <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs">Connected</Badge>
+              ) : (
+                <button
+                  onClick={onConnectGsc}
+                  className="text-xs px-3 py-1.5 rounded bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+                >
+                  Connect GSC
+                </button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* IndexNow info */}
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-900">IndexNow Key</p>
+                <p className="text-xs text-gray-500">Set INDEXNOW_KEY env var for faster Bing/Yandex indexing</p>
+              </div>
+              <Badge className="bg-gray-50 text-gray-500 border-gray-200 text-xs">Optional</Badge>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

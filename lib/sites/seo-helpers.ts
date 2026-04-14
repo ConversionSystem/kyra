@@ -262,6 +262,92 @@ export function generateKeywords(site: {
   return [...new Set(keywords)].join(', ');
 }
 
+// ---------- Submit to Search Engines ----------
+
+export async function submitToSearchEngines(domain: string): Promise<{
+  results: Array<{ engine: string; status: 'submitted' | 'manual_required'; url: string; note?: string }>
+}> {
+  const results: Array<{ engine: string; status: 'submitted' | 'manual_required'; url: string; note?: string }> = [];
+
+  // 1. Google — ping sitemap
+  try {
+    const googleUrl = `https://www.google.com/ping?sitemap=https://${domain}/sitemap.xml`;
+    const googleRes = await fetch(googleUrl);
+    results.push({
+      engine: 'Google',
+      status: googleRes.ok ? 'submitted' : 'manual_required',
+      url: googleUrl,
+      note: googleRes.ok ? 'Sitemap ping sent successfully' : `HTTP ${googleRes.status}`,
+    });
+  } catch (err) {
+    results.push({ engine: 'Google', status: 'manual_required', url: `https://search.google.com/search-console`, note: 'Ping failed — submit manually via Search Console' });
+  }
+
+  // 2. Bing — ping sitemap
+  try {
+    const bingUrl = `https://www.bing.com/ping?sitemap=https://${domain}/sitemap.xml`;
+    const bingRes = await fetch(bingUrl);
+    results.push({
+      engine: 'Bing',
+      status: bingRes.ok ? 'submitted' : 'manual_required',
+      url: bingUrl,
+      note: bingRes.ok ? 'Sitemap ping sent successfully' : `HTTP ${bingRes.status}`,
+    });
+  } catch (err) {
+    results.push({ engine: 'Bing', status: 'manual_required', url: `https://www.bing.com/webmasters`, note: 'Ping failed — submit manually via Bing Webmaster Tools' });
+  }
+
+  // 3. IndexNow (Bing/Yandex/Seznam)
+  const indexNowKey = process.env.INDEXNOW_KEY;
+  if (indexNowKey) {
+    try {
+      const indexNowRes = await fetch('https://api.indexnow.org/indexnow', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          host: domain,
+          key: indexNowKey,
+          keyLocation: `https://${domain}/${indexNowKey}.txt`,
+          urlList: [`https://${domain}/`, `https://${domain}/sitemap.xml`],
+        }),
+      });
+      results.push({
+        engine: 'IndexNow (Bing/Yandex/Seznam)',
+        status: indexNowRes.ok || indexNowRes.status === 202 ? 'submitted' : 'manual_required',
+        url: 'https://www.indexnow.org/',
+        note: indexNowRes.ok || indexNowRes.status === 202 ? 'URLs submitted via IndexNow' : `HTTP ${indexNowRes.status}`,
+      });
+    } catch {
+      results.push({ engine: 'IndexNow (Bing/Yandex/Seznam)', status: 'manual_required', url: 'https://www.indexnow.org/', note: 'IndexNow submission failed' });
+    }
+  } else {
+    results.push({
+      engine: 'IndexNow (Bing/Yandex/Seznam)',
+      status: 'manual_required',
+      url: 'https://www.indexnow.org/',
+      note: 'Set INDEXNOW_KEY env var for automatic submission',
+    });
+  }
+
+  // 4. DuckDuckGo — manual only
+  results.push({
+    engine: 'DuckDuckGo',
+    status: 'manual_required',
+    url: 'https://duckduckgo.com/?q=site:' + domain,
+    note: 'DuckDuckGo crawls automatically — no manual submission available',
+  });
+
+  // 5. LLMs.txt
+  results.push({
+    engine: 'AI Crawlers (llms.txt)',
+    status: 'submitted',
+    url: `https://${domain}/llms.txt`,
+    note: 'llms.txt is already in place for AI crawlers (GPTBot, ClaudeBot, PerplexityBot)',
+  });
+
+  return { results };
+}
+
 // ---------- Utility ----------
 
 function escapeXml(str: string): string {

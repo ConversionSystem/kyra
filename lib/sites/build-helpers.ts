@@ -166,7 +166,8 @@ export async function assembleSitePages(
 
   // Custom assemblers for specific templates
   const useCustomAssembler = site.template_id === 'tech-enterprise';
-  const useHvacAssembler = site.template_id === 'hvac-dark-red';
+  const useHvacAssembler = site.template_id === 'hvac-dark-red'
+    || (site.site_domain || site.site_subdomain || '').includes('hvacsanmateo');
   const useAranaAssembler = site.template_id === 'arana-painting';
 
   // Assemble full HTML for every visible page
