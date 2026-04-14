@@ -193,12 +193,12 @@ interface ChatMessage {
   content: string;
 }
 
-type Tab = 'inbox' | 'crm' | 'voice-sms' | 'marketing' | 'website' | 'seo-geo' | 'ai-setup' | 'integrations' | 'it-operations' | 'settings' | 'insights';
+type Tab = 'inbox' | 'terminal' | 'crm' | 'voice-sms' | 'marketing' | 'website' | 'seo-geo' | 'ai-setup' | 'integrations' | 'it-operations' | 'settings' | 'insights';
 
 // Map legacy ?tab= values to new tab IDs
 const LEGACY_TAB_MAP: Record<string, Tab> = {
   conversations: 'inbox',
-  terminal: 'inbox',
+  terminal: 'terminal',
   chat: 'inbox',
   personality: 'ai-setup',
   train: 'ai-setup',
@@ -222,10 +222,11 @@ const LEGACY_TAB_MAP: Record<string, Tab> = {
   usage: 'insights',
   memory: 'insights',
   seo: 'seo-geo',
-  'ai-teams': 'inbox',
+  'ai-teams': 'terminal',
 };
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
+  { id: 'terminal', label: 'Terminal', icon: Terminal },
   { id: 'inbox', label: 'Inbox', icon: Inbox },
   { id: 'crm', label: 'CRM', icon: Users },
   { id: 'voice-sms', label: 'Voice & SMS', icon: Phone },
@@ -476,8 +477,14 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
           )}
 
           {/* Tab content */}
+          {activeTab === 'terminal' && (
+            <TerminalTab client={initialClient} />
+          )}
           {activeTab === 'inbox' && (
-            <InboxWithTerminal client={initialClient} isFree={isFreeOrSolo} />
+            <>
+              {isFreeOrSolo && <UpgradeNudgeBanner />}
+              <ConversationsTab client={initialClient} />
+            </>
           )}
           {activeTab === 'crm' && (
             <CrmTab client={initialClient} clientId={initialClient.id} />
@@ -520,44 +527,7 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
 }
 
 
-// ── Inbox + Terminal (merged) ─────────────────────────────────────────────────
-
-function InboxWithTerminal({ client, isFree }: { client: AgencyClient; isFree?: boolean }) {
-  const [mode, setMode] = useState<'messages' | 'terminal'>('messages');
-
-  return (
-    <div className="space-y-3">
-      {/* Toggle between Messages and Terminal */}
-      <div className="flex items-center gap-1 border-b border-gray-100 pb-3">
-        {([
-          { id: 'messages' as const, label: 'Messages', icon: Inbox },
-          { id: 'terminal' as const, label: 'Terminal', icon: Terminal },
-        ]).map(f => (
-          <button
-            key={f.id}
-            onClick={() => setMode(f.id)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition ${
-              mode === f.id
-                ? 'bg-indigo-600 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            <f.icon className="h-3.5 w-3.5" />
-            {f.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Upgrade nudge — free plan users see this after their first messages */}
-      {isFree && mode === 'messages' && (
-        <UpgradeNudgeBanner />
-      )}
-
-      {mode === 'messages' && <ConversationsTab client={client} />}
-      {mode === 'terminal' && <TerminalTab client={client} />}
-    </div>
-  );
-}
+// ── InboxWithTerminal removed — Terminal is now its own tab ──────────────────
 
 // ── Upgrade Nudge Banner (Inbox) ─────────────────────────────────────────────
 

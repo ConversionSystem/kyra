@@ -466,11 +466,8 @@ export default function AccountsAdminClient() {
     e.stopPropagation();
     setImpersonateMsg({ type: 'ok', text: `Preparing login as ${account.name}…` });
     try {
-      // Get temp credentials while still logged in as admin
-      const res = await fetch('/api/master/impersonate', {
+      const res = await fetch(`/api/admin/accounts/${account.id}/login-as`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: account.owner_id }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -479,19 +476,11 @@ export default function AccountsAdminClient() {
       }
 
       // Open the magic link in a new tab — admin session in THIS tab stays intact
-      if (data.loginUrl) {
-        window.open(data.loginUrl, '_blank');
-      } else {
-        // Fallback to old impersonate page if no magic link returned
-        const params = new URLSearchParams({
-          e: data.email,
-          p: data.password || '',
-          n: data.agencyName || account.name,
-        });
-        window.open(`/login/impersonate?${params.toString()}`, '_blank');
+      if (data.url) {
+        window.open(data.url, '_blank');
       }
 
-      setImpersonateMsg({ type: 'ok', text: `Opening ${account.name}'s dashboard in new tab — you'll be logged in as ${data.agencyName || account.name}` });
+      setImpersonateMsg({ type: 'ok', text: `Opening ${data.name || account.name}'s dashboard in new tab` });
       setTimeout(() => setImpersonateMsg(null), 5000);
     } catch (err) {
       setImpersonateMsg({ type: 'err', text: `Network error: ${String(err)}` });
