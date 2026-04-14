@@ -53,7 +53,6 @@ import type { AgencyClient, AgencyMember } from '@/lib/agency/queries';
 import GHLConnection from './ghl-connection';
 import PermissionsCard from './permissions-card';
 import ClientStatusBanner from '@/components/dashboard/client-status-banner';
-import { VoiceClient } from '@/app/(dashboard)/agency/voice/voice-client';
 import RetellVoiceTab from '@/components/dashboard/client-tabs/retell-voice-tab';
 import { ModelSelector } from '@/components/dashboard/model-selector';
 import QuickAnswersEditor from '@/components/dashboard/quick-answers-editor';
@@ -194,7 +193,7 @@ interface ChatMessage {
   content: string;
 }
 
-type Tab = 'inbox' | 'crm' | 'marketing' | 'website' | 'seo-geo' | 'ai-setup' | 'integrations' | 'it-operations' | 'settings' | 'insights';
+type Tab = 'inbox' | 'crm' | 'voice-sms' | 'marketing' | 'website' | 'seo-geo' | 'ai-setup' | 'integrations' | 'it-operations' | 'settings' | 'insights';
 
 // Map legacy ?tab= values to new tab IDs
 const LEGACY_TAB_MAP: Record<string, Tab> = {
@@ -217,8 +216,8 @@ const LEGACY_TAB_MAP: Record<string, Tab> = {
   ghl: 'settings',
   channels: 'settings',
   secrets: 'settings',
-  voice: 'settings',
-  'delivery-sms': 'settings',
+  voice: 'voice-sms',
+  'delivery-sms': 'voice-sms',
   automation: 'settings',
   usage: 'insights',
   memory: 'insights',
@@ -229,6 +228,7 @@ const LEGACY_TAB_MAP: Record<string, Tab> = {
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'inbox', label: 'Inbox', icon: Inbox },
   { id: 'crm', label: 'CRM', icon: Users },
+  { id: 'voice-sms', label: 'Voice & SMS', icon: Phone },
   { id: 'marketing', label: 'Marketing', icon: TrendingUp },
   { id: 'website', label: 'Website', icon: Globe },
   { id: 'seo-geo', label: 'SEO/GEO', icon: Search },
@@ -345,6 +345,8 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
   const hasAdvancedTabs = isMasterOrKyra || isPaidPlan;
   // TrustedNetworx gets Operations only (not Marketing) unless they're on a paid plan
   const hasMarketingTab = isMasterOrKyra || isPaidPlan;
+  const hasWebsiteTab = isMasterOrKyra;
+  const hasSeoGeoTab = isMasterOrKyra;
   const hasOperationsTab = isMasterOrKyra || isPaidPlan || isTrustedNetworx;
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -354,6 +356,8 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
   // Feature gating: Marketing, Operations, Voice, AI Marketing Worker
   const HIDDEN_TABS: string[] = [];
   if (!hasMarketingTab) HIDDEN_TABS.push('marketing');
+  if (!hasWebsiteTab) HIDDEN_TABS.push('website');
+  if (!hasSeoGeoTab) HIDDEN_TABS.push('seo-geo');
   if (!hasOperationsTab) HIDDEN_TABS.push('integrations');
   if (!hasItOps) HIDDEN_TABS.push('it-operations');
   const filteredGroups = TAB_GROUPS.map(g => ({
@@ -477,6 +481,9 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
           )}
           {activeTab === 'crm' && (
             <CrmTab client={initialClient} clientId={initialClient.id} />
+          )}
+          {activeTab === 'voice-sms' && (
+            <VoiceSmsTab client={initialClient} plan={plan} accountType={accountType} />
           )}
           {activeTab === 'marketing' && (
             <MarketingTab client={initialClient} />
@@ -1480,20 +1487,109 @@ function IntegrationsTab({ client, onRefresh }: { client: AgencyClient; onRefres
           );
         })}
       </div>
+
+      {/* Secrets Vault */}
+      <div className="border-t border-gray-200 pt-6">
+        <h3 className="text-sm font-semibold text-gray-900 mb-1">Custom Secrets</h3>
+        <p className="text-xs text-gray-500 mb-4">Store additional API keys or credentials not covered by the integrations above.</p>
+        <SecretsTab clientId={client.id} />
+      </div>
     </div>
   );
 }
 
-// ── Settings Tab Merged (General + Channels + Integrations + Security + Voice + SMS + Workflows) ──
+// ── Voice & SMS Tab ─────────────────────────────────────────────────────────
 
-type SettingsSubTab = 'general' | 'channels' | 'integrations' | 'voice' | 'sms' | 'autopilot';
+function VoiceSmsTab({
+  client,
+  plan,
+  accountType,
+}: {
+  client: AgencyClient;
+  plan?: string;
+  accountType?: string;
+}) {
+  const isFreeOrSolo = !plan || plan === 'free' || plan === 'solo_pro' || (plan === 'free' && accountType === 'solo');
+  const isPaidPlan = plan === 'pro' || plan === 'scale';
+  const isMasterOrKyra = ADVANCED_TABS_AGENCIES.has(client.agency_id ?? '');
+  const hasVoice = isMasterOrKyra || isPaidPlan;
+  const [activeSection, setActiveSection] = useState<'voice' | 'sms'>('voice');
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap gap-2">
+        {[
+          { id: 'voice' as const, label: 'Voice' },
+          { id: 'sms' as const, label: 'SMS' },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveSection(tab.id)}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+              activeSection === tab.id
+                ? 'bg-indigo-600 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeSection === 'voice' && (
+        hasVoice ? (
+          <RetellVoiceTab client={client} />
+        ) : (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="h-16 w-16 rounded-2xl bg-indigo-50 flex items-center justify-center mb-4">
+              <Phone className="h-8 w-8 text-indigo-400" />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Premium Feature</h2>
+            <p className="text-gray-500 mb-6 max-w-md">
+              <span className="font-medium">Voice AI</span> is available on Pro and Scale plans. Upgrade to unlock voice capabilities.
+            </p>
+            <a
+              href="/agency/billing"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+            >
+              Upgrade Plan
+            </a>
+          </div>
+        )
+      )}
+
+      {activeSection === 'sms' && (
+        isFreeOrSolo ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="h-16 w-16 rounded-2xl bg-indigo-50 flex items-center justify-center mb-4">
+              <Mail className="h-8 w-8 text-indigo-400" />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Premium Feature</h2>
+            <p className="text-gray-500 mb-6 max-w-md">
+              <span className="font-medium">Delivery SMS</span> is available on Agency plans. Upgrade to unlock all features.
+            </p>
+            <a
+              href="/agency/billing"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+            >
+              Upgrade Plan
+            </a>
+          </div>
+        ) : (
+          <DeliverySmsTab clientId={client.id} />
+        )
+      )}
+    </div>
+  );
+}
+
+// ── Settings Tab Merged (General + Channels + Autopilot) ──
+
+type SettingsSubTab = 'general' | 'channels' | 'autopilot';
 
 const SETTINGS_SUB_TABS: { id: SettingsSubTab; label: string }[] = [
   { id: 'general', label: 'General' },
   { id: 'channels', label: 'Channels' },
-  { id: 'integrations', label: 'Integrations' },
-  { id: 'voice', label: 'Voice' },
-  { id: 'sms', label: 'SMS' },
   { id: 'autopilot', label: 'Autopilot' },
 ];
 
@@ -1513,18 +1609,11 @@ function SettingsTabMerged({
   // Read settingsTab from URL params to preserve tab across reloads (e.g., after voice agent creation)
   const initialSubTab = typeof window !== 'undefined' ? (new URLSearchParams(window.location.search).get('settingsTab') as SettingsSubTab) || 'general' : 'general';
   const [activeSubTab, setActiveSubTab] = useState<SettingsSubTab>(initialSubTab);
-  const isFreeOrSolo = !plan || plan === 'free' || plan === 'solo_pro' || (plan === 'free' && accountType === 'solo');
-  const isPaidPlan = plan === 'pro' || plan === 'scale';
-  const isMasterOrKyra = ADVANCED_TABS_AGENCIES.has(client.agency_id ?? '');
-  const hasVoice = isMasterOrKyra || isPaidPlan;
-
   return (
     <div className="space-y-6">
       {/* Sub-nav pills */}
       <div className="flex flex-wrap gap-2">
-        {SETTINGS_SUB_TABS.filter((tab) => tab.id !== 'voice' || hasVoice).map((tab) => {
-          const locked = tab.id === 'sms' && isFreeOrSolo;
-          return (
+        {SETTINGS_SUB_TABS.map((tab) => (
             <button
               key={tab.id}
               id={`settings-subtab-${tab.id}`}
@@ -1536,10 +1625,8 @@ function SettingsTabMerged({
               }`}
             >
               {tab.label}
-              {locked && <span className="ml-1">🔒</span>}
             </button>
-          );
-        })}
+        ))}
       </div>
 
       {activeSubTab === 'general' && (
@@ -1547,42 +1634,6 @@ function SettingsTabMerged({
       )}
       {activeSubTab === 'channels' && (
         <ChannelsLiveTab clientId={client.id} client={client} />
-      )}
-      {activeSubTab === 'integrations' && (
-        <div className="space-y-8">
-          <IntegrationsTab client={client} onRefresh={onRefresh} />
-
-          {/* Secrets Vault */}
-          <div className="border-t border-gray-200 pt-6">
-            <h3 className="text-sm font-semibold text-gray-900 mb-1">Custom Secrets</h3>
-            <p className="text-xs text-gray-500 mb-4">Store additional API keys or credentials not covered by the integrations above.</p>
-            <SecretsTab clientId={client.id} />
-          </div>
-        </div>
-      )}
-      {activeSubTab === 'voice' && (
-        <RetellVoiceTab client={client} />
-      )}
-      {activeSubTab === 'sms' && (
-        isFreeOrSolo ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="h-16 w-16 rounded-2xl bg-indigo-50 flex items-center justify-center mb-4">
-              <span className="text-3xl">🔒</span>
-            </div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Premium Feature</h2>
-            <p className="text-gray-500 mb-6 max-w-md">
-              <span className="font-medium">Delivery SMS</span> is available on Agency plans. Upgrade to unlock all features.
-            </p>
-            <a
-              href="/agency/billing"
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
-            >
-              Upgrade Plan
-            </a>
-          </div>
-        ) : (
-          <DeliverySmsTab clientId={client.id} />
-        )
       )}
       {activeSubTab === 'autopilot' && (
         <AutopilotClient />

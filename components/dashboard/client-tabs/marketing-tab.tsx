@@ -422,6 +422,13 @@ function DashboardView({ client, onNavigate }: { client: AgencyClient; onNavigat
         <MetricCard label="AI Actions" value={stats.activities} sub="Actions taken by AI" />
       </div>
 
+      {/* Clarification when worker is not applied */}
+      {!isActive && (
+        <p className="text-xs text-gray-500 bg-gray-50 rounded-lg px-4 py-3">
+          Stats shown reflect actual data from this client. Apply the AI Marketing Worker to unlock content creation, social drafting, and campaign features.
+        </p>
+      )}
+
       {/* Recent Activity — from CRM activities */}
       <div className="rounded-xl border border-gray-200 bg-white p-5">
         <h3 className="text-sm font-semibold text-gray-900 mb-3">Recent Activity</h3>

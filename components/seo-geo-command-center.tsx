@@ -441,13 +441,14 @@ function OverviewTab({ data, siteId, onRunTask, running }: { data: SeoData; site
               <Search className="w-6 h-6 text-blue-600" />
             </div>
             <h3 className="text-sm font-semibold text-gray-900 mb-1">GSC not connected</h3>
-            <p className="text-xs text-gray-500 mb-4">Connect Google Search Console to see real search performance data.</p>
-            <Link
-              href={`/agency/website/${siteId}/settings`}
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50"
+            <p className="text-xs text-gray-500 mb-4">Google Search Console integration is coming soon. This feature will connect your GSC data to show real search performance metrics.</p>
+            <button
+              disabled
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-400 border border-gray-200 rounded-lg cursor-not-allowed"
             >
               Connect Google Search Console
-            </Link>
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Coming Soon</Badge>
+            </button>
           </CardContent>
         </Card>
       )}
@@ -509,13 +510,22 @@ function GSCTab({ data }: { data: SeoData }) {
 
   if (!data.gsc_connected) {
     return (
-      <EmptyState
-        icon={Search}
-        title="Connect Google Search Console"
-        description="Link your GSC account to see real search performance data — clicks, impressions, CTR, and keyword positions."
-        actionLabel="Connect Google Search Console"
-        onAction={() => {}}
-      />
+      <Card>
+        <CardContent className="p-8 text-center">
+          <div className="rounded-full bg-gray-100 w-16 h-16 flex items-center justify-center mx-auto mb-4">
+            <Search className="w-8 h-8 text-gray-400" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Connect Google Search Console</h3>
+          <p className="text-sm text-gray-500 mb-6 max-w-md mx-auto">Google Search Console integration is coming soon. This feature will connect your GSC data to show real search performance metrics.</p>
+          <button
+            disabled
+            className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium text-gray-400 border border-gray-200 rounded-lg cursor-not-allowed"
+          >
+            Connect Google Search Console
+            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Coming Soon</Badge>
+          </button>
+        </CardContent>
+      </Card>
     );
   }
 
