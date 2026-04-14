@@ -38,6 +38,10 @@ interface SeoData {
   industry: string;
   industry_pack_id: string | null;
   gsc_connected: boolean;
+  gsc_site_url: string | null;
+  gsc_metrics: Record<string, unknown> | null;
+  last_gsc_sync: string | null;
+  ga4_id: string | null;
   metrics: {
     total_clicks: number;
     total_impressions: number;
@@ -548,12 +552,13 @@ function OverviewTab({ data, siteId, onRunTask, running, onConnectGsc }: { data:
             </div>
             <h3 className="text-sm font-semibold text-gray-900 mb-1">GSC not connected</h3>
             <p className="text-xs text-gray-500 mb-4">Connect Google Search Console to track real search performance metrics, rankings, and indexing status.</p>
-            <button
-              onClick={onConnectGsc}
+            <a
+              href={`/api/auth/gsc?siteId=${siteId}`}
               className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg"
             >
-              Connect Google Search Console
-            </button>
+              <ExternalLink className="w-4 h-4" />
+              Connect via Google →
+            </a>
           </CardContent>
         </Card>
       )}
@@ -576,6 +581,40 @@ function OverviewTab({ data, siteId, onRunTask, running, onConnectGsc }: { data:
                   </div>
                 </div>
               ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Top Pages */}
+      {hasGsc && metrics.top_pages.length > 0 && (
+        <Card>
+          <CardContent className="p-4">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <BarChart2 className="w-4 h-4 text-blue-500" />
+              Top Pages
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-xs text-gray-500 border-b">
+                    <th className="text-left py-2 pr-4">Page</th>
+                    <th className="text-right py-2 px-2">Clicks</th>
+                    <th className="text-right py-2 px-2">Impressions</th>
+                    <th className="text-right py-2 pl-2">Position</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {metrics.top_pages.slice(0, 8).map((page, i) => (
+                    <tr key={i} className="border-b border-gray-50">
+                      <td className="py-2 pr-4 text-gray-700 truncate max-w-[200px]">{page.slug}</td>
+                      <td className="py-2 px-2 text-right text-gray-900 font-medium">{page.clicks}</td>
+                      <td className="py-2 px-2 text-right text-gray-500">{page.impressions}</td>
+                      <td className="py-2 pl-2 text-right text-gray-500">{page.position.toFixed(1)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </CardContent>
         </Card>
@@ -1613,87 +1652,270 @@ function SubmitTab({ siteId, data, onConnectGsc }: { siteId: string; data: SeoDa
 
 // ── Settings Tab ─────────────────────────────────────────────────────────────
 
-function SettingsTab({ data, siteId, onConnectGsc }: { data: SeoData; siteId: string; onConnectGsc: () => void }) {
+function SettingsTab({ data, siteId }: { data: SeoData; siteId: string; onConnectGsc: () => void }) {
+  const [ga4Id, setGa4Id] = useState(data.ga4_id || '');
+  const [industry, setIndustry] = useState(data.industry || '');
+  const [indexNowKey, setIndexNowKey] = useState('');
+  const [saving, setSaving] = useState<string | null>(null);
+  const [syncingGsc, setSyncingGsc] = useState(false);
+
+  const saveSetting = async (field: string, value: string) => {
+    setSaving(field);
+    try {
+      await fetch(`/api/agency/sites/${siteId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [field]: value }),
+      });
+    } catch { /* ignore */ }
+    setSaving(null);
+  };
+
+  const syncGscNow = async () => {
+    setSyncingGsc(true);
+    try {
+      await fetch(`/api/agency/sites/${siteId}/seo`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'sync_gsc' }),
+      });
+    } catch { /* ignore */ }
+    setSyncingGsc(false);
+  };
+
   return (
     <div className="space-y-6">
-      <Card>
-        <CardContent className="p-4">
-          <h3 className="text-sm font-semibold text-gray-900 mb-4">Integrations</h3>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-700">Google Search Console</p>
-                <p className="text-xs text-gray-500">Track search performance and indexing</p>
+      {/* Section 1: Analytics & Search */}
+      <div>
+        <h3 className="text-sm font-semibold text-gray-900 mb-3">Analytics & Search</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Google Analytics 4 */}
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-medium text-gray-900">Google Analytics 4</p>
+                {(ga4Id || data.ga4_id) ? (
+                  <Badge className="bg-emerald-100 text-emerald-700 border-0">Connected</Badge>
+                ) : (
+                  <Badge variant="outline" className="text-gray-500">Not connected</Badge>
+                )}
               </div>
-              {data.gsc_connected ? (
-                <span className="text-xs px-2 py-1 rounded bg-emerald-100 text-emerald-700">Connected</span>
-              ) : (
-                <button
-                  onClick={onConnectGsc}
-                  className="text-xs px-2 py-1 rounded bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors"
+              <p className="text-xs text-gray-500 mb-3">Track website traffic and user behavior</p>
+              <div className="flex gap-2">
+                <input
+                  value={ga4Id}
+                  onChange={e => setGa4Id(e.target.value)}
+                  placeholder="G-XXXXXXXXXX"
+                  className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <Button
+                  size="sm"
+                  onClick={() => saveSetting('ga4_id', ga4Id)}
+                  disabled={saving === 'ga4_id'}
                 >
-                  Connect
-                </button>
+                  {saving === 'ga4_id' ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Save'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Google Search Console */}
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-medium text-gray-900">Google Search Console</p>
+                {data.gsc_connected ? (
+                  <Badge className="bg-emerald-100 text-emerald-700 border-0">Connected ✅</Badge>
+                ) : (
+                  <Badge variant="outline" className="text-gray-500">Not connected</Badge>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 mb-3">Track search performance and indexing</p>
+              {data.gsc_connected ? (
+                <div className="space-y-2">
+                  {data.gsc_site_url && (
+                    <p className="text-xs text-gray-600">Site: <span className="font-mono">{data.gsc_site_url}</span></p>
+                  )}
+                  {data.last_gsc_sync && (
+                    <p className="text-xs text-gray-400">Last synced: {new Date(data.last_gsc_sync).toLocaleString()}</p>
+                  )}
+                  <Button size="sm" variant="outline" onClick={syncGscNow} disabled={syncingGsc}>
+                    {syncingGsc ? <><Loader2 className="w-3 h-3 animate-spin mr-1" />Syncing...</> : <><RefreshCw className="w-3 h-3 mr-1" />Sync Now</>}
+                  </Button>
+                </div>
+              ) : (
+                <a
+                  href={`/api/auth/gsc?siteId=${siteId}`}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  Connect via Google →
+                </a>
               )}
-            </div>
+            </CardContent>
+          </Card>
 
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-700">Industry Pack</p>
-                <p className="text-xs text-gray-500">GEO queries, NAP directories, audience data</p>
+          {/* Bing Webmaster Tools */}
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-medium text-gray-900">Bing Webmaster Tools</p>
+                <Badge variant="outline" className="text-gray-500">Manual Setup</Badge>
               </div>
-              <span className={`text-xs px-2 py-1 rounded ${
-                data.industry_pack_id ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-              }`}>
-                {data.industry_pack_id ? data.industry : 'Not Configured'}
-              </span>
-            </div>
+              <p className="text-xs text-gray-500 mb-3">Submit your site to Bing and track indexing</p>
+              <ol className="text-xs text-gray-600 space-y-1 mb-3 list-decimal list-inside">
+                <li>Go to bing.com/webmasters</li>
+                <li>Add your site URL</li>
+                <li>Verify ownership via HTML tag</li>
+              </ol>
+              <a
+                href="https://www.bing.com/webmasters"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-700"
+              >
+                <ExternalLink className="w-3 h-3" />
+                Open Bing Webmaster →
+              </a>
+            </CardContent>
+          </Card>
 
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-700">DataForSEO</p>
-                <p className="text-xs text-gray-500">Keyword research and ranking data</p>
+          {/* Google My Business */}
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-medium text-gray-900">Google My Business</p>
+                <Badge variant="outline" className="text-amber-600 border-amber-200 bg-amber-50">Coming Soon</Badge>
               </div>
-              <span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-500">System-wide</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+              <p className="text-xs text-gray-500">Sync your GMB listing to auto-populate NAP data and monitor reviews.</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
 
+      {/* Section 2: SEO Data Sources */}
+      <div>
+        <h3 className="text-sm font-semibold text-gray-900 mb-3">SEO Data Sources</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Industry Pack */}
+          <Card>
+            <CardContent className="p-4">
+              <p className="text-sm font-medium text-gray-900 mb-1">Industry Pack</p>
+              <p className="text-xs text-gray-500 mb-3">GEO queries, NAP directories, audience data</p>
+              <div className="flex gap-2">
+                <select
+                  value={industry}
+                  onChange={e => setIndustry(e.target.value)}
+                  className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                >
+                  <option value="">Select industry...</option>
+                  <option value="hvac">HVAC</option>
+                  <option value="legal">Legal</option>
+                  <option value="medical">Medical</option>
+                  <option value="restaurant">Restaurant</option>
+                  <option value="realestate">Real Estate</option>
+                </select>
+                <Button
+                  size="sm"
+                  onClick={() => saveSetting('industry', industry)}
+                  disabled={saving === 'industry'}
+                >
+                  {saving === 'industry' ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Save'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* DataForSEO */}
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-sm font-medium text-gray-900">DataForSEO</p>
+                <Badge className="bg-emerald-100 text-emerald-700 border-0">System-wide</Badge>
+              </div>
+              <p className="text-xs text-gray-500">Keyword volume data is included in your plan.</p>
+            </CardContent>
+          </Card>
+
+          {/* IndexNow */}
+          <Card>
+            <CardContent className="p-4">
+              <p className="text-sm font-medium text-gray-900 mb-1">IndexNow</p>
+              <p className="text-xs text-gray-500 mb-3">Instant indexing for Bing, Yandex, and more</p>
+              <div className="flex gap-2 mb-2">
+                <input
+                  value={indexNowKey}
+                  onChange={e => setIndexNowKey(e.target.value)}
+                  placeholder="API Key"
+                  className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <Button
+                  size="sm"
+                  onClick={() => saveSetting('indexnow_key', indexNowKey)}
+                  disabled={saving === 'indexnow_key'}
+                >
+                  {saving === 'indexnow_key' ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Save'}
+                </Button>
+              </div>
+              <a
+                href="https://www.indexnow.org/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-indigo-600 hover:text-indigo-700"
+              >
+                Learn more →
+              </a>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Section 3: Automated Schedule */}
       <Card>
         <CardContent className="p-4">
           <h3 className="text-sm font-semibold text-gray-900 mb-4">Automated Schedule</h3>
-          <div className="space-y-2 text-sm text-gray-500">
-            <p><strong className="text-gray-700">Monday:</strong> GEO visibility tests</p>
-            <p><strong className="text-gray-700">Tuesday &amp; Thursday:</strong> Content creation</p>
-            <p><strong className="text-gray-700">Wednesday:</strong> NAP consistency audits</p>
-            <p><strong className="text-gray-700">Friday:</strong> Weekly SEO report</p>
-            <p><strong className="text-gray-700">Daily:</strong> GSC metric sync (5 AM UTC)</p>
-            <p><strong className="text-gray-700">Hourly:</strong> Publish queue processing</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            {[
+              { day: 'Monday', task: 'GEO visibility tests', icon: Globe, color: 'text-indigo-600' },
+              { day: 'Tue & Thu', task: 'Content creation', icon: FileText, color: 'text-blue-600' },
+              { day: 'Wednesday', task: 'NAP consistency audits', icon: Shield, color: 'text-emerald-600' },
+              { day: 'Friday', task: 'Weekly SEO report', icon: BarChart2, color: 'text-purple-600' },
+              { day: 'Daily (5 AM)', task: 'GSC metric sync', icon: RefreshCw, color: 'text-gray-600' },
+              { day: 'Hourly', task: 'Publish queue processing', icon: Send, color: 'text-amber-600' },
+            ].map((item) => (
+              <div key={item.day} className="flex items-center gap-3 p-2 rounded-lg bg-gray-50">
+                <item.icon className={`w-4 h-4 ${item.color} shrink-0`} />
+                <div>
+                  <p className="text-xs font-medium text-gray-900">{item.day}</p>
+                  <p className="text-xs text-gray-500">{item.task}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
 
+      {/* Section 4: Getting Started Checklist */}
       <Card>
         <CardContent className="p-4">
-          <h3 className="text-sm font-semibold text-gray-900 mb-2">Getting Started</h3>
-          <div className="space-y-3 text-sm text-gray-600">
-            <div className="flex items-start gap-3">
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold ${data.gsc_connected ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>1</div>
-              <p>Connect Google Search Console to track real search performance data.</p>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold ${data.geo.total_queries > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>2</div>
-              <p>Run your first GEO test to measure AI citation visibility.</p>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold ${data.nap.total > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>3</div>
-              <p>Run a NAP audit to check directory consistency.</p>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold ${data.published_content.length > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>4</div>
-              <p>Publish authority content across Web 2.0 platforms to close content gaps.</p>
-            </div>
+          <h3 className="text-sm font-semibold text-gray-900 mb-3">Getting Started Checklist</h3>
+          <div className="space-y-3">
+            {[
+              { label: 'Connect Google Search Console', done: data.gsc_connected },
+              { label: 'Run a GEO Test', done: data.geo.results.length > 0 },
+              { label: 'Run a NAP Audit', done: data.nap.total > 0 },
+              { label: 'Add Google Analytics 4', done: !!(data.ga4_id) },
+              { label: 'Publish Content', done: data.published_content.length > 0 },
+            ].map((item) => (
+              <div key={item.label} className="flex items-center gap-3">
+                {item.done ? (
+                  <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+                ) : (
+                  <div className="w-5 h-5 rounded-full border-2 border-gray-300 shrink-0" />
+                )}
+                <span className={`text-sm ${item.done ? 'text-gray-900' : 'text-gray-500'}`}>{item.label}</span>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>

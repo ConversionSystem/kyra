@@ -26,7 +26,7 @@ export async function GET(
   // Verify site ownership via agency
   const { data: site } = await service
     .from('client_sites')
-    .select('id, agency_id, client_id, site_domain, site_subdomain, search_console_connected, seo_industry_pack_id, industry')
+    .select('id, agency_id, client_id, site_domain, site_subdomain, search_console_connected, seo_industry_pack_id, industry, ga4_id, gsc_site_url, gsc_metrics, last_gsc_sync')
     .eq('id', siteId)
     .single();
 
@@ -44,6 +44,20 @@ export async function GET(
 
   const siteUrl = `https://${site.site_domain || site.site_subdomain}`;
 
+  // Determine GSC connection status (handle missing columns gracefully)
+  let gscConnected = false;
+  let gscSiteUrl: string | null = null;
+  let gscMetrics: Record<string, unknown> | null = null;
+  let lastGscSync: string | null = null;
+  try {
+    gscConnected = !!(site as Record<string, unknown>).search_console_connected;
+    gscSiteUrl = ((site as Record<string, unknown>).gsc_site_url as string) || null;
+    gscMetrics = ((site as Record<string, unknown>).gsc_metrics as Record<string, unknown>) || null;
+    lastGscSync = ((site as Record<string, unknown>).last_gsc_sync as string) || null;
+  } catch {
+    // GSC columns may not exist yet
+  }
+
   // Fetch all data in parallel
   const [
     metricsSummary,
@@ -54,7 +68,16 @@ export async function GET(
     publishedContent,
     publishQueue,
   ] = await Promise.all([
-    getPageMetricsSummary(siteId, siteUrl),
+    getPageMetricsSummary(siteId, siteUrl).catch(() => ({
+      total_clicks: 0,
+      total_impressions: 0,
+      avg_ctr: 0,
+      avg_position: 0,
+      page_count: 0,
+      top_pages: [],
+      quick_wins: [],
+      ranking_drops: [],
+    })),
     service.from('seo_geo_results').select('*').eq('site_id', siteId).order('tested_at', { ascending: false }).limit(100),
     service.from('seo_nap_audits').select('*').eq('site_id', siteId).order('audited_at', { ascending: false }).limit(50),
     service.from('seo_content_gaps').select('*').eq('site_id', siteId).eq('resolved', false).order('priority_score', { ascending: false }).limit(20),
@@ -82,7 +105,11 @@ export async function GET(
     client_id: site.client_id || null,
     industry: site.industry,
     industry_pack_id: site.seo_industry_pack_id,
-    gsc_connected: site.search_console_connected || false,
+    gsc_connected: gscConnected,
+    gsc_site_url: gscSiteUrl,
+    gsc_metrics: gscMetrics,
+    last_gsc_sync: lastGscSync,
+    ga4_id: (site as Record<string, unknown>).ga4_id || null,
     metrics: metricsSummary,
     geo: {
       score: geoScore,
