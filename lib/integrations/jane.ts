@@ -166,11 +166,9 @@ async function searchViaAlgolia(
   const store = STORE_CONFIG[storeId] || DEFAULT_STORE;
   const baseUrl = store.baseUrl;
 
-  // Build Algolia filters
+  // Build Algolia filters — only store + category. Brand goes into text query
+  // because Algolia brand names may differ from our shorthand (e.g. "CBX" vs "CBX Cannabiotix")
   const filters: string[] = [`store_id:${store.algoliaId}`];
-  if (params.brand) {
-    filters.push(`brand:"${params.brand}"`);
-  }
   if (params.category) {
     const algoliaKind = CATEGORY_TO_ALGOLIA_KIND[params.category.toLowerCase()];
     if (algoliaKind) {
@@ -178,13 +176,17 @@ async function searchViaAlgolia(
     }
   }
 
-  // Build query — use the raw query minus brand/category words for better Algolia matching
-  let query = params.query || '';
-  // If we already have brand + category as filters, simplify the text query
-  if (params.brand) query = query.replace(new RegExp(params.brand, 'gi'), '').trim();
-  if (params.category) query = query.replace(new RegExp(params.category, 'gi'), '').trim();
-  // Strip common filler words that hurt Algolia relevance
-  query = query.replace(/\b(what|which|do you have|any|are|in stock|available|show me|find|best|recommend|looking for|i want|i need|get me)\b/gi, '').trim();
+  // Build query — for brand queries, use JUST the brand name as query text
+  // to avoid residual words (like "strains", "products") reducing Algolia results
+  let query: string;
+  if (params.brand) {
+    query = params.brand;
+  } else {
+    query = params.query || '';
+    if (params.category) query = query.replace(new RegExp(params.category, 'gi'), '').trim();
+    // Strip common filler words that hurt Algolia relevance
+    query = query.replace(/\b(what|which|do you have|any|are|in stock|available|show me|find|best|recommend|looking for|i want|i need|get me)\b/gi, '').trim();
+  }
 
   const limit = params.limit || 10;
 

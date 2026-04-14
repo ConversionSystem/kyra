@@ -331,15 +331,67 @@ export async function POST(request: NextRequest) {
     `If you can't resolve something, say: "Let me connect you with our team — they'll follow up shortly."`,
     // Auto-inject cannabis product recommendation prompt when Jane is active
     janeActive ? `PRODUCT RECOMMENDATION ENGINE:
-You are also a cannabis product recommendation specialist. When customers ask about products, strains, effects, or inventory:
-- Search the live menu and recommend products based on their needs (effects, potency, price, category).
-- Match customer intent to strain types: Indica → sleep/relax/pain, Sativa → energy/focus/creativity, Hybrid → balanced.
-- Always mention THC%, price, strain type, and brand when available.
-- If a customer describes how they want to feel (e.g., "something to help me sleep"), recommend appropriate products.
-- If no products match, suggest browsing the full menu at the store or trying a different category.
-- Be knowledgeable but not pushy — like a helpful budtender.
-- For general store questions (hours, location, payment), answer from your business knowledge.
-- NEVER recommend specific medical uses or make health claims. Say "many customers find..." instead of "this will help your...".` : '',
+You are also a cannabis product recommendation specialist — think helpful, knowledgeable budtender.
+
+PRODUCT ANSWERS — MANDATORY FORMAT:
+Every time you recommend or mention a specific product, you MUST include ALL of these:
+1. Product name (bold)
+2. Brand name
+3. THC % (if available)
+4. Strain type (indica/sativa/hybrid)
+5. Short reason why it's a good pick for the customer's ask
+6. Direct product page link using [View Product →](url) — NEVER skip the link
+
+BRAND QUESTIONS:
+When a customer asks about a specific brand (e.g., "What Alien Labs strains do you have?"):
+- List ALL products from that brand currently in stock
+- Group by category (flower, pre-rolls, vapes, edibles) if more than 3 products
+- Include strain names, THC%, and direct links for each
+
+CATEGORY + POTENCY QUESTIONS:
+When asked "highest THC flower" or "strongest pre-roll":
+- Sort by THC% descending
+- Show the top 3-5 results with full details + links
+
+DEALS & PROMOTIONS:
+When asked about deals, specials, or promotions:
+- Check if any deal info is provided in context below
+- Always include the deals page link if available
+- Recommend products from active deals when possible
+
+EFFECT-BASED RECOMMENDATIONS:
+- Indica → sleep/relax/pain | Sativa → energy/focus/creativity | Hybrid → balanced
+- "Something to help me sleep" → recommend top indica products with links
+- NEVER make medical claims. Say "many customers find..." not "this will help your..."
+
+GENERAL STORE QUESTIONS:
+For non-product questions (delivery, payment, ordering, rewards, returns):
+- Answer directly from your business knowledge
+- ALWAYS include the relevant page link when available (see SUPPORT LINKS below)
+- Examples: "How do I order?" → answer + ordering page link, "Where do you deliver?" → answer + delivery link
+
+Be knowledgeable but not pushy. If no products match, suggest browsing the full menu or trying a different category.` : '',
+    // Support / info page links — configured per client for delivery, payment, deals, ordering, etc.
+    (() => {
+      const links = cfg.support_links as Record<string, string> | undefined;
+      const websiteUrl = (cfg.website_url as string) || '';
+      if (!links && !websiteUrl) return '';
+      const entries: string[] = [];
+      if (links) {
+        for (const [label, url] of Object.entries(links)) {
+          if (url) entries.push(`- ${label}: ${url}`);
+        }
+      }
+      // Auto-generate common links from website_url if support_links not fully configured
+      if (websiteUrl && (!links || Object.keys(links).length < 3)) {
+        if (!links?.menu && !links?.['shop']) entries.push(`- Full Menu: ${websiteUrl}/shop/all`);
+        if (!links?.delivery) entries.push(`- Delivery Info: ${websiteUrl}/delivery`);
+        if (!links?.deals && !links?.['specials']) entries.push(`- Today's Deals: ${websiteUrl}/deals`);
+        if (!links?.ordering && !links?.['how to order']) entries.push(`- How to Order: ${websiteUrl}/order`);
+      }
+      if (entries.length === 0) return '';
+      return `SUPPORT LINKS — when answering informational questions, include the relevant link:\n${entries.join('\n')}`;
+    })(),
     customInstructions ? `BUSINESS KNOWLEDGE AND RULES (use this information to answer customer questions accurately):\n${customInstructions}` : '',
     knowledgeSection,
     crmContextSection ? `\n${crmContextSection}` : '',
@@ -368,13 +420,31 @@ You are also a cannabis product recommendation specialist. When customers ask ab
       if (isProductQuery(safeMessage)) {
         const intent = parseProductIntent(safeMessage);
         intent.storeId = resolvedStoreId || 'san-jose';
+        // For brand queries, get more results to show full brand inventory
+        if (intent.brand && !intent.limit) intent.limit = 30;
         const firecrawlKey = process.env.FIRECRAWL_API_KEY;
-        // 12s timeout — Firecrawl scrape takes ~8s. If too slow, skip and answer from knowledge
+        // 12s timeout — Firecrawl scrape takes ~8s. Algolia is ~4ms so this is mostly for fallback.
         const searchPromise = searchProducts(intent, firecrawlKey || undefined);
         const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 12000));
         const results = await Promise.race([searchPromise, timeoutPromise]);
         if (results && results.products.length > 0) {
-          productContext = `\n\nPRODUCT SEARCH RESULTS (from live ${results.storeId} inventory — ${results.totalFound} products found, showing top ${results.products.length}):\n${formatProductsForAI(results.products)}\n\nFORMATTING (use markdown bold and links):\n\n**Apple Drip** by Caviar Gold — $22.99\nHybrid · THC: 48.1% · Potent and fruity.\n[View Product →](https://plpcsanjose.com/product/143411/caviar-gold-hybrid-apple-drip-1-5g?weight=each)\n\nRULES:\n- Show 3-5 products (pick the best matches for the customer's request)\n- Use **bold** for product names\n- Use [View Product →](url) for EVERY product link — NEVER paste raw URLs\n- Each product: name+brand+price on line 1, strain·THC·description on line 2, link on line 3\n- One short intro line, then products. Total response under 150 words.`;
+          // Use grouped format for brand queries
+          const isBrand = !!intent.brand;
+          const formatted = formatProductsForAI(results.products, isBrand);
+          // Build filtered browse URL so the AI links to pre-filtered pages, not /shop/all
+          const storeBaseUrl = (cfg.website_url as string) || 'https://plpcsanjose.com';
+          let browseMoreUrl = `${storeBaseUrl}/shop/all`;
+          let browseMoreLabel = 'Full Menu';
+          if (intent.brand) {
+            const brandSlug = intent.brand.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+            browseMoreUrl = `${storeBaseUrl}/brands/${brandSlug}`;
+            browseMoreLabel = `${intent.brand} Products`;
+          } else if (intent.category) {
+            const catSlug = intent.category.replace(/\s+/g, '-');
+            browseMoreUrl = `${storeBaseUrl}/shop/${catSlug}`;
+            browseMoreLabel = catSlug.charAt(0).toUpperCase() + catSlug.slice(1) + ' Menu';
+          }
+          productContext = `\n\nPRODUCT SEARCH RESULTS (from live ${results.storeId} inventory — ${results.totalFound} total, showing ${results.products.length}${intent.brand ? ` from ${intent.brand}` : ''}):\n${formatted}\n\nBROWSE MORE LINK (use this when suggesting the customer browse more — NEVER link to /shop/all when a filtered link is available):\n[Browse ${browseMoreLabel} →](${browseMoreUrl})\n\nFORMATTING (use markdown bold and links):\n\n**Apple Drip** by Caviar Gold — $22.99\nHybrid · THC: 48.1% · Potent and fruity.\n[View Product →](https://plpcsanjose.com/product/143411/caviar-gold-hybrid-apple-drip-1-5g?weight=each)\n\nRULES:\n- Show ALL products from the search results (they are already filtered and relevant)\n- Use **bold** for product names\n- Use [View Product →](url) for EVERY product — NEVER skip links, NEVER paste raw URLs\n- Each product: name+brand+price on line 1, strain·THC·description on line 2, link on line 3\n- When suggesting "browse more", ALWAYS use the BROWSE MORE LINK above — never /shop/all\n- ${isBrand ? 'Group products by category (flower, pre-rolls, vapes, edibles). Show ALL in-stock items from the results.' : 'One short intro line, then products. Total response under 150 words.'}`;
         }
       }
     } catch (e) {
