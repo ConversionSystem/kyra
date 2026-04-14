@@ -55,6 +55,7 @@ import {
   DEFAULT_SECTION_ORDER,
   formatVariantName,
 } from '@/lib/sites/section-variants';
+import { WidgetBuilderEmbedded } from '@/components/dashboard/widget-builder-embedded';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -1549,6 +1550,7 @@ export default function PageEditor() {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [activeTab, setActiveTab] = useState<'content' | 'design' | 'site'>('content');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [editorSubTab, setEditorSubTab] = useState<'editor' | 'widget'>('editor');
 
   const siteUrl = site?.site_domain
     ? `https://${site.site_domain}`
@@ -1565,8 +1567,8 @@ export default function PageEditor() {
   const fetchData = useCallback(async () => {
     try {
       const [siteRes, pagesRes] = await Promise.all([
-        fetch(`/api/agency/sites/${siteId}`),
-        fetch(`/api/agency/sites/${siteId}/pages`),
+        fetch(`/api/agency/sites/${siteId}`, { cache: 'no-store' }),
+        fetch(`/api/agency/sites/${siteId}/pages`, { cache: 'no-store' }),
       ]);
 
       if (siteRes.ok) {
@@ -1614,7 +1616,7 @@ export default function PageEditor() {
   // Refresh site data
   const refreshSite = async () => {
     try {
-      const res = await fetch(`/api/agency/sites/${siteId}`);
+      const res = await fetch(`/api/agency/sites/${siteId}`, { cache: 'no-store' });
       if (res.ok) {
         const result = await res.json();
         setSite(result.data);
@@ -1887,6 +1889,9 @@ export default function PageEditor() {
       });
       if (res.ok) {
         showToast('Site rebuild started. Live in ~30 seconds.');
+        // Refresh site data after a delay to pick up updated last_deployed_at
+        setTimeout(() => refreshSite(), 10000);
+        setTimeout(() => refreshSite(), 30000);
       } else {
         showToast('Failed to start rebuild', 'error');
       }
@@ -2009,28 +2014,45 @@ export default function PageEditor() {
 
         {/* Sub-navigation tabs */}
         <div className="flex border-t border-gray-100 px-2 sm:px-4 overflow-x-auto">
-          {[
-            { href: `/agency/website/${siteId}/editor`, icon: <Edit3 className="h-3.5 w-3.5" />, label: 'Editor', active: true },
-            { href: `/agency/website/${siteId}/settings`, icon: <Settings className="h-3.5 w-3.5" />, label: 'Settings', active: false },
-          ].map((tab) => (
-            <Link
-              key={tab.href}
-              href={tab.href}
+          <button
+            onClick={() => setEditorSubTab('editor')}
+            className={`flex items-center gap-1.5 px-3 sm:px-4 py-2.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap flex-1 sm:flex-none justify-center sm:justify-start ${
+              editorSubTab === 'editor' ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <Edit3 className="h-3.5 w-3.5" />
+            Editor
+          </button>
+          <Link
+            href={`/agency/website/${siteId}/settings`}
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2.5 text-xs font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors whitespace-nowrap flex-1 sm:flex-none justify-center sm:justify-start"
+          >
+            <Settings className="h-3.5 w-3.5" />
+            Settings
+          </Link>
+          {site?.client_id && (
+            <button
+              onClick={() => setEditorSubTab('widget')}
               className={`flex items-center gap-1.5 px-3 sm:px-4 py-2.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap flex-1 sm:flex-none justify-center sm:justify-start ${
-                tab.active
-                  ? 'border-indigo-600 text-indigo-700'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                editorSubTab === 'widget' ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
-              {tab.icon}
-              {tab.label}
-            </Link>
-          ))}
+              <MessageSquare className="h-3.5 w-3.5" />
+              Chat Widget
+            </button>
+          )}
         </div>
       </div>
 
+      {/* Chat Widget sub-tab */}
+      {editorSubTab === 'widget' && site?.client_id && (
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+          <WidgetBuilderEmbedded clientId={site.client_id} />
+        </div>
+      )}
+
       {/* Main Layout: Sidebar + Content */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className={`flex flex-1 overflow-hidden ${editorSubTab !== 'editor' ? 'hidden' : ''}`}>
         {/* Mobile Sidebar Overlay */}
         <div className={`fixed inset-0 z-40 md:hidden ${mobileMenuOpen ? 'block' : 'hidden'}`}>
           {/* Backdrop */}

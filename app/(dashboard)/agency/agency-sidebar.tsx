@@ -79,6 +79,8 @@ const navSections: NavSection[] = [
       { label: 'Analytics', href: '/agency/analytics', icon: BarChart2, masterOnly: true },
       { label: 'Intelligence', href: '/agency/intelligence', icon: Brain, iconClassName: 'text-purple-400', requiredPlans: ['pro', 'scale'] },
       { label: 'Clients', href: '/agency/clients', icon: Users },
+      { label: 'Terminal', href: '/agency/clients?tab=terminal', icon: Terminal },
+      { label: 'Inbox', href: '/agency/clients?tab=inbox', icon: MessageSquare },
 
       { label: 'Websites', href: '/agency/sites', icon: Globe, masterOnly: true },
       { label: 'SEO/GEO', href: '/agency/seo', icon: Search, masterOnly: true },

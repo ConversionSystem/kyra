@@ -150,23 +150,28 @@ export default function SeoGeoCommandCenterInner({ siteId, embedded }: { siteId:
   };
 
   const runTask = async (task: string) => {
+    if (!data?.client_id) {
+      setError('Connect this site to a client first');
+      return;
+    }
     setRunning(task);
     try {
-      if (data?.client_id) {
-        await fetch(`/api/agency/clients/${data.client_id}/seo/run`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ task }),
-        });
+      const res = await fetch(`/api/agency/clients/${data.client_id}/seo/run`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ task }),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        setError(errData.error || `Task failed (HTTP ${res.status})`);
       } else {
-        await fetch(`/api/agency/sites/${siteId}/seo`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: `run_${task}` }),
-        });
+        setError(null);
       }
-      setTimeout(() => fetchData(), 2000);
-    } catch { /* ignore */ }
+      await new Promise(r => setTimeout(r, 2000));
+      await fetchData();
+    } catch {
+      setError(`Failed to run ${task}. Check your connection and try again.`);
+    }
     setRunning(null);
   };
 
@@ -282,7 +287,7 @@ export default function SeoGeoCommandCenterInner({ siteId, embedded }: { siteId:
         {activeTab === 'gsc' && <GSCTab data={data} onConnectGsc={() => setShowGscModal(true)} />}
         {activeTab === 'geo' && <GEOTab data={data} siteId={siteId} onRunTask={runTask} running={running} />}
         {activeTab === 'nap' && <NAPTab data={data} siteId={siteId} onRunTask={runTask} running={running} />}
-        {activeTab === 'keywords' && <KeywordsTab data={data} clientId={data.client_id} />}
+        {activeTab === 'keywords' && <KeywordsTab data={data} clientId={data.client_id} siteId={siteId} />}
         {activeTab === 'content' && <ContentTab data={data} clientId={data.client_id} />}
         {activeTab === 'growth' && <GrowthTab siteId={siteId} />}
         {activeTab === 'submit' && <SubmitTab siteId={siteId} data={data} onConnectGsc={() => setShowGscModal(true)} />}
@@ -905,13 +910,46 @@ const DEFAULT_HVAC_KEYWORDS = [
   { keyword: 'air conditioning San Mateo', position: null as number | null, source: 'target' },
 ];
 
-function KeywordsTab({ data, clientId }: { data: SeoData; clientId: string | null }) {
+function KeywordsTab({ data, clientId, siteId }: { data: SeoData; clientId: string | null; siteId: string }) {
   const [seedKeyword, setSeedKeyword] = useState('');
   const [researchResults, setResearchResults] = useState<Keyword[]>([]);
   const [loading, setLoading] = useState(false);
   const [aiEstimated, setAiEstimated] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const [trackedKeywords, setTrackedKeywords] = useState<Array<{ keyword: string; position: number | null; source: string }>>(DEFAULT_HVAC_KEYWORDS);
+  const [savingKeywords, setSavingKeywords] = useState(false);
+
+  // Load saved keywords from DB on mount
+  useEffect(() => {
+    fetch(`/api/agency/sites/${siteId}/seo/keywords`)
+      .then(r => r.ok ? r.json() : null)
+      .then(json => {
+        if (json?.data?.length) {
+          const unique = new Map<string, { keyword: string; position: number | null; source: string }>();
+          for (const kw of json.data) {
+            if (!unique.has(kw.keyword)) {
+              unique.set(kw.keyword, { keyword: kw.keyword, position: kw.position, source: kw.source || 'saved' });
+            }
+          }
+          setTrackedKeywords(Array.from(unique.values()));
+        }
+      })
+      .catch(() => {});
+  }, [siteId]);
+
+  // Save tracked keywords to DB
+  const saveKeywords = useCallback(async (kws: Array<{ keyword: string; position: number | null; source: string }>) => {
+    if (!siteId || kws.length === 0) return;
+    setSavingKeywords(true);
+    try {
+      await fetch(`/api/agency/sites/${siteId}/seo/keywords`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ keywords: kws.map(k => ({ keyword: k.keyword, position: k.position, source: k.source })) }),
+      });
+    } catch { /* ignore */ }
+    setSavingKeywords(false);
+  }, [siteId]);
   const [newKeyword, setNewKeyword] = useState('');
 
   const doResearch = useCallback(async () => {
@@ -1078,7 +1116,9 @@ function KeywordsTab({ data, clientId }: { data: SeoData; clientId: string | nul
               onChange={e => setNewKeyword(e.target.value)}
               onKeyDown={e => {
                 if (e.key === 'Enter' && newKeyword.trim()) {
-                  setTrackedKeywords(prev => [...prev, { keyword: newKeyword.trim(), position: null, source: 'custom' }]);
+                  const updated = [...trackedKeywords, { keyword: newKeyword.trim(), position: null, source: 'custom' }];
+                  setTrackedKeywords(updated);
+                  saveKeywords(updated);
                   setNewKeyword('');
                 }
               }}
@@ -1089,7 +1129,9 @@ function KeywordsTab({ data, clientId }: { data: SeoData; clientId: string | nul
               size="sm"
               onClick={() => {
                 if (newKeyword.trim()) {
-                  setTrackedKeywords(prev => [...prev, { keyword: newKeyword.trim(), position: null, source: 'custom' }]);
+                  const updated = [...trackedKeywords, { keyword: newKeyword.trim(), position: null, source: 'custom' }];
+                  setTrackedKeywords(updated);
+                  saveKeywords(updated);
                   setNewKeyword('');
                 }
               }}

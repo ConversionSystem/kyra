@@ -478,16 +478,20 @@ export default function AccountsAdminClient() {
         return;
       }
 
-      // Open the auto-login page in a new tab — it signs out there and logs in as the target user
-      // The admin's session in THIS tab remains intact
-      const params = new URLSearchParams({
-        e: data.email,
-        p: data.password,
-        n: data.agencyName || account.name,
-      });
-      window.open(`/login/impersonate?${params.toString()}`, '_blank');
-      
-      setImpersonateMsg({ type: 'ok', text: `Opening ${account.name}'s dashboard in new tab...` });
+      // Open the magic link in a new tab — admin session in THIS tab stays intact
+      if (data.loginUrl) {
+        window.open(data.loginUrl, '_blank');
+      } else {
+        // Fallback to old impersonate page if no magic link returned
+        const params = new URLSearchParams({
+          e: data.email,
+          p: data.password || '',
+          n: data.agencyName || account.name,
+        });
+        window.open(`/login/impersonate?${params.toString()}`, '_blank');
+      }
+
+      setImpersonateMsg({ type: 'ok', text: `Opening ${account.name}'s dashboard in new tab — you'll be logged in as ${data.agencyName || account.name}` });
       setTimeout(() => setImpersonateMsg(null), 5000);
     } catch (err) {
       setImpersonateMsg({ type: 'err', text: `Network error: ${String(err)}` });
