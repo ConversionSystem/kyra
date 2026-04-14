@@ -166,13 +166,30 @@ async function searchViaAlgolia(
   const store = STORE_CONFIG[storeId] || DEFAULT_STORE;
   const baseUrl = store.baseUrl;
 
-  // Build Algolia filters — only store + category. Brand goes into text query
-  // because Algolia brand names may differ from our shorthand (e.g. "CBX" vs "CBX Cannabiotix")
+  // Build Algolia filters
+  // - Brand goes into text query (names may differ: "CBX" vs "CBX Cannabiotix")
+  // - Product type uses root_types (Jane's canonical categories)
+  // - Lineage uses category field (indica/sativa/hybrid/cbd)
   const filters: string[] = [`store_id:${store.algoliaId}`];
   if (params.category) {
-    const algoliaKind = CATEGORY_TO_ALGOLIA_KIND[params.category.toLowerCase()];
-    if (algoliaKind) {
-      filters.push(`kind:${algoliaKind}`);
+    const rootType = CATEGORY_TO_ROOT_TYPE[params.category.toLowerCase()];
+    if (rootType) {
+      filters.push(`root_types:${rootType}`);
+    }
+  }
+  // Filter by lineage for effect-based queries (sleep → indica, energy → sativa)
+  if (params.effects?.length) {
+    const lineageMap: Record<string, string[]> = {
+      sleep: ['indica'],
+      relax: ['indica', 'hybrid'],
+      energy: ['sativa'],
+      pain: ['indica', 'hybrid'],
+    };
+    const lineages = [...new Set(params.effects.flatMap(e => lineageMap[e] || []))];
+    if (lineages.length === 1) {
+      filters.push(`category:${lineages[0]}`);
+    } else if (lineages.length > 1) {
+      filters.push(`(${lineages.map(l => `category:${l}`).join(' OR ')})`);
     }
   }
 
@@ -202,10 +219,11 @@ async function searchViaAlgolia(
       filters: filters.join(' AND '),
       hitsPerPage: Math.min(limit, 50),
       attributesToRetrieve: [
-        'product_id', 'name', 'brand', 'kind', 'root_subtype', 'custom_product_type',
-        'percent_thc', 'percent_cbd', 'bucket_price', 'url_slug', 'strain',
-        'available_weights', 'image_urls', 'effects', 'feelings', 'activities',
-        'available_for_delivery', 'available_for_pickup', 'store_id',
+        'product_id', 'name', 'brand', 'kind', 'root_types', 'root_subtype',
+        'custom_product_type', 'category', 'percent_thc', 'percent_cbd',
+        'bucket_price', 'url_slug', 'available_weights', 'image_urls',
+        'feelings', 'activities', 'description', 'aggregate_rating',
+        'review_count', 'available_for_delivery', 'available_for_pickup',
       ],
     }),
     signal: AbortSignal.timeout(5000),
@@ -228,29 +246,14 @@ async function searchViaAlgolia(
   } else if (params.sortBy === 'price_asc') {
     products.sort((a, b) => parseFloat(a.price?.replace('$', '') || '999') - parseFloat(b.price?.replace('$', '') || '999'));
   }
-
-  // Filter by effects if specified
-  if (params.effects?.length) {
-    const effectMap: Record<string, string[]> = {
-      sleep: ['indica'],
-      relax: ['indica', 'hybrid'],
-      energy: ['sativa'],
-      pain: ['indica', 'hybrid'],
-    };
-    const wantedStrains = params.effects.flatMap(e => effectMap[e] || []);
-    if (wantedStrains.length > 0) {
-      const effectFiltered = products.filter(p =>
-        p.strainType && wantedStrains.includes(p.strainType.toLowerCase())
-      );
-      if (effectFiltered.length >= 3) products = effectFiltered;
-    }
-  }
+  // Note: effect/lineage filtering is done server-side via Algolia's category facet
 
   return { products: products.slice(0, limit), totalFound, storeId, source: 'algolia' };
 }
 
-// Map our category slugs → Algolia's "kind" field values
-const CATEGORY_TO_ALGOLIA_KIND: Record<string, string> = {
+// Map user category terms → Algolia root_types values
+// root_types is Jane's canonical product taxonomy (per Ace/docs)
+const CATEGORY_TO_ROOT_TYPE: Record<string, string> = {
   'flower': 'flower', 'bud': 'flower', 'nug': 'flower', 'weed': 'flower',
   'pre-roll': 'pre-roll', 'preroll': 'pre-roll', 'joint': 'pre-roll', 'blunt': 'pre-roll',
   'edible': 'edible', 'gummy': 'edible', 'gummies': 'edible', 'chocolate': 'edible',
@@ -261,50 +264,47 @@ const CATEGORY_TO_ALGOLIA_KIND: Record<string, string> = {
   'drink': 'edible', 'beverage': 'edible',
 };
 
-// Algolia hit type (partial — only fields we use)
+// Algolia hit type — fields from Jane's Algolia index
+// Docs: https://docs.iheartjane.com/jane-docs/implementing-roots/building-your-menu/using-react-and-instant-search/filtering-your-results
 interface AlgoliaHit {
   product_id: number;
   name: string;
   brand?: string;
-  kind?: string;
-  root_subtype?: string;
+  kind?: string;           // product type (flower, pre-roll, etc.)
+  root_types?: string[];   // Jane's canonical categories: ["flower", "flower:Infused Flower"]
+  root_subtype?: string;   // sub-category: "Infused Flower", "Live Resin", etc.
   custom_product_type?: string;
+  category?: string;       // lineage: "indica", "sativa", "hybrid", "cbd"
   percent_thc?: number | null;
   percent_cbd?: number | null;
   bucket_price?: number | null;
   url_slug?: string;
-  strain?: string | null;
   available_weights?: string[];
   image_urls?: string[];
-  effects?: string[];
-  feelings?: string[];
-  activities?: string[];
+  feelings?: string[];     // ["Relaxed", "Blissful", "Sleepy"]
+  activities?: string[];   // ["Ease my mind", "Get relief", "Get some sleep"]
+  description?: string;    // full product description
+  aggregate_rating?: number;
+  review_count?: number;
   available_for_delivery?: boolean;
   available_for_pickup?: boolean;
 }
 
 function algoliaHitToProduct(hit: AlgoliaHit, baseUrl: string): JaneProduct {
-  // Derive strain type from the "strain" field or name hints
-  let strainType: string | undefined;
-  if (hit.strain) {
-    const s = hit.strain.toLowerCase();
-    if (s.includes('indica')) strainType = 'indica';
-    else if (s.includes('sativa')) strainType = 'sativa';
-    else if (s.includes('hybrid')) strainType = 'hybrid';
-    else if (s.includes('cbd')) strainType = 'cbd';
-  }
-  // Fallback: check name for strain keywords
-  if (!strainType) {
-    const nameLower = (hit.name + ' ' + (hit.root_subtype || '')).toLowerCase();
-    if (nameLower.includes('indica')) strainType = 'indica';
-    else if (nameLower.includes('sativa')) strainType = 'sativa';
-    else if (nameLower.includes('hybrid')) strainType = 'hybrid';
-  }
+  // Lineage comes from the "category" field (indica/sativa/hybrid/cbd)
+  // This is the authoritative source per Jane's docs
+  const strainType = hit.category || undefined;
 
   // Build product URL
   const slug = hit.url_slug || hit.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
   const weight = hit.available_weights?.[0] || 'each';
   const url = `${baseUrl}/product/${hit.product_id}/${slug}?weight=${weight}`;
+
+  // Merge feelings + activities into effects for the AI
+  const effects = [
+    ...(hit.feelings || []),
+    ...(hit.activities || []),
+  ].filter(Boolean);
 
   return {
     id: String(hit.product_id),
@@ -315,7 +315,7 @@ function algoliaHitToProduct(hit: AlgoliaHit, baseUrl: string): JaneProduct {
     cbd: hit.percent_cbd != null && hit.percent_cbd > 0 ? `${hit.percent_cbd}%` : undefined,
     price: hit.bucket_price != null ? `$${hit.bucket_price}` : undefined,
     strainType,
-    effects: hit.effects?.length ? hit.effects : hit.feelings || undefined,
+    effects: effects.length > 0 ? effects : undefined,
     url,
     weight: hit.available_weights?.[0] || undefined,
     imageUrl: hit.image_urls?.[0] || undefined,
@@ -560,8 +560,9 @@ export function formatProductsForAI(products: JaneProduct[], groupByCategory = f
       p.price && `${p.price}`,
       p.weight && `(${p.weight})`,
     ].filter(Boolean).join(' · ');
+    const effectsLine = p.effects?.length ? `\n   Effects: ${p.effects.slice(0, 4).join(', ')}` : '';
 
-    return `${i + 1}. **${p.name}**\n   ${details}\n   ${p.url}`;
+    return `${i + 1}. **${p.name}**\n   ${details}${effectsLine}\n   ${p.url}`;
   }).join('\n\n');
 }
 
