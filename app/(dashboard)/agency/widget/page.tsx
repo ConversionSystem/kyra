@@ -78,7 +78,7 @@ const COLOR_PRESETS = [
 const AVATAR_OPTIONS = ['🤖', '💬', '👋', '🧠', '⚡', '🎯', '🌟', '🔮', '🤝', '💡'];
 
 export default function WidgetBuilderPage() {
-  const [activeTab, setActiveTab] = useState<'builder' | 'analytics'>('builder');
+  const [activeTab] = useState<'builder' | 'analytics'>('builder');
   const [copied, setCopied] = useState(false);
   const [embedPlatform, setEmbedPlatform] = useState<'html' | 'wordpress' | 'shopify' | 'react'>('html');
   const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
@@ -94,12 +94,6 @@ export default function WidgetBuilderPage() {
     autoOpen: false,
     autoOpenDelay: 5,
   });
-
-  // Analytics state
-  const [analytics, setAnalytics] = useState<Analytics | null>(null);
-  const [analyticsDays, setAnalyticsDays] = useState(30);
-  const [analyticsLoading, setAnalyticsLoading] = useState(false);
-  const [analyticsError, setAnalyticsError] = useState<string | null>(null);
 
   // Clients for embed code
   const [clients, setClients] = useState<Array<{ id: string; name: string }>>([]);
@@ -132,7 +126,7 @@ export default function WidgetBuilderPage() {
         }
       })
       .catch((err) => { console.error('[widget] load clients:', err); setLoadError('Failed to load clients'); });
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load client widget config
   useEffect(() => {
@@ -156,32 +150,6 @@ export default function WidgetBuilderPage() {
       })
       .catch((err) => { console.error('[widget] load config:', err); setLoadError('Failed to load widget config'); });
   }, [selectedClient]);
-
-  // Load analytics
-  const fetchAnalytics = useCallback(async () => {
-    setAnalyticsLoading(true);
-    setAnalyticsError(null);
-    try {
-      const params = new URLSearchParams({ days: String(analyticsDays) });
-      if (selectedClient) params.set('clientId', selectedClient);
-      const res = await fetch(`/api/agency/analytics/chat-widget?${params}`);
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: 'Unknown error' }));
-        throw new Error(err.error || `HTTP ${res.status}`);
-      }
-      const data = await res.json();
-      setAnalytics(data);
-    } catch (err) {
-      console.error('Failed to load analytics:', err);
-      setAnalyticsError(err instanceof Error ? err.message : 'Failed to load analytics');
-    } finally {
-      setAnalyticsLoading(false);
-    }
-  }, [analyticsDays, selectedClient]);
-
-  useEffect(() => {
-    if (activeTab === 'analytics') fetchAnalytics();
-  }, [activeTab, fetchAnalytics]);
 
   // Save config
   const saveConfig = async () => {
@@ -239,6 +207,37 @@ export default function WidgetBuilderPage() {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  // Analytics state (page-level only)
+  const [analytics, setAnalytics] = useState<Analytics | null>(null);
+  const [analyticsDays, setAnalyticsDays] = useState(30);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsError, setAnalyticsError] = useState<string | null>(null);
+
+  const fetchAnalytics = useCallback(async () => {
+    setAnalyticsLoading(true);
+    setAnalyticsError(null);
+    try {
+      const params = new URLSearchParams({ days: String(analyticsDays) });
+      if (selectedClient) params.set('clientId', selectedClient);
+      const res = await fetch(`/api/agency/analytics/chat-widget?${params}`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      setAnalytics(data);
+    } catch (err) {
+      console.error('Failed to load analytics:', err);
+      setAnalyticsError(err instanceof Error ? err.message : 'Failed to load analytics');
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  }, [analyticsDays, selectedClient]);
+
+  useEffect(() => {
+    if (activeTab === 'analytics') fetchAnalytics();
+  }, [activeTab, fetchAnalytics]);
 
   return (
     <div className="space-y-0">

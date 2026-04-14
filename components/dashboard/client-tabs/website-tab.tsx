@@ -657,7 +657,7 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
   useEffect(() => {
     async function fetchSite() {
       try {
-        const res = await fetch(`/api/agency/sites?clientId=${clientId}`);
+        const res = await fetch(`/api/agency/sites?clientId=${clientId}`, { cache: 'no-store' });
         if (res.ok) {
           const result = await res.json();
           const sites = result.data || result;
@@ -676,7 +676,7 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
   }, [clientId]);
 
   const refreshSite = useCallback(async () => {
-    const res = await fetch(`/api/agency/sites?clientId=${clientId}`);
+    const res = await fetch(`/api/agency/sites?clientId=${clientId}`, { cache: 'no-store' });
     if (res.ok) {
       const result = await res.json();
       const sites = result.data || result;

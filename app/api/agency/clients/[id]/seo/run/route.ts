@@ -8,7 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAgencyAdmin } from '@/lib/agency/middleware';
+import { requireAgencyMember } from '@/lib/agency/middleware';
 import { createClient } from '@/lib/supabase/server';
 import { deductCredits } from '@/lib/billing/credit-engine';
 import { runGeoTest } from '@/templates/vet-seo-worker/skills/geo-tester/run';
@@ -25,7 +25,7 @@ interface PageParams {
 export async function POST(request: NextRequest, { params }: PageParams) {
   const { id: clientId } = await params;
 
-  const authResult = await requireAgencyAdmin();
+  const authResult = await requireAgencyMember();
   if (authResult.error) {
     return NextResponse.json({ error: authResult.error.message }, { status: authResult.error.status });
   }
