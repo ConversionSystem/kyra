@@ -8,6 +8,10 @@
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { getPerformance, getQuickWins, getRankingDrops } from '@/lib/integrations/gsc';
 import type { QuickWinKeyword, RankDrop } from '@/lib/integrations/gsc';
+import {
+  getValidGSCToken,
+  fetchGSCMetrics as fetchGSCMetricsOAuth,
+} from '@/lib/integrations/google-search-console';
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -31,8 +35,9 @@ export interface PageMetricsSummary {
 // ── Public API ───────────────────────────────────────────────────────────
 
 /**
- * Sync GSC metrics for a site into seo_page_metrics table.
- * Pulls last 90 days of per-page performance data.
+ * Sync GSC metrics using real OAuth tokens (preferred) or service account.
+ * If OAuth token exists, fetches metrics and stores in client_sites.gsc_metrics.
+ * Falls back to service account + seo_page_metrics table approach.
  */
 export async function syncGSCMetrics(
   siteId: string,
@@ -40,6 +45,38 @@ export async function syncGSCMetrics(
 ): Promise<{ success: boolean; rowsUpserted: number; error?: string }> {
   const supabase = createServiceClientWithoutCookies();
 
+  // Try OAuth-based sync first
+  try {
+    const token = await getValidGSCToken(siteId);
+    if (token) {
+      // Get the stored GSC site URL
+      const { data: siteRecord } = await supabase
+        .from('client_sites')
+        .select('gsc_site_url')
+        .eq('id', siteId)
+        .single();
+
+      const gscSiteUrl = siteRecord?.gsc_site_url || siteUrl;
+      const metrics = await fetchGSCMetricsOAuth(token, gscSiteUrl);
+
+      // Store aggregated metrics in client_sites
+      await supabase
+        .from('client_sites')
+        .update({
+          gsc_metrics: metrics,
+          last_gsc_sync: new Date().toISOString(),
+        })
+        .eq('id', siteId);
+
+      console.log(`[gsc-sync] OAuth sync complete for site ${siteId}`);
+      return { success: true, rowsUpserted: metrics.page_count };
+    }
+  } catch (err) {
+    // OAuth columns may not exist or token invalid — fall through to service account
+    console.log('[gsc-sync] OAuth sync unavailable, falling back to service account:', err instanceof Error ? err.message : err);
+  }
+
+  // Fallback: service account based sync
   try {
     const endDate = new Date().toISOString().split('T')[0];
     const startDate = new Date(Date.now() - 90 * 86400000).toISOString().split('T')[0];

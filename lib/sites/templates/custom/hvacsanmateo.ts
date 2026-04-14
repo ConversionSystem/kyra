@@ -191,14 +191,14 @@ function renderHead(site: Record<string, any>, page: Record<string, any>, schema
     select option { background: #111827; color: #fff; }
   </style>
   ${schemaJson ? `<script type="application/ld+json">${schemaJson}</script>` : ''}
-  ${site.ga4_id ? `<!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=${site.ga4_id}"></script>
+  ${(() => { const gid = site.ga4_id || ((site.domain || '').includes('hvacsanmateo') ? 'G-0JN67PGZHL' : ''); return gid ? `<!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=${gid}"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
-    gtag('config', '${site.ga4_id}');
-  </script>` : ''}
+    gtag('config', '${gid}');
+  </script>` : ''; })()}
 </head>
 <body class="bg-black text-white min-h-screen">`;
 }
