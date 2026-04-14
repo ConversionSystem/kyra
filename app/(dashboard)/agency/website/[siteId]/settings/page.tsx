@@ -16,7 +16,6 @@ import {
   Paintbrush,
   X,
   Edit3,
-  TrendingUp,
   Settings,
   Search,
   Bot,
@@ -204,9 +203,7 @@ export default function SiteSettings() {
         <div className="flex border-t border-gray-100 px-4">
           {[
             { href: `/agency/website/${siteId}/editor`, icon: <Edit3 className="h-3.5 w-3.5" />, label: 'Editor', active: false },
-            { href: `/agency/website/${siteId}/seo?tab=growth`, icon: <TrendingUp className="h-3.5 w-3.5" />, label: 'Growth', active: false },
             { href: `/agency/website/${siteId}/settings`, icon: <Settings className="h-3.5 w-3.5" />, label: 'Settings', active: true },
-            { href: `/agency/website/${siteId}/seo`, icon: <Search className="h-3.5 w-3.5" />, label: 'SEO/GEO', active: false },
           ].map((tab) => (
             <Link
               key={tab.href}
