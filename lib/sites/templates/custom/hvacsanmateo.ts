@@ -929,102 +929,7 @@ function serviceContent(site: Record<string, any>, page: Record<string, any>): s
   </main>`;
 }
 
-function cityContent(site: Record<string, any>, page: Record<string, any>): string {
-  const phone = site.phone || '';
-  const rating = site.rating || '5.0';
-  const yearsExp = site.yearsInBusiness || '36+';
-  const services = getServices(site);
-
-  const cityName = (page.city_name as string) || (page.title as string)?.replace(/^HVAC Services in /, '').replace(/, CA.*$/, '') || '';
-  const h1 = (page.hero_h1 as string) || `HVAC Services in <span class="text-red-500">${esc(cityName)}, CA</span>`;
-  const subtitle = (page.hero_subtitle as string) || `Air Temp Co provides expert heating, air conditioning, and refrigeration services to homes and businesses in ${cityName}.`;
-
-  return `
-  <main>
-    <!-- Hero -->
-    <section class="relative pt-32 pb-16 sm:pt-40 sm:pb-24 overflow-hidden">
-      <div class="absolute inset-0 bg-gradient-to-br from-gray-900 via-black to-gray-900"></div>
-      <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(220,38,38,0.15),transparent_60%)]"></div>
-      <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex items-center gap-2 mb-4">
-          ${SVG.mapPin('h-4 w-4 text-red-500')}
-          <span class="text-sm text-red-400 font-medium">Serving ${esc(cityName)}</span>
-        </div>
-        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight">${h1}</h1>
-        <p class="mt-4 text-lg text-gray-400 max-w-2xl">${esc(subtitle)}</p>
-        <div class="flex flex-wrap items-center gap-4 mt-6">
-          <div class="flex items-center gap-1.5 text-sm text-gray-300">
-            ${SVG.star('h-4 w-4 text-yellow-500', true)}
-            <span class="font-semibold">${esc(rating)}</span> Google Rating
-          </div>
-          <div class="flex items-center gap-1.5 text-sm text-gray-300">
-            ${SVG.award('h-4 w-4 text-red-500')}
-            ${esc(yearsExp)} Years Experience
-          </div>
-          <div class="flex items-center gap-1.5 text-sm text-gray-300">
-            ${SVG.zap('h-4 w-4 text-amber-500')}
-            Same-Day Service
-          </div>
-        </div>
-        <div class="flex flex-col sm:flex-row gap-3 mt-8">
-          <a href="${phoneHref(phone)}" class="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3.5 rounded-xl text-lg font-semibold transition shadow-lg shadow-red-600/25">
-            ${SVG.phone('h-5 w-5')}
-            Call ${esc(phone)}
-          </a>
-          <a href="/#quote" class="flex items-center justify-center gap-2 border border-white/20 hover:bg-white/5 text-white px-6 py-3.5 rounded-xl text-lg font-medium transition">
-            Free Quote with Repair or Installation
-          </a>
-        </div>
-      </div>
-    </section>
-
-    <!-- Services Grid -->
-    <section class="py-20 sm:py-28">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-14">
-          <h2 class="text-3xl sm:text-4xl font-bold text-white">Our Services in ${esc(cityName)}</h2>
-          <p class="mt-3 text-gray-400 max-w-2xl mx-auto">Complete HVAC solutions for ${esc(cityName)} homes and businesses. From emergency repairs to new installations, we handle it all.</p>
-        </div>
-        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          ${services.map(svc => {
-            const iconFn = ICON_MAP[svc.icon || 'Wind'] || SVG.wind;
-            const citySlug = slugify(cityName);
-            const features = (svc.features || []).slice(0, 4);
-            return `
-          <a href="/${esc(citySlug)}/${esc(svc.slug)}" class="group bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-red-500/30 hover:bg-white/[0.07] transition-all">
-            <div class="h-12 w-12 rounded-xl bg-red-600/10 flex items-center justify-center mb-4 group-hover:bg-red-600/20 transition">
-              ${iconFn('h-6 w-6 text-red-500')}
-            </div>
-            <h3 class="text-lg font-semibold text-white mb-2">${esc(svc.name)}</h3>
-            <p class="text-sm text-gray-400 mb-4">${esc(svc.description || '')}</p>
-            <ul class="space-y-1.5">
-              ${features.map(f => `<li class="flex items-center gap-2 text-sm text-gray-300">${SVG.checkCircle2()} ${esc(f)}</li>`).join('\n              ')}
-            </ul>
-            <div class="flex items-center gap-1 mt-4 text-red-400 text-sm font-medium group-hover:text-red-300 transition">
-              Learn More ${SVG.chevronRight('h-4 w-4')}
-            </div>
-          </a>`;
-          }).join('')}
-
-          <!-- Emergency CTA -->
-          <div class="bg-gradient-to-br from-red-600 to-red-800 rounded-2xl p-6 flex flex-col justify-center">
-            <div class="h-12 w-12 rounded-xl bg-white/20 flex items-center justify-center mb-4">
-              ${SVG.phone('h-6 w-6 text-white')}
-            </div>
-            <h3 class="text-lg font-semibold text-white mb-2">Emergency HVAC in ${esc(cityName)}</h3>
-            <p class="text-sm text-red-100 mb-6">Need urgent HVAC help in ${esc(cityName)}? We offer same-day and after-hours service.</p>
-            <a href="${phoneHref(phone)}" class="flex items-center justify-center gap-2 bg-white text-red-600 px-4 py-3 rounded-xl font-semibold hover:bg-red-50 transition">
-              ${SVG.phone('h-4 w-4')}
-              ${esc(phone)}
-            </a>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    ${renderCTASection(site)}
-  </main>`;
-}
+// Old cityContent removed — replaced by enrichedCityContent (richer content, FAQs, neighborhoods, breadcrumbs)
 
 function cityServiceContent(site: Record<string, any>, page: Record<string, any>): string {
   const phone = site.phone || '';
@@ -1530,7 +1435,7 @@ function buildHomeSchema(site: Record<string, any>): string {
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'HVACBusiness',
-    name: `${site.owner_company || 'Air Temp Co'} - ${site.dba || site.business_name || 'HVAC San Mateo'}`,
+    name: site.dba || site.business_name || 'Air Temp Co — HVAC San Mateo',
     image: `https://${site.domain || 'hvacsanmateo.com'}/logo.png`,
     url: `https://${site.domain || 'hvacsanmateo.com'}`,
     telephone: phoneHref(site.phone || '').replace('tel:', ''),
@@ -1567,17 +1472,22 @@ function buildHomeSchema(site: Record<string, any>): string {
 
 function buildServiceSchema(site: Record<string, any>, page: Record<string, any>): string {
   const addr = getAddr(site);
+  const cities = getCities(site);
   const faq = (page.faq || []) as { question: string; answer: string }[];
+  const serviceName = (page.title as string) || '';
   const schemas: any[] = [
     {
       '@context': 'https://schema.org',
       '@type': 'Service',
-      serviceType: (page.title as string) || '',
-      name: `${(page.title as string) || ''} - ${addr.city || 'San Mateo'}`,
-      areaServed: { '@type': 'City', name: addr.city || 'San Mateo' },
+      serviceType: serviceName,
+      name: `${serviceName} in ${addr.city || 'San Mateo'}`,
+      description: (page.meta_description as string) || (page.hero_subtitle as string) || '',
+      areaServed: cities.length > 0
+        ? cities.map(c => ({ '@type': 'City', name: c.name }))
+        : [{ '@type': 'City', name: addr.city || 'San Mateo' }],
       provider: {
         '@type': 'HVACBusiness',
-        name: site.owner_company || 'Air Temp Co',
+        name: site.dba || site.business_name || 'Air Temp Co \u2014 HVAC San Mateo',
         telephone: phoneHref(site.phone || '').replace('tel:', ''),
       },
     },
@@ -1635,6 +1545,517 @@ function buildFaqSchema(faq: { question: string; answer: string }[]): string {
   return JSON.stringify(schema);
 }
 
+function buildBreadcrumbSchema(domain: string, items: { name: string; url: string }[]): string {
+  const schema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: items.map((item, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: item.name,
+      item: item.url,
+    })),
+  };
+  return JSON.stringify(schema);
+}
+
+// ---------------------------------------------------------------------------
+// City page data — neighborhoods and enriched content
+// ---------------------------------------------------------------------------
+const CITY_DATA: Record<string, { neighborhoods: string[]; description: string; funFact: string }> = {
+  'san-mateo': {
+    neighborhoods: ['Downtown San Mateo', 'Hillsdale', 'Baywood', 'Shoreview', 'Sugarloaf', 'San Mateo Village', 'Fiesta Gardens', 'Beresford Park'],
+    description: 'As the county seat and one of the largest cities on the Peninsula, San Mateo features a diverse mix of mid-century homes, newer developments, and thriving commercial districts. The Mediterranean climate means warm summers that demand reliable air conditioning and cool, damp winters that require dependable heating systems.',
+    funFact: 'San Mateo\'s wide temperature swings between coastal fog and inland warmth make proper HVAC sizing critical for energy efficiency.',
+  },
+  'burlingame': {
+    neighborhoods: ['Burlingame Hills', 'Easton Addition', 'Ray Park', 'Burlingame Village', 'Ingold-Milldale', 'Lyon-Hoag'],
+    description: 'Burlingame is known for its charming tree-lined streets, historic Craftsman homes, and the popular Broadway and Burlingame Avenue shopping districts. Many older homes need HVAC upgrades to improve efficiency while preserving their architectural character.',
+    funFact: 'Burlingame\'s proximity to SFO means many homes have upgraded insulation and sealed ductwork for both comfort and noise reduction.',
+  },
+  'foster-city': {
+    neighborhoods: ['Foster City Islands', 'Pilgrim-Triton', 'Marlin Cove', 'Bounty Drive area', 'Beach Park Boulevard', 'Port Royal'],
+    description: 'Foster City is a planned community built on reclaimed land in the San Francisco Bay. Its unique waterfront location and consistent sea breezes create specific HVAC challenges — salt air exposure requires corrosion-resistant outdoor units, and the mild but humid climate demands proper dehumidification.',
+    funFact: 'Foster City\'s lagoon-surrounded neighborhoods experience more consistent temperatures than inland areas, but the salt air accelerates outdoor unit corrosion.',
+  },
+  'belmont': {
+    neighborhoods: ['Belmont Hills', 'Belmont Village', 'Hallmark area', 'Homeview', 'Cipriani', 'Harbor Industrial'],
+    description: 'Belmont sits in the hills between the Bay and the Pacific coast, with elevations ranging from sea level to over 1,000 feet. Homes at higher elevations face different heating and cooling needs than those in the flatlands, making proper system design essential for comfort and efficiency.',
+    funFact: 'Belmont\'s hillside homes often need zoned HVAC systems because upper floors get significantly warmer than lower levels.',
+  },
+  'san-carlos': {
+    neighborhoods: ['White Oaks', 'Devonshire', 'Alder Manor', 'Crestview', 'Howard Park', 'Brittan Heights'],
+    description: 'Known as the "City of Good Living," San Carlos enjoys some of the warmest weather on the Peninsula thanks to its position in a gap in the coastal hills. This means air conditioning is more important here than in neighboring fog-belt cities, and residents appreciate responsive same-day service.',
+    funFact: 'San Carlos averages 260 sunny days per year — more than most Peninsula cities — making air conditioning a priority for summer comfort.',
+  },
+  'redwood-city': {
+    neighborhoods: ['Downtown Redwood City', 'Woodside Plaza', 'Palm Park', 'Stambaugh-Heller', 'Redwood Shores', 'Emerald Hills', 'Farm Hills'],
+    description: 'Redwood City\'s motto "Climate Best by Government Test" reflects its warm, sunny weather. As the Peninsula\'s commercial hub, we serve both residential and commercial clients — from downtown offices needing reliable commercial HVAC to the suburban neighborhoods of Redwood Shores and Emerald Hills.',
+    funFact: 'Redwood City consistently records the highest temperatures in San Mateo County, making annual AC maintenance especially important.',
+  },
+  'hillsborough': {
+    neighborhoods: ['North Hillsborough', 'Carolands', 'Vista', 'Brewer tract', 'El Cerrito area', 'Crystal Springs'],
+    description: 'Hillsborough is one of the most affluent communities in the Bay Area, featuring large estate homes that require sophisticated HVAC solutions. Many properties have multiple zones, high ceilings, and specialized climate control needs for wine cellars, home theaters, and server rooms.',
+    funFact: 'Hillsborough\'s large estate homes often require multi-zone systems with five or more zones for optimal comfort throughout.',
+  },
+  'millbrae': {
+    neighborhoods: ['Meadows', 'Mills Estate', 'Spring Valley', 'Lomita Park', 'Downtown Millbrae', 'Green Hills'],
+    description: 'Located near SFO and the Millbrae BART station, Millbrae blends suburban living with excellent transit access. The city\'s mix of mid-century ranches and newer townhomes means a variety of HVAC systems to maintain — from legacy furnaces needing upgrades to modern heat pump installations.',
+    funFact: 'Millbrae\'s climate is heavily influenced by fog rolling in from the coast, making heat pump systems an excellent year-round option.',
+  },
+  'south-san-francisco': {
+    neighborhoods: ['Westborough', 'Sunshine Gardens', 'Avalon', 'Sign Hill', 'Lindenville', 'Downtown SSF'],
+    description: 'South San Francisco, the "Industrial City," has evolved into a biotech hub while maintaining its residential neighborhoods. We serve both the commercial buildings along the Oyster Point corridor and the hillside homes in Westborough with reliable heating, cooling, and refrigeration services.',
+    funFact: 'South San Francisco\'s biotech labs require specialized HVAC with precise temperature and humidity controls that we help maintain.',
+  },
+  'daly-city': {
+    neighborhoods: ['Westlake', 'Serramonte', 'Crocker', 'Southern Hills', 'Bayshore', 'Broadmoor Village'],
+    description: 'As the most populous city in San Mateo County, Daly City\'s dense neighborhoods and frequent fog create unique HVAC needs. Heating is the primary concern for most of the year, and many older homes in the Westlake and Crocker neighborhoods benefit from furnace upgrades and better insulation.',
+    funFact: 'Daly City\'s fog-belt location means heating systems run more hours per year than in most Peninsula cities, making efficiency crucial.',
+  },
+  'pacifica': {
+    neighborhoods: ['Linda Mar', 'Pedro Point', 'Rockaway Beach', 'Sharp Park', 'Fairway Park', 'Vallemar'],
+    description: 'Pacifica\'s stunning coastline comes with salt air, ocean moisture, and cool temperatures year-round. HVAC systems in Pacifica need corrosion-resistant components, reliable heating for the perpetually cool climate, and proper ventilation to manage indoor humidity from the marine environment.',
+    funFact: 'Pacifica rarely needs air conditioning, but quality heating and dehumidification are essential for comfort in this coastal city.',
+  },
+  'half-moon-bay': {
+    neighborhoods: ['Downtown Half Moon Bay', 'Miramar', 'Princeton', 'El Granada', 'Moss Beach', 'Montara'],
+    description: 'Half Moon Bay and the surrounding coastside communities experience a cool, marine-influenced climate with frequent fog. Heating is the primary HVAC need, and many homes rely on efficient furnaces and heat pump systems. We also serve the local agricultural businesses and restaurants with commercial refrigeration.',
+    funFact: 'Half Moon Bay\'s coastal temperatures rarely exceed 75°F, but proper heating is critical during the damp, cool winters.',
+  },
+};
+
+function enrichedCityContent(site: Record<string, any>, page: Record<string, any>): string {
+  const phone = site.phone || '';
+  const rating = site.rating || '5.0';
+  const yearsExp = site.yearsInBusiness || '36+';
+  const services = getServices(site);
+  const cities = getCities(site);
+  const ownerCompany = site.owner_company || 'Air Temp Co';
+  const dba = site.dba || site.business_name || 'HVAC San Mateo';
+
+  const cityName = (page.city_name as string) || (page.title as string)?.replace(/^HVAC Services in /, '').replace(/, CA.*$/, '') || '';
+  const citySlug = slugify(cityName);
+  const cityData = CITY_DATA[citySlug] || { neighborhoods: [], description: '', funFact: '' };
+
+  const h1 = (page.hero_h1 as string) || `HVAC Services in <span class="text-red-500">${esc(cityName)}, CA</span>`;
+  const subtitle = (page.hero_subtitle as string) || `${esc(ownerCompany)} provides expert heating, air conditioning, and refrigeration services to homes and businesses in ${cityName}. With ${yearsExp} years of experience serving San Mateo County, we deliver reliable same-day service, transparent pricing, and lasting solutions.`;
+
+  // City-specific FAQ
+  const cityFaq = [
+    { question: `What HVAC services do you offer in ${cityName}?`, answer: `We provide comprehensive HVAC services in ${cityName} including AC repair, heating repair, refrigeration, new system installation, and preventive maintenance. Whether you need an emergency furnace repair or a complete system replacement, our licensed technicians are ready to help. We serve residential and commercial properties throughout ${cityName} and surrounding areas.` },
+    { question: `How quickly can you respond to an HVAC emergency in ${cityName}?`, answer: `We offer same-day emergency service in ${cityName} and throughout San Mateo County. In most cases, our technicians can arrive within a few hours of your call. We understand that a broken heater or AC system is more than an inconvenience — it affects your family's comfort and safety. Call us at ${phone} for immediate assistance.` },
+    { question: `Do you serve both residential and commercial properties in ${cityName}?`, answer: `Yes, ${ownerCompany} serves both residential homes and commercial businesses in ${cityName}. Our team is equipped to handle everything from single-family home AC units to large commercial HVAC systems, walk-in coolers, and multi-zone installations. We hold C10, C20, C38, and B contractor licenses.` },
+    { question: `What brands of HVAC equipment do you install and repair in ${cityName}?`, answer: `We install and repair all major HVAC brands including Carrier, Lennox, Trane, Daikin, Goodman, Rheem, Bryant, Mitsubishi, Ruud, York, and Amana. No matter what brand your ${cityName} home or business uses, our experienced technicians can diagnose and fix the problem efficiently.` },
+    { question: `How much does HVAC service cost in ${cityName}?`, answer: `HVAC service costs in ${cityName} vary depending on the type of service needed. We provide free quotes with every repair or installation, so you know exactly what to expect before any work begins. We believe in transparent pricing with no hidden fees. Contact us at ${phone} for a free estimate.` },
+  ];
+
+  return `
+  <main>
+    <!-- Hero -->
+    <section class="relative pt-32 pb-16 sm:pt-40 sm:pb-24 overflow-hidden">
+      <div class="absolute inset-0 bg-gradient-to-br from-gray-900 via-black to-gray-900"></div>
+      <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(220,38,38,0.15),transparent_60%)]"></div>
+      <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center gap-2 mb-4">
+          ${SVG.mapPin('h-4 w-4 text-red-500')}
+          <span class="text-sm text-red-400 font-medium">Serving ${esc(cityName)}, California</span>
+        </div>
+        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight">${h1}</h1>
+        <p class="mt-4 text-lg text-gray-400 max-w-2xl">${esc(subtitle)}</p>
+        <div class="flex flex-wrap items-center gap-4 mt-6">
+          <div class="flex items-center gap-1.5 text-sm text-gray-300">
+            ${SVG.star('h-4 w-4 text-yellow-500', true)}
+            <span class="font-semibold">${esc(rating)}</span> Google Rating
+          </div>
+          <div class="flex items-center gap-1.5 text-sm text-gray-300">
+            ${SVG.award('h-4 w-4 text-red-500')}
+            ${esc(yearsExp)} Years Experience
+          </div>
+          <div class="flex items-center gap-1.5 text-sm text-gray-300">
+            ${SVG.zap('h-4 w-4 text-amber-500')}
+            Same-Day Service
+          </div>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-3 mt-8">
+          <a href="${phoneHref(phone)}" class="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3.5 rounded-xl text-lg font-semibold transition shadow-lg shadow-red-600/25">
+            ${SVG.phone('h-5 w-5')}
+            Call ${esc(phone)}
+          </a>
+          <a href="/#quote" class="flex items-center justify-center gap-2 border border-white/20 hover:bg-white/5 text-white px-6 py-3.5 rounded-xl text-lg font-medium transition">
+            Free Quote with Repair or Installation
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- About HVAC in this City -->
+    <section class="py-20 sm:py-28 border-b border-white/10">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid lg:grid-cols-2 gap-12 items-start">
+          <div>
+            <h2 class="text-3xl sm:text-4xl font-bold text-white mb-6">Expert HVAC Service in ${esc(cityName)}, CA</h2>
+            <p class="text-gray-300 leading-relaxed mb-4">${esc(cityData.description || `${cityName} residents and businesses trust ${ownerCompany} for reliable heating, air conditioning, and refrigeration services. With ${yearsExp} years of experience, our licensed technicians deliver professional HVAC solutions tailored to the local climate and building standards.`)}</p>
+            <p class="text-gray-300 leading-relaxed mb-4">${esc(ownerCompany)} has proudly served ${esc(cityName)} and the greater San Mateo County area since ${site.year_founded || 1990}. Our team understands the unique heating and cooling challenges faced by Peninsula residents — from foggy coastal mornings to warm afternoon sun. We design, install, and maintain HVAC systems that keep your home or business comfortable all year long.</p>
+            ${cityData.funFact ? `<div class="bg-red-600/10 border border-red-500/20 rounded-xl p-4 mt-4">
+              <p class="text-sm text-red-300 font-medium">💡 Local Insight</p>
+              <p class="text-sm text-gray-300 mt-1">${esc(cityData.funFact)}</p>
+            </div>` : ''}
+          </div>
+          <div>
+            <div class="bg-white/5 border border-white/10 rounded-2xl p-6">
+              <h3 class="text-lg font-semibold text-white mb-4">Why ${esc(cityName)} Chooses ${esc(ownerCompany)}</h3>
+              <ul class="space-y-3">
+                <li class="flex items-start gap-3 text-sm text-gray-300">${SVG.checkCircle2('h-4 w-4 text-red-500 shrink-0 mt-0.5')} <span><strong class="text-white">Local expertise:</strong> ${esc(yearsExp)} years serving ${esc(cityName)} and San Mateo County</span></li>
+                <li class="flex items-start gap-3 text-sm text-gray-300">${SVG.checkCircle2('h-4 w-4 text-red-500 shrink-0 mt-0.5')} <span><strong class="text-white">Same-day service:</strong> Fast response for emergencies and routine repairs</span></li>
+                <li class="flex items-start gap-3 text-sm text-gray-300">${SVG.checkCircle2('h-4 w-4 text-red-500 shrink-0 mt-0.5')} <span><strong class="text-white">All major brands:</strong> Carrier, Lennox, Trane, Daikin, and more</span></li>
+                <li class="flex items-start gap-3 text-sm text-gray-300">${SVG.checkCircle2('h-4 w-4 text-red-500 shrink-0 mt-0.5')} <span><strong class="text-white">Licensed &amp; insured:</strong> CA License C10, C20, C38, B</span></li>
+                <li class="flex items-start gap-3 text-sm text-gray-300">${SVG.checkCircle2('h-4 w-4 text-red-500 shrink-0 mt-0.5')} <span><strong class="text-white">Transparent pricing:</strong> Free quotes, no hidden fees</span></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Services Grid -->
+    <section class="py-20 sm:py-28">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-14">
+          <h2 class="text-3xl sm:text-4xl font-bold text-white">Our Services in ${esc(cityName)}</h2>
+          <p class="mt-3 text-gray-400 max-w-2xl mx-auto">Complete HVAC solutions for ${esc(cityName)} homes and businesses. From emergency repairs to new installations, we handle it all.</p>
+        </div>
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          ${services.map(svc => {
+            const iconFn = ICON_MAP[svc.icon || 'Wind'] || SVG.wind;
+            const features = (svc.features || []).slice(0, 4);
+            return `
+          <a href="/${esc(citySlug)}/${esc(svc.slug)}" class="group bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-red-500/30 hover:bg-white/[0.07] transition-all">
+            <div class="h-12 w-12 rounded-xl bg-red-600/10 flex items-center justify-center mb-4 group-hover:bg-red-600/20 transition">
+              ${iconFn('h-6 w-6 text-red-500')}
+            </div>
+            <h3 class="text-lg font-semibold text-white mb-2">${esc(svc.name)} in ${esc(cityName)}</h3>
+            <p class="text-sm text-gray-400 mb-4">${esc(svc.description || '')}</p>
+            <ul class="space-y-1.5">
+              ${features.map(f => `<li class="flex items-center gap-2 text-sm text-gray-300">${SVG.checkCircle2()} ${esc(f)}</li>`).join('\n              ')}
+            </ul>
+            <div class="flex items-center gap-1 mt-4 text-red-400 text-sm font-medium group-hover:text-red-300 transition">
+              Learn More ${SVG.chevronRight('h-4 w-4')}
+            </div>
+          </a>`;
+          }).join('')}
+
+          <!-- Emergency CTA -->
+          <div class="bg-gradient-to-br from-red-600 to-red-800 rounded-2xl p-6 flex flex-col justify-center">
+            <div class="h-12 w-12 rounded-xl bg-white/20 flex items-center justify-center mb-4">
+              ${SVG.phone('h-6 w-6 text-white')}
+            </div>
+            <h3 class="text-lg font-semibold text-white mb-2">Emergency HVAC in ${esc(cityName)}</h3>
+            <p class="text-sm text-red-100 mb-6">Need urgent HVAC help in ${esc(cityName)}? We offer same-day and after-hours service.</p>
+            <a href="${phoneHref(phone)}" class="flex items-center justify-center gap-2 bg-white text-red-600 px-4 py-3 rounded-xl font-semibold hover:bg-red-50 transition">
+              ${SVG.phone('h-4 w-4')}
+              ${esc(phone)}
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    ${cityData.neighborhoods.length ? `
+    <!-- Neighborhoods -->
+    <section class="py-20 sm:py-28 bg-gray-900/50 border-y border-white/10">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">Neighborhoods We Serve in ${esc(cityName)}</h2>
+        <p class="text-gray-400 mb-8 max-w-3xl">Our technicians know ${esc(cityName)} inside and out. We provide HVAC services to all neighborhoods and commercial areas throughout the city.</p>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          ${cityData.neighborhoods.map(n => `
+          <div class="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-4 py-3">
+            ${SVG.mapPin('h-3.5 w-3.5 text-red-500 shrink-0')}
+            <span class="text-sm text-gray-300">${esc(n)}</span>
+          </div>`).join('')}
+        </div>
+      </div>
+    </section>` : ''}
+
+    <!-- FAQ -->
+    <section class="py-20 sm:py-28">
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="text-3xl sm:text-4xl font-bold text-white mb-3">HVAC Questions from ${esc(cityName)} Residents</h2>
+        <p class="text-gray-400 mb-8">Common questions we hear from homeowners and businesses in ${esc(cityName)}.</p>
+        <div class="space-y-4">
+          ${cityFaq.map(f => `
+          <details class="bg-white/5 border border-white/10 rounded-2xl p-5 group">
+            <summary class="cursor-pointer list-none font-semibold text-white flex items-start gap-3">
+              <span class="mt-1 h-2 w-2 rounded-full bg-red-500 shrink-0"></span>
+              ${esc(f.question)}
+            </summary>
+            <p class="mt-3 text-gray-300 leading-relaxed">${esc(f.answer)}</p>
+          </details>`).join('')}
+        </div>
+      </div>
+    </section>
+
+    <!-- Nearby Cities -->
+    <section class="py-20 sm:py-28 bg-gray-900/50 border-t border-white/10">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">Also Serving Nearby Cities</h2>
+        <p class="text-gray-400 mb-8">In addition to ${esc(cityName)}, we provide HVAC services throughout San Mateo County.</p>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          ${cities.filter(c => c.slug !== citySlug).map(c => `
+          <a href="/${esc(c.slug)}" class="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-4 py-3 hover:border-red-500/30 transition">
+            ${SVG.mapPin('h-3.5 w-3.5 text-red-500 shrink-0')}
+            <span class="text-sm text-gray-300">${esc(c.name)}</span>
+          </a>`).join('')}
+        </div>
+      </div>
+    </section>
+
+    ${renderCTASection(site)}
+  </main>`;
+}
+
+function emergencyServiceContent(site: Record<string, any>, page: Record<string, any>): string {
+  const phone = site.phone || '';
+  const license = site.license || '';
+  const rating = site.rating || '5.0';
+  const reviewCount = site.reviewCount || 11;
+  const ownerCompany = site.owner_company || 'Air Temp Co';
+  const cities = getCities(site);
+
+  const emergencyFaq = [
+    { question: 'What qualifies as an HVAC emergency?', answer: 'An HVAC emergency includes complete system failure during extreme weather, gas leaks or carbon monoxide detector alerts, electrical burning smells from your unit, flooding from a broken AC drain line, or no heat when temperatures drop below 50°F. If you\'re unsure, call us — we\'d rather check and find a minor issue than have you suffer through a dangerous situation.' },
+    { question: 'How quickly can you respond to an emergency call?', answer: `In most cases, our emergency technicians can arrive within 1-3 hours of your call, depending on your location in San Mateo County and current demand. We prioritize safety-related emergencies like gas leaks and complete heating failure during cold weather. Call ${phone} for immediate dispatch.` },
+    { question: 'Do you charge extra for after-hours emergency service?', answer: 'Emergency and after-hours calls may have a diagnostic fee that differs from standard business hours pricing. However, we always provide a clear quote before beginning any repair work, so there are no surprises. We believe in transparent pricing even during emergencies.' },
+    { question: 'What should I do while waiting for an emergency HVAC technician?', answer: 'For heating failure: use space heaters safely, close off unused rooms, and bundle up. For AC failure: close blinds, use fans, and stay hydrated. For gas smells: leave the house immediately, don\'t use light switches, and call your gas company and then us. For water leaks: turn off the system and place towels or buckets to minimize damage.' },
+    { question: 'Can you repair all HVAC brands in an emergency?', answer: 'Yes, our emergency technicians carry common parts for all major HVAC brands including Carrier, Lennox, Trane, Daikin, Goodman, Rheem, and more. Our trucks are stocked with the most frequently needed components so we can complete most emergency repairs in a single visit.' },
+  ];
+
+  return `
+  <main class="bg-black text-white">
+    <!-- Hero -->
+    <section class="pt-32 pb-20 sm:pt-40 sm:pb-28 border-b border-white/10 bg-gradient-to-br from-black via-gray-950 to-gray-900">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="max-w-3xl">
+          <div class="inline-flex items-center gap-2 bg-red-600/10 border border-red-500/30 text-red-300 px-4 py-2 rounded-full text-sm font-medium">
+            ${SVG.zap('h-4 w-4 text-amber-500')}
+            Available 24/7 for HVAC emergencies
+          </div>
+          <h1 class="mt-6 text-4xl sm:text-5xl font-bold leading-tight">24/7 Emergency HVAC Service in San Mateo, CA</h1>
+          <p class="mt-5 text-lg text-gray-300 max-w-2xl">When your heating or air conditioning breaks down unexpectedly, ${esc(ownerCompany)} is here to help. Our emergency HVAC technicians serve San Mateo County around the clock — nights, weekends, and holidays included.</p>
+          <div class="mt-6 flex flex-wrap gap-3 text-sm">
+            <span class="inline-flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-3 py-1.5 text-gray-200">
+              ${SVG.star('h-4 w-4 text-yellow-500', true)}
+              ${esc(rating)} stars (${reviewCount} Google reviews)
+            </span>
+            <span class="inline-flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-3 py-1.5 text-gray-200">
+              ${SVG.clock3('h-4 w-4 text-red-400')}
+              1-3 hour response time
+            </span>
+            <span class="inline-flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-3 py-1.5 text-gray-200">
+              ${SVG.badgeCheck('h-4 w-4 text-red-400')}
+              ${esc(license)}
+            </span>
+          </div>
+          <div class="mt-8 flex flex-col sm:flex-row gap-4">
+            <a href="${phoneHref(phone)}" class="inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3.5 rounded-xl font-semibold transition">
+              ${SVG.phone('h-5 w-5')}
+              Call Now - ${esc(phone)}
+            </a>
+            <a href="/contact" class="inline-flex items-center justify-center gap-2 border border-white/20 hover:bg-white/5 text-white px-6 py-3.5 rounded-xl font-medium transition">
+              Request Emergency Service
+            </a>
+          </div>
+        </div>
+
+        <div class="mt-10 bg-gradient-to-br from-red-600 to-red-800 rounded-2xl p-6 sm:p-8 max-w-3xl">
+          <p class="text-red-100 text-sm uppercase tracking-wide font-semibold">🔥 HVAC Emergency?</p>
+          <p class="mt-2 text-white text-lg font-semibold">No heat, no cooling, strange smells, or system making loud noises? Talk to a technician now.</p>
+          <a href="${phoneHref(phone)}" class="mt-5 inline-flex items-center gap-2 bg-white text-red-700 px-5 py-3 rounded-xl font-semibold hover:bg-red-50 transition">
+            ${SVG.phone('h-4 w-4')}
+            Call ${esc(phone)}
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- What We Handle -->
+    <section class="py-20 sm:py-28">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="max-w-2xl mb-12">
+          <h2 class="text-3xl sm:text-4xl font-bold">Emergency HVAC Situations We Handle</h2>
+          <p class="mt-3 text-gray-400">Our emergency technicians are equipped to diagnose and repair a wide range of urgent HVAC issues on the first visit.</p>
+        </div>
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          ${[
+            { title: 'Complete System Failure', desc: 'Furnace won\'t ignite, AC compressor dead, or heat pump not responding — we diagnose and repair total system breakdowns fast.' },
+            { title: 'No Heat in Cold Weather', desc: 'A broken heater during cold Peninsula nights is dangerous. We prioritize heating emergencies to restore warmth quickly.' },
+            { title: 'AC Breakdown in Heat Waves', desc: 'When temperatures spike and your AC stops working, we provide rapid cooling system repairs to protect your family.' },
+            { title: 'Strange Smells or Sounds', desc: 'Burning smells, gas odors, or loud banging from your HVAC unit need immediate attention. These can indicate serious safety issues.' },
+            { title: 'Refrigerant Leaks', desc: 'Low refrigerant causes poor cooling and can damage your compressor. We locate leaks, repair them, and recharge your system.' },
+            { title: 'Electrical Issues', desc: 'Tripping breakers, flickering when the HVAC runs, or visible sparks require immediate professional attention for safety.' },
+          ].map(item => `
+          <article class="bg-white/5 border border-white/10 rounded-2xl p-6">
+            <div class="h-11 w-11 rounded-xl bg-red-600/10 flex items-center justify-center mb-4">
+              ${SVG.checkCircle2('h-5 w-5 text-red-400')}
+            </div>
+            <h3 class="text-lg font-semibold text-white mb-2">${item.title}</h3>
+            <p class="text-sm text-gray-300 leading-relaxed">${item.desc}</p>
+          </article>`).join('')}
+        </div>
+      </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="py-20 sm:py-28 bg-gray-900/50 border-y border-white/10">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="text-3xl sm:text-4xl font-bold text-white mb-10">How Emergency Service Works</h2>
+        <div class="grid md:grid-cols-3 gap-8">
+          <div class="text-center">
+            <div class="h-16 w-16 rounded-2xl bg-red-600/10 flex items-center justify-center mx-auto mb-4">
+              ${SVG.phone('h-8 w-8 text-red-500')}
+            </div>
+            <h3 class="text-xl font-bold text-white mb-2">1. Call Us</h3>
+            <p class="text-gray-400">Call ${esc(phone)} any time, day or night. Describe your issue and we\'ll dispatch a technician immediately.</p>
+          </div>
+          <div class="text-center">
+            <div class="h-16 w-16 rounded-2xl bg-red-600/10 flex items-center justify-center mx-auto mb-4">
+              ${SVG.wrench('h-8 w-8 text-red-500')}
+            </div>
+            <h3 class="text-xl font-bold text-white mb-2">2. Fast Diagnosis</h3>
+            <p class="text-gray-400">Our technician arrives quickly, diagnoses the problem, and provides a clear repair quote before starting any work.</p>
+          </div>
+          <div class="text-center">
+            <div class="h-16 w-16 rounded-2xl bg-red-600/10 flex items-center justify-center mx-auto mb-4">
+              ${SVG.shieldCheck('h-8 w-8 text-red-500')}
+            </div>
+            <h3 class="text-xl font-bold text-white mb-2">3. Same-Visit Repair</h3>
+            <p class="text-gray-400">Most emergency repairs are completed during the first visit. Our trucks carry common parts for all major brands.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Service Areas -->
+    <section class="py-20 sm:py-28">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="text-3xl sm:text-4xl font-bold text-white mb-4">Emergency HVAC Service Areas</h2>
+        <p class="text-gray-400 mb-8 max-w-3xl">We provide 24/7 emergency HVAC service throughout San Mateo County. No matter where you are on the Peninsula, help is just a phone call away.</p>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          ${cities.map(c => `
+          <a href="/${esc(c.slug)}" class="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-4 py-3 hover:border-red-500/30 transition">
+            ${SVG.mapPin('h-3.5 w-3.5 text-red-500 shrink-0')}
+            <span class="text-sm text-gray-300">${esc(c.name)}</span>
+          </a>`).join('')}
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="py-20 sm:py-28 bg-gray-900/50">
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="text-3xl sm:text-4xl font-bold">Emergency HVAC Questions</h2>
+        <p class="mt-3 text-gray-400">Answers to common questions about our emergency HVAC services in San Mateo County.</p>
+        <div class="mt-8 space-y-4">
+          ${emergencyFaq.map(f => `
+          <details class="bg-white/5 border border-white/10 rounded-2xl p-5 group">
+            <summary class="cursor-pointer list-none font-semibold text-white flex items-start gap-3">
+              <span class="mt-1 h-2 w-2 rounded-full bg-red-500 shrink-0"></span>
+              ${esc(f.question)}
+            </summary>
+            <p class="mt-3 text-gray-300 leading-relaxed">${esc(f.answer)}</p>
+          </details>`).join('')}
+        </div>
+      </div>
+    </section>
+
+    ${renderCTASection(site)}
+  </main>`;
+}
+
+function buildEmergencySchema(site: Record<string, any>): string {
+  const cities = getCities(site);
+  const emergencyFaq = [
+    { question: 'What qualifies as an HVAC emergency?', answer: 'An HVAC emergency includes complete system failure during extreme weather, gas leaks or carbon monoxide detector alerts, electrical burning smells from your unit, flooding from a broken AC drain line, or no heat when temperatures drop below 50°F.' },
+    { question: 'How quickly can you respond to an emergency call?', answer: 'In most cases, our emergency technicians can arrive within 1-3 hours of your call, depending on your location in San Mateo County.' },
+    { question: 'Do you charge extra for after-hours emergency service?', answer: 'Emergency and after-hours calls may have a diagnostic fee that differs from standard business hours pricing. We always provide a clear quote before beginning any repair work.' },
+    { question: 'What should I do while waiting for an emergency HVAC technician?', answer: 'For heating failure: use space heaters safely. For gas smells: leave the house immediately. For water leaks: turn off the system and place towels to minimize damage.' },
+    { question: 'Can you repair all HVAC brands in an emergency?', answer: 'Yes, our emergency technicians carry common parts for all major HVAC brands including Carrier, Lennox, Trane, Daikin, Goodman, Rheem, and more.' },
+  ];
+  const schemas: any[] = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Service',
+      serviceType: 'Emergency HVAC Service',
+      name: `24/7 Emergency HVAC Service in San Mateo, CA`,
+      provider: {
+        '@type': 'HVACBusiness',
+        name: site.dba || site.business_name || 'Air Temp Co \u2014 HVAC San Mateo',
+        telephone: phoneHref(site.phone || '').replace('tel:', ''),
+      },
+      areaServed: cities.map(c => ({ '@type': 'City', name: c.name })),
+      description: 'Round-the-clock emergency heating, air conditioning, and refrigeration repair for homes and businesses in San Mateo County.',
+      availableChannel: {
+        '@type': 'ServiceChannel',
+        servicePhone: { '@type': 'ContactPoint', telephone: phoneHref(site.phone || '').replace('tel:', ''), contactType: 'emergency' },
+      },
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: emergencyFaq.map(f => ({
+        '@type': 'Question',
+        name: f.question,
+        acceptedAnswer: { '@type': 'Answer', text: f.answer },
+      })),
+    },
+  ];
+  return schemas.map(s => JSON.stringify(s)).join('</script>\n<script type="application/ld+json">');
+}
+
+function buildCitySchema(site: Record<string, any>, page: Record<string, any>): string {
+  const cities = getCities(site);
+  const cityName = (page.city_name as string) || '';
+  const citySlug = slugify(cityName);
+  const phone = site.phone || '';
+  const domain = site.domain || 'hvacsanmateo.com';
+  const ownerCompany = site.owner_company || 'Air Temp Co';
+
+  // City-specific FAQ for schema
+  const cityFaq = [
+    { question: `What HVAC services do you offer in ${cityName}?`, answer: `We provide AC repair, heating repair, refrigeration, new system installation, and preventive maintenance in ${cityName}.` },
+    { question: `How quickly can you respond to an HVAC emergency in ${cityName}?`, answer: `We offer same-day emergency service in ${cityName}. Call ${phone} for immediate assistance.` },
+    { question: `Do you serve both residential and commercial properties in ${cityName}?`, answer: `Yes, ${ownerCompany} serves both residential and commercial properties in ${cityName}.` },
+    { question: `What brands do you install and repair in ${cityName}?`, answer: `We install and repair all major HVAC brands including Carrier, Lennox, Trane, Daikin, Goodman, Rheem, and more.` },
+    { question: `How much does HVAC service cost in ${cityName}?`, answer: `Costs vary by service type. We provide free quotes with every repair or installation. Call ${phone} for a free estimate.` },
+  ];
+
+  const schemas: any[] = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'HVACBusiness',
+      name: site.dba || site.business_name || 'Air Temp Co \u2014 HVAC San Mateo',
+      url: `https://${domain}/${citySlug}`,
+      telephone: phoneHref(phone).replace('tel:', ''),
+      areaServed: { '@type': 'City', name: cityName },
+      aggregateRating: {
+        '@type': 'AggregateRating',
+        ratingValue: Number(site.rating || 5).toFixed(1),
+        reviewCount: site.reviewCount || 11,
+      },
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: cityFaq.map(f => ({
+        '@type': 'Question',
+        name: f.question,
+        acceptedAnswer: { '@type': 'Answer', text: f.answer },
+      })),
+    },
+  ];
+  return schemas.map(s => JSON.stringify(s)).join('</script>\n<script type="application/ld+json">');
+}
+
 // ---------------------------------------------------------------------------
 // Main export
 // ---------------------------------------------------------------------------
@@ -1646,17 +2067,21 @@ export function assembleHvacSanMateoPage(
   const slug = (page.slug as string) || '';
   const pageType = (page.page_type as string) || '';
   const normalizedSlug = slug.replace(/^\/+/, '').replace(/\/+$/, '') || 'home';
+  const domain = site.domain || 'hvacsanmateo.com';
+  const baseUrl = `https://${domain}`;
+  const businessName = site.dba || site.business_name || 'Air Temp Co \u2014 HVAC San Mateo';
 
   // Determine page type from slug or page_type field
   let body: string;
   let schemaJson: string | undefined;
+  let breadcrumbJson: string | undefined;
 
   if (normalizedSlug === 'home' || normalizedSlug === '' || normalizedSlug === 'index' || pageType === 'home' || pageType === 'homepage') {
     body = homeContent(site, page);
     schemaJson = buildHomeSchema(site);
   } else if (normalizedSlug === 'about' || pageType === 'about') {
     body = aboutContent(site, page);
-    schemaJson = buildHomeSchema(site); // LocalBusiness schema on about
+    schemaJson = buildHomeSchema(site);
   } else if (normalizedSlug === 'reviews' || pageType === 'reviews') {
     body = reviewsContent(site, page);
     schemaJson = buildReviewSchema(site);
@@ -1667,21 +2092,57 @@ export function assembleHvacSanMateoPage(
   } else if (normalizedSlug === 'contact' || pageType === 'contact') {
     body = contactContent(site, page);
     schemaJson = buildHomeSchema(site);
+  } else if (normalizedSlug === 'services/emergency-service') {
+    // Emergency service page — custom content
+    body = emergencyServiceContent(site, page);
+    schemaJson = buildEmergencySchema(site);
+    breadcrumbJson = buildBreadcrumbSchema(domain, [
+      { name: 'Home', url: baseUrl },
+      { name: 'Services', url: `${baseUrl}/services/ac-repair` },
+      { name: '24/7 Emergency Service', url: `${baseUrl}/services/emergency-service` },
+    ]);
   } else if (pageType === 'city_service') {
+    const cityName = (page.city_name as string) || '';
+    const serviceName = (page.service_name as string) || '';
+    const citySlug = slugify(cityName);
     body = cityServiceContent(site, page);
     schemaJson = buildServiceSchema(site, page);
+    breadcrumbJson = buildBreadcrumbSchema(domain, [
+      { name: 'Home', url: baseUrl },
+      { name: cityName, url: `${baseUrl}/${citySlug}` },
+      { name: serviceName, url: `${baseUrl}/${citySlug}/${slugify(serviceName)}` },
+    ]);
   } else if (pageType === 'city') {
-    body = cityContent(site, page);
-    schemaJson = buildHomeSchema(site);
+    const cityName = (page.city_name as string) || (page.title as string)?.replace(/^HVAC Services in /, '').replace(/, CA.*$/, '') || '';
+    body = enrichedCityContent(site, page);
+    schemaJson = buildCitySchema(site, page);
+    breadcrumbJson = buildBreadcrumbSchema(domain, [
+      { name: 'Home', url: baseUrl },
+      { name: 'Service Areas', url: baseUrl },
+      { name: cityName, url: `${baseUrl}/${slugify(cityName)}` },
+    ]);
   } else if (pageType === 'service' || normalizedSlug.startsWith('services/')) {
+    const serviceName = (page.title as string) || normalizedSlug.replace('services/', '').replace(/-/g, ' ');
     body = serviceContent(site, page);
     schemaJson = buildServiceSchema(site, page);
+    breadcrumbJson = buildBreadcrumbSchema(domain, [
+      { name: 'Home', url: baseUrl },
+      { name: 'Services', url: `${baseUrl}/services/ac-repair` },
+      { name: serviceName, url: `${baseUrl}/${normalizedSlug}` },
+    ]);
   } else {
-    // Generic fallback
     body = genericContent(site, page);
   }
 
-  return renderHead(site, page, schemaJson)
+  // Combine all schema scripts
+  let allSchema = schemaJson || '';
+  if (breadcrumbJson) {
+    allSchema = allSchema
+      ? `${allSchema}</script>\n<script type="application/ld+json">${breadcrumbJson}`
+      : breadcrumbJson;
+  }
+
+  return renderHead(site, page, allSchema || undefined)
     + renderNavbar(site)
     + body
     + renderFooter(site)

@@ -9,18 +9,48 @@
  */
 export function generateSitemapXml(
   domain: string,
-  pages: Array<{ slug: string; updated_at?: string | null }>
+  pages: Array<{ slug: string; updated_at?: string | null; page_type?: string | null }>
 ): string {
   const baseUrl = `https://${domain}`;
+  const today = new Date().toISOString().split('T')[0];
 
-  const urls = pages.map((p) => {
-    const loc = p.slug === '/' ? baseUrl : `${baseUrl}${p.slug.startsWith('/') ? '' : '/'}${p.slug}`;
+  // Filter out /index (duplicate of homepage) and normalize
+  const filtered = pages.filter(p => {
+    const s = p.slug.replace(/^\/+/, '').replace(/\/+$/, '');
+    return s !== 'index'; // /index is a duplicate of homepage
+  });
+
+  const urls = filtered.map((p) => {
+    const normalSlug = p.slug.replace(/^\/+/, '').replace(/\/+$/, '');
+    const isHome = normalSlug === '' || normalSlug === '/' || normalSlug === 'home';
+    const loc = isHome ? `${baseUrl}/` : `${baseUrl}/${normalSlug}`;
     const lastmod = p.updated_at
       ? new Date(p.updated_at).toISOString().split('T')[0]
-      : new Date().toISOString().split('T')[0];
-    // Homepage gets highest priority, service/city pages get 0.8
-    const priority = p.slug === '/' ? '1.0' : p.slug.includes('/services/') ? '0.8' : '0.7';
-    const changefreq = p.slug === '/' ? 'weekly' : 'monthly';
+      : today;
+
+    // Priority by page type and slug pattern
+    let priority: string;
+    let changefreq: string;
+    if (isHome) {
+      priority = '1.0';
+      changefreq = 'weekly';
+    } else if (normalSlug.startsWith('services/')) {
+      priority = '0.9';
+      changefreq = 'monthly';
+    } else if (['about', 'faq', 'reviews', 'contact'].includes(normalSlug)) {
+      priority = '0.8';
+      changefreq = 'monthly';
+    } else if (p.page_type === 'city_service' || normalSlug.includes('/')) {
+      // City×service pages (e.g., san-mateo/ac-repair)
+      priority = '0.6';
+      changefreq = 'monthly';
+    } else if (p.page_type === 'city') {
+      priority = '0.7';
+      changefreq = 'monthly';
+    } else {
+      priority = '0.5';
+      changefreq = 'monthly';
+    }
 
     return `  <url>
     <loc>${escapeXml(loc)}</loc>
@@ -40,7 +70,28 @@ ${urls.join('\n')}
  * Generate robots.txt with sitemap reference.
  */
 export function generateRobotsTxt(domain: string): string {
+  // Allow all crawlers including AI bots (GPTBot, ClaudeBot, etc.).
+  // We WANT AI crawlers to index our pages for Generative Engine Optimization
+  // (GEO) so the business appears in AI search citations.
+  // Training opt-out is handled separately via the "ai-train=no" Content-Signal
+  // header, which prevents model training without blocking retrieval.
+  // Note: The live robots.txt may be managed by Cloudflare; this generated
+  // version documents our intended policy for the build output.
   return `User-agent: *
+Allow: /
+
+# Explicitly allow AI crawlers for GEO (AI search citation).
+# Training opt-out is handled via ai-train=no Content-Signal, not robots.txt.
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: PerplexityBot
 Allow: /
 
 Sitemap: https://${domain}/sitemap.xml
