@@ -9,6 +9,8 @@ import {
   DEFAULT_TEMPLATES,
 } from '@/lib/sms';
 import type { ClientSmsConfig, OnfleetWebhookPayload } from '@/lib/sms';
+import { evaluateNotificationGate } from '@/lib/onfleet/notification-gate';
+import type { ClientDispatchConfig } from '@/lib/onfleet/types';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -67,6 +69,61 @@ export async function POST(req: NextRequest) {
     payload = await req.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON payload' }, { status: 400 });
+  }
+
+  // ── Notification gate (dispatch intelligence) ───────────────────────
+  const dispatchConfig = await getClientDispatchConfig(clientId);
+
+  // Look up last notification time for cooldown (DB-backed, survives serverless restarts)
+  const taskId = payload.taskId || payload.data?.task?.id || 'unknown';
+  let lastNotificationAt: number | undefined;
+  if (dispatchConfig?.enabled && dispatchConfig.notificationGate?.cooldownMinutes > 0) {
+    try {
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+      const { data: lastSms } = await supabase
+        .from('delivery_sms_log')
+        .select('sent_at')
+        .eq('client_id', clientId)
+        .eq('order_id', taskId)
+        .eq('status', 'sent')
+        .order('sent_at', { ascending: false })
+        .limit(1)
+        .single();
+      if (lastSms?.sent_at) {
+        lastNotificationAt = new Date(lastSms.sent_at).getTime();
+      }
+    } catch {
+      // table may not exist or no prior SMS — cooldown won't apply
+    }
+  }
+
+  const gateDecision = evaluateNotificationGate(payload, dispatchConfig, lastNotificationAt);
+
+  if (!gateDecision.allow) {
+    // Log the suppression to dispatch_events if table exists
+    if (dispatchConfig?.enabled) {
+      try {
+        const supabase = createClient(supabaseUrl, supabaseServiceKey);
+        await supabase.from('dispatch_events').insert({
+          client_id: clientId,
+          event_type: 'notification_suppressed',
+          details: {
+            reason: gateDecision.reason,
+            triggerName: payload.triggerName,
+            taskId: payload.taskId || payload.data?.task?.id,
+          },
+          tasks_affected: 1,
+          workers_affected: 0,
+        });
+      } catch {
+        // table may not exist yet
+      }
+    }
+
+    return NextResponse.json({
+      status: 'suppressed',
+      reason: gateDecision.reason,
+    });
   }
 
   // ── Process: parse event → find template → render message ───────────
@@ -182,4 +239,24 @@ async function getClientSmsConfig(clientId: string): Promise<ClientSmsConfig | n
     sendingHoursEnd: sms.sendingHoursEnd ?? 22,
     timezone: sms.timezone ?? 'America/Los_Angeles',
   };
+}
+
+// ── Helper: Load client dispatch config ───────────────────────────────────
+
+async function getClientDispatchConfig(clientId: string): Promise<ClientDispatchConfig | null> {
+  if (!supabaseUrl || !supabaseServiceKey) return null;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  const { data, error } = await supabase
+    .from('agency_clients')
+    .select('settings')
+    .eq('id', clientId)
+    .single();
+
+  if (error || !data?.settings) return null;
+
+  const settings = data.settings as Record<string, unknown>;
+  const dispatch = settings.dispatch as ClientDispatchConfig | undefined;
+
+  return dispatch ?? null;
 }

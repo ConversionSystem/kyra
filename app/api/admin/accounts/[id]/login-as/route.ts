@@ -13,11 +13,18 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
   const service = createServiceClientWithoutCookies();
-  const { data: agency } = await service.from('agencies').select('owner_email, name').eq('id', id).single();
+  const { data: agency } = await service.from('agencies').select('owner_id, name').eq('id', id).single();
   if (!agency) return NextResponse.json({ error: 'Agency not found' }, { status: 404 });
+
+  // Look up owner email from auth.users
+  const { data: ownerUser, error: userErr } = await service.auth.admin.getUserById(agency.owner_id);
+  if (userErr || !ownerUser?.user?.email) {
+    return NextResponse.json({ error: 'Owner user not found' }, { status: 404 });
+  }
+
   const { data, error } = await service.auth.admin.generateLink({
     type: 'magiclink',
-    email: agency.owner_email,
+    email: ownerUser.user.email,
     options: { redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://kyra.conversionsystem.com'}/agency` },
   });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

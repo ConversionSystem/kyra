@@ -66,6 +66,10 @@
     {
       "path": "/api/cron/container-health",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/dispatch-optimize",
+      "schedule": "*/15 * * * *"
     }
   ]
 }

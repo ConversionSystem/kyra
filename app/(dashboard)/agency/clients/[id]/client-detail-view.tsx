@@ -48,6 +48,7 @@ import {
   Play,
   Calendar,
   Monitor,
+  Truck,
 } from 'lucide-react';
 import type { AgencyClient, AgencyMember } from '@/lib/agency/queries';
 import GHLConnection from './ghl-connection';
@@ -71,6 +72,7 @@ import BookingConfigTab from '@/components/dashboard/client-tabs/booking-config-
 import WorkflowsTab from '@/components/dashboard/client-tabs/workflows-tab';
 import AiSetupTab from '@/components/dashboard/client-tabs/ai-setup-tab';
 import SeoGeoTab from '@/components/dashboard/client-tabs/seo-geo-tab';
+import DispatchTab from '@/components/dashboard/client-tabs/dispatch-tab';
 
 // ── GHL Free Sub-Account Sticky Banner ───────────────────────────────────────
 
@@ -193,7 +195,7 @@ interface ChatMessage {
   content: string;
 }
 
-type Tab = 'inbox' | 'terminal' | 'crm' | 'voice-sms' | 'marketing' | 'website' | 'seo-geo' | 'ai-setup' | 'integrations' | 'it-operations' | 'settings' | 'insights';
+type Tab = 'inbox' | 'terminal' | 'crm' | 'voice-sms' | 'dispatch' | 'marketing' | 'website' | 'seo-geo' | 'ai-setup' | 'integrations' | 'it-operations' | 'settings' | 'insights';
 
 // Map legacy ?tab= values to new tab IDs
 const LEGACY_TAB_MAP: Record<string, Tab> = {
@@ -218,6 +220,7 @@ const LEGACY_TAB_MAP: Record<string, Tab> = {
   secrets: 'settings',
   voice: 'voice-sms',
   'delivery-sms': 'voice-sms',
+  dispatch: 'dispatch',
   automation: 'settings',
   usage: 'insights',
   memory: 'insights',
@@ -230,6 +233,7 @@ const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'inbox', label: 'Inbox', icon: Inbox },
   { id: 'crm', label: 'CRM', icon: Users },
   { id: 'voice-sms', label: 'Voice & SMS', icon: Phone },
+  { id: 'dispatch', label: 'Dispatch', icon: Truck },
   { id: 'marketing', label: 'Marketing', icon: TrendingUp },
   { id: 'website', label: 'Website', icon: Globe },
   { id: 'seo-geo', label: 'SEO/GEO', icon: Search },
@@ -338,6 +342,12 @@ const ADVANCED_TABS_AGENCIES = new Set([
   '13cc47bc-88bb-4ef8-84e8-f2c0cd97fd3e', // Priv7 (Purple Lotus — Paul Rivera)
 ]);
 
+// Agencies with access to the Dispatch tab (OnFleet integration)
+const DISPATCH_AGENCIES = new Set([
+  '1511e077-77ef-4c47-81fd-06a3bc9f1dbb', // Conversion System (Kyra master)
+  '13cc47bc-88bb-4ef8-84e8-f2c0cd97fd3e', // Priv7 (Purple Lotus — Paul Rivera)
+]);
+
 export function ClientDetailView({ client: initialClient, role, plan, accountType }: ClientDetailViewProps) {
   const isFreeOrSolo = !plan || plan === 'free' || plan === 'solo_pro' || (plan === 'free' && accountType === 'solo');
   const isPaidPlan = plan === 'pro' || plan === 'scale';
@@ -348,6 +358,7 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
   const hasMarketingTab = isMasterOrKyra;
   const hasSeoGeoTab = isMasterOrKyra;
   const hasVoiceSmsTab = isMasterOrKyra;
+  const hasDispatchTab = DISPATCH_AGENCIES.has(initialClient.agency_id ?? '');
   const hasOperationsTab = isMasterOrKyra || isPaidPlan || isTrustedNetworx;
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -359,6 +370,7 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
   if (!hasMarketingTab) HIDDEN_TABS.push('marketing');
   if (!hasSeoGeoTab) HIDDEN_TABS.push('seo-geo');
   if (!hasVoiceSmsTab) HIDDEN_TABS.push('voice-sms');
+  if (!hasDispatchTab) HIDDEN_TABS.push('dispatch');
   if (!hasOperationsTab) HIDDEN_TABS.push('integrations');
   if (!hasItOps) HIDDEN_TABS.push('it-operations');
   const filteredGroups = TAB_GROUPS.map(g => ({
@@ -491,6 +503,9 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
           )}
           {activeTab === 'voice-sms' && (
             <VoiceSmsTab client={initialClient} plan={plan} accountType={accountType} />
+          )}
+          {activeTab === 'dispatch' && (
+            <DispatchTab clientId={initialClient.id} />
           )}
           {activeTab === 'marketing' && (
             <MarketingTab client={initialClient} onNavigateToTab={(tab: string) => handleTabChange(tab as Tab)} />
