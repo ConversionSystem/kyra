@@ -462,6 +462,57 @@ function OverviewView({
         </div>
       )}
 
+      {/* Breach Alerts */}
+      {config.enabled && (() => {
+        const breachEvents = events.filter((e) => e.event_type === 'sla_breach');
+        const allAlerts = breachEvents.flatMap((e) => {
+          const details = (e.details || {}) as Record<string, unknown>;
+          return (details.alerts || []) as Array<{
+            taskShortId?: string; severity: string; overshootMinutes: number; zone?: string;
+          }>;
+        });
+        const criticalCount = allAlerts.filter((a) => a.severity === 'critical').length;
+        const warningCount = allAlerts.filter((a) => a.severity === 'warning').length;
+        if (allAlerts.length === 0) return null;
+        return (
+          <div className="p-4 rounded-xl border border-red-200 bg-red-50/50">
+            <div className="flex items-center gap-2 mb-3">
+              <AlertTriangle className="h-4 w-4 text-red-500" />
+              <p className="text-sm font-semibold text-gray-900">
+                SLA Breach Alerts
+                <span className="ml-2 text-xs font-normal text-gray-500">Last 24h</span>
+              </p>
+            </div>
+            <div className="flex items-center gap-4 mb-3">
+              {criticalCount > 0 && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-red-100 text-red-700 text-xs font-medium">
+                  {criticalCount} critical
+                </span>
+              )}
+              {warningCount > 0 && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-amber-100 text-amber-700 text-xs font-medium">
+                  {warningCount} warning
+                </span>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              {allAlerts.slice(0, 5).map((alert, i) => (
+                <div key={i} className="flex items-center gap-2 text-xs">
+                  <span className={`h-2 w-2 rounded-full ${alert.severity === 'critical' ? 'bg-red-500' : 'bg-amber-500'}`} />
+                  <span className="text-gray-700">
+                    Task {alert.taskShortId || '?'} — {alert.overshootMinutes}min over SLA
+                    {alert.zone ? ` (${alert.zone})` : ''}
+                  </span>
+                </div>
+              ))}
+              {allAlerts.length > 5 && (
+                <p className="text-xs text-gray-400">+{allAlerts.length - 5} more</p>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Webhook URL */}
       {config.enabled && <WebhookUrlCard clientId={clientId} hasApiKey={config.hasApiKey} />}
 
@@ -1162,6 +1213,9 @@ function EventIcon({ type }: { type: string }) {
     driver_break: { icon: Clock, color: 'text-gray-500' },
     route_rebalance: { icon: RefreshCw, color: 'text-indigo-500' },
     complete_before_set: { icon: Clock, color: 'text-green-500' },
+    rule_execution: { icon: Zap, color: 'text-indigo-500' },
+    cancellation_reopt: { icon: RefreshCw, color: 'text-amber-500' },
+    breach_alert_sent: { icon: AlertTriangle, color: 'text-red-500' },
   };
   const entry = icons[type] ?? { icon: TrendingUp, color: 'text-gray-400' };
   const Icon = entry.icon;
@@ -1176,6 +1230,9 @@ function formatEventType(type: string): string {
     driver_break: 'Driver break scheduled',
     route_rebalance: 'Routes rebalanced',
     complete_before_set: 'SLA deadline set',
+    rule_execution: 'Automation rule executed',
+    cancellation_reopt: 'Route reoptimized after cancellation',
+    breach_alert_sent: 'Breach alert sent',
   };
   return labels[type] ?? type.replace(/_/g, ' ');
 }

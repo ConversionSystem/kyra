@@ -10,7 +10,8 @@ import {
 } from '@/lib/sms';
 import type { ClientSmsConfig, OnfleetWebhookPayload } from '@/lib/sms';
 import { evaluateNotificationGate } from '@/lib/onfleet/notification-gate';
-import type { ClientDispatchConfig } from '@/lib/onfleet/types';
+import { executeRules } from '@/lib/onfleet/rule-engine';
+import type { ClientDispatchConfig, RuleExecutionContext, OnfleetTask } from '@/lib/onfleet/types';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -129,6 +130,86 @@ export async function POST(
       status: 'suppressed',
       reason: gateDecision.reason,
     });
+  }
+
+  // ── Rule engine evaluation (dispatch intelligence) ──────────────────
+  if (dispatchConfig?.enabled && dispatchConfig.rules?.length > 0) {
+    try {
+      // Build task from webhook payload for rule context
+      // The webhook payload type is loosely typed — cast to access OnFleet task fields
+      const webhookTask = payload.data?.task as Record<string, unknown> | undefined;
+      const ruleTask: OnfleetTask | undefined = webhookTask ? {
+        id: (webhookTask.id as string) || taskId,
+        shortId: (webhookTask.shortId as string) || '',
+        state: ((webhookTask.status ?? webhookTask.state ?? 0) as number) as 0 | 1 | 2 | 3,
+        timeCreated: (webhookTask.timeCreated as number) || 0,
+        timeLastModified: (webhookTask.timeLastModified as number) || 0,
+        eta: webhookTask.eta as number | undefined,
+        worker: typeof webhookTask.worker === 'string'
+          ? webhookTask.worker
+          : (webhookTask.worker as Record<string, string> | undefined)?.id,
+        completeBefore: webhookTask.completeBefore as number | undefined,
+        recipients: ((webhookTask.recipients || []) as Record<string, string>[]).map((r) => ({
+          id: r.id || '', name: r.name || '', phone: r.phone || '',
+        })),
+        destination: {
+          id: ((webhookTask.destination as Record<string, unknown>)?.id as string) || '',
+          location: ((webhookTask.destination as Record<string, unknown>)?.location as [number, number]) || [0, 0],
+          address: ((webhookTask.destination as Record<string, unknown>)?.address as OnfleetTask['destination']['address']) || {},
+        },
+      } : undefined;
+
+      // Check for recent cancellation reopt (debounce)
+      let lastCancelReoptAt: number | undefined;
+      if (payload.triggerId === 4) {
+        try {
+          const dbClient = createClient(supabaseUrl, supabaseServiceKey);
+          const { data: lastReopt } = await dbClient
+            .from('dispatch_events')
+            .select('created_at')
+            .eq('client_id', clientId)
+            .eq('event_type', 'cancellation_reopt')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+          if (lastReopt?.created_at) {
+            lastCancelReoptAt = new Date(lastReopt.created_at).getTime();
+          }
+        } catch {
+          // No prior reopt — debounce won't apply
+        }
+      }
+
+      const ruleCtx: RuleExecutionContext = {
+        clientId,
+        config: dispatchConfig,
+        trigger: 'webhook',
+        eventType: payload.triggerName,
+        triggerId: payload.triggerId,
+        task: ruleTask,
+        webhookPayload: payload,
+        lastCancelReoptAt,
+      };
+
+      const results = await executeRules(ruleCtx);
+
+      // Log events from rules that fired
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+      for (const result of results) {
+        if (result.fired && result.event) {
+          await supabase.from('dispatch_events').insert({
+            client_id: result.event.client_id,
+            event_type: result.event.event_type,
+            details: result.event.details,
+            tasks_affected: result.event.tasks_affected,
+            workers_affected: result.event.workers_affected,
+          });
+        }
+      }
+    } catch (err) {
+      console.error('[dispatch/rules] Rule execution failed:', err);
+      // Non-fatal — don't block SMS processing
+    }
   }
 
   // ── Process: parse event → find template → render message ───────────

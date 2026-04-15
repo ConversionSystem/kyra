@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { runOptimization } from '@/lib/onfleet/route-optimizer';
+import { executeRules } from '@/lib/onfleet/rule-engine';
+import { createOnfleetClient } from '@/lib/onfleet/client';
 import type { ClientDispatchConfig } from '@/lib/onfleet/types';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -50,6 +52,41 @@ export async function GET(req: NextRequest) {
     }
 
     try {
+      // ── Rule engine FIRST: cutoff boost + breach alerting ──────────────
+      // Rules run before optimization so the cutoff-priority boost sets
+      // aggressive completeBefore values. The optimizer's 5-min diff check
+      // will then skip those already-boosted tasks instead of overwriting.
+      if (dispatch.rules?.length > 0) {
+        try {
+          const onfleetClient = createOnfleetClient(dispatch.onfleetApiKey);
+          const since = Date.now() - 86400 * 1000;
+          const allTasks = await onfleetClient.listTasks(since);
+          const pendingTasks = allTasks.filter((t) => t.state === 0 || t.state === 1);
+
+          const ruleResults = await executeRules({
+            clientId: client.id,
+            config: dispatch,
+            trigger: 'cron',
+            allPendingTasks: pendingTasks,
+          });
+
+          for (const rr of ruleResults) {
+            if (rr.fired && rr.event) {
+              await supabase.from('dispatch_events').insert({
+                client_id: rr.event.client_id,
+                event_type: rr.event.event_type,
+                details: rr.event.details,
+                tasks_affected: rr.event.tasks_affected,
+                workers_affected: rr.event.workers_affected,
+              });
+            }
+          }
+        } catch (err) {
+          console.error(`[cron/rules] Rule engine failed for ${client.id}:`, err);
+        }
+      }
+
+      // ── Route optimization SECOND: respects boosted deadlines ──────────
       const result = await runOptimization(client.id, dispatch);
 
       // Log events

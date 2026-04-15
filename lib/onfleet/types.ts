@@ -124,7 +124,7 @@ export interface SlaRule {
 export interface DispatchEvent {
   id: string;
   client_id: string;
-  event_type: 'optimization_run' | 'sla_breach' | 'notification_suppressed' | 'driver_break' | 'route_rebalance' | 'complete_before_set';
+  event_type: 'optimization_run' | 'sla_breach' | 'notification_suppressed' | 'driver_break' | 'route_rebalance' | 'complete_before_set' | 'rule_execution' | 'cancellation_reopt' | 'breach_alert_sent';
   details: Record<string, unknown>;
   tasks_affected: number;
   workers_affected: number;
@@ -145,6 +145,45 @@ export interface ClientDispatchConfig {
   };
   defaultSlaTotalMinutes: number;    // default: 60
   autoOptimize: boolean;             // enable cron-based auto-optimization
+}
+
+// ── Rule Engine Types ────────────────────────────────────────────────────
+
+/** Context passed to the rule engine for evaluation */
+export interface RuleExecutionContext {
+  clientId: string;
+  config: ClientDispatchConfig;
+  trigger: 'webhook' | 'cron' | 'manual';
+  eventType?: string;               // OnFleet trigger name: 'taskFailed', 'taskCreated', etc.
+  triggerId?: number;               // OnFleet trigger ID: 4 = failed, 12 = created, etc.
+  task?: OnfleetTask;                // The task involved (from webhook or fetch)
+  webhookPayload?: unknown;          // Raw webhook payload for advanced rules
+  allPendingTasks?: OnfleetTask[];   // Available during cron (batch evaluation)
+  lastCancelReoptAt?: number;        // Epoch ms of last cancellation reopt (for debounce)
+}
+
+/** Result from evaluating a single rule */
+export interface RuleExecutionResult {
+  ruleId: string;
+  ruleName: string;
+  ruleType: SlaRule['type'];
+  fired: boolean;
+  action?: string;
+  details?: Record<string, unknown>;
+  event?: Omit<DispatchEvent, 'id' | 'created_at'>;
+}
+
+/** SLA breach alert for dashboard / webhook delivery */
+export interface BreachAlert {
+  taskId: string;
+  taskShortId?: string;
+  predictedMinutes: number;
+  targetMinutes: number;
+  overshootMinutes: number;
+  zone?: string;
+  workerName?: string;
+  severity: 'warning' | 'critical';
+  createdAt: string;
 }
 
 /** Dispatch stats summary */
