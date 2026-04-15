@@ -89,7 +89,7 @@ export async function runOptimization(
     }
   }
 
-  // 3. Trigger auto-assign for each team
+  // 3. Trigger auto-assign for each team (requires OnFleet Professional plan)
   let teamsOptimized = 0;
   try {
     const teams = await client.listTeams();
@@ -102,12 +102,18 @@ export async function runOptimization(
 
       if (result.success) {
         teamsOptimized++;
+      } else if (result.error?.includes('405') || result.error?.includes('MethodNotAllowed')) {
+        // Auto-dispatch not available on this OnFleet plan — not a failure
+        // SLA deadlines were still set, which is the primary optimization value
       } else if (result.error) {
         errors.push(`Team "${team.name}": ${result.error}`);
       }
     }
   } catch (err) {
-    errors.push(`Team optimization: ${err instanceof Error ? err.message : 'Unknown'}`);
+    const msg = err instanceof Error ? err.message : 'Unknown';
+    if (!msg.includes('405') && !msg.includes('MethodNotAllowed')) {
+      errors.push(`Team optimization: ${msg}`);
+    }
   }
 
   // Log the optimization run event
