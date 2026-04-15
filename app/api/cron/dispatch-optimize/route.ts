@@ -13,8 +13,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
  * Finds all clients with dispatch enabled + autoOptimize = true,
  * then runs route optimization for each.
  *
- * Vercel cron config (vercel.json):
- *   { "path": "/api/cron/dispatch-optimize", "schedule": "*/15 * * * *" }
+ * Vercel cron config: see vercel.json (every 15 minutes)
  */
 export async function GET(req: NextRequest) {
   // Verify cron secret
