@@ -54,7 +54,7 @@ export async function GET(
       sendingHoursStart: smsConfig.sendingHoursStart ?? 8,
       sendingHoursEnd: smsConfig.sendingHoursEnd ?? 22,
       timezone: smsConfig.timezone ?? 'America/Los_Angeles',
-      webhookUrl: `${getBaseUrl(req)}/api/webhooks/onfleet?clientId=${clientId}&secret=${smsConfig.webhookSecret || 'configure-me'}`,
+      webhookUrl: `${getBaseUrl(req)}/api/webhooks/onfleet/${clientId}?secret=${smsConfig.webhookSecret || 'configure-me'}`,
     },
     stats,
     recentLog,
@@ -175,7 +175,7 @@ export async function POST(
   };
 
   // Forward to the webhook handler internally
-  const webhookUrl = `${getBaseUrl(req)}/api/webhooks/onfleet?clientId=${clientId}&secret=test`;
+  const webhookUrl = `${getBaseUrl(req)}/api/webhooks/onfleet/${clientId}?secret=test`;
   const response = await fetch(webhookUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

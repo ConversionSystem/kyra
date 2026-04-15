@@ -502,7 +502,7 @@ function WebhookUrlCard({ clientId, hasApiKey }: { clientId: string; hasApiKey?:
   const [copied, setCopied] = useState(false);
   const [registering, setRegistering] = useState(false);
   const [registerResult, setRegisterResult] = useState<{ success: boolean; message: string } | null>(null);
-  const webhookUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/api/webhooks/onfleet?clientId=${clientId}`;
+  const webhookUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/api/webhooks/onfleet/${clientId}`;
 
   const copyUrl = () => {
     navigator.clipboard.writeText(webhookUrl);

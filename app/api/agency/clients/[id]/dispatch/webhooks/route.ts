@@ -99,7 +99,8 @@ export async function POST(
   }
 
   const origin = process.env.NEXT_PUBLIC_APP_URL || 'https://kyra.conversionsystem.com';
-  const webhookUrl = `${origin}/api/webhooks/onfleet?clientId=${clientId}`;
+  // Use path-based clientId (not query string) so OnFleet can safely append ?check= during validation
+  const webhookUrl = `${origin}/api/webhooks/onfleet/${clientId}`;
 
   const client = createOnfleetClient(dispatch.onfleetApiKey);
 
@@ -116,7 +117,7 @@ export async function POST(
   for (const { trigger, name } of REQUIRED_TRIGGERS) {
     // Skip if a webhook with this trigger already exists for our URL
     const alreadyExists = existing.some(
-      (w) => w.trigger === trigger && w.url.includes(`clientId=${clientId}`),
+      (w) => w.trigger === trigger && (w.url.includes(`/onfleet/${clientId}`) || w.url.includes(`clientId=${clientId}`)),
     );
 
     if (alreadyExists) {
