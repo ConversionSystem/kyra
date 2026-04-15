@@ -53,7 +53,8 @@ export async function runOptimization(
   }
 
   // Filter to unassigned or assigned-but-not-started tasks
-  const pendingTasks = tasks.filter((t) => t.status === 0 || t.status === 1);
+  // OnFleet uses 'state' field: 0=unassigned, 1=assigned, 2=active, 3=completed
+  const pendingTasks = tasks.filter((t) => t.state === 0 || t.state === 1);
 
   // 2. Set completeBefore on tasks that don't have one (or need recalculation)
   for (const task of pendingTasks) {

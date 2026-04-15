@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { MessageSquare, Send, Clock, AlertTriangle, CheckCircle2, XCircle, Zap, Copy } from 'lucide-react';
+import { MessageSquare, Send, Clock, AlertTriangle, CheckCircle2, XCircle, Zap, Copy, Loader2 } from 'lucide-react';
 
 interface SmsConfig {
   enabled: boolean;
@@ -220,16 +220,7 @@ export default function DeliverySmsTab({ clientId }: { clientId: string }) {
           )}
 
           {/* Provider */}
-          <div className="rounded-xl border border-gray-200 bg-white p-5">
-            <h3 className="text-sm font-semibold text-gray-900">SMS Provider</h3>
-            <div className="mt-2 flex items-center gap-2">
-              <span className={`h-2 w-2 rounded-full ${config.providerConfigured ? 'bg-green-500' : 'bg-amber-400'}`} />
-              <span className="text-sm text-gray-700 capitalize">{config.provider}</span>
-              {!config.providerConfigured && (
-                <span className="text-xs text-amber-600">— API credentials needed</span>
-              )}
-            </div>
-          </div>
+          <ProviderSettings clientId={clientId} config={config} onUpdate={() => loadData()} />
 
           {/* Sending hours */}
           <div className="rounded-xl border border-gray-200 bg-white p-5">
@@ -375,6 +366,156 @@ export default function DeliverySmsTab({ clientId }: { clientId: string }) {
               );
             })
           )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Provider Settings Component ─────────────────────────────────────────────
+
+const PROVIDERS = [
+  { value: 'mock', label: 'Mock (testing)', description: 'Logs messages without sending' },
+  { value: 'twilio', label: 'Twilio', description: 'Industry-standard SMS API' },
+  { value: 'telnyx', label: 'Telnyx', description: 'Programmable SMS API' },
+  { value: 'custom', label: 'Custom API', description: 'Any REST-based SMS provider' },
+];
+
+function ProviderSettings({
+  clientId,
+  config,
+  onUpdate,
+}: {
+  clientId: string;
+  config: SmsConfig;
+  onUpdate: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [provider, setProvider] = useState(config.provider || 'mock');
+  const [apiKey, setApiKey] = useState('');
+  const [apiUrl, setApiUrl] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  const save = async () => {
+    setSaving(true);
+    setMsg(null);
+    try {
+      const res = await fetch(`/api/agency/clients/${clientId}/sms`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider,
+          ...(apiKey && { providerApiKey: apiKey }),
+          ...(apiUrl && { providerApiUrl: apiUrl }),
+        }),
+      });
+      if (res.ok) {
+        setMsg('Saved');
+        setEditing(false);
+        setApiKey('');
+        setApiUrl('');
+        onUpdate();
+      } else {
+        const data = await res.json();
+        setMsg(`Error: ${data.error || 'Failed to save'}`);
+      }
+    } catch {
+      setMsg('Network error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const defaultUrls: Record<string, string> = {
+    twilio: 'https://api.twilio.com/2010-04-01/Accounts/{ACCOUNT_SID}/Messages.json',
+    telnyx: 'https://api.telnyx.com/v2/messages',
+  };
+
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white p-5">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-gray-900">SMS Provider</h3>
+        {!editing && (
+          <button
+            onClick={() => setEditing(true)}
+            className="text-xs font-medium text-indigo-600 hover:text-indigo-700"
+          >
+            Configure
+          </button>
+        )}
+      </div>
+
+      {!editing ? (
+        <div className="mt-2 flex items-center gap-2">
+          <span className={`h-2 w-2 rounded-full ${config.providerConfigured ? 'bg-green-500' : 'bg-amber-400'}`} />
+          <span className="text-sm text-gray-700 capitalize">{config.provider}</span>
+          {!config.providerConfigured && (
+            <span className="text-xs text-amber-600">— API credentials needed</span>
+          )}
+        </div>
+      ) : (
+        <div className="mt-3 space-y-3">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Provider</label>
+            <select
+              value={provider}
+              onChange={(e) => {
+                setProvider(e.target.value);
+                if (defaultUrls[e.target.value]) setApiUrl(defaultUrls[e.target.value]);
+              }}
+              className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            >
+              {PROVIDERS.map((p) => (
+                <option key={p.value} value={p.value}>{p.label} — {p.description}</option>
+              ))}
+            </select>
+          </div>
+
+          {provider !== 'mock' && (
+            <>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">API Key / Auth Token</label>
+                <input
+                  type="password"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder={config.providerConfigured ? '••••••••••• (already set)' : 'Enter API key'}
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">API URL</label>
+                <input
+                  type="text"
+                  value={apiUrl}
+                  onChange={(e) => setApiUrl(e.target.value)}
+                  placeholder="https://api.provider.com/messages"
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+              </div>
+            </>
+          )}
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={save}
+              disabled={saving}
+              className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
+            >
+              {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+              Save Provider
+            </button>
+            <button
+              onClick={() => { setEditing(false); setMsg(null); }}
+              className="rounded-lg px-4 py-2 text-xs font-medium text-gray-500 hover:bg-gray-100"
+            >
+              Cancel
+            </button>
+            {msg && (
+              <span className={`text-xs ${msg.startsWith('Error') ? 'text-red-600' : 'text-green-600'}`}>{msg}</span>
+            )}
+          </div>
         </div>
       )}
     </div>

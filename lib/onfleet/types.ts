@@ -31,7 +31,8 @@ export interface OnfleetWorker {
 export interface OnfleetTask {
   id: string;
   shortId: string;
-  status: OnfleetTaskStatus;
+  state: OnfleetTaskStatus;
+  status?: OnfleetTaskStatus; // alias — OnFleet uses 'state'
   timeCreated: number;
   timeLastModified: number;
   completeAfter?: number;
