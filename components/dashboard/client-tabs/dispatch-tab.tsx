@@ -621,14 +621,24 @@ function RoutesView({
       const res = await fetch(`/api/agency/clients/${clientId}/dispatch/optimize`, {
         method: 'POST',
       });
+      if (!res.ok) {
+        const text = await res.text();
+        try {
+          const data = JSON.parse(text);
+          setOptimizeResult(`Error: ${data.errors?.join(', ') || data.error || `HTTP ${res.status}`}`);
+        } catch {
+          setOptimizeResult(`Error: HTTP ${res.status} — ${text.slice(0, 100)}`);
+        }
+        return;
+      }
       const data = await res.json();
       if (data.success) {
         setOptimizeResult(`Optimized: ${data.tasksProcessed} tasks processed, ${data.tasksUpdated} updated`);
       } else {
         setOptimizeResult(`Error: ${data.errors?.join(', ') || data.error || 'Unknown'}`);
       }
-    } catch {
-      setOptimizeResult('Network error');
+    } catch (err) {
+      setOptimizeResult(`Network error: ${err instanceof Error ? err.message : 'Request failed'}`);
     } finally {
       setOptimizing(false);
     }

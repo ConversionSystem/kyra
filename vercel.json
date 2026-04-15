@@ -8,7 +8,11 @@
     "app/api/agency/sites/[id]/generate/route.ts": { "maxDuration": 300 },
     "app/api/agency/sites/[id]/deploy/route.ts": { "maxDuration": 300 },
     "app/api/agency/sites/[id]/growth/route.ts": { "maxDuration": 60 },
-    "app/api/agency/sites/[id]/pages/route.ts": { "maxDuration": 60 }
+    "app/api/agency/sites/[id]/pages/route.ts": { "maxDuration": 60 },
+    "app/api/agency/clients/[id]/dispatch/optimize/route.ts": { "maxDuration": 60 },
+    "app/api/agency/clients/[id]/dispatch/drivers/route.ts": { "maxDuration": 30 },
+    "app/api/agency/clients/[id]/dispatch/webhooks/route.ts": { "maxDuration": 30 },
+    "app/api/webhooks/onfleet/[clientId]/route.ts": { "maxDuration": 30 }
   },
   "crons": [
     {
