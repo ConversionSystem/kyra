@@ -349,7 +349,7 @@ function OverviewView({
         </div>
 
         {/* Webhook URL for reference */}
-        <WebhookUrlCard clientId={clientId} />
+        <WebhookUrlCard clientId={clientId} hasApiKey={false} />
       </div>
     );
   }
@@ -463,7 +463,7 @@ function OverviewView({
       )}
 
       {/* Webhook URL */}
-      {config.enabled && <WebhookUrlCard clientId={clientId} />}
+      {config.enabled && <WebhookUrlCard clientId={clientId} hasApiKey={config.hasApiKey} />}
 
       {/* Recent Events */}
       {config.enabled && events.length > 0 && (
@@ -520,16 +520,17 @@ function WebhookUrlCard({ clientId, hasApiKey }: { clientId: string; hasApiKey?:
       const data = await res.json();
       if (!res.ok) {
         setRegisterResult({ success: false, message: data.error || 'Failed to register' });
-      } else if (data.failed > 0) {
-        const failedNames = data.results
+      } else if ((data.failed ?? 0) > 0) {
+        const failedNames = (data.results ?? [])
           .filter((r: { status: string }) => r.status === 'failed')
           .map((r: { name: string; error?: string }) => `${r.name}: ${r.error}`)
           .join(', ');
-        setRegisterResult({ success: false, message: `${data.created} registered, ${data.failed} failed: ${failedNames}` });
+        setRegisterResult({ success: false, message: `${data.created ?? 0} registered, ${data.failed} failed: ${failedNames}` });
       } else {
+        const created = data.created ?? 0;
         setRegisterResult({
           success: true,
-          message: `${data.created} webhook${data.created !== 1 ? 's' : ''} registered${data.existed ? `, ${data.existed} already existed` : ''}`,
+          message: `${created} webhook${created !== 1 ? 's' : ''} registered${data.existed ? `, ${data.existed} already existed` : ''}`,
         });
       }
     } catch {
@@ -1169,7 +1170,7 @@ function formatEventType(type: string): string {
   return labels[type] ?? type.replace(/_/g, ' ');
 }
 
-const ZONE_COLORS = ['#6366F1', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899'];
+const ZONE_COLORS = ['#6366F1', '#8B5CF6', '#A78BFA', '#4F46E5', '#7C3AED', '#6D28D9'];
 
 const DEFAULT_RULES: SlaRule[] = [
   {
