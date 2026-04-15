@@ -498,9 +498,11 @@ function OverviewView({
 
 // ── Webhook URL Card ──────────────────────────────────────────────────────
 
-function WebhookUrlCard({ clientId }: { clientId: string }) {
+function WebhookUrlCard({ clientId, hasApiKey }: { clientId: string; hasApiKey?: boolean }) {
   const [copied, setCopied] = useState(false);
-  const webhookUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/api/webhooks/onfleet?clientId=${clientId}&secret=configure-me`;
+  const [registering, setRegistering] = useState(false);
+  const [registerResult, setRegisterResult] = useState<{ success: boolean; message: string } | null>(null);
+  const webhookUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/api/webhooks/onfleet?clientId=${clientId}`;
 
   const copyUrl = () => {
     navigator.clipboard.writeText(webhookUrl);
@@ -508,12 +510,66 @@ function WebhookUrlCard({ clientId }: { clientId: string }) {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const registerWebhooks = async () => {
+    setRegistering(true);
+    setRegisterResult(null);
+    try {
+      const res = await fetch(`/api/agency/clients/${clientId}/dispatch/webhooks`, {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setRegisterResult({ success: false, message: data.error || 'Failed to register' });
+      } else if (data.failed > 0) {
+        const failedNames = data.results
+          .filter((r: { status: string }) => r.status === 'failed')
+          .map((r: { name: string; error?: string }) => `${r.name}: ${r.error}`)
+          .join(', ');
+        setRegisterResult({ success: false, message: `${data.created} registered, ${data.failed} failed: ${failedNames}` });
+      } else {
+        setRegisterResult({
+          success: true,
+          message: `${data.created} webhook${data.created !== 1 ? 's' : ''} registered${data.existed ? `, ${data.existed} already existed` : ''}`,
+        });
+      }
+    } catch {
+      setRegisterResult({ success: false, message: 'Network error' });
+    } finally {
+      setRegistering(false);
+    }
+  };
+
   return (
     <div className="p-4 rounded-xl border border-gray-200 bg-white">
-      <div className="flex items-center gap-2 mb-2">
-        <Zap className="h-4 w-4 text-indigo-500" />
-        <p className="text-sm font-semibold text-gray-900">OnFleet Webhook URL</p>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <Zap className="h-4 w-4 text-indigo-500" />
+          <p className="text-sm font-semibold text-gray-900">OnFleet Webhooks</p>
+        </div>
+        {hasApiKey && (
+          <button
+            onClick={registerWebhooks}
+            disabled={registering}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+          >
+            {registering ? (
+              <><Loader2 className="h-3 w-3 animate-spin" /> Registering...</>
+            ) : (
+              <><Zap className="h-3 w-3" /> Auto-Register Webhooks</>
+            )}
+          </button>
+        )}
       </div>
+
+      {registerResult && (
+        <div className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg mb-3 ${
+          registerResult.success ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
+        }`}>
+          {registerResult.success ? <CheckCircle2 className="h-3.5 w-3.5" /> : <AlertTriangle className="h-3.5 w-3.5" />}
+          {registerResult.message}
+        </div>
+      )}
+
       <div className="flex items-center gap-2">
         <code className="flex-1 text-xs text-gray-600 bg-gray-50 px-3 py-2 rounded-lg overflow-x-auto">
           {webhookUrl}
@@ -527,8 +583,9 @@ function WebhookUrlCard({ clientId }: { clientId: string }) {
         </button>
       </div>
       <p className="text-xs text-gray-400 mt-1.5">
-        Add this URL in OnFleet → API &amp; Webhooks → Create a webhook. Create one webhook per trigger:
-        <span className="font-medium text-gray-500"> Task assigned, Task started, Driver arriving, Task completed, Task failed, New task created.</span>
+        {hasApiKey
+          ? 'Click "Auto-Register Webhooks" to set up all 6 triggers automatically, or add them manually in OnFleet.'
+          : 'Connect your OnFleet API key first, then webhooks can be auto-registered.'}
       </p>
     </div>
   );

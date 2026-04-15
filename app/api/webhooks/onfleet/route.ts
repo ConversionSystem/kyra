@@ -24,17 +24,23 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
  * URL pattern: /api/webhooks/onfleet?clientId={clientId}&secret={webhookSecret}
  */
 
-// Onfleet sends a GET to validate the webhook URL on setup
+// Onfleet sends a GET to validate the webhook URL on setup.
+// It appends ?check=<value> and expects a 200 response with the check value
+// echoed back as the response body (plain text, not JSON).
+// See: https://docs.onfleet.com/reference/webhooks
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const check = searchParams.get('check');
 
-  // Onfleet validation — just return 200
   if (check) {
-    return NextResponse.json({ status: 'ok', check });
+    // OnFleet expects the check value echoed as plain text
+    return new NextResponse(check, {
+      status: 200,
+      headers: { 'Content-Type': 'text/plain' },
+    });
   }
 
-  return NextResponse.json({ status: 'ok', service: 'kyra-delivery-sms' });
+  return NextResponse.json({ status: 'ok', service: 'kyra-dispatch' });
 }
 
 export async function POST(req: NextRequest) {
