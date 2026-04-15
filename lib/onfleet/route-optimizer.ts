@@ -66,10 +66,20 @@ export async function runOptimization(
       const diff = Math.abs(sla.completeBefore - currentCB);
 
       if (diff > 300) {
-        await client.updateTask(task.id, {
-          completeBefore: sla.completeBefore,
-        });
-        tasksUpdated++;
+        try {
+          await client.updateTask(task.id, {
+            completeBefore: sla.completeBefore,
+          });
+          tasksUpdated++;
+        } catch (updateErr) {
+          const msg = updateErr instanceof Error ? updateErr.message : '';
+          if (msg.includes('405') || msg.includes('MethodNotAllowed')) {
+            // Task PATCH not available on this OnFleet plan (sandbox/trial)
+            // SLA calculations still succeed — just can't write them back
+          } else {
+            throw updateErr;
+          }
+        }
 
         events.push({
           client_id: clientId,
