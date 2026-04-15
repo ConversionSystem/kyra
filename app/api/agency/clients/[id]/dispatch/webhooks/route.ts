@@ -98,7 +98,7 @@ export async function POST(
     return NextResponse.json({ error: 'OnFleet API key not configured' }, { status: 400 });
   }
 
-  const origin = process.env.NEXT_PUBLIC_APP_URL || 'https://kyra.conversionsystem.com';
+  const origin = (process.env.NEXT_PUBLIC_APP_URL || 'https://kyra.conversionsystem.com').replace(/\/+$/, '');
   // Use path-based clientId (not query string) so OnFleet can safely append ?check= during validation
   const webhookUrl = `${origin}/api/webhooks/onfleet/${clientId}`;
 
