@@ -526,7 +526,10 @@ function WebhookUrlCard({ clientId }: { clientId: string }) {
           {copied ? 'Copied' : 'Copy'}
         </button>
       </div>
-      <p className="text-xs text-gray-400 mt-1.5">Add this URL in OnFleet → Settings → Webhooks. Select all task events.</p>
+      <p className="text-xs text-gray-400 mt-1.5">
+        Add this URL in OnFleet → API &amp; Webhooks → Create a webhook. Create one webhook per trigger:
+        <span className="font-medium text-gray-500"> Task assigned, Task started, Driver arriving, Task completed, Task failed, New task created.</span>
+      </p>
     </div>
   );
 }
