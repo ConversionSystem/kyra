@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAgencyMember } from '@/lib/agency/middleware';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { createOnfleetClient } from '@/lib/onfleet/client';
+import { calculateSlaStats } from '@/lib/onfleet/sla-calculator';
 import type { ClientDispatchConfig, DispatchStats } from '@/lib/onfleet/types';
 
 /**
@@ -37,7 +39,7 @@ export async function GET(
   const settings = (data.settings || {}) as Record<string, unknown>;
   const dispatch = (settings.dispatch || {}) as Partial<ClientDispatchConfig>;
 
-  // Load recent dispatch events
+  // Load recent dispatch events (50 for richer history)
   let recentEvents: unknown[] = [];
   try {
     const { data: events } = await supabase
@@ -45,27 +47,71 @@ export async function GET(
       .select('*')
       .eq('client_id', clientId)
       .order('created_at', { ascending: false })
-      .limit(20);
+      .limit(50);
     recentEvents = events || [];
   } catch {
     // table may not exist yet
   }
 
-  // Calculate stats from events
+  // Calculate stats from events (fallback values)
   const now = Date.now();
   const last24h = (recentEvents as any[]).filter(
     (e) => new Date(e.created_at).getTime() > now - 86400000,
   );
 
   const optimizationRuns = last24h.filter((e) => e.event_type === 'optimization_run');
-  const slaBreaches = last24h.filter((e) => e.event_type === 'sla_breach');
+  const slaBreachEvents = last24h.filter((e) => e.event_type === 'sla_breach');
+
+  // Start with event-based stats as fallback
+  let totalTasks24h = optimizationRuns.reduce((sum: number, e: any) => sum + (e.details?.tasksProcessed || 0), 0);
+  let completedOnTime = 0;
+  let slaBreaches = slaBreachEvents.length;
+  let avgDeliveryMinutes = dispatch.defaultSlaTotalMinutes ?? 60;
+  let activeDrivers = 0;
+
+  // When OnFleet API key is set, fetch real data
+  if (dispatch.onfleetApiKey) {
+    try {
+      const onfleet = createOnfleetClient(dispatch.onfleetApiKey);
+      const since = now - 86400 * 1000;
+
+      // Fetch real tasks and workers in parallel
+      const [allTasks, workers] = await Promise.all([
+        onfleet.listTasks(since).catch(() => []),
+        onfleet.listWorkers().catch(() => []),
+      ]);
+
+      // Count active drivers (on duty)
+      activeDrivers = workers.filter((w) => w.onDuty).length;
+
+      // Total tasks = all tasks created in last 24h
+      if (allTasks.length > 0) {
+        totalTasks24h = allTasks.length;
+      }
+
+      // Calculate real SLA stats from completed tasks
+      const completedTasks = allTasks.filter(
+        (t) => t.state === 3 && t.completionDetails?.time,
+      );
+
+      if (completedTasks.length > 0) {
+        const slaStats = calculateSlaStats(completedTasks, dispatch as ClientDispatchConfig);
+        completedOnTime = slaStats.onTime;
+        slaBreaches = slaStats.breached;
+        avgDeliveryMinutes = slaStats.avgMinutes;
+      }
+    } catch (err) {
+      console.error('[dispatch/stats] Failed to fetch OnFleet data:', err);
+      // Fall back to event-based stats (already set above)
+    }
+  }
 
   const stats: DispatchStats = {
-    totalTasks24h: optimizationRuns.reduce((sum: number, e: any) => sum + (e.details?.tasksProcessed || 0), 0),
-    completedOnTime: 0, // calculated from OnFleet data when API key is set
-    slaBreaches: slaBreaches.length,
-    avgDeliveryMinutes: dispatch.defaultSlaTotalMinutes ?? 60,
-    activeDrivers: 0, // populated from OnFleet when API key is set
+    totalTasks24h,
+    completedOnTime,
+    slaBreaches,
+    avgDeliveryMinutes,
+    activeDrivers,
     optimizationRuns24h: optimizationRuns.length,
     lastOptimization: optimizationRuns[0]?.created_at,
   };
