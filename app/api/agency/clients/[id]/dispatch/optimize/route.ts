@@ -45,7 +45,15 @@ export async function POST(
   }
 
   // Run optimization
-  const result = await runOptimization(clientId, dispatch);
+  let result;
+  try {
+    result = await runOptimization(clientId, dispatch);
+  } catch (err) {
+    return NextResponse.json({
+      success: false,
+      error: err instanceof Error ? err.message : 'Optimization failed',
+    }, { status: 500 });
+  }
 
   // Log events to dispatch_events table
   for (const event of result.events) {

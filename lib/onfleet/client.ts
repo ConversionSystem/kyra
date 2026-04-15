@@ -79,7 +79,8 @@ export class OnfleetClient {
   /** List tasks (paginated — returns most recent by default) */
   async listTasks(from?: number): Promise<OnfleetTask[]> {
     const params = from ? `?from=${from}` : '';
-    return this.request<OnfleetTask[]>('GET', `/tasks/all${params}`);
+    const result = await this.request<{ tasks: OnfleetTask[]; lastId?: string }>('GET', `/tasks/all${params}`);
+    return result.tasks ?? [];
   }
 
   /** Get a single task by ID */
