@@ -36,8 +36,8 @@ export async function runOptimization(
   const events: Omit<DispatchEvent, 'id' | 'created_at'>[] = [];
   let tasksUpdated = 0;
 
-  // 1. Fetch recent tasks (last 24h)
-  const since = Math.floor(Date.now() / 1000) - 86400;
+  // 1. Fetch recent tasks (last 24h) — OnFleet expects milliseconds
+  const since = Date.now() - 86400 * 1000;
   let tasks: OnfleetTask[];
   try {
     tasks = await client.listTasks(since);
