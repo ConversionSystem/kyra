@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Truck, Clock, AlertTriangle, CheckCircle2, XCircle, Zap,
-  MapPin, Users, Bell, Settings, Play, Pause, RefreshCw,
-  TrendingUp, Shield, ChevronRight, Loader2, Copy, Plus,
-  Trash2, Save, ToggleLeft, ToggleRight,
+  Truck, Clock, AlertTriangle, CheckCircle2, Zap,
+  MapPin, Users, Bell, Settings, Play, RefreshCw,
+  TrendingUp, Shield, Loader2, Plus,
+  Trash2, Save, ToggleLeft, ToggleRight, Key, Copy, Check,
 } from 'lucide-react';
 
 // ── Types ─────────────────────────────────────────────────────────────────
@@ -93,6 +93,7 @@ export default function DispatchTab({ clientId }: { clientId: string }) {
   const [events, setEvents] = useState<DispatchEventEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saveMsg, setSaveMsg] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     try {
@@ -126,8 +127,9 @@ export default function DispatchTab({ clientId }: { clientId: string }) {
     if (activeView === 'drivers' && config?.hasApiKey) loadDrivers();
   }, [activeView, config?.hasApiKey, loadDrivers]);
 
-  const saveConfig = async (updates: Partial<DispatchConfig>) => {
+  const saveConfig = async (updates: Record<string, unknown>) => {
     setSaving(true);
+    setSaveMsg(null);
     try {
       const res = await fetch(`/api/agency/clients/${clientId}/dispatch`, {
         method: 'PUT',
@@ -135,11 +137,17 @@ export default function DispatchTab({ clientId }: { clientId: string }) {
         body: JSON.stringify(updates),
       });
       if (res.ok) {
+        // Reload full config from server to stay in sync
+        await loadData();
+        setSaveMsg('Saved');
+        setTimeout(() => setSaveMsg(null), 2000);
+      } else {
         const data = await res.json();
-        setConfig((prev) => prev ? { ...prev, ...data.dispatch } : prev);
+        setSaveMsg(`Error: ${data.error || 'Failed to save'}`);
       }
     } catch (err) {
       console.error('Failed to save:', err);
+      setSaveMsg('Error: Network failure');
     } finally {
       setSaving(false);
     }
@@ -158,15 +166,15 @@ export default function DispatchTab({ clientId }: { clientId: string }) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-gradient-to-br from-orange-500 to-red-500">
-            <Truck className="h-5 w-5 text-white" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50">
+            <Truck className="h-5 w-5 text-indigo-600" />
           </div>
           <div>
             <h2 className="text-lg font-bold text-gray-900">Dispatch Intelligence</h2>
             <p className="text-xs text-gray-500">Route optimization, SLA tracking, driver management</p>
           </div>
         </div>
-        {config?.enabled && (
+        {config?.enabled && config?.hasApiKey && (
           <span className="flex items-center gap-1.5 text-xs font-medium text-green-600 bg-green-50 px-2.5 py-1 rounded-full">
             <CheckCircle2 className="h-3 w-3" /> Active
           </span>
@@ -202,8 +210,9 @@ export default function DispatchTab({ clientId }: { clientId: string }) {
           config={config}
           stats={stats}
           events={events}
-          onToggle={(enabled) => saveConfig({ enabled })}
+          onSave={saveConfig}
           saving={saving}
+          saveMsg={saveMsg}
         />
       )}
       {activeView === 'routes' && (
@@ -212,16 +221,18 @@ export default function DispatchTab({ clientId }: { clientId: string }) {
           config={config}
           onSave={saveConfig}
           saving={saving}
+          saveMsg={saveMsg}
         />
       )}
       {activeView === 'drivers' && (
-        <DriversView drivers={drivers} onRefresh={loadDrivers} />
+        <DriversView drivers={drivers} onRefresh={loadDrivers} config={config} />
       )}
       {activeView === 'notifications' && (
         <NotificationsView
           config={config}
           onSave={saveConfig}
           saving={saving}
+          saveMsg={saveMsg}
         />
       )}
       {activeView === 'rules' && (
@@ -229,8 +240,31 @@ export default function DispatchTab({ clientId }: { clientId: string }) {
           config={config}
           onSave={saveConfig}
           saving={saving}
+          saveMsg={saveMsg}
         />
       )}
+    </div>
+  );
+}
+
+// ── Save Button ───────────────────────────────────────────────────────────
+
+function SaveButton({ saving, saveMsg, onClick }: { saving: boolean; saveMsg: string | null; onClick: () => void }) {
+  return (
+    <div className="flex items-center gap-3 justify-end">
+      {saveMsg && (
+        <span className={`text-xs ${saveMsg.startsWith('Error') ? 'text-red-600' : 'text-green-600'}`}>
+          {saveMsg}
+        </span>
+      )}
+      <button
+        onClick={onClick}
+        disabled={saving}
+        className="flex items-center gap-1.5 px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+      >
+        {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+        Save Changes
+      </button>
     </div>
   );
 }
@@ -242,19 +276,81 @@ function OverviewView({
   config,
   stats,
   events,
-  onToggle,
+  onSave,
   saving,
+  saveMsg,
 }: {
   clientId: string;
   config: DispatchConfig | null;
   stats: DispatchStats | null;
   events: DispatchEventEntry[];
-  onToggle: (enabled: boolean) => void;
+  onSave: (updates: Record<string, unknown>) => void;
   saving: boolean;
+  saveMsg: string | null;
 }) {
-  if (!config) {
+  const [apiKey, setApiKey] = useState('');
+  const [showApiInput, setShowApiInput] = useState(false);
+
+  // No API key — show setup
+  if (!config?.hasApiKey) {
     return (
-      <SetupPrompt clientId={clientId} />
+      <div className="space-y-6">
+        {/* Enable toggle */}
+        <div className="flex items-center justify-between p-4 rounded-xl border border-gray-200 bg-white">
+          <div>
+            <p className="text-sm font-semibold text-gray-900">Dispatch Intelligence</p>
+            <p className="text-xs text-gray-500 mt-0.5">
+              {config?.enabled ? 'Enabled — connect OnFleet to start' : 'Enable to start optimizing delivery routes'}
+            </p>
+          </div>
+          <button
+            onClick={() => onSave({ enabled: !config?.enabled })}
+            disabled={saving}
+          >
+            {config?.enabled ? (
+              <ToggleRight className="h-8 w-8 text-green-500" />
+            ) : (
+              <ToggleLeft className="h-8 w-8 text-gray-300" />
+            )}
+          </button>
+        </div>
+
+        {/* API Key Setup */}
+        <div className="p-6 rounded-xl border border-gray-200 bg-white">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50">
+              <Key className="h-5 w-5 text-indigo-600" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-900">Connect OnFleet</p>
+              <p className="text-xs text-gray-500">Enter your OnFleet API key to enable route optimization and driver tracking</p>
+            </div>
+          </div>
+          <div className="space-y-3">
+            <input
+              type="password"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              placeholder="Paste your OnFleet API key"
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            />
+            <button
+              onClick={() => onSave({ onfleetApiKey: apiKey.trim(), enabled: true })}
+              disabled={saving || !apiKey.trim()}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50 transition-all"
+            >
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
+              {saving ? 'Connecting...' : 'Connect OnFleet'}
+            </button>
+            {saveMsg && (
+              <p className={`text-xs ${saveMsg.startsWith('Error') ? 'text-red-600' : 'text-green-600'}`}>{saveMsg}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Webhook URL for reference */}
+        <WebhookUrlCard clientId={clientId} />
+      </div>
     );
   }
 
@@ -269,27 +365,62 @@ function OverviewView({
 
   return (
     <div className="space-y-6">
-      {/* Enable/Disable Toggle */}
+      {/* Enable/Disable + API Key */}
       <div className="flex items-center justify-between p-4 rounded-xl border border-gray-200 bg-white">
-        <div>
-          <p className="text-sm font-semibold text-gray-900">Dispatch Intelligence</p>
-          <p className="text-xs text-gray-500 mt-0.5">
-            {config.enabled
-              ? 'Actively optimizing routes and managing SLAs'
-              : 'Enable to start optimizing delivery routes'}
-          </p>
+        <div className="flex items-center gap-3">
+          <div>
+            <p className="text-sm font-semibold text-gray-900">Dispatch Intelligence</p>
+            <p className="text-xs text-gray-500 mt-0.5">
+              {config.enabled
+                ? 'Actively optimizing routes and managing SLAs'
+                : 'Enable to start optimizing delivery routes'}
+            </p>
+          </div>
         </div>
-        <button
-          onClick={() => onToggle(!config.enabled)}
-          disabled={saving}
-          className="flex items-center gap-2"
-        >
-          {config.enabled ? (
-            <ToggleRight className="h-8 w-8 text-green-500" />
+        <div className="flex items-center gap-3">
+          {/* Update API Key */}
+          {showApiInput ? (
+            <div className="flex items-center gap-2">
+              <input
+                type="password"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder="New API key"
+                className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs w-48 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+              <button
+                onClick={() => { onSave({ onfleetApiKey: apiKey.trim() }); setShowApiInput(false); setApiKey(''); }}
+                disabled={!apiKey.trim()}
+                className="text-xs text-indigo-600 font-medium hover:text-indigo-700"
+              >
+                Update
+              </button>
+              <button
+                onClick={() => { setShowApiInput(false); setApiKey(''); }}
+                className="text-xs text-gray-400 hover:text-gray-600"
+              >
+                Cancel
+              </button>
+            </div>
           ) : (
-            <ToggleLeft className="h-8 w-8 text-gray-300" />
+            <button
+              onClick={() => setShowApiInput(true)}
+              className="flex items-center gap-1 text-xs text-gray-400 hover:text-indigo-600 transition-colors"
+            >
+              <Key className="h-3 w-3" /> API Key
+            </button>
           )}
-        </button>
+          <button
+            onClick={() => onSave({ enabled: !config.enabled })}
+            disabled={saving}
+          >
+            {config.enabled ? (
+              <ToggleRight className="h-8 w-8 text-green-500" />
+            ) : (
+              <ToggleLeft className="h-8 w-8 text-gray-300" />
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Stats Grid */}
@@ -317,7 +448,7 @@ function OverviewView({
           <div className="flex items-center gap-3">
             <div className="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-green-400 to-green-500 rounded-full transition-all"
+                className="h-full bg-gradient-to-r from-indigo-400 to-indigo-600 rounded-full transition-all"
                 style={{ width: `${Math.round((stats.completedOnTime / stats.totalTasks24h) * 100)}%` }}
               />
             </div>
@@ -330,6 +461,9 @@ function OverviewView({
           </p>
         </div>
       )}
+
+      {/* Webhook URL */}
+      {config.enabled && <WebhookUrlCard clientId={clientId} />}
 
       {/* Recent Events */}
       {config.enabled && events.length > 0 && (
@@ -362,6 +496,41 @@ function OverviewView({
   );
 }
 
+// ── Webhook URL Card ──────────────────────────────────────────────────────
+
+function WebhookUrlCard({ clientId }: { clientId: string }) {
+  const [copied, setCopied] = useState(false);
+  const webhookUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/api/webhooks/onfleet?clientId=${clientId}&secret=configure-me`;
+
+  const copyUrl = () => {
+    navigator.clipboard.writeText(webhookUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="p-4 rounded-xl border border-gray-200 bg-white">
+      <div className="flex items-center gap-2 mb-2">
+        <Zap className="h-4 w-4 text-indigo-500" />
+        <p className="text-sm font-semibold text-gray-900">OnFleet Webhook URL</p>
+      </div>
+      <div className="flex items-center gap-2">
+        <code className="flex-1 text-xs text-gray-600 bg-gray-50 px-3 py-2 rounded-lg overflow-x-auto">
+          {webhookUrl}
+        </code>
+        <button
+          onClick={copyUrl}
+          className="flex items-center gap-1 px-3 py-2 text-xs text-gray-500 hover:text-indigo-600 border border-gray-200 rounded-lg transition-colors"
+        >
+          {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+          {copied ? 'Copied' : 'Copy'}
+        </button>
+      </div>
+      <p className="text-xs text-gray-400 mt-1.5">Add this URL in OnFleet → Settings → Webhooks. Select all task events.</p>
+    </div>
+  );
+}
+
 // ── Routes & Optimization View ─────────────────────────────────────────────
 
 function RoutesView({
@@ -369,11 +538,13 @@ function RoutesView({
   config,
   onSave,
   saving,
+  saveMsg,
 }: {
   clientId: string;
   config: DispatchConfig | null;
-  onSave: (updates: Partial<DispatchConfig>) => void;
+  onSave: (updates: Record<string, unknown>) => void;
   saving: boolean;
+  saveMsg: string | null;
 }) {
   const [optimizing, setOptimizing] = useState(false);
   const [optimizeResult, setOptimizeResult] = useState<string | null>(null);
@@ -393,7 +564,7 @@ function RoutesView({
       if (data.success) {
         setOptimizeResult(`Optimized: ${data.tasksProcessed} tasks processed, ${data.tasksUpdated} updated`);
       } else {
-        setOptimizeResult(`Error: ${data.errors?.join(', ') || 'Unknown'}`);
+        setOptimizeResult(`Error: ${data.errors?.join(', ') || data.error || 'Unknown'}`);
       }
     } catch {
       setOptimizeResult('Network error');
@@ -428,7 +599,7 @@ function RoutesView({
       defaultSlaTotalMinutes: defaultSla,
       autoOptimize: autoOpt,
       zones,
-    } as any);
+    });
   };
 
   return (
@@ -443,7 +614,7 @@ function RoutesView({
           <button
             onClick={triggerOptimization}
             disabled={optimizing || !config?.hasApiKey}
-            className="flex items-center gap-1.5 px-4 py-2 bg-orange-500 text-white rounded-lg text-xs font-semibold hover:bg-orange-600 disabled:opacity-50 transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700 disabled:opacity-50 transition-colors"
           >
             {optimizing ? (
               <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Optimizing...</>
@@ -460,7 +631,7 @@ function RoutesView({
         {!config?.hasApiKey && (
           <p className="text-xs text-amber-600 mt-2 flex items-center gap-1">
             <AlertTriangle className="h-3 w-3" />
-            Add your OnFleet API key in Settings to enable optimization
+            Connect your OnFleet API key in the Overview tab to enable optimization
           </p>
         )}
       </div>
@@ -495,7 +666,7 @@ function RoutesView({
                 max={120}
                 value={interval}
                 onChange={(e) => setInterval_(Number(e.target.value))}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
             <div>
@@ -508,7 +679,7 @@ function RoutesView({
                 max={240}
                 value={defaultSla}
                 onChange={(e) => setDefaultSla(Number(e.target.value))}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
           </div>
@@ -548,13 +719,13 @@ function RoutesView({
                 value={zone.name}
                 onChange={(e) => updateZone(zone.id, { name: e.target.value })}
                 placeholder="Zone name (e.g. Blue Zone)"
-                className="flex-1 px-2 py-1 border border-gray-200 rounded text-sm"
+                className="flex-1 px-2 py-1 border border-gray-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
               <input
                 type="number"
                 value={zone.targetMinutes}
                 onChange={(e) => updateZone(zone.id, { targetMinutes: Number(e.target.value) })}
-                className="w-20 px-2 py-1 border border-gray-200 rounded text-sm text-center"
+                className="w-20 px-2 py-1 border border-gray-200 rounded text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 min={10}
                 max={240}
               />
@@ -567,32 +738,76 @@ function RoutesView({
               </button>
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Zip codes (comma-separated)</label>
-              <input
-                type="text"
-                value={zone.zipCodes.join(', ')}
-                onChange={(e) => updateZone(zone.id, {
-                  zipCodes: e.target.value.split(',').map((z) => z.trim()).filter(Boolean),
-                })}
-                placeholder="95110, 95112, 95113"
-                className="w-full px-2 py-1 border border-gray-200 rounded text-sm"
+              <label className="text-xs text-gray-500 block mb-1">
+                Zip codes (comma-separated — press Enter or comma to add)
+              </label>
+              <ZipCodeInput
+                zipCodes={zone.zipCodes}
+                onChange={(zipCodes) => updateZone(zone.id, { zipCodes })}
               />
             </div>
           </div>
         ))}
       </div>
 
-      {/* Save Button */}
-      <div className="flex justify-end">
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="flex items-center gap-1.5 px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50 transition-colors"
-        >
-          {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-          Save Changes
-        </button>
-      </div>
+      <SaveButton saving={saving} saveMsg={saveMsg} onClick={handleSave} />
+    </div>
+  );
+}
+
+// ── Zip Code Input (tag-style) ────────────────────────────────────────────
+
+function ZipCodeInput({ zipCodes, onChange }: { zipCodes: string[]; onChange: (zips: string[]) => void }) {
+  const [input, setInput] = useState('');
+
+  const addZips = (raw: string) => {
+    const newZips = raw
+      .split(/[,\s]+/)
+      .map((z) => z.trim())
+      .filter((z) => z && !zipCodes.includes(z));
+    if (newZips.length > 0) {
+      onChange([...zipCodes, ...newZips]);
+    }
+    setInput('');
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      addZips(input);
+    }
+    if (e.key === 'Backspace' && !input && zipCodes.length > 0) {
+      onChange(zipCodes.slice(0, -1));
+    }
+  };
+
+  const handleBlur = () => {
+    if (input.trim()) addZips(input);
+  };
+
+  const removeZip = (zip: string) => {
+    onChange(zipCodes.filter((z) => z !== zip));
+  };
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 px-2 py-1.5 border border-gray-200 rounded-lg min-h-[36px] focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent">
+      {zipCodes.map((zip) => (
+        <span key={zip} className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded text-xs font-medium">
+          {zip}
+          <button onClick={() => removeZip(zip)} className="text-indigo-400 hover:text-indigo-700">
+            &times;
+          </button>
+        </span>
+      ))}
+      <input
+        type="text"
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        onKeyDown={handleKeyDown}
+        onBlur={handleBlur}
+        placeholder={zipCodes.length === 0 ? 'Type zip codes...' : ''}
+        className="flex-1 min-w-[80px] text-sm outline-none bg-transparent"
+      />
     </div>
   );
 }
@@ -602,12 +817,26 @@ function RoutesView({
 function DriversView({
   drivers,
   onRefresh,
+  config,
 }: {
   drivers: DriverStatus[];
   onRefresh: () => void;
+  config: DispatchConfig | null;
 }) {
   const onDuty = drivers.filter((d) => d.onDuty);
   const offDuty = drivers.filter((d) => !d.onDuty);
+
+  if (!config?.hasApiKey) {
+    return (
+      <div className="text-center py-16">
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-50 mx-auto mb-4">
+          <Users className="h-6 w-6 text-indigo-600" />
+        </div>
+        <p className="text-sm font-medium text-gray-700">Connect OnFleet to see drivers</p>
+        <p className="text-xs text-gray-400 mt-1">Go to the Overview tab and add your OnFleet API key</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -617,7 +846,7 @@ function DriversView({
         </p>
         <button
           onClick={onRefresh}
-          className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700"
+          className="flex items-center gap-1 text-xs text-gray-500 hover:text-indigo-600 transition-colors"
         >
           <RefreshCw className="h-3 w-3" /> Refresh
         </button>
@@ -627,7 +856,7 @@ function DriversView({
         <div className="text-center py-12">
           <Users className="h-10 w-10 text-gray-300 mx-auto mb-3" />
           <p className="text-sm text-gray-500">No driver data available</p>
-          <p className="text-xs text-gray-400 mt-1">Connect your OnFleet API key to see live driver statuses</p>
+          <p className="text-xs text-gray-400 mt-1">Drivers will appear here when they&apos;re active in OnFleet</p>
         </div>
       )}
 
@@ -683,10 +912,12 @@ function NotificationsView({
   config,
   onSave,
   saving,
+  saveMsg,
 }: {
   config: DispatchConfig | null;
-  onSave: (updates: Partial<DispatchConfig>) => void;
+  onSave: (updates: Record<string, unknown>) => void;
   saving: boolean;
+  saveMsg: string | null;
 }) {
   const gate = config?.notificationGate ?? {
     suppressOnReassign: true,
@@ -705,7 +936,7 @@ function NotificationsView({
         suppressOnRouteReoptimize: suppressReoptimize,
         cooldownMinutes: cooldown,
       },
-    } as any);
+    });
   };
 
   return (
@@ -717,7 +948,7 @@ function NotificationsView({
         </div>
         <p className="text-xs text-gray-500 mb-4">
           Controls WHEN notifications are sent. Prevents duplicate tracking messages when tasks are reassigned or routes are reoptimized.
-          The SMS tab controls WHAT is sent.
+          The Voice &amp; SMS tab controls WHAT message content is sent.
         </p>
 
         <div className="space-y-4">
@@ -746,22 +977,13 @@ function NotificationsView({
               max={120}
               value={cooldown}
               onChange={(e) => setCooldown(Number(e.target.value))}
-              className="w-32 px-3 py-2 border border-gray-200 rounded-lg text-sm"
+              className="w-32 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
         </div>
       </div>
 
-      <div className="flex justify-end">
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="flex items-center gap-1.5 px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50 transition-colors"
-        >
-          {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-          Save Changes
-        </button>
-      </div>
+      <SaveButton saving={saving} saveMsg={saveMsg} onClick={handleSave} />
     </div>
   );
 }
@@ -772,19 +994,23 @@ function RulesView({
   config,
   onSave,
   saving,
+  saveMsg,
 }: {
   config: DispatchConfig | null;
-  onSave: (updates: Partial<DispatchConfig>) => void;
+  onSave: (updates: Record<string, unknown>) => void;
   saving: boolean;
+  saveMsg: string | null;
 }) {
-  const [rules, setRules] = useState<SlaRule[]>(config?.rules ?? DEFAULT_RULES);
+  // Use DEFAULT_RULES if config has no rules or empty array
+  const initialRules = config?.rules && config.rules.length > 0 ? config.rules : DEFAULT_RULES;
+  const [rules, setRules] = useState<SlaRule[]>(initialRules);
 
   const toggleRule = (id: string) => {
     setRules(rules.map((r) => r.id === id ? { ...r, enabled: !r.enabled } : r));
   };
 
   const handleSave = () => {
-    onSave({ rules } as any);
+    onSave({ rules });
   };
 
   return (
@@ -800,7 +1026,7 @@ function RulesView({
             <div
               key={rule.id}
               className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
-                rule.enabled ? 'border-green-200 bg-green-50/50' : 'border-gray-100'
+                rule.enabled ? 'border-indigo-200 bg-indigo-50/50' : 'border-gray-100'
               }`}
             >
               <button onClick={() => toggleRule(rule.id)}>
@@ -822,76 +1048,12 @@ function RulesView({
         </div>
       </div>
 
-      <div className="flex justify-end">
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="flex items-center gap-1.5 px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50 transition-colors"
-        >
-          {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-          Save Changes
-        </button>
-      </div>
+      <SaveButton saving={saving} saveMsg={saveMsg} onClick={handleSave} />
     </div>
   );
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────
-
-function SetupPrompt({ clientId }: { clientId: string }) {
-  const [apiKey, setApiKey] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-
-  const handleConnect = async () => {
-    if (!apiKey.trim()) return;
-    setSaving(true);
-    setError('');
-    try {
-      const res = await fetch(`/api/agency/clients/${clientId}/dispatch`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ onfleetApiKey: apiKey.trim(), enabled: true }),
-      });
-      if (!res.ok) throw new Error('Failed to save');
-      window.location.reload();
-    } catch {
-      setError('Failed to connect. Check your API key and try again.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div className="text-center py-16">
-      <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center mb-4">
-        <Truck className="h-8 w-8 text-white" />
-      </div>
-      <h3 className="text-lg font-bold text-gray-900 mb-2">Set Up Dispatch Intelligence</h3>
-      <p className="text-sm text-gray-500 max-w-md mx-auto mb-6">
-        Connect your OnFleet API key to enable route optimization, SLA tracking, and smart notification management.
-      </p>
-      <div className="max-w-sm mx-auto space-y-3">
-        <input
-          type="password"
-          value={apiKey}
-          onChange={(e) => setApiKey(e.target.value)}
-          placeholder="Paste your OnFleet API key"
-          className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-        />
-        <button
-          onClick={handleConnect}
-          disabled={saving || !apiKey.trim()}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl text-sm font-semibold hover:from-orange-600 hover:to-red-600 disabled:opacity-50 transition-all"
-        >
-          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
-          {saving ? 'Connecting...' : 'Connect OnFleet'}
-        </button>
-        {error && <p className="text-xs text-red-600">{error}</p>}
-      </div>
-    </div>
-  );
-}
 
 function ToggleRow({
   label,
@@ -923,14 +1085,14 @@ function ToggleRow({
 
 function EventIcon({ type }: { type: string }) {
   const icons: Record<string, { icon: React.ElementType; color: string }> = {
-    optimization_run: { icon: Zap, color: 'text-blue-500' },
+    optimization_run: { icon: Zap, color: 'text-indigo-500' },
     sla_breach: { icon: AlertTriangle, color: 'text-red-500' },
     notification_suppressed: { icon: Bell, color: 'text-amber-500' },
-    driver_break: { icon: Pause, color: 'text-gray-500' },
+    driver_break: { icon: Clock, color: 'text-gray-500' },
     route_rebalance: { icon: RefreshCw, color: 'text-indigo-500' },
     complete_before_set: { icon: Clock, color: 'text-green-500' },
   };
-  const entry = icons[type] ?? { icon: ChevronRight, color: 'text-gray-400' };
+  const entry = icons[type] ?? { icon: TrendingUp, color: 'text-gray-400' };
   const Icon = entry.icon;
   return <Icon className={`h-3.5 w-3.5 ${entry.color}`} />;
 }
@@ -947,7 +1109,7 @@ function formatEventType(type: string): string {
   return labels[type] ?? type.replace(/_/g, ' ');
 }
 
-const ZONE_COLORS = ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899'];
+const ZONE_COLORS = ['#6366F1', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899'];
 
 const DEFAULT_RULES: SlaRule[] = [
   {

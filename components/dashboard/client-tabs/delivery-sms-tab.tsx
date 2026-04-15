@@ -219,29 +219,6 @@ export default function DeliverySmsTab({ clientId }: { clientId: string }) {
             </div>
           )}
 
-          {/* Webhook URL */}
-          <div className="rounded-xl border border-gray-200 bg-white p-5">
-            <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-              <Zap className="h-4 w-4 text-indigo-600" />
-              Onfleet Webhook URL
-            </h3>
-            <div className="mt-3 flex items-center gap-2">
-              <code className="flex-1 truncate rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-700">
-                {config.webhookUrl}
-              </code>
-              <button
-                onClick={copyWebhookUrl}
-                className="flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 transition"
-              >
-                <Copy className="h-3 w-3" />
-                {copied ? 'Copied!' : 'Copy'}
-              </button>
-            </div>
-            <p className="mt-2 text-xs text-gray-400">
-              Add this URL in Onfleet → Settings → Webhooks. Select all task events.
-            </p>
-          </div>
-
           {/* Provider */}
           <div className="rounded-xl border border-gray-200 bg-white p-5">
             <h3 className="text-sm font-semibold text-gray-900">SMS Provider</h3>
