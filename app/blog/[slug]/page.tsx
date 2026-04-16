@@ -16,15 +16,26 @@ export async function generateMetadata({
   const { slug } = await params;
   const post = getPost(slug);
   if (!post) return { title: 'Not found' };
+  const url = `https://kyra.conversionsystem.com/blog/${slug}`;
   return {
     title: post.title,
     description: post.description,
+    alternates: { canonical: url },
+    keywords: [
+      post.category,
+      'AI worker',
+      'AI agent',
+      'white-label AI',
+      'agency AI platform',
+      'Kyra',
+    ],
     openGraph: {
       title: post.title,
       description: post.description,
       type: 'article',
       publishedTime: post.date,
-      url: `https://kyra.conversionsystem.com/blog/${slug}`,
+      url,
+      siteName: 'Kyra AI',
     },
     twitter: { card: 'summary_large_image', title: post.title, description: post.description },
   };
@@ -43,7 +54,7 @@ export default async function BlogPostPage({
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white">
-      {/* JSON-LD */}
+      {/* JSON-LD — richer schema for SEO + GEO (AI citation surfacing) */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -53,8 +64,28 @@ export default async function BlogPostPage({
             headline: post.title,
             description: post.description,
             datePublished: post.date,
-            author: { '@type': 'Organization', name: 'Conversion System' },
-            publisher: { '@type': 'Organization', name: 'Kyra AI', url: 'https://kyra.conversionsystem.com' },
+            dateModified: post.date,
+            articleSection: post.category,
+            wordCount: post.content.replace(/<[^>]+>/g, ' ').split(/\s+/).filter(Boolean).length,
+            inLanguage: 'en-US',
+            mainEntityOfPage: {
+              '@type': 'WebPage',
+              '@id': `https://kyra.conversionsystem.com/blog/${slug}`,
+            },
+            author: {
+              '@type': 'Organization',
+              name: 'Conversion System',
+              url: 'https://conversionsystem.com',
+            },
+            publisher: {
+              '@type': 'Organization',
+              name: 'Kyra AI',
+              url: 'https://kyra.conversionsystem.com',
+              logo: {
+                '@type': 'ImageObject',
+                url: 'https://kyra.conversionsystem.com/favicon.ico',
+              },
+            },
           }),
         }}
       />

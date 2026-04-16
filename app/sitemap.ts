@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { INDUSTRY_TEMPLATES } from '@/lib/templates/industry-templates';
+import { POSTS } from '@/lib/blog/posts';
 
 const BASE = 'https://kyra.conversionsystem.com';
 
@@ -15,9 +16,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BASE}/launch`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${BASE}/tools/ai-readiness`, lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
     { url: `${BASE}/pricing`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${BASE}/blog`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${BASE}/privacy`, lastModified: now, changeFrequency: 'yearly', priority: 0.3 },
     { url: `${BASE}/terms`, lastModified: now, changeFrequency: 'yearly', priority: 0.3 },
   ];
+
+  // Blog posts — index for SEO and GEO (AI citation surfacing)
+  const blogPages: MetadataRoute.Sitemap = POSTS.map((p) => ({
+    url: `${BASE}/blog/${p.slug}`,
+    lastModified: p.date,
+    changeFrequency: 'monthly' as const,
+    priority: 0.7,
+  }));
 
   // 50 industry pages — high SEO value
   const industryPages: MetadataRoute.Sitemap = INDUSTRY_TEMPLATES.map((t) => ({
@@ -44,5 +54,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.7,
   }));
 
-  return [...corePages, ...industryPages, ...demoPages, ...tryPages];
+  return [...corePages, ...blogPages, ...industryPages, ...demoPages, ...tryPages];
 }
