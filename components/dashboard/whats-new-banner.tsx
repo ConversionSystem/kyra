@@ -6,19 +6,19 @@ import { X, Sparkles, ArrowRight } from 'lucide-react';
 
 // Bump this version string whenever new features are added.
 // Users who dismissed an older version will see the banner again.
-const BANNER_VERSION = '2026-03-07-v1';
+const BANNER_VERSION = '2026-04-16-v1';
 const STORAGE_KEY = `kyra_whats_new_dismissed_${BANNER_VERSION}`;
 
 const LATEST_FEATURES = [
-  { emoji: '🎁', text: 'Referral Program — earn 100 credits for every friend you invite; friends get 100 credits too' },
-  { emoji: '📞', text: 'Voice AI — inbound & outbound calls now available. Answer leads by phone, book appointments, escalate to humans' },
-  { emoji: '⚡', text: 'Automation Triggers — automate your AI worker on real-world events (GHL webhook, new contact, deal stage change)' },
-  { emoji: '🧠', text: 'Customer Intelligence — AI-powered contact insights, relationship memory, and engagement scoring' },
-  { emoji: '💬', text: 'Conversations Inbox — all channels (SMS, Telegram, web chat, voice) unified in one real-time feed' },
-  { emoji: '🪟', text: 'Chat Widget — embed Kyra on any website; tracks source URL and session for full analytics' },
-  { emoji: '🎯', text: 'Mission Control fleet view — see every AI worker\'s status, today\'s activity, and errors at a glance' },
-  { emoji: '🛡️', text: 'Review Gates — approve AI responses before they send. Human-in-the-loop control' },
-  { emoji: '📈', text: 'Performance CSV export + per-client cost tracking with margin visibility' },
+  { emoji: '⌘', text: 'Command Palette (⌘K) — instant fuzzy search across pages, clients, and actions' },
+  { emoji: '⌨️', text: 'Keyboard Shortcuts (?) — GitHub-style hotkeys for fast navigation' },
+  { emoji: '🌍', text: 'SEO/GEO Command Center — audit, fix, and optimize search presence from one dashboard' },
+  { emoji: '🚚', text: 'Dispatch Intelligence — smart delivery logistics with cutoff boost and breach alerts' },
+  { emoji: '🔍', text: 'Algolia Product Search — blazing-fast product lookups (~4ms vs ~8s)' },
+  { emoji: '🤖', text: 'AI Sales Pipeline — autonomous prospecting, enrichment, and outbound campaigns' },
+  { emoji: '📊', text: 'CRM Overhaul — deals kanban, enrichment, scoring, follow-up sequences' },
+  { emoji: '🔒', text: 'Security Hardening — rate limiting, auth fixes, prompt injection defense' },
+  { emoji: '🧠', text: 'Knowledge-Powered Workers — auto-train AI from your website content' },
 ];
 
 export default function WhatsNewBanner() {
