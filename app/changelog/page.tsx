@@ -9,6 +9,123 @@ export const metadata: Metadata = {
 };
 
 const UPDATES = [
+  // ═══════════════════════════════════════════════════════════════════════
+  // APRIL 2026
+  // ═══════════════════════════════════════════════════════════════════════
+  {
+    date: 'April 15–16, 2026',
+    tag: 'Power User',
+    tagColor: 'bg-violet-100 text-violet-700',
+    title: 'Command Palette, Keyboard Shortcuts & Dispatch Intelligence',
+    desc: 'Pro-level navigation and smart delivery logistics in one sprint.',
+    items: [
+      { emoji: '⌘', text: 'Global Command Palette (⌘K) — instant fuzzy search across pages, clients, and actions' },
+      { emoji: '⌨️', text: 'Keyboard Shortcuts (?) — GitHub-style hotkeys: G→H for home, G→C for clients, N for new worker' },
+      { emoji: '🚚', text: 'Dispatch Intelligence Rule Engine — cutoff boost, breach alerts, cancel re-optimization' },
+      { emoji: '📦', text: 'OnFleet integration hardened — 12 bug fixes for webhooks, task sync, and sandbox plans' },
+      { emoji: '🔍', text: 'Algolia product search — ~4ms lookups replacing ~8s Firecrawl scraping' },
+      { emoji: '📝', text: 'OpenClaw Fundamentals blog post + SEO/GEO content hardening' },
+    ],
+  },
+  {
+    date: 'April 14, 2026',
+    tag: 'Platform',
+    tagColor: 'bg-indigo-100 text-indigo-700',
+    title: 'Dashboard Cleanup & Feature Gating',
+    desc: 'Cleaner navigation, proper plan-based access control, and branding unification.',
+    items: [
+      { emoji: '🧹', text: 'Feature gating — Voice/SMS, Marketing, SEO/GEO, and Booking locked to appropriate plans' },
+      { emoji: '🎨', text: 'Branding unification across all dashboard pages — consistent Kyra identity' },
+      { emoji: '🔗', text: 'Real Google Search Console OAuth integration + expanded Settings page' },
+      { emoji: '🐛', text: 'Big bug batch — GEO test, NAP audit, keywords save, widget, terminal nav fixes' },
+      { emoji: '📊', text: 'Overview page now shows real data from connected services' },
+      { emoji: '🔑', text: 'Admin login-as magic links for support and debugging' },
+    ],
+  },
+  {
+    date: 'April 8–12, 2026',
+    tag: 'SEO',
+    tagColor: 'bg-emerald-100 text-emerald-700',
+    title: 'Unified SEO/GEO Command Center',
+    desc: 'Complete search engine optimization toolkit built into every client dashboard.',
+    items: [
+      { emoji: '🌍', text: 'SEO/GEO Command Center — audit, fix, and universalize search presence in one dashboard' },
+      { emoji: '📈', text: 'SEO tab added to all website pages (editor, growth, settings)' },
+      { emoji: '🔧', text: 'HVAC SEO features — domain fallback, GA4, search engine submission, GSC sync' },
+      { emoji: '🏗️', text: 'Custom website assemblers — pixel-perfect builds for TrustedNetworx, HVAC, Arana Painting' },
+      { emoji: '📊', text: 'GA4 integration + search engine submission automation' },
+      { emoji: '✅', text: 'Comprehensive SEO/GEO audit — 11 critical fixes for schema, meta, and structured data' },
+    ],
+  },
+  // ═══════════════════════════════════════════════════════════════════════
+  // MARCH 2026 (late)
+  // ═══════════════════════════════════════════════════════════════════════
+  {
+    date: 'March 25–31, 2026',
+    tag: 'Security',
+    tagColor: 'bg-red-100 text-red-700',
+    title: 'Security Hardening & Marketing Rewrite',
+    desc: 'Two-phase security sprint plus honest, accurate marketing.',
+    items: [
+      { emoji: '🔒', text: 'P1 hardening — saga rollback, rate limiting, admin impersonation fix, billing tests' },
+      { emoji: '🛡️', text: 'P2 hardening — 11 fixes across auth, billing, webhooks, and rate limiting' },
+      { emoji: '🗑️', text: 'Production secrets scrubbed from git + PII exports deleted' },
+      { emoji: '🩺', text: 'Container health cron — automatic gateway monitoring with polling hooks' },
+      { emoji: '📢', text: 'Marketing funnel rewrite — removed false claims, surfaced hidden features across 14 pages' },
+      { emoji: '🔐', text: 'Marketing dashboard locked to Kyra main agency only' },
+    ],
+  },
+  {
+    date: 'March 18–24, 2026',
+    tag: 'Websites',
+    tagColor: 'bg-cyan-100 text-cyan-700',
+    title: 'Enterprise Chat Widget & Industry Templates',
+    desc: 'Terpli-style chat experiences and more industries supported.',
+    items: [
+      { emoji: '💬', text: 'Enterprise widget dashboard — Terpli-style quick replies + clickable product links' },
+      { emoji: '🏢', text: 'Telecom/IT industry template (Tech Enterprise) added' },
+      { emoji: '🏠', text: 'Custom website assemblers — fully data-driven builds from content_sections' },
+      { emoji: '📋', text: 'CRM timeline logging on website form submissions' },
+      { emoji: '🔗', text: 'Product links fixed — no more raw HTML in chat responses' },
+      { emoji: '🎯', text: 'Quick reply buttons now trigger product search properly' },
+    ],
+  },
+  {
+    date: 'March 10–17, 2026',
+    tag: 'AI Sales',
+    tagColor: 'bg-orange-100 text-orange-700',
+    title: 'AI Sales Pipeline & CRM Overhaul',
+    desc: 'Autonomous AI-powered sales prospecting from discovery to close.',
+    items: [
+      { emoji: '🤖', text: 'Autonomous AI Sales Pipeline — find, research, personalize, and launch outbound campaigns' },
+      { emoji: '🧠', text: 'AI Closer — OpenClaw-powered autonomous sales agent that follows up and closes deals' },
+      { emoji: '📊', text: 'CRM Phase 1-4 Complete — enrichment, scoring, deals auto-create, rules, analytics, import' },
+      { emoji: '📧', text: 'Automated Follow-Up Sequences — multi-touch sales engine' },
+      { emoji: '🔄', text: 'Deals Kanban + pipeline auto-sync + send SMS/email from CRM' },
+      { emoji: '🌐', text: 'Apollo.io integration — 275M+ B2B contact discovery' },
+      { emoji: '📇', text: 'Deep enrichment — phones, emails, socials, AI-generated killer emails' },
+    ],
+  },
+  {
+    date: 'March 1–9, 2026',
+    tag: 'Growth',
+    tagColor: 'bg-green-100 text-green-700',
+    title: 'Credits, Outbound & Self-Serve Onboarding',
+    desc: 'Complete revenue infrastructure and frictionless onboarding.',
+    items: [
+      { emoji: '💰', text: 'Unified credit system — every AI action tracked, gated, and deducted automatically' },
+      { emoji: '📡', text: 'Channel 4: Outbound campaigns using Kyra\'s own AI workers via GHL' },
+      { emoji: '🚀', text: 'Self-serve onboarding — fixes all 4 friction gaps in signup flow' },
+      { emoji: '📊', text: 'VPS capacity monitor with auto-refresh and scale alerts' },
+      { emoji: '🧠', text: 'Knowledge-powered AI workers — auto-train from client website content' },
+      { emoji: '🛡️', text: 'Three-layer prompt injection defense on all AI messages' },
+      { emoji: '🎯', text: 'Meta Pixel tracking + in-app webhook setup (no env vars needed)' },
+      { emoji: '🇮🇳', text: 'HighLevel LIVE India 2026 campaign page' },
+    ],
+  },
+  // ═══════════════════════════════════════════════════════════════════════
+  // FEBRUARY 2026 (original entries preserved)
+  // ═══════════════════════════════════════════════════════════════════════
   {
     date: 'February 22–23, 2026',
     tag: 'Major Release',
@@ -90,9 +207,18 @@ const UPDATES = [
       { emoji: '🌐', text: 'Public portal → real OpenClaw gateway redirect' },
       { emoji: '🔑', text: 'BYOK (Bring Your Own OpenAI Key) — wired to containers in real-time' },
       { emoji: '🎭', text: 'Personality settings push to container SOUL.md on save' },
-      { emoji: '22', text: '22 active containers running across 9 agencies' },
+      { emoji: '🏢', text: '22 active containers running across 9 agencies' },
     ],
   },
+];
+
+// ─── Stats bar ──────────────────────────────────────────────────────────────
+
+const STATS = [
+  { label: 'Features shipped', value: '200+' },
+  { label: 'Commits', value: '950+' },
+  { label: 'Weeks of shipping', value: '8' },
+  { label: 'Deploys', value: '100+' },
 ];
 
 export default function ChangelogPage() {
@@ -101,6 +227,7 @@ export default function ChangelogPage() {
       <PublicNav />
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-16">
+        {/* Header */}
         <div className="mb-12">
           <div className="inline-flex items-center gap-2 bg-indigo-600/20 border border-indigo-500/30 rounded-full px-4 py-1.5 text-sm text-indigo-300 font-medium mb-4">
             Product Changelog
@@ -109,6 +236,17 @@ export default function ChangelogPage() {
           <p className="text-slate-400">We ship fast. Here&apos;s everything that&apos;s been built.</p>
         </div>
 
+        {/* Stats bar */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-12">
+          {STATS.map((stat) => (
+            <div key={stat.label} className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
+              <p className="text-2xl font-black text-indigo-400">{stat.value}</p>
+              <p className="text-xs text-slate-400 mt-1">{stat.label}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Timeline */}
         <div className="space-y-10">
           {UPDATES.map((update, i) => (
             <div key={i} className="border-l-2 border-indigo-500/30 pl-6">
