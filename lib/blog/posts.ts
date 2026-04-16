@@ -359,6 +359,228 @@ export const POSTS: BlogPost[] = [
 `,
   },
   {
+    slug: 'what-is-openclaw-ai-gateway-explained',
+    title: 'What Is OpenClaw? The Open-Source AI Gateway That Connects Every Messaging App to Your AI Agent',
+    description: 'OpenClaw is the self-hosted AI gateway most people still haven\'t heard of. One daemon connects WhatsApp, Telegram, Slack, Discord, Signal, iMessage and 18 more channels to a single AI agent. Here\'s what it does, how it works, and how to set it up in 10 minutes.',
+    date: '2026-04-16',
+    readMins: 12,
+    category: 'AI Infrastructure',
+    emoji: '🦞',
+    content: `
+<p>Most of the AI chat tools on the market today are closed black boxes. You sign up, you hand over your data, you pay per seat, and you pray the vendor doesn't change their pricing next quarter. Your conversations sit on someone else's server. Your customers get answers from the same shared infrastructure as everyone else. If the service goes down, your business goes down with it.</p>
+
+<p>There is a different path. It is called <strong>OpenClaw</strong>, and it is quietly becoming the backbone of serious AI deployments in 2026. This guide explains what OpenClaw actually is, what problem it solves, how the architecture works, and exactly how to set it up — even if you have never run a server before.</p>
+
+<p>By the end of this article, you will understand why agencies, solo operators, and regulated businesses are moving off shared chatbot platforms onto self-hosted AI gateways — and why OpenClaw is the one they are choosing.</p>
+
+<h2>What Is OpenClaw? The One-Sentence Definition</h2>
+
+<p><strong>OpenClaw is an open-source, self-hosted AI gateway that runs as a single daemon on your machine or server and connects your messaging apps — WhatsApp, Telegram, Slack, Discord, Signal, iMessage, Microsoft Teams, Matrix, and more — to an AI agent that you fully control.</strong></p>
+
+<p>That definition packs a lot in, so let us unpack it.</p>
+
+<p><strong>Open-source:</strong> MIT licensed. The code is on GitHub at <code>github.com/openclaw/openclaw</code>. You can read every line. You can fork it. You can contribute. There is no vendor to go out of business and take your bot with them.</p>
+
+<p><strong>Self-hosted:</strong> OpenClaw runs on your hardware. Your laptop, a Mac Mini in a closet, a Raspberry Pi, a cheap VPS, a dedicated server, a Docker container — wherever you want. Your data lives in <code>~/.openclaw/</code> on your disk. Nothing is sent to a cloud service unless you explicitly configure it.</p>
+
+<p><strong>AI gateway:</strong> This is the important word. A gateway is not a chatbot. It is not a workflow automation tool. It is a bridge — a single process that sits between your messaging channels on one side and an AI model on the other, routing messages, managing sessions, invoking tools, and keeping state.</p>
+
+<p><strong>Single daemon:</strong> One background process. One port. One config file. You do not have to stitch together seven different services, manage a Kubernetes cluster, or learn four new languages. You install Node, run one command, and it is live.</p>
+
+<h2>What OpenClaw Replaces</h2>
+
+<p>OpenClaw is the most interesting when you look at what it makes obsolete. Four categories of tools disappear the moment you deploy it.</p>
+
+<h3>1. Zapier-Style Automation for AI</h3>
+
+<p>Most businesses glue AI into their stack with Zapier, Make, or n8n. It works — barely — until you hit a rate limit, a per-task fee, or a broken trigger at 2am. OpenClaw has built-in cron jobs, event hooks, background tasks, and multi-step task flows. They run inside the gateway, tied to your agent, with no per-task billing and no external scheduler to fail.</p>
+
+<h3>2. Shared Chatbot Platforms</h3>
+
+<p>If you are using a SaaS chatbot tool, your client's conversations are likely sitting on a shared server with thousands of other businesses. Their data, their prompts, their patient intake forms — mixed with a random e-commerce store in another industry. For regulated businesses (dental, legal, medical, financial), this is not a feature. It is a liability. OpenClaw runs on your machine. Every client can have their own isolated container with their own data, their own personality, and their own knowledge base.</p>
+
+<h3>3. Custom-Built Bots for Every Channel</h3>
+
+<p>If you have ever tried to ship a WhatsApp bot, a Telegram bot, a Slack bot, and a Discord bot as separate projects, you know the pain. Four codebases. Four auth flows. Four message formats. Four deploy pipelines. OpenClaw collapses this into one process. You write the agent once. It speaks every channel. When a message comes in on Telegram, the reply goes to Telegram. When it comes in on Slack, the reply goes to Slack. The routing is deterministic and configurable.</p>
+
+<h3>4. Prompt Chains That Break</h3>
+
+<p>Handcrafted prompt chains are brittle. One new product update, one odd customer question, one edge case — and the whole chain falls apart. OpenClaw agents use persistent sessions, structured memory, built-in tool use, and automatic context compaction. The agent remembers what it learned yesterday. It can search the web. It can read files. It can write to a CRM. It does not forget your customer after every message.</p>
+
+<h2>24+ Channels, One Gateway</h2>
+
+<p>OpenClaw ships with first-party integrations for the channels real businesses use every day. Here is the list as of 2026.</p>
+
+<p><strong>Built-in channels:</strong> WhatsApp (via Baileys with QR pairing), Telegram (via bot token — the fastest setup), Discord (with guild routing, threads, and slash commands), Slack (via the Bolt SDK in socket mode or HTTP webhooks), Signal (via signal-cli bridge), iMessage (via Mac or BlueBubbles), Google Chat, IRC, and WebChat (an embeddable widget for any website).</p>
+
+<p><strong>Bundled plugin channels:</strong> Matrix (with end-to-end encryption support), Microsoft Teams (with full Graph API integration), Feishu, LINE, Mattermost, Nextcloud Talk, Nostr, QQ Bot, Synology Chat, Tlon, Twitch, Zalo, and Zalo Personal.</p>
+
+<p>That is more than twenty-four channels. Every one of them runs from the same gateway. You add a channel by editing a config file or running a CLI command. You do not write a new bot for each one.</p>
+
+<p>And the replies route intelligently. If a customer messages your WhatsApp number, the reply goes to WhatsApp. If a teammate pings your agent in a Slack thread, the reply goes into that thread. Session state is isolated per channel, per group, per user — so conversations never cross-contaminate.</p>
+
+<h2>The Core Architecture in Plain English</h2>
+
+<p>You do not need to be a systems engineer to use OpenClaw, but it helps to understand the moving parts. Here is the picture.</p>
+
+<p><strong>The Gateway:</strong> a single long-lived daemon. It opens one port (default <code>18789</code>, loopback only by default) and listens for WebSocket connections from channels, clients, and nodes. It is the single source of truth for sessions, routing, and channel connections.</p>
+
+<p><strong>The Agent Runtime:</strong> embedded inside the gateway. When a message arrives, the gateway hands it to the agent runtime, which assembles a context, calls the language model, invokes tools if needed, streams the response back, and persists the conversation transcript.</p>
+
+<p><strong>The Workspace:</strong> a directory on your disk (default <code>~/.openclaw/workspace</code>). Inside it, a handful of markdown files define how your agent behaves. <code>SOUL.md</code> is the personality file — tone, voice, boundaries. <code>AGENTS.md</code> is operating rules and memory. <code>USER.md</code> is who you are. <code>TOOLS.md</code> is your notes on how to use specific tools. These files inject into the agent's context at the start of every new session.</p>
+
+<p><strong>Sessions:</strong> every conversation is a session, stored as a JSONL file. Sessions reset on a schedule (default 4am local) or when they go idle. Old tool results are pruned in memory to save tokens. When context fills up, older messages are summarized into a single compact entry — a process called compaction — so the conversation can continue indefinitely.</p>
+
+<p><strong>Tools:</strong> the agent has more than sixty built-in tools. It can execute shell commands. It can read and write files. It can search the web through ten different providers. It can drive a Chromium browser. It can send messages across channels. It can generate images, audio, and video. It can spawn sub-agents for complex tasks. You control which tools it can use through simple allow and deny lists.</p>
+
+<p><strong>Skills:</strong> reusable markdown instruction files that teach the agent specific workflows. Write a skill once — "generate a weekly client report" — and the agent will follow those steps forever. Skills load from six locations with clear precedence, so you can ship skills per-workspace, per-user, or bundled with the install.</p>
+
+<h2>How to Set Up OpenClaw in 10 Minutes</h2>
+
+<p>This is the part everyone wants. Here is the exact, step-by-step installation for a typical developer or power user. Total time, start to first message: under ten minutes.</p>
+
+<h3>Step 1. Check Your Node Version</h3>
+
+<p>OpenClaw recommends Node 24, but it works on Node 22.14 or later for compatibility. Check what you have:</p>
+
+<pre><code>node --version</code></pre>
+
+<p>If you do not have Node, install it from <code>nodejs.org</code> or via a version manager like <code>nvm</code>. This is the only real dependency.</p>
+
+<h3>Step 2. Install OpenClaw Globally</h3>
+
+<pre><code>npm install -g openclaw@latest</code></pre>
+
+<p>This puts the <code>openclaw</code> CLI on your path. Takes about thirty seconds on a reasonable internet connection.</p>
+
+<h3>Step 3. Run the Onboarding Wizard</h3>
+
+<pre><code>openclaw onboard --install-daemon</code></pre>
+
+<p>The wizard walks you through three things. First, it asks for an API key from a model provider. Claude from Anthropic is the default recommendation, but OpenClaw supports more than fifty providers including OpenAI, Google Gemini, Mistral, Groq, DeepSeek, OpenRouter, and local models via Ollama. Pick whichever you have credentials for.</p>
+
+<p>Second, it creates your workspace at <code>~/.openclaw/workspace</code> and seeds it with template files. Third, it installs the daemon as a service so it starts automatically when your computer boots. On macOS this is launchd. On Linux it is systemd. On Windows it is a Scheduled Task.</p>
+
+<h3>Step 4. Customize Your Agent's Personality</h3>
+
+<p>Open <code>~/.openclaw/workspace/SOUL.md</code> in any text editor. Replace the default content with who you want your agent to be. For example:</p>
+
+<pre><code>You are a professional customer service assistant for a dental
+practice. You are warm, clear, and patient. You answer questions
+about scheduling, insurance, and services. You never speculate
+about medical conditions. If a patient sounds distressed, you
+offer to connect them with a human immediately.
+
+You respond in short sentences. You avoid jargon. You confirm
+every appointment time and date twice before booking.</code></pre>
+
+<p>Save the file. The next conversation your agent has will use this personality.</p>
+
+<h3>Step 5. Add Your First Channel</h3>
+
+<p>Telegram is the fastest channel to set up because it only requires a bot token. Create a bot by messaging <code>@BotFather</code> on Telegram and following the prompts. Copy the token it gives you.</p>
+
+<p>Open <code>~/.openclaw/openclaw.json</code> and add:</p>
+
+<pre><code>{
+  "channels": {
+    "telegram": {
+      "enabled": true,
+      "botToken": "YOUR_TOKEN_HERE",
+      "allowFrom": ["your_telegram_username"]
+    }
+  }
+}</code></pre>
+
+<p>The <code>allowFrom</code> list is your first line of defense. Only listed users can message your agent. Remove it later once you have pairing or broader access policies configured.</p>
+
+<h3>Step 6. Restart and Message Your Agent</h3>
+
+<pre><code>openclaw gateway restart</code></pre>
+
+<p>Open Telegram. Find your bot. Say hello. You should get a reply within a couple of seconds, in the voice you defined in <code>SOUL.md</code>, coming from your own hardware, using your own API key.</p>
+
+<p>That is a working AI gateway. From here you can add more channels, more tools, more skills, and more agents. The gateway is already doing the heavy lifting.</p>
+
+<h3>Step 7. Open the Dashboard</h3>
+
+<pre><code>openclaw dashboard</code></pre>
+
+<p>This opens the Control UI at <code>http://127.0.0.1:18789/</code>. It is a browser dashboard for managing sessions, inspecting logs, configuring channels, and chatting with your agent directly. For most power users this becomes the main interface alongside the CLI.</p>
+
+<h2>Common Questions About OpenClaw</h2>
+
+<h3>Is OpenClaw really free?</h3>
+
+<p>Yes. The code is MIT licensed. There is no subscription, no per-message fee, no paid tier. The only thing you pay for is the AI model you connect it to — and you bring your own API key. If you use a local model through Ollama, even that cost disappears.</p>
+
+<h3>What does it run on?</h3>
+
+<p>Any machine that can run Node.js. Many users run it on a Mac Mini, an old laptop, or a cheap virtual server. Memory footprint is modest. The gateway itself is lightweight; the heavy lifting is the model call, which happens on the provider's infrastructure or your local GPU.</p>
+
+<h3>Is it secure?</h3>
+
+<p>The gateway binds to loopback by default, meaning only your local machine can talk to it. For remote access, the recommended pattern is Tailscale or an SSH tunnel rather than public ingress. Every channel connection uses pairing — a challenge-signed device identity that must be explicitly approved on first connect. Non-local connections still require explicit approval. The full security model uses MITRE ATLAS terminology and is documented in the project's threat model.</p>
+
+<h3>Can I run multiple agents on one gateway?</h3>
+
+<p>Yes. Multi-agent routing is a first-class feature. Each agent gets its own workspace, its own sessions, its own skills, and its own routing bindings. You can point different channels at different agents, or split one channel by guild, role, or peer. One gateway can host a support agent, a sales agent, and a personal assistant at the same time without any cross-contamination.</p>
+
+<h3>What about enterprise deployments?</h3>
+
+<p>OpenClaw includes a delegate architecture for agents that act on behalf of organizational principals. It supports three capability tiers — read-only, send-on-behalf, and autonomous — each with hardening requirements including tool allow and deny lists, sandbox isolation, and audit trails. It integrates with Microsoft 365 and Google Workspace with minimum-privilege delegation scopes.</p>
+
+<h3>How does it handle memory?</h3>
+
+<p>Session transcripts live on your disk as JSONL. Daily memory summaries can be written to markdown files in the workspace. An optional active memory sub-agent surfaces relevant memories before each reply. Compaction automatically summarizes older turns when context fills up. Prompt cache pruning reduces token cost without losing context. All of this works out of the box.</p>
+
+<h2>When OpenClaw Makes Sense, and When It Does Not</h2>
+
+<p>Self-hosted AI is not the right choice for every situation. Here is the honest take.</p>
+
+<p><strong>OpenClaw makes sense if:</strong></p>
+
+<ul>
+<li>You care about data sovereignty — regulated industries, sensitive intake forms, confidential business workflows</li>
+<li>You want multi-channel AI without writing four separate bots</li>
+<li>You have more than a handful of clients or teams and need isolation between them</li>
+<li>You want predictable costs — pay for the model tokens you use, not per-seat licensing</li>
+<li>You want to build skills and automation your agent runs repeatedly</li>
+<li>You are comfortable editing a config file or running a CLI command</li>
+</ul>
+
+<p><strong>OpenClaw might be overkill if:</strong></p>
+
+<ul>
+<li>You only need a basic chatbot on a single channel and have never managed a server</li>
+<li>You do not have any API keys and do not want to get any</li>
+<li>You want a zero-setup, click-and-deploy experience with no configuration</li>
+</ul>
+
+<p>For that second group, there is an easier path.</p>
+
+<h2>The Easier Path: Deploy OpenClaw Without Managing Infrastructure</h2>
+
+<p>OpenClaw is powerful. It is also, for most agency owners and non-technical operators, more setup than they want to do for every client. Installing Node, editing config files, managing daemons, paying for a VPS, renewing TLS certificates — it adds up.</p>
+
+<p>That is the problem <a href="https://kyra.conversionsystem.com">Kyra</a> solves. Kyra is a white-label platform built on OpenClaw technology. Agencies use it to deploy isolated AI workers for every one of their clients without writing code or managing infrastructure. Each client gets their own OpenClaw container with their own personality, knowledge base, and workspace — and the agency manages everything from a single dashboard.</p>
+
+<p>You get the architecture of OpenClaw — isolation, multi-channel, memory, skills, tools — wrapped in an onboarding flow that takes minutes instead of hours, plus billing, CRM, and the industry-specific templates that turn a technology into a business.</p>
+
+<p>The underlying technology is the same. The deployment experience is built for scale.</p>
+
+<h2>Start Here</h2>
+
+<p>If you are technical and curious, install OpenClaw. It is free, it is open source, and ten minutes of your time gets you an agent that runs on your hardware and speaks through every channel you use.</p>
+
+<p>If you are an agency owner or business operator who wants the OpenClaw architecture without the infrastructure work, <a href="/solo">start with Kyra Solo</a>. It is free to try, no credit card required, and your first AI worker goes live in under two minutes.</p>
+
+<p>Either way, the era of shared chatbot platforms is ending. The era of self-hosted, agent-native, multi-channel AI is beginning. The tools are open source, the architecture is proven, and the setup is fast. The only question is whether you want to run it yourself or let a platform run it for you.</p>
+
+<p>Want to read more? See our guide on <a href="/blog/white-label-ai-platform-agencies">building a white-label AI business</a> or the <a href="/blog/ghl-ai-employee-complete-guide">GoHighLevel AI worker setup guide</a>.</p>
+`,
+  },
+  {
     slug: 'white-label-ai-platform-agencies',
     title: 'White-Label AI Platform for Agencies: Build a $50K/mo AI Business in 2026',
     description: 'The complete playbook for building a white-label AI worker business using Kyra. Pricing strategy, client onboarding, positioning, and how to scale to $50K/month.',
