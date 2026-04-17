@@ -40,6 +40,11 @@ Kyra is a white-label AI workforce platform built for agencies. Agencies use it 
 
 Built by [Conversion System](https://conversionsystem.com). Contact: angel@conversionsystem.com
 
+## Feeds
+
+- [RSS Feed](https://kyra.conversionsystem.com/feed.xml): Blog updates via RSS 2.0
+- [Full LLM Context](https://kyra.conversionsystem.com/llms-full.txt): Extended version with complete blog content
+
 ## Technical
 
 - Powered by OpenClaw autonomous agent framework
