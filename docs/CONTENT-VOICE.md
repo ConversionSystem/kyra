@@ -47,31 +47,63 @@ Every post maps to one pillar. Weekly rotation: Week 1 = Pillar 1, Week 2 = Pill
 
 ---
 
-## Platform-Specific Format
+## Platform-Specific Format — 2026 Algorithm-Native Rules
 
-### LinkedIn (daily)
-- **Length:** 150–300 words
-- **Structure:**
-  1. Bold hook (1 line, punchy claim)
-  2. Subhook with 👇 emoji
-  3. 2–3 lines of context or credibility
-  4. Numbered list — each item = feature name + one-line outcome
-  5. Time-compression proof line ("2 hours → 5 minutes") when applicable
-  6. "No X, no Y" simplicity close
-  7. CTA: `Comment "[Keyword]" and I'll send the [thing]`
-- **Formatting:** Every sentence on its own line. Single-line spacing inside the post.
+Every routine MUST pick the native format that wins on the platform in 2026. Source research in `docs/CONTENT-VOICE-RESEARCH-2026.md`.
 
-### Facebook (daily)
-- **Length:** 100–200 words
-- **Structure:** More conversational than LinkedIn. Starts with a question or observation.
-- **Tone:** Less polished, more casual. Can ask the reader directly ("Anyone else seeing this?").
-- **CTA:** Same comment-gated format as LinkedIn.
+### LinkedIn (daily) — 2026 is all about dwell time
 
-### X / Twitter (daily)
-- **Length:** Main tweet 260 chars max, leave room for hook
-- **Structure:** Hook + thread (4–8 tweets) OR single tweet with high density
-- **Thread format:** Number each tweet (1/ 2/ 3/), save the CTA for the last tweet
-- **Formatting:** No emoji clusters. One emoji max per tweet. No hashtag spam — 0–2 hashtags total.
+**Native winning format:** **Document posts (PDF carousels), 8–10 slides.** These hit 6.60% engagement — the highest of any LinkedIn format in 2026. Text-only posts are fine; horizontal video is penalized (reach −18%).
+
+**Rules:**
+- **Preferred:** 8–10 slide carousel as PDF attachment. One idea per slide. First slide = cover hook. Last slide = CTA.
+- **Alt (text-only):** 150–300 words. Bold hook, 👇 subhook, 2–3 credibility lines, numbered list (verb-first), simplicity close, comment-gated CTA.
+- **Dwell time is the #1 ranking signal.** Structure for 31–60 seconds of reading. Posts with 61+ seconds dwell time hit 15.6% engagement vs 1.2% at 0–3 seconds.
+- **First hour is make-or-break.** Only 5% of posts that flop in hour 1 recover. Every post should be designed to provoke ≥15-word comments, not "Great post!".
+- **Best posting time:** Tuesday–Thursday, 10am–2pm audience local time.
+
+### Facebook (daily) — thread your own replies
+
+**Native winning format:** **One parent post + 5–7 threaded replies to your own post**, posted across the first 60–120 minutes. Multi-thread comment exchanges of 5+ back-and-forth get **312% more distribution** than single-reaction posts.
+
+**Rules:**
+- **Preferred:** Parent post + threaded replies (the "drop each feature in the comments" format).
+- **Alt:** 100–200 word standalone if the idea is self-contained.
+- **Every post must end with a real question** to the audience (drives reply-to-reply threads, which is what the algorithm wants).
+- **Explicit share nudge when relevant:** "Send this to an agency owner who…" — private shares to Messenger/WhatsApp are the single highest-weighted signal in the 2026 algorithm.
+- **No external links in the parent post.** Native always wins. Put any link in a comment reply.
+- **Max 2 hashtags.**
+
+### X / Twitter (daily) — threads always, no links in tweet 1
+
+**Native winning format:** **7–9 tweet thread, text-first.** Threads get **3× engagement** vs single tweets. Text-first outperforms video by 30% on X (unlike IG/TikTok). **Replies carry 150× the weight of likes.**
+
+**Rules:**
+- **Preferred:** Thread of 7–9 tweets, each ≤260 chars. CTA on the final tweet only.
+- **NEVER put an external link in tweet 1.** X actively suppresses tweets with links (near-zero engagement for non-Premium since March 2026). Put the link in a final reply under the thread.
+- **Text-first wins.** Skip video unless you have a ≤30s vertical clip with native captions.
+- **Max 1 emoji per tweet. Max 2 hashtags across the whole thread.**
+- **Engagement window:** respond to every reply within the first 2–3 hours. A tweet loses half its visibility every 6 hours.
+
+### Blog (daily, auto-PR) — GEO first, SEO second
+
+**Reality check:** 80% of URLs cited by ChatGPT/Perplexity/Copilot in 2026 don't rank in Google's top 100. AI citation and Google SEO are two different games. Optimize for both, prioritize GEO.
+
+**Rules:**
+- **Length:** 2,000 words minimum. Target 2,500–3,000.
+- **Structure (GEO-optimized):**
+  1. **H1** via `title` field — keyword-rich, comparative, year-stamped when applicable ("…in 2026")
+  2. **Definitional hook in paragraph 1** — "X is Y that does Z." (44.2% of LLM citations come from the first 30% of text.)
+  3. **Key Takeaways callout box** near the top — 4–6 bullets. AI engines extract these directly. Render as a `<div class="bg-indigo-950/50 border border-indigo-500/20 rounded-xl p-4 my-6">` with `<strong>Key takeaways:</strong>` heading + bullet list.
+  4. **6–9 H2 sections**, each with clear subhead
+  5. **Step-by-step setup guide** with real CLI commands when relevant
+  6. **At least one comparison table** (AI engines love structured data)
+  7. **FAQ section** with 4–6 Q&As (AI engines cite these directly — format each Q as `<h3>` or `<strong>`)
+  8. **Honest "when this isn't for you"** section (builds trust)
+  9. **"Last updated" line near the top** (freshness is heavily weighted in GEO)
+  10. **Soft Kyra mention at end + 3 internal links + 2 external authority links**
+- **Links out to authoritative sources** (docs.openclaw.ai, github.com/openclaw/openclaw, docs.anthropic.com). Perplexity cites posts that themselves cite.
+- **E-E-A-T signals:** author byline, expertise markers, real examples with numbers.
 
 ### Blog (daily, auto-PR)
 - **Length:** 2,000 words minimum. Target 2,500–3,000.
