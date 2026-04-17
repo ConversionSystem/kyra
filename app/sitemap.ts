@@ -17,6 +17,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BASE}/tools/ai-readiness`, lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
     { url: `${BASE}/pricing`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
     { url: `${BASE}/blog`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${BASE}/llms.txt`, lastModified: now, changeFrequency: 'monthly', priority: 0.4 },
+    { url: `${BASE}/llms-full.txt`, lastModified: now, changeFrequency: 'weekly', priority: 0.4 },
     { url: `${BASE}/privacy`, lastModified: now, changeFrequency: 'yearly', priority: 0.3 },
     { url: `${BASE}/terms`, lastModified: now, changeFrequency: 'yearly', priority: 0.3 },
   ];

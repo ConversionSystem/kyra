@@ -42,6 +42,11 @@ export const metadata: Metadata = {
     follow: true,
     googleBot: { index: true, follow: true, 'max-image-preview': 'large' },
   },
+  alternates: {
+    types: {
+      'application/rss+xml': `${BASE_URL}/feed.xml`,
+    },
+  },
 };
 
 export const viewport: Viewport = {
