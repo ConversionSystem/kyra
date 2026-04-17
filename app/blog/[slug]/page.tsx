@@ -1,12 +1,21 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, Clock } from 'lucide-react';
+import { ArrowLeft, Clock, Calendar } from 'lucide-react';
 import type { Metadata } from 'next';
 import PublicNav from '@/components/layout/public-nav';
 import PublicFooter from '@/components/layout/public-footer';
 import { getPost, generateStaticParams as getStaticParams, POSTS } from '@/lib/blog/posts';
 
 export { getStaticParams as generateStaticParams };
+
+// Default author for all posts. When we add per-post author later, add an
+// optional `author` field on BlogPost and fall back to this.
+const DEFAULT_AUTHOR = {
+  name: 'The Kyra Team',
+  role: 'Conversion System',
+  bio: 'We build white-label AI workforce infrastructure for digital agencies on top of OpenClaw. We publish practical guides on deploying AI agents, self-hosted AI, and multi-channel workforce design.',
+  url: 'https://conversionsystem.com',
+};
 
 export async function generateMetadata({
   params,
@@ -27,6 +36,7 @@ export async function generateMetadata({
       'AI agent',
       'white-label AI',
       'agency AI platform',
+      'OpenClaw',
       'Kyra',
     ],
     openGraph: {
@@ -34,6 +44,7 @@ export async function generateMetadata({
       description: post.description,
       type: 'article',
       publishedTime: post.date,
+      authors: [DEFAULT_AUTHOR.name],
       url,
       siteName: 'Kyra AI',
     },
@@ -50,11 +61,19 @@ export default async function BlogPostPage({
   const post = getPost(slug);
   if (!post) notFound();
 
-  const related = POSTS.filter(p => p.slug !== slug).slice(0, 2);
+  // Related posts: pick 2 others that share the pillar/category first, fall back to most recent
+  const related = (() => {
+    const sameCategory = POSTS.filter(p => p.slug !== slug && p.category === post.category);
+    const others = POSTS.filter(p => p.slug !== slug && p.category !== post.category);
+    const sorted = [...sameCategory, ...others].sort((a, b) => b.date.localeCompare(a.date));
+    return sorted.slice(0, 3);
+  })();
+
+  const wordCount = post.content.replace(/<[^>]+>/g, ' ').split(/\s+/).filter(Boolean).length;
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white">
-      {/* JSON-LD — richer schema for SEO + GEO (AI citation surfacing) */}
+    <div className="min-h-screen bg-white text-gray-900">
+      {/* JSON-LD — rich schema for SEO + GEO (AI citation surfacing) */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -66,7 +85,7 @@ export default async function BlogPostPage({
             datePublished: post.date,
             dateModified: post.date,
             articleSection: post.category,
-            wordCount: post.content.replace(/<[^>]+>/g, ' ').split(/\s+/).filter(Boolean).length,
+            wordCount,
             inLanguage: 'en-US',
             mainEntityOfPage: {
               '@type': 'WebPage',
@@ -74,8 +93,8 @@ export default async function BlogPostPage({
             },
             author: {
               '@type': 'Organization',
-              name: 'Conversion System',
-              url: 'https://conversionsystem.com',
+              name: DEFAULT_AUTHOR.name,
+              url: DEFAULT_AUTHOR.url,
             },
             publisher: {
               '@type': 'Organization',
@@ -92,54 +111,92 @@ export default async function BlogPostPage({
 
       <PublicNav />
 
-      <article className="max-w-3xl mx-auto px-4 py-16">
+      <article className="max-w-3xl mx-auto px-4 py-12 sm:py-16">
         {/* Back */}
-        <Link href="/blog" className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white transition mb-8">
+        <Link
+          href="/blog"
+          className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 transition mb-8"
+        >
           <ArrowLeft className="h-4 w-4" /> All articles
         </Link>
 
         {/* Header */}
-        <div className="mb-10">
+        <header className="mb-10 border-b border-gray-200 pb-8">
           <div className="flex items-center gap-3 mb-4">
-            <span className="text-4xl">{post.emoji}</span>
-            <span className="text-xs text-slate-500 bg-white/5 px-3 py-1.5 rounded-full">{post.category}</span>
+            <span className="text-4xl" aria-hidden="true">{post.emoji}</span>
+            <span className="text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 px-3 py-1.5 rounded-full uppercase tracking-wider">
+              {post.category}
+            </span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-black leading-tight mb-4">{post.title}</h1>
-          <p className="text-slate-400 text-lg leading-relaxed mb-4">{post.description}</p>
-          <div className="flex items-center gap-3 text-xs text-slate-500">
-            <span>{new Date(post.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black leading-tight tracking-tight mb-4 text-gray-900">
+            {post.title}
+          </h1>
+          <p className="text-gray-600 text-lg leading-relaxed mb-6">{post.description}</p>
+          <div className="flex items-center gap-3 text-xs text-gray-500 flex-wrap">
+            <Calendar className="h-3.5 w-3.5" />
+            <time dateTime={post.date}>
+              {new Date(post.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+            </time>
             <span>·</span>
-            <Clock className="h-3 w-3" />
+            <Clock className="h-3.5 w-3.5" />
             <span>{post.readMins} min read</span>
             <span>·</span>
-            <span>Kyra AI Blog</span>
+            <span>{wordCount.toLocaleString()} words</span>
+            <span>·</span>
+            <span>By <span className="font-semibold text-gray-700">{DEFAULT_AUTHOR.name}</span></span>
           </div>
-        </div>
+        </header>
 
-        {/* Content */}
+        {/* Content — light theme, reading-optimized */}
         <div
-          className="prose prose-invert prose-sm sm:prose-base max-w-none
-            prose-headings:font-black prose-headings:text-white
-            prose-h2:text-xl prose-h2:mt-10 prose-h2:mb-4
-            prose-h3:text-lg prose-h3:mt-8 prose-h3:mb-3
-            prose-p:text-slate-300 prose-p:leading-relaxed
-            prose-li:text-slate-300
-            prose-strong:text-white
-            prose-a:text-indigo-400 prose-a:no-underline hover:prose-a:underline
-            prose-blockquote:border-indigo-500/50 prose-blockquote:bg-white/5 prose-blockquote:rounded-xl prose-blockquote:py-1 prose-blockquote:not-italic
-            prose-ol:text-slate-300 prose-ul:text-slate-300"
+          className="prose prose-base sm:prose-lg max-w-none
+            prose-headings:font-bold prose-headings:text-gray-900 prose-headings:tracking-tight
+            prose-h2:text-2xl prose-h2:mt-12 prose-h2:mb-4 prose-h2:border-b prose-h2:border-gray-100 prose-h2:pb-2
+            prose-h3:text-xl prose-h3:mt-8 prose-h3:mb-3
+            prose-p:text-gray-700 prose-p:leading-[1.75]
+            prose-li:text-gray-700 prose-li:my-1
+            prose-strong:text-gray-900 prose-strong:font-semibold
+            prose-a:text-indigo-600 prose-a:font-medium prose-a:no-underline hover:prose-a:underline hover:prose-a:text-indigo-700
+            prose-blockquote:border-l-4 prose-blockquote:border-indigo-500 prose-blockquote:bg-indigo-50/50 prose-blockquote:rounded-r-lg prose-blockquote:not-italic prose-blockquote:text-gray-700
+            prose-code:text-indigo-700 prose-code:bg-gray-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:font-mono prose-code:before:content-none prose-code:after:content-none
+            prose-pre:bg-gray-900 prose-pre:text-gray-100 prose-pre:rounded-xl prose-pre:border prose-pre:border-gray-200
+            prose-table:text-sm prose-table:border prose-table:border-gray-200 prose-table:rounded-lg prose-table:overflow-hidden
+            prose-th:bg-gray-50 prose-th:text-gray-900 prose-th:font-semibold prose-th:px-4 prose-th:py-2 prose-th:border-b prose-th:border-gray-200
+            prose-td:text-gray-700 prose-td:px-4 prose-td:py-2 prose-td:border-b prose-td:border-gray-100
+            prose-ol:text-gray-700 prose-ul:text-gray-700
+            prose-em:text-gray-600"
           dangerouslySetInnerHTML={{ __html: post.content }}
         />
 
+        {/* Author byline footer (E-E-A-T signal for GEO) */}
+        <div className="mt-16 rounded-2xl border border-gray-200 bg-gray-50 p-6">
+          <div className="flex items-start gap-4">
+            <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-lg">
+              K
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-gray-900">{DEFAULT_AUTHOR.name}</p>
+              <p className="text-xs text-gray-500 mb-2">{DEFAULT_AUTHOR.role}</p>
+              <p className="text-sm text-gray-600 leading-relaxed">{DEFAULT_AUTHOR.bio}</p>
+            </div>
+          </div>
+        </div>
+
         {/* CTA */}
-        <div className="mt-12 rounded-2xl bg-indigo-950/50 border border-indigo-500/20 p-8 text-center">
-          <p className="text-xl font-bold mb-2">Try it yourself — free</p>
-          <p className="text-slate-400 mb-6 text-sm">No credit card. Powered by OpenClaw. First AI worker live in 2 minutes.</p>
+        <div className="mt-10 rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-700 p-8 text-center text-white">
+          <p className="text-2xl font-bold mb-2">Try Kyra free</p>
+          <p className="text-indigo-100 mb-6 text-sm">No credit card. Powered by OpenClaw. First AI worker live in under 2 minutes.</p>
           <div className="flex items-center justify-center gap-3 flex-wrap">
-            <Link href="/solo" className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-3 rounded-xl transition">
+            <Link
+              href="/solo"
+              className="bg-white hover:bg-gray-50 text-indigo-700 font-bold px-6 py-3 rounded-xl transition"
+            >
               Start Free →
             </Link>
-            <Link href="/try/dental" className="bg-white/10 hover:bg-white/15 border border-white/10 text-white font-medium px-6 py-3 rounded-xl transition text-sm">
+            <Link
+              href="/try/dental"
+              className="bg-indigo-500/40 hover:bg-indigo-500/60 border border-white/30 text-white font-medium px-6 py-3 rounded-xl transition text-sm"
+            >
               See live demo
             </Link>
           </div>
@@ -147,15 +204,21 @@ export default async function BlogPostPage({
 
         {/* Related */}
         {related.length > 0 && (
-          <div className="mt-12">
-            <h3 className="text-lg font-bold mb-4 text-slate-300">More to read</h3>
+          <div className="mt-16">
+            <h2 className="text-xl font-bold mb-4 text-gray-900">Related reading</h2>
             <div className="grid sm:grid-cols-2 gap-4">
               {related.map(p => (
-                <Link key={p.slug} href={`/blog/${p.slug}`}
-                  className="bg-white/5 hover:bg-white/8 border border-white/10 rounded-xl p-4 transition group">
-                  <span className="text-2xl mb-2 block">{p.emoji}</span>
-                  <p className="text-sm font-semibold text-white group-hover:text-indigo-300 transition leading-tight">{p.title}</p>
-                  <p className="text-xs text-slate-500 mt-1">{p.readMins} min read</p>
+                <Link
+                  key={p.slug}
+                  href={`/blog/${p.slug}`}
+                  className="bg-white hover:bg-gray-50 border border-gray-200 hover:border-indigo-300 rounded-xl p-5 transition group"
+                >
+                  <span className="text-2xl mb-2 block" aria-hidden="true">{p.emoji}</span>
+                  <p className="text-xs font-semibold text-indigo-700 uppercase tracking-wider mb-1">{p.category}</p>
+                  <p className="text-base font-bold text-gray-900 group-hover:text-indigo-700 transition leading-snug mb-1">
+                    {p.title}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-2">{p.readMins} min read</p>
                 </Link>
               ))}
             </div>

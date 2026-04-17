@@ -25,7 +25,7 @@ export default function BlogPage() {
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">
-          {POSTS.map(post => (
+          {[...POSTS].sort((a, b) => b.date.localeCompare(a.date)).map(post => (
             <Link key={post.slug} href={`/blog/${post.slug}`}
               className="group bg-white/5 hover:bg-white/8 border border-white/10 hover:border-white/20 rounded-2xl p-6 transition-all block">
               <div className="flex items-start justify-between gap-3 mb-3">
