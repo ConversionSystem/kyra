@@ -3,6 +3,7 @@
 // ============================================================================
 
 import type { ToolResult } from '../ghl-tools';
+import { validateGhlIds } from './validate';
 import { createPaymentLink } from '@/lib/payments/payment-collection';
 
 const GHL_API_BASE = 'https://services.leadconnectorhq.com';
@@ -172,6 +173,9 @@ export async function executeInvoiceTool(
 ): Promise<ToolResult> {
   const headers = ghlHeaders(token);
   const locId = (args.location_id as string) || locationId;
+
+  const idCheck = validateGhlIds(args, ['invoice_id']);
+  if (idCheck) return idCheck;
 
   try {
     switch (toolName) {

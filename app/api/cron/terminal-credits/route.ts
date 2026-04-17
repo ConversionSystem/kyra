@@ -123,8 +123,13 @@ async function deductTerminalCredits(
 // ── Main handler ──────────────────────────────────────────────────────────────
 
 export async function GET(request: Request) {
+  // Fail-closed cron auth. Inlined (not using lib/auth/cron) because this
+  // file must avoid any import chain that pulls in next/headers.
+  if (!CRON_SECRET) {
+    return NextResponse.json({ error: 'CRON_SECRET not configured' }, { status: 500 });
+  }
   const authHeader = request.headers.get('authorization');
-  if (CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
+  if (authHeader !== `Bearer ${CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

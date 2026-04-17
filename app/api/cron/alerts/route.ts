@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { requireCron } from '@/lib/auth/cron';
 
 /**
  * GET /api/cron/alerts
@@ -10,13 +11,8 @@ import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
  * Secured by Vercel's CRON_SECRET header.
  */
 export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get('authorization');
-  if (
-    process.env.CRON_SECRET &&
-    authHeader !== `Bearer ${process.env.CRON_SECRET}`
-  ) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const unauthorized = requireCron(request);
+  if (unauthorized) return unauthorized;
 
   const supabase = createServiceClientWithoutCookies();
 

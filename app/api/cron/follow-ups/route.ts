@@ -8,17 +8,13 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { processDueFollowUps } from '@/lib/pipeline/follow-up-engine';
+import { requireCron } from '@/lib/auth/cron';
 
 export const maxDuration = 60; // Allow up to 60 seconds for processing
 
 export async function GET(req: NextRequest) {
-  // Verify cron secret (Vercel sets this automatically for cron jobs)
-  const authHeader = req.headers.get('authorization');
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const unauthorized = requireCron(req);
+  if (unauthorized) return unauthorized;
 
   try {
     const result = await processDueFollowUps();

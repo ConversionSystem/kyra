@@ -15,6 +15,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createSupabase } from '@supabase/supabase-js';
+import { requireCron } from '@/lib/auth/cron';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
@@ -27,11 +28,8 @@ const IDLE_DAYS = 3;
 const PROTECTED_PLANS = new Set(['starter', 'pro', 'scale', 'solo_pro']);
 
 export async function GET(request: NextRequest) {
-  // Auth: Vercel CRON_SECRET
-  const authHeader = request.headers.get('authorization');
-  if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const unauthorized = requireCron(request);
+  if (unauthorized) return unauthorized;
 
   const supabase = createSupabase(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

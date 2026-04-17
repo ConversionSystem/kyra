@@ -20,15 +20,11 @@ import { getRules, executeRule } from '@/lib/crm/rules';
 import { logActivity } from '@/lib/crm/activities';
 import { scanForAutoDeals } from '@/lib/crm/auto-deal';
 import { sendDigestEmail } from '@/lib/email/sender';
-
-// Vercel cron auth
-const CRON_SECRET = process.env.CRON_SECRET;
+import { requireCron } from '@/lib/auth/cron';
 
 export async function POST(req: NextRequest) {
-  // Verify cron auth
-  if (CRON_SECRET && req.headers.get('authorization') !== `Bearer ${CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const unauthorized = requireCron(req);
+  if (unauthorized) return unauthorized;
 
   const svc = createServiceClientWithoutCookies();
   const results: Record<string, unknown>[] = [];

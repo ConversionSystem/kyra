@@ -36,7 +36,7 @@
       "schedule": "0 7 * * *"
     },
     {
-      "path": "/api/briefing?secret=CRON_SECRET_PLACEHOLDER",
+      "path": "/api/cron/briefing",
       "schedule": "0 8 * * *"
     },
     {

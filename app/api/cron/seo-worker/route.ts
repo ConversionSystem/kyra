@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { dispatchGeoTest, dispatchNapAudit, buildClientContext } from '@/lib/seo/worker-dispatcher';
+import { requireCron } from '@/lib/auth/cron';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300; // 5 minutes
@@ -22,12 +23,8 @@ export const maxDuration = 300; // 5 minutes
  *   Daily:     Reddit/UGC monitoring (via container, vet-seo-worker clients only)
  */
 export async function GET(request: NextRequest) {
-  // Auth check
-  const authHeader = request.headers.get('authorization');
-  const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const unauthorized = requireCron(request);
+  if (unauthorized) return unauthorized;
 
   const supabase = createServiceClientWithoutCookies();
   const now = new Date();

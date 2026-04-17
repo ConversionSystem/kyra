@@ -12,6 +12,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { generateBriefingData, formatBriefing } from '@/lib/briefing/daily-briefing';
 import { deductCredits } from '@/lib/billing/credit-engine';
+import { requireCron } from '@/lib/auth/cron';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -67,11 +68,8 @@ export async function GET(req: NextRequest) {
 
 // POST — Send briefings to all agencies with briefing enabled
 export async function POST(req: NextRequest) {
-  // Verify cron secret
-  const cronSecret = req.headers.get('x-cron-secret') || req.nextUrl.searchParams.get('secret');
-  if (cronSecret !== process.env.CRON_SECRET) {
-    return NextResponse.json({ error: 'Invalid cron secret' }, { status: 403 });
-  }
+  const unauthorized = requireCron(req);
+  if (unauthorized) return unauthorized;
 
   const supabase = createServiceClientWithoutCookies();
 

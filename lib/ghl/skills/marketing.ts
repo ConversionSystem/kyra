@@ -3,6 +3,7 @@
 // ============================================================================
 
 import type { ToolResult } from '../ghl-tools';
+import { validateGhlIds } from './validate';
 
 const GHL_API_BASE = 'https://services.leadconnectorhq.com';
 const GHL_API_VERSION = '2021-04-15';
@@ -135,6 +136,9 @@ export async function executeMarketingTool(
 ): Promise<ToolResult> {
   const headers = ghlHeaders(token);
   const locId = (args.location_id as string) || locationId;
+
+  const idCheck = validateGhlIds(args, ['campaign_id', 'workflow_id', 'contact_id']);
+  if (idCheck) return idCheck;
 
   try {
     switch (toolName) {
