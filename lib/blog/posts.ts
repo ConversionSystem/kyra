@@ -11,6 +11,265 @@ export interface BlogPost {
 
 export const POSTS: BlogPost[] = [
   {
+    slug: 'openclaw-agent-vs-chatbot-capabilities',
+    title: '6 Things an OpenClaw AI Agent Can Do That a Chatbot Can\'t (2026 Guide)',
+    description: 'OpenClaw agents browse the live web, run code, read files, remember past conversations, fire webhooks, and spawn sub-agents. Here\'s what each capability does, how it works, and how to set it up in under 15 minutes.',
+    date: '2026-04-17',
+    readMins: 13,
+    category: 'AI Infrastructure',
+    emoji: '🛠️',
+    content: `
+<p><em>Last updated: April 17, 2026</em></p>
+
+<p>An <strong>OpenClaw AI agent</strong> is an open-source, self-hosted AI worker that can do six things a typical chatbot cannot: browse the live web, read and write files, execute real code, search memory from past conversations, fire emails and webhooks, and delegate complex work to sub-agents. These capabilities ship out of the box — no plugins, no custom code, no orchestration layer. This guide explains each one, shows a real example of what it enables, and walks through the setup in under fifteen minutes.</p>
+
+<div style="background:rgba(79,70,229,0.15);border:1px solid rgba(99,102,241,0.3);border-radius:12px;padding:20px;margin:24px 0;">
+  <p style="margin:0 0 8px 0;"><strong>Key takeaways</strong></p>
+  <ul style="margin:0;">
+    <li>A chatbot responds to text. An AI agent has six tool categories that let it actually do the work.</li>
+    <li>OpenClaw ships with 60+ built-in tools covering web, files, code, memory, actions, and multi-agent coordination.</li>
+    <li>The community ClawHub registry adds thousands of additional skills contributed by agencies running this in production.</li>
+    <li>Setup takes under 15 minutes on any machine that runs Node.js 22 or later.</li>
+    <li>The architecture is MIT-licensed, self-hosted, and works with Claude, GPT, Gemini, and 50+ other models.</li>
+  </ul>
+</div>
+
+<h2>Why "chatbot" and "AI agent" are different things</h2>
+
+<p>Most software called "AI" in 2026 is still a text interface in front of a language model. You type a question, the model replies, the interaction ends. The model does not open a browser, does not touch your files, does not run any code, and does not remember you the next time you come back. It is a chatbot.</p>
+
+<p>An AI agent is the same language model connected to tools. Those tools let the model take actions in the real world: read a webpage, write a file, execute a query, send an email, call another agent. Without tools, a language model is a very articulate pattern-matcher. With tools, it is a worker.</p>
+
+<p>OpenClaw is an open-source framework that gives any language model the full toolkit. It runs as a single daemon on your hardware, connects to messaging channels like WhatsApp, Slack, and Discord, and routes user messages to the agent along with access to all its tools. For the full architecture, see our guide on <a href="/blog/what-is-openclaw-ai-gateway-explained">what OpenClaw actually is</a>.</p>
+
+<p>The six capability categories below are what that toolkit enables. Every one is built in. You do not install anything to get them.</p>
+
+<h2>1. Browse the web and pull live data</h2>
+
+<p>The first thing a real AI agent does that a chatbot cannot: look at the live internet. Language models are frozen at their training cutoff. OpenClaw agents have a built-in browser tool powered by Chromium plus a web-search tool that integrates with more than ten search providers — Google, Bing, Brave, Kagi, SerpAPI, and others. The agent can open a page, read its content, fill out a form, click a button, or extract structured data.</p>
+
+<p><strong>Real examples:</strong></p>
+<ul>
+  <li>Pull today's competitor pricing from three different websites, compare, and report the deltas every morning at 6am.</li>
+  <li>Verify a stat before citing it in a reply. If the claim is wrong, the agent says so.</li>
+  <li>Read a news article the user just linked, summarize the relevant points, and pull out action items.</li>
+  <li>Check if a lead's business is still operating before the sales team calls.</li>
+  <li>Scrape a product page and extract specs, warranty info, and shipping details.</li>
+</ul>
+
+<p>The key difference from a generic "search plugin": the agent chooses when to search, what to search, and how to interpret the result. It does not blindly forward your query to Google. It reasons about whether live data is needed, fetches it, and integrates it into the answer.</p>
+
+<h2>2. Read, write, edit, and analyze files</h2>
+
+<p>An OpenClaw agent has four file tools — <code>read</code>, <code>write</code>, <code>edit</code>, and <code>apply_patch</code> — that operate on files inside a workspace directory on your machine. The workspace is the agent's <code>cwd</code>: a folder you control, where your files live, and where the agent's outputs land.</p>
+
+<p><strong>Real examples:</strong></p>
+<ul>
+  <li>Summarize a 40-page PDF contract and flag clauses that need legal review.</li>
+  <li>Clean up a messy CSV export — drop duplicates, fix encoding, normalize column names — and save a clean version.</li>
+  <li>Rewrite a long proposal document in a different tone, saving as a new version without touching the original.</li>
+  <li>Compare two versions of a document and list the diffs.</li>
+  <li>Analyze a folder of raw data files and generate a weekly report.</li>
+</ul>
+
+<p>Critically, your files stay on your disk. OpenClaw is self-hosted: nothing is uploaded to a cloud service for processing. The agent reads from local paths and writes to local paths. That matters for regulated businesses — dental, legal, medical, financial — where shipping patient or client data to a third-party SaaS violates compliance requirements.</p>
+
+<h2>3. Run code and return real results</h2>
+
+<p>This is the capability that separates a chatbot from an analyst. OpenClaw agents have two execution tools: one for shell commands, one for sandboxed Python. When the agent needs to compute something, it does not guess. It writes code, runs it, and returns the actual output.</p>
+
+<p><strong>Real examples:</strong></p>
+<ul>
+  <li>Run a Python script against a CSV and return summary stats — mean, median, percentiles — with actual numbers.</li>
+  <li>Execute a SQL query against your database and report the result.</li>
+  <li>Call your API endpoint and tell you what response it received, including the status code and headers.</li>
+  <li>Transform a spreadsheet with pandas and write the cleaned output to disk.</li>
+  <li>Test a regex against your sample inputs to confirm it catches what you want.</li>
+</ul>
+
+<p>The difference this makes is qualitative, not quantitative. When a chatbot says "your conversion rate is approximately 3.2%", that number was generated by pattern-matching — it may or may not be correct. When an agent says it, the number came from running the calculation. The agent can show you the code it ran, the data it read, and the output it got.</p>
+
+<p>For sensitive commands, the execution tool respects a permissions system. You can restrict the agent to a specific set of commands, a specific working directory, or require explicit approval for anything destructive. The <a href="https://docs.openclaw.ai">OpenClaw documentation</a> covers tool allow and deny lists in detail.</p>
+
+<h2>4. Search memory from past conversations</h2>
+
+<p>The single biggest reason chatbots feel broken is that they forget you the second the conversation ends. OpenClaw agents do not. Every conversation is stored as a session file in JSONL format at <code>~/.openclaw/agents/&lt;agentId&gt;/sessions/&lt;sessionId&gt;.jsonl</code>. The agent has two memory tools — <code>memory_search</code> and <code>memory_get</code> — that search across all past sessions.</p>
+
+<p><strong>Real example conversation:</strong></p>
+
+<blockquote>
+<p><strong>Customer (one week later):</strong> Hey, I'm back.</p>
+<p><strong>Agent:</strong> Welcome back, Sarah. Last time you were weighing the 3-bedroom versus the 2-bedroom with the garage. Did you decide?</p>
+</blockquote>
+
+<p>That is not a scripted flow. The agent searched its memory for prior sessions with this user, found the relevant thread, extracted the open decision, and brought it up. Session management, memory search, and recall all work out of the box.</p>
+
+<p>There is also an optional <strong>active memory</strong> sub-agent that runs before every reply, searches memory for anything relevant, and surfaces it so the main agent can reference it naturally. Six prompt modes are available — balanced, strict, recall-heavy, precision-heavy, contextual, preference-only — so you can tune how aggressively memory gets injected.</p>
+
+<p>Older turns in very long sessions are automatically compacted into summary entries (the built-in <strong>compaction</strong> system), which keeps the token bill down without losing continuity. <a href="/blog/what-is-openclaw-ai-gateway-explained">The architecture guide</a> goes deeper into this.</p>
+
+<h2>5. Send emails, book calendar slots, and trigger webhooks</h2>
+
+<p>Where most chatbots stop, an agent finishes the job. After a conversation ends, an OpenClaw agent can fire any number of post-conversation actions: email a summary, book a calendar slot, drop a message in another channel, fire a webhook into Zapier or n8n, update a CRM, schedule a follow-up via the built-in <code>cron</code> tool.</p>
+
+<p><strong>Real workflow:</strong></p>
+<ol>
+  <li>A patient texts a dental practice at 9pm asking about insurance and availability.</li>
+  <li>The agent answers the insurance question (by searching the uploaded coverage document), offers three appointment times based on Google Calendar availability, and confirms the booking.</li>
+  <li>After the conversation ends, the agent emails the office manager a summary, creates the appointment on the shared calendar, tags the patient in the CRM as "new-booking," and schedules a reminder for the next morning.</li>
+</ol>
+
+<p>None of that requires an external automation tool. It is all built into the OpenClaw messaging, webhook, and cron systems. For the full automation stack, see the <a href="https://docs.openclaw.ai">docs on hooks, cron, and tasks</a>.</p>
+
+<h2>6. Call sub-agents to split complex tasks</h2>
+
+<p>One agent can only hold so much context at once. When a task has multiple parallel parts, OpenClaw lets the main agent spawn specialist sub-agents, each with its own context window, tool allowlist, and workspace. The main agent orchestrates. The sub-agents focus.</p>
+
+<p><strong>Real workflow:</strong></p>
+
+<p>A patient asks a dental practice AI: "Does my insurance cover a cleaning this week, and can anyone do an emergency filling today?"</p>
+
+<p>Instead of juggling three lookups in one context, the main agent delegates:</p>
+
+<ul>
+  <li><strong>Sub-agent 1:</strong> Look up insurance coverage across the practice's 12 supported providers.</li>
+  <li><strong>Sub-agent 2:</strong> Check today's calendar for any emergency slot.</li>
+  <li><strong>Sub-agent 3:</strong> Pull the current pricing for cleanings and fillings, including any active promotions.</li>
+</ul>
+
+<p>All three run in parallel. They report back. The main agent composes a single clean reply with all three answers. This pattern scales: an agency that handles support, sales, and ops from one inbox can use sub-agent routing to give each lane its own specialist brain without running three separate chatbots.</p>
+
+<p>Each sub-agent has isolated context (no cross-contamination), its own tool permissions (the support sub-agent does not have access to the billing API), and its own session (audit trails stay clean).</p>
+
+<h2>The 6 capabilities side-by-side</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Capability</th>
+      <th>Tools Used</th>
+      <th>What It Enables</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Browse the web</td>
+      <td><code>browser</code>, <code>web_search</code></td>
+      <td>Live data, competitor checks, stat verification</td>
+    </tr>
+    <tr>
+      <td>Read/write/edit files</td>
+      <td><code>read</code>, <code>write</code>, <code>edit</code>, <code>apply_patch</code></td>
+      <td>Document work on your own disk, self-hosted</td>
+    </tr>
+    <tr>
+      <td>Run code</td>
+      <td><code>exec</code>, <code>code_execution</code></td>
+      <td>Real computation, SQL, API calls, data transforms</td>
+    </tr>
+    <tr>
+      <td>Search memory</td>
+      <td><code>memory_search</code>, <code>memory_get</code></td>
+      <td>Returning-customer recognition, persistent context</td>
+    </tr>
+    <tr>
+      <td>Actions &amp; webhooks</td>
+      <td><code>message</code>, <code>cron</code>, webhook tools</td>
+      <td>Email, calendar, CRM updates, scheduled follow-ups</td>
+    </tr>
+    <tr>
+      <td>Sub-agents</td>
+      <td><code>sessions_spawn</code>, <code>subagents</code></td>
+      <td>Parallelized specialist workflows</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>How to set up an OpenClaw agent with all 6 capabilities in 15 minutes</h2>
+
+<p>The full six-capability toolkit is available the moment the gateway starts. There is no "install tool pack" step. Here is the minimum-viable setup.</p>
+
+<h3>Step 1. Install OpenClaw</h3>
+
+<pre><code>npm install -g openclaw@latest</code></pre>
+
+<p>Requires Node.js 22.14 or later. The recommended version is Node 24.</p>
+
+<h3>Step 2. Run the onboarding wizard</h3>
+
+<pre><code>openclaw onboard --install-daemon</code></pre>
+
+<p>This prompts for a model provider API key (Anthropic, OpenAI, Google, OpenRouter, Ollama, and fifty-plus others supported), creates your workspace at <code>~/.openclaw/workspace</code>, and installs the daemon as a system service (launchd on macOS, systemd on Linux, Scheduled Task on Windows).</p>
+
+<h3>Step 3. Verify the built-in tools</h3>
+
+<pre><code>openclaw cli tools list</code></pre>
+
+<p>You should see 60+ tools listed. All six capability categories are represented: browser, file I/O, exec, memory, messaging, sub-agent spawning, plus tools for media generation, cron, and more.</p>
+
+<h3>Step 4. Open the dashboard and test</h3>
+
+<pre><code>openclaw dashboard</code></pre>
+
+<p>This launches the Control UI at <code>http://127.0.0.1:18789</code>. Send the agent a test message that exercises a tool — "What's the current weather in San Francisco?" forces a web search. "Run ls ~/Documents" forces a shell exec (with appropriate permissions). You will see the tool invocations in the agent's reasoning trace.</p>
+
+<h3>Step 5. Connect a messaging channel</h3>
+
+<p>Telegram is the fastest channel to configure: create a bot with <code>@BotFather</code>, paste the token into <code>~/.openclaw/openclaw.json</code> under <code>channels.telegram.botToken</code>, add your username to <code>channels.telegram.allowFrom</code>, and restart the gateway. The agent will start replying to your messages from your phone within seconds.</p>
+
+<h2>Frequently asked questions</h2>
+
+<h3>Do I need to know how to code to use this?</h3>
+
+<p>No. The built-in tools work through natural-language instructions. You tell the agent what you want ("pull the competitor prices this morning") and it picks the right tools to accomplish it. You only need to edit config files — no programming.</p>
+
+<h3>What does this cost to run?</h3>
+
+<p>OpenClaw itself is free (MIT licensed, open source). The only cost is the model API token usage for your chosen provider. A busy agent running on Claude Sonnet typically costs $5–$30 per month in API fees at moderate conversation volume. If you use a local model via Ollama, that cost is zero.</p>
+
+<h3>Is this secure for regulated industries?</h3>
+
+<p>The gateway binds to loopback (<code>127.0.0.1</code>) by default, meaning only your local machine can talk to it. For remote access, the recommended pattern is Tailscale or an SSH tunnel, not public internet ingress. Files stay on your disk. Sessions stay on your disk. The full security model uses MITRE ATLAS terminology and is documented in the project's threat model.</p>
+
+<h3>Can I run multiple agents with different tool permissions?</h3>
+
+<p>Yes. OpenClaw supports multi-agent deployment on one gateway. Each agent has its own workspace, its own tool allow/deny lists, its own sessions, and its own routing bindings. A customer support agent can have browser and memory access but no shell exec. A personal productivity agent can have full access. They run on the same gateway without cross-contamination.</p>
+
+<h3>How does this compare to building on the OpenAI Assistants API or similar?</h3>
+
+<p>OpenAI's Assistants API gives you a hosted agent runtime tied to OpenAI's models and infrastructure. OpenClaw gives you a self-hosted agent runtime with model-agnostic design — you can swap between Claude, GPT, Gemini, local models, and others with a config change. You control where the data lives, what tools are available, and how the agent is deployed.</p>
+
+<h3>What about the skills ecosystem?</h3>
+
+<p>The six capabilities above are built-in tools. On top of those, OpenClaw supports <strong>Skills</strong> — markdown instruction files that teach the agent repeatable workflows. The community ClawHub registry hosts thousands of published skills covering ads management, CRM automation, research workflows, and more. Skills load per-workspace, per-user, or globally, and you can write your own by dropping a markdown file in the skills folder.</p>
+
+<h2>When OpenClaw is probably overkill for you</h2>
+
+<p>Not every use case needs a self-hosted agent. OpenClaw is the wrong choice if:</p>
+
+<ul>
+  <li>You just need a FAQ chatbot on one page of your website. A lighter tool will do.</li>
+  <li>You have no model API key and no interest in getting one.</li>
+  <li>You are not comfortable editing a config file or running a command-line install.</li>
+  <li>You need zero-setup, click-and-deploy with no configuration at all.</li>
+</ul>
+
+<p>For that last group, a managed platform that wraps OpenClaw makes more sense than running it directly. That is the space <a href="https://kyra.conversionsystem.com">Kyra</a> occupies: agencies use it to deploy isolated OpenClaw containers for each of their clients without touching infrastructure. Each client gets their own agent, their own workspace, their own memory — and the agency manages everything from one dashboard. The architecture is identical; the operational overhead is zero.</p>
+
+<h2>The bigger point</h2>
+
+<p>The gap between "AI chatbot" and "AI worker" is exactly this toolkit. A chatbot responds. An agent executes. The difference is not the model. It is what the model can reach.</p>
+
+<p>OpenClaw ships the toolkit free and open source. You get six capability categories, sixty-plus tools, and a community registry of thousands of additional skills — all in fifteen minutes of setup.</p>
+
+<p>Most businesses are still running chatbots. The ones that switched to agents are closing tickets, booking appointments, qualifying leads, and running reports while their teams sleep. The technology gap is real. The setup gap is small.</p>
+
+<p>Want the full breakdown of what OpenClaw is before you install it? Start with our guide on <a href="/blog/what-is-openclaw-ai-gateway-explained">what OpenClaw actually is</a>. Ready to deploy it for clients without the DevOps burden? <a href="/solo">Start with Kyra Solo</a> — free, no credit card, first agent live in under two minutes.</p>
+
+<p>External references: <a href="https://github.com/openclaw/openclaw">OpenClaw on GitHub (MIT licensed)</a> · <a href="https://docs.openclaw.ai">Official OpenClaw documentation</a> · <a href="https://modelcontextprotocol.io">Model Context Protocol (MCP) specification</a> · <a href="https://docs.anthropic.com">Anthropic Claude documentation</a>.</p>
+`,
+  },
+  {
     slug: 'ghl-ai-employee-agency',
     title: 'How to Add an AI worker to Every GHL Client (and Charge $1,000/mo for It)',
     description: 'GHL agencies are sitting on a goldmine. Here\'s how to turn your existing client base into a recurring AI revenue stream — without building anything from scratch.',
