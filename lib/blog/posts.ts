@@ -271,16 +271,31 @@ export const POSTS: BlogPost[] = [
   },
   {
     slug: 'ghl-ai-employee-agency',
-    title: 'How to Add an AI worker to Every GHL Client (and Charge $1,000/mo for It)',
-    description: 'GHL agencies are sitting on a goldmine. Here\'s how to turn your existing client base into a recurring AI revenue stream — without building anything from scratch.',
+    title: 'How to Add an AI Worker to Every GHL Client (2026 Agency Guide)',
+    description: 'A practical guide for GoHighLevel agencies on deploying AI workers to client sub-accounts. Covers what an AI worker is, how it connects to GHL, pricing frameworks, and the 5-step setup.',
     date: '2026-02-22',
-    readMins: 6,
+    readMins: 10,
     category: 'Agency Growth',
     emoji: '🚀',
     content: `
-<p>Most GHL agencies have the same problem: you charge a setup fee, maybe a retainer, and then the relationship goes quiet. The client stops replying. Revenue stagnates.</p>
+<p><em>Last updated: April 17, 2026</em></p>
 
-<p>There's a simple fix. And it's worth $1,000–$2,000/month per client.</p>
+<p>An <strong>AI worker for GHL</strong> is an autonomous AI agent that connects to a GoHighLevel sub-account via a Private Integration Token and handles inbound conversations across SMS, WhatsApp, Instagram, Facebook, Live Chat, email, and Google My Business — 24/7, in under 60 seconds per reply, without staff involvement. This guide explains what an AI worker actually does, how it plugs into GHL, how agencies typically structure the offering, and how to go live on your first client in under 15 minutes.</p>
+
+<div style="background:rgba(79,70,229,0.15);border:1px solid rgba(99,102,241,0.3);border-radius:12px;padding:20px;margin:24px 0;">
+  <p style="margin:0 0 8px 0;"><strong>Key takeaways</strong></p>
+  <ul style="margin:0;">
+    <li>An AI worker is a full agent (not a chatbot) that reads conversations, executes tool calls, updates the CRM, and books appointments.</li>
+    <li>It connects to any GHL sub-account via a Private Integration Token — no marketplace, no OAuth app, no waiting.</li>
+    <li>Typical agency retainer pricing: $500 to $2,000/month per client depending on vertical and volume.</li>
+    <li>Setup takes under 15 minutes per client once your agency is configured.</li>
+    <li>All seven GHL conversation channels are covered: SMS, WhatsApp, Instagram, Facebook Messenger, Live Chat, email, Google My Business.</li>
+  </ul>
+</div>
+
+<p>Most GHL agencies have the same problem. You charge a setup fee, maybe a retainer, and then the relationship goes quiet. The client stops replying. Revenue stagnates.</p>
+
+<p>Adding an AI worker to every client solves two problems at once: it gives your client measurable, ongoing value (so they stop churning), and it creates a new recurring revenue line for your agency that scales without hiring.</p>
 
 <h2>What is an AI worker?</h2>
 
@@ -339,18 +354,117 @@ export const POSTS: BlogPost[] = [
 
 <p>Every booking it makes, every lead it handles, every CRM update it logs — that's value your client can see. It's not abstract "automation." It's results they can count.</p>
 
-<p>Ready to add your first AI worker? <a href="/try/dental">Try a live demo</a> or <a href="/signup/agency">start your free account</a>.</p>
+<h2>How AI workers compare to GHL workflow automations</h2>
+
+<p>GHL's native workflow automations are a powerful tool, but they're a different kind of tool. Here's how to think about them:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Capability</th>
+      <th>GHL Workflow Automation</th>
+      <th>AI Worker</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Reply to a generic inquiry</td>
+      <td>Matches keywords, sends templated reply</td>
+      <td>Reads context, writes an original reply</td>
+    </tr>
+    <tr>
+      <td>Handle off-script questions</td>
+      <td>Falls back to default or staff</td>
+      <td>Composes a contextual answer</td>
+    </tr>
+    <tr>
+      <td>Book an appointment</td>
+      <td>Via calendar-link trigger</td>
+      <td>Checks availability, offers times, confirms</td>
+    </tr>
+    <tr>
+      <td>Update pipeline stage</td>
+      <td>Rule-based on trigger events</td>
+      <td>Decides based on conversation content</td>
+    </tr>
+    <tr>
+      <td>Escalate to a human</td>
+      <td>Only if explicitly configured</td>
+      <td>Detects frustration or complexity automatically</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>They work together. Workflows handle deterministic paths (opt-outs, appointment reminders, drip sequences). AI workers handle the open-ended conversations workflows can't model.</p>
+
+<h2>Frequently asked questions</h2>
+
+<h3>Do I need my client to be on a specific GHL plan?</h3>
+
+<p>Any GHL sub-account that supports Private Integration Tokens works. That's the standard SaaS and Pro plans at the time of writing. Check the official <a href="https://help.gohighlevel.com">GoHighLevel documentation</a> for current plan features if you need to confirm.</p>
+
+<h3>How long does it take to onboard a new client?</h3>
+
+<p>Under 15 minutes per client once your agency account is set up. The steps: create the client in your dashboard, pick an industry template, paste the GHL Private Integration Token, customize the personality file, and go live. The AI starts responding to new inbound messages within 60 seconds of activation.</p>
+
+<h3>What happens if the AI doesn't know an answer?</h3>
+
+<p>The agent is configured to escalate rather than hallucinate. If a customer asks something outside the knowledge base, the AI either asks a clarifying question or tags the conversation for human follow-up. Escalation rules are configurable per client — some agencies set hard rules (medical questions, legal questions, refund requests) that always route to a human.</p>
+
+<h3>Which GHL channels does this cover?</h3>
+
+<p>All seven conversation channels GHL supports: SMS, WhatsApp, Instagram DM, Facebook Messenger, Live Chat, email, and Google My Business. The AI sees everything in the unified GHL conversations inbox and responds through whichever channel the customer used.</p>
+
+<h3>Can I white-label this for my agency?</h3>
+
+<p>Yes. The client never sees the underlying platform. The AI has whatever name you configure (Alex, Maya, Jordan). The dashboard is your branded portal. The conversations appear to come from the client's business. See our <a href="/blog/white-label-ai-platform-agencies">white-label deployment guide</a> for the full setup.</p>
+
+<h3>What if my client wants to take it over themselves someday?</h3>
+
+<p>That's a business decision you control. The AI workers live in your agency account. You can transfer ownership of a client container, migrate it out, or keep it locked to your agency as part of the retainer. Most agencies keep it locked — that's the moat.</p>
+
+<h2>When an AI worker isn't right for a client</h2>
+
+<p>Not every GHL client is a fit. Skip the offer if:</p>
+
+<ul>
+  <li>They receive fewer than 5 inbound messages per week. The math doesn't work for them.</li>
+  <li>Their business is highly regulated in ways that require every reply to be human-reviewed before sending.</li>
+  <li>They have an in-house team that handles inbound within minutes and is at excess capacity.</li>
+  <li>They operate in a language the AI doesn't handle well. (Most major languages work; niche regional languages may not.)</li>
+</ul>
+
+<p>For every other client, the math works.</p>
+
+<p>Ready to add your first AI worker? <a href="/try/dental">Try a live demo</a> or <a href="/signup/agency">start your free agency account</a>. For the underlying technology, see our guide on <a href="/blog/what-is-openclaw-ai-gateway-explained">what OpenClaw is</a>.</p>
+
+<p>External references: <a href="https://help.gohighlevel.com">GoHighLevel help center</a> · <a href="https://github.com/openclaw/openclaw">OpenClaw on GitHub (the agent runtime powering AI workers)</a> · <a href="https://docs.anthropic.com">Anthropic Claude documentation</a>.</p>
 `,
   },
   {
     slug: 'ai-for-dental-practices',
-    title: 'AI for Dental Practices: How It Works, What It Does, and What to Expect',
-    description: 'Dental practices lose thousands in missed appointments and unanswered after-hours inquiries every month. AI workers change that — here\'s exactly how.',
+    title: 'AI for Dental Practices: The 2026 Guide to 24/7 Patient Response',
+    description: 'How AI workers handle after-hours patient inquiries for dental practices. Covers what the AI does, HIPAA-compliant boundaries, GoHighLevel integration, booking flows, and what to expect in the first 30 days.',
     date: '2026-02-22',
-    readMins: 5,
+    readMins: 11,
     category: 'Industry Guide',
     emoji: '🦷',
     content: `
+<p><em>Last updated: April 17, 2026</em></p>
+
+<p><strong>An AI worker for a dental practice</strong> is an autonomous AI agent that responds to inbound patient texts, calls, and chats in under 60 seconds — day or night — to answer common questions, verify insurance, book appointments, and route urgent situations to the on-call staff. This guide explains exactly what a dental AI handles, what it cannot and should not handle, how it integrates with GoHighLevel, and what practices typically see in the first 30 days.</p>
+
+<div style="background:rgba(79,70,229,0.15);border:1px solid rgba(99,102,241,0.3);border-radius:12px;padding:20px;margin:24px 0;">
+  <p style="margin:0 0 8px 0;"><strong>Key takeaways</strong></p>
+  <ul style="margin:0;">
+    <li>Dental practices lose an estimated 30 to 40 percent of new patient inquiries to after-hours unavailability. An AI worker captures most of those.</li>
+    <li>Deployment is roughly 15 minutes when using an industry template for dental.</li>
+    <li>The AI handles scheduling, FAQs, and insurance inquiries. It does not access or store medical records.</li>
+    <li>Integration with GoHighLevel is native: SMS, WhatsApp, email, and chat all flow through one inbox.</li>
+    <li>Typical first-month outcomes: 3 to 8 new patient bookings recovered from after-hours inquiries, 100 percent response rate on new-patient texts.</li>
+  </ul>
+</div>
+
 <p>Dental practices have a lead problem that most dentists don't realize: their phones go unanswered.</p>
 
 <p>A patient texts at 7pm asking about a cleaning. The office is closed. By morning, they've booked with another practice. That's $150 lost on a cleaning — potentially $2,000+ if they become a regular patient.</p>
@@ -413,18 +527,127 @@ export const POSTS: BlogPost[] = [
   <li>100% response rate on new patient inquiries</li>
 </ul>
 
-<p>Ready to see it in action? <a href="/try/dental">Try the live dental AI demo</a> — type anything a patient would say.</p>
+<h2>What the dental AI does NOT do</h2>
+
+<p>Being clear about boundaries builds trust with practices that are rightly cautious. The AI worker does not:</p>
+
+<ul>
+  <li>Access the practice management system or patient medical records</li>
+  <li>Offer clinical advice ("Is this toothache an emergency?" gets an escalation, not an opinion)</li>
+  <li>Prescribe medications or interpret symptoms</li>
+  <li>Handle billing disputes or insurance appeals</li>
+  <li>Replace the emergency triage that a human dental team performs</li>
+</ul>
+
+<p>Everything on that list stays with staff or the on-call dentist. The AI covers the scheduling and intake layer that eats hours of front-desk time every week.</p>
+
+<h2>A typical 2026 dental deployment</h2>
+
+<p>Here is what a deployment looks like for a mid-size practice (two dentists, ~400 active patients):</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Item</th>
+      <th>Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Channels active</td>
+      <td>SMS + website chat + Google Business Profile messaging</td>
+    </tr>
+    <tr>
+      <td>Response SLA</td>
+      <td>Under 60 seconds, 24/7</td>
+    </tr>
+    <tr>
+      <td>Setup time</td>
+      <td>15 minutes using the dental industry template</td>
+    </tr>
+    <tr>
+      <td>Escalation triggers</td>
+      <td>Emergency keywords, frustrated tone, insurance-appeal requests</td>
+    </tr>
+    <tr>
+      <td>CRM used</td>
+      <td>GoHighLevel (via Private Integration Token)</td>
+    </tr>
+    <tr>
+      <td>Monthly conversations handled</td>
+      <td>150 to 400 depending on advertising volume</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Frequently asked questions</h2>
+
+<h3>Is this HIPAA compliant?</h3>
+
+<p>The AI worker itself does not access or store protected health information (PHI). It handles the same kinds of interactions a front-desk receptionist handles via text: scheduling, directions, insurance plan inquiries, pricing. However, HIPAA compliance is a property of the whole workflow, not the AI in isolation. Practices should review the AI's operating scope with their compliance officer and ensure their consent forms cover SMS communication. The U.S. Department of Health and Human Services maintains guidance at <a href="https://www.hhs.gov/hipaa/index.html">hhs.gov/hipaa</a>.</p>
+
+<h3>Will patients know they're talking to an AI?</h3>
+
+<p>That's a choice each practice makes. Many practices disclose it explicitly in the first message ("Hi, I'm Alex, the practice's virtual assistant. I can help with scheduling, insurance, and directions."). Transparency tends to build more trust than trying to hide it, and it sets clean expectations about what the assistant can handle.</p>
+
+<h3>What happens if the AI can't answer something?</h3>
+
+<p>It escalates. The conversation gets tagged in GHL for staff to follow up, and urgent keywords trigger an immediate notification to a designated team member's phone or Slack. The AI never pretends to know a medical answer it doesn't have.</p>
+
+<h3>How much does this cost the practice?</h3>
+
+<p>If you are an agency deploying this for dental clients, typical retainers are $500 to $1,000 per month. The practice compares that to the cost of one lost patient (often $2,000 to $5,000 in lifetime value) and the math is immediate. If you are a practice shopping directly, most agencies will quote a 60-day pilot.</p>
+
+<h3>Can it integrate with dental-specific practice management software?</h3>
+
+<p>Native integrations with Dentrix, Eaglesoft, Open Dental, and similar are limited today. Most practices route the AI through GoHighLevel for conversation handling, then have staff transfer booked appointments into the practice management system manually. This is a multi-minute task per booking, not hours, and it stays inside HIPAA-compliant workflows.</p>
+
+<h3>Does it work for specialist practices (orthodontics, endodontics, oral surgery)?</h3>
+
+<p>Yes, with personality and knowledge-base customization. The standard dental template is tuned for general practice. Specialist templates are available for orthodontics (braces and Invisalign intake), endodontics (root canal inquiries), and oral surgery (extraction scheduling). Customization happens in the agent's personality file.</p>
+
+<h2>When a dental AI worker isn't the right fit</h2>
+
+<p>A practice should skip the AI worker if:</p>
+
+<ul>
+  <li>The practice has a full-time receptionist with excess capacity and no missed calls or after-hours voicemails.</li>
+  <li>Patient volume is under 5 new inquiries per week total.</li>
+  <li>State regulations require every patient communication to be reviewed by a licensed clinician before sending (rare but exists).</li>
+  <li>The practice doesn't want to use SMS for patient communication at all.</li>
+</ul>
+
+<p>Most general-practice dental offices fit the target profile cleanly.</p>
+
+<p>Ready to see it in action? <a href="/try/dental">Try the live dental AI demo</a> — type anything a patient would say. For the broader agency-deployment story, see our <a href="/blog/ghl-ai-employee-agency">GHL AI worker agency guide</a> or our primer on <a href="/blog/openclaw-agent-vs-chatbot-capabilities">what an AI agent can actually do</a>.</p>
+
+<p>External references: <a href="https://www.hhs.gov/hipaa/index.html">HIPAA guidance from HHS</a> · <a href="https://help.gohighlevel.com">GoHighLevel documentation</a> · <a href="https://docs.openclaw.ai">OpenClaw documentation</a>.</p>
 `,
   },
   {
     slug: 'agency-recurring-revenue-ai',
-    title: 'How Agencies Add $10,000/Month in Recurring Revenue with AI Workers',
-    description: 'The math is simple: 10 clients × $1,000/month = $10K MRR at ~97% gross margin. Here\'s the exact playbook to get there in 90 days.',
+    title: 'How Agencies Use AI Workers to Build Recurring Revenue (2026 Playbook)',
+    description: 'A 90-day playbook for digital agencies adding AI workers as a recurring service line. Covers pricing frameworks, client onboarding, industry fit, and the practical steps from first client to a stable 10-client book.',
     date: '2026-02-22',
-    readMins: 7,
+    readMins: 12,
     category: 'Agency Growth',
     emoji: '💰',
     content: `
+<p><em>Last updated: April 17, 2026</em></p>
+
+<p><strong>An AI worker retainer</strong> is a recurring monthly service line agencies add on top of existing client work, where the agency deploys and manages an autonomous AI agent that handles inbound messages, books appointments, and updates the CRM for each client — typically priced between $500 and $2,000 per month per client. This playbook walks through how to structure the offering, how to land your first three clients, and how to scale the book without hiring.</p>
+
+<div style="background:rgba(79,70,229,0.15);border:1px solid rgba(99,102,241,0.3);border-radius:12px;padding:20px;margin:24px 0;">
+  <p style="margin:0 0 8px 0;"><strong>Key takeaways</strong></p>
+  <ul style="margin:0;">
+    <li>AI workers break the linear-revenue trap most agencies hit — marginal cost of adding a 15th worker is near zero.</li>
+    <li>Pricing runs $500 to $2,000 per client per month. Typical gross margin after platform and API costs is 85 to 95 percent.</li>
+    <li>The 90-day playbook: 14 days foundation, 16 days first paid client, 60 days to three paying clients and a repeatable process.</li>
+    <li>Best starter verticals: dental, real estate, auto dealerships, med spas, cannabis dispensaries. High lead value, high missed-call rates, steady volume.</li>
+    <li>Retention is the moat. Churn on a working AI worker is near zero because the agent compounds value month over month.</li>
+  </ul>
+</div>
+
 <p>Most digital marketing agencies have a ceiling problem. You can only take on so many clients. Every new client means more work, more management, more headaches. Revenue grows linearly. Costs grow almost as fast.</p>
 
 <p>AI workers break this model. Here's why: the marginal cost of adding a 15th AI worker is almost zero. You configure a personality, connect GHL, and the AI does the rest. The infrastructure scales automatically. You don't hire more staff. You don't increase overhead.</p>
@@ -502,18 +725,117 @@ export const POSTS: BlogPost[] = [
 
 <p>Compare this to typical agency services where clients churn after 3–6 months. An AI worker that books appointments and handles leads creates ongoing, measurable value that compounds over time.</p>
 
-<p>Ready to start? <a href="/signup/agency">Create your free agency account</a> — no credit card required.</p>
+<h2>A real-world economic comparison</h2>
+
+<p>Here's how the unit economics actually look across a typical 10-client book compared to traditional agency services:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Service line</th>
+      <th>Typical monthly price per client</th>
+      <th>Gross margin</th>
+      <th>Typical 12-month retention</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Facebook ads management</td>
+      <td>$800 to $3,000</td>
+      <td>30 to 50 percent</td>
+      <td>4 to 8 months</td>
+    </tr>
+    <tr>
+      <td>Website build + maintenance</td>
+      <td>$200 to $800</td>
+      <td>40 to 60 percent</td>
+      <td>Variable (often one-time)</td>
+    </tr>
+    <tr>
+      <td>SEO retainer</td>
+      <td>$1,000 to $5,000</td>
+      <td>30 to 60 percent</td>
+      <td>6 to 12 months</td>
+    </tr>
+    <tr>
+      <td>AI worker retainer</td>
+      <td>$500 to $2,000</td>
+      <td>85 to 95 percent</td>
+      <td>12+ months (near-zero churn)</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The AI worker retainer is the first new agency service line in a decade with margin and retention characteristics this strong. That's why agencies that move early establish a defensible position.</p>
+
+<h2>Frequently asked questions</h2>
+
+<h3>Do I need technical skills to deploy AI workers?</h3>
+
+<p>No. The platform handles the infrastructure. You configure personality via a markdown file, connect the client's existing CRM with a token, and pick an industry template. If you can manage a GoHighLevel sub-account, you can deploy an AI worker.</p>
+
+<h3>What if a client already has a chatbot on their site?</h3>
+
+<p>Most site chatbots are keyword-based scripts. An AI worker replaces them entirely. The client removes the old chatbot script from their website and installs the AI worker embed code. The new AI has a conversation with visitors instead of a scripted Q-and-A.</p>
+
+<h3>How do I price this for my first few clients?</h3>
+
+<p>Start at the low end of the range. First three clients at $500 per month to build case studies, then raise to $800 to $1,500 for new clients once you have results to show. Do not underprice long-term; the margin supports it and the value is real.</p>
+
+<h3>How do I sell this to a client who's skeptical of AI?</h3>
+
+<p>Show, don't tell. Every agency account includes industry-specific demo pages (<a href="/try/dental">dental</a>, <a href="/try/realestate">real estate</a>, <a href="/try/auto">auto</a>, and others). Send the prospect the link, tell them to text anything a customer would text. Most skepticism disappears after a 3-minute live conversation with the AI.</p>
+
+<h3>What are the operational costs I should plan for?</h3>
+
+<p>Platform subscription (typically $99 to $499 per month depending on client count), plus AI model API costs (roughly $1 to $5 per client per month at moderate conversation volume). Both scale cleanly with client count. No per-message or per-conversation fees beyond the model API cost.</p>
+
+<h3>Can I offer this alongside my current services, or does it replace them?</h3>
+
+<p>Alongside. AI worker retainers sit on top of existing services (ads, SEO, GHL management). They often make the other services stickier because the client is getting measurable, ongoing value from the agency relationship.</p>
+
+<h2>When this business model isn't right for you</h2>
+
+<p>The AI worker retainer is a strong recurring-revenue play, but it's not universal. Skip this service line if:</p>
+
+<ul>
+  <li>Your current clients are not in high-inbound-volume verticals (pure B2B consulting, for example, often doesn't fit).</li>
+  <li>You have no interest in learning a new dashboard or maintaining a new service line.</li>
+  <li>Your existing agency margin is already so high that adding this is noise.</li>
+  <li>Your client base won't or can't pay monthly recurring fees.</li>
+</ul>
+
+<p>For agencies serving local service businesses, e-commerce, real estate, or any high-volume consumer-facing vertical, this works.</p>
+
+<p>Ready to start? <a href="/signup/agency">Create your free agency account</a> — no credit card required. For the deeper technical story on how AI workers differ from chatbots, read our <a href="/blog/openclaw-agent-vs-chatbot-capabilities">6 capabilities guide</a> or our <a href="/blog/ghl-ai-employee-complete-guide">GHL AI worker complete guide</a>.</p>
+
+<p>External references: <a href="https://help.gohighlevel.com">GoHighLevel documentation</a> · <a href="https://docs.openclaw.ai">OpenClaw documentation</a> · <a href="https://github.com/openclaw/openclaw">OpenClaw on GitHub</a>.</p>
 `,
   },
   {
     slug: 'ghl-ai-employee-complete-guide',
     title: 'GoHighLevel AI Worker: The Complete Guide for GHL Agencies (2026)',
-    description: 'Everything GHL agencies need to know about adding a real AI worker to every sub-account — not automations, not a chatbot. A real AI that talks, thinks, and books appointments.',
+    description: 'Everything GHL agencies need to know about deploying an AI worker to every sub-account. Covers Private Integration Tokens, channel coverage, pricing models, proactive outreach, and CRM automation.',
     date: '2026-02-23',
-    readMins: 8,
+    readMins: 13,
     category: 'GHL Integration',
     emoji: '⚡',
     content: `
+<p><em>Last updated: April 17, 2026</em></p>
+
+<p><strong>A GoHighLevel AI worker</strong> is an autonomous AI agent connected to a GHL sub-account via a Private Integration Token that reads inbound conversations across all seven GHL channels (SMS, WhatsApp, Instagram, Facebook Messenger, Live Chat, email, and Google My Business), replies within 60 seconds, books appointments, updates CRM tags and pipeline stages, and escalates urgent or complex situations to the agency team. This guide walks through exactly how it works, how to deploy one in 10 minutes, and how agencies typically price it.</p>
+
+<div style="background:rgba(79,70,229,0.15);border:1px solid rgba(99,102,241,0.3);border-radius:12px;padding:20px;margin:24px 0;">
+  <p style="margin:0 0 8px 0;"><strong>Key takeaways</strong></p>
+  <ul style="margin:0;">
+    <li>Connection uses GHL Private Integration Tokens — no marketplace listing, no OAuth app, no review process required.</li>
+    <li>All seven GHL conversation channels are covered from a single unified inbox.</li>
+    <li>Typical retainer pricing: $500 (restaurant, basic) to $2,000 (real estate, premium) per month per client.</li>
+    <li>Proactive outreach is the highest-leverage feature: the AI contacts new leads within ~60 seconds of creation.</li>
+    <li>Every conversation auto-updates GHL tags, pipeline stages, and contact notes — no manual CRM maintenance.</li>
+  </ul>
+</div>
+
 <p>If you're running a GoHighLevel agency, you've already heard the buzzword: "AI." GHL has started integrating AI features, and every agency is trying to figure out what to do with them. But most GHL agencies are doing AI wrong — and leaving serious money on the table.</p>
 
 <p>This guide explains how to add a <strong>real AI worker</strong> to every GHL sub-account — not a workflow automation, not a keyword chatbot, but a conversational AI that responds to every inbound SMS within 60 seconds, 24/7.</p>
@@ -614,7 +936,82 @@ export const POSTS: BlogPost[] = [
 
 <p><strong>Can I white-label this?</strong> Yes. The AI personality is fully configurable — you name it, set its personality, and it represents the client's business. There's no "Kyra" branding in client-facing messages.</p>
 
-<p>Ready to add AI workers to your GHL agency? <a href="/signup/agency">Create your free account</a> and have your first AI live in 10 minutes.</p>
+<h2>Troubleshooting the first 48 hours</h2>
+
+<p>Most first-deployment issues fall into one of four buckets. Here's how to triage them:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Symptom</th>
+      <th>Likely cause</th>
+      <th>Fix</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>AI isn't replying to test messages</td>
+      <td>Wrong or expired Private Integration Token</td>
+      <td>Regenerate the token in GHL Settings → Integrations</td>
+    </tr>
+    <tr>
+      <td>AI replies but tone is off</td>
+      <td>Personality file too generic</td>
+      <td>Tighten the SOUL.md-equivalent personality brief</td>
+    </tr>
+    <tr>
+      <td>AI books appointments wrong</td>
+      <td>Calendar not connected or time zone mismatch</td>
+      <td>Confirm GHL calendar sync and agent's configured time zone</td>
+    </tr>
+    <tr>
+      <td>AI gives wrong pricing</td>
+      <td>Knowledge base out of date</td>
+      <td>Update the uploaded pricing document; rebuild embeddings</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Frequently asked questions</h2>
+
+<h3>What's the difference between a Private Integration Token and a GHL marketplace app?</h3>
+
+<p>A marketplace app requires OAuth approval, a listing, and a review process from GHL. A Private Integration Token is a single credential generated inside the sub-account that grants API access. For agency use cases where you're already inside your client's sub-account, Private Integration Tokens are dramatically faster to deploy (2 minutes per client) and require no app approval.</p>
+
+<h3>Will the AI worker step on my existing GHL workflows?</h3>
+
+<p>No. The AI only responds to inbound conversation messages. Your outbound workflows (appointment reminders, review requests, nurture sequences) continue running untouched. They run in parallel.</p>
+
+<h3>Can multiple AI workers share one GHL account?</h3>
+
+<p>Each GHL sub-account maps to exactly one AI worker. If you manage 10 sub-accounts, you deploy 10 AI workers — one per sub-account. Each has its own personality, knowledge base, and escalation rules.</p>
+
+<h3>Does the AI handle payments or sensitive data?</h3>
+
+<p>The AI does not process payments directly. For payment collection, the AI hands off to a GHL payment link or Stripe Checkout URL. The AI never sees or stores credit card data. For other sensitive data (SSN, medical records), the agent is configured to refuse and escalate.</p>
+
+<h3>How does billing work between me (the agency) and the platform?</h3>
+
+<p>Agencies pay a single platform subscription (flat monthly, tiered by client count) plus model API costs. Clients pay the agency directly for the AI worker service. The platform has no billing relationship with end clients — that's entirely your agency relationship.</p>
+
+<h3>What's the realistic upper limit of this service line?</h3>
+
+<p>We know agencies running 30+ clients on a single ops person managing the AI side. Beyond that, hiring a junior specialist to monitor alerts and tune personalities makes sense. The work scales sub-linearly with client count, which is what makes the margin work.</p>
+
+<h2>When a GHL AI worker isn't the right fit</h2>
+
+<ul>
+  <li>Client is on a GHL plan that doesn't support Private Integration Tokens.</li>
+  <li>Client receives fewer than ~20 inbound messages per month. Not enough volume for the ROI to land.</li>
+  <li>Client's regulatory environment requires every outbound communication be human-signed.</li>
+  <li>Client's conversations are predominantly voice calls. Voice AI is a different product category (see our voice-AI coverage once available).</li>
+</ul>
+
+<p>Everything else is in scope.</p>
+
+<p>Ready to add AI workers to your GHL agency? <a href="/signup/agency">Create your free account</a> and have your first AI live in 10 minutes. For the broader playbook on positioning AI workers as a service line, read <a href="/blog/agency-recurring-revenue-ai">how agencies use AI workers for recurring revenue</a>. For the underlying technology, see our guide on <a href="/blog/openclaw-agent-vs-chatbot-capabilities">the 6 capabilities a real AI agent has</a>.</p>
+
+<p>External references: <a href="https://help.gohighlevel.com">GoHighLevel documentation</a> · <a href="https://github.com/openclaw/openclaw">OpenClaw on GitHub</a> · <a href="https://docs.anthropic.com">Anthropic Claude documentation</a>.</p>
 `,
   },
   {
@@ -622,10 +1019,23 @@ export const POSTS: BlogPost[] = [
     title: 'What Is OpenClaw? The Open-Source AI Gateway That Connects Every Messaging App to Your AI Agent',
     description: 'OpenClaw is the self-hosted AI gateway most people still haven\'t heard of. One daemon connects WhatsApp, Telegram, Slack, Discord, Signal, iMessage and 18 more channels to a single AI agent. Here\'s what it does, how it works, and how to set it up in 10 minutes.',
     date: '2026-04-16',
-    readMins: 12,
+    readMins: 13,
     category: 'AI Infrastructure',
     emoji: '🦞',
     content: `
+<p><em>Last updated: April 17, 2026</em></p>
+
+<div style="background:rgba(79,70,229,0.15);border:1px solid rgba(99,102,241,0.3);border-radius:12px;padding:20px;margin:24px 0;">
+  <p style="margin:0 0 8px 0;"><strong>Key takeaways</strong></p>
+  <ul style="margin:0;">
+    <li>OpenClaw is an open-source, MIT-licensed AI gateway that runs as a single daemon on your hardware.</li>
+    <li>It connects 24+ messaging channels (WhatsApp, Telegram, Slack, Discord, Signal, iMessage, Teams, Matrix, and more) to a single AI agent.</li>
+    <li>Supports 50+ model providers including Claude, GPT, Gemini, Ollama, and OpenRouter.</li>
+    <li>Setup takes under 10 minutes on any machine with Node.js 22 or later.</li>
+    <li>Your data stays on your hardware. No vendor lock-in.</li>
+  </ul>
+</div>
+
 <p>Most of the AI chat tools on the market today are closed black boxes. You sign up, you hand over your data, you pay per seat, and you pray the vendor doesn't change their pricing next quarter. Your conversations sit on someone else's server. Your customers get answers from the same shared infrastructure as everyone else. If the service goes down, your business goes down with it.</p>
 
 <p>There is a different path. It is called <strong>OpenClaw</strong>, and it is quietly becoming the backbone of serious AI deployments in 2026. This guide explains what OpenClaw actually is, what problem it solves, how the architecture works, and exactly how to set it up — even if you have never run a server before.</p>
@@ -820,6 +1230,50 @@ every appointment time and date twice before booking.</code></pre>
 
 <h2>The Easier Path: Deploy OpenClaw Without Managing Infrastructure</h2>
 
+<h2>OpenClaw vs. alternative AI deployment paths</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Approach</th>
+      <th>Data location</th>
+      <th>Channel coverage</th>
+      <th>Per-seat pricing</th>
+      <th>Lock-in risk</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>ChatGPT / Claude web app</td>
+      <td>Vendor cloud</td>
+      <td>Web only</td>
+      <td>Yes</td>
+      <td>High</td>
+    </tr>
+    <tr>
+      <td>OpenAI Assistants API</td>
+      <td>Vendor cloud</td>
+      <td>Custom integration per channel</td>
+      <td>Usage + model cost</td>
+      <td>High (API tied to one vendor)</td>
+    </tr>
+    <tr>
+      <td>Shared SaaS chatbot</td>
+      <td>Vendor cloud, shared infra</td>
+      <td>Channel dependent</td>
+      <td>Yes</td>
+      <td>Medium</td>
+    </tr>
+    <tr>
+      <td>OpenClaw (self-hosted)</td>
+      <td>Your hardware</td>
+      <td>24+ built-in channels</td>
+      <td>None</td>
+      <td>None (MIT licensed)</td>
+    </tr>
+  </tbody>
+</table>
+
 <p>OpenClaw is powerful. It is also, for most agency owners and non-technical operators, more setup than they want to do for every client. Installing Node, editing config files, managing daemons, paying for a VPS, renewing TLS certificates — it adds up.</p>
 
 <p>That is the problem <a href="https://kyra.conversionsystem.com">Kyra</a> solves. Kyra is a white-label platform built on OpenClaw technology. Agencies use it to deploy isolated AI workers for every one of their clients without writing code or managing infrastructure. Each client gets their own OpenClaw container with their own personality, knowledge base, and workspace — and the agency manages everything from a single dashboard.</p>
@@ -836,19 +1290,36 @@ every appointment time and date twice before booking.</code></pre>
 
 <p>Either way, the era of shared chatbot platforms is ending. The era of self-hosted, agent-native, multi-channel AI is beginning. The tools are open source, the architecture is proven, and the setup is fast. The only question is whether you want to run it yourself or let a platform run it for you.</p>
 
-<p>Want to read more? See our guide on <a href="/blog/white-label-ai-platform-agencies">building a white-label AI business</a> or the <a href="/blog/ghl-ai-employee-complete-guide">GoHighLevel AI worker setup guide</a>.</p>
+<p>Want to read more? See our guide on <a href="/blog/white-label-ai-platform-agencies">building a white-label AI business</a> or the <a href="/blog/ghl-ai-employee-complete-guide">GoHighLevel AI worker setup guide</a>, or our breakdown of <a href="/blog/openclaw-agent-vs-chatbot-capabilities">the 6 capabilities an AI agent has that a chatbot doesn't</a>.</p>
+
+<p>External references: <a href="https://github.com/openclaw/openclaw">OpenClaw on GitHub (MIT licensed)</a> · <a href="https://docs.openclaw.ai">Official OpenClaw documentation</a> · <a href="https://modelcontextprotocol.io">Model Context Protocol (MCP) specification</a> · <a href="https://docs.anthropic.com">Anthropic Claude documentation</a>.</p>
 `,
   },
   {
     slug: 'white-label-ai-platform-agencies',
-    title: 'White-Label AI Platform for Agencies: Build a $50K/mo AI Business in 2026',
-    description: 'The complete playbook for building a white-label AI worker business using Kyra. Pricing strategy, client onboarding, positioning, and how to scale to $50K/month.',
+    title: 'White-Label AI Platform for Agencies: The 2026 Deployment Guide',
+    description: 'A practical guide to deploying white-label AI workers for agency clients. Covers the economics of the service line, onboarding flow, pricing tiers, industry fit, and how to scale from 5 to 50 clients.',
     date: '2026-02-23',
-    readMins: 9,
+    readMins: 14,
     category: 'Agency Growth',
     emoji: '💰',
     content: `
-<p>In 2026, the most profitable agencies aren't selling websites, ads, or even GHL setups. They're selling <strong>AI workers</strong>. And the ones who figured this out first are building $50,000/month businesses on autopilot.</p>
+<p><em>Last updated: April 17, 2026</em></p>
+
+<p><strong>A white-label AI platform for agencies</strong> is a managed deployment layer on top of an open-source agent runtime (like OpenClaw) that lets agencies deploy isolated AI workers for each of their clients — under the agency's brand, with per-client data isolation — without building infrastructure. This guide covers when the white-label model works, how to structure pricing, and the 6-month path from first client to a stable 50-client book.</p>
+
+<div style="background:rgba(79,70,229,0.15);border:1px solid rgba(99,102,241,0.3);border-radius:12px;padding:20px;margin:24px 0;">
+  <p style="margin:0 0 8px 0;"><strong>Key takeaways</strong></p>
+  <ul style="margin:0;">
+    <li>Agencies sell the AI worker under their own brand. Clients never see the underlying platform.</li>
+    <li>Each client gets an isolated AI container — separate personality, knowledge base, memory, and data.</li>
+    <li>Typical margin: 85 to 95 percent after platform and API costs. Retention is near-zero churn once the AI is delivering.</li>
+    <li>First-client onboarding takes 30 to 60 minutes. Subsequent clients: under 15 minutes per deployment.</li>
+    <li>Strongest verticals: dental, real estate, auto, med spas, cannabis, high-volume local service.</li>
+  </ul>
+</div>
+
+<p>In 2026, the most profitable agencies aren't selling websites, ads, or even GHL setups. They're selling <strong>AI workers</strong>. And the ones who figured this out first are building significant recurring revenue on autopilot — because the AI worker retainer has economics no other agency service line can match.</p>
 
 <p>This guide is the complete playbook for building a white-label AI worker business using Kyra — the platform built specifically for agencies who want to resell AI without building anything from scratch.</p>
 
@@ -958,7 +1429,100 @@ every appointment time and date twice before booking.</code></pre>
 
 <p>Kyra is free to start — no credit card, no commitment. Add your first client, run the demo, see the AI live. If it doesn't work, you haven't spent a dollar.</p>
 
+<h2>How white-label AI compares to other agency service lines</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Service line</th>
+      <th>Onboarding time per client</th>
+      <th>Monthly ops time per client</th>
+      <th>Typical margin</th>
+      <th>Churn profile</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Website build</td>
+      <td>20 to 60 hours</td>
+      <td>1 to 3 hours</td>
+      <td>40 to 60%</td>
+      <td>Often one-time</td>
+    </tr>
+    <tr>
+      <td>Facebook ads</td>
+      <td>6 to 10 hours</td>
+      <td>4 to 10 hours</td>
+      <td>30 to 50%</td>
+      <td>4 to 8 months typical</td>
+    </tr>
+    <tr>
+      <td>SEO retainer</td>
+      <td>8 to 20 hours</td>
+      <td>6 to 15 hours</td>
+      <td>30 to 60%</td>
+      <td>6 to 12 months</td>
+    </tr>
+    <tr>
+      <td>White-label AI worker</td>
+      <td>15 to 30 minutes</td>
+      <td>10 to 30 minutes</td>
+      <td>85 to 95%</td>
+      <td>Near-zero once live</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The combination — low onboarding, low ops, high margin, near-zero churn — is unusual. It's why the agencies investing in this category now are building defensible positions before the space gets crowded.</p>
+
+<h2>Data isolation is the feature sophisticated clients ask about</h2>
+
+<p>For regulated clients (dental, legal, medical, financial), "your data won't be mixed with anyone else's" is not a nice-to-have. It's the table-stakes question on every vendor evaluation call.</p>
+
+<p>The white-label deployment model addresses this directly: each client gets an isolated container with their own storage, their own AI personality, their own knowledge base, and their own memory. Nothing from Client A ever touches Client B. If regulated clients are part of your book, this is the line that sells the service.</p>
+
+<h2>Frequently asked questions</h2>
+
+<h3>What does "white-label" actually include?</h3>
+
+<p>Clients see your agency's brand on the dashboard (if exposed), on the AI worker's name and voice, and on any public-facing surfaces (widgets, embed codes). They never see the underlying platform brand. If a client discovers the underlying technology, it's because you chose to disclose it.</p>
+
+<h3>Do I need my own infrastructure?</h3>
+
+<p>No. The platform handles hosting, scaling, updates, and failover. Your work is configuration and client management. If you want maximum control (regulated client, custom hosting requirement), you can optionally self-host the agent runtime on your own servers — but that's a later-stage choice, not a requirement to start.</p>
+
+<h3>How do I position this in a sales conversation?</h3>
+
+<p>Lead with the outcome, not the technology. "Your business is missing 30 to 40 percent of inquiries after 6pm. We'll put an AI worker on your phone line tonight. By Thursday morning, it will have handled 20-plus conversations you would have missed. You'll see the report." Then show the live demo. Close rate goes up 3x compared to pitching "AI" abstractly.</p>
+
+<h3>What happens when the AI gets something wrong?</h3>
+
+<p>Three layers of safety: explicit escalation rules (urgent keywords, frustrated tone), soft fallbacks ("I'm not sure, let me connect you with a team member"), and full audit trails. Every conversation is logged. If something goes wrong, you review the transcript, tighten the personality file, and ship the fix in under 10 minutes.</p>
+
+<h3>Can I run this for clients who aren't on GoHighLevel?</h3>
+
+<p>Yes. GHL is the most common integration path, but the underlying runtime supports direct SMS, email, Slack, Discord, Matrix, Microsoft Teams, iMessage, and WhatsApp via their respective APIs. For clients on platforms like HubSpot, Pipedrive, or custom CRMs, webhook integrations cover most workflows.</p>
+
+<h3>How do I price this for my agency's size?</h3>
+
+<p>If you're new: start at $500 per client per month. Use the first three clients to build case studies. If you're established: price based on client value. A dental practice where one lost patient is $2,000 easily supports $1,500 per month. Enterprise med spas and real estate teams can support $2,000-plus. Never underprice on retention economics this strong.</p>
+
+<h2>When white-label AI isn't the right model for you</h2>
+
+<ul>
+  <li>You have no existing client base and aren't set up to acquire new ones.</li>
+  <li>You want zero ongoing management — even 10 minutes per client per month is too much.</li>
+  <li>You're not comfortable troubleshooting AI personality issues when they come up (usually easy, but it's a skill).</li>
+  <li>You plan to market the AI worker as your own proprietary technology (possible, but the marketing story is different from "we deploy AI").</li>
+</ul>
+
+<p>For every other agency, the economics make this the single most interesting service line to add in 2026.</p>
+
 <p><a href="/signup/agency">Create your free agency account →</a></p>
+
+<p>Related reading: <a href="/blog/openclaw-agent-vs-chatbot-capabilities">The 6 capabilities an AI agent has that a chatbot doesn't</a> · <a href="/blog/ghl-ai-employee-complete-guide">The GHL AI worker complete guide</a> · <a href="/blog/what-is-openclaw-ai-gateway-explained">What OpenClaw is</a>.</p>
+
+<p>External references: <a href="https://github.com/openclaw/openclaw">OpenClaw on GitHub</a> · <a href="https://docs.openclaw.ai">OpenClaw documentation</a> · <a href="https://docs.anthropic.com">Anthropic Claude documentation</a> · <a href="https://modelcontextprotocol.io">Model Context Protocol specification</a>.</p>
 `,
   },
 ];
