@@ -4,7 +4,7 @@ import { requireAgencyMember, requireAgencyAdmin } from '@/lib/agency/middleware
 import { isValidSlug } from '@/lib/agency/utils';
 import { provisionClientGateway } from '@/lib/ovh/provisioner';
 import { buildInjectionDefensePromptSuffix } from '@/lib/security/prompt-injection';
-import { canAddClient, getPlanClientLimit } from '@/lib/billing/plans';
+import { getPlanClientLimit } from '@/lib/billing/plans';
 import type { CreateClientRequest } from '@/lib/agency/types';
 import { markOnboardingStep } from '@/lib/onboarding/tracker';
 import { createGhlSubAccount } from '@/lib/ghl/agency-api';
@@ -80,14 +80,19 @@ export async function POST(request: NextRequest) {
     .eq('agency_id', agency.id);
 
   const agencyPlan = (agency as any).plan || 'free';
-  if (!canAddClient(agencyPlan, currentClientCount ?? 0)) {
-    const limit = getPlanClientLimit(agencyPlan);
+  const agencySettings = ((agency as any).settings ?? {}) as Record<string, unknown>;
+  const extraSlots = typeof agencySettings.extra_client_slots === 'number'
+    ? agencySettings.extra_client_slots
+    : 0;
+  const effectiveLimit = getPlanClientLimit(agencyPlan) + extraSlots;
+
+  if ((currentClientCount ?? 0) >= effectiveLimit) {
     return NextResponse.json(
       {
-        error: `Your ${agencyPlan} plan allows up to ${limit} client${limit === 1 ? '' : 's'}. Upgrade to add more.`,
+        error: `Your ${agencyPlan} plan allows up to ${effectiveLimit} client${effectiveLimit === 1 ? '' : 's'}. Upgrade to add more.`,
         code: 'PLAN_LIMIT_REACHED',
         currentCount: currentClientCount,
-        limit,
+        limit: effectiveLimit,
         plan: agencyPlan,
       },
       { status: 403 }

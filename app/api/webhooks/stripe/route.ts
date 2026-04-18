@@ -194,6 +194,12 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   const resolvedPlan: StripePlan | 'free' = isActive ? plan : 'free';
 
   await updateAgencyPlan(agencyId, resolvedPlan, subscription.id);
+
+  // Grant credits on plan activation/upgrade (idempotent on subscription + period)
+  if (isActive && plan !== 'free') {
+    const idempotencyKey = `sub_renewed:${subscription.id}:${subscription.current_period_start}`;
+    await grantPlanCreditsOnce(agencyId, plan, idempotencyKey, 'subscription renewal');
+  }
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
