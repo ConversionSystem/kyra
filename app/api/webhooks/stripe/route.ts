@@ -300,6 +300,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: `Webhook signature invalid: ${message}` }, { status: 400 });
   }
 
+  // Log webhook receipt for health monitoring
+  console.log(`[stripe/webhook] Received event: ${event.type} (${event.id}) at ${new Date().toISOString()}`);
+
   // Route to handler
   try {
     switch (event.type) {
@@ -328,9 +331,10 @@ export async function POST(request: NextRequest) {
         break;
     }
 
+    console.log(`[stripe/webhook] Successfully processed: ${event.type} (${event.id})`);
     return NextResponse.json({ received: true });
   } catch (err) {
-    console.error('[stripe/webhook] Handler error:', err);
+    console.error(`[stripe/webhook] Handler error for ${event.type} (${event.id}):`, err);
     return NextResponse.json({ error: 'Webhook handler failed' }, { status: 500 });
   }
 }
