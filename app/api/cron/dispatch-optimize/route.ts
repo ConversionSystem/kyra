@@ -4,6 +4,7 @@ import { runOptimization } from '@/lib/onfleet/route-optimizer';
 import { executeRules } from '@/lib/onfleet/rule-engine';
 import { createOnfleetClient } from '@/lib/onfleet/client';
 import type { ClientDispatchConfig } from '@/lib/onfleet/types';
+import { requireCron } from '@/lib/auth/cron';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -18,11 +19,8 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
  * Vercel cron config: see vercel.json (every 15 minutes)
  */
 export async function GET(req: NextRequest) {
-  // Verify cron secret
-  const authHeader = req.headers.get('authorization');
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const unauthorized = requireCron(req);
+  if (unauthorized) return unauthorized;
 
   if (!supabaseUrl || !supabaseServiceKey) {
     return NextResponse.json({ error: 'Database not configured' }, { status: 500 });

@@ -15,11 +15,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { getSchedule } from '@/lib/autopilot/autopilot-engine';
 import { deductCredits } from '@/lib/billing/credit-engine';
+import { requireCron } from '@/lib/auth/cron';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
-
-const CRON_SECRET = process.env.CRON_SECRET;
 
 function isTaskDueNow(schedule: string, lastRunAt: string | null, nowUtc: Date): boolean {
   // Parse cron: "0 9 * * *" = 9am UTC daily, "0 9 * * 1" = Monday 9am UTC
@@ -99,11 +98,8 @@ async function wakeContainerWithTask(
 }
 
 export async function GET(req: NextRequest) {
-  // Verify cron auth
-  const authHeader = req.headers.get('authorization');
-  if (CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const unauthorized = requireCron(req);
+  if (unauthorized) return unauthorized;
 
   const supabase = createServiceClientWithoutCookies();
   const nowUtc = new Date();

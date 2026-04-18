@@ -19,11 +19,11 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireCron } from '@/lib/auth/cron';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
-const CRON_SECRET = process.env.CRON_SECRET || '';
 const PROVISIONER_URL = process.env.OVH_PROVISIONER_URL || 'https://provisioner.gw.kyra.conversionsystem.com';
 const PROVISIONER_SECRET = process.env.OVH_PROVISIONER_SECRET || 'kyra-provisioner-2026';
 const MASTER_EMAILS = ['hello@conversionsystem.com', 'angel@conversionsystem.com'];
@@ -94,14 +94,10 @@ async function runSync(): Promise<{ fixed: number; checked: number; errors: stri
   return results;
 }
 
-// Cron trigger (GET with CRON_SECRET header)
+// Cron trigger (GET with CRON_SECRET header, or OVH_PROVISIONER_SECRET for manual)
 export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get('authorization');
-  const secret = authHeader?.replace('Bearer ', '');
-
-  if (secret !== CRON_SECRET && secret !== PROVISIONER_SECRET) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const unauthorized = requireCron(request, { extraSecretEnvVars: ['OVH_PROVISIONER_SECRET'] });
+  if (unauthorized) return unauthorized;
 
   try {
     const result = await runSync();

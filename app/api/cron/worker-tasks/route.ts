@@ -9,17 +9,14 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { checkAndRunDueTasks } from '@/lib/tasks/task-scheduler';
+import { requireCron } from '@/lib/auth/cron';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300; // 5 min max — tasks can be long-running
 
-const CRON_SECRET = process.env.CRON_SECRET;
-
 export async function GET(req: NextRequest) {
-  const authHeader = req.headers.get('authorization');
-  if (CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const unauthorized = requireCron(req);
+  if (unauthorized) return unauthorized;
 
   console.log('[worker-tasks cron] Starting task check...');
 

@@ -3,6 +3,7 @@
 // ============================================================================
 
 import type { ToolResult } from '../ghl-tools';
+import { validateGhlIds } from './validate';
 
 const GHL_API_BASE = 'https://services.leadconnectorhq.com';
 const GHL_API_VERSION = '2021-04-15';
@@ -111,6 +112,9 @@ export async function executeTaskTool(
   _locationId: string,
 ): Promise<ToolResult> {
   const headers = ghlHeaders(token);
+
+  const idCheck = validateGhlIds(args, ['contact_id', 'task_id']);
+  if (idCheck) return idCheck;
 
   try {
     switch (toolName) {
