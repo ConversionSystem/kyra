@@ -7,6 +7,7 @@ import {
   ArrowUpRight, ArrowDownRight, Minus, CreditCard, Flame,
   UserCheck, Globe, Phone, DatabaseZap, CheckCircle2, AlertCircle,
 } from 'lucide-react';
+import WebhookHealthCard from '@/components/admin/webhook-health-card';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -401,6 +402,9 @@ export default function AdminDashboardClient() {
             </div>
           </div>
         </div>
+
+        {/* ── Stripe Webhook Health ─────────────────────────────────────── */}
+        <WebhookHealthCard />
 
         {/* ── Activation + Solo/Agency split ───────────────────────────────── */}
         <div className="grid lg:grid-cols-2 gap-4">
