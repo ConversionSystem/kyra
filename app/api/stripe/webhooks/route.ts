@@ -1,3 +1,10 @@
+/**
+ * SECONDARY WEBHOOK HANDLER — currently disabled in Stripe.
+ * The PRIMARY handler is at /api/webhooks/stripe (app/api/webhooks/stripe/route.ts).
+ * That route handles: checkout.session.completed, subscription.updated/deleted, invoice events + credits.
+ * Do not register this endpoint in Stripe unless intentionally consolidating.
+ */
+
 import { NextRequest, NextResponse } from 'next/server';
 import type Stripe from 'stripe';
 import {

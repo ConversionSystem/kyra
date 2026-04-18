@@ -54,6 +54,8 @@ export function BillingPageClient({
   const [loading, setLoading]         = useState<string | null>(null);
   const [error, setError]             = useState<string | null>(null);
   const [billing, setBilling]         = useState<'monthly' | 'annual'>('monthly');
+  const [upgrading, setUpgrading]     = useState(checkoutStatus === 'success' && currentPlan === 'free');
+  const [upgradeTimedOut, setUpgradeTimedOut] = useState(false);
 
   // ── Live data ─────────────────────────────────────────────────────────────
   const [creditsBalance, setCreditsBalance]   = useState(initialCreditsBalance);
@@ -97,6 +99,26 @@ export function BillingPageClient({
     return () => clearInterval(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ── Poll for plan activation after checkout ────────────────────────────────
+  useEffect(() => {
+    if (!upgrading) return;
+    let cancelled = false;
+    const timeout = setTimeout(() => {
+      if (!cancelled) { setUpgrading(false); setUpgradeTimedOut(true); }
+    }, 30_000);
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch('/api/agency/plan-status', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.plan && data.plan !== 'free') {
+          if (!cancelled) { setUpgrading(false); router.refresh(); }
+        }
+      } catch { /* retry next tick */ }
+    }, 2_000);
+    return () => { cancelled = true; clearTimeout(timeout); clearInterval(interval); };
+  }, [upgrading, router]);
 
   // ── Plan config ───────────────────────────────────────────────────────────
   const PLAN_ORDER: Plan[] = ['starter', 'pro', 'scale'];
@@ -203,13 +225,30 @@ export function BillingPageClient({
         </div>
       )}
 
-      {checkoutStatus === 'success' && (
+      {checkoutStatus === 'success' && upgrading && (
+        <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-5 flex items-center gap-4">
+          <Loader2 className="h-6 w-6 text-indigo-600 animate-spin shrink-0" />
+          <div>
+            <p className="font-semibold text-indigo-900">Activating your Lite plan...</p>
+            <p className="text-sm text-indigo-700 mt-0.5">This usually takes a few seconds.</p>
+          </div>
+        </div>
+      )}
+
+      {checkoutStatus === 'success' && upgradeTimedOut && currentPlan === 'free' && (
+        <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-4 py-3 text-sm">
+          <AlertCircle className="h-5 w-5 text-amber-500 shrink-0" />
+          If your plan hasn&apos;t updated, please refresh the page or contact support.
+        </div>
+      )}
+
+      {checkoutStatus === 'success' && !upgrading && (
         <div className="rounded-xl overflow-hidden border border-indigo-200">
           <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 text-white p-5 sm:p-6">
             <div className="flex items-start gap-4 mb-4">
               <div className="text-4xl">🎉</div>
               <div>
-                <p className="text-xl font-black">You&apos;re on {PLANS[currentPlan]?.name ?? 'your new plan'}!</p>
+                <p className="text-xl font-black">You&apos;re on {PLANS[currentPlan]?.name && currentPlan !== 'free' ? PLANS[currentPlan].name : 'your new plan'}!</p>
                 <p className="text-indigo-200 text-sm mt-1">Your client slots are live. Start adding AI workers now.</p>
               </div>
             </div>

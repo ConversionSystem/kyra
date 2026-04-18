@@ -55,6 +55,8 @@ export default async function AgencyBillingPage({
     : voice === 'cancelled' ? 'cancelled'
     : checkout ?? null;
 
+  const isPostCheckout = checkout === 'success' || checkout === 'voice_success';
+
   return (
     <BillingPageClient
       agency={agency as { id: string; name: string; plan: string; stripe_customer_id: string | null; settings?: Record<string, unknown> }}
@@ -63,7 +65,7 @@ export default async function AgencyBillingPage({
       checkoutStatus={checkoutStatus}
       autoUpgradePlan={upgrade ?? null}
       isSolo={isSolo}
-      requirePlan={required === 'true'}
+      requirePlan={required === 'true' && !isPostCheckout}
       initialCreditsBalance={credits.balance}
       initialCreditsUsed={credits.lifetimeUsed}
     />

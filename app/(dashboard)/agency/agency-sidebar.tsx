@@ -17,6 +17,7 @@ import {
   BarChart3 as CrmChartIcon,
   Brain,
   Settings,
+  HelpCircle,
   Terminal,
   ExternalLink,
   Menu,
@@ -98,6 +99,7 @@ const navSections: NavSection[] = [
       { label: 'Referrals', href: '/agency/referrals', icon: Gift },
       { label: 'API Keys', href: '/agency/api-keys', icon: KeyRound },
       { label: 'Settings', href: '/agency/settings', icon: Settings },
+      { label: 'Help & Support', href: 'mailto:hello@conversionsystem.com', icon: HelpCircle },
     ],
   },
 ];
