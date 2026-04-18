@@ -11,6 +11,244 @@ export interface BlogPost {
 
 export const POSTS: BlogPost[] = [
   {
+    slug: 'mcp-connectors-openclaw-guide-2026',
+    title: 'MCP Connectors Explained: How OpenClaw Plugs 10,000+ Tools Into Any AI Agent (2026 Guide)',
+    description: 'The Model Context Protocol hit 10,000 public servers and 97 million monthly SDK downloads by March 2026. Here is how MCP connectors actually work, how OpenClaw uses them as both client and server, and a full setup walkthrough.',
+    date: '2026-04-17',
+    readMins: 14,
+    category: 'AI Infrastructure',
+    emoji: '🔌',
+    content: `
+<p><em>Last updated: April 17, 2026</em></p>
+
+<p>A <strong>Model Context Protocol (MCP) connector</strong> is a standardized bridge that lets any AI model read from, write to, and trigger actions on any external tool using a single common wire format. You write the connector once. Every MCP-aware agent can use it. That is why, by March 2026, Anthropic reported <strong>over 10,000 public MCP servers</strong> and <strong>97 million monthly SDK downloads</strong> across Python and TypeScript. MCP turned the mess of one-off API integrations into a lingua franca for agentic software, and OpenClaw plugs directly into the entire ecosystem on day one.</p>
+
+<div style="background:rgba(79,70,229,0.15);border:1px solid rgba(99,102,241,0.3);border-radius:12px;padding:20px;margin:24px 0;">
+  <p style="margin:0 0 8px 0;"><strong>Key takeaways</strong></p>
+  <ul style="margin:0;">
+    <li>MCP is an open protocol Anthropic released in November 2024 and donated to the Linux Foundation (via the Agentic AI Foundation) in December 2025.</li>
+    <li>An MCP connector exposes tools, resources, and prompts from a data source to any MCP-aware agent over stdio or HTTP/SSE transport.</li>
+    <li>OpenClaw is both an MCP client (it consumes MCP servers) and an MCP server (it exposes OpenClaw tools to outside clients like Claude Desktop).</li>
+    <li>Setup is under 10 minutes: add the server to <code>mcp.json</code>, restart the daemon, list the new tools, and the agent can call them.</li>
+    <li>Security boils down to allowlists, deny-lists, OAuth where supported, and running untrusted servers in sandboxed containers.</li>
+    <li>By March 2026, every major AI provider shipped MCP support. Gartner projects 40% of enterprise apps will embed task-specific AI agents by end of 2026.</li>
+  </ul>
+</div>
+
+<h2>What Model Context Protocol actually is</h2>
+
+<p>Before MCP, every AI integration looked the same: someone wrote a custom adapter for their favorite tool, then rewrote it three more times for OpenAI, Anthropic, and whatever internal framework was fashionable that quarter. The adapter would break when the API changed, nobody shared code, and every agency running AI for clients maintained its own private stack of tape-and-glue integrations.</p>
+
+<p>MCP replaced that pattern with a single specification. The protocol defines three primitives a server can expose: <strong>tools</strong> the model can call, <strong>resources</strong> the model can read, and <strong>prompts</strong> the model can receive as structured templates. A compliant client speaks this protocol once. Any compliant server plugs in without extra work. Agents, IDEs, assistants, and orchestration layers can all consume the same server.</p>
+
+<p>The protocol itself is transport-agnostic. The two official transports are <code>stdio</code> (the client spawns the server as a subprocess and talks to it over standard input and output) and <code>Streamable HTTP</code> with optional SSE for streaming. Stdio is the default for local tools. HTTP is the default for anything remote or multi-tenant.</p>
+
+<h2>Why MCP exploded in 2025 and 2026</h2>
+
+<p>MCP shipped in November 2024 as a small Anthropic experiment. By April 2025 it was at 8 million cumulative SDK downloads. June 2025 hit 35 million monthly. March 2026 crossed 97 million monthly downloads and 10,000 active public servers. That is one of the fastest adoption curves any developer protocol has ever recorded.</p>
+
+<p>Three forces drove the growth. First, every major AI vendor adopted MCP in the same 12-month window. Second, Anthropic donated the protocol to the Agentic AI Foundation in December 2025, a directed fund under the Linux Foundation co-founded with Block and OpenAI. That removed vendor-control fears and unlocked enterprise procurement. Third, the MCP spec kept shipping: new maintainers like Clare Liguori and Den Delimarsky joined in April 2026, and the 2026 roadmap prioritizes stateless transport, scalable session handling, and multi-server discovery via Server Cards.</p>
+
+<p>The practical effect on agencies and builders: the integration work that used to be the hard part is now table stakes. Hundreds of SaaS vendors ship official MCP servers. Thousands more are community-maintained. Notion, Linear, GitHub, Stripe, Slack, Postgres, Google Drive, Figma, Salesforce, Zendesk, Intercom, Sentry, AWS, Cloudflare, every major CRM, and most databases have a public MCP server you can wire up in minutes.</p>
+
+<h2>How OpenClaw uses MCP (client and server)</h2>
+
+<p>OpenClaw is unusual in the ecosystem because it plays both roles. As an <strong>MCP client</strong>, an OpenClaw agent can consume any external MCP server — the same way Claude Desktop or Cursor does. You add the server to an <code>mcp.json</code> file, the gateway boots it, and the tools appear in the agent's tool list automatically. The agent decides when to call them.</p>
+
+<p>As an <strong>MCP server</strong>, OpenClaw exposes its own internal tools to outside clients. There are two common patterns. First, a loopback bridge lets background Claude CLI runs reach the same tools the main OpenClaw agent has. Second, a remote bridge (the freema/openclaw-mcp project is one implementation) exposes routed channel conversations over MCP so that a Claude Desktop user can talk to a self-hosted OpenClaw assistant with OAuth2 authentication. See <a href="https://docs.openclaw.ai/cli/mcp">the OpenClaw MCP CLI docs</a> for the current reference.</p>
+
+<p>Being both sides of the protocol matters because it lets a single OpenClaw gateway act as the integration layer for a whole agency. Thirty clients, each with their own session, all share the same pool of MCP connectors. You maintain one CRM connector, not thirty. For how this fits into the broader gateway design, read <a href="/blog/what-is-openclaw-ai-gateway-explained">what OpenClaw actually is</a>.</p>
+
+<h2>Stdio vs HTTP/SSE: picking a transport</h2>
+
+<p>Most teams get this wrong the first time. Stdio connectors spawn a subprocess on the same machine as the gateway and communicate over pipes. They are fast, private, and have no network surface. But they cannot be shared across gateways, they die when the gateway restarts, and they are awkward to scale horizontally. HTTP/SSE connectors run as independent services anywhere on the network. They can be load-balanced, authenticated with OAuth, and shared by every gateway in an estate. But they add latency and require actual ops work.</p>
+
+<p>The rough rule:</p>
+
+<ul>
+  <li><strong>Use stdio</strong> for local-first tools: reading the filesystem, shelling out to a CLI, hitting a local Postgres, scraping a page, controlling a local Chrome instance.</li>
+  <li><strong>Use HTTP/SSE</strong> for anything multi-tenant, anything with OAuth, anything that already runs as a service, and anything that needs to be reachable from more than one OpenClaw node.</li>
+</ul>
+
+<p>The MCP maintainer team is actively reshaping the HTTP transport in the 2026 roadmap to behave correctly behind load balancers and survive server restarts without losing session state. That work is tracked in the <a href="https://modelcontextprotocol.io/development/roadmap">official MCP roadmap</a>.</p>
+
+<h2>Step-by-step: add your first MCP server to OpenClaw</h2>
+
+<p>This walkthrough wires up a common example: a GitHub MCP server so the agent can open issues, review pull requests, and search code. It takes about eight minutes on a fresh OpenClaw install.</p>
+
+<p><strong>1. Install OpenClaw if you have not already.</strong> Any Linux, macOS, or WSL box with Node.js 22 or newer works:</p>
+
+<pre><code>npm install -g @openclaw/cli
+openclaw init
+openclaw gateway start</code></pre>
+
+<p><strong>2. Open your agent workspace.</strong> Every agent has a workspace directory at <code>~/.openclaw/agents/&lt;agentId&gt;</code>. The MCP config lives there:</p>
+
+<pre><code>cd ~/.openclaw/agents/my-first-agent
+ls mcp.json 2&gt;/dev/null || echo '{ "servers": {} }' &gt; mcp.json</code></pre>
+
+<p><strong>3. Add the server block.</strong> Edit <code>mcp.json</code> to register the GitHub server:</p>
+
+<pre><code>{
+  "servers": {
+    "github": {
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "ghp_your_token_here"
+      }
+    }
+  }
+}</code></pre>
+
+<p><strong>4. Reload the agent.</strong> The gateway picks up new connectors on reload:</p>
+
+<pre><code>openclaw agents reload my-first-agent
+openclaw mcp list my-first-agent</code></pre>
+
+<p>You should see the GitHub tools appear: <code>search_code</code>, <code>create_issue</code>, <code>list_pull_requests</code>, and a dozen more.</p>
+
+<p><strong>5. Test in the agent.</strong> Send a message over any connected channel:</p>
+
+<blockquote>"Find open issues in openclaw/openclaw labeled <code>good-first-issue</code> and summarize them."</blockquote>
+
+<p>The agent will call <code>github.list_issues</code> with the label filter, read the results, and reply with a summary. That is a full MCP round trip on a live production connector.</p>
+
+<p><strong>6. Lock down permissions.</strong> By default the agent can call any tool the MCP server exposes. For safety in client-facing deployments, add an allowlist in the agent's config:</p>
+
+<pre><code>openclaw agents edit my-first-agent \\
+  --allow "github.search_code,github.list_issues,github.list_pull_requests" \\
+  --deny "github.delete_repository"</code></pre>
+
+<p>Now the agent can read your repositories but cannot delete anything. The full permission model is documented in the <a href="https://docs.openclaw.ai">OpenClaw docs</a>, and if you want an end-to-end example using the same pattern for a law firm, see <a href="/ai-for/law-firm">our law firm AI worker template</a>.</p>
+
+<h2>MCP connectors vs custom plugins vs raw API calls</h2>
+
+<p>Agencies shipping AI to clients have three realistic ways to plug an agent into an external tool. Each has a place. Picking the wrong one wastes weeks.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Dimension</th>
+      <th>MCP connector</th>
+      <th>Custom OpenClaw plugin</th>
+      <th>Raw API call from agent</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Setup time</td>
+      <td>Minutes (if server exists)</td>
+      <td>Hours to days</td>
+      <td>Hours (prompt-engineered)</td>
+    </tr>
+    <tr>
+      <td>Reusable across agents</td>
+      <td>Yes, any MCP client</td>
+      <td>Yes, within OpenClaw</td>
+      <td>No, per-prompt</td>
+    </tr>
+    <tr>
+      <td>Works outside OpenClaw</td>
+      <td>Yes (Claude Desktop, Cursor, Windsurf)</td>
+      <td>No</td>
+      <td>No</td>
+    </tr>
+    <tr>
+      <td>Schema discovery</td>
+      <td>Automatic</td>
+      <td>Defined in plugin manifest</td>
+      <td>Manual, in prompt</td>
+    </tr>
+    <tr>
+      <td>Auth pattern</td>
+      <td>OAuth / env / headers</td>
+      <td>OpenClaw vault</td>
+      <td>Whatever you inject</td>
+    </tr>
+    <tr>
+      <td>When to use</td>
+      <td>Standard SaaS tools</td>
+      <td>Agency-specific business logic</td>
+      <td>One-off prototypes</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The short answer most agencies land on: MCP connectors for anything vendors already ship (CRMs, databases, dev tools, file storage), custom plugins for the one or two pieces of logic that are actually your moat, and raw API calls only for quick prototypes. The longer you run an agency, the more of your stack ends up as stock MCP connectors — and that is the healthy outcome.</p>
+
+<h2>The MCP connectors every agency should know</h2>
+
+<p>Out of 10,000 public servers, a short list covers 80% of real agency work. These are the ones worth wiring up on day one:</p>
+
+<ul>
+  <li><strong>GitHub.</strong> Issues, pull requests, code search, file contents. The starter connector for every technical team.</li>
+  <li><strong>Postgres / MySQL / SQLite.</strong> Read-only query access to your operational database. Pair with a strict allowlist.</li>
+  <li><strong>Slack.</strong> Post messages, read channels, react to threads. Not a chatbot replacement — an action surface.</li>
+  <li><strong>Stripe.</strong> Customer lookup, charge history, subscription status. Gold for billing support agents.</li>
+  <li><strong>Notion or Linear.</strong> Plan work, file tickets, update docs. Most agencies pick one.</li>
+  <li><strong>Google Drive or Dropbox.</strong> Read-only access to client docs for retrieval-augmented answering.</li>
+  <li><strong>Browser (via Chrome MCP).</strong> Fills the long tail when no first-party server exists. OpenClaw v2026.3.23 shipped major reliability fixes to the browser attach path.</li>
+  <li><strong>GHL / HubSpot / Salesforce.</strong> Contact records, deal pipelines, workflow triggers. Read our <a href="/blog/ghl-ai-employee-complete-guide">GHL AI employee guide</a> for the end-to-end pattern.</li>
+</ul>
+
+<p>Wiring all eight takes an afternoon. The same eight connectors, shared across every client agent on the same gateway, is the backbone of a production agency stack in 2026.</p>
+
+<h2>Security: the part most people get wrong</h2>
+
+<p>MCP gives an agent tools. Tools execute real actions. Treating that casually is how data leaks happen. Four rules cover most of the risk.</p>
+
+<p><strong>1. Allowlist by default, not denylist.</strong> It is easier to add a tool an agent needs than to remove one it should not have. Start with zero tools allowed, add the specific tool names the use case requires.</p>
+
+<p><strong>2. Never run untrusted servers in the main gateway process.</strong> A community MCP server is arbitrary code. If you do not know the author, run it in an isolated container with its own network, no filesystem access outside a scratch directory, and no access to gateway secrets.</p>
+
+<p><strong>3. Use OAuth where the server supports it.</strong> Static tokens in <code>mcp.json</code> are fine for local dev, terrible for production. OAuth means the user authorizes exactly the scopes the agent needs, and tokens can be revoked without redeploying.</p>
+
+<p><strong>4. Monitor every tool call.</strong> OpenClaw writes every MCP call to the agent's session JSONL. Forward those logs somewhere you will actually read them. The cheap version is a nightly cron that greps for high-risk tool names (anything with <code>delete</code>, <code>write</code>, or <code>transfer</code>) and emails the summary.</p>
+
+<p>For regulated industries this is not optional. A dental practice running an AI receptionist over MCP connectors needs a documented permission posture before the HIPAA officer will sign off. Our guide on <a href="/blog/ai-for-dental-practices">AI for dental practices</a> covers that specific posture.</p>
+
+<h2>When MCP is not the right choice</h2>
+
+<p>MCP is not the answer to every integration question. Three cases where reaching for it is the wrong instinct.</p>
+
+<p><strong>Real-time, sub-second control loops.</strong> MCP is request-response with some streaming. If you are building a trading system or a realtime game agent, the protocol overhead will dominate. Talk directly to the underlying API.</p>
+
+<p><strong>High-volume background data movement.</strong> If the job is moving a million rows a night from Salesforce to Snowflake, write an ETL pipeline. Do not have an agent iterate through it.</p>
+
+<p><strong>Logic that is genuinely yours.</strong> If the "tool" is 40 lines of your company's pricing logic, that belongs in a custom OpenClaw plugin or a small internal service. MCP adds no value for something only your agent will ever call.</p>
+
+<p>A clean mental model: MCP is the right choice when the tool already exists or could reasonably exist as a general-purpose product. It is the wrong choice when the tool is really just a piece of your business logic wearing a protocol costume.</p>
+
+<h2>Frequently asked questions</h2>
+
+<h3>Is MCP production-ready in 2026?</h3>
+<p>Yes, with care. The spec is stable, the major SDKs are reliable, and enterprise adoption is real. The sharp edges are still in the HTTP transport (stateful sessions behind load balancers) and server discovery, both of which are explicitly on the 2026 roadmap. Stdio-based local connectors have been production-ready since early 2025.</p>
+
+<h3>Do I need OpenClaw to use MCP?</h3>
+<p>No. MCP is an open protocol. Claude Desktop, Cursor, Windsurf, and dozens of other clients consume MCP servers. OpenClaw is specifically useful when you want one gateway serving many clients and channels, rather than a single developer using a single IDE.</p>
+
+<h3>Can one MCP server be used by many agents at once?</h3>
+<p>Yes. That is the point. A single GitHub or Postgres MCP server on your network can be a tool source for every agent on every gateway in your estate. Stdio servers are per-process; HTTP servers are shared.</p>
+
+<h3>How does MCP handle authentication?</h3>
+<p>Three patterns. Static tokens in environment variables (simplest, least secure). Header-based auth on HTTP transport (good for service-to-service). OAuth 2.1 with the DPoP extension being proposed in 2026 (best for user-authorized access). Pick based on who the agent is acting on behalf of.</p>
+
+<h3>What happens if an MCP server goes down?</h3>
+<p>The tool disappears from the agent's available tool list until the server returns. A well-written agent handles the missing tool gracefully — it falls back to asking the user or using a different path. A poorly written prompt pretends the tool is still there and hallucinates the result. Test the degraded-mode path before shipping.</p>
+
+<h3>Does MCP work with non-Anthropic models?</h3>
+<p>Yes. The protocol is model-agnostic. OpenAI, Google, Mistral, and open-weights models via tool-calling all consume MCP servers through the same OpenClaw client layer. The "Model" in "Model Context Protocol" refers to any language model, not Anthropic specifically.</p>
+
+<h2>The bottom line</h2>
+
+<p>Two years ago the hard part of agentic software was the integration work. Every agency had its own sprawling collection of API adapters, and every client engagement started with another adapter rewrite. In 2026 that problem is mostly solved. MCP turned integration into a shared commons. OpenClaw turned it into something an agency can operate at scale: one gateway, one pool of connectors, every client isolated, every tool reusable.</p>
+
+<p>If you want to run this stack yourself, the <a href="https://github.com/openclaw/openclaw">openclaw/openclaw repo</a> is the right starting point, and the official <a href="https://modelcontextprotocol.io/development/roadmap">MCP roadmap</a> is worth subscribing to. If you want the same architecture without the ops work, <strong>Kyra</strong> runs a hosted OpenClaw gateway with a curated MCP connector library, session isolation per client, and permission presets that match real agency workflows. Our <a href="/solo">solo plan</a> is free during beta so you can wire up your first three MCP connectors without a credit card. Our team has deployed this pattern across agencies ranging from two-person shops to 50-client white-label operators, and the playbook works the same in both places.</p>
+`,
+  },
+  {
     slug: 'openclaw-agent-vs-chatbot-capabilities',
     title: '6 Things an OpenClaw AI Agent Can Do That a Chatbot Can\'t (2026 Guide)',
     description: 'OpenClaw agents browse the live web, run code, read files, remember past conversations, fire webhooks, and spawn sub-agents. Here\'s what each capability does, how it works, and how to set it up in under 15 minutes.',
