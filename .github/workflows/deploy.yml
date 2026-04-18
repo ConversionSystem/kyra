@@ -8,9 +8,13 @@ on:
   workflow_dispatch:
 
 # ─────────────────────────────────────────────────────────────────────────────
-# CI only — TypeScript + lint checks.
-# Deployments are done via CLI (npx vercel --prod --yes) to avoid double builds.
-# Previous workflow deployed on every push → doubled build minutes → $150/mo.
+# CI runs on every push + PR. Deploy runs only on push to main, after CI.
+# Deploy uses the Vercel CLI with a scoped token (see repo secrets below).
+#
+# Required repo secrets:
+#   VERCEL_TOKEN        — personal or team token with deploy scope
+#   VERCEL_ORG_ID       — from `vercel link` → .vercel/project.json (orgId)
+#   VERCEL_PROJECT_ID   — from `vercel link` → .vercel/project.json (projectId)
 # ─────────────────────────────────────────────────────────────────────────────
 jobs:
   ci:
@@ -37,3 +41,33 @@ jobs:
 
       - name: Tests
         run: npm test
+
+  deploy:
+    name: Deploy to Vercel (production)
+    needs: ci
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull Vercel env (production)
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
