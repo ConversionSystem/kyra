@@ -16,11 +16,10 @@ const UPDATES = [
     date: 'April 15–16, 2026',
     tag: 'Power User',
     tagColor: 'bg-violet-100 text-violet-700',
-    title: 'Command Palette, Keyboard Shortcuts & Dispatch Intelligence',
+    title: 'Command Palette & Dispatch Intelligence',
     desc: 'Pro-level navigation and smart delivery logistics in one sprint.',
     items: [
       { emoji: '⌘', text: 'Global Command Palette (⌘K) — instant fuzzy search across pages, clients, and actions' },
-      { emoji: '⌨️', text: 'Keyboard Shortcuts (?) — GitHub-style hotkeys: G→H for home, G→C for clients, N for new worker' },
       { emoji: '🚚', text: 'Dispatch Intelligence Rule Engine — cutoff boost, breach alerts, cancel re-optimization' },
       { emoji: '📦', text: 'OnFleet integration hardened — 12 bug fixes for webhooks, task sync, and sandbox plans' },
       { emoji: '🔍', text: 'Algolia product search — ~4ms lookups replacing ~8s Firecrawl scraping' },

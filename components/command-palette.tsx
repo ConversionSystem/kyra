@@ -5,9 +5,8 @@ import { useRouter } from 'next/navigation';
 import {
   Activity, Users, MessageSquare, Terminal, Globe, Search, Settings,
   CreditCard, KeyRound, Gift, BarChart2, Brain, Sparkles, Mail,
-  Phone, Bot, ClipboardList, ArrowRight, Command, Hash, Keyboard,
+  Phone, Bot, ClipboardList, ArrowRight, Command, Hash,
 } from 'lucide-react';
-import { openKeyboardShortcuts } from './keyboard-shortcuts-dialog';
 import { cn } from '@/lib/utils';
 import type { LucideIcon } from 'lucide-react';
 
@@ -46,7 +45,6 @@ const NAV_ITEMS: CommandItem[] = [
   { id: 'settings', label: 'Settings', description: 'Agency settings', icon: Settings, href: '/agency/settings', section: 'Account', keywords: ['config', 'preferences'] },
   { id: 'add-client', label: 'Add AI Worker', description: 'Create a new client', icon: Bot, href: '/agency/clients/new', section: 'Actions', keywords: ['new', 'create', 'add', 'worker'] },
   { id: 'changelog', label: 'Changelog', description: "What's new", icon: ClipboardList, href: '/changelog', section: 'Actions', keywords: ['updates', 'whats new', 'releases'] },
-  { id: 'shortcuts', label: 'Keyboard Shortcuts', description: 'View all shortcuts', icon: Keyboard, action: () => openKeyboardShortcuts(), section: 'Actions', keywords: ['keyboard', 'shortcuts', 'hotkeys', 'keys'] },
 ];
 
 // ─── Component ──────────────────────────────────────────────────────────────
@@ -277,10 +275,6 @@ export function CommandPalette({ clients = [] }: CommandPaletteProps) {
               </span>
             </div>
             <div className="flex items-center gap-3 text-[10px] text-gray-400">
-              <span className="flex items-center gap-1">
-                <kbd className="px-1 py-0.5 bg-gray-100 rounded border border-gray-200 text-[10px]">?</kbd>
-                shortcuts
-              </span>
               <span className="flex items-center gap-0.5">
                 <Command className="h-3 w-3" />K to toggle
               </span>
