@@ -16,6 +16,10 @@
 //   invoice.payment_succeeded         — Clear payment flags + grant monthly renewal credits
 // ============================================================================
 
+// ⚠️  This is the PRIMARY webhook endpoint registered in Stripe Dashboard.
+// Stripe webhook ID: we_1TCcvQDr3LPJOIaMuaY1zJhG
+// Registered events: checkout.session.completed, customer.subscription.updated/deleted, invoice.payment_failed/succeeded
+
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { stripe, planFromPriceId, type StripePlan } from '@/lib/stripe/config';
