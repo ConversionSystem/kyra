@@ -1,0 +1,29 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Kyra Web (Next.js)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 3001
+    },
+    {
+      "name": "OpenClaw Bridge",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["infrastructure/openclaw/kyra-bridge.js"],
+      "port": 3100
+    },
+    {
+      "name": "OVH Provisioner",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["infra/provisioner/server.js"],
+      "port": 9090
+    },
+    {
+      "name": "Site Template (generic)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "site-templates/generic"],
+      "port": 3000
+    }
+  ]
+}

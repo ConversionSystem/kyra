@@ -100,6 +100,7 @@ const navSections: NavSection[] = [
       { label: 'API Keys', href: '/agency/api-keys', icon: KeyRound },
       { label: 'Settings', href: '/agency/settings', icon: Settings },
       { label: 'Help & Support', href: 'mailto:hello@conversionsystem.com', icon: HelpCircle },
+      { label: 'What\u2019s New', href: '/changelog', icon: Zap, badge: 'NEW' },
     ],
   },
 ];
