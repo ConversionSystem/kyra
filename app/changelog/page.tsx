@@ -13,6 +13,38 @@ const UPDATES = [
   // APRIL 2026
   // ═══════════════════════════════════════════════════════════════════════
   {
+    date: 'April 18, 2026',
+    tag: 'Billing & Security',
+    tagColor: 'bg-green-100 text-green-700',
+    title: 'Billing Sprint + Webhook Monitor + Security Hardening',
+    desc: 'Four production deploys: billing reliability, webhook observability, and fail-closed security.',
+    items: [
+      { emoji: '📡', text: 'Stripe Webhook Health Monitor — real-time health card on admin dashboard with 24h delivery stats' },
+      { emoji: '💰', text: 'Credits now granted on subscription.updated (not just checkout.session.completed)' },
+      { emoji: '🔒', text: 'Fail-closed cron auth — was open by default, now locked down' },
+      { emoji: '🛡️', text: 'GHL skill ID validation — prevents unauthorized skill execution' },
+      { emoji: '⚡', text: 'Plan upgrade race condition fixed — no more double-charges on fast clicks' },
+      { emoji: '🎁', text: 'Extra client slots bonus now properly respected on plan change' },
+      { emoji: '🧹', text: 'Keyboard shortcuts removed (⌘K command palette kept)' },
+      { emoji: '✅', text: '59 tests passing, TSC clean' },
+    ],
+  },
+  {
+    date: 'April 17, 2026',
+    tag: 'Content & GEO',
+    tagColor: 'bg-cyan-100 text-cyan-700',
+    title: 'Editorial Calendar + Blog Content + GEO Discoverability',
+    desc: 'Content engine foundations: editorial voice spec, two blog posts, and machine-readable discovery.',
+    items: [
+      { emoji: '📝', text: 'Editorial calendar + voice specification for consistent brand content' },
+      { emoji: '📰', text: 'Blog: "2026 Algorithm-Native Rules" — comprehensive playbook for algo-native agencies' },
+      { emoji: '🔍', text: 'Blog: "Q2 2026 Audit Fixes" — GEO structure, light theme, author byline improvements' },
+      { emoji: '📣', text: 'Social content drafts for Facebook, LinkedIn, and X — ready to publish' },
+      { emoji: '📡', text: 'RSS feed + llms-full.txt — AI engines can now discover and cite Kyra content' },
+      { emoji: '🤖', text: 'Blog: "MCP Connectors Explained" — 2,600-word GEO-optimized deep dive' },
+    ],
+  },
+  {
     date: 'April 15–16, 2026',
     tag: 'Power User',
     tagColor: 'bg-violet-100 text-violet-700',
@@ -214,10 +246,10 @@ const UPDATES = [
 // ─── Stats bar ──────────────────────────────────────────────────────────────
 
 const STATS = [
-  { label: 'Features shipped', value: '200+' },
-  { label: 'Commits', value: '950+' },
+  { label: 'Features shipped', value: '220+' },
+  { label: 'Commits', value: '1,000+' },
   { label: 'Weeks of shipping', value: '8' },
-  { label: 'Deploys', value: '100+' },
+  { label: 'Deploys', value: '110+' },
 ];
 
 export default function ChangelogPage() {

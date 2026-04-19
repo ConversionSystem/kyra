@@ -65,3 +65,4 @@ kyra-router/
 .env.openai
 .env.secrets
 .env.fc
+.claude/
