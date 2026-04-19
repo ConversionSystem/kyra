@@ -1,6 +1,7 @@
 # Kyra OpenClaw Infrastructure
 
-Real OpenClaw container that powers Kyra's AI agents.
+Real OpenClaw container that powers Kyra's AI agents. One container per agency
+client, running on an OVH Docker host behind Traefik.
 
 ## Architecture
 
@@ -9,22 +10,26 @@ GHL Customer SMS → Kyra Poller (Vercel cron)
                         ↓
                    HTTP POST /chat
                         ↓
-              ┌─────────────────────┐
-              │  Fly.io Container   │
-              │                     │
-              │  Kyra Bridge :3100  │ ← HTTP API (exposed externally)
-              │       ↓ WS          │
-              │  OpenClaw GW :18789 │ ← Real OpenClaw engine (internal)
-              │                     │
-              │  • 60+ skills       │
-              │  • Persistent memory│
-              │  • Sub-agents       │
-              │  • Tool system      │
-              │  • Multi-model      │
-              └─────────────────────┘
+              ┌─────────────────────────────┐
+              │  OVH VPS (Docker + Traefik) │
+              │                             │
+              │  Kyra Bridge :3100          │ ← HTTP API (via Traefik)
+              │       ↓ WS                  │
+              │  OpenClaw GW :18789         │ ← Real OpenClaw engine
+              │                             │
+              │  • 60+ skills               │
+              │  • Persistent memory        │
+              │  • Sub-agents               │
+              │  • Tool system              │
+              │  • Multi-model              │
+              └─────────────────────────────┘
                         ↓
               AI Response → GHL API → Customer
 ```
+
+Provisioning is handled by `infra/provisioner/server.js`, which spawns a
+per-client container from the image built by this directory and publishes it
+at `{client-id}.gw.kyra.conversionsystem.com` via Traefik.
 
 ## What This Is
 
@@ -40,8 +45,7 @@ This is **NOT** a dumb API proxy. This runs the actual OpenClaw platform:
 
 | File | Purpose |
 |------|---------|
-| `Dockerfile` | Builds container with Node.js + OpenClaw + Bridge |
-| `fly.toml` | Fly.io deployment config (Frankfurt, 1GB RAM) |
+| `Dockerfile` | Builds the `kyra-gateway` image (Node.js + OpenClaw + Bridge) |
 | `start.sh` | Entry point: generates config → starts gateway → starts bridge |
 | `kyra-bridge.js` | HTTP API that translates to OpenClaw's WS protocol |
 | `workspace/` | Base workspace files (SOUL.md, AGENTS.md, etc.) |
@@ -60,20 +64,23 @@ This is **NOT** a dumb API proxy. This runs the actual OpenClaw platform:
 
 ## Deploy
 
+Build the image on the OVH host and let the provisioner pick it up:
+
 ```bash
+# On the OVH VPS
 cd infrastructure/openclaw
-fly deploy
+docker build -t kyra-gateway:latest .
 ```
 
-Set secrets:
-```bash
-fly secrets set ANTHROPIC_API_KEY=sk-ant-... -a kyra-gateway
-```
+New client containers spawned by `infra/provisioner/server.js` will use the
+freshly built image on their next boot.
 
 ## Health Check
 
+Each client gateway exposes `/health` on its own subdomain:
+
 ```bash
-curl https://kyra-gateway.fly.dev/health
+curl https://{client-id}.gw.kyra.conversionsystem.com/health
 ```
 
 Expected response:
@@ -91,7 +98,7 @@ Expected response:
 ## How It Works
 
 1. **Kyra Poller** (Vercel cron, every minute) checks GHL for new messages
-2. Poller sends `POST /chat` to this container with:
+2. Poller sends `POST /chat` to the client's gateway URL with:
    - `message`: Customer's text
    - `sessionKey`: Unique per client-contact pair
    - `systemContext`: Business identity, customer info, instructions

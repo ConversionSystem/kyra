@@ -71,7 +71,7 @@ COPY start.sh /usr/local/bin/start.sh
 COPY kyra-bridge.js /usr/local/bin/kyra-bridge.js
 RUN chmod +x /usr/local/bin/start.sh
 
-# Bridge port (externally exposed via Fly.io)
+# Bridge port (exposed externally via Traefik on the OVH VPS)
 EXPOSE 3100
 
 WORKDIR /root
