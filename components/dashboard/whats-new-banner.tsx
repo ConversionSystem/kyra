@@ -10,7 +10,6 @@ const BANNER_VERSION = '2026-04-18-v1';
 const STORAGE_KEY = `kyra_whats_new_dismissed_${BANNER_VERSION}`;
 
 const LATEST_FEATURES = [
-  { emoji: '⌘', text: 'Command Palette (⌘K) — instant fuzzy search across pages, clients, and actions' },
   { emoji: '🌍', text: 'SEO/GEO Command Center — audit, fix, and optimize search presence from one dashboard' },
   { emoji: '🚚', text: 'Dispatch Intelligence — smart delivery logistics with cutoff boost and breach alerts' },
   { emoji: '🔍', text: 'Algolia Product Search — blazing-fast product lookups (~4ms vs ~8s)' },
