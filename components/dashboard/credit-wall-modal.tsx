@@ -31,7 +31,7 @@ export default function CreditWallModal({ agencyId: _agencyId }: Props) {
     setLoading(packId);
     setError(null);
     try {
-      const res = await fetch('/api/billing/checkout', {
+      const res = await fetch('/api/stripe/credits', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
