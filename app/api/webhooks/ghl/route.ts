@@ -34,14 +34,13 @@ const API_SECRET = process.env.KYRA_API_SECRET;
 // ── Webhook Verification ────────────────────────────────────────────────────
 // Uses GHL_WEBHOOK_SECRET (set in Vercel env vars) to verify incoming requests.
 // Accepts: HMAC signature (GHL Marketplace) OR shared-secret header/query (Workflow).
+// FAIL-CLOSED: if GHL_WEBHOOK_SECRET is unset, all requests are rejected.
 async function verifyGhlWebhook(request: NextRequest, rawBody: string): Promise<boolean> {
   const secret = process.env.GHL_WEBHOOK_SECRET;
 
   if (!secret) {
-    if (process.env.NODE_ENV === 'production') {
-      console.warn('[ghl-webhook] ⚠️  GHL_WEBHOOK_SECRET not set — webhook verification disabled!');
-    }
-    return true;
+    console.error('[ghl-webhook] ⛔ GHL_WEBHOOK_SECRET not configured — rejecting');
+    return false;
   }
 
   const headerSecret = request.headers.get('x-kyra-secret');
@@ -50,9 +49,15 @@ async function verifyGhlWebhook(request: NextRequest, rawBody: string): Promise<
 
   const ghlSignature = request.headers.get('x-ghl-signature') || request.headers.get('x-hub-signature-256');
   if (ghlSignature && rawBody) {
-    const { createHmac } = await import('crypto');
+    const { createHmac, timingSafeEqual } = await import('crypto');
     const expected = 'sha256=' + createHmac('sha256', secret).update(rawBody).digest('hex');
-    if (ghlSignature === expected) return true;
+    if (expected.length === ghlSignature.length) {
+      try {
+        if (timingSafeEqual(Buffer.from(expected), Buffer.from(ghlSignature))) return true;
+      } catch {
+        // fall through to reject
+      }
+    }
   }
 
   console.warn('[ghl-webhook] ⛔ Rejected request — invalid webhook signature');

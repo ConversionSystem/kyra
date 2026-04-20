@@ -15,7 +15,7 @@ import { processInboundMessage } from '@/lib/ghl/webhook-handler';
 import type { GHLWebhookPayload } from '@/lib/ghl/types';
 import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
 
-// ── Webhook Authentication ──────────────────────────────────────────────────
+// ── Webhook Authentication (fail-closed) ────────────────────────────────────
 // GHL Marketplace signed webhooks include a signature header.
 // For GHL Workflow "Custom Webhook" actions, we use a shared secret appended
 // as a query param (?secret=...) or header (x-kyra-secret).
@@ -24,17 +24,15 @@ import type { AgencyClient, AgencyTemplate } from '@/lib/agency/types';
 //   a) A valid GHL HMAC signature (x-ghl-signature), OR
 //   b) A matching x-kyra-secret header / ?secret= query param
 //
-// If GHL_WEBHOOK_SECRET is NOT set, we skip verification (dev mode / legacy).
-// Set GHL_WEBHOOK_SECRET in Vercel env vars to enable enforcement.
+// FAIL-CLOSED: if GHL_WEBHOOK_SECRET is NOT set, all requests are rejected.
+// Previously this path fell open in dev — that was a prod footgun because the
+// env var is easy to miss in Vercel config and fail-open is undetectable.
 async function verifyGhlWebhook(request: NextRequest, rawBody: string): Promise<boolean> {
   const secret = process.env.GHL_WEBHOOK_SECRET;
 
-  // Not configured → allow all (warn in production)
   if (!secret) {
-    if (process.env.NODE_ENV === 'production') {
-      console.warn('[ghl/webhook] ⚠️  GHL_WEBHOOK_SECRET not set — webhook verification disabled!');
-    }
-    return true;
+    console.error('[ghl/webhook] ⛔ GHL_WEBHOOK_SECRET not configured — rejecting');
+    return false;
   }
 
   // Check shared secret header or query param (used in GHL Workflow custom webhooks)
@@ -47,10 +45,14 @@ async function verifyGhlWebhook(request: NextRequest, rawBody: string): Promise<
   // Check GHL HMAC signature (used in GHL Marketplace webhooks)
   const ghlSignature = request.headers.get('x-ghl-signature') || request.headers.get('x-hub-signature-256');
   if (ghlSignature && rawBody) {
-    const { createHmac } = await import('crypto');
+    const { createHmac, timingSafeEqual } = await import('crypto');
     const expected = 'sha256=' + createHmac('sha256', secret).update(rawBody).digest('hex');
-    if (ghlSignature === expected) {
-      return true;
+    if (expected.length === ghlSignature.length) {
+      try {
+        if (timingSafeEqual(Buffer.from(expected), Buffer.from(ghlSignature))) return true;
+      } catch {
+        // fall through to reject
+      }
     }
   }
 

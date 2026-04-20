@@ -44,13 +44,15 @@ const FORWARDABLE_EVENTS: Set<GHLWebhookEventType> = new Set([
 ]);
 
 export async function POST(request: NextRequest) {
-  // ── Webhook authentication ────────────────────────────────────────────
+  // ── Webhook authentication (fail-closed) ────────────────────────────────
   const webhookSecret = process.env.GHL_WEBHOOK_SECRET;
-  if (webhookSecret) {
-    const providedSecret = request.headers.get('x-webhook-secret') || request.nextUrl.searchParams.get('secret');
-    if (providedSecret !== webhookSecret) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  if (!webhookSecret) {
+    console.error('[crm/webhook] GHL_WEBHOOK_SECRET not configured — rejecting');
+    return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 });
+  }
+  const providedSecret = request.headers.get('x-webhook-secret') || request.nextUrl.searchParams.get('secret');
+  if (providedSecret !== webhookSecret) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   let payload: GHLWebhookPayload;
