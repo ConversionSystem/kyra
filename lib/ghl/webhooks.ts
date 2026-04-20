@@ -218,9 +218,12 @@ export async function listWebhooks(
 /**
  * Build the full webhook URL from environment config.
  * Uses NEXT_PUBLIC_APP_URL as the base.
+ * Appends GHL_WEBHOOK_SECRET as ?secret= query param if configured.
  */
 export function getKyraWebhookUrl(): string {
   const baseUrl =
     process.env.NEXT_PUBLIC_APP_URL || 'https://kyra.conversionsystem.com';
-  return `${baseUrl}/api/webhooks/ghl`;
+  const base = `${baseUrl}/api/webhooks/ghl`;
+  const secret = process.env.GHL_WEBHOOK_SECRET;
+  return secret ? `${base}?secret=${secret}` : base;
 }
