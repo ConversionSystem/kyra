@@ -53,6 +53,7 @@ import { cn } from '@/lib/utils';
 import type { AgencySettings } from '@/lib/agency/types';
 import type { LucideIcon } from 'lucide-react';
 import { CreditBadge } from '@/components/chat/CreditBadge';
+import { WhatsNewDot } from '@/components/whats-new-dot';
 
 interface NavItem {
   label: string;
@@ -99,7 +100,7 @@ const navSections: NavSection[] = [
       { label: 'API Keys', href: '/agency/api-keys', icon: KeyRound },
       { label: 'Settings', href: '/agency/settings', icon: Settings },
       { label: 'Help & Support', href: 'mailto:hello@conversionsystem.com', icon: HelpCircle },
-      { label: 'What\u2019s New', href: '/changelog', icon: Zap, badge: 'NEW' },
+      { label: 'What\u2019s New', href: '/changelog', icon: Zap, badge: 'whats-new' },
     ],
   },
 ];
@@ -353,7 +354,10 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
                         New
                       </span>
                     )}
-                    {item.badge && item.href !== '/agency/ai-model' && !isActive && (
+                    {item.badge === 'whats-new' && !isActive && (
+                      <WhatsNewDot />
+                    )}
+                    {item.badge && item.badge !== 'whats-new' && item.href !== '/agency/ai-model' && !isActive && (
                       <span className="ml-auto bg-emerald-500 text-white text-[9px] font-bold rounded px-1.5 py-0.5 leading-none uppercase tracking-wide">
                         {item.badge}
                       </span>

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import PublicNav from '@/components/layout/public-nav';
 import PublicFooter from '@/components/layout/public-footer';
+import { ChangelogSeenMarker } from '@/components/whats-new-dot';
 
 export const metadata: Metadata = {
   title: 'Kyra Changelog — AI Workforce Platform',
@@ -12,6 +13,31 @@ const UPDATES = [
   // ═══════════════════════════════════════════════════════════════════════
   // APRIL 2026
   // ═══════════════════════════════════════════════════════════════════════
+  {
+    date: 'April 20, 2026',
+    tag: 'Security Sprint',
+    tagColor: 'bg-red-100 text-red-700',
+    title: 'Phase 0 Security Hardening — 18 Commits Shipped',
+    desc: 'Comprehensive security audit and hardening across the entire platform. Every webhook verified, every admin route gated, RLS on all tables.',
+    items: [
+      { emoji: '🔐', text: 'Hardcoded production secrets removed from repository' },
+      { emoji: '🛡️', text: 'Admin allowlists consolidated into single source of truth (lib/auth/admin.ts)' },
+      { emoji: '🔒', text: 'All admin endpoints gated with requireMaster — no more open routes' },
+      { emoji: '📡', text: 'Resend webhook signature verification (Svix) — fail-closed' },
+      { emoji: '🤖', text: 'Retell voice webhook signature verification — fail-closed' },
+      { emoji: '📞', text: 'Twilio webhook signature verification across all 6 routes' },
+      { emoji: '💬', text: 'Telegram + WhatsApp webhook verification — fail-closed' },
+      { emoji: '🔗', text: 'GHL webhook receivers flipped to fail-closed with secret verification' },
+      { emoji: '🧹', text: 'HTML escaped in admin email notifications — XSS prevention' },
+      { emoji: '🗄️', text: 'Row-Level Security enabled on 16 previously unprotected tables' },
+      { emoji: '💰', text: 'Billing fully re-enabled — stub routes removed, modal fixed' },
+      { emoji: '📝', text: 'Audit logging + noindex headers on sensitive debug endpoints' },
+      { emoji: '🧪', text: 'Integration tests added for 5 critical routes' },
+      { emoji: '⚡', text: 'BYOK provider priority consolidated — cleaner AI model selection' },
+      { emoji: '🛣️', text: '/ai-for/[niche] vs /ai-for/[slug] route conflict resolved' },
+      { emoji: '🏗️', text: 'CI pipeline renamed, dead code removed, type safety improved' },
+    ],
+  },
   {
     date: 'April 18, 2026',
     tag: 'Billing & Security',
@@ -245,15 +271,16 @@ const UPDATES = [
 // ─── Stats bar ──────────────────────────────────────────────────────────────
 
 const STATS = [
-  { label: 'Features shipped', value: '220+' },
-  { label: 'Commits', value: '1,000+' },
-  { label: 'Weeks of shipping', value: '8' },
-  { label: 'Deploys', value: '110+' },
+  { label: 'Features shipped', value: '240+' },
+  { label: 'Commits', value: '1,100+' },
+  { label: 'Weeks of shipping', value: '9' },
+  { label: 'Deploys', value: '120+' },
 ];
 
 export default function ChangelogPage() {
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white">
+      <ChangelogSeenMarker />
       <PublicNav />
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-16">
