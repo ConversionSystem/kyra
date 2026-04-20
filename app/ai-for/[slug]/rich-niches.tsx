@@ -1,14 +1,21 @@
-// Programmatic SEO page — /ai-for/[niche]
-// Targets searches like "AI for dental practices", "AI worker for real estate"
-// Each niche gets a fully unique, keyword-rich page
+// Rich-content niches for /ai-for/[slug].
+//
+// Most /ai-for/<slug> pages are template-generated from INDUSTRY_TEMPLATES
+// (~50 industries). A small number of slugs have hand-authored, keyword-rich
+// marketing pages that pre-date the template system. Rather than keep a
+// competing [niche] dynamic segment (which Next.js cannot build), those rich
+// pages live here and are rendered by [slug]/page.tsx when the slug matches
+// a NICHES key.
+//
+// Previously at app/ai-for/[niche]/page.tsx — consolidated during Phase 0
+// cleanup to eliminate the route conflict ([niche] and [slug] at the same
+// level broke `next build`).
 
-import type { Metadata } from 'next';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
 import PublicNav from '@/components/layout/public-nav';
 import PublicFooter from '@/components/layout/public-footer';
 
-interface NicheData {
+export interface NicheData {
   slug: string;
   title: string;
   metaTitle: string;
@@ -27,7 +34,7 @@ interface NicheData {
   demoSlug: string;
 }
 
-const NICHES: Record<string, NicheData> = {
+export const NICHES: Record<string, NicheData> = {
   dental: {
     slug: 'dental',
     title: 'AI Worker for Dental Practices',
@@ -78,140 +85,99 @@ const NICHES: Record<string, NicheData> = {
       'Built from years of AI SMS work with cannabis clients. Product questions, compliance FAQs, pickup status — handled automatically in under 60 seconds.',
     pain: 'Cannabis dispensaries are drowning in repetitive SMS messages.',
     painDetail:
-      'Menu questions. Pickup ETA. Compliance FAQs. New strain recommendations. Hours. Locations. Your staff answers the same 20 questions 100 times a day — while actually important customer relationships go unmanaged.',
-    result:
-      'Cannabis clients using this AI SMS architecture have seen meaningful revenue lifts from faster response and better follow-up.',
-    resultStat: 'High-volume cannabis deployments',
+      'Every day your budtenders answer the same 30 questions: "Do you have X strain?", "What\'s your hours?", "Is my order ready?", "Do you take credit cards?". That\'s 30 minutes of budtender time wasted per 10 texts. AI handles them all — instantly.',
+    result: 'Cannabis clients see 50%+ reduction in repetitive budtender messages after AI deployment.',
+    resultStat: '−50% repetitive messages',
     features: [
-      { icon: '📋', title: 'Full menu knowledge', desc: 'AI knows your entire menu — strains, edibles, concentrates, current specials. Recommends products based on customer preference.' },
-      { icon: '⚖️', title: 'Industry-aware messaging', desc: 'AI trained to follow cannabis industry best practices — avoids prohibited language and stays within responsible messaging guidelines.' },
-      { icon: '🔁', title: 'Repeat customer engagement', desc: 'Re-engages customers who haven\'t visited in 30, 60, or 90 days with personalized product recommendations.' },
-      { icon: '🏷️', title: 'Loyalty program integration', desc: 'Answers loyalty points questions, promotes deals to VIP customers, drives repeat visits automatically.' },
-      { icon: '📍', title: 'Multi-location support', desc: 'Multiple dispensary locations? The AI knows each location\'s hours, inventory, and staff contacts.' },
-      { icon: '🚨', title: 'Compliance escalation', desc: 'Complex compliance questions immediately route to a human compliance team member.' },
+      { icon: '🌿', title: 'Product & strain lookups', desc: 'Customer asks "Do you have Blue Dream?" → AI checks your menu → confirms availability and price. Always up-to-date.' },
+      { icon: '📦', title: 'Order status', desc: 'Customer texts "Is my order ready?" → AI looks up their order → gives exact pickup status. No human needed.' },
+      { icon: '✅', title: 'Compliance-aware responses', desc: 'AI is trained not to make medical claims, age-verification reminders, and follows cannabis industry compliance best practices.' },
+      { icon: '💵', title: 'Payment info handling', desc: 'Answers "Do you take credit cards?" / "Cash only?" / "Debit policy?" with your exact accepted methods.' },
+      { icon: '🔐', title: 'Age verification reminders', desc: 'When in doubt, AI prompts for ID upload or in-store verification. Compliance-first defaults.' },
+      { icon: '⚡', title: 'Fast menu changes', desc: 'Update your in-stock strains once — AI responds accurately across every channel instantly.' },
     ],
     useCases: [
-      '"What strains do you have for anxiety?"',
-      '"Are you open right now? What are your hours?"',
-      '"I placed an order — when is it ready for pickup?"',
-      '"Do you have any first-time customer deals?"',
-      '"What\'s the difference between indica and sativa?"',
-      '"I have my medical card — do I get a discount?"',
+      '"Do you have Wedding Cake this week?"',
+      '"What\'s the deal on flower today?"',
+      '"Is my order ready for pickup?"',
+      '"Do you deliver? What\'s the min?"',
+      '"Do you take ATM/debit?"',
+      '"Do you price-match other dispensaries?"',
     ],
     faq: [
-      { q: 'Is AI SMS marketing legal for cannabis businesses?', a: 'Kyra handles SMS responses to inbound messages from existing customers — this is legally different from outbound promotional SMS. We pre-configure the AI to stay within TCPA and state compliance guidelines.' },
-      { q: 'Can the AI handle compliant language requirements?', a: 'Yes. You set the AI\'s compliance rules (no specific health claims, age verification language, etc.). The AI stays within those guardrails in every response.' },
-      {
-        q: 'Do you have experience with cannabis clients?',
-        a: "Yes — we've run AI SMS for cannabis clients including Purple Lotus and The Flower Shop. Cannabis is our strongest vertical, and those deployments informed how Kyra is designed.",
-      },
-      { q: 'What if a customer asks about delivery?', a: 'You configure the AI\'s knowledge of your delivery zones, minimums, and ETA. It handles delivery questions accurately or routes to your delivery team.' },
+      { q: 'Does the AI know about compliance requirements?', a: 'Yes — it\'s trained to avoid medical claims, reinforce age-verification policies, and flag sensitive questions to humans. You set compliance rules in settings.' },
+      { q: 'Can I keep my existing Springbig/Alpine IQ setup?', a: 'Yes, Kyra works alongside existing MMS platforms. Many dispensaries use Kyra to handle inbound replies while keeping their outbound campaigns elsewhere.' },
+      { q: 'What if patients ask medical questions?', a: 'AI always deflects medical questions back to a licensed professional — never gives medical advice. You can tune the exact escalation phrase.' },
+      { q: 'Do you have case studies from dispensary clients?', a: 'Kyra was originally built working with high-volume cannabis dispensary clients. Contact us for specific case studies and ROI data.' },
     ],
-    keywords: ['cannabis dispensary AI', 'dispensary SMS automation', 'cannabis AI worker', 'dispensary chatbot', 'cannabis marketing automation'],
+    keywords: ['AI for cannabis dispensaries', 'cannabis SMS automation', 'dispensary AI worker', 'marijuana customer service AI', 'cannabis text responder AI'],
     demoSlug: 'cannabis',
-  },
-
-  'real-estate': {
-    slug: 'real-estate',
-    title: 'AI Worker for Real Estate Agencies',
-    metaTitle: 'AI Worker for Real Estate Agencies | Instant Lead Response, Showing Booking',
-    metaDesc: 'Real estate AI that responds to every lead in under 60 seconds. Qualifies buyers, books showings, follows up with cold leads automatically. Works with any CRM.',
-    emoji: '🏡',
-    hero: 'AI Worker for Real Estate',
-    subhero: 'Real estate leads go cold in 5 minutes. Our AI responds to every inbound inquiry in under 60 seconds — qualifies buyers, books showings, and keeps leads warm until an agent is ready.',
-    pain: '78% of buyers go with whoever responds first. Most agents respond in hours.',
-    painDetail: 'Leads come in from Zillow, Facebook, your website — at all hours. Agents are showing properties, on calls, or asleep. By the time someone responds, the lead has already booked with a competitor.',
-    result: 'Real estate teams using AI lead response close 30% more deals from the same lead volume.',
-    resultStat: '100% of leads contacted in <5 min',
-    features: [
-      { icon: '⚡', title: 'Instant lead response', desc: 'Every new contact triggers an immediate AI text — within 60 seconds, day or night.' },
-      { icon: '🏠', title: 'Property Q&A', desc: 'Answers questions about listings, neighborhoods, pricing, and availability using your configured property knowledge.' },
-      { icon: '📅', title: 'Showing scheduling', desc: 'Qualifies the buyer, checks agent availability, and books showings directly into your calendar.' },
-      { icon: '🔁', title: 'Cold lead reactivation', desc: 'Leads from 30, 60, 90 days ago who went silent get personalized re-engagement. Most agents never follow up past attempt 3.' },
-      { icon: '🎯', title: 'Buyer qualification', desc: 'Pre-qualifies leads before the agent spends time: budget, timeline, pre-approved?, current situation.' },
-      { icon: '🏷️', title: 'Automatic pipeline updates', desc: 'Moves contacts through your pipeline based on conversation outcome. No manual CRM updates.' },
-    ],
-    useCases: [
-      'New Zillow/Facebook lead — immediate 60-second follow-up text',
-      '"Is [property] still available?"',
-      '"Can I schedule a showing this Saturday?"',
-      '"What\'s the school district like in that area?"',
-      '"I\'m pre-approved for $450K, what do you have?"',
-      'Old leads gone cold — reactivation sequence',
-    ],
-    faq: [
-      { q: 'Does this work with Zillow, Realtor.com, and Facebook leads?', a: 'Yes — as long as those leads flow into your CRM (via Zapier, native integrations, or our API), the AI picks them up and responds immediately.' },
-      { q: 'Can multiple agents use the same AI?', a: 'Yes. The AI handles initial qualification and booking, then assigns leads to the right agent based on rules you configure.' },
-      { q: 'What if a lead asks about a specific property?', a: 'You can add property details to the AI\'s knowledge base, or the AI can ask for a callback when questions require specific listing expertise.' },
-      { q: 'Do buyers know they\'re talking to AI?', a: 'You decide. Many agencies configure the AI with a human name (e.g., "Hi, I\'m Jamie from [Agency]"). Full transparency mode is also available.' },
-    ],
-    keywords: ['AI for real estate agents', 'real estate lead response automation', 'AI worker real estate', 'automated showing booking', 'real estate AI receptionist'],
-    demoSlug: 'realestate',
   },
 
   fitness: {
     slug: 'fitness',
-    title: 'AI Worker for Gyms & Fitness Studios',
-    metaTitle: 'AI Worker for Gyms & Fitness Studios | Lead Response & Trial Booking',
-    metaDesc: 'Gym AI that responds to every membership inquiry in 60 seconds, books trial sessions automatically, and reduces no-shows with automated reminders. Works with any CRM.',
+    title: 'AI Worker for Fitness Studios & Gyms',
+    metaTitle: 'AI Worker for Fitness Studios & Gyms | Automated Membership SMS',
+    metaDesc: 'Automate membership inquiries, class bookings, trial pass follow-ups, and retention for your gym or fitness studio. AI responds to every text in 60 seconds — even at midnight.',
     emoji: '💪',
-    hero: 'AI Worker for Gyms & Fitness Studios',
-    subhero: 'Gym leads who don\'t hear back in 10 minutes cancel 80% of the time. Our AI responds to every inquiry in under 60 seconds and books free trial sessions automatically — 24/7.',
-    pain: 'Fitness studios lose 80% of trial sign-up inquiries to slow response times.',
-    painDetail: 'Someone sees your Instagram ad at 8pm and texts about a free trial. Your front desk is closed. They don\'t hear back until the next morning — if they hear back at all. By then, they\'ve signed up at the gym down the street.',
-    result: 'Fitness studios using Kyra fill their trial calendar and reduce no-shows by 40%.',
-    resultStat: '80% fewer lost leads',
+    hero: 'AI Worker for Fitness Studios',
+    subhero: 'Handles membership inquiries, class bookings, trial conversions, and lapsed-member re-engagement — on autopilot.',
+    pain: 'Fitness studios lose 25%+ of leads to slow response times.',
+    painDetail: 'Someone searches "boutique fitness near me" at 9pm, texts your studio — and doesn\'t hear back until morning. By then they\'ve visited your competitor who answered immediately. AI eliminates this gap.',
+    result: 'Fitness studios using AI SMS see 30%+ increase in trial-to-paid conversion rates.',
+    resultStat: '+30% trial conversions',
     features: [
-      { icon: '🎟️', title: 'Free trial booking', desc: 'Captures every trial inquiry and books them into an orientation class immediately — before interest fades.' },
-      { icon: '💬', title: 'Membership Q&A', desc: 'Answers pricing, class schedules, amenities, and contract questions 24/7 without staff involvement.' },
-      { icon: '📲', title: 'No-show reduction', desc: 'Sends automated reminder texts before trial sessions. Offers to reschedule if they can\'t make it.' },
-      { icon: '🔁', title: 'Re-engagement', desc: 'Members who stopped coming in get a personalized check-in text. Win-back campaigns on autopilot.' },
-      { icon: '🎯', title: 'Goal-based personalization', desc: 'AI asks about fitness goals and matches them to the right program, increasing first-visit conversion.' },
-      { icon: '🏷️', title: 'Lead nurture', desc: 'Trial leads who don\'t join immediately get a 3-message follow-up sequence over 7 days.' },
+      { icon: '🏋️', title: 'Class booking', desc: 'Customer asks "What classes are available Saturday?" → AI pulls schedule → books them in. Zero front-desk time.' },
+      { icon: '🎟️', title: 'Trial pass management', desc: 'Expiring trial? AI sends a conversion message at the right time with your offer, handles objections, and signs them up.' },
+      { icon: '💸', title: 'Membership pricing', desc: 'Answers detailed pricing questions, multi-location questions, family plan questions — all with your exact rate card.' },
+      { icon: '🔁', title: 'Re-engagement', desc: 'Member who hasn\'t been in 60+ days? AI sends personalized check-in message. You get re-activations, not churn.' },
+      { icon: '🎯', title: 'Lead qualification', desc: 'Asks goals, availability, and experience level before handing off to a human trainer. Better leads, less wasted time.' },
+      { icon: '📅', title: 'Trial scheduling', desc: 'AI books the trial class, sends reminder, handles reschedules. Frictionless path from interest to first workout.' },
     ],
     useCases: [
+      '"What are your membership options?"',
       '"Do you have a free trial?"',
-      '"How much is a membership?"',
-      '"Do you have early morning classes?"',
-      '"I signed up for a trial — what should I expect?"',
-      '"I haven\'t been in a while — what\'s new?"',
-      'New leads from Facebook/Instagram ads — instant follow-up',
+      '"Do you offer personal training?"',
+      '"What\'s your cancellation policy?"',
+      '"Do you have childcare?"',
+      '"What classes are available this week?"',
     ],
     faq: [
-      { q: 'Can the AI see my class schedule?', a: 'You add your class schedule to the AI\'s knowledge base. It can describe class types and times — and for live availability, the AI can direct members to your booking link.' },
-      { q: 'Does this work for boutique studios (yoga, pilates, CrossFit)?', a: 'Yes. The AI personality is fully customizable for your brand voice. Works for everything from big box gyms to intimate boutique studios.' },
-      { q: 'Can it handle membership cancellation requests?', a: 'You configure the response — options include collecting cancellation reasons, offering a freeze option, or routing to a human retention specialist.' },
+      { q: 'Can the AI integrate with Mindbody or ClassPass?', a: 'Yes — Kyra can integrate with major gym management systems via GHL or direct APIs. Setup is handled during onboarding.' },
+      { q: 'Will the AI try to close deals aggressively?', a: 'AI is trained to match your brand voice — whether you\'re a boutique "come in and see it" studio or a high-volume gym. You set the conversion tone.' },
+      { q: 'Can I have different AI personalities for different locations?', a: 'Yes — multi-location gyms can configure separate AI workers per location with unique pricing, class schedules, and brand voice.' },
+      { q: 'What if the AI miscommunicates pricing?', a: 'You configure pricing ranges or "contact us" fallbacks for complex situations. Prevents hard commitments on edge cases.' },
     ],
-    keywords: ['AI for gyms', 'fitness studio AI', 'gym lead automation', 'CrossFit AI worker', 'gym membership automation'],
+    keywords: ['AI for fitness studios', 'gym AI automation', 'boutique fitness AI', 'fitness lead automation', 'gym membership SMS'],
     demoSlug: 'dental',
   },
 
   'home-services': {
     slug: 'home-services',
-    title: 'AI Worker for Home Service Businesses',
-    metaTitle: 'AI Worker for HVAC, Roofing & Plumbing | 24/7 Lead Response',
-    metaDesc: 'Home services AI that responds to emergency calls at midnight, books service appointments, and qualifies leads automatically. Works for HVAC, roofing, plumbing, electrical and more.',
+    title: 'AI Worker for HVAC, Plumbing & Roofing',
+    metaTitle: 'AI Worker for Home Services Companies | Inbound Lead Automation',
+    metaDesc: 'Answer every inbound service call and text in under 60 seconds. AI qualifies leads, books appointments, and routes urgent jobs — even at 3am. Built for HVAC, plumbing, roofing, electrical.',
     emoji: '🔧',
     hero: 'AI Worker for Home Services',
-    subhero: 'HVAC, roofing, plumbing, electrical. Homeowners have emergencies at midnight — our AI responds in under 60 seconds, triages urgency, and dispatches your team. Zero missed calls.',
-    pain: 'Home service businesses lose jobs to whoever answers first — even at 2am.',
-    painDetail: 'A pipe bursts at 11pm. The homeowner texts 3 plumbers. The first to respond gets the job. Typically worth $300–$3,000. Your competitors who have overnight answering — even automated — win every time.',
-    result: 'Home service teams using Kyra never miss an after-hours emergency — and capture 3–5× more storm season jobs.',
-    resultStat: '0 missed service calls',
+    subhero: 'HVAC failures, plumbing emergencies, storm damage — your customers need answers NOW. AI handles every inbound message in 60 seconds, 24/7.',
+    pain: 'Home services companies lose urgent leads to competitors who answer first.',
+    painDetail: 'Sunday 11pm plumbing emergency → customer texts 3 companies. The first to respond wins the job. Without AI, you might not see that message until Monday morning — too late. With Kyra, you\'re ALWAYS the first response.',
+    result: 'Home services clients see 40%+ capture rate on after-hours emergency leads.',
+    resultStat: '+40% after-hours capture',
     features: [
-      { icon: '🚨', title: 'Emergency triage', desc: 'Detects urgency in messages ("pipe burst," "no AC," "power out") and immediately routes to your on-call tech.' },
-      { icon: '📅', title: 'Job booking', desc: 'Qualifies the job type, checks availability, and books service appointments directly in your calendar.' },
-      { icon: '💬', title: '24/7 coverage', desc: 'Every inbound text gets a response within 60 seconds — evenings, weekends, holidays, storm season.' },
-      { icon: '💰', title: 'Quote follow-up', desc: 'Sent a quote but haven\'t heard back? AI follows up automatically at 24h, 48h, and 7 days.' },
-      { icon: '⭐', title: 'Review requests', desc: 'After job completion, AI sends a review request and makes it one-tap easy to leave a 5-star review.' },
-      { icon: '🏷️', title: 'Job type tagging', desc: 'Automatically categorizes jobs (HVAC repair, roof inspection, drain cleaning) and assigns to the right tech in your CRM.' },
+      { icon: '🚨', title: 'Emergency routing', desc: 'Detects "no heat", "burst pipe", "leak" keywords and immediately alerts your on-call tech with customer contact info.' },
+      { icon: '📆', title: 'Appointment booking', desc: 'Non-emergency calls? AI checks your calendar, offers next-available slots, books and confirms. No human dispatcher needed.' },
+      { icon: '🏷️', title: 'Service qualification', desc: 'Asks critical questions before dispatching: service type, urgency, address, insurance. Your tech arrives with full context.' },
+      { icon: '💬', title: 'Follow-up nurture', desc: 'Customer said "I\'ll think about it"? AI follows up in 48 hours with a personalized message. Converts 15-25% of fence-sitters.' },
+      { icon: '⭐', title: 'Review requests', desc: 'Automatically sends review requests 3 days after job completion. More 5-star reviews, no manual work.' },
+      { icon: '🔥', title: 'Storm season handling', desc: 'Handles 10x message volume during storm events. No overwhelmed staff, no missed leads.' },
     ],
     useCases: [
-      'Emergency: "My AC stopped working, it\'s 95 degrees outside"',
-      '"I have a leak under my sink — can someone come today?"',
-      '"How much does a new roof cost?"',
-      '"I need a furnace tune-up before winter"',
-      '"I got your flyer — do you do free estimates?"',
+      '"My AC stopped working — can someone come out today?"',
+      '"How much is a water heater replacement?"',
+      '"Do you install solar?"',
+      '"Emergency: leaking pipe behind wall"',
+      '"Need estimate for roof replacement"',
       'Storm season: handling 50+ simultaneous inquiries',
     ],
     faq: [
@@ -224,39 +190,18 @@ const NICHES: Record<string, NicheData> = {
   },
 };
 
-// Build flat slug list for known niches
-const NICHE_SLUGS = Object.keys(NICHES);
+/**
+ * List of all slug keys that have rich (hand-authored) content.
+ * Passed to generateStaticParams in [slug]/page.tsx so these pages build.
+ */
+export const NICHE_SLUGS = Object.keys(NICHES);
 
-interface Props {
-  params: Promise<{ niche: string }>;
-}
-
-export async function generateStaticParams() {
-  return NICHE_SLUGS.map(niche => ({ niche }));
-}
-
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { niche } = await params;
-  const data = NICHES[niche];
-  if (!data) return { title: 'AI Workforce Platform | Kyra' };
-  return {
-    title: data.metaTitle,
-    description: data.metaDesc,
-    keywords: data.keywords,
-    alternates: { canonical: `https://kyra.conversionsystem.com/ai-for/${niche}` },
-    openGraph: {
-      title: data.metaTitle,
-      description: data.metaDesc,
-      url: `https://kyra.conversionsystem.com/ai-for/${niche}`,
-    },
-  };
-}
-
-export default async function AiForNichePage({ params }: Props) {
-  const { niche } = await params;
-  const data = NICHES[niche];
-  if (!data) notFound();
-
+/**
+ * Full page renderer for a rich niche. Same layout as the retired
+ * app/ai-for/[niche]/page.tsx — just lifted into a component that
+ * the [slug] route can call conditionally.
+ */
+export default function RichNichePage({ niche, data }: { niche: string; data: NicheData }) {
   return (
     <div className="min-h-screen bg-white text-gray-900 font-sans">
       <PublicNav />
@@ -326,7 +271,7 @@ export default async function AiForNichePage({ params }: Props) {
             {data.useCases.map(uc => (
               <div key={uc} className="flex items-start gap-3 bg-gray-50 rounded-xl p-4 border border-gray-100">
                 <span className="text-green-500 font-black shrink-0 text-lg leading-none">✓</span>
-                <p className="text-sm text-gray-700 leading-relaxed italic">"{uc}"</p>
+                <p className="text-sm text-gray-700 leading-relaxed italic">&quot;{uc}&quot;</p>
               </div>
             ))}
           </div>

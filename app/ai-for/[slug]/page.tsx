@@ -5,10 +5,15 @@ import PublicNav from '@/components/layout/public-nav';
 import PublicFooter from '@/components/layout/public-footer';
 import { INDUSTRY_TEMPLATES } from '@/lib/templates/industry-templates';
 import DemoChat from '@/app/demo/[industry]/demo-chat';
+import RichNichePage, { NICHES, NICHE_SLUGS } from './rich-niches';
 
-// Generate all 50 pages at build time for SEO
+// Generate all ~55 pages at build time for SEO (50 template-backed +
+// 5 rich-content niches from ./rich-niches, deduped).
 export function generateStaticParams() {
-  return INDUSTRY_TEMPLATES.map((t) => ({ slug: t.id }));
+  const templateIds = INDUSTRY_TEMPLATES.map((t) => t.id);
+  const seen = new Set(templateIds);
+  const extras = NICHE_SLUGS.filter((s) => !seen.has(s));
+  return [...templateIds, ...extras].map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({
@@ -17,6 +22,25 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
+
+  // Prefer rich-niche metadata when the slug has hand-authored content.
+  const niche = NICHES[slug];
+  if (niche) {
+    return {
+      title: niche.metaTitle,
+      description: niche.metaDesc,
+      keywords: niche.keywords,
+      alternates: {
+        canonical: `https://kyra.conversionsystem.com/ai-for/${slug}`,
+      },
+      openGraph: {
+        title: niche.metaTitle,
+        description: niche.metaDesc,
+        url: `https://kyra.conversionsystem.com/ai-for/${slug}`,
+      },
+    };
+  }
+
   const template = INDUSTRY_TEMPLATES.find((t) => t.id === slug);
   if (!template) return { title: 'Industry Not Found' };
 
@@ -73,6 +97,14 @@ export default async function IndustryPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+
+  // Rich-content niches (dental, cannabis, fitness, home-services) ship a
+  // hand-authored page — render that in preference to the template version.
+  const niche = NICHES[slug];
+  if (niche) {
+    return <RichNichePage niche={slug} data={niche} />;
+  }
+
   const template = INDUSTRY_TEMPLATES.find((t) => t.id === slug);
   if (!template) notFound();
 
