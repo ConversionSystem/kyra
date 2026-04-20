@@ -21,19 +21,26 @@ const GATEWAY_DOMAIN = 'gw.kyra.conversionsystem.com';
 
 import { resolveOcModel } from '@/lib/agency/ai-models';
 import { getRouterTierForModel } from '@/lib/billing/model-credits';
+import { BYOK_PROVIDER_PRIORITY } from '@/lib/billing/byok';
 import { markOnboardingStep } from '@/lib/onboarding/tracker';
 
 /**
  * Given an agencies.api_keys record, return the winning provider + key + model.
- * Priority: anthropic > openrouter > openai > google
- * Respects selected_models override if set.
+ *
+ * Priority is the canonical BYOK_PROVIDER_PRIORITY from lib/billing/byok
+ * (anthropic > openrouter > openai > google) — keeping all three resolver
+ * sites in the codebase aligned. Respects selected_models override if set.
+ *
+ * Model name is resolved via resolveOcModel (OpenClaw-compatible IDs),
+ * which is specific to this caller — the GHL poller and dashboard chat
+ * use different model-name conventions.
  */
 function resolveWinningKey(
   apiKeys: Record<string, unknown>
 ): { provider: string; key: string; model: string } | null {
   const selectedModels = (apiKeys.selected_models as Record<string, string>) || {};
 
-  for (const provider of ['anthropic', 'openrouter', 'openai', 'google']) {
+  for (const provider of BYOK_PROVIDER_PRIORITY) {
     const key = apiKeys[provider] as string | undefined;
     if (key) {
       const selectedModelId = selectedModels[provider];

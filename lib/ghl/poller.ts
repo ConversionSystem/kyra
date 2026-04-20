@@ -43,16 +43,23 @@ const GHL_API_VERSION = '2021-04-15';
 
 // ── BYOK: Agency API key resolution ───────────────────────────────────────────
 
+import { BYOK_PROVIDER_PRIORITY, type BYOKProvider } from '@/lib/billing/byok';
+
 interface ResolvedApiKey {
   apiKey: string;
-  provider: 'anthropic' | 'openai' | 'google' | 'openrouter';
+  provider: BYOKProvider;
   model?: string; // override model when using non-Anthropic provider
 }
 
 /**
  * Look up the agency's BYOK API keys from Supabase.
- * Priority: anthropic → openrouter → openai → google → fallback to env var.
- * Respects per-provider selected_models override.
+ * Priority is the canonical BYOK_PROVIDER_PRIORITY from lib/billing/byok
+ * (anthropic > openrouter > openai > google). Falls back to env var if no
+ * BYOK key is configured. Respects per-provider selected_models override.
+ *
+ * Model names are resolved via resolveNativeModel (GHL-poll / direct-LLM
+ * naming convention) — separate from lib/ovh/provisioner.ts which uses
+ * resolveOcModel for OpenClaw-compatible names.
  */
 async function resolveAgencyApiKey(agencyId: string): Promise<ResolvedApiKey | null> {
   const supabase = createServiceClientWithoutCookies();
@@ -65,42 +72,16 @@ async function resolveAgencyApiKey(agencyId: string): Promise<ResolvedApiKey | n
   const keys = (agency?.api_keys as Record<string, unknown>) || {};
   const selectedModels = (keys.selected_models as Record<string, string>) || {};
 
-  // Prefer Anthropic (native bridge support)
-  if (keys.anthropic) {
-    const selectedModelId = selectedModels.anthropic;
-    return {
-      apiKey: keys.anthropic as string,
-      provider: 'anthropic',
-      model: resolveNativeModel('anthropic', selectedModelId),
-    };
-  }
-  // OpenRouter — routes to any model via OpenAI-compatible API
-  // model = raw OpenRouter model ID (e.g. "anthropic/claude-sonnet-4-5"), no openrouter/ prefix
-  if (keys.openrouter) {
-    const selectedModelId = selectedModels.openrouter;
-    return {
-      apiKey: keys.openrouter as string,
-      provider: 'openrouter',
-      model: resolveNativeModel('openrouter', selectedModelId),
-    };
-  }
-  // OpenAI native
-  if (keys.openai) {
-    const selectedModelId = selectedModels.openai;
-    return {
-      apiKey: keys.openai as string,
-      provider: 'openai',
-      model: resolveNativeModel('openai', selectedModelId),
-    };
-  }
-  // Google AI
-  if (keys.google) {
-    const selectedModelId = selectedModels.google;
-    return {
-      apiKey: keys.google as string,
-      provider: 'google',
-      model: resolveNativeModel('google', selectedModelId),
-    };
+  for (const provider of BYOK_PROVIDER_PRIORITY) {
+    const key = keys[provider] as string | undefined;
+    if (key) {
+      const selectedModelId = selectedModels[provider];
+      return {
+        apiKey: key,
+        provider,
+        model: resolveNativeModel(provider, selectedModelId),
+      };
+    }
   }
 
   return null; // No BYOK keys — caller should fall back to env var
