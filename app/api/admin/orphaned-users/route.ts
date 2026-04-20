@@ -1,9 +1,14 @@
 import { NextResponse } from 'next/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { requireMaster } from '@/lib/auth/admin';
 
 // GET /api/admin/orphaned-users
-// Returns auth users who never created/joined an agency (no agency_members row)
+// Returns auth users who never created/joined an agency (no agency_members row).
+// Master-only: this leaks every auth email that hasn't completed signup.
 export async function GET() {
+  const auth = await requireMaster();
+  if (!auth.ok) return auth.response;
+
   try {
     const service = createServiceClientWithoutCookies();
     const { data, error } = await service

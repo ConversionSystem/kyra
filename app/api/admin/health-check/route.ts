@@ -1,9 +1,11 @@
 // GET /api/admin/health-check
-// Returns a list of pending action items for the admin.
-// Only callable by admin users (checked via service key header).
+// Returns a list of pending action items for the admin dashboard.
+// Master-only: response includes env presence flags, production Supabase project
+// ID, and raw migration DDL — all reconnaissance-grade info.
 
 import { NextResponse } from 'next/server';
 import { createClient as createSupabase } from '@supabase/supabase-js';
+import { requireMaster } from '@/lib/auth/admin';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,6 +26,9 @@ async function tableExists(sb: ReturnType<typeof getSupabase>, name: string): Pr
 }
 
 export async function GET() {
+  const auth = await requireMaster();
+  if (!auth.ok) return auth.response;
+
   const checks: Array<{ id: string; title: string; desc: string; link: string; linkLabel: string; severity: 'critical' | 'warning' | 'info'; sql?: string }> = [];
 
   // 1. RESEND_API_KEY
