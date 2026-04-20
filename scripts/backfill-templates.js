@@ -11,10 +11,30 @@
 
 const DRY_RUN = process.argv.includes('--dry-run');
 
-const SUPABASE_URL  = process.env.SUPABASE_URL  || 'https://yaijdtsunxicuphrakcc.supabase.co';
-const SUPABASE_KEY  = process.env.SUPABASE_KEY  || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhaWpkdHN1bnhpY3VwaHJha2NjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MDI3NzkzOSwiZXhwIjoyMDg1ODUzOTM5fQ.13OWEHyuk7EOLZRGbmxgVKqd2HJ_ouA78BFbEhwChmA';
-const PROVISIONER   = process.env.PROVISIONER   || 'http://localhost:9090';
-const PROV_SECRET   = process.env.PROV_SECRET   || 'kyra-provisioner-2026';
+// ─── Required env — no hardcoded secrets ────────────────────────────────────
+// Previously this file contained a hardcoded production service-role JWT and
+// provisioner secret as "convenient" defaults. Those are security incidents.
+// If you hit these errors: export the vars from .env.local before running.
+// See SECURITY-PHASE-0.md for the rotation + backfill process.
+
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_KEY;
+const PROVISIONER  = process.env.PROVISIONER || 'http://localhost:9090';
+const PROV_SECRET  = process.env.PROV_SECRET;
+
+if (!SUPABASE_URL) {
+  console.error('ERROR: SUPABASE_URL is required. Set it in your .env.local or shell.');
+  process.exit(1);
+}
+if (!SUPABASE_KEY) {
+  console.error('ERROR: SUPABASE_KEY is required. Set it to your Supabase service-role key.');
+  console.error('       Never hardcode this value — see SECURITY-PHASE-0.md.');
+  process.exit(1);
+}
+if (!PROV_SECRET) {
+  console.error('ERROR: PROV_SECRET is required. Set it to the OVH provisioner bearer secret.');
+  process.exit(1);
+}
 
 // ─── Template builder (mirror of lib/billing/template-builder.ts) ─────────────
 

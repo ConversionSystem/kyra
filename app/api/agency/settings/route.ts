@@ -179,7 +179,7 @@ export async function DELETE() {
 
   // Container cleanup (best-effort with timeout)
   const provisionerUrl = process.env.OVH_PROVISIONER_URL || 'https://provisioner.gw.kyra.conversionsystem.com';
-  const provisionerSecret = process.env.OVH_PROVISIONER_SECRET || 'kyra-provisioner-2026';
+  const provisionerSecret = process.env.OVH_PROVISIONER_SECRET;
   for (const cid of uniqueContainerIds) {
     try {
       const controller = new AbortController();

@@ -308,7 +308,7 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
   // Container cleanup (best-effort with timeout)
   try {
     const provisionerUrl = process.env.OVH_PROVISIONER_URL || 'https://provisioner.gw.kyra.conversionsystem.com';
-    const provisionerSecret = process.env.OVH_PROVISIONER_SECRET || 'kyra-provisioner-2026';
+    const provisionerSecret = process.env.OVH_PROVISIONER_SECRET;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);
     await fetch(`${provisionerUrl}/containers/${id}`, {

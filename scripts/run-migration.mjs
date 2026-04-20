@@ -11,14 +11,18 @@ import path from 'path';
 
 const { Client } = pg;
 
-// Supabase direct connection (Transaction mode pooler)
-const PROJECT_REF = 'yaijdtsunxicuphrakcc';
+// Supabase direct connection (Transaction mode pooler).
+// Both PROJECT_REF and DB_PASSWORD must come from env — no hardcoded project refs.
+const PROJECT_REF = process.env.SUPABASE_PROJECT_REF;
 const DB_PASSWORD = process.env.SUPABASE_DB_PASSWORD;
-const DATABASE_URL = process.env.DATABASE_URL || 
-  `postgresql://postgres.${PROJECT_REF}:${DB_PASSWORD}@aws-0-eu-central-1.pooler.supabase.com:6543/postgres`;
+const DATABASE_URL = process.env.DATABASE_URL ||
+  (PROJECT_REF && DB_PASSWORD
+    ? `postgresql://postgres.${PROJECT_REF}:${DB_PASSWORD}@aws-0-eu-central-1.pooler.supabase.com:6543/postgres`
+    : null);
 
-if (!DB_PASSWORD && !process.env.DATABASE_URL) {
-  console.error('Error: Set SUPABASE_DB_PASSWORD or DATABASE_URL env var');
+if (!DATABASE_URL) {
+  console.error('Error: set DATABASE_URL, OR both SUPABASE_PROJECT_REF and SUPABASE_DB_PASSWORD env vars.');
+  console.error('       See SECURITY-PHASE-0.md — do not hardcode project refs or passwords.');
   process.exit(1);
 }
 

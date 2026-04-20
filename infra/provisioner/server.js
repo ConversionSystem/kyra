@@ -15,7 +15,12 @@ app.use(cors());
 
 const docker = new Docker({ socketPath: '/var/run/docker.sock' });
 const PORT = 9090;
-const PROVISIONER_SECRET = process.env.PROVISIONER_SECRET || 'kyra-provisioner-2026';
+const PROVISIONER_SECRET = process.env.PROVISIONER_SECRET;
+if (!PROVISIONER_SECRET) {
+  console.error('FATAL: PROVISIONER_SECRET env var is required. Refusing to start with a blank or default secret.');
+  console.error('       Set PROVISIONER_SECRET in systemd unit or /opt/kyra/.env. See SECURITY-PHASE-0.md.');
+  process.exit(1);
+}
 const DATA_DIR = '/opt/kyra/data/clients';
 const DYNAMIC_DIR = '/opt/kyra/traefik/dynamic';
 const NETWORK_NAME = 'kyra-net';

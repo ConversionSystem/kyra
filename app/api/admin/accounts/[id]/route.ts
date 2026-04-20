@@ -3,7 +3,7 @@ import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/
 
 const MASTER_EMAILS = ['hello@conversionsystem.com', 'angel@conversionsystem.com'];
 const PROVISIONER_URL = process.env.OVH_PROVISIONER_URL || 'https://provisioner.gw.kyra.conversionsystem.com';
-const PROVISIONER_SECRET = process.env.OVH_PROVISIONER_SECRET || 'kyra-provisioner-2026';
+const PROVISIONER_SECRET = process.env.OVH_PROVISIONER_SECRET;
 
 async function requireMaster() {
   const sb = await createClient();

@@ -21,7 +21,7 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
 
 const PROVISIONER_URL = process.env.OVH_PROVISIONER_URL || 'https://provisioner.gw.kyra.conversionsystem.com';
-const PROVISIONER_SECRET = process.env.OVH_PROVISIONER_SECRET || 'kyra-provisioner-2026';
+const PROVISIONER_SECRET = process.env.OVH_PROVISIONER_SECRET;
 const IDLE_DAYS = 3;
 
 // Plans that are NEVER auto-stopped (paying customers)

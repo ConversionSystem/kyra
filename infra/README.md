@@ -19,8 +19,8 @@ to create virtual device sessions.
 
 ## Deploy
 ```bash
-# Restart provisioner
-sudo bash -c 'cd /opt/kyra/provisioner && PROVISIONER_SECRET=kyra-provisioner-2026 nohup node server.js >> /tmp/provisioner.log 2>&1 &'
+# Restart provisioner (PROVISIONER_SECRET must be exported from /opt/kyra/.env or shell — never hardcode).
+sudo bash -c 'cd /opt/kyra/provisioner && source /opt/kyra/.env && nohup node server.js >> /tmp/provisioner.log 2>&1 &'
 
 # Reload nginx (WS fix)
 docker exec kyra-css-proxy nginx -s reload

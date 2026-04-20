@@ -3,13 +3,20 @@ import { createClient } from '@/lib/supabase/server';
 
 const MASTER_EMAILS = ['hello@conversionsystem.com', 'angel@conversionsystem.com'];
 const VPS_URL = 'https://provisioner.gw.kyra.conversionsystem.com/health';
-const VPS_TOKEN = process.env.OVH_PROVISIONER_SECRET ?? 'kyra-provisioner-2026';
+const VPS_TOKEN = process.env.OVH_PROVISIONER_SECRET;
 
 export async function GET() {
   const sb = await createClient();
   const { data: { user } } = await sb.auth.getUser();
   if (!user || !MASTER_EMAILS.includes(user.email ?? '')) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  if (!VPS_TOKEN) {
+    return NextResponse.json(
+      { error: 'OVH_PROVISIONER_SECRET env var not configured' },
+      { status: 500 },
+    );
   }
 
   try {
