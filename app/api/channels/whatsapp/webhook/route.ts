@@ -1,10 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 import { processChannelMessage } from '@/lib/channels/router';
+
+export const runtime = 'nodejs';
 
 const WHATSAPP_ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
 const WHATSAPP_PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID;
 const WHATSAPP_VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
+// Meta WhatsApp Business app secret. Used to verify X-Hub-Signature-256
+// (HMAC-SHA256 of the raw request body). See:
+// https://developers.facebook.com/docs/graph-api/webhooks/getting-started#event-notifications
+const WHATSAPP_APP_SECRET = process.env.WHATSAPP_APP_SECRET;
+
+/**
+ * Verify a WhatsApp webhook POST via X-Hub-Signature-256. Fail-closed if env unset.
+ */
+function verifyWhatsAppSignature(rawBody: string, headerValue: string | null): NextResponse | null {
+  if (!WHATSAPP_APP_SECRET) {
+    console.error('[whatsapp-webhook] WHATSAPP_APP_SECRET not configured — rejecting');
+    return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 });
+  }
+  if (!headerValue || !headerValue.startsWith('sha256=')) {
+    return NextResponse.json({ error: 'Missing X-Hub-Signature-256 header' }, { status: 401 });
+  }
+  const expected = crypto
+    .createHmac('sha256', WHATSAPP_APP_SECRET)
+    .update(rawBody)
+    .digest('hex');
+  const received = headerValue.slice('sha256='.length);
+  if (expected.length !== received.length) {
+    return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+  }
+  try {
+    const ok = crypto.timingSafeEqual(
+      Buffer.from(expected, 'hex'),
+      Buffer.from(received, 'hex'),
+    );
+    if (!ok) return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+  } catch {
+    return NextResponse.json({ error: 'Invalid signature format' }, { status: 401 });
+  }
+  return null;
+}
 
 function getSupabase() {
   return createClient(
@@ -40,8 +78,12 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   console.log('[whatsapp-webhook] handler called');
 
+  const rawBody = await request.text();
+  const sigFailure = verifyWhatsAppSignature(rawBody, request.headers.get('x-hub-signature-256'));
+  if (sigFailure) return sigFailure;
+
   try {
-    const body = (await request.json()) as any;
+    const body = JSON.parse(rawBody) as any;
 
     // WhatsApp Cloud API sends messages nested in entry[].changes[].value
     const entry = body?.entry?.[0];

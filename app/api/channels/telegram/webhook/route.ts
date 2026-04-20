@@ -1,13 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'node:crypto';
 import { processChannelMessage } from '@/lib/channels/router';
 import { transcribeAudio } from '@/lib/channels/whisper';
 import { textToSpeech } from '@/lib/channels/voice';
 import { analyzeImage } from '@/lib/tools/image-analysis';
 import { getCreditCost } from '@/lib/billing/plans';
 
+export const runtime = 'nodejs';
+
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+// Secret passed to Telegram via setWebhook?secret_token=...; Telegram echoes
+// it back in X-Telegram-Bot-Api-Secret-Token on every webhook call.
+// See: https://core.telegram.org/bots/api#setwebhook
+const TELEGRAM_WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET;
 
 import { createClient } from '@supabase/supabase-js';
+
+/**
+ * Verify the inbound Telegram webhook by comparing the secret header
+ * against TELEGRAM_WEBHOOK_SECRET (timing-safe). Fail-closed if env unset.
+ */
+function verifyTelegramRequest(request: NextRequest): NextResponse | null {
+  if (!TELEGRAM_WEBHOOK_SECRET) {
+    console.error('[telegram-webhook] TELEGRAM_WEBHOOK_SECRET not configured — rejecting');
+    return NextResponse.json(
+      { error: 'Webhook secret not configured' },
+      { status: 500 },
+    );
+  }
+  const received = request.headers.get('x-telegram-bot-api-secret-token') ?? '';
+  const expectedBuf = Buffer.from(TELEGRAM_WEBHOOK_SECRET);
+  const receivedBuf = Buffer.from(received);
+  if (
+    expectedBuf.length !== receivedBuf.length ||
+    !crypto.timingSafeEqual(expectedBuf, receivedBuf)
+  ) {
+    return NextResponse.json({ error: 'Invalid webhook secret' }, { status: 401 });
+  }
+  return null;
+}
 
 function getSupabase() {
   return createClient(
@@ -19,6 +50,9 @@ function getSupabase() {
 
 export async function POST(request: NextRequest) {
   console.log('[telegram-webhook] handler called');
+
+  const authFailure = verifyTelegramRequest(request);
+  if (authFailure) return authFailure;
 
   try {
     const body = (await request.json()) as any;
