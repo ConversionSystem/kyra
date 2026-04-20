@@ -1,13 +1,107 @@
 import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'node:crypto';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { unsubscribeContact } from '@/lib/email/marketing';
 
+export const runtime = 'nodejs'; // raw body + node:crypto
+
+/**
+ * Verify a Svix webhook signature (Resend, Clerk, Svix Portal, …).
+ *
+ * Headers sent by Svix:
+ *   svix-id          — unique message id (UUID)
+ *   svix-timestamp   — unix seconds of the send
+ *   svix-signature   — space-separated list of `v1,<base64-hmac>` values
+ *
+ * Signed payload: `${svix-id}.${svix-timestamp}.${raw-body}`
+ * HMAC key:       base64-decoded(secret without `whsec_` prefix)
+ *
+ * Timestamp is checked against a ±5 minute window to prevent replays.
+ *
+ * Returns null on success, or a NextResponse on failure.
+ */
+function verifySvixSignature(
+  headers: Headers,
+  rawBody: string,
+  secret: string,
+): NextResponse | null {
+  const svixId = headers.get('svix-id');
+  const svixTimestamp = headers.get('svix-timestamp');
+  const svixSignature = headers.get('svix-signature');
+
+  if (!svixId || !svixTimestamp || !svixSignature) {
+    return NextResponse.json({ error: 'Missing svix signature headers' }, { status: 401 });
+  }
+
+  // Replay window: ±5 minutes
+  const timestampSec = Number.parseInt(svixTimestamp, 10);
+  const nowSec = Math.floor(Date.now() / 1000);
+  if (!Number.isFinite(timestampSec) || Math.abs(nowSec - timestampSec) > 300) {
+    return NextResponse.json({ error: 'Signature timestamp outside window' }, { status: 401 });
+  }
+
+  // Strip `whsec_` prefix, base64-decode to get the raw HMAC key
+  const keyB64 = secret.startsWith('whsec_') ? secret.slice(6) : secret;
+  let keyBuf: Buffer;
+  try {
+    keyBuf = Buffer.from(keyB64, 'base64');
+  } catch {
+    return NextResponse.json({ error: 'Invalid webhook secret format' }, { status: 500 });
+  }
+
+  const signedPayload = `${svixId}.${svixTimestamp}.${rawBody}`;
+  const expected = crypto.createHmac('sha256', keyBuf).update(signedPayload).digest('base64');
+
+  // svixSignature is space-separated: "v1,<sig1> v1,<sig2>". Accept if ANY v1 sig matches.
+  const candidates = svixSignature.split(' ').map((s) => s.trim()).filter(Boolean);
+  const expectedBuf = Buffer.from(expected, 'base64');
+
+  for (const candidate of candidates) {
+    const [version, sig] = candidate.split(',');
+    if (version !== 'v1' || !sig) continue;
+    let sigBuf: Buffer;
+    try {
+      sigBuf = Buffer.from(sig, 'base64');
+    } catch {
+      continue;
+    }
+    if (sigBuf.length === expectedBuf.length && crypto.timingSafeEqual(sigBuf, expectedBuf)) {
+      return null; // match
+    }
+  }
+
+  return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 401 });
+}
+
 /**
  * POST /api/webhooks/resend
- * Resend webhook handler for tracking email events.
+ * Resend webhook handler for tracking email events. Verified via Svix signature.
  */
 export async function POST(request: NextRequest) {
-  const body = await request.json();
+  // Fail-closed: webhook cannot operate without the signing secret configured.
+  const secret = process.env.RESEND_WEBHOOK_SECRET;
+  if (!secret) {
+    console.error('[webhooks/resend] RESEND_WEBHOOK_SECRET not configured — rejecting');
+    return NextResponse.json(
+      { error: 'Webhook signing secret not configured' },
+      { status: 500 },
+    );
+  }
+
+  // Raw body first — we need exact bytes for HMAC before JSON parsing.
+  const rawBody = await request.text();
+
+  const sigError = verifySvixSignature(request.headers, rawBody, secret);
+  if (sigError) return sigError;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let body: any;
+  try {
+    body = JSON.parse(rawBody);
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON payload' }, { status: 400 });
+  }
+
   const { type, data } = body;
 
   if (!type || !data) {
