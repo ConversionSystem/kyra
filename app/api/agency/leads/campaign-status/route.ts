@@ -6,19 +6,15 @@
  */
 
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { requireMaster } from '@/lib/auth/admin';
 import type { CampaignRecord } from '../run-campaign/route';
-
-const MASTER_EMAILS = ['hello@conversionsystem.com', 'angel@conversionsystem.com'];
 
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user || !MASTER_EMAILS.includes(user.email ?? '')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const auth = await requireMaster();
+    if (!auth.ok) return auth.response;
+    const user = auth.user;
 
     const serviceClient = createServiceClientWithoutCookies();
     const { data: membership } = await serviceClient
@@ -66,11 +62,9 @@ export async function GET() {
  */
 export async function PATCH(req: Request) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user || !MASTER_EMAILS.includes(user.email ?? '')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const auth = await requireMaster();
+    if (!auth.ok) return auth.response;
+    const user = auth.user;
 
     const { leadId, status, notes } = await req.json() as {
       leadId: string;

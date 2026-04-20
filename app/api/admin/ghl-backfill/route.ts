@@ -6,22 +6,18 @@
  */
 
 import { NextResponse } from 'next/server';
-import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { requireMaster } from '@/lib/auth/admin';
 import { createGhlSubAccount } from '@/lib/ghl/agency-api';
 
-const MASTER_EMAILS = ['hello@conversionsystem.com', 'angel@conversionsystem.com'];
 const PAID_PLANS = ['starter', 'pro', 'scale'];
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
 export async function POST() {
-  // Auth check
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user || !MASTER_EMAILS.includes(user.email ?? '')) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
+  const auth = await requireMaster();
+  if (!auth.ok) return auth.response;
 
   if (!process.env.GHL_AGENCY_API_KEY) {
     return NextResponse.json({ error: 'GHL_AGENCY_API_KEY not set' }, { status: 500 });

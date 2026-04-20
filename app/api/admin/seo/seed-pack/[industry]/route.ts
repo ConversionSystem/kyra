@@ -9,13 +9,11 @@
 // ============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { requireMaster } from '@/lib/auth/admin';
 import { seedIndustryPack, getIndustryPack } from '@/lib/seo/industry-packs';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
-
-const MASTER_EMAILS = ['hello@conversionsystem.com', 'angel@conversionsystem.com'];
 
 const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY;
 const API_URL = process.env.OPENROUTER_API_KEY
@@ -36,11 +34,8 @@ export async function POST(
   const isSecretAuth = authHeader === `Bearer ${process.env.KYRA_API_SECRET}`;
 
   if (!isSecretAuth) {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user || !MASTER_EMAILS.includes(user.email || '')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const auth = await requireMaster();
+    if (!auth.ok) return auth.response;
   }
 
   const slug = industry.toLowerCase().replace(/\s+/g, '-');

@@ -1,16 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { NextResponse } from 'next/server';
+import { createServiceClient } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/auth/admin';
 
-const ADMIN_EMAILS = ['hello@conversionsystem.com', 'angel@conversionsystem.com', 'steve@conversionsystem.com'];
-
-export async function GET(request: NextRequest) {
-  // Auth check
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  
-  if (!user || !ADMIN_EMAILS.includes(user.email || '')) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-  }
+export async function GET() {
+  const auth = await requireAdmin();
+  if (!auth.ok) return auth.response;
 
   const service = await createServiceClient();
 

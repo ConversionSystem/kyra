@@ -1,17 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
-
-const MASTER_EMAILS = ['hello@conversionsystem.com', 'angel@conversionsystem.com'];
+import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { requireMaster } from '@/lib/auth/admin';
 
 interface RouteContext { params: Promise<{ id: string }> }
 
 export async function POST(req: NextRequest, { params }: RouteContext) {
   const { id } = await params;
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user || !MASTER_EMAILS.includes(user.email ?? '')) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-  }
+  const auth = await requireMaster();
+  if (!auth.ok) return auth.response;
+  const user = auth.user;
   const service = createServiceClientWithoutCookies();
   const { data: agency } = await service.from('agencies').select('owner_id, name').eq('id', id).single();
   if (!agency) return NextResponse.json({ error: 'Agency not found' }, { status: 404 });

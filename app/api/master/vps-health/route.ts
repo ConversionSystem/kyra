@@ -1,16 +1,12 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { requireMaster } from '@/lib/auth/admin';
 
-const MASTER_EMAILS = ['hello@conversionsystem.com', 'angel@conversionsystem.com'];
 const VPS_URL = 'https://provisioner.gw.kyra.conversionsystem.com/health';
 const VPS_TOKEN = process.env.OVH_PROVISIONER_SECRET;
 
 export async function GET() {
-  const sb = await createClient();
-  const { data: { user } } = await sb.auth.getUser();
-  if (!user || !MASTER_EMAILS.includes(user.email ?? '')) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
+  const auth = await requireMaster();
+  if (!auth.ok) return auth.response;
 
   if (!VPS_TOKEN) {
     return NextResponse.json(

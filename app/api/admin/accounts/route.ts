@@ -1,17 +1,12 @@
 import { NextResponse } from 'next/server';
-import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { requireMaster } from '@/lib/auth/admin';
 
 export const dynamic = 'force-dynamic';
 
-const MASTER_EMAILS = ['hello@conversionsystem.com', 'angel@conversionsystem.com'];
-
 export async function GET() {
-  // Auth check (cookie-based, knows current user)
-  const sb = await createClient();
-  const { data: { user } } = await sb.auth.getUser();
-  if (!user || !MASTER_EMAILS.includes(user.email ?? '')) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
+  const auth = await requireMaster();
+  if (!auth.ok) return auth.response;
 
   // All DB queries bypass RLS
   const admin = createServiceClientWithoutCookies();

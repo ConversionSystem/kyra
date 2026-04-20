@@ -6,21 +6,14 @@
 // ============================================================================
 
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { requireMaster } from '@/lib/auth/admin';
 import { getWebhookHealth } from '@/lib/stripe/webhook-health';
 
 export const dynamic = 'force-dynamic';
 
-const ADMIN_EMAILS = ['hello@conversionsystem.com', 'angel@conversionsystem.com'];
-
 export async function GET() {
-  // Auth check
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user || !ADMIN_EMAILS.includes(user.email || '')) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const auth = await requireMaster();
+  if (!auth.ok) return auth.response;
 
   try {
     const health = await getWebhookHealth();

@@ -1,17 +1,14 @@
 import { NextResponse } from 'next/server';
-import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
-
-const MASTER_EMAILS = ['hello@conversionsystem.com', 'angel@conversionsystem.com'];
+import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { requireMaster } from '@/lib/auth/admin';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   // 1. Auth — verify caller is a master admin
-  const sb = await createClient();
-  const { data: { user } } = await sb.auth.getUser();
-  if (!user || !MASTER_EMAILS.includes(user.email ?? '')) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
+  const auth = await requireMaster();
+  if (!auth.ok) return auth.response;
+  const user = auth.user;
 
   // 2. Parse request
   const body = await request.json().catch(() => null);

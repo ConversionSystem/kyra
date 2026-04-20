@@ -1,17 +1,12 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { requireMaster } from '@/lib/auth/admin';
 import { stripe } from '@/lib/stripe/config';
-
-const MASTER_EMAILS = ['hello@conversionsystem.com', 'angel@conversionsystem.com'];
 
 export const dynamic = 'force-dynamic';
 
 export async function POST() {
-  const sb = await createClient();
-  const { data: { user } } = await sb.auth.getUser();
-  if (!user || !MASTER_EMAILS.includes(user.email ?? '')) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
+  const auth = await requireMaster();
+  if (!auth.ok) return auth.response;
 
   if (!process.env.STRIPE_SECRET_KEY) {
     return NextResponse.json({ ok: false, error: 'STRIPE_SECRET_KEY is not set' });

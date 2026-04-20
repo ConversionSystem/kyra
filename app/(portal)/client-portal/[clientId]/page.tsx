@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { redirect, notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { isMasterEmail } from '@/lib/auth/admin';
 import PortalDashboard from './portal-dashboard';
 
 interface Props { params: Promise<{ clientId: string }> }
@@ -49,7 +50,7 @@ export default async function PortalPage({ params }: Props) {
     .maybeSingle();
 
   // Master emails always have access
-  const isMaster = ['hello@conversionsystem.com', 'angel@conversionsystem.com'].includes(user.email ?? '');
+  const isMaster = isMasterEmail(user.email);
 
   if (!isMaster && !agencyMembership && !portalMembership) {
     redirect(`/client-portal/${clientId}/request-access`);

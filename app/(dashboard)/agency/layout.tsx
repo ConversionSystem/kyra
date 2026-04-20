@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getAgencyForUser, getAgencyClients } from '@/lib/agency/queries';
+import { isMasterEmail } from '@/lib/auth/admin';
 import { AgencySidebar } from './agency-sidebar';
 // VoiceCommandButton removed — not functional, just UI noise
 
@@ -18,7 +19,7 @@ export default async function AgencyLayout({
   if (!result) redirect('/signup/agency');
 
   const { agency, role } = result;
-  const isMaster = ['hello@conversionsystem.com', 'angel@conversionsystem.com'].includes(user.email ?? '');
+  const isMaster = isMasterEmail(user.email);
 
   // Block dashboard access for unpaid agency accounts.
   // Solo accounts (account_type === 'solo') are exempt — they have a free tier.

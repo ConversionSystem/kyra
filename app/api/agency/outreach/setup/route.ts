@@ -9,8 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAgencyAdmin, requireAgencyMember } from '@/lib/agency/middleware';
 import { createClient } from '@/lib/supabase/server';
-
-const MASTER_EMAILS = ['hello@conversionsystem.com', 'angel@conversionsystem.com'];
+import { requireMaster } from '@/lib/auth/admin';
 
 function maskUrl(url: string): string {
   try {
@@ -52,13 +51,12 @@ export async function PATCH(req: NextRequest) {
   }
 
   const { agency } = result.data;
-  const supabase = await createClient();
 
   // Only master account can set this
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user || !MASTER_EMAILS.includes(user.email ?? '')) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-  }
+  const masterAuth = await requireMaster();
+  if (!masterAuth.ok) return masterAuth.response;
+
+  const supabase = await createClient();
 
   const body = await req.json().catch(() => ({}));
   const url: string = (body.url ?? '').trim();
@@ -98,12 +96,9 @@ export async function POST() {
   }
 
   const { agency } = result.data;
-  const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user || !MASTER_EMAILS.includes(user.email ?? '')) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-  }
+  const masterAuth = await requireMaster();
+  if (!masterAuth.ok) return masterAuth.response;
 
   const settings = (agency.settings ?? {}) as Record<string, unknown>;
   const webhookUrl =

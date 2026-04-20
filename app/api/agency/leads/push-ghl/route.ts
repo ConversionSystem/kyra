@@ -12,10 +12,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
 import { getAgencyForUser } from '@/lib/agency/queries';
-
-const MASTER_EMAILS = ['hello@conversionsystem.com', 'angel@conversionsystem.com'];
+import { requireMaster } from '@/lib/auth/admin';
 
 // Niche → cold email sequence ID in GHL (maps to the 5-niche sequences from PR #152)
 const NICHE_TO_SEQUENCE: Record<string, string> = {
@@ -43,11 +41,9 @@ function buildPitchUrl(owner: string, agency: string, niche: string): string {
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user || !MASTER_EMAILS.includes(user.email ?? '')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const auth = await requireMaster();
+    if (!auth.ok) return auth.response;
+    const user = auth.user;
 
     const agencyResult = await getAgencyForUser(user.id); // ensure agency exists
 

@@ -3,20 +3,16 @@
 // Restricted to ADMIN_EMAILS only.
 
 import { NextResponse } from 'next/server';
-import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
-
-const ADMIN_EMAILS = ['hello@conversionsystem.com', 'angel@conversionsystem.com'];
+import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { requireMaster } from '@/lib/auth/admin';
 
 const PLAN_MRR: Record<string, number> = {
   free: 0, solo_pro: 49, starter: 99, pro: 249, scale: 499, beta: 249,
 };
 
 export async function GET() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user || !ADMIN_EMAILS.includes(user.email || '')) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-  }
+  const auth = await requireMaster();
+  if (!auth.ok) return auth.response;
 
   const db = createServiceClientWithoutCookies();
   const now = new Date();

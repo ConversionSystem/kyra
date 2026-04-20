@@ -1,25 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { requireMaster } from '@/lib/auth/admin';
 import { migrateAllContainersToRouter, getRouterStatus } from '@/lib/ovh/provisioner';
 
-// Simple master-only auth check
-async function isMaster(req: NextRequest): Promise<boolean> {
+// Bearer secret bypass (for ops scripts) OR master email via Supabase session
+async function checkAuth(req: NextRequest): Promise<NextResponse | null> {
   const authHeader = req.headers.get('authorization');
-  if (authHeader === `Bearer ${process.env.MASTER_SECRET}`) return true;
-
-  const supabase = createServiceClientWithoutCookies();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return false;
-
-  const masterEmails = (process.env.MASTER_EMAILS || 'angel@conversionsystem.com').split(',');
-  return masterEmails.includes(user.email || '');
+  if (authHeader === `Bearer ${process.env.MASTER_SECRET}`) return null;
+  const auth = await requireMaster();
+  if (!auth.ok) return auth.response;
+  return null;
 }
 
 // GET /api/admin/router-migrate — check router status + preview what would migrate
 export async function GET(req: NextRequest) {
-  if (!await isMaster(req)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const denial = await checkAuth(req);
+  if (denial) return denial;
 
   const [status, preview] = await Promise.all([
     getRouterStatus(),
@@ -31,9 +26,8 @@ export async function GET(req: NextRequest) {
 
 // POST /api/admin/router-migrate — run the migration
 export async function POST(req: NextRequest) {
-  if (!await isMaster(req)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const denial = await checkAuth(req);
+  if (denial) return denial;
 
   const result = await migrateAllContainersToRouter(false);
   if (!result) {

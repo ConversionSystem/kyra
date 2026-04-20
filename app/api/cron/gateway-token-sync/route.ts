@@ -20,13 +20,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { requireCron } from '@/lib/auth/cron';
+import { requireMaster } from '@/lib/auth/admin';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
 const PROVISIONER_URL = process.env.OVH_PROVISIONER_URL || 'https://provisioner.gw.kyra.conversionsystem.com';
 const PROVISIONER_SECRET = process.env.OVH_PROVISIONER_SECRET;
-const MASTER_EMAILS = ['hello@conversionsystem.com', 'angel@conversionsystem.com'];
 
 function getSupabase() {
   return createClient(
@@ -109,14 +109,8 @@ export async function GET(request: NextRequest) {
 
 // Manual trigger for master admins (POST)
 export async function POST(request: NextRequest) {
-  // Check master auth via cookie-based Supabase session
-  const { createClient: createServerClient } = await import('@/lib/supabase/server');
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user || !MASTER_EMAILS.includes(user.email ?? '')) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
+  const auth = await requireMaster();
+  if (!auth.ok) return auth.response;
 
   try {
     const result = await runSync();

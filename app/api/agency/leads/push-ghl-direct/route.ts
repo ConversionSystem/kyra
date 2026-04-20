@@ -15,10 +15,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { requireMaster } from '@/lib/auth/admin';
 
-const MASTER_EMAILS = ['hello@conversionsystem.com', 'angel@conversionsystem.com'];
 const GHL_API_BASE = 'https://services.leadconnectorhq.com';
 // Match version used by the working poll/send route
 const GHL_API_VERSION = '2021-04-15';
@@ -147,12 +146,9 @@ async function upsertGhlContact(
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user || !MASTER_EMAILS.includes(user.email ?? '')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const auth = await requireMaster();
+    if (!auth.ok) return auth.response;
+    const user = auth.user;
 
     const body = await req.json();
     const { leads } = body as { leads: LeadInput[] };

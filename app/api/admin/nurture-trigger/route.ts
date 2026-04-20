@@ -6,19 +6,15 @@
 // ============================================================================
 
 import { NextResponse } from 'next/server';
-import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { requireMaster } from '@/lib/auth/admin';
 import { getNurtureEmail } from '@/lib/email/nurture-sequence';
 
 export const dynamic = 'force-dynamic';
 
-const MASTER_EMAILS = ['hello@conversionsystem.com', 'angel@conversionsystem.com'];
-
 export async function POST() {
-  const sb = await createClient();
-  const { data: { user } } = await sb.auth.getUser();
-  if (!user || !MASTER_EMAILS.includes(user.email ?? '')) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
+  const auth = await requireMaster();
+  if (!auth.ok) return auth.response;
 
   const supabase = createServiceClientWithoutCookies();
   const now = new Date();

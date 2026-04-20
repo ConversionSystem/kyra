@@ -1,21 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { requireMaster } from '@/lib/auth/admin';
 
-const MASTER_EMAILS = ['hello@conversionsystem.com', 'angel@conversionsystem.com'];
 const PROVISIONER_URL = process.env.OVH_PROVISIONER_URL || 'https://provisioner.gw.kyra.conversionsystem.com';
 const PROVISIONER_SECRET = process.env.OVH_PROVISIONER_SECRET;
 
-async function requireMaster() {
-  const sb = await createClient();
-  const { data: { user } } = await sb.auth.getUser();
-  if (!user || !MASTER_EMAILS.includes(user.email ?? '')) return null;
-  return user;
-}
-
 // PATCH — update plan, account_type, name
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const user = await requireMaster();
-  if (!user) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  const auth = await requireMaster();
+  if (!auth.ok) return auth.response;
 
   const { id } = await params;
   const admin = createServiceClientWithoutCookies();
@@ -75,8 +68,8 @@ async function deleteContainer(cid: string): Promise<string | null> {
 
 // DELETE — full account deletion
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const user = await requireMaster();
-  if (!user) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  const auth = await requireMaster();
+  if (!auth.ok) return auth.response;
 
   const { id: agencyId } = await params;
   const admin = createServiceClientWithoutCookies();

@@ -4,9 +4,8 @@
 // Restricted to ADMIN_EMAILS only.
 
 import { NextResponse } from 'next/server';
-import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
-
-const ADMIN_EMAILS = ['hello@conversionsystem.com', 'angel@conversionsystem.com'];
+import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { requireMaster } from '@/lib/auth/admin';
 
 const AVATAR_COLORS = [
   '#6366f1', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b',
@@ -23,12 +22,9 @@ const PLAN_MRR: Record<string, number> = {
 };
 
 export async function POST() {
-  // ── Auth guard ────────────────────────────────────────────────────────────
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user || !ADMIN_EMAILS.includes(user.email ?? '')) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-  }
+  const auth = await requireMaster();
+  if (!auth.ok) return auth.response;
+  const user = auth.user;
 
   const db = createServiceClientWithoutCookies();
 

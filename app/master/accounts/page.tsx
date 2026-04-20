@@ -2,16 +2,15 @@ export const dynamic = 'force-dynamic';
 
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { isMasterEmail } from '@/lib/auth/admin';
 import AccountsAdminClient from './accounts-admin-client';
 import Link from 'next/link';
 import { Crown, ArrowLeft } from 'lucide-react';
 
-const MASTER_EMAILS = ['hello@conversionsystem.com', 'angel@conversionsystem.com'];
-
 export default async function AdminAccountsPage() {
   const sb = await createClient();
   const { data: { user } } = await sb.auth.getUser();
-  if (!user || !MASTER_EMAILS.includes(user.email ?? '')) redirect('/agency');
+  if (!isMasterEmail(user?.email)) redirect('/agency');
 
   return (
     <div className="min-h-screen bg-gray-50">

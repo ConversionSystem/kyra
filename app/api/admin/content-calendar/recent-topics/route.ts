@@ -1,18 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { isAdminEmail } from '@/lib/auth/admin';
 import type { Platform } from '@/lib/content/pillars';
 
-const ADMIN_EMAILS = [
-  'hello@conversionsystem.com',
-  'angel@conversionsystem.com',
-  'steve@conversionsystem.com',
-  'webblex10@gmail.com',
-];
-
+// Note: `webblex10@gmail.com` previously hardcoded here now migrates to the
+// `ADMIN_EMAILS` env var set in Vercel (see lib/auth/admin.ts).
 async function authed(req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (user && ADMIN_EMAILS.includes(user.email || '')) return true;
+  if (isAdminEmail(user?.email)) return true;
   const header = req.headers.get('authorization') || req.headers.get('x-routine-secret') || '';
   const secret = process.env.CONTENT_ROUTINE_SECRET;
   if (secret) {

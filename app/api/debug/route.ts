@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { requireMaster } from '@/lib/auth/admin';
 
 export const dynamic = 'force-dynamic';
-
-const ADMIN_EMAILS = ['hello@conversionsystem.com', 'angel@conversionsystem.com'];
 
 /**
  * GET /api/debug
@@ -12,15 +10,8 @@ const ADMIN_EMAILS = ['hello@conversionsystem.com', 'angel@conversionsystem.com'
  * ⚠️ Never return actual key values — only booleans for whether they are set.
  */
 export async function GET() {
-  // Auth check — admin only
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user || !ADMIN_EMAILS.includes(user.email ?? '')) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-  }
+  const auth = await requireMaster();
+  if (!auth.ok) return auth.response;
 
   return NextResponse.json({
     ok: true,

@@ -4,11 +4,10 @@
 // ============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { requireMaster } from '@/lib/auth/admin';
 
 export const dynamic = 'force-dynamic';
-
-const MASTER_EMAILS = ['hello@conversionsystem.com', 'angel@conversionsystem.com'];
 
 /** Day offsets matching nurture-enrollment.ts */
 const STEP_DAYS: Record<number, number> = {
@@ -21,19 +20,11 @@ const STEP_DAYS: Record<number, number> = {
   7: 21,
 };
 
-async function authCheck() {
-  const sb = await createClient();
-  const { data: { user } } = await sb.auth.getUser();
-  if (!user || !MASTER_EMAILS.includes(user.email ?? '')) return null;
-  return user;
-}
-
 // ── GET — audit ──────────────────────────────────────────────────────────────
 
 export async function GET() {
-  if (!await authCheck()) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
+  const auth = await requireMaster();
+  if (!auth.ok) return auth.response;
 
   const admin = createServiceClientWithoutCookies();
 
@@ -97,9 +88,8 @@ export async function GET() {
 // ── POST — re-enroll ─────────────────────────────────────────────────────────
 
 export async function POST(request: NextRequest) {
-  if (!await authCheck()) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
+  const auth = await requireMaster();
+  if (!auth.ok) return auth.response;
 
   const body = await request.json() as { action: string; agencyIds?: string[] };
   const { action, agencyIds } = body;
