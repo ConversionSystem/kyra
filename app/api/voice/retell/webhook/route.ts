@@ -7,24 +7,67 @@
  * - call_analyzed: save sentiment + summary to CRM
  *
  * Retell sends: { event, call }
+ *
+ * Signature: HMAC-SHA256 of raw body using RETELL_API_KEY as the secret.
+ * Sent in header `x-retell-signature` (hex-encoded).
+ * Docs: https://docs.retellai.com/features/webhook
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'node:crypto';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+
+export const runtime = 'nodejs';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Headers': 'Content-Type, X-Retell-Signature',
 };
+
+function verifyRetellSignature(rawBody: string, signatureHeader: string | null, apiKey: string): boolean {
+  if (!signatureHeader) return false;
+  const expected = crypto.createHmac('sha256', apiKey).update(rawBody).digest('hex');
+  // Strip optional 'v=' prefix some Retell envs emit.
+  const received = signatureHeader.replace(/^v=/, '').trim();
+  if (expected.length !== received.length) return false;
+  try {
+    return crypto.timingSafeEqual(
+      Buffer.from(expected, 'hex'),
+      Buffer.from(received, 'hex'),
+    );
+  } catch {
+    return false;
+  }
+}
 
 export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: CORS });
 }
 
 export async function POST(request: NextRequest) {
+  // Fail-closed: webhook requires API key to verify signatures.
+  const apiKey = process.env.RETELL_API_KEY;
+  if (!apiKey) {
+    console.error('[retell-webhook] RETELL_API_KEY not configured — rejecting');
+    return NextResponse.json(
+      { error: 'Webhook verification key not configured' },
+      { status: 500, headers: CORS },
+    );
+  }
+
+  // Raw body for HMAC, then parse.
+  const rawBody = await request.text();
+  const sigHeader = request.headers.get('x-retell-signature');
+
+  if (!verifyRetellSignature(rawBody, sigHeader, apiKey)) {
+    console.warn('[retell-webhook] Invalid or missing signature');
+    return NextResponse.json({ error: 'Invalid signature' }, { status: 401, headers: CORS });
+  }
+
   try {
-    const body = await request.json();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const body: any = JSON.parse(rawBody);
     const event = body.event as string;
     const call = body.call as Record<string, unknown> | undefined;
 
