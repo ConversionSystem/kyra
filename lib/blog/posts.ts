@@ -357,7 +357,7 @@ openclaw mcp list my-first-agent</code></pre>
   <li>After the conversation ends, the agent emails the office manager a summary, creates the appointment on the shared calendar, tags the patient in the CRM as "new-booking," and schedules a reminder for the next morning.</li>
 </ol>
 
-<p>None of that requires an external automation tool. It is all built into the OpenClaw messaging, webhook, and cron systems. For the full automation stack, see the <a href="https://docs.openclaw.ai">docs on hooks, cron, and tasks</a>.</p>
+<p>None of that requires an external automation tool. It is all built into the OpenClaw messaging, webhook, and cron systems. For the full automation stack, see the <a href="https://docs.openclaw.ai">docs on hooks, cron, and tasks</a>. For how this workflow plays out in a real dental practice deployment, see our <a href="/blog/ai-for-dental-practices">dental AI guide</a>.</p>
 
 <h2>6. Call sub-agents to split complex tasks</h2>
 
@@ -550,7 +550,7 @@ openclaw mcp list my-first-agent</code></pre>
 
 <h2>Why GHL Agencies Are Perfectly Positioned</h2>
 
-<p>You already have the infrastructure. GHL gives you the CRM, the pipelines, the phone numbers, and the messaging channels. An AI worker like Kyra plugs directly into your existing GHL setup using a Private Integration Token — no OAuth approval, no marketplace hurdles.</p>
+<p>You already have the infrastructure. GHL gives you the CRM, the pipelines, the phone numbers, and the messaging channels. An AI worker plugs directly into your existing GHL setup using a Private Integration Token — no OAuth approval, no marketplace hurdles.</p>
 
 <p>The moment your client adds their GHL token, the AI starts monitoring their conversations and responding automatically. Setup takes about 10 minutes. The AI goes live immediately.</p>
 
@@ -584,13 +584,29 @@ openclaw mcp list my-first-agent</code></pre>
 
 <p>Once you have your first AI worker live and your client sees results, scaling is straightforward. Every new client follows the same 5-step process. The AI personalities are different, the channels might vary, but the infrastructure is the same.</p>
 
-<p>At 10 clients charging $800/month each: $8,000/month in recurring revenue. At 20 clients: $16,000/month. Kyra Pro handles 10 clients at $299/month — your gross margin is 96% before API costs.</p>
+<p>At 10 clients charging $800/month each: $8,000/month in recurring revenue. At 20 clients: $16,000/month. The pro plan handles 10 clients at $299/month — your gross margin is 96% before API costs.</p>
 
 <h2>The Competitive Moat</h2>
 
 <p>Once your client's AI worker is live and working, they won't want to turn it off. The AI builds up conversation history, learns the business's tone, and becomes genuinely useful over time. Churn on a working AI worker is near zero.</p>
 
 <p>Every booking it makes, every lead it handles, every CRM update it logs — that's value your client can see. It's not abstract "automation." It's results they can count.</p>
+
+<h2>Why AI workers dramatically reduce agency client churn</h2>
+
+<p>The average agency loses 30 to 50 percent of its client base annually. Clients churn when they stop seeing measurable results — which happens with ads when ROAS drops, with SEO when rankings plateau, and with website work when the project ends.</p>
+
+<p>AI workers behave differently. Three structural factors keep churn near zero once the AI is live:</p>
+
+<ul>
+  <li><strong>Daily visible value.</strong> The AI runs every day. Clients see conversation logs, response times, and booked appointments without waiting 90 days for a ranking report or an ad performance review.</li>
+  <li><strong>Compounding institutional knowledge.</strong> The AI learns the business's vocabulary, pricing, objections, and typical conversation flows over months. Switching to a new system means retraining from scratch — a switching cost that compounds every month the AI runs.</li>
+  <li><strong>CRM dependency.</strong> Once the AI is writing contact notes, updating pipeline stages, and tagging leads by conversation content, the client's GHL data depends on the AI staying active. Turning it off breaks the CRM automation they have built their operations around.</li>
+</ul>
+
+<p>Compare that to an ad campaign or a monthly SEO report. An AI worker that books three appointments a week is not abstract value. It is a line item the client can point to on a Monday morning. That is why agencies running AI workers consistently see 12-month retention rates well above 80 percent — versus 30 to 50 percent on most other service lines.</p>
+
+<p>For the broader business model behind this service line, see our <a href="/blog/agency-recurring-revenue-ai">agency recurring revenue guide</a>.</p>
 
 <h2>How AI workers compare to GHL workflow automations</h2>
 
@@ -818,6 +834,20 @@ openclaw mcp list my-first-agent</code></pre>
   </tbody>
 </table>
 
+<h2>What to look for in a dental AI worker</h2>
+
+<p>Not all AI workers handle dental workflows equally. Before committing to a deployment, evaluate any option against these five criteria:</p>
+
+<ul>
+  <li><strong>Native CRM integration — not a Zapier wrapper.</strong> An AI worker that routes through a third-party automation layer introduces additional latency, failure points, and per-task costs. Direct API access to GoHighLevel is the standard for serious deployments. Check whether the integration is native or intermediated.</li>
+  <li><strong>Configurable escalation rules.</strong> Dental practices deal with pain, anxiety, and occasionally urgent clinical situations. The AI should hand off to staff the moment it detects emergency keywords ("tooth knocked out," "severe pain," "can't stop bleeding"), frustrated tone, or clinical questions. Hardcoded escalation lists are a red flag — you want rules you can tune per practice.</li>
+  <li><strong>Per-practice data isolation.</strong> Patient inquiry data should live in an isolated container for that practice, not mixed with thousands of other businesses on shared infrastructure. For HIPAA-adjacent workflows, isolation is a minimum baseline, not a premium feature.</li>
+  <li><strong>Personality customization at the field level.</strong> A pediatric practice needs different tone, vocabulary, and response patterns than an oral surgery group. Look for systems that let you configure tone, forbidden topics, booking logic, and escalation triggers independently per client — not just a single global setting.</li>
+  <li><strong>Full audit trails.</strong> Every AI reply should be logged with a timestamp, the message received, the action taken, and any CRM updates made. Dental practices are not required to archive patient texts the way medical records are archived, but a complete audit trail protects the practice if a patient dispute arises over what was communicated.</li>
+</ul>
+
+<p>A properly configured dental AI worker passes all five. A generic chatbot repurposed for dental typically fails on escalation rules and data isolation first — both of which matter most in regulated environments. The OpenClaw-based architecture described in our <a href="/blog/what-is-openclaw-ai-gateway-explained">gateway guide</a> addresses each of these points by design.</p>
+
 <h2>Frequently asked questions</h2>
 
 <h3>Is this HIPAA compliant?</h3>
@@ -897,7 +927,7 @@ openclaw mcp list my-first-agent</code></pre>
 <p>Let's run the numbers on a basic agency AI operation:</p>
 
 <ul>
-  <li><strong>Platform cost:</strong> $299/month (Kyra Pro, up to 10 AI workers)</li>
+  <li><strong>Platform cost:</strong> $299/month (pro plan, up to 10 AI workers)</li>
   <li><strong>API cost:</strong> ~$1–3/client/month at moderate conversation volume</li>
   <li><strong>Your price to clients:</strong> $800–$1,500/month per AI worker</li>
   <li><strong>10 clients at $1,000/month:</strong> $10,000 MRR</li>
@@ -905,7 +935,7 @@ openclaw mcp list my-first-agent</code></pre>
   <li><strong>Gross margin:</strong> ~97%</li>
 </ul>
 
-<p>At 10 clients — Kyra Pro capacity — you're at $10,000/month with essentially no marginal cost increase.</p>
+<p>At 10 clients you're at $10,000/month with essentially no marginal cost increase.</p>
 
 <h2>The 90-Day Playbook</h2>
 
@@ -924,7 +954,7 @@ openclaw mcp list my-first-agent</code></pre>
   <li>Pick your easiest existing client — probably someone you talk to regularly who trusts you</li>
   <li>Show them a live demo using their industry's pitch page</li>
   <li>Offer a 30-day trial at $0 (or a reduced rate) to prove the value</li>
-  <li>Get them live on Kyra, connect their GHL, customize their personality</li>
+  <li>Get them live on your platform, connect their GHL, customize their personality</li>
   <li>Let the AI run for 2 weeks and review the results together</li>
 </ol>
 
@@ -962,6 +992,22 @@ openclaw mcp list my-first-agent</code></pre>
 <p>Here's the best part: AI worker churn is nearly zero. Once it's live and working, clients don't want to turn it off. The AI builds up institutional knowledge — it knows the business's tone, the common questions, the pipeline stages. Replacing it means starting over.</p>
 
 <p>Compare this to typical agency services where clients churn after 3–6 months. An AI worker that books appointments and handles leads creates ongoing, measurable value that compounds over time.</p>
+
+<h2>How to build a sustainable referral system</h2>
+
+<p>The 90-day playbook above gets you to three to five paying clients. Scaling beyond that typically comes from referrals, not cold outreach.</p>
+
+<p>A simple referral program that works: offer existing clients one free month for every client they introduce who signs a contract. The economics work because your marginal cost of adding a client is near zero — giving away an $800 month costs you roughly $15 in platform and API fees, not $800.</p>
+
+<p>Three practical steps:</p>
+
+<ol>
+  <li><strong>Ask at the 60-day mark.</strong> Once a client has seen two months of performance reports, their skepticism is gone. That is the right moment to ask: "Do you know anyone else who would want this?"</li>
+  <li><strong>Give them the demo link, not the pitch.</strong> Most business owners know other business owners. A dental client knows other dental professionals. Sending them a demo link lets the AI sell itself. You get a warm introduction; the AI does the convincing.</li>
+  <li><strong>Keep the referral program simple.</strong> One rule: introduce a client who signs, get one free month. No tiers, no points, no complexity. Simple referral programs generate more referrals than tiered ones because the math is obvious to the referring client.</li>
+</ol>
+
+<p>By month six, a referral system running alongside direct outreach should account for 30 to 50 percent of new client acquisitions. That is when the business starts compounding on its own momentum.</p>
 
 <h2>A real-world economic comparison</h2>
 
@@ -1512,13 +1558,7 @@ every appointment time and date twice before booking.</code></pre>
   </tbody>
 </table>
 
-<p>OpenClaw is powerful. It is also, for most agency owners and non-technical operators, more setup than they want to do for every client. Installing Node, editing config files, managing daemons, paying for a VPS, renewing TLS certificates — it adds up.</p>
-
-<p>That is the problem <a href="https://kyra.conversionsystem.com">Kyra</a> solves. Kyra is a white-label platform built on OpenClaw technology. Agencies use it to deploy isolated AI workers for every one of their clients without writing code or managing infrastructure. Each client gets their own OpenClaw container with their own personality, knowledge base, and workspace — and the agency manages everything from a single dashboard.</p>
-
-<p>You get the architecture of OpenClaw — isolation, multi-channel, memory, skills, tools — wrapped in an onboarding flow that takes minutes instead of hours, plus billing, CRM, and the industry-specific templates that turn a technology into a business.</p>
-
-<p>The underlying technology is the same. The deployment experience is built for scale.</p>
+<p>OpenClaw is powerful. It is also, for most agency owners and non-technical operators, more setup than they want to do for every client. Installing Node, editing config files, managing daemons, paying for a VPS, renewing TLS certificates — it adds up. For agencies who want the OpenClaw architecture without the infrastructure work, managed platforms exist that wrap this runtime in a complete service layer — per-client isolation, ready-to-configure industry templates, integrated billing, and an onboarding flow measured in minutes rather than hours. The underlying technology is identical to self-hosted OpenClaw.</p>
 
 <h2>Start Here</h2>
 
