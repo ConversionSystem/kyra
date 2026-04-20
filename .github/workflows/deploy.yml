@@ -43,9 +43,9 @@ jobs:
         run: npm test
 
   deploy:
-    name: Deploy to Vercel (production)
+    name: Deploy to Vercel (production) [DISABLED — use CLI only]
     needs: ci
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: false  # NEVER auto-deploy from CI — use 'npx vercel --prod --yes' locally to control deploy count
     runs-on: ubuntu-latest
     env:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
