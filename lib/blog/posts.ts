@@ -11,6 +11,264 @@ export interface BlogPost {
 
 export const POSTS: BlogPost[] = [
   {
+    slug: 'write-your-first-claude-skill-openclaw-2026',
+    title: 'Write Your First Claude Skill for OpenClaw: A 2026 Step-by-Step Guide',
+    description: 'Claude Skills became an open standard in December 2025 and now power 13,729 community skills in the OpenClaw registry. Here is the definition, the SKILL.md anatomy, a full walkthrough for writing and shipping your first skill, and the comparison to MCP and sub-agents.',
+    date: '2026-04-19',
+    readMins: 12,
+    category: 'AI Infrastructure',
+    emoji: '🛠️',
+    content: `
+<p><em>Last updated: April 19, 2026</em></p>
+
+<p>A <strong>Claude Skill</strong> is a folder of markdown and optional scripts that teaches an AI agent one specific, repeatable workflow and loads itself into context only when the agent detects a matching request. Anthropic announced Skills on October 16, 2025, published the 32-page <em>Complete Guide to Building Skills for Claude</em> on January 29, 2026, and made Agent Skills an open standard on December 18, 2025. The same format now works across Claude Code, Claude Desktop, Cursor, and OpenClaw. By February 28, 2026 the public OpenClaw registry (ClawHub) was already carrying <strong>13,729 community-built skills</strong>, and the format had become the default way agent builders package reusable capability.</p>
+
+<div style="background:rgba(79,70,229,0.15);border:1px solid rgba(99,102,241,0.3);border-radius:12px;padding:20px;margin:24px 0;">
+  <p style="margin:0 0 8px 0;"><strong>Key takeaways</strong></p>
+  <ul style="margin:0;">
+    <li>A Skill is a directory with a <code>SKILL.md</code> file. The file has YAML frontmatter (name, description, optional allowed-tools) and markdown instructions below it.</li>
+    <li>The <code>description</code> field decides whether the agent ever loads the skill. Write it as a clear "what it does + when to use it" sentence.</li>
+    <li>Skills use progressive disclosure: only the frontmatter metadata sits in context until a matching request triggers a full load. Fifty skills cost roughly the same idle tokens as one.</li>
+    <li>OpenClaw loads skills from three roots, in precedence order: bundled, local (<code>~/.openclaw/skills</code>), and per-workspace. Later roots override earlier ones by name.</li>
+    <li>Agent Skills became an open standard in December 2025. A skill written for Claude Code drops into OpenClaw, Cursor, or any compatible runtime with no rewrite.</li>
+    <li>Skills are the right answer for repeatable procedural knowledge. Tools, MCP servers, and sub-agents solve different problems and are explained below.</li>
+  </ul>
+</div>
+
+<h2>What a Claude Skill actually is</h2>
+
+<p>Before Skills, agent builders had three choices. You could stuff long instructions into the system prompt and pay the token cost on every turn. You could write a custom tool for each workflow and maintain the glue code forever. Or you could train a sub-agent per task and juggle routing logic by hand.</p>
+
+<p>A Skill replaces all three for the case that covers most real work: <em>the agent already knows how to do the thing in principle, but it needs the house-specific recipe</em>. How does our agency format a client onboarding report? Which fields go into a GHL appointment webhook? What is the exact SQL migration pattern this codebase uses? Those answers are short, procedural, and worth reusing. That is a Skill.</p>
+
+<p>The physical artifact is almost embarrassingly simple. A folder. Inside the folder, a file named <code>SKILL.md</code>. Optional subfolders named <code>scripts/</code>, <code>references/</code>, and <code>assets/</code> for bundled code, docs, and templates. That is the whole spec.</p>
+
+<p>The agent indexes every skill's frontmatter at startup. When a user request matches the description, the agent pulls in the full markdown and any referenced files, runs the procedure, and unloads it again. Progressive disclosure keeps idle context cheap and the skill library big.</p>
+
+<h2>Skills vs tools vs MCP servers vs sub-agents</h2>
+
+<p>Agent builders new to the ecosystem routinely confuse these four primitives. They solve overlapping but distinct problems, and picking the wrong one creates architecture pain that is hard to undo later.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Primitive</th>
+      <th>What it encodes</th>
+      <th>When to reach for it</th>
+      <th>Cost model</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Skill</strong></td>
+      <td>Procedural knowledge and templates</td>
+      <td>A repeatable workflow your agent does often, with house-specific steps</td>
+      <td>Metadata-only when idle, full markdown on trigger</td>
+    </tr>
+    <tr>
+      <td><strong>Tool</strong></td>
+      <td>A deterministic function the agent can call</td>
+      <td>Reading a file, sending a message, running a shell command</td>
+      <td>Schema in context always, invoked on demand</td>
+    </tr>
+    <tr>
+      <td><strong>MCP server</strong></td>
+      <td>A remote bundle of tools and resources from one data source</td>
+      <td>Any external integration you want to share across agents</td>
+      <td>Subprocess or HTTP service, schema injected into context</td>
+    </tr>
+    <tr>
+      <td><strong>Sub-agent</strong></td>
+      <td>A separate agent loop with its own context window</td>
+      <td>Long research, parallel exploration, isolated failure domains</td>
+      <td>A fresh full conversation per invocation</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The mental model that keeps teams unstuck: a Skill tells the agent <em>how</em> to do something. A Tool or MCP server lets the agent <em>do</em> something. A Sub-agent delegates the <em>whole job</em> to a new context. Most production OpenClaw workspaces end up using all four, but they start with Skills because Skills are cheap, versionable, and readable in plain markdown.</p>
+
+<p>For a deeper look at the MCP half of that picture, see the companion post on <a href="/blog/mcp-connectors-openclaw-guide-2026">MCP connectors in OpenClaw</a>.</p>
+
+<h2>The SKILL.md anatomy</h2>
+
+<p>Every Skill file has two parts. YAML frontmatter on top, markdown body below. The frontmatter tells the agent when to load the skill. The body tells the agent what to do once loaded.</p>
+
+<p>A minimal example for a fictitious "summarize-client-call" skill:</p>
+
+<pre><code>---
+name: summarize-client-call
+description: Turns a raw call transcript into a structured client summary with action items. Use this whenever the user pastes a call transcript, attaches an audio transcript file, or asks to summarize a client conversation.
+allowed-tools: [read_file, write_file]
+---
+
+# Summarize Client Call
+
+## When to use
+The user has a call transcript (text, VTT, or pasted dialogue) and wants a structured summary for their CRM.
+
+## Steps
+1. Read the transcript. Identify the client name, the agency owner's name, and the call date.
+2. Extract the top three outcomes the client wanted from the call.
+3. Extract every action item, with the owner and a due date if mentioned.
+4. Write the result to \`./out/&lt;client&gt;-&lt;YYYY-MM-DD&gt;.md\` using the template in \`./references/template.md\`.
+
+## Output contract
+The summary file must contain five H2 sections: Attendees, Context, Outcomes, Action items, Next call.
+</code></pre>
+
+<p>Three details matter more than they look. First, <code>description</code> is the only string the agent sees before loading the skill, so it has to contain both what the skill does and the exact trigger phrases a user might say. Anthropic's own skill-creator plugin writes the description last for exactly this reason. Second, <code>allowed-tools</code> is a safety rail: even if the agent has twenty tools available, only the listed ones can fire while this skill is active. Third, the body uses short numbered steps, not prose. Agents follow checklists reliably. They rewrite prose.</p>
+
+<h2>Step-by-step: write and install your first OpenClaw skill</h2>
+
+<p>This walkthrough produces a working skill in about fifteen minutes on a fresh OpenClaw install. Any Linux, macOS, or WSL box with Node.js 22 or newer will do.</p>
+
+<p><strong>1. Install OpenClaw and start the gateway</strong> if you have not already:</p>
+
+<pre><code>npm install -g @openclaw/cli
+openclaw init
+openclaw gateway start</code></pre>
+
+<p><strong>2. Create the skill directory</strong> inside your local skills root:</p>
+
+<pre><code>mkdir -p ~/.openclaw/skills/summarize-client-call/references
+cd ~/.openclaw/skills/summarize-client-call
+touch SKILL.md references/template.md</code></pre>
+
+<p><strong>3. Write the SKILL.md file.</strong> Paste the example from the anatomy section above, or use the scaffold the CLI ships with:</p>
+
+<pre><code>openclaw skills new summarize-client-call \\
+  --description "Turns a raw call transcript into a structured client summary." \\
+  --allowed-tools read_file,write_file</code></pre>
+
+<p>The CLI writes a templated <code>SKILL.md</code>, an empty <code>references/</code> directory, and an <code>assets/</code> folder for any images or sample files.</p>
+
+<p><strong>4. Add a template to references.</strong> Drop a markdown file at <code>references/template.md</code> that holds the exact output shape you want. The agent will read it at runtime, so you avoid duplicating the template inside the main SKILL.md:</p>
+
+<pre><code>## Attendees
+- &lt;name&gt; (role)
+
+## Context
+One paragraph.
+
+## Outcomes
+1. ...
+2. ...
+3. ...
+
+## Action items
+| Owner | Action | Due |
+| --- | --- | --- |
+| ... | ... | ... |
+
+## Next call
+Date, channel, goal.
+</code></pre>
+
+<p><strong>5. Validate the skill locally:</strong></p>
+
+<pre><code>openclaw skills validate summarize-client-call</code></pre>
+
+<p>The validator checks frontmatter syntax, warns on missing <code>description</code> triggers, and runs a dry-load against the current gateway.</p>
+
+<p><strong>6. Reload the daemon and list loaded skills:</strong></p>
+
+<pre><code>openclaw gateway reload
+openclaw skills list --agent my-first-agent</code></pre>
+
+<p>You should see <code>summarize-client-call</code> in the output, tagged with its source path. The gateway only loads frontmatter at this point, so startup time is unaffected.</p>
+
+<p><strong>7. Fire it.</strong> Send the agent a message that matches the trigger in the description:</p>
+
+<pre><code>openclaw chat my-first-agent \\
+  "Here's a call transcript from today with Acme Dental. Summarize it."</code></pre>
+
+<p>The agent matches the description, loads the full <code>SKILL.md</code> plus the template, produces the summary, and writes it to <code>./out/acme-dental-2026-04-19.md</code>. If you watch the gateway logs you will see a single "skill:load" event and a "skill:unload" right after the response is returned.</p>
+
+<p>That is the full loop: write markdown, validate, reload, call. No compile step, no deployment, no redeploys across clients. The same skill dropped into a teammate's workspace works identically because the contract is files on disk.</p>
+
+<h2>Progressive disclosure and why the token math works</h2>
+
+<p>Progressive disclosure is the reason skills scale. At agent startup, OpenClaw reads every <code>SKILL.md</code> and indexes only the YAML frontmatter. Typical frontmatter is under 200 tokens. Fifty skills cost around 10,000 idle tokens in context, which is tolerable on any modern model.</p>
+
+<p>When the agent decides to invoke a skill, it pulls the full markdown, any files referenced from the body, and any scripts the body explicitly calls out. Once the turn ends, that material is dropped from the working context. The next unrelated turn starts clean.</p>
+
+<p>This is the same pattern that makes big codebases tractable for agents: keep the index in memory, load the file only when the query matches. It is also why Anthropic's engineering team has said Skills pair cleanly with MCP rather than replacing it. MCP handles discovery and tool invocation for live systems; Skills handle the procedural knowledge the agent applies once a tool is available.</p>
+
+<h2>How OpenClaw resolves bundled, local, and workspace skills</h2>
+
+<p>OpenClaw loads skills from three roots. Understanding the precedence rules prevents a whole class of "why is my skill not firing" support tickets.</p>
+
+<ol>
+  <li><strong>Bundled skills</strong> ship inside the <code>@openclaw/cli</code> package. You can point the gateway at a pinned bundled directory using <code>OPENCLAW_BUNDLED_PLUGINS_DIR</code>. These are the defaults everyone gets on install.</li>
+  <li><strong>Local skills</strong> live at <code>~/.openclaw/skills</code>. Anything here applies to every agent on the machine and overrides a bundled skill of the same name. Use this for your own reusable workflows.</li>
+  <li><strong>Workspace skills</strong> live at <code>~/.openclaw/agents/&lt;agentId&gt;/skills</code>. Anything here applies only to that agent and overrides both bundled and local skills with the same name. Use this for client-specific or project-specific customizations.</li>
+</ol>
+
+<p>The agent logs the source path next to each loaded skill so you can tell at a glance which copy won. For white-label agencies running thirty clients on one gateway, the common pattern is: bundled for the baseline, local for the agency house style, workspace for per-client variants. The file layout itself enforces isolation.</p>
+
+<p>To see how this slots into the larger gateway picture, read <a href="/blog/what-is-openclaw-ai-gateway-explained">what OpenClaw actually is</a>.</p>
+
+<h2>Testing, versioning, and shipping a Skill</h2>
+
+<p>Skills are plain files in a git repository. Treat them as code. A team shipping skills to clients usually ends up with a shape like this:</p>
+
+<ul>
+  <li>A <code>skills/</code> directory at the root of the agency repo, one subdirectory per skill.</li>
+  <li>A <code>tests/</code> directory next to each skill holding sample inputs and expected outputs. The CLI can run these against a lightweight agent loop: <code>openclaw skills test summarize-client-call</code>.</li>
+  <li>Pull requests that change a skill's behaviour bump the <code>version</code> field in frontmatter. The registry surfaces this version in the UI, so clients can see when a skill changes underneath them.</li>
+  <li>A CI job that validates every skill on every commit. The validator is fast (under a second per skill) so it stays in the pre-commit hook too.</li>
+</ul>
+
+<p>For publishing, the open <a href="https://docs.openclaw.ai/tools/skills">OpenClaw skills documentation</a> describes packaging for ClawHub. For private teams, the simplest approach is to keep skills in a shared git repo and install them into <code>~/.openclaw/skills</code> via <code>openclaw skills add &lt;git-url&gt;</code>. The CLI handles the clone, checkout, and symlink steps so that updates are a single <code>git pull</code>.</p>
+
+<h2>When a Skill is not the right tool</h2>
+
+<p>Skills are great at one thing and bad at the opposite of that thing. They encode reusable procedural knowledge. They are the wrong answer when:</p>
+
+<ul>
+  <li><strong>The work is one-off.</strong> If you only need the agent to do it once, put the instructions in the chat. A Skill adds friction when it will never be reused.</li>
+  <li><strong>The work is mostly a live system call.</strong> If the core of the job is "hit this API and summarize the response", write an MCP server or a tool. Skills should orchestrate tools, not replace them.</li>
+  <li><strong>The work branches deeply based on state.</strong> If your procedure has more than two or three decision points that require loading different playbooks, promote each branch to its own skill and route between them with a top-level skill, or reach for a sub-agent.</li>
+  <li><strong>The instructions are longer than the task.</strong> If a skill's SKILL.md is 3,000 words long and the output is a two-line confirmation, the skill is doing too much. Break it up or convert the instructions to a real tool.</li>
+</ul>
+
+<p>The honest test: if you would not write a Notion doc to describe the procedure, you probably should not write a skill either. Skills reward clarity, not volume.</p>
+
+<h2>Frequently asked questions</h2>
+
+<h3>Do Claude Skills work in OpenClaw without modification?</h3>
+
+<p>Yes. Skills follow the Agent Skills open standard that Anthropic published in December 2025. The <code>SKILL.md</code> contract is identical across Claude Code, Claude Desktop, Cursor, and OpenClaw. A skill you wrote against Claude Code drops into <code>~/.openclaw/skills</code> and loads without changes. Skills that call <code>allowed-tools</code> only work if the host agent actually has those tools, but that is a runtime concern, not a format one.</p>
+
+<h3>How many skills can one agent have before context costs blow up?</h3>
+
+<p>In practice, several hundred. Frontmatter is usually 100 to 200 tokens per skill. Progressive disclosure means the full body never sits in context unless the skill fires. Anthropic's own skills repo at the time of writing ships dozens of skills and runs on every Claude plan. The practical ceiling is discoverability: past 30 or 40 skills, the agent starts to have a harder time picking the right one, so invest in tighter <code>description</code> fields rather than a bigger library.</p>
+
+<h3>Is it safe to install community skills from ClawHub or agentskills.io?</h3>
+
+<p>Treat them like npm packages. Read the SKILL.md before installing. Check what scripts the skill ships and what <code>allowed-tools</code> it requests. The gateway isolates tool execution inside per-agent workspaces, but a skill that runs a shell script still runs with your user's permissions on the host. For anything touching a client workspace, fork the skill into your own repo, audit it, and pin the commit.</p>
+
+<h3>What is the difference between a Skill and a prompt template?</h3>
+
+<p>A prompt template is a string you paste into a conversation. The agent has no awareness of it beyond that one turn. A Skill is a persistent artifact the agent decides to load based on request intent, can reference files from, and can scope tool access inside. Skills are to prompts what functions are to snippets.</p>
+
+<h3>Can a Skill call another Skill?</h3>
+
+<p>Indirectly. A skill's markdown can instruct the agent to invoke another skill by name, and the agent will match the second skill's description and load it for the next turn. There is no direct programmatic import. This is intentional: the agent stays in charge of which skills are active, which keeps context use predictable and matches how progressive disclosure is supposed to work.</p>
+
+<h3>How do I debug a skill that is not firing?</h3>
+
+<p>Three checks. First, run <code>openclaw skills list --agent &lt;id&gt; --verbose</code> and confirm the skill loaded at startup. Second, check that the user message contains at least one phrase from the <code>description</code> field. Third, rerun the turn with <code>OPENCLAW_LOG=debug</code> to see the skill-match decision trace. Most "not firing" issues trace back to a description that is too vague or too narrow.</p>
+
+<h2>Ship the skill, then pick your next one</h2>
+
+<p>Skills are the lowest-friction way to teach an agent a repeatable job that lives in your head today. Write the markdown, validate it, reload the gateway, call it once, correct the description if the match was weak. That loop takes an afternoon. The compounding effect is that a year of those afternoons produces a skill library that becomes your agency's actual operating system.</p>
+
+<p>If you want the OpenClaw gateway, the bundled skill library, and the ClawHub integration wired up for you rather than built by hand, <a href="/solo">Kyra</a> deploys the whole stack on your own domain in about ten minutes. For industry-specific starter skills, see the <a href="/ai-for/dental">dental practice template</a>. For the broader integration picture, Anthropic's own <a href="https://code.claude.com/docs/en/skills">Claude Code skills documentation</a>, the open-source <a href="https://github.com/anthropics/skills">anthropics/skills repository</a>, and the <a href="https://docs.openclaw.ai/tools/skills">OpenClaw skills reference</a> are the three sources worth bookmarking first. Skills are a format, not a feature, and formats outlast the companies that invent them.</p>
+`,
+  },
+  {
     slug: 'mcp-connectors-openclaw-guide-2026',
     title: 'MCP Connectors Explained: How OpenClaw Plugs 10,000+ Tools Into Any AI Agent (2026 Guide)',
     description: 'The Model Context Protocol hit 10,000 public servers and 97 million monthly SDK downloads by March 2026. Here is how MCP connectors actually work, how OpenClaw uses them as both client and server, and a full setup walkthrough.',
