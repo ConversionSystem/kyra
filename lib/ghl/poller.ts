@@ -9,7 +9,7 @@
 // 2. For each client, search conversations with inbound unread messages
 // 3. For each conversation, get messages and find new inbound ones
 // 4. Skip if we already replied (outbound message is newer than latest inbound)
-// 5. Process through REAL OpenClaw Gateway (via Kyra Bridge on Fly.io)
+// 5. Process through REAL OpenClaw Gateway (via Kyra Bridge in the client's container)
 //
 // Architecture:
 //   Poller → HTTP POST /chat → Kyra Bridge → OpenClaw Gateway (real AI)

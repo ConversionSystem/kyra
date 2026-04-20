@@ -19,8 +19,8 @@ import type {
 // Receives all inbound webhooks from GoHighLevel, routes them to the correct
 // agency client's OpenClaw container based on locationId → agency_client mapping.
 //
-// For InboundMessage events, forwards to the client's container via the
-// Fly.io bridge at KYRA_WORKER_URL/chat so the AI can respond.
+// For InboundMessage events, forwards to the client's per-agency gateway
+// (resolved from agencies.gateway_url) so the AI can respond.
 // ============================================================================
 
 import { getGatewayByClientId } from '@/lib/ovh/gateway-resolver';

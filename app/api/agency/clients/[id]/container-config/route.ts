@@ -1,5 +1,5 @@
 // GET /api/agency/clients/:id/container-config
-// Returns base64-encoded workspace files + env vars for the Fly.io container.
+// Returns base64-encoded workspace files + env vars for the per-client container.
 // Called by the worker/bridge when booting a client's container.
 
 import { NextRequest, NextResponse } from 'next/server';

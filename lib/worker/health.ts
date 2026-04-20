@@ -37,14 +37,3 @@ export async function checkGatewayHealth(gatewayUrl: string): Promise<HealthStat
     };
   }
 }
-
-/**
- * Legacy: Check health using KYRA_WORKER_URL fallback.
- */
-export async function checkWorkerHealth(): Promise<HealthStatus> {
-  const workerUrl = process.env.KYRA_WORKER_URL;
-  if (!workerUrl) {
-    return { reachable: false, error: 'KYRA_WORKER_URL not configured', latencyMs: 0 };
-  }
-  return checkGatewayHealth(workerUrl);
-}

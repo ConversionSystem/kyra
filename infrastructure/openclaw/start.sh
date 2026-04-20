@@ -142,7 +142,6 @@ const config = {
     controlUi: {
       allowedOrigins: [
         'https://gateway.conversionsystem.com',
-        'https://kyra-gateway.fly.dev',
         'https://kyra.conversionsystem.com',
         'http://localhost:3000',
         'http://localhost:3100',

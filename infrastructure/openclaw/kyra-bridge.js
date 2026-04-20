@@ -867,7 +867,7 @@ const server = http.createServer((req, res) => {
   if (req.method === 'GET' && req.url === '/health') {
     const gwConnected = gw.connected;
     // Always return 200 — bridge is healthy even if gateway is still booting.
-    // Fly.io health checks need this to pass during the 60-90s gateway startup.
+    // Traefik health checks need this to pass during the 60-90s gateway startup.
     res.writeHead(200, { 'Content-Type': 'application/json' });
     return res.end(JSON.stringify({
       status: gwConnected ? 'ok' : 'gateway_starting',
@@ -1013,7 +1013,7 @@ function proxyToGateway(clientReq, clientRes) {
     if (headers['content-security-policy']) {
       headers['content-security-policy'] = headers['content-security-policy']
         .replace(/frame-ancestors\s+'none'/g, "frame-ancestors 'self' https://kyra.conversionsystem.com https://localhost:3000")
-        .replace(/connect-src\s+'self'\s+ws:\s+wss:/g, "connect-src 'self' ws: wss: https://gateway.conversionsystem.com https://kyra-gateway.fly.dev");
+        .replace(/connect-src\s+'self'\s+ws:\s+wss:/g, "connect-src 'self' ws: wss: https://gateway.conversionsystem.com");
     }
     clientRes.writeHead(proxyRes.statusCode, headers);
     proxyRes.pipe(clientRes, { end: true });
