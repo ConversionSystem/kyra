@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createSupabase } from '@supabase/supabase-js';
+import { escapeHtml } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,32 +41,48 @@ export async function POST(request: NextRequest) {
     console.warn('[leads] DB error (migration may not be applied):', dbError.message);
   }
 
-  // Notify Angel — fire-and-forget
+  // Notify Angel — fire-and-forget. All user-controlled fields escaped with
+  // escapeHtml() to prevent HTML injection / mail-client XSS. Angel's inbox
+  // is the one reading this.
+  const safeEmail    = escapeHtml(email);
+  const safeName     = escapeHtml(body.name);
+  const safeCompany  = escapeHtml(body.company);
+  const safeIndustry = escapeHtml(body.industry);
+  const safeSize     = escapeHtml(body.size);
+  const safeHow      = escapeHtml(body.how);
+  const safeMessage  = escapeHtml(body.message);
+  const safeSource   = escapeHtml(body.source || 'landing');
+  const isDemo       = body.source === 'get-demo';
+  const safeSubjectName = escapeHtml(body.name || email);
+
   void import('@/lib/email/ghl-platform-sender').then(({ sendPlatformEmail }) =>
     sendPlatformEmail({
       to: 'angel@conversionsystem.com',
-      subject: body.source === 'get-demo' ? `🎯 Demo request: ${body.name || email}` : `🔔 New lead: ${email}`,
+      // Subject is plain text (not HTML), but we still strip control chars
+      // by passing through escapeHtml (which becomes a no-op in plain-text
+      // headers since the email lib sets Content-Type appropriately).
+      subject: isDemo ? `🎯 Demo request: ${safeSubjectName}` : `🔔 New lead: ${safeEmail}`,
       html: `
         <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:560px;margin:0 auto;">
           <div style="background:linear-gradient(135deg,#4f46e5,#7c3aed);color:white;padding:20px 24px;border-radius:10px 10px 0 0;">
-            <h2 style="margin:0;font-size:18px;font-weight:700;">${body.source === 'get-demo' ? '🎯 Demo Request' : '🔔 New Lead'}</h2>
+            <h2 style="margin:0;font-size:18px;font-weight:700;">${isDemo ? '🎯 Demo Request' : '🔔 New Lead'}</h2>
             <p style="margin:4px 0 0;opacity:0.85;font-size:13px;">Kyra Leads · kyra.conversionsystem.com</p>
           </div>
           <div style="border:1px solid #e5e7eb;border-top:none;padding:24px;border-radius:0 0 10px 10px;background:#f9fafb;">
             <table style="width:100%;border-collapse:collapse;font-size:14px;">
               <tr style="border-bottom:1px solid #e5e7eb;">
                 <td style="padding:10px 8px;color:#6b7280;font-weight:600;width:140px;">Email</td>
-                <td style="padding:10px 8px;color:#111827;font-weight:700;">${email}</td>
+                <td style="padding:10px 8px;color:#111827;font-weight:700;">${safeEmail}</td>
               </tr>
-              ${body.name ? `<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:10px 8px;color:#6b7280;font-weight:600;">Name</td><td style="padding:10px 8px;color:#111827;">${body.name}</td></tr>` : ''}
-              ${body.company ? `<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:10px 8px;color:#6b7280;font-weight:600;">Company</td><td style="padding:10px 8px;color:#111827;">${body.company}</td></tr>` : ''}
-              ${body.industry ? `<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:10px 8px;color:#6b7280;font-weight:600;">Industry</td><td style="padding:10px 8px;color:#111827;">${body.industry}</td></tr>` : ''}
-              ${body.size ? `<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:10px 8px;color:#6b7280;font-weight:600;">GHL clients</td><td style="padding:10px 8px;color:#111827;">${body.size}</td></tr>` : ''}
-              ${body.how ? `<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:10px 8px;color:#6b7280;font-weight:600;">How they heard</td><td style="padding:10px 8px;color:#111827;">${body.how}</td></tr>` : ''}
-              ${body.message ? `<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:10px 8px;color:#6b7280;font-weight:600;vertical-align:top;">Message</td><td style="padding:10px 8px;color:#111827;">${body.message}</td></tr>` : ''}
+              ${safeName ? `<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:10px 8px;color:#6b7280;font-weight:600;">Name</td><td style="padding:10px 8px;color:#111827;">${safeName}</td></tr>` : ''}
+              ${safeCompany ? `<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:10px 8px;color:#6b7280;font-weight:600;">Company</td><td style="padding:10px 8px;color:#111827;">${safeCompany}</td></tr>` : ''}
+              ${safeIndustry ? `<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:10px 8px;color:#6b7280;font-weight:600;">Industry</td><td style="padding:10px 8px;color:#111827;">${safeIndustry}</td></tr>` : ''}
+              ${safeSize ? `<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:10px 8px;color:#6b7280;font-weight:600;">GHL clients</td><td style="padding:10px 8px;color:#111827;">${safeSize}</td></tr>` : ''}
+              ${safeHow ? `<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:10px 8px;color:#6b7280;font-weight:600;">How they heard</td><td style="padding:10px 8px;color:#111827;">${safeHow}</td></tr>` : ''}
+              ${safeMessage ? `<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:10px 8px;color:#6b7280;font-weight:600;vertical-align:top;">Message</td><td style="padding:10px 8px;color:#111827;">${safeMessage}</td></tr>` : ''}
               <tr>
                 <td style="padding:10px 8px;color:#6b7280;font-weight:600;">Source</td>
-                <td style="padding:10px 8px;color:#111827;">${body.source || 'landing'}</td>
+                <td style="padding:10px 8px;color:#111827;">${safeSource}</td>
               </tr>
             </table>
           </div>
