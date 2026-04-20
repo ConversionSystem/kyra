@@ -14,6 +14,9 @@ import { logConversationToCrm } from '@/lib/crm/conversation-logger';
 import { GHL_TOOL_DEFINITIONS, executeTool } from '@/lib/ghl/ghl-tools';
 import { getValidToken } from '@/lib/ghl/api';
 import { resolveGHLConfig } from '@/lib/ghl/resolve-ghl-config';
+import { verifyTwilioRequest } from '@/lib/voice/twilio-verify';
+
+export const runtime = 'nodejs';
 
 // Cache client config per clientId — avoids repeated Supabase queries mid-call
 // TTL 5 min — fast enough to pick up config changes without DB hit every turn
@@ -97,14 +100,16 @@ function currentMonth(): string {
 }
 
 export async function POST(req: NextRequest) {
+  const verified = await verifyTwilioRequest(req);
+  if (!verified.ok) return verified.response;
+
   const clientId = req.nextUrl.searchParams.get('clientId');
   if (!clientId) return twiml('<Say>Configuration error.</Say><Hangup/>');
 
-  // Parse Twilio form body
-  const body = await req.formData();
-  const speechResult = body.get('SpeechResult')?.toString() ?? '';
-  const callSid = body.get('CallSid')?.toString() ?? 'unknown';
-  const callerNumber = body.get('From')?.toString() ?? 'unknown';
+  // Twilio form body (already parsed by verifyTwilioRequest)
+  const speechResult = verified.params.SpeechResult ?? '';
+  const callSid = verified.params.CallSid ?? 'unknown';
+  const callerNumber = verified.params.From ?? 'unknown';
 
   if (!speechResult.trim()) {
     // No speech detected — prompt again

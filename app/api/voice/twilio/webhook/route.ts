@@ -12,6 +12,9 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { verifyTwilioRequest } from '@/lib/voice/twilio-verify';
+
+export const runtime = 'nodejs';
 
 // Shared voice map — must match gather/route.ts
 const VOICE_MAP: Record<string, string> = {
@@ -37,6 +40,9 @@ function twiml(xml: string) {
 }
 
 export async function POST(req: NextRequest) {
+  const verified = await verifyTwilioRequest(req);
+  if (!verified.ok) return verified.response;
+
   const clientId = req.nextUrl.searchParams.get('clientId');
   if (!clientId) return twiml('<Say>Sorry, this number is not configured.</Say><Hangup/>');
 

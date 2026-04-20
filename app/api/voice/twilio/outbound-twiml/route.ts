@@ -6,8 +6,10 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { verifyTwilioRequest } from '@/lib/voice/twilio-verify';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 function twiml(xml: string) {
   return new NextResponse(
@@ -17,6 +19,9 @@ function twiml(xml: string) {
 }
 
 export async function POST(req: NextRequest) {
+  const verified = await verifyTwilioRequest(req);
+  if (!verified.ok) return verified.response;
+
   const clientId = req.nextUrl.searchParams.get('clientId');
   if (!clientId) return twiml('<Hangup/>');
 

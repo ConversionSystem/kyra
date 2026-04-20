@@ -21,9 +21,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createSupabase } from '@supabase/supabase-js';
 import { deductCredits } from '@/lib/billing/credit-engine';
+import { verifyTwilioRequest } from '@/lib/voice/twilio-verify';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
+export const runtime = 'nodejs';
 
 function getSupabase() {
   return createSupabase(
@@ -40,6 +42,9 @@ function twiml(xml: string) {
 }
 
 export async function POST(request: NextRequest) {
+  const verified = await verifyTwilioRequest(request);
+  if (!verified.ok) return verified.response;
+
   const clientId = request.nextUrl.searchParams.get('clientId');
 
   if (!clientId) {
@@ -48,12 +53,11 @@ export async function POST(request: NextRequest) {
 
   const supabase = getSupabase();
 
-  // Parse Twilio form body
-  const formData = await request.formData().catch(() => new FormData());
-  const callerNumber = formData.get('From')?.toString() || 'Unknown';
-  const recordingUrl = formData.get('RecordingUrl')?.toString() || '';
-  const transcriptionText = formData.get('TranscriptionText')?.toString() || '';
-  const callStatus = formData.get('CallStatus')?.toString() || '';
+  // Twilio form body (parsed by verifyTwilioRequest)
+  const callerNumber = verified.params.From || 'Unknown';
+  const recordingUrl = verified.params.RecordingUrl || '';
+  const transcriptionText = verified.params.TranscriptionText || '';
+  const callStatus = verified.params.CallStatus || '';
 
   console.log(`[voice-webhook] clientId=${clientId} from=${callerNumber} status=${callStatus}`);
 
