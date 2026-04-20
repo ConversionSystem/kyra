@@ -11,6 +11,225 @@ export interface BlogPost {
 
 export const POSTS: BlogPost[] = [
   {
+    slug: 'openclaw-session-keys-explained-2026',
+    title: 'OpenClaw Session Keys Explained: How One Gateway Keeps 24 Channels Separate in 2026',
+    description: 'An OpenClaw session key is the unique string that tells the gateway which conversation a message belongs to. Here is how session keys work, how dmScope isolates DMs across WhatsApp, Slack, Discord, and 20+ other channels, and how to configure them for a multi-client agency without leaking context between users.',
+    date: '2026-04-20',
+    readMins: 12,
+    category: 'AI Infrastructure',
+    emoji: '🔑',
+    content: `
+<p><em>Last updated: April 20, 2026</em></p>
+
+<p>An <strong>OpenClaw session key</strong> is the unique identifier the gateway attaches to every incoming message so the AI agent knows which conversation it belongs to and which context to load. Each channel, each user, and each thread produces a different key. That one string is what lets a single OpenClaw gateway run a WhatsApp DM, a Slack thread, a Discord guild channel, and the browser WebChat widget side by side without any of them reading the others' memory. OpenClaw 2026.4.15 ships 24 supported channel integrations out of the box, and the session key is the quiet machinery that keeps every one of those conversations isolated from every other one.</p>
+
+<div style="background:rgba(79,70,229,0.15);border:1px solid rgba(99,102,241,0.3);border-radius:12px;padding:20px;margin:24px 0;">
+  <p style="margin:0 0 8px 0;"><strong>Key takeaways</strong></p>
+  <ul style="margin:0;">
+    <li>Session keys are generated automatically from channel, user, and thread metadata. You normally never type one by hand, but you can override the format for multi-tenant apps.</li>
+    <li>The <code>session.dmScope</code> setting has three modes (<code>main</code>, <code>per-channel-peer</code>, <code>per-peer</code>) and each one trades continuity for isolation differently.</li>
+    <li>Groups and threads always get their own session. That part is not configurable and it is the right default for group privacy.</li>
+    <li>The OpenClaw gateway listens on port 18789 by default and resolves the session key before it ever dispatches a message to the agent runtime.</li>
+    <li>A prefixed session key like <code>kyra-user-42</code> is how multi-tenant platforms separate thousands of clients without spinning up a container per user.</li>
+    <li>Session keys solve the isolation problem at the context layer, not the infrastructure layer. One daemon, one agent pool, N clean conversations.</li>
+  </ul>
+</div>
+
+<h2>What an OpenClaw session key actually is</h2>
+
+<p>Every message that arrives at an OpenClaw gateway carries a small bundle of metadata: which channel adapter it came from (Slack, WhatsApp, Discord, Matrix, and so on), which account sent it, and whether it landed in a DM, a group, or a thread. The gateway runs that bundle through its session manager, which deterministically produces a string. That string is the session key.</p>
+
+<p>The key does two jobs at once. First, it tells the agent runtime which conversation's memory, history, and working files to load before replying. Second, it tells the gateway where to route the reply once the agent is done thinking. A message with key <code>slack:T12345:C98765:U00001</code> loads and writes to a different context than a message with key <code>wa:+15551234567</code>, even if both messages come from the same human being on the same day.</p>
+
+<p>This is the core primitive behind OpenClaw's "one gateway, many channels" promise. Without the session key, every incoming message would either collapse into a single global chat (disastrous for privacy) or require a separate daemon per channel (disastrous for cost and ops). The key is the cheap, composable middle path.</p>
+
+<h2>Why one gateway needs many sessions</h2>
+
+<p>A realistic deployment for a small agency looks like this. One OpenClaw gateway on a VPS. One Anthropic API key. Fifteen client businesses, each with their own Slack workspace, WhatsApp number, or web widget. Hundreds of end users across those businesses. Every one of those users expects the AI to remember their last conversation and nothing else.</p>
+
+<p>If you tried to do that with fifteen separate daemons, your ops surface would triple: fifteen systemd units to patch, fifteen logs to tail, fifteen sets of secrets to rotate. If you tried to do it with one daemon and one global conversation, the first time User A's medical question leaked into User B's session you would lose every client at once.</p>
+
+<p>Session keys let you stay in the middle. One daemon still runs. One agent pool still handles the load. But every message lives in its own keyed context, and the gateway enforces the boundary before the model ever sees the prompt. This is the same pattern Cowork, Claude Code's IDE extensions, and most production OpenClaw deployments use, and it is exactly how the broader <a href="/blog/what-is-openclaw-ai-gateway-explained">OpenClaw gateway architecture</a> was designed to scale.</p>
+
+<h2>The anatomy of a session key</h2>
+
+<p>Session keys are plain strings, so you can look at them in a log file and read them. The default format encodes the channel, the workspace or server, the channel or room, and the user, joined with colons. Real examples from a production gateway:</p>
+
+<ul>
+  <li><code>slack:T09ABC123:C04XYZ789:U07DEF456</code> — a DM inside a specific Slack workspace</li>
+  <li><code>discord:guild_742:channel_9981:user_4412</code> — a DM-style channel in a Discord guild</li>
+  <li><code>wa:+15551234567</code> — a WhatsApp DM, keyed by the peer's phone number</li>
+  <li><code>telegram:chat_5839201</code> — a Telegram chat</li>
+  <li><code>webchat:anon_9d2f1c</code> — an anonymous browser visitor on the WebChat widget</li>
+  <li><code>matrix:!room_abc:server:@user:server</code> — a Matrix room with full federated identity</li>
+</ul>
+
+<p>You can also prefix your own namespace. This is how multi-tenant hosts structure keys. A self-serve platform might force every agent's session keys to begin with <code>tenant-42-</code>, giving you strings like <code>tenant-42-slack:T09ABC:C04XYZ:U07DEF</code>. The gateway treats the prefix as opaque, but it means one tenant's Slack DM and a different tenant's identical Slack DM never collide in the session store.</p>
+
+<p>The specific format is documented in the <a href="https://docs.openclaw.ai/gateway/security">OpenClaw gateway security reference</a>. You can override it in <code>config.yml</code> under <code>session.keyFormat</code>, but the default is good enough for 95% of deployments and you should only change it if you know exactly why.</p>
+
+<h2>dmScope: three ways to isolate direct messages</h2>
+
+<p>Groups and threads are easy. Every group gets its own session key, every thread gets its own key, and nobody disagrees about whether that is correct. DMs are the interesting case. A user who chats with the same AI persona across Slack, WhatsApp, and WebChat might want those three surfaces to feel like one continuous conversation, or they might want them to feel like three airtight rooms. OpenClaw exposes this choice through the <code>session.dmScope</code> setting, which has exactly three valid values.</p>
+
+<h3>dmScope: main (the default)</h3>
+
+<p>In <code>main</code> mode every direct message the user sends, from any channel, resolves to the same shared session. The agent remembers everything they ever said in a DM regardless of which app delivered it. This is the warmest setting and the right one for a single-user personal assistant: the OpenClaw founder chatting with their own agent from Slack in the morning and WhatsApp in the evening does not want two separate memories.</p>
+
+<h3>dmScope: per-channel-peer (the secure default)</h3>
+
+<p>In <code>per-channel-peer</code> mode every unique combination of channel plus sender produces its own session. Slack DMs from user Alice get one session. WhatsApp DMs from the same Alice get a different one. Discord DMs get a third. This is the right default when you deploy for other people rather than yourself. An employee who messages the AI from work Slack and personal WhatsApp probably expects those to feel like two different contexts, and HR auditors definitely expect it.</p>
+
+<h3>dmScope: per-peer</h3>
+
+<p>In <code>per-peer</code> mode the channel is dropped from the key and only the peer identity matters. Alice's DMs collapse into one session across every channel of the same type, but different channel types still stay separate. This is the rarest setting and is usually only useful when the underlying identity system is strong enough to trust across surfaces, for example a Matrix-federated deployment where every user has one canonical MXID.</p>
+
+<p>The practical rule: start with <code>per-channel-peer</code> for any multi-user deployment, switch to <code>main</code> for a personal bot, and only reach for <code>per-peer</code> when a specific compliance or UX requirement demands it.</p>
+
+<h2>Groups, threads, and why they always get their own session</h2>
+
+<p>The dmScope setting only governs direct messages. Group channels and threads are treated as first-class conversations in their own right, every time, without exception. A Slack channel <code>#general</code> gets one session key shared by every member. A Slack thread inside that channel gets a different session key shared by every participant in the thread. The same rule applies to Discord threads, Matrix spaces, Telegram group chats, and WhatsApp groups.</p>
+
+<p>This design matters for two reasons. First, groups have social norms: a message posted to <code>#engineering</code> is readable by the whole team, so the agent can safely load prior <code>#engineering</code> context when replying. Second, threads are mini-rooms: they exist specifically because the participants want a scoped side conversation, and the agent should respect that scope. OpenClaw bakes that expectation into the session layer so the developer cannot accidentally violate it.</p>
+
+<p>The upshot is that <code>dmScope</code> only needs to worry about direct messages because everything else already has the right behavior by default. If you need to see the full precedence order the gateway uses to derive a key, the <a href="https://docs.openclaw.ai/gateway/security">security reference</a> lays out the full resolution algorithm.</p>
+
+<h2>Step-by-step: configure session keys for a multi-client agency</h2>
+
+<p>Here is a minimal working setup that takes an OpenClaw gateway from vanilla install to multi-client isolation. It assumes you have already installed OpenClaw and bound it to its default port. The walkthrough targets OpenClaw 2026.4.15 or later.</p>
+
+<p><strong>1. Confirm the gateway is running.</strong></p>
+
+<pre><code>openclaw gateway status
+# expected: listening on :18789, 0 active sessions</code></pre>
+
+<p><strong>2. Open your gateway config.</strong></p>
+
+<pre><code>$EDITOR ~/.openclaw/config.yml</code></pre>
+
+<p><strong>3. Set the DM scope and enable tenant prefixing.</strong> This is the single most important block for multi-client deployments. Every session key will now carry the tenant prefix, and DMs will isolate per channel plus peer.</p>
+
+<pre><code>session:
+  dmScope: per-channel-peer
+  keyFormat: "tenant-{tenant_id}-{channel}:{server_id}:{channel_id}:{user_id}"
+  ttlDays: 30
+  storage: sqlite
+  storagePath: ~/.openclaw/sessions.db</code></pre>
+
+<p><strong>4. Add two channel adapters for a first smoke test.</strong> Slack and WebChat are the fastest to wire up because neither requires a verified phone number.</p>
+
+<pre><code>channels:
+  - type: slack
+    botToken: \${SLACK_BOT_TOKEN}
+    signingSecret: \${SLACK_SIGNING_SECRET}
+    tenant_id: "42"
+  - type: webchat
+    publicUrl: https://chat.example.com
+    tenant_id: "42"</code></pre>
+
+<p><strong>5. Reload the gateway without dropping active sessions.</strong></p>
+
+<pre><code>openclaw gateway reload</code></pre>
+
+<p><strong>6. Send one test message from each surface.</strong> Slack DM first, then a WebChat visit from an incognito browser. Then run the session listing command.</p>
+
+<pre><code>openclaw sessions list --tenant 42
+# expected: two rows, one slack session, one webchat session,
+# both prefixed with tenant-42-</code></pre>
+
+<p><strong>7. Verify isolation with a one-line check.</strong> Ask the agent in Slack what it remembers. Ask the same question in WebChat. The answers must differ. If they don't, your <code>dmScope</code> is wrong or your <code>keyFormat</code> is collapsing the two keys into one.</p>
+
+<p>That is it. The config file and the seven commands above are a complete per-tenant session isolation setup. Every client you add later is one more entry in the <code>channels:</code> array with a different <code>tenant_id</code>, plus whatever per-client skills or memory you want to layer on top. For the broader walkthrough that includes <a href="/blog/mcp-connectors-openclaw-guide-2026">MCP connectors</a> and <a href="/blog/write-your-first-claude-skill-openclaw-2026">Claude Skills</a>, those two companion guides pick up where this one stops.</p>
+
+<h2>Comparison: session isolation strategies across AI gateways</h2>
+
+<p>Session isolation is not an OpenClaw-specific idea, but the shape of the implementation varies widely across the ecosystem. Here is how the four patterns most teams will encounter in 2026 actually differ.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Strategy</th>
+      <th>What gets isolated</th>
+      <th>Typical implementation</th>
+      <th>Cost per extra user</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Session key (OpenClaw)</strong></td>
+      <td>Conversation context, memory, working files</td>
+      <td>One daemon, keyed context store</td>
+      <td>A few KB of session state</td>
+    </tr>
+    <tr>
+      <td><strong>Container per tenant</strong></td>
+      <td>Everything, including CPU and filesystem</td>
+      <td>One container per client, orchestrator on top</td>
+      <td>50–200 MB RAM minimum per user</td>
+    </tr>
+    <tr>
+      <td><strong>Thread per request (classic chatbot)</strong></td>
+      <td>Nothing beyond one turn</td>
+      <td>Stateless API call, memory pushed to a DB</td>
+      <td>Round-trips to external memory on every turn</td>
+    </tr>
+    <tr>
+      <td><strong>Claude Managed Agents</strong></td>
+      <td>Sandboxed execution, long-running sessions</td>
+      <td>Anthropic-hosted infrastructure (public beta, April 2026)</td>
+      <td>Per-session metered pricing</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Session keys give you conversation-level isolation at near-zero marginal cost, which is why they dominate multi-tenant self-hosted deployments. Containers give you infrastructure-level isolation, which matters when you run untrusted code and you are willing to pay the RAM bill. Anthropic's <a href="https://docs.anthropic.com/en/docs/claude-managed-agents">Claude Managed Agents</a>, launched in public beta on April 8, 2026, sit at the other end of the spectrum: you pay Anthropic to host the isolation boundary and stop worrying about it yourself. Most Kyra-style deployments pick the session key path because it keeps the stack thin.</p>
+
+<h2>When session keys aren't the right answer for you</h2>
+
+<p>Session keys solve context isolation. They do not solve everything, and there are three situations where reaching for a different primitive is the correct move.</p>
+
+<p><strong>You run untrusted code on behalf of users.</strong> If your agent executes arbitrary Python or shell that a user can control, context isolation is necessary but not sufficient. You want a real sandbox boundary: a container, a firecracker VM, or Claude Managed Agents. Session keys stop a user from reading another user's conversation, but they do not stop one user's shell command from reading the daemon's filesystem.</p>
+
+<p><strong>You have strict regulatory isolation requirements.</strong> Some HIPAA, GDPR, or FedRAMP deployments contractually require that two tenants' data never share a process, period. Session keys share a process by design. If your compliance officer is in the conversation, plan for a container-per-tenant or a dedicated gateway-per-tenant architecture from day one.</p>
+
+<p><strong>You want a stateless protocol.</strong> The MCP working group is actively evolving the protocol toward stateless requests in 2026 for the same load-balancer and horizontal-scaling reasons that session state creates. If your deployment is behind a round-robin load balancer across many stateless server instances, OpenClaw's keyed session store assumes the load balancer is sticky (or assumes a shared session DB). Pick accordingly, and check the <a href="https://modelcontextprotocol.io/development/roadmap">MCP 2026 roadmap</a> if you are making long-range architecture bets.</p>
+
+<p>For the other 80% of deployments (agencies with tens to low hundreds of clients, founders running a personal assistant across every app they use, GHL resellers adding an AI worker per client), session keys are boringly correct.</p>
+
+<h2>Frequently asked questions</h2>
+
+<h3>How does OpenClaw decide which agent handles a given session key?</h3>
+
+<p>The gateway reads a <code>routing:</code> block in the config that maps channel patterns to agent names. A route like <code>slack:T09ABC*:* -> agent-acme</code> sends every Slack message from workspace T09ABC to the Acme agent, regardless of which user or channel triggered it. Session keys are derived first, then routing picks the agent, then the agent loads the session's context. All three steps happen before the model sees a single token.</p>
+
+<h3>Can I share a session key across two users intentionally?</h3>
+
+<p>Yes. Set <code>session.keyFormat</code> to a value that ignores the user portion, for example <code>"{channel}:{server_id}:{channel_id}"</code>. Every user in that channel will then write to the same context. This is useful for a shared workspace assistant where the team expects a continuous thread of memory. Use it on purpose, not by accident.</p>
+
+<h3>What happens when a session key is rotated or expired?</h3>
+
+<p>Sessions have a TTL (default 30 days). When the TTL lapses, the gateway archives the conversation and returns a cold context for the next message with that key. The user sees the AI "forget" the old conversation. To keep the memory forever, set <code>session.ttlDays</code> to <code>0</code> and budget for your session store to grow over time.</p>
+
+<h3>Can I look up a session key from a user's name?</h3>
+
+<p>Yes, through the admin API. <code>openclaw sessions find --channel slack --user U07DEF456</code> returns the full session key and metadata. This is how support teams pull up a user's conversation history when they file a ticket. Access is gated by the gateway's admin token, not by the agent, so users cannot read each other's sessions even if they have agent-level tool access.</p>
+
+<h3>Does this work the same way in a Cowork deployment?</h3>
+
+<p>Yes. Cowork adds a workspace layer on top of the gateway, but the session key primitive is the same. A Cowork workspace contributes one more segment to the key (the workspace ID), which is how a single physical gateway can host many Cowork tenants without any of them seeing each other's sessions.</p>
+
+<h3>How do I debug a session that is routing to the wrong agent?</h3>
+
+<p>Run the gateway with <code>OPENCLAW_LOG=debug</code> and watch the "session resolved" and "routing matched" log lines for the incoming message. Nine times out of ten the issue is a missing or wrong <code>tenant_id</code> on the channel, or a routing pattern that matches more aggressively than you expected. The third time it is an outdated cache, which <code>openclaw gateway reload</code> fixes.</p>
+
+<h2>The small idea that makes multi-channel AI practical</h2>
+
+<p>Session keys are a small idea and they do a surprising amount of work. They are why one OpenClaw daemon can run 15 clients without cross-talk. They are why a personal assistant can feel continuous across Slack and WhatsApp or crisply separated, depending on a single config line. They are why agencies can charge recurring fees for AI workers without standing up a container farm to host them. The format is five minutes of reading in the docs, and the implications show up in every architectural decision downstream.</p>
+
+<p>If you want the OpenClaw gateway, the session key defaults, and the per-client isolation wired up for you rather than configured by hand, <a href="/solo">Kyra</a> runs the whole stack on your own domain with tenant prefixes and <code>per-channel-peer</code> isolation turned on from the first install. For industry-specific starting points there are ready-made worker templates for <a href="/ai-for/dental">dental practices</a> and <a href="/ai-for/real-estate">real estate agencies</a>, and for the architectural picture behind all of this, the <a href="https://github.com/openclaw/openclaw">OpenClaw repository on GitHub</a> and the <a href="https://docs.openclaw.ai/gateway/security">gateway security reference</a> are the two most useful places to keep bookmarked. Session keys are the kind of primitive you only notice when they fail, and when they are set up right you should never have to think about them again.</p>
+`,
+  },
+  {
     slug: 'write-your-first-claude-skill-openclaw-2026',
     title: 'Write Your First Claude Skill for OpenClaw: A 2026 Step-by-Step Guide',
     description: 'Claude Skills became an open standard in December 2025 and now power 13,729 community skills in the OpenClaw registry. Here is the definition, the SKILL.md anatomy, a full walkthrough for writing and shipping your first skill, and the comparison to MCP and sub-agents.',
