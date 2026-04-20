@@ -1,6 +1,11 @@
-// Database types matching Supabase schema
-
-export type Plan = 'free' | 'starter' | 'business' | 'max';
+// Database types matching Supabase schema.
+//
+// The canonical source of truth for PLAN names is lib/billing/plans.ts.
+// This alias exists for legacy per-user (pre-agency) schema shapes
+// (`public.users.plan`) — agency plans should be imported directly from
+// lib/billing/plans via PLANS / PlanId. Phase 0.13 aligned this union to
+// the real values shipped in production.
+export type Plan = 'free' | 'solo_pro' | 'starter' | 'pro' | 'scale' | 'beta';
 export type Channel = 'web' | 'slack' | 'whatsapp' | 'email';
 export type MessageRole = 'user' | 'assistant' | 'system';
 export type MemoryType = 'fact' | 'person' | 'decision' | 'event' | 'preference';
