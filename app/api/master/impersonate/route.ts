@@ -36,10 +36,16 @@ export async function POST(request: Request) {
 
   // 5. Generate a one-time magic login link (non-destructive — doesn't touch user's password)
   const origin = process.env.NEXT_PUBLIC_APP_URL || 'https://kyra.conversionsystem.com';
+
+  // Magic link MUST land at /api/auth/callback so exchangeCodeForSession() runs
+  // and sets the session cookie on our domain. Passing /agency directly drops
+  // the ?code= param and the user arrives unauthenticated → bounces to /login.
+  const callbackUrl = `${origin}/api/auth/callback?redirect=${encodeURIComponent('/agency')}`;
+
   const { data: linkData, error: linkErr } = await db.auth.admin.generateLink({
     type: 'magiclink',
     email: targetEmail,
-    options: { redirectTo: `${origin}/agency` },
+    options: { redirectTo: callbackUrl },
   });
 
   if (linkErr || !linkData?.properties?.action_link) {

@@ -475,13 +475,19 @@ export default function AccountsAdminClient() {
         return;
       }
 
-      // Open the magic link in a new tab — admin session in THIS tab stays intact
+      // Open the magic link in a new tab. NOTE: Supabase session cookies are
+      // shared across tabs for the same origin, so the new tab's session WILL
+      // overwrite the master session in this tab. To preserve master access,
+      // open the link in an incognito window / different browser profile.
       if (data.url) {
         window.open(data.url, '_blank');
       }
 
-      setImpersonateMsg({ type: 'ok', text: `Opening ${data.name || account.name}'s dashboard in new tab` });
-      setTimeout(() => setImpersonateMsg(null), 5000);
+      setImpersonateMsg({
+        type: 'ok',
+        text: `Opening ${data.name || account.name}'s dashboard in a new tab. Tip: use an incognito window to keep this master session alive.`,
+      });
+      setTimeout(() => setImpersonateMsg(null), 8000);
     } catch (err) {
       setImpersonateMsg({ type: 'err', text: `Network error: ${String(err)}` });
     }
