@@ -271,10 +271,29 @@ interface ClientDetailViewProps {
 
 // ── Reprovision Button ────────────────────────────────────────────────────────
 
-function ReprovisionButton({ clientId }: { clientId: string }) {
+/**
+ * Header button that kicks off the reprovision flow. The label adapts to the
+ * current gateway state so the banner copy (which says "Click Redeploy AI
+ * above") matches what the user actually sees on the button.
+ *
+ *   - never deployed (null)  → "Deploy AI"   (fresh launch)
+ *   - errored                → "Redeploy AI" (recover from failure)
+ */
+function ReprovisionButton({
+  clientId,
+  gatewayStatus,
+}: {
+  clientId: string;
+  gatewayStatus: string | null | undefined;
+}) {
   const router = useRouter();
   const [state, setState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
+
+  const isRecovery = gatewayStatus === 'error';
+  const idleLabel = isRecovery ? 'Redeploy AI' : 'Deploy AI';
+  const loadingLabel = isRecovery ? 'Redeploying AI…' : 'Deploying AI…';
+  const successLabel = isRecovery ? 'AI redeployed! Refreshing…' : 'AI deployed! Refreshing…';
 
   const handleReprovision = async () => {
     setState('loading');
@@ -299,7 +318,7 @@ function ReprovisionButton({ clientId }: { clientId: string }) {
     return (
       <div className="flex items-center gap-1.5 text-xs text-green-600 font-medium">
         <CheckCircle2 className="h-3.5 w-3.5" />
-        AI deployed! Refreshing...
+        {successLabel}
       </div>
     );
   }
@@ -318,7 +337,7 @@ function ReprovisionButton({ clientId }: { clientId: string }) {
         ) : (
           <RefreshCw className="h-3 w-3 mr-1" />
         )}
-        {state === 'loading' ? 'Deploying AI...' : 'Deploy AI'}
+        {state === 'loading' ? loadingLabel : idleLabel}
       </Button>
       {state === 'error' && (
         <p className="text-xs text-red-500 flex items-center gap-1">
@@ -410,7 +429,10 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
 
           {(!initialClient.gateway_status || initialClient.gateway_status === 'error') && (
             <div className="shrink-0">
-              <ReprovisionButton clientId={initialClient.id} />
+              <ReprovisionButton
+                clientId={initialClient.id}
+                gatewayStatus={initialClient.gateway_status}
+              />
             </div>
           )}
         </div>
