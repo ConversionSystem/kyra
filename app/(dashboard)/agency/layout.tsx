@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getAgencyForUser, getAgencyClients } from '@/lib/agency/queries';
 import { isMasterEmail } from '@/lib/auth/admin';
 import { AgencySidebar } from './agency-sidebar';
+import { WhatsNewPanel } from '@/components/whats-new-panel';
 // VoiceCommandButton removed — not functional, just UI noise
 
 export default async function AgencyLayout({
@@ -34,6 +35,7 @@ export default async function AgencyLayout({
       <main className="flex-1 min-h-screen overflow-y-auto overflow-x-hidden bg-gray-50 pt-14 lg:pt-0">
         {children}
       </main>
+      <WhatsNewPanel />
     </div>
   );
 }
