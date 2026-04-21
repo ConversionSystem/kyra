@@ -6,9 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
 import {
   Save, Loader2, Trash2, UserPlus, Crown, Shield, User,
-  ImageIcon, Palette, CheckCircle2, AlertTriangle, X, Zap,
+  ImageIcon, Palette, CheckCircle2, AlertTriangle, X, Zap, Webhook, ArrowRight,
 } from 'lucide-react';
 import type { Agency, AgencyMember, AgencyRole, AgencySettings } from '@/lib/agency/types';
 import { BrandingPreview } from './branding-preview';
@@ -20,6 +21,23 @@ const roleConfig: Record<AgencyRole, { label: string; icon: typeof Crown; color:
   admin:  { label: 'Admin',  icon: Shield, color: 'border-indigo-200 bg-indigo-50 text-indigo-600' },
   member: { label: 'Member', icon: User,   color: 'border-gray-500/50 bg-gray-500/10 text-gray-500' },
 };
+
+// ── Validation helpers (match server-side rules) ───────────────────────────────
+const HEX_COLOR = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function validateLogoUrl(v: string): string | null {
+  if (!v.trim()) return null;
+  try {
+    const u = new URL(v.trim());
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') {
+      return 'Logo URL must use http:// or https:// (file:// and local paths will not load for your clients).';
+    }
+    return null;
+  } catch {
+    return 'Logo URL is not a valid URL.';
+  }
+}
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -99,6 +117,35 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
   // Save all settings
   // ════════════════════════════════════════════════════════════════════════════
   const handleSave = async () => {
+    // Client-side validation — match server validator. Fail fast with a clear
+    // message rather than wait for the 400 round-trip.
+    const trimmedName = name.trim();
+    if (!trimmedName || trimmedName.length < 2 || trimmedName.length > 100) {
+      setSaveMsg({ type: 'err', text: 'Account Name must be 2–100 characters.' });
+      return;
+    }
+    const logoErr = validateLogoUrl(logoUrl);
+    if (logoErr) {
+      setSaveMsg({ type: 'err', text: logoErr });
+      return;
+    }
+    if (primaryColor.trim() && !HEX_COLOR.test(primaryColor.trim())) {
+      setSaveMsg({ type: 'err', text: 'Primary Color must be a hex value (e.g. #8b5cf6).' });
+      return;
+    }
+    if (accentColor.trim() && !HEX_COLOR.test(accentColor.trim())) {
+      setSaveMsg({ type: 'err', text: 'Accent Color must be a hex value (e.g. #6366f1).' });
+      return;
+    }
+    if (supportEmail.trim() && !EMAIL_RE.test(supportEmail.trim())) {
+      setSaveMsg({ type: 'err', text: 'Support Email must be a valid email address.' });
+      return;
+    }
+    if (companyName.trim().length > 100) {
+      setSaveMsg({ type: 'err', text: 'Company Name must be ≤ 100 characters.' });
+      return;
+    }
+
     setSaving(true);
     setSaveMsg(null);
     try {
@@ -106,14 +153,17 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: name.trim(),
+          name: trimmedName,
           settings: {
             logo_url: logoUrl.trim() || undefined,
             primary_color: primaryColor.trim() || undefined,
             accent_color: accentColor.trim() || undefined,
             company_name: companyName.trim() || undefined,
             support_email: supportEmail.trim() || undefined,
-            show_powered_by: showPoweredBy,
+            // Only include show_powered_by when the toggle is actually
+            // available — avoids sending a field the server will ignore
+            // anyway and keeps the payload honest.
+            ...(canTogglePoweredBy ? { show_powered_by: showPoweredBy } : {}),
           },
         }),
       });
@@ -374,6 +424,7 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
                 companyName={companyName}
                 primaryColor={primaryColor}
                 accentColor={accentColor}
+                agencyName={agency.name}
               />
               <p className="text-xs text-gray-400 text-center">Updates live as you change settings.</p>
             </div>
@@ -502,10 +553,14 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
             })}
           </div>
 
-          {/* Invite form */}
+          {/* Add-member form. Note: this adds EXISTING users to the agency —
+              it does not send an invitation email. The label reflects that. */}
           {isAdmin && (
             <form onSubmit={handleInvite} className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-              <p className="text-sm font-medium text-gray-700 mb-3">Invite New Member</p>
+              <p className="text-sm font-medium text-gray-700 mb-1">Add Team Member</p>
+              <p className="text-xs text-gray-500 mb-3">
+                The person must already have a Kyra account. They&apos;ll see this agency next time they sign in.
+              </p>
               {inviteMsg && (
                 <div className="mb-3">
                   <StatusMessage
@@ -534,13 +589,39 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
                 </select>
                 <Button type="submit" disabled={inviting || !inviteEmail.trim()} className="gap-2 shrink-0">
                   {inviting ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
-                  Invite
+                  Add
                 </Button>
               </div>
             </form>
           )}
         </CardContent>
       </Card>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          WEBHOOKS (link to sub-page)
+          ══════════════════════════════════════════════════════════════════════ */}
+      {isAdmin && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Webhook className="h-5 w-5 text-indigo-500" />
+              Webhooks
+            </CardTitle>
+            <CardDescription>
+              Fire outbound webhooks when key events happen — new conversations, escalations, leads, low credits, review-queued messages.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link
+              href="/agency/settings/webhooks"
+              className="inline-flex items-center gap-2 text-sm font-medium text-indigo-600 hover:text-indigo-700 hover:underline"
+            >
+              Configure webhooks
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </CardContent>
+        </Card>
+      )}
 
       {/* ══════════════════════════════════════════════════════════════════════
           DANGER ZONE

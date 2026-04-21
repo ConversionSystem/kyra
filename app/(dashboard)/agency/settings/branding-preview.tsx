@@ -7,6 +7,9 @@ interface BrandingPreviewProps {
   companyName: string;
   primaryColor: string;
   accentColor: string;
+  /** Agency's display name. Used as fallback when companyName is empty —
+   * matches the runtime behavior in agency-sidebar.tsx + the widget script. */
+  agencyName: string;
 }
 
 /**
@@ -18,8 +21,9 @@ export function BrandingPreview({
   companyName,
   primaryColor,
   accentColor,
+  agencyName,
 }: BrandingPreviewProps) {
-  const displayName = companyName.trim() || 'Your Brand';
+  const displayName = companyName.trim() || agencyName.trim() || 'Your Brand';
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white overflow-hidden shadow-sm">
