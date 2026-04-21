@@ -18,7 +18,10 @@ export interface Agency {
   updated_at: string;
 }
 
-export type AgencyPlan = 'starter' | 'pro' | 'scale' | 'beta';
+// Full plan catalog — matches lib/billing/plans.ts.
+// Keep this union in sync with the Stripe price map and the `agencies.plan`
+// CHECK constraint in supabase/migrations (see 20260222002_add_free_plan.sql).
+export type AgencyPlan = 'free' | 'solo_pro' | 'starter' | 'pro' | 'scale' | 'beta';
 
 export interface AgencySettings {
   logo_url?: string;
@@ -27,6 +30,9 @@ export interface AgencySettings {
   custom_domain?: string;
   company_name?: string;
   support_email?: string;
+  /** Only Pro/Scale can set this to false (white-label). Lower plans are
+   * forced to true by the PATCH /api/agency/settings validator. */
+  show_powered_by?: boolean;
   [key: string]: unknown;
 }
 

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
-import { requireAgencyMember, requireAgencyAdmin } from '@/lib/agency/middleware';
+import { requireAgencyMember, requireAgencyAdmin, requireAgencyOwner } from '@/lib/agency/middleware';
 import { markOnboardingStep } from '@/lib/onboarding/tracker';
+import { validateSettingsPatch } from '@/lib/agency/settings-validator';
 
 /**
  * GET /api/agency/settings
@@ -40,6 +41,7 @@ export async function GET() {
 /**
  * PATCH /api/agency/settings
  * Update agency name and/or settings JSONB. Requires admin+ role.
+ * Settings JSONB is validated — only known keys are merged.
  */
 export async function PATCH(request: NextRequest) {
   const result = await requireAgencyAdmin();
@@ -71,13 +73,20 @@ export async function PATCH(request: NextRequest) {
     updates.name = name;
   }
 
-  // Update settings JSONB (merge with existing)
-  if (body.settings !== undefined && typeof body.settings === 'object') {
+  // Update settings JSONB (validate → merge)
+  if (body.settings !== undefined && body.settings !== null && typeof body.settings === 'object') {
+    const { updates: validatedSettings, error: validationError } = validateSettingsPatch(
+      body.settings as Record<string, unknown>,
+      agency.plan,
+    );
+    if (validationError) {
+      return NextResponse.json({ error: validationError }, { status: 400 });
+    }
+
     const currentSettings = (agency.settings ?? {}) as Record<string, unknown>;
-    // Merge: new values override, undefined values are stripped
     const merged: Record<string, unknown> = { ...currentSettings };
-    for (const [key, value] of Object.entries(body.settings)) {
-      if (value === undefined || value === null || value === '') {
+    for (const [key, value] of Object.entries(validatedSettings)) {
+      if (value === undefined) {
         delete merged[key];
       } else {
         merged[key] = value;
@@ -118,17 +127,12 @@ export async function PATCH(request: NextRequest) {
  * Also cleans up containers via provisioner (best-effort).
  */
 export async function DELETE() {
-  const result = await requireAgencyAdmin();
+  const result = await requireAgencyOwner();
   if (result.error) {
     return NextResponse.json({ error: result.error.message }, { status: result.error.status });
   }
 
-  const { agency, membership } = result.data;
-
-  // Only owner can delete
-  if (membership.role !== 'owner') {
-    return NextResponse.json({ error: 'Only the agency owner can delete the agency' }, { status: 403 });
-  }
+  const { agency } = result.data;
 
   const admin = createServiceClientWithoutCookies();
   const agencyId = agency.id;
