@@ -98,3 +98,64 @@ export async function requireAgencyOwner(): Promise<
 
   return result;
 }
+
+/**
+ * Verify the current user is an admin+ of their agency AND their agency is in
+ * the ADVANCED_TABS allowlist (Marketing / Voice-SMS / SEO-GEO / IT Ops).
+ *
+ * Previously the allowlist was checked UI-side only — any authenticated
+ * admin who knew the endpoint URL could hit the underlying routes
+ * regardless of entitlement. This closes that gap server-side.
+ */
+export async function requireAdvancedTabsAgency(): Promise<
+  { data: AgencyContext; error: null } | { data: null; error: { message: string; status: number } }
+> {
+  // Lazy import to avoid a circular-ish dependency with lib/agency/constants
+  // (constants is leaf; middleware is higher — import is fine, but doing it
+  // inline keeps the common case snappy).
+  const { hasAdvancedTabs } = await import('./constants');
+
+  const result = await requireAgencyAdmin();
+  if (result.error) return result;
+
+  if (!hasAdvancedTabs(result.data.agency.id)) {
+    return {
+      data: null,
+      error: {
+        message: 'This feature is not enabled on your plan. Contact Kyra support to request access.',
+        status: 403,
+      },
+    };
+  }
+
+  return result;
+}
+
+/**
+ * Verify the current user is a member of their agency AND their agency is in
+ * the DISPATCH allowlist (Onfleet integration).
+ *
+ * Matches the role level used by the existing dispatch routes
+ * (`requireAgencyMember`). Promoting to admin would regress for agencies
+ * whose dispatch operators have `member` role.
+ */
+export async function requireDispatchAgency(): Promise<
+  { data: AgencyContext; error: null } | { data: null; error: { message: string; status: number } }
+> {
+  const { hasDispatchTab } = await import('./constants');
+
+  const result = await requireAgencyMember();
+  if (result.error) return result;
+
+  if (!hasDispatchTab(result.data.agency.id)) {
+    return {
+      data: null,
+      error: {
+        message: 'Dispatch is not enabled on your account. Contact Kyra support to request access.',
+        status: 403,
+      },
+    };
+  }
+
+  return result;
+}

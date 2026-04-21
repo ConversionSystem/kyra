@@ -74,20 +74,19 @@ function matchesCategory(worker: RoleWorker, category: WorkerCategory): boolean 
   return true;
 }
 
-const MASTER_AGENCY_IDS = ['1511e077-77ef-4c47-81fd-06a3bc9f1dbb'];
+import { isMasterAgency } from '@/lib/agency/constants';
 
 export default function AIWorkersTab({ client, agencyId, plan }: AIWorkersTabProps) {
   const [view, setView] = useState<'workers' | 'skills'>('workers');
-  const isMasterAgency = MASTER_AGENCY_IDS.includes(agencyId);
-  // Marketing Worker is locked for all except Kyra's main agency (private beta)
-  const KYRA_MAIN_AGENCY_ID = '1511e077-77ef-4c47-81fd-06a3bc9f1dbb';
-  const canUseMarketingWorker = agencyId === KYRA_MAIN_AGENCY_ID;
+  const isMaster = isMasterAgency(agencyId);
+  // Marketing Worker is locked for all except the master agency (private beta)
+  const canUseMarketingWorker = isMaster;
   // Filter workers by visibility — private workers shown to allowed agencies + master admin
   const visibleWorkers = ROLE_WORKERS.filter(w => {
     if (!w.visibility || w.visibility === 'public') return true;
     if (w.visibility === 'private') {
       if (w.allowedAgencies?.includes(agencyId)) return true;
-      if (isMasterAgency) return true;
+      if (isMaster) return true;
     }
     return false;
   });

@@ -6,10 +6,9 @@ import AIWorkersTab from './ai-workers-tab';
 import BookingConfigTab from './booking-config-tab';
 import { Brain, Bot, Calendar } from 'lucide-react';
 import type { AgencyClient } from '@/lib/agency/queries';
+import { isMasterAgency } from '@/lib/agency/constants';
 
 type SubTab = 'train' | 'workers' | 'booking';
-
-const MASTER_AGENCY_ID = '1511e077-77ef-4c47-81fd-06a3bc9f1dbb';
 
 export default function AiSetupTab({
   client,
@@ -22,7 +21,7 @@ export default function AiSetupTab({
   agencyId: string;
   plan?: string;
 }) {
-  const isMaster = agencyId === MASTER_AGENCY_ID;
+  const isMaster = isMasterAgency(agencyId);
   const [activeTab, setActiveTab] = useState<SubTab>('train');
 
   const allTabs = [

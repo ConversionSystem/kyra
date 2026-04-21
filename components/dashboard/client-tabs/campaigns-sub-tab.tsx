@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import type { AgencyClient } from '@/lib/agency/queries';
 import type { CampaignPlan, CampaignEmail, CampaignSMS, CampaignSocialPost } from '@/lib/campaigns/ai-campaign-engine';
+import { sanitizeGeneratedHTML } from '@/lib/sites/html-sanitizer';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -77,9 +78,11 @@ function EmailCard({ email, index }: { email: CampaignEmail; index: number }) {
       {expanded && (
         <div className="border-t border-gray-100 p-4 space-y-2">
           <p className="text-xs text-gray-500">Preheader: {email.preheader}</p>
+          {/* AI-generated HTML — sanitized before render. Strips <script>,
+              on* handlers, javascript: URLs, untrusted iframes. */}
           <div
             className="text-sm text-gray-700 prose prose-sm max-w-none"
-            dangerouslySetInnerHTML={{ __html: email.body }}
+            dangerouslySetInnerHTML={{ __html: sanitizeGeneratedHTML(email.body) }}
           />
         </div>
       )}
@@ -287,9 +290,10 @@ export default function CampaignsSubTab({ client }: { client: AgencyClient }) {
                   <h2 className="text-xl font-bold text-gray-900">{campaign.landingPageCopy.headline}</h2>
                   <p className="text-base text-gray-600 mt-1">{campaign.landingPageCopy.subheadline}</p>
                 </div>
+                {/* AI-generated landing-page body — sanitized. */}
                 <div
                   className="text-sm text-gray-700 prose prose-sm max-w-none"
-                  dangerouslySetInnerHTML={{ __html: campaign.landingPageCopy.bodyHtml }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeGeneratedHTML(campaign.landingPageCopy.bodyHtml) }}
                 />
                 <div className="flex items-center gap-4">
                   <button className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium text-sm hover:bg-indigo-700 transition-colors">

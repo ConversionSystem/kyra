@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAgencyMember } from '@/lib/agency/middleware';
+import { requireDispatchAgency } from '@/lib/agency/middleware';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { runOptimization } from '@/lib/onfleet/route-optimizer';
 import type { ClientDispatchConfig } from '@/lib/onfleet/types';
@@ -14,7 +14,7 @@ export async function POST(
 ) {
   const { id: clientId } = await params;
 
-  const auth = await requireAgencyMember();
+  const auth = await requireDispatchAgency();
   if (auth.error) {
     return NextResponse.json({ error: auth.error.message }, { status: auth.error.status });
   }

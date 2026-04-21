@@ -25,6 +25,7 @@ import {
   Star,
 } from 'lucide-react';
 import type { AgencyClient } from '@/lib/agency/queries';
+import { isMasterAgency } from '@/lib/agency/constants';
 import EmailMarketingTab from './email-marketing-tab';
 import CampaignsSubTab from './campaigns-sub-tab';
 import SMSCampaignsSubTab from './sms-campaigns-sub-tab';
@@ -1015,14 +1016,11 @@ const SUB_TABS: { id: SubTab; label: string; icon: React.ElementType }[] = [
   { id: 'workflows', label: 'Workflows', icon: Zap },
 ];
 
-// Only Kyra's main agency (ConversionSystem) gets full Marketing access
-const KYRA_MAIN_AGENCY_ID = '1511e077-77ef-4c47-81fd-06a3bc9f1dbb';
-
 export default function MarketingTab({ client, onNavigateToTab }: { client: AgencyClient; onNavigateToTab?: (tab: string) => void }) {
   const [subTab, setSubTab] = useState<SubTab>('dashboard');
 
-  // Lock Marketing for all agencies except Kyra's main account
-  const isKyraMain = client.agency_id === KYRA_MAIN_AGENCY_ID;
+  // Lock Marketing for all agencies except the master account (Kyra ConversionSystem)
+  const isKyraMain = isMasterAgency(client.agency_id);
 
   if (!isKyraMain) {
     return (
