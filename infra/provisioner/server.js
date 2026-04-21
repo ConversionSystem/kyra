@@ -226,7 +226,7 @@ app.post('/containers', async (req, res) => {
       return res.status(400).json({ error: 'clientId and agencyId are required' });
     }
 
-    const containerPrefix = req.body.containerPrefix || 'kyra-cl';
+    const containerPrefix = req.body?.containerPrefix || 'kyra-cl';
     const containerName = `${containerPrefix}-${clientId}`;
     const clientDataDir = path.join(DATA_DIR, clientId);
     const authToken = crypto.randomBytes(32).toString('hex');
@@ -315,7 +315,7 @@ app.post('/containers', async (req, res) => {
     //     is paying with their own key, the router adds no value and breaks their model.
     //     Rule: ANY BYOK key (Anthropic, OpenAI, OpenRouter, Google) = bypass router.
     //
-    const providedApiKeys = req.body.apiKeys || {};
+    const providedApiKeys = req.body?.apiKeys || {};
     const PROVIDER_ENV_MAP = {
       openai: 'OPENAI_API_KEY',
       anthropic: 'ANTHROPIC_API_KEY',
@@ -357,7 +357,7 @@ app.post('/containers', async (req, res) => {
         // Any BYOK agency (any provider) calls their provider directly — router adds no value.
         ...(hasByok ? [] : [
           `OPENAI_BASE_URL=${KYRA_ROUTER_URL}`,
-          `KYRA_MAX_TIER=${req.body.routerMaxTier ?? 2}`,
+          `KYRA_MAX_TIER=${req.body?.routerMaxTier ?? 2}`,
         ]),
         ...apiKeyEnvs,
       ],
@@ -426,7 +426,9 @@ app.post('/containers', async (req, res) => {
 app.get('/containers/:id', async (req, res) => {
   try {
     const clientId = req.params.id;
-    const containerPrefix = req.body.containerPrefix || 'kyra-cl';
+    // GET requests don't carry a body — req.body is undefined under Express's
+    // default json middleware. Optional-chain so the handler doesn't crash.
+    const containerPrefix = req.body?.containerPrefix || 'kyra-cl';
     const containerName = `${containerPrefix}-${clientId}`;
     const container = docker.getContainer(containerName);
     const info = await container.inspect();
@@ -482,7 +484,7 @@ app.post('/containers/:id/start', async (req, res) => {
 // Env vars can't be changed without recreating the container.
 app.post('/containers/:id/update-tier', auth, async (req, res) => {
   const clientId = req.params.id;
-  const maxTier = req.body.maxTier ?? 2;
+  const maxTier = req.body?.maxTier ?? 2;
   const containerName = `kyra-cl-${clientId}`;
 
   try {
@@ -557,7 +559,7 @@ app.post('/containers/:id/stop', async (req, res) => {
 app.post('/containers/:id/wake', async (req, res) => {
   try {
     const clientId = req.params.id;
-    const containerPrefix = req.body.containerPrefix || 'kyra-cl';
+    const containerPrefix = req.body?.containerPrefix || 'kyra-cl';
     const containerName = `${containerPrefix}-${clientId}`;
     const container = docker.getContainer(containerName);
     
@@ -590,7 +592,10 @@ app.post('/containers/:id/wake', async (req, res) => {
 app.delete('/containers/:id', async (req, res) => {
   try {
     const clientId = req.params.id;
-    const containerPrefix = req.body.containerPrefix || 'kyra-cl';
+    // Client may DELETE with no body — req.body is undefined in that case.
+    // Optional-chain so the handler never crashes with:
+    //   "Cannot read properties of undefined (reading 'containerPrefix')"
+    const containerPrefix = req.body?.containerPrefix || 'kyra-cl';
     const containerName = `${containerPrefix}-${clientId}`;
     
     // Stop and remove container

@@ -106,15 +106,28 @@ async function provisionerFetch(
   options: RequestInit = {}
 ): Promise<Response> {
   const url = `${PROVISIONER_URL}${path}`;
+  const method = (options.method || 'GET').toUpperCase();
   const headers: Record<string, string> = {
     'Authorization': `Bearer ${PROVISIONER_SECRET}`,
     'Content-Type': 'application/json',
     ...((options.headers as Record<string, string>) || {}),
   };
 
+  // The provisioner's Express routes dereference `req.body.containerPrefix`
+  // on DELETE/POST handlers (infra/provisioner/server.js:593 etc.). When
+  // we send a non-GET request with no body + Content-Type: application/json,
+  // Express's body parser leaves `req.body` as `undefined` (not `{}`), and
+  // the handler crashes with:
+  //   "Cannot read properties of undefined (reading 'containerPrefix')"
+  // Force `{}` as the body for non-GET methods that don't specify one.
+  // Server-side also has optional-chaining as defense in depth.
+  const body = options.body ?? (method === 'GET' ? undefined : '{}');
+
   const res = await fetch(url, {
     ...options,
+    method,
     headers,
+    body,
     signal: AbortSignal.timeout(30_000),
   });
 
