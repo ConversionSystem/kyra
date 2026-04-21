@@ -37,15 +37,16 @@ export async function POST(request: Request) {
   // 5. Generate a one-time magic login link (non-destructive — doesn't touch user's password)
   const origin = process.env.NEXT_PUBLIC_APP_URL || 'https://kyra.conversionsystem.com';
 
-  // Magic link MUST land at /api/auth/callback so exchangeCodeForSession() runs
-  // and sets the session cookie on our domain. Passing /agency directly drops
-  // the ?code= param and the user arrives unauthenticated → bounces to /login.
-  const callbackUrl = `${origin}/api/auth/callback?redirect=${encodeURIComponent('/agency')}`;
+  // Supabase admin.generateLink uses IMPLICIT flow by default — tokens land
+  // in the URL hash (#access_token=...&refresh_token=...), which the server
+  // can't read. We send the user to a client-side page that parses the hash
+  // and calls supabase.auth.setSession() to persist the session cookie.
+  const confirmUrl = `${origin}/auth/confirm?next=${encodeURIComponent('/agency')}`;
 
   const { data: linkData, error: linkErr } = await db.auth.admin.generateLink({
     type: 'magiclink',
     email: targetEmail,
-    options: { redirectTo: callbackUrl },
+    options: { redirectTo: confirmUrl },
   });
 
   if (linkErr || !linkData?.properties?.action_link) {
