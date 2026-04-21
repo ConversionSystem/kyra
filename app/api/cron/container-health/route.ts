@@ -1,9 +1,11 @@
 /**
  * GET /api/cron/container-health
  *
- * Runs every 5 minutes. Checks all "running" containers are actually healthy
- * by hitting their OpenClaw health endpoint. Sends a Telegram alert if any fail.
- * Silent on success.
+ * Runs every 5 minutes. Two-way health sync:
+ * 1. Checks "running" containers are actually healthy → marks failed ones as "error"
+ * 2. Re-checks "error" containers → self-heals recovered ones back to "running"
+ * 
+ * Sends Telegram alerts for new failures AND recoveries.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -15,6 +17,22 @@ export const maxDuration = 120;
 
 const HEALTH_TIMEOUT_MS = 5000;
 
+async function checkHealth(gatewayUrl: string): Promise<{ ok: boolean; reason?: string }> {
+  try {
+    const res = await fetch(`${gatewayUrl}/__openclaw__/health`, {
+      signal: AbortSignal.timeout(HEALTH_TIMEOUT_MS),
+    });
+    if (!res.ok) return { ok: false, reason: `HTTP ${res.status}` };
+    return { ok: true };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    const reason = msg.includes('timeout') || msg.includes('abort')
+      ? 'Timeout (5s)'
+      : `Network error: ${msg.slice(0, 80)}`;
+    return { ok: false, reason };
+  }
+}
+
 export async function GET(request: NextRequest) {
   const unauthorized = requireCron(request);
   if (unauthorized) return unauthorized;
@@ -25,51 +43,82 @@ export async function GET(request: NextRequest) {
     { auth: { persistSession: false, autoRefreshToken: false } },
   );
 
-  // Get all running containers with their gateway URLs
-  const { data: clients, error: clientErr } = await supabase
+  // ── 1. Check "running" containers are still healthy ───────────────────────
+  const { data: runningClients, error: runErr } = await supabase
     .from('agency_clients')
-    .select('id, name, container_config, gateway_status, gateway_url')
+    .select('id, name, gateway_status, gateway_url')
     .eq('gateway_status', 'running');
 
-  if (clientErr || !clients) {
-    return NextResponse.json({ error: clientErr?.message || 'Failed to query' }, { status: 500 });
+  if (runErr) {
+    return NextResponse.json({ error: runErr.message }, { status: 500 });
   }
 
-  if (clients.length === 0) {
-    return NextResponse.json({ ok: true, checked: 0 });
-  }
-
-  // Health-check each container in parallel
   const failures: Array<{ name: string; id: string; reason: string }> = [];
 
-  await Promise.all(
-    clients.map(async (client) => {
-      // gateway_url is a column on agency_clients, NOT in container_config
-      const gatewayUrl = (client as Record<string, unknown>).gateway_url as string | undefined;
+  if (runningClients && runningClients.length > 0) {
+    await Promise.all(
+      runningClients.map(async (client) => {
+        const gatewayUrl = (client as Record<string, unknown>).gateway_url as string | undefined;
 
-      if (!gatewayUrl) {
-        failures.push({ name: client.name, id: client.id, reason: 'No gateway_url configured' });
-        return;
-      }
-
-      try {
-        const res = await fetch(`${gatewayUrl}/__openclaw__/health`, {
-          signal: AbortSignal.timeout(HEALTH_TIMEOUT_MS),
-        });
-        if (!res.ok) {
-          failures.push({ name: client.name, id: client.id, reason: `HTTP ${res.status}` });
+        if (!gatewayUrl) {
+          failures.push({ name: client.name, id: client.id, reason: 'No gateway_url configured' });
+          return;
         }
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : String(err);
-        const reason = msg.includes('timeout') || msg.includes('abort')
-          ? 'Timeout (5s)'
-          : `Network error: ${msg.slice(0, 80)}`;
-        failures.push({ name: client.name, id: client.id, reason });
-      }
-    }),
-  );
 
-  // ── Check for clients stuck in 'setup' > 10 minutes ──────────────────────
+        const result = await checkHealth(gatewayUrl);
+        if (!result.ok) {
+          failures.push({ name: client.name, id: client.id, reason: result.reason! });
+
+          // Mark as error in DB so it gets re-checked for recovery
+          await supabase
+            .from('agency_clients')
+            .update({
+              gateway_status: 'error',
+              gateway_error: result.reason,
+            })
+            .eq('id', client.id)
+            .eq('gateway_status', 'running'); // guard against race
+          
+          console.warn(`[container-health] ${client.name} (${client.id}) failed → marked error: ${result.reason}`);
+        }
+      }),
+    );
+  }
+
+  // ── 2. Self-heal: re-check "error" containers for recovery ────────────────
+  const { data: errorClients } = await supabase
+    .from('agency_clients')
+    .select('id, name, gateway_status, gateway_url, gateway_error')
+    .eq('gateway_status', 'error');
+
+  const recoveries: Array<{ name: string; id: string }> = [];
+
+  if (errorClients && errorClients.length > 0) {
+    await Promise.all(
+      errorClients.map(async (client) => {
+        const gatewayUrl = (client as Record<string, unknown>).gateway_url as string | undefined;
+        if (!gatewayUrl) return; // can't check without a URL
+
+        const result = await checkHealth(gatewayUrl);
+        if (result.ok) {
+          // Container recovered! Update status back to running
+          await supabase
+            .from('agency_clients')
+            .update({
+              gateway_status: 'running',
+              gateway_error: null,
+            })
+            .eq('id', client.id)
+            .eq('gateway_status', 'error'); // guard against race
+
+          recoveries.push({ name: client.name, id: client.id });
+          console.log(`[container-health] ✅ ${client.name} (${client.id}) recovered → marked running`);
+        }
+      }),
+    );
+  }
+
+  // ── 3. Check for clients stuck in 'setup' > 10 minutes ───────────────────
   const tenMinutesAgo = new Date(Date.now() - 10 * 60_000).toISOString();
   const { data: stuckClients } = await supabase
     .from('agency_clients')
@@ -78,7 +127,6 @@ export async function GET(request: NextRequest) {
     .lt('created_at', tenMinutesAgo);
 
   if (stuckClients && stuckClients.length > 0) {
-    // Mark stuck clients as 'failed' so the dashboard can show a retry button
     for (const sc of stuckClients) {
       await supabase
         .from('agency_clients')
@@ -88,40 +136,50 @@ export async function GET(request: NextRequest) {
       console.warn(`[container-health] Client ${sc.id} (${sc.name}) stuck in setup > 10min — marked as failed`);
     }
 
-    // Include stuck clients in the alert
     for (const sc of stuckClients) {
       failures.push({ name: sc.name, id: sc.id, reason: 'Stuck in setup > 10 minutes (marked failed)' });
     }
   }
 
-  // If all healthy, silent success
-  if (failures.length === 0) {
-    return NextResponse.json({ ok: true, checked: clients.length, failures: 0 });
+  // ── 4. Alerts ─────────────────────────────────────────────────────────────
+  if (failures.length > 0) {
+    await sendTelegramAlert('failure', failures);
   }
 
-  // Send Telegram alert for failures
-  await sendTelegramAlert(failures);
+  if (recoveries.length > 0) {
+    await sendTelegramRecoveryAlert(recoveries);
+  }
 
-  console.log(`[container-health] ${failures.length}/${clients.length} containers failed health check`);
+  const totalChecked = (runningClients?.length || 0) + (errorClients?.length || 0);
+
+  if (failures.length === 0 && recoveries.length === 0) {
+    return NextResponse.json({ ok: true, checked: totalChecked, failures: 0, recoveries: 0 });
+  }
+
+  console.log(`[container-health] checked=${totalChecked} failures=${failures.length} recoveries=${recoveries.length}`);
 
   return NextResponse.json({
-    ok: false,
-    checked: clients.length,
+    ok: failures.length === 0,
+    checked: totalChecked,
     failures: failures.length,
-    details: failures,
+    recoveries: recoveries.length,
+    details: { failures, recoveries },
   });
 }
 
-async function sendTelegramAlert(failures: Array<{ name: string; id: string; reason: string }>) {
+async function sendTelegramAlert(
+  _type: 'failure',
+  items: Array<{ name: string; id: string; reason: string }>,
+) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_NOTIFY_CHAT_ID;
   if (!token || !chatId) return;
 
-  const lines = failures.map(f => `• ${f.name} (${f.id}) — ${f.reason}`);
+  const lines = items.map(f => `• ${f.name} (${f.id}) — ${f.reason}`);
   const message = [
     `🚨 Container Health Alert`,
     ``,
-    `${failures.length} container(s) failed health check:`,
+    `${items.length} container(s) failed health check:`,
     ...lines,
     ``,
     `Check: kyra.conversionsystem.com/agency`,
@@ -139,5 +197,35 @@ async function sendTelegramAlert(failures: Array<{ name: string; id: string; rea
     });
   } catch {
     console.error('[container-health] Failed to send Telegram alert');
+  }
+}
+
+async function sendTelegramRecoveryAlert(
+  items: Array<{ name: string; id: string }>,
+) {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.TELEGRAM_NOTIFY_CHAT_ID;
+  if (!token || !chatId) return;
+
+  const lines = items.map(r => `• ${r.name} (${r.id})`);
+  const message = [
+    `✅ Container Recovery`,
+    ``,
+    `${items.length} container(s) recovered and marked running:`,
+    ...lines,
+  ].join('\n');
+
+  try {
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: message,
+        parse_mode: 'HTML',
+      }),
+    });
+  } catch {
+    console.error('[container-health] Failed to send Telegram recovery alert');
   }
 }
