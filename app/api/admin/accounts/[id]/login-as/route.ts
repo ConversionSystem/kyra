@@ -21,16 +21,17 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
 
   const origin = process.env.NEXT_PUBLIC_APP_URL || 'https://kyra.conversionsystem.com';
 
-  // Magic link MUST land at /api/auth/callback so exchangeCodeForSession() runs
-  // and sets the session cookie on our domain. Passing /agency directly drops
-  // the ?code= param and the user arrives unauthenticated → bounces to /login.
-  const callbackUrl = `${origin}/api/auth/callback?redirect=${encodeURIComponent('/agency')}`;
+  // Supabase admin.generateLink uses IMPLICIT flow by default — tokens land
+  // in the URL hash (#access_token=...&refresh_token=...), which the server
+  // can't read. We send the user to a client-side page that parses the hash
+  // and calls supabase.auth.setSession() to persist the session cookie.
+  const confirmUrl = `${origin}/auth/confirm?next=${encodeURIComponent('/agency')}`;
 
   // Generate magic link for the target user
   const { data, error } = await service.auth.admin.generateLink({
     type: 'magiclink',
     email: ownerUser.user.email,
-    options: { redirectTo: callbackUrl },
+    options: { redirectTo: confirmUrl },
   });
 
   if (error || !data?.properties?.action_link) {
