@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import type { AgencyClient } from '@/lib/agency/queries';
 import type { FunnelPlan, FunnelStep } from '@/lib/funnels/ai-funnel-builder';
+import { sanitizeGeneratedHTML } from '@/lib/sites/html-sanitizer';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -86,9 +87,10 @@ function FunnelStepCard({ step, isLast }: { step: FunnelStep; isLast: boolean })
         {expanded && (
           <div className="border-t border-gray-100 p-4 space-y-3">
             <p className="text-sm text-gray-600">{step.subheadline}</p>
+            {/* AI-generated funnel-step HTML — sanitized. */}
             <div
               className="text-sm text-gray-700 prose prose-sm max-w-none"
-              dangerouslySetInnerHTML={{ __html: step.body }}
+              dangerouslySetInnerHTML={{ __html: sanitizeGeneratedHTML(step.body) }}
             />
             <div className="flex items-center gap-3">
               <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors">
@@ -260,9 +262,10 @@ export default function FunnelsSubTab({ client }: { client: AgencyClient }) {
                         </div>
                         <CopyButton text={`Subject: ${email.subject}\n\n${email.body}`} />
                       </div>
+                      {/* AI-generated email body — sanitized. */}
                       <div
                         className="text-sm text-gray-700 prose prose-sm max-w-none"
-                        dangerouslySetInnerHTML={{ __html: email.body }}
+                        dangerouslySetInnerHTML={{ __html: sanitizeGeneratedHTML(email.body) }}
                       />
                     </div>
                   ))}

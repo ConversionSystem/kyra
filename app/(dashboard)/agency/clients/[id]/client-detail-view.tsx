@@ -351,33 +351,20 @@ function ReprovisionButton({
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
-const MASTER_AGENCY_ID = '1511e077-77ef-4c47-81fd-06a3bc9f1dbb';
-
-// Agencies with access to advanced tabs (Marketing + IT Operations Center)
-// Add agency IDs here to unlock these tabs for specific accounts
-const ADVANCED_TABS_AGENCIES = new Set([
-  '1511e077-77ef-4c47-81fd-06a3bc9f1dbb', // Conversion System (Kyra master)
-  '18e6e562-ec29-4652-a38b-58f6be2e533f', // TrustedNetworx
-  '13cc47bc-88bb-4ef8-84e8-f2c0cd97fd3e', // Priv7 (Purple Lotus — Paul Rivera)
-]);
-
-// Agencies with access to the Dispatch tab (OnFleet integration)
-const DISPATCH_AGENCIES = new Set([
-  '1511e077-77ef-4c47-81fd-06a3bc9f1dbb', // Conversion System (Kyra master)
-  '13cc47bc-88bb-4ef8-84e8-f2c0cd97fd3e', // Priv7 (Purple Lotus — Paul Rivera)
-]);
+import { hasAdvancedTabs as hasAdvancedTabsForAgency, hasDispatchTab as hasDispatchTabForAgency } from '@/lib/agency/constants';
 
 export function ClientDetailView({ client: initialClient, role, plan, accountType }: ClientDetailViewProps) {
+  const agencyId = initialClient.agency_id ?? '';
   const isFreeOrSolo = !plan || plan === 'free' || plan === 'solo_pro' || (plan === 'free' && accountType === 'solo');
   const isPaidPlan = plan === 'pro' || plan === 'scale';
-  const isMasterOrKyra = ADVANCED_TABS_AGENCIES.has(initialClient.agency_id ?? '');
-  const isTrustedNetworx = initialClient.agency_id === '18e6e562-ec29-4652-a38b-58f6be2e533f';
+  const isMasterOrKyra = hasAdvancedTabsForAgency(agencyId);
+  const isTrustedNetworx = agencyId.toLowerCase() === '18e6e562-ec29-4652-a38b-58f6be2e533f';
   const hasAdvancedTabs = isMasterOrKyra || isPaidPlan;
   // TrustedNetworx gets Operations only (not Marketing) unless they're on a paid plan
   const hasMarketingTab = isMasterOrKyra;
   const hasSeoGeoTab = isMasterOrKyra;
   const hasVoiceSmsTab = isMasterOrKyra;
-  const hasDispatchTab = DISPATCH_AGENCIES.has(initialClient.agency_id ?? '');
+  const hasDispatchTab = hasDispatchTabForAgency(agencyId);
   const hasOperationsTab = isMasterOrKyra || isPaidPlan || isTrustedNetworx;
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -663,9 +650,11 @@ function TerminalTab({ client }: { client: AgencyClient }) {
         headers: { 'Content-Type': 'application/json' },
       });
       if (res.ok) {
-        // Reload to pick up new gateway status
+        // Give the gateway ~2s to start, then re-fetch the server component
+        // tree. Previously this was followed by a hard window.location.reload()
+        // 4s later — unnecessary, nukes in-flight user state, and violates
+        // our no-full-reload rule for SPA transitions.
         setTimeout(() => router.refresh(), 2000);
-        setTimeout(() => window.location.reload(), 4000);
       } else {
         const data = await res.json().catch(() => ({}));
         setActivateError(data.error || 'Failed to activate. Try again.');
@@ -706,14 +695,17 @@ function TerminalTab({ client }: { client: AgencyClient }) {
 
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-8 text-white">
+      {/* Terminal launch card — brand-compliant (indigo accents on white,
+          per BRANDING.md). Previously used a dark gradient which violated
+          the "no bg-gray-900 on page content" rule. */}
+      <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-8">
         <div className="flex items-start gap-4 mb-6">
-          <div className="p-3 bg-white/10 rounded-xl">
-            <Terminal className="h-8 w-8" />
+          <div className="p-3 bg-indigo-50 rounded-xl">
+            <Terminal className="h-8 w-8 text-indigo-600" />
           </div>
           <div>
-            <h3 className="text-xl font-bold mb-1">Test {client.name}&apos;s AI</h3>
-            <p className="text-gray-300 text-sm">
+            <h3 className="text-xl font-bold text-gray-900 mb-1">Test {client.name}&apos;s AI</h3>
+            <p className="text-gray-500 text-sm">
               Open the terminal to chat with this AI worker and test how it responds to customers.
             </p>
           </div>
@@ -722,7 +714,7 @@ function TerminalTab({ client }: { client: AgencyClient }) {
           href={terminalPageUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 bg-indigo-500 hover:bg-indigo-400 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
+          className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-xl transition-colors"
         >
           <ExternalLink className="h-5 w-5" />
           Open Terminal
@@ -1511,7 +1503,7 @@ function VoiceSmsTab({
 }) {
   const isFreeOrSolo = !plan || plan === 'free' || plan === 'solo_pro' || (plan === 'free' && accountType === 'solo');
   const isPaidPlan = plan === 'pro' || plan === 'scale';
-  const isMasterOrKyra = ADVANCED_TABS_AGENCIES.has(client.agency_id ?? '');
+  const isMasterOrKyra = hasAdvancedTabsForAgency(client.agency_id ?? '');
   const hasVoice = isMasterOrKyra || isPaidPlan;
   const [activeSection, setActiveSection] = useState<'voice' | 'sms'>('voice');
 
