@@ -3,9 +3,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   MessageSquare, Plus, Send, Clock, Loader2, Trash2, Sparkles,
-  CheckCircle2, AlertTriangle, Users, Calendar, Copy, Check,
+  CheckCircle2, AlertTriangle, Users, Calendar, Check,
 } from 'lucide-react';
 import type { AgencyClient } from '@/lib/agency/queries';
+import { CopyButton } from '@/components/ui/copy-button';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -54,19 +55,6 @@ function StatusBadge({ status }: { status: string }) {
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${s.bg}`}>
       {s.label}
     </span>
-  );
-}
-
-function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false);
-  return (
-    <button
-      onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-      className="inline-flex items-center gap-1 p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100"
-      title="Copy message"
-    >
-      {copied ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
-    </button>
   );
 }
 
@@ -418,7 +406,7 @@ export default function SMSCampaignsSubTab({ client }: { client: AgencyClient })
                   </p>
                 </div>
                 <div className="flex items-center gap-1">
-                  <CopyButton text={campaign.message} />
+                  <CopyButton text={campaign.message} title="Copy message" className="inline-flex items-center gap-1 p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100" />
                 </div>
               </div>
 

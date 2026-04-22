@@ -4,26 +4,14 @@ import { useState, useCallback } from 'react';
 import {
   Sparkles, Loader2, Zap, ChevronDown, ChevronUp,
   Globe, FormInput, ThumbsUp, TrendingUp, Mail,
-  Copy, Check, ArrowRight,
+  ArrowRight,
 } from 'lucide-react';
 import type { AgencyClient } from '@/lib/agency/queries';
 import type { FunnelPlan, FunnelStep } from '@/lib/funnels/ai-funnel-builder';
 import { sanitizeGeneratedHTML } from '@/lib/sites/html-sanitizer';
+import { CopyButton } from '@/components/ui/copy-button';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-
-function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false);
-  return (
-    <button
-      onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-      className="inline-flex items-center gap-1 p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-      title="Copy"
-    >
-      {copied ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
-    </button>
-  );
-}
 
 const STEP_ICONS: Record<FunnelStep['type'], React.ElementType> = {
   landing: Globe,
@@ -79,7 +67,7 @@ function FunnelStepCard({ step, isLast }: { step: FunnelStep; isLast: boolean })
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <CopyButton text={`${step.headline}\n${step.subheadline}\n\n${step.body}`} />
+            <CopyButton text={`${step.headline}\n${step.subheadline}\n\n${step.body}`} title="Copy" />
             {expanded ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
           </div>
         </button>
@@ -260,7 +248,7 @@ export default function FunnelsSubTab({ client }: { client: AgencyClient }) {
                           <span className="text-xs font-medium text-gray-400">Day {email.sendDay}</span>
                           <span className="text-sm font-medium text-gray-900">{email.subject}</span>
                         </div>
-                        <CopyButton text={`Subject: ${email.subject}\n\n${email.body}`} />
+                        <CopyButton text={`Subject: ${email.subject}\n\n${email.body}`} title="Copy" />
                       </div>
                       {/* AI-generated email body — sanitized. */}
                       <div

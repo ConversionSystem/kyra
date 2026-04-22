@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   PenTool,
@@ -9,7 +10,6 @@ import {
   ArrowRight,
   Loader2,
   Plus,
-  Copy,
   Check,
   AlertTriangle,
   ExternalLink,
@@ -32,6 +32,7 @@ import SMSCampaignsSubTab from './sms-campaigns-sub-tab';
 import ReviewsSubTab from './reviews-sub-tab';
 import WorkflowsTab from './workflows-tab';
 import { EmailSequencesDashboard } from '@/app/(dashboard)/agency/email/email-sequences-dashboard';
+import { CopyButton } from '@/components/ui/copy-button';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -108,19 +109,6 @@ function ThreatBadge({ level }: { level: 'high' | 'medium' | 'low' }) {
     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${t.bg}`}>
       {t.emoji} {t.label}
     </span>
-  );
-}
-
-function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false);
-  return (
-    <button
-      onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-      className="inline-flex items-center gap-1 p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-      title="Copy to clipboard"
-    >
-      {copied ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
-    </button>
   );
 }
 
@@ -494,6 +482,7 @@ const SOCIAL_HELP = [
 ];
 
 function SocialView({ client }: { client: AgencyClient }) {
+  const router = useRouter();
   const clientId = client.id;
   const cfg = client.container_config || {};
   const businessName = (cfg.business_name as string) || client.name;
@@ -589,9 +578,10 @@ Requirements per platform:
         }));
         setDrafts(prev => [...newDrafts, ...prev]);
       }
+      router.refresh();
     } catch { /* handled */ }
     finally { setGenerating(false); }
-  }, [postTopic, selectedPlatforms, clientId, businessName, industry, brandTone]);
+  }, [postTopic, selectedPlatforms, clientId, businessName, industry, brandTone, router]);
 
   const generateForDay = useCallback(async (day: string) => {
     if (generating) return;
@@ -659,9 +649,10 @@ Return ONLY a JSON array (no markdown, no explanation):
           setDrafts(prev => [...newDrafts, ...prev]);
         }
       }
+      router.refresh();
     } catch { /* handled */ }
     finally { setGenerating(false); }
-  }, [generating, selectedPlatforms, clientId, businessName, industry, brandTone]);
+  }, [generating, selectedPlatforms, clientId, businessName, industry, brandTone, router]);
 
   const markAsPosted = (id: string) => {
     setDrafts(prev => prev.map(d => d.id === id ? { ...d, status: 'posted' as const } : d));
@@ -691,9 +682,10 @@ Make them feel authentic, not salesy. Each should offer genuine value.`;
         return;
       }
       setEngagementComments(reply);
+      router.refresh();
     } catch { /* handled */ }
     finally { setEngagementLoading(false); }
-  }, [clientId, linkedinTargets]);
+  }, [clientId, linkedinTargets, router]);
 
   const platformIcon = (name: string) => {
     const p = PLATFORMS.find(p => p.label.toLowerCase().includes(name.toLowerCase()) || p.id === name.toLowerCase());

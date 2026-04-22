@@ -3,27 +3,15 @@
 import { useState, useCallback } from 'react';
 import {
   Sparkles, Loader2, Mail, MessageSquare, Share2, Globe,
-  Copy, Check, ChevronDown, ChevronUp, Zap, Send,
+  ChevronDown, ChevronUp, Zap, Send,
   Smartphone, Facebook, Instagram, Linkedin, Edit3,
 } from 'lucide-react';
 import type { AgencyClient } from '@/lib/agency/queries';
 import type { CampaignPlan, CampaignEmail, CampaignSMS, CampaignSocialPost } from '@/lib/campaigns/ai-campaign-engine';
 import { sanitizeGeneratedHTML } from '@/lib/sites/html-sanitizer';
+import { CopyButton } from '@/components/ui/copy-button';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-
-function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false);
-  return (
-    <button
-      onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-      className="inline-flex items-center gap-1 p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-      title="Copy to clipboard"
-    >
-      {copied ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
-    </button>
-  );
-}
 
 function SectionHeader({ icon: Icon, title, count }: { icon: React.ElementType; title: string; count?: number }) {
   return (
