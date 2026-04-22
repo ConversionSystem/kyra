@@ -94,6 +94,12 @@ export const CREDIT_COSTS = {
   'seo.gsc_sync': 1,              // Per GSC data sync
   'seo.content_publish': 2,       // Per off-site content publish
 
+  // Dispatch agents (cannabis vertical — Onfleet + LLM reasoning)
+  'dispatch.brain_call': 5,       // Dispatch Brain (Sonnet 4.5) — per webhook/cron evaluation
+  'dispatch.sms_writer_call': 1,  // SMS Writer (Haiku 4.5) — per outbound message draft
+  'dispatch.copilot_call': 3,     // Dispatcher Copilot (Sonnet cached) — per briefing
+  'dispatch.inbound_customer_call': 1, // Inbound Customer Agent (Haiku) — per customer reply
+
   // Free actions (logged but cost 0)
   'system.calendar': 0,
   'system.reminder': 0,

@@ -13,6 +13,10 @@ interface AgencyContext {
   membership: AgencyMember;
 }
 
+interface ClientAccessContext extends AgencyContext {
+  clientId: string;
+}
+
 /**
  * Verify the current user is authenticated and a member of an agency.
  * Returns the user, their agency, and membership record.
@@ -158,4 +162,42 @@ export async function requireDispatchAgency(): Promise<
   }
 
   return result;
+}
+
+/**
+ * Verify the current user is a member of an agency AND that the given
+ * `clientId` (agency_clients.id) belongs to that agency.
+ *
+ * Closes the cross-tenant gap where an agency member could act on briefings,
+ * settings, or webhooks scoped to a client they don't own by URL-manipulating
+ * the `[id]` segment. Every dispatch-agent-related route should gate on this.
+ */
+export async function requireClientAccess(
+  clientId: string,
+): Promise<
+  { data: ClientAccessContext; error: null } | { data: null; error: { message: string; status: number } }
+> {
+  const result = await requireAgencyMember();
+  if (result.error) return result;
+
+  const supabase = await createClient();
+  const { data: client, error } = await supabase
+    .from('agency_clients')
+    .select('id, agency_id')
+    .eq('id', clientId)
+    .maybeSingle();
+
+  if (error || !client) {
+    return { data: null, error: { message: 'Client not found', status: 404 } };
+  }
+
+  if (client.agency_id !== result.data.agency.id) {
+    // Intentionally opaque — don't leak that the client exists under another agency.
+    return { data: null, error: { message: 'Client not found', status: 404 } };
+  }
+
+  return {
+    data: { ...result.data, clientId },
+    error: null,
+  };
 }
