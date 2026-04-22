@@ -3,8 +3,8 @@
  * Generate a natural language analytics report for a client.
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { requireClientAccess } from '@/lib/agency/middleware';
 import { generateReport, type ClientAnalyticsData } from '@/lib/analytics/ai-reporter';
 
 export const dynamic = 'force-dynamic';
@@ -15,9 +15,11 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id: clientId } = await params;
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const auth = await requireClientAccess(clientId);
+  if (auth.error) {
+    return NextResponse.json({ error: auth.error.message }, { status: auth.error.status });
+  }
 
   const svc = createServiceClientWithoutCookies();
   const { data: client } = await svc

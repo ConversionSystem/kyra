@@ -4,7 +4,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
-import { requireAgencyMember } from '@/lib/agency/middleware';
+import { requireClientAccess } from '@/lib/agency/middleware';
 import { syncIntegrationCredentials } from '@/lib/secrets/sync';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -79,9 +79,14 @@ Use GHL tools to manage the CRM when needed.
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const result = await requireAgencyMember();
-  if (result.error) {
-    return NextResponse.json({ error: result.error.message }, { status: result.error.status });
+  // PATCH writes integration credentials (GHL, Stripe, Twilio, etc.) — must be
+  // scoped to a client the caller actually owns. Previous check was
+  // `requireAgencyMember` with no clientId comparison: any authenticated
+  // member could PATCH ANY client's container_config and drop plaintext
+  // secrets into someone else's .secrets.env. Closed here.
+  const auth = await requireClientAccess(id);
+  if (auth.error) {
+    return NextResponse.json({ error: auth.error.message }, { status: auth.error.status });
   }
 
   const body = await req.json();
