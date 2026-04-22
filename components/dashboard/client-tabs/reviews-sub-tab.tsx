@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Star, MessageSquare, Send, Loader2, Sparkles, Copy, Check,
+  Star, MessageSquare, Send, Loader2, Sparkles,
   TrendingUp, Users, AlertTriangle, Plus, RefreshCw,
 } from 'lucide-react';
 import type { AgencyClient } from '@/lib/agency/queries';
+import { CopyButton } from '@/components/ui/copy-button';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -57,18 +58,6 @@ function MetricCard({ label, value, sub, color }: { label: string; value: string
       <p className={`text-2xl font-bold mt-1 ${color || 'text-gray-900'}`}>{value}</p>
       {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
     </div>
-  );
-}
-
-function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false);
-  return (
-    <button
-      onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-      className="inline-flex items-center gap-1 p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100"
-    >
-      {copied ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
-    </button>
   );
 }
 
@@ -415,7 +404,7 @@ export default function ReviewsSubTab({ client }: { client: AgencyClient }) {
                 <div className="rounded-xl border border-green-200 bg-green-50 p-4">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-semibold text-green-800">AI Generated Response</span>
-                    <CopyButton text={generatedResponse} />
+                    <CopyButton text={generatedResponse} className="inline-flex items-center gap-1 p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100" />
                   </div>
                   <p className="text-sm text-green-900 whitespace-pre-wrap">{generatedResponse}</p>
                   <p className="text-xs text-green-600 mt-3">
@@ -478,7 +467,7 @@ export default function ReviewsSubTab({ client }: { client: AgencyClient }) {
               ].map((template, i) => (
                 <div key={i} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
                   <p className="flex-1 text-sm text-gray-700">{template}</p>
-                  <CopyButton text={template} />
+                  <CopyButton text={template} className="inline-flex items-center gap-1 p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100" />
                 </div>
               ))}
             </div>

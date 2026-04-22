@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Users, Mail, DollarSign, BarChart3, Activity, Plus, Search, Upload,
   Trash2, Send, Clock, CheckCircle2, AlertTriangle, Loader2,
@@ -11,6 +12,8 @@ import {
   Sliders, GitMerge, Layers, PhoneCall, GitBranch,
 } from 'lucide-react';
 import type { AgencyClient } from '@/lib/agency/queries';
+import { timeAgo } from '@/lib/format/time-ago';
+import { getInitials } from '@/lib/format/initials';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -171,25 +174,8 @@ function getAvatarColor(firstName?: string | null, lastName?: string | null): st
   return AVATAR_COLORS[hash % AVATAR_COLORS.length];
 }
 
-function getInitials(firstName?: string | null, lastName?: string | null): string {
-  const f = firstName?.charAt(0)?.toUpperCase() || '';
-  const l = lastName?.charAt(0)?.toUpperCase() || '';
-  return f + l || '?';
-}
-
 function formatCurrency(value: number, currency = 'USD'): string {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency, minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
-}
-
-function timeAgo(dateStr: string): string {
-  const d = new Date(dateStr);
-  const now = new Date();
-  const diff = now.getTime() - d.getTime();
-  if (diff < 60_000) return 'Just now';
-  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
-  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
-  if (diff < 604_800_000) return `${Math.floor(diff / 86_400_000)}d ago`;
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: d.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
 }
 
 function contactName(c: { first_name?: string | null; last_name?: string | null }): string {
@@ -280,6 +266,7 @@ const btnSecondary = 'border border-gray-200 text-gray-700 hover:bg-gray-50 roun
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function ContactsSection({ client, clientId }: { client: AgencyClient; clientId: string }) {
+  const router = useRouter();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -378,6 +365,7 @@ function ContactsSection({ client, clientId }: { client: AgencyClient; clientId:
       if (!res.ok) { setActionError((data as { error?: string }).error || 'Import failed.'); return; }
       setActionError(null);
       loadContacts();
+      router.refresh();
     } catch {
       setActionError('Import failed. Please check your CSV format.');
     } finally { setImporting(false); if (fileInputRef.current) fileInputRef.current.value = ''; }
@@ -403,6 +391,7 @@ function ContactsSection({ client, clientId }: { client: AgencyClient; clientId:
     setBulkAction('');
     setBulkValue('');
     loadContacts();
+    router.refresh();
   };
 
   const toggleSelect = (id: string) => {
@@ -601,6 +590,7 @@ function ContactsSection({ client, clientId }: { client: AgencyClient; clientId:
 // ── Add Contact Modal ──────────────────────────────────────────────────────────
 
 function AddContactModal({ clientId, onClose, onSaved }: { clientId: string; onClose: () => void; onSaved: () => void }) {
+  const router = useRouter();
   const [form, setForm] = useState({ first_name: '', last_name: '', email: '', phone: '', title: '', company_name: '', stage: 'lead', tags: '' });
   const [saving, setSaving] = useState(false);
 
@@ -610,7 +600,7 @@ function AddContactModal({ clientId, onClose, onSaved }: { clientId: string; onC
     try {
       const body = { ...form, clientId, tags: form.tags ? form.tags.split(',').map(t => t.trim()).filter(Boolean) : [] };
       const res = await fetch('/api/agency/crm/contacts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      if (res.ok) onSaved();
+      if (res.ok) { onSaved(); router.refresh(); }
     } finally { setSaving(false); }
   };
 
@@ -648,6 +638,7 @@ function AddContactModal({ clientId, onClose, onSaved }: { clientId: string; onC
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function ContactDetailPanel({ contact: initial, onBack, client }: { contact: Contact; onBack: () => void; client: AgencyClient }) {
+  const router = useRouter();
   const [contact, setContact] = useState<Contact>(initial);
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({ first_name: '', last_name: '', email: '', phone: '', title: '', stage: '', tags: '' });
@@ -725,7 +716,7 @@ function ContactDetailPanel({ contact: initial, onBack, client }: { contact: Con
     try {
       const body = { ...editForm, tags: editForm.tags ? editForm.tags.split(',').map(t => t.trim()).filter(Boolean) : [] };
       const res = await fetch(`/api/agency/crm/contacts/${contact.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      if (res.ok) { const data = await res.json(); setContact(data.contact || { ...contact, ...body }); setEditing(false); }
+      if (res.ok) { const data = await res.json(); setContact(data.contact || { ...contact, ...body }); setEditing(false); router.refresh(); }
     } finally { setSaving(false); }
   };
 
@@ -733,13 +724,13 @@ function ContactDetailPanel({ contact: initial, onBack, client }: { contact: Con
     if (!newTag.trim()) return;
     const tags = [...contact.tags, newTag.trim()];
     const res = await fetch(`/api/agency/crm/contacts/${contact.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tags }) });
-    if (res.ok) { setContact(c => ({ ...c, tags })); setNewTag(''); }
+    if (res.ok) { setContact(c => ({ ...c, tags })); setNewTag(''); router.refresh(); }
   };
 
   const removeTag = async (tag: string) => {
     const tags = contact.tags.filter(t => t !== tag);
     const res = await fetch(`/api/agency/crm/contacts/${contact.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tags }) });
-    if (res.ok) setContact(c => ({ ...c, tags }));
+    if (res.ok) { setContact(c => ({ ...c, tags })); router.refresh(); }
   };
 
   const handleDelete = async () => {
@@ -747,6 +738,7 @@ function ContactDetailPanel({ contact: initial, onBack, client }: { contact: Con
     const res = await fetch(`/api/agency/crm/contacts/${contact.id}`, { method: 'DELETE' });
     if (!res.ok) { setPanelError('Failed to delete contact. Please try again.'); return; }
     onBack();
+    router.refresh();
   };
 
   return (
@@ -961,16 +953,19 @@ function ContactDetailPanel({ contact: initial, onBack, client }: { contact: Con
 // ── Contact Task Row ───────────────────────────────────────────────────────────
 
 function ContactTaskRow({ task, onUpdate }: { task: CrmTask; onUpdate: () => void }) {
+  const router = useRouter();
   const toggleComplete = async () => {
     const status = task.status === 'completed' ? 'pending' : 'completed';
     await fetch(`/api/agency/crm/tasks/${task.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
     onUpdate();
+    router.refresh();
   };
 
   const handleDelete = async () => {
     if (!window.confirm('Delete this task?')) return;
     await fetch(`/api/agency/crm/tasks/${task.id}`, { method: 'DELETE' });
     onUpdate();
+    router.refresh();
   };
 
   return (
@@ -993,6 +988,7 @@ function ContactTaskRow({ task, onUpdate }: { task: CrmTask; onUpdate: () => voi
 function SendMessageModal({ channel, contactId, contactName: cName, onClose, onSent }: {
   channel: 'email' | 'sms'; contactId: string; contactName: string; onClose: () => void; onSent: () => void;
 }) {
+  const router = useRouter();
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
@@ -1013,6 +1009,7 @@ function SendMessageModal({ channel, contactId, contactName: cName, onClose, onS
       }
       onSent();
       onClose();
+      router.refresh();
     } catch { setSendError('Network error. Please try again.'); }
     finally { setSending(false); }
   };
@@ -1040,6 +1037,7 @@ function SendMessageModal({ channel, contactId, contactName: cName, onClose, onS
 // ── Add Note Modal ─────────────────────────────────────────────────────────────
 
 function AddNoteModal({ contactId, onClose, onSaved }: { contactId: string; onClose: () => void; onSaved: () => void }) {
+  const router = useRouter();
   const [body, setBody] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -1052,6 +1050,7 @@ function AddNoteModal({ contactId, onClose, onSaved }: { contactId: string; onCl
         body: JSON.stringify({ contact_id: contactId, type: 'note', subject: 'Note', body, actor: 'human' }),
       });
       onSaved(); onClose();
+      router.refresh();
     } finally { setSaving(false); }
   };
 
@@ -1074,6 +1073,7 @@ function AddNoteModal({ contactId, onClose, onSaved }: { contactId: string; onCl
 // ── Log Call Modal (Sprint 4) ──────────────────────────────────────────────────
 
 function LogCallModal({ contactId, onClose, onSaved }: { contactId: string; onClose: () => void; onSaved: () => void }) {
+  const router = useRouter();
   const [duration, setDuration] = useState('');
   const [outcome, setOutcome] = useState('connected');
   const [notes, setNotes] = useState('');
@@ -1097,6 +1097,7 @@ function LogCallModal({ contactId, onClose, onSaved }: { contactId: string; onCl
       });
       onSaved();
       onClose();
+      router.refresh();
     } finally { setSaving(false); }
   };
 
@@ -1147,6 +1148,7 @@ function LogCallModal({ contactId, onClose, onSaved }: { contactId: string; onCl
 // ── Add Task Modal ─────────────────────────────────────────────────────────────
 
 function AddTaskModal({ contactId, onClose, onSaved }: { contactId?: string; onClose: () => void; onSaved: () => void }) {
+  const router = useRouter();
   const [form, setForm] = useState({ title: '', description: '', priority: 'medium' as CrmTask['priority'], due_date: '', contact_id: contactId || '' });
   const [saving, setSaving] = useState(false);
 
@@ -1157,6 +1159,7 @@ function AddTaskModal({ contactId, onClose, onSaved }: { contactId?: string; onC
       const body = { ...form, contact_id: form.contact_id || null, due_date: form.due_date || null };
       await fetch('/api/agency/crm/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       onSaved(); onClose();
+      router.refresh();
     } finally { setSaving(false); }
   };
 
@@ -1204,6 +1207,7 @@ const KANBAN_STAGES = [
 ];
 
 function ClientPipelineKanban({ clientId }: { clientId: string }) {
+  const router = useRouter();
   const [deals, setDeals] = useState<KanbanDeal[]>([]);
   const [loading, setLoading] = useState(true);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
@@ -1259,6 +1263,8 @@ function ClientPipelineKanban({ clientId }: { clientId: string }) {
       });
       if (!res.ok) {
         setDeals(prev => prev.map(d => d.id === dealId ? { ...d, stage: deal.stage } : d));
+      } else {
+        router.refresh();
       }
     } catch {
       setDeals(prev => prev.map(d => d.id === dealId ? { ...d, stage: deal.stage } : d));
@@ -1480,6 +1486,7 @@ function DealsSection({ clientId }: { clientId: string }) {
 // ── Deal Modal ─────────────────────────────────────────────────────────────────
 
 function DealModal({ deal, contacts, onClose, onSaved }: { deal: Deal | null; contacts: Contact[]; onClose: () => void; onSaved: () => void }) {
+  const router = useRouter();
   const [form, setForm] = useState({
     name: deal?.name || '', value: deal?.value?.toString() || '', currency: deal?.currency || 'USD',
     stage: deal?.stage || 'prospect', contact_id: deal?.contact_id || '', close_date: deal?.close_date?.split('T')[0] || '', notes: deal?.notes || '',
@@ -1494,7 +1501,7 @@ function DealModal({ deal, contacts, onClose, onSaved }: { deal: Deal | null; co
       const url = deal ? `/api/agency/crm/deals/${deal.id}` : '/api/agency/crm/deals';
       const method = deal ? 'PATCH' : 'POST';
       const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      if (res.ok) onSaved();
+      if (res.ok) { onSaved(); router.refresh(); }
     } finally { setSaving(false); }
   };
 
@@ -1502,6 +1509,7 @@ function DealModal({ deal, contacts, onClose, onSaved }: { deal: Deal | null; co
     if (!deal || !window.confirm('Delete this deal?')) return;
     await fetch(`/api/agency/crm/deals/${deal.id}`, { method: 'DELETE' });
     onSaved();
+    router.refresh();
   };
 
   return (
@@ -1543,6 +1551,7 @@ function DealModal({ deal, contacts, onClose, onSaved }: { deal: Deal | null; co
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function TasksSection({ clientId }: { clientId: string }) {
+  const router = useRouter();
   const [tasks, setTasks] = useState<CrmTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
@@ -1592,12 +1601,14 @@ function TasksSection({ clientId }: { clientId: string }) {
     const status = task.status === 'completed' ? 'pending' : 'completed';
     await fetch(`/api/agency/crm/tasks/${task.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
     loadTasks();
+    router.refresh();
   };
 
   const handleDeleteTask = async (id: string) => {
     if (!window.confirm('Delete this task?')) return;
     await fetch(`/api/agency/crm/tasks/${id}`, { method: 'DELETE' });
     loadTasks();
+    router.refresh();
   };
 
   return (
@@ -1676,6 +1687,7 @@ function TasksSection({ clientId }: { clientId: string }) {
 // ── Edit Task Modal ────────────────────────────────────────────────────────────
 
 function EditTaskModal({ task, onClose, onSaved }: { task: CrmTask; onClose: () => void; onSaved: () => void }) {
+  const router = useRouter();
   const [form, setForm] = useState({
     title: task.title, description: task.description || '', priority: task.priority,
     due_date: task.due_date?.split('T')[0] || '', status: task.status,
@@ -1690,6 +1702,7 @@ function EditTaskModal({ task, onClose, onSaved }: { task: CrmTask; onClose: () 
         body: JSON.stringify({ ...form, due_date: form.due_date || null }),
       });
       onSaved();
+      router.refresh();
     } finally { setSaving(false); }
   };
 
@@ -1697,6 +1710,7 @@ function EditTaskModal({ task, onClose, onSaved }: { task: CrmTask; onClose: () 
     if (!window.confirm('Delete this task?')) return;
     await fetch(`/api/agency/crm/tasks/${task.id}`, { method: 'DELETE' });
     onSaved();
+    router.refresh();
   };
 
   return (
@@ -1947,6 +1961,7 @@ function ActivitySection({ clientId }: { clientId: string }) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function AIInsightsSection({ setSection, clientId }: { setSection: (s: Section) => void; clientId: string }) {
+  const router = useRouter();
   const [feed, setFeed] = useState<FeedResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [aiHandledOpen, setAiHandledOpen] = useState(false);
@@ -1985,6 +2000,7 @@ function AIInsightsSection({ setSection, clientId }: { setSection: (s: Section) 
           body: JSON.stringify({ activity_id: item.id }),
         });
         fetchFeed();
+        router.refresh();
       }
     } catch (err) { console.error('[crm-ai] send failed:', err); }
     setSending(null);
@@ -2186,6 +2202,7 @@ interface ScoringRule {
 }
 
 function ScoringSection() {
+  const router = useRouter();
   const [rules, setRules] = useState<ScoringRule[]>([]);
   const [loading, setLoading] = useState(true);
   const [scoring, setScoring] = useState(false);
@@ -2213,6 +2230,7 @@ function ScoringSection() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rules }),
       });
+      router.refresh();
     } finally { setSaving(false); }
   };
 
@@ -2224,6 +2242,7 @@ function ScoringSection() {
       if (res.ok) {
         const data = await res.json();
         setScoreResult({ scored: data.scoring?.scored ?? 0, stale: data.stale_deals?.stale ?? 0 });
+        router.refresh();
       }
     } finally { setScoring(false); }
   };
@@ -2418,6 +2437,7 @@ const SEGMENT_VALUE_OPTIONS: Record<string, string[]> = {
 };
 
 function SegmentsSection({ setSection }: { setSection: (s: Section) => void }) {
+  const router = useRouter();
   const [segments, setSegments] = useState<Segment[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -2444,6 +2464,7 @@ function SegmentsSection({ setSection }: { setSection: (s: Section) => void }) {
       body: JSON.stringify({ action: 'delete', segmentId: id }),
     });
     loadSegments();
+    router.refresh();
   };
 
   // Sprint 4: Bulk SMS from segment
@@ -2463,7 +2484,7 @@ function SegmentsSection({ setSection }: { setSection: (s: Section) => void }) {
       });
       const data = await res.json();
       setSmsResult(res.ok ? `✅ SMS queued for ${data.count ?? '?'} contacts` : `❌ ${data.error || 'Failed'}`);
-      if (res.ok) setSmsMessage('');
+      if (res.ok) { setSmsMessage(''); router.refresh(); }
     } finally { setSmsSending(false); }
   };
 
@@ -2601,6 +2622,7 @@ function SegmentEditor({ segment, onClose, onSaved }: {
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const router = useRouter();
   const [name, setName] = useState(segment?.name || '');
   const [emoji, setEmoji] = useState(segment?.emoji || '📋');
   const [filters, setFilters] = useState<Segment['filters']>(
@@ -2624,6 +2646,7 @@ function SegmentEditor({ segment, onClose, onSaved }: {
         body: JSON.stringify({ action: 'save', segment: { ...segment, name, emoji, filters, id: segment?.id } }),
       });
       onSaved();
+      router.refresh();
     } finally { setSaving(false); }
   };
 
@@ -2710,6 +2733,7 @@ interface DuplicateGroup {
 }
 
 function MergeSection() {
+  const router = useRouter();
   const [groups, setGroups] = useState<DuplicateGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [merging, setMerging] = useState<string | null>(null);
@@ -2738,6 +2762,7 @@ function MergeSection() {
       if (res.ok) {
         setMerged(prev => new Set([...prev, group.key]));
         setGroups(prev => prev.filter(g => g.key !== group.key));
+        router.refresh();
       }
     } finally { setMerging(null); }
   };

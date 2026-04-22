@@ -73,6 +73,7 @@ import WorkflowsTab from '@/components/dashboard/client-tabs/workflows-tab';
 import AiSetupTab from '@/components/dashboard/client-tabs/ai-setup-tab';
 import SeoGeoTab from '@/components/dashboard/client-tabs/seo-geo-tab';
 import DispatchTab from '@/components/dashboard/client-tabs/dispatch-tab';
+import { getInitials } from '@/lib/format/initials';
 
 // ── GHL Free Sub-Account Sticky Banner ───────────────────────────────────────
 
@@ -1699,17 +1700,35 @@ function ConversationsTab({ client }: { client: AgencyClient }) {
   const [voiceCalls, setVoiceCalls] = useState<VoiceCall[]>([]);
   const [voiceLoading, setVoiceLoading] = useState(false);
   const [expandedCall, setExpandedCall] = useState<string | null>(null);
+  // Load-error state surfaces failures that previously only hit console.error,
+  // so users can see when polling is degraded rather than staring at a stale
+  // empty list with no explanation.
+  const [loadError, setLoadError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Helper: only poll when the tab is actually visible. Prevents wasting API
+  // calls (and the associated credits/rate-limit budget) when the user has
+  // switched to another tab or minimized the browser. Guarded by typeof so
+  // it no-ops during SSR.
+  const isDocumentVisible = () =>
+    typeof document === 'undefined' || document.visibilityState === 'visible';
 
   // Load voice calls
   useEffect(() => {
     if (channelFilter !== 'voice') return;
     setVoiceLoading(true);
+    setLoadError(null);
     fetch(`/api/voice/call-logs?entityId=${client.id}&limit=50`)
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
       .then(d => setVoiceCalls(d.calls ?? []))
-      .catch(err => console.error('[voice-calls] load failed:', err))
+      .catch(err => {
+        console.error('[voice-calls] load failed:', err);
+        setLoadError(`Couldn't load voice calls: ${err instanceof Error ? err.message : 'unknown error'}. Retrying…`);
+      })
       .finally(() => setVoiceLoading(false));
   }, [channelFilter, client.id]);
 
@@ -1718,18 +1737,28 @@ function ConversationsTab({ client }: { client: AgencyClient }) {
     const params = new URLSearchParams({ limit: '30' });
     if (searchQuery) params.set('q', searchQuery);
     fetch(`/api/agency/clients/${client.id}/threads?${params}`)
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
       .then(d => {
         setThreads(d.threads || []);
         setTotalThreads(d.total || 0);
+        setLoadError(null);
       })
-      .catch(err => console.error('[threads] load failed:', err))
+      .catch(err => {
+        console.error('[threads] load failed:', err);
+        setLoadError(`Couldn't refresh inbox: ${err instanceof Error ? err.message : 'unknown error'}. Retrying…`);
+      })
       .finally(() => setLoading(false));
   }, [client.id, searchQuery]);
 
   useEffect(() => {
     loadThreads();
-    const interval = setInterval(loadThreads, 15_000);
+    const interval = setInterval(() => {
+      // Skip polling when tab is hidden — wasted bandwidth + rate-limit hits
+      if (isDocumentVisible()) loadThreads();
+    }, 15_000);
     return () => clearInterval(interval);
   }, [loadThreads]);
 
@@ -1741,22 +1770,33 @@ function ConversationsTab({ client }: { client: AgencyClient }) {
       ? `/api/agency/clients/${client.id}/messages?source=webchat&contactId=${encodeURIComponent(contactId)}`
       : `/api/agency/clients/${client.id}/messages?limit=100`;
     fetch(url)
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
       .then(d => {
         const msgs = (d.messages || [])
           .filter((m: GHLMessage) => isWebChat || m.contact_id === contactId)
           .sort((a: GHLMessage, b: GHLMessage) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
         setThreadMessages(msgs);
+        setLoadError(null);
         setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
       })
-      .catch(err => console.error('[thread-messages] load failed:', err))
+      .catch(err => {
+        console.error('[thread-messages] load failed:', err);
+        setLoadError(`Couldn't load messages: ${err instanceof Error ? err.message : 'unknown error'}. Retrying…`);
+      })
       .finally(() => setThreadLoading(false));
   }, [client.id]);
 
   useEffect(() => {
     if (selectedContact) {
       loadThreadMessages(selectedContact.contactId, selectedContact.messageType);
-      const interval = setInterval(() => loadThreadMessages(selectedContact.contactId, selectedContact.messageType), 10_000);
+      const interval = setInterval(() => {
+        if (isDocumentVisible()) {
+          loadThreadMessages(selectedContact.contactId, selectedContact.messageType);
+        }
+      }, 10_000);
       return () => clearInterval(interval);
     }
   }, [selectedContact, loadThreadMessages]);
@@ -1816,11 +1856,6 @@ function ConversationsTab({ client }: { client: AgencyClient }) {
     const diffHrs = Math.floor(diffMins / 60);
     if (diffHrs < 24) return `${diffHrs}h`;
     return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
-  };
-
-  const getInitials = (name: string | null) => {
-    if (!name) return '?';
-    return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
   };
 
   if (loading) {
@@ -1940,6 +1975,21 @@ function ConversationsTab({ client }: { client: AgencyClient }) {
 
   return (
     <div className="space-y-3">
+    {/* Load-error banner — surfaces transient failures that previously only
+        hit console.error. Auto-clears when the next poll succeeds. */}
+    {loadError && (
+      <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs">
+        <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+        <span className="flex-1">{loadError}</span>
+        <button
+          onClick={() => setLoadError(null)}
+          className="shrink-0 hover:opacity-70"
+          aria-label="Dismiss"
+        >
+          ×
+        </button>
+      </div>
+    )}
     <ChannelFilterBar filter={channelFilter} onChange={setChannelFilter} />
     <div className="flex h-[calc(100vh-260px)] min-h-[500px] rounded-xl border border-gray-200 overflow-hidden bg-white">
       {/* ── Thread List (Left Panel) ── */}

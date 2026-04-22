@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Mail, Send, Plus, Search, Upload, Trash2, Eye, X, Users,
   BarChart3, FileText, Clock, CheckCircle2, AlertTriangle, Loader2,
@@ -252,6 +253,7 @@ export default function EmailMarketingTab({ client }: EmailMarketingTabProps) {
 // ══════════════════════════════════════════════════════════════════════════════
 
 function CampaignsView({ clientId }: { clientId: string }) {
+  const router = useRouter();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<'list' | 'compose' | 'detail'>('list');
@@ -317,6 +319,7 @@ function CampaignsView({ clientId }: { clientId: string }) {
     if (res.ok) {
       setView('list');
       load();
+      router.refresh();
     }
   };
 
@@ -331,11 +334,13 @@ function CampaignsView({ clientId }: { clientId: string }) {
     setSendConfirm(false);
     setView('list');
     load();
+    router.refresh();
   };
 
   const handleDelete = async (id: string) => {
     await fetch(`/api/agency/clients/${clientId}/email/campaigns/${id}`, { method: 'DELETE' });
     load();
+    router.refresh();
   };
 
   // ── List View ──
@@ -533,6 +538,7 @@ function CampaignsView({ clientId }: { clientId: string }) {
                   const data = await res.json();
                   setSelected(data.campaign);
                   setSendConfirm(true);
+                  router.refresh();
                 }
               }}
               disabled={!form.name || !form.subject || !form.from_name || !form.from_email || !form.html_body}
@@ -565,6 +571,7 @@ function CampaignsView({ clientId }: { clientId: string }) {
 // ══════════════════════════════════════════════════════════════════════════════
 
 function ContactsView({ clientId }: { clientId: string }) {
+  const router = useRouter();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -601,6 +608,7 @@ function ContactsView({ clientId }: { clientId: string }) {
     setShowAdd(false);
     setAddForm({ email: '', first_name: '', last_name: '', phone: '', tags: '' });
     load();
+    router.refresh();
   };
 
   const handleCSV = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -639,6 +647,7 @@ function ContactsView({ clientId }: { clientId: string }) {
     setImporting(false);
     if (fileRef.current) fileRef.current.value = '';
     load();
+    router.refresh();
   };
 
   const handleDeleteSelected = async (ids: string[]) => {
@@ -648,6 +657,7 @@ function ContactsView({ clientId }: { clientId: string }) {
       body: JSON.stringify({ ids }),
     });
     load();
+    router.refresh();
   };
 
   return (
@@ -783,6 +793,7 @@ function ContactsView({ clientId }: { clientId: string }) {
 // ══════════════════════════════════════════════════════════════════════════════
 
 function TemplatesView({ clientId }: { clientId: string }) {
+  const router = useRouter();
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -846,6 +857,7 @@ function TemplatesView({ clientId }: { clientId: string }) {
     setShowCreate(false);
     setCreateForm({ name: '', subject: '', html_body: '', category: 'custom' });
     load();
+    router.refresh();
   };
 
   const openEdit = (t: Template, e: React.MouseEvent) => {
@@ -885,6 +897,7 @@ function TemplatesView({ clientId }: { clientId: string }) {
     setSaving(false);
     setEditing(null);
     load();
+    router.refresh();
   };
 
   const categoryColors: Record<string, string> = {

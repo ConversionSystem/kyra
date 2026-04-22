@@ -934,7 +934,12 @@ function KeywordsTab({ data, clientId, siteId }: { data: SeoData; clientId: stri
           setTrackedKeywords(Array.from(unique.values()));
         }
       })
-      .catch(() => {});
+      .catch(err => {
+        // Load failure — log for ops visibility. Users see an empty tracker
+        // (existing empty-state). Not worth a banner here because the poll
+        // will retry next time the component mounts.
+        console.warn('[seo-geo] tracked-keywords load failed:', err);
+      });
   }, [siteId]);
 
   // Save tracked keywords to DB
@@ -1481,7 +1486,10 @@ function GrowthTab({ siteId }: { siteId: string }) {
     fetch(`/api/agency/sites/${siteId}/seo/growth`)
       .then(r => r.json())
       .then(data => setSuggestions(data.suggestions || []))
-      .catch(() => {})
+      .catch(err => {
+        // Load failure — logged for ops; user sees empty "no suggestions yet" state.
+        console.warn('[seo-geo] growth-suggestions load failed:', err);
+      })
       .finally(() => setLoading(false));
   }, [siteId]);
 

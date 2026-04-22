@@ -18,6 +18,7 @@ import { getScopedToolsForWorker } from '@/lib/ai-workers/tool-scoping';
 import { updateClientConfig } from '@/lib/ovh/provisioner';
 import { resolveGHLConfig } from '@/lib/ghl/resolve-ghl-config';
 import { PLANS } from '@/lib/billing/plans';
+import { isMasterAgency } from '@/lib/agency/constants';
 
 export const dynamic = 'force-dynamic';
 
@@ -5406,6 +5407,31 @@ export async function POST(request: NextRequest) {
 
   if (!clientId || !type || !templateId) {
     return NextResponse.json({ error: 'clientId, type, and templateId are required' }, { status: 400 });
+  }
+
+  // ── Worker plan-gate: enforce server-side what the UI gates client-side ───
+  // Marketing Worker is private-beta (master agency only). Mirrors the UI
+  // lock in components/dashboard/client-tabs/ai-workers-tab.tsx so a crafted
+  // request cannot bypass the click-to-apply gate.
+  if (type === 'role' && templateId === 'ai-marketing-worker' && !isMasterAgency(agency.id)) {
+    return NextResponse.json(
+      { error: 'AI Marketing Worker is available in private beta only. Contact Kyra support to request access.' },
+      { status: 403 },
+    );
+  }
+
+  // Also enforce the visibility/allowedAgencies metadata on role workers —
+  // private workers are only applyable by explicitly allowlisted agencies (or master).
+  if (type === 'role') {
+    const def = ROLE_WORKERS.find(r => r.id === templateId);
+    if (def?.visibility === 'private'
+      && !def.allowedAgencies?.includes(agency.id)
+      && !isMasterAgency(agency.id)) {
+      return NextResponse.json(
+        { error: 'This worker requires a private-beta entitlement. Contact Kyra support to request access.' },
+        { status: 403 },
+      );
+    }
   }
 
   const supabase = await createClient();

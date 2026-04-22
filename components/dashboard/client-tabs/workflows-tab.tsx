@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Sparkles,
   Plus,
@@ -189,6 +190,7 @@ interface WorkflowsTabProps {
 }
 
 export default function WorkflowsTab({ client }: WorkflowsTabProps) {
+  const router = useRouter();
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [templates, setTemplates] = useState<WorkflowTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -275,6 +277,7 @@ export default function WorkflowsTab({ client }: WorkflowsTabProps) {
       setShowCreate(false);
       setPreview(null);
       setAiPrompt('');
+      router.refresh();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to save');
     }
@@ -293,6 +296,7 @@ export default function WorkflowsTab({ client }: WorkflowsTabProps) {
       });
       if (res.ok) {
         setWorkflows(prev => prev.map(w => w.id === workflow.id ? { ...w, status: newStatus } : w));
+        router.refresh();
       }
     } catch { /* ignore */ }
   };
@@ -305,6 +309,7 @@ export default function WorkflowsTab({ client }: WorkflowsTabProps) {
       const res = await fetch(`/api/agency/clients/${clientId}/workflows/${id}`, { method: 'DELETE' });
       if (res.ok) {
         setWorkflows(prev => prev.filter(w => w.id !== id));
+        router.refresh();
       }
     } catch { /* ignore */ }
   };
