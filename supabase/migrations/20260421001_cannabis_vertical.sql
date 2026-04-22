@@ -38,9 +38,11 @@ CREATE TABLE IF NOT EXISTS public.dispatch_briefings (
 
 CREATE INDEX IF NOT EXISTS idx_dispatch_briefings_client_time
   ON public.dispatch_briefings(client_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_dispatch_briefings_active
-  ON public.dispatch_briefings(client_id, expires_at DESC)
-  WHERE expires_at > NOW();
+-- Plain composite index (no partial WHERE). Postgres rejects NOW() in an index
+-- predicate because it's STABLE, not IMMUTABLE. Readers filter expires_at
+-- themselves; this index still supports those range scans.
+CREATE INDEX IF NOT EXISTS idx_dispatch_briefings_expires
+  ON public.dispatch_briefings(client_id, expires_at DESC);
 
 ALTER TABLE public.dispatch_briefings ENABLE ROW LEVEL SECURITY;
 
