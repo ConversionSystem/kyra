@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Truck, Clock, AlertTriangle, CheckCircle2, Zap,
   MapPin, Users, Bell, Settings, Play, RefreshCw,
@@ -86,6 +87,7 @@ const SUB_VIEWS: { id: SubView; label: string; icon: React.ElementType }[] = [
 // ── Main Component ────────────────────────────────────────────────────────
 
 export default function DispatchTab({ clientId }: { clientId: string }) {
+  const router = useRouter();
   const [activeView, setActiveView] = useState<SubView>('overview');
   const [config, setConfig] = useState<DispatchConfig | null>(null);
   const [stats, setStats] = useState<DispatchStats | null>(null);
@@ -141,6 +143,7 @@ export default function DispatchTab({ clientId }: { clientId: string }) {
         await loadData();
         setSaveMsg('Saved');
         setTimeout(() => setSaveMsg(null), 2000);
+        router.refresh();
       } else {
         const data = await res.json();
         setSaveMsg(`Error: ${data.error || 'Failed to save'}`);
@@ -550,6 +553,7 @@ function OverviewView({
 // ── Webhook URL Card ──────────────────────────────────────────────────────
 
 function WebhookUrlCard({ clientId, hasApiKey }: { clientId: string; hasApiKey?: boolean }) {
+  const router = useRouter();
   const [copied, setCopied] = useState(false);
   const [registering, setRegistering] = useState(false);
   const [registerResult, setRegisterResult] = useState<{ success: boolean; message: string } | null>(null);
@@ -583,6 +587,7 @@ function WebhookUrlCard({ clientId, hasApiKey }: { clientId: string; hasApiKey?:
           success: true,
           message: `${created} webhook${created !== 1 ? 's' : ''} registered${data.existed ? `, ${data.existed} already existed` : ''}`,
         });
+        router.refresh();
       }
     } catch {
       setRegisterResult({ success: false, message: 'Network error' });
@@ -658,6 +663,7 @@ function RoutesView({
   saving: boolean;
   saveMsg: string | null;
 }) {
+  const router = useRouter();
   const [optimizing, setOptimizing] = useState(false);
   const [optimizeResult, setOptimizeResult] = useState<string | null>(null);
   const [interval, setInterval_] = useState(config?.optimizationIntervalMinutes ?? 15);
@@ -685,6 +691,7 @@ function RoutesView({
       const data = await res.json();
       if (data.success) {
         setOptimizeResult(`Optimized: ${data.tasksProcessed} tasks processed, ${data.tasksUpdated} updated`);
+        router.refresh();
       } else {
         setOptimizeResult(`Error: ${data.errors?.join(', ') || data.error || 'Unknown'}`);
       }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Globe,
   ExternalLink,
@@ -102,6 +103,7 @@ function StatusBadge({ status }: { status: SiteData['status'] }) {
 // ── SEO Health (compact badges) ───────────────────────────────────────────────
 
 function SEOHealthCompact({ site }: { site: SiteData }) {
+  const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const [submitResult, setSubmitResult] = useState<string | null>(null);
   const isDeployed = !!site.last_deployed_at || site.status === 'live';
@@ -174,6 +176,7 @@ function SEOHealthCompact({ site }: { site: SiteData }) {
                 const res = await fetch(`/api/agency/sites/${site.id}/submit-sitemap`, { method: 'POST' });
                 const data = await res.json();
                 setSubmitResult(data.ok ? 'Sitemap submitted!' : (data.error || 'Failed'));
+                if (data.ok) router.refresh();
               } catch {
                 setSubmitResult('Failed to submit');
               } finally {
@@ -486,6 +489,7 @@ interface BlogPage {
 // ── Blog Section ─────────────────────────────────────────────────────────────
 
 function BlogSection({ siteId }: { siteId: string }) {
+  const router = useRouter();
   const [posts, setPosts] = useState<BlogPage[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -534,6 +538,7 @@ function BlogSection({ siteId }: { siteId: string }) {
         setPosts(p => [data.data, ...p]);
         setShowForm(false);
         setForm({ title: '', slug: '', meta_description: '', content: '' });
+        router.refresh();
       }
     } finally {
       setSaving(false);
@@ -650,6 +655,7 @@ function BlogSection({ siteId }: { siteId: string }) {
 // ── Main WebsiteTab ───────────────────────────────────────────────────────────
 
 export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
+  const router = useRouter();
   const [site, setSite] = useState<SiteData | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -754,6 +760,7 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
         if (res.ok) {
           await new Promise(r => setTimeout(r, 3000));
           await refreshSite();
+          router.refresh();
         }
       }
     } catch {
@@ -807,6 +814,7 @@ export default function WebsiteTab({ clientId, clientName }: WebsiteTabProps) {
                 } else {
                   await refreshSite();
                 }
+                router.refresh();
               } catch (err) { console.error('[website-tab]', err); }
             }}
             className="shrink-0 text-xs font-medium bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg transition whitespace-nowrap"

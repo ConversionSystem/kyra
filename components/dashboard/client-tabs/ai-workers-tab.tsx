@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   ArrowRight, Loader2, X, ChevronDown, CheckCircle2, AlertTriangle,
   ChevronRight, Users, User, Plus, Trash2, Sparkles,
@@ -77,6 +78,7 @@ function matchesCategory(worker: RoleWorker, category: WorkerCategory): boolean 
 import { isMasterAgency } from '@/lib/agency/constants';
 
 export default function AIWorkersTab({ client, agencyId, plan }: AIWorkersTabProps) {
+  const router = useRouter();
   const [view, setView] = useState<'workers' | 'skills'>('workers');
   const isMaster = isMasterAgency(agencyId);
   // Marketing Worker is locked for all except the master agency (private beta)
@@ -159,6 +161,7 @@ export default function AIWorkersTab({ client, agencyId, plan }: AIWorkersTabPro
         }
         setTeamResult({ success: true, message: msg });
         setEditingTeam(false);
+        router.refresh();
       } else {
         setTeamResult({ success: false, message: data.error || 'Failed to save team' });
       }
@@ -184,6 +187,7 @@ export default function AIWorkersTab({ client, agencyId, plan }: AIWorkersTabPro
         setTeamPrimary('');
         setEditingTeam(false);
         setTeamResult({ success: true, message: 'Team disabled. Single worker mode restored.' });
+        router.refresh();
       } else {
         setTeamResult({ success: false, message: data.error || 'Failed to disable team' });
       }
@@ -272,6 +276,7 @@ export default function AIWorkersTab({ client, agencyId, plan }: AIWorkersTabPro
           message: `${applyWorker.name} applied to ${client.name}.${data.containerPushed ? ' AI is live now.' : ''}`,
           warning: data.warning,
         });
+        router.refresh();
       }
     } catch {
       setApplyResult({ success: false, message: 'Network error. Please try again.' });
