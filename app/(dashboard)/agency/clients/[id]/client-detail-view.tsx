@@ -683,7 +683,7 @@ function TerminalTab({ client, plan }: { client: AgencyClient; plan?: string }) 
             </ul>
           </div>
           <a
-            href="/agency/settings?tab=billing"
+            href="/agency/billing"
             className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-colors"
           >
             <Zap className="h-4 w-4" /> Upgrade to Activate
