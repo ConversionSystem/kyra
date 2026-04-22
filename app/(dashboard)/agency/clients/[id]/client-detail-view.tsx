@@ -500,7 +500,7 @@ export function ClientDetailView({ client: initialClient, role, plan, accountTyp
 
           {/* Tab content */}
           {activeTab === 'terminal' && (
-            <TerminalTab client={initialClient} />
+            <TerminalTab client={initialClient} plan={plan} />
           )}
           {activeTab === 'inbox' && (
             <>
@@ -636,8 +636,9 @@ function SettingsWithPortal({
 
 // ── Terminal Tab ──────────────────────────────────────────────────────────────
 
-function TerminalTab({ client }: { client: AgencyClient }) {
+function TerminalTab({ client, plan }: { client: AgencyClient; plan?: string }) {
   const hasGateway = !!(client.gateway_url && client.gateway_status === 'running');
+  const isFree = !plan || plan === 'free';
   const [activating, setActivating] = useState(false);
   const [activateError, setActivateError] = useState<string | null>(null);
   const router = useRouter();
@@ -651,10 +652,6 @@ function TerminalTab({ client }: { client: AgencyClient }) {
         headers: { 'Content-Type': 'application/json' },
       });
       if (res.ok) {
-        // Give the gateway ~2s to start, then re-fetch the server component
-        // tree. Previously this was followed by a hard window.location.reload()
-        // 4s later — unnecessary, nukes in-flight user state, and violates
-        // our no-full-reload rule for SPA transitions.
         setTimeout(() => router.refresh(), 2000);
       } else {
         const data = await res.json().catch(() => ({}));
@@ -668,6 +665,33 @@ function TerminalTab({ client }: { client: AgencyClient }) {
   };
 
   if (!hasGateway) {
+    // Free plan: show upgrade prompt instead of activate button
+    if (isFree) {
+      return (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <Terminal className="h-12 w-12 text-gray-300 mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Terminal Not Available</h3>
+          <p className="text-sm text-gray-500 max-w-md mb-4">
+            AI terminals are available on paid plans. Upgrade to activate your AI worker and start serving customers.
+          </p>
+          <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 max-w-sm mb-6">
+            <p className="text-sm font-semibold text-indigo-800 mb-2">Choose a plan to get started:</p>
+            <ul className="text-sm text-indigo-700 space-y-1">
+              <li>🚀 <strong>Lite</strong> — $99/mo (up to 3 clients)</li>
+              <li>⚡ <strong>Pro</strong> — $299/mo (up to 10 clients)</li>
+              <li>🏢 <strong>Scale</strong> — $499/mo (up to 20 clients)</li>
+            </ul>
+          </div>
+          <a
+            href="/agency/settings?tab=billing"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-colors"
+          >
+            <Zap className="h-4 w-4" /> Upgrade to Activate
+          </a>
+        </div>
+      );
+    }
+
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <Terminal className="h-12 w-12 text-gray-300 mb-4" />
