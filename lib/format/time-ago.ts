@@ -1,7 +1,7 @@
 /**
  * Relative-time helper — "3h ago", "2d ago", etc. Single source of truth.
  * Replaces 4+ reimplementations across client-detail-view, crm-tab,
- * payments-sub-tab, voice-sub-tab.
+ * payments-sub-tab, retell-voice-tab.
  */
 export function timeAgo(dateStr: string | Date | null | undefined): string {
   if (!dateStr) return '—';
