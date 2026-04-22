@@ -1417,15 +1417,37 @@ function IntegrationsTab({ client, onRefresh }: { client: AgencyClient; onRefres
 
                       {integration.fields.length > 0 && (
                         <div className="mt-4 space-y-3">
-                          {integration.fields.map(field => (
+                          {integration.fields.map(field => {
+                            // Never pre-fill sensitive values into the DOM.
+                            // The HTML response already leaves the browser over
+                            // TLS, but any plaintext we put into `value` sits in
+                            // the rendered DOM + React state and gets exfiltrated
+                            // by the first browser extension / XSS / memory dump
+                            // that looks. Show a "saved" indicator instead; user
+                            // must retype to change.
+                            const hasSavedValue = Boolean(cfg[field.key]);
+                            const displayValue = field.sensitive
+                              ? (values[field.key] ?? '')
+                              : (values[field.key] ?? (cfg[field.key] as string) ?? '');
+                            const effectivePlaceholder = field.sensitive && hasSavedValue
+                              ? '•••••••••••••• (saved — enter new value to replace)'
+                              : field.placeholder;
+                            return (
                             <div key={field.key}>
-                              <label className="block text-xs font-medium text-gray-700 mb-1">{field.label}</label>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">
+                                {field.label}
+                                {field.sensitive && hasSavedValue && (
+                                  <span className="ml-2 inline-flex items-center gap-1 text-[10px] font-medium text-green-600">
+                                    <CheckCircle2 className="w-3 h-3" /> Saved
+                                  </span>
+                                )}
+                              </label>
                               <p className="text-[10px] text-gray-400 mb-1">{field.help}</p>
                               {field.multiline ? (
                                 <textarea
-                                  value={values[field.key] || (cfg[field.key] as string) || ''}
+                                  value={displayValue}
                                   onChange={e => setValues(v => ({ ...v, [field.key]: e.target.value }))}
-                                  placeholder={field.placeholder}
+                                  placeholder={effectivePlaceholder}
                                   rows={4}
                                   className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono"
                                 />
@@ -1433,9 +1455,10 @@ function IntegrationsTab({ client, onRefresh }: { client: AgencyClient; onRefres
                                 <div className="relative">
                                   <input
                                     type={field.sensitive && !showSensitive[field.key] ? 'password' : 'text'}
-                                    value={values[field.key] || (cfg[field.key] as string) || ''}
+                                    value={displayValue}
                                     onChange={e => setValues(v => ({ ...v, [field.key]: e.target.value }))}
-                                    placeholder={field.placeholder}
+                                    placeholder={effectivePlaceholder}
+                                    autoComplete={field.sensitive ? 'new-password' : undefined}
                                     className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono pr-10"
                                   />
                                   {field.sensitive && (
@@ -1450,7 +1473,8 @@ function IntegrationsTab({ client, onRefresh }: { client: AgencyClient; onRefres
                                 </div>
                               )}
                             </div>
-                          ))}
+                            );
+                          })}
 
                           <div className="flex items-center gap-3 pt-2">
                             <button

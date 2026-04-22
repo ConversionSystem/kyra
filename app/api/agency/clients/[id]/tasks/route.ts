@@ -4,7 +4,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { requireClientAccess } from '@/lib/agency/middleware';
 import { getNextCronRun } from '@/lib/tasks/cron-utils';
 import type { TaskType, TriggerType } from '@/lib/tasks/task-types';
 
@@ -15,21 +16,14 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: clientId } = await params;
-  const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const auth = await requireClientAccess(clientId);
+  if (auth.error) {
+    return NextResponse.json({ error: auth.error.message }, { status: auth.error.status });
+  }
 
-  // Verify user is agency member for this client
-  const { data: client } = await supabase
-    .from('agency_clients')
-    .select('agency_id')
-    .eq('id', clientId)
-    .single();
-
-  if (!client) return NextResponse.json({ error: 'Client not found' }, { status: 404 });
-
-  const { data: tasks, error } = await supabase
+  const svc = createServiceClientWithoutCookies();
+  const { data: tasks, error } = await svc
     .from('worker_tasks')
     .select('*')
     .eq('client_id', clientId)
@@ -45,19 +39,11 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: clientId } = await params;
-  const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-  // Get client to verify agency membership and get agency_id
-  const { data: client } = await supabase
-    .from('agency_clients')
-    .select('agency_id')
-    .eq('id', clientId)
-    .single();
-
-  if (!client) return NextResponse.json({ error: 'Client not found' }, { status: 404 });
+  const auth = await requireClientAccess(clientId);
+  if (auth.error) {
+    return NextResponse.json({ error: auth.error.message }, { status: auth.error.status });
+  }
 
   const body = await req.json();
   const {
@@ -100,11 +86,12 @@ export async function POST(
     next_run_at = nextRun?.toISOString() ?? null;
   }
 
-  const { data: task, error } = await supabase
+  const svc = createServiceClientWithoutCookies();
+  const { data: task, error } = await svc
     .from('worker_tasks')
     .insert({
       client_id: clientId,
-      agency_id: client.agency_id,
+      agency_id: auth.data.client.agency_id,
       name,
       description: description ?? null,
       task_type,

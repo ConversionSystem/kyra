@@ -3,7 +3,7 @@
 // Verify agency membership and roles for API route handlers.
 // ============================================================================
 
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
 import { Agency, AgencyMember } from './types';
 import { User } from '@supabase/supabase-js';
 
@@ -13,8 +13,14 @@ interface AgencyContext {
   membership: AgencyMember;
 }
 
-interface ClientAccessContext extends AgencyContext {
-  clientId: string;
+/** Same shape as AgencyContext but with the specific client the caller is
+ *  targeting. Returned by `requireClientAccess()`. */
+export interface ClientAccessContext extends AgencyContext {
+  client: {
+    id: string;
+    agency_id: string;
+    name: string | null;
+  };
 }
 
 /**
@@ -104,6 +110,75 @@ export async function requireAgencyOwner(): Promise<
 }
 
 /**
+ * Verify the caller is an agency member AND the target `clientId` belongs to
+ * their agency. Returns the client row plus the full agency context.
+ *
+ * This is the canonical guard for every `/api/agency/clients/[id]/**` route.
+ * Previously many of those routes either used raw `supabase.auth.getUser()`
+ * (no agency scoping) or `requireAgencyMember()` without verifying the
+ * clientId in the URL actually belonged to the caller — a cross-tenant
+ * abuse vector (chainable with the public /api/public/workers endpoint
+ * which exposes client UUIDs).
+ *
+ * Usage:
+ *   const auth = await requireClientAccess(clientId);
+ *   if (auth.error) return NextResponse.json(
+ *     { error: auth.error.message }, { status: auth.error.status }
+ *   );
+ *   const { user, agency, membership, client } = auth.data;
+ *
+ * Error shape matches the other `require*` helpers so route code stays
+ * uniform. Not found → 404. Cross-tenant access → 403. Unauthenticated → 401.
+ *
+ * The client lookup uses the service role client (bypassing RLS) so the
+ * caller's membership check is the sole authority — RLS on `agency_clients`
+ * would otherwise return null rows and the caller would see a 404 for
+ * clients they ARE allowed to access but happen to have unusual RLS policies.
+ */
+export async function requireClientAccess(
+  clientId: string | null | undefined,
+): Promise<
+  { data: ClientAccessContext; error: null } | { data: null; error: { message: string; status: number } }
+> {
+  if (!clientId || typeof clientId !== 'string') {
+    return { data: null, error: { message: 'clientId is required', status: 400 } };
+  }
+
+  const auth = await requireAgencyMember();
+  if (auth.error) return auth;
+
+  const svc = createServiceClientWithoutCookies();
+  const { data: client, error: clientErr } = await svc
+    .from('agency_clients')
+    .select('id, agency_id, name')
+    .eq('id', clientId)
+    .maybeSingle();
+
+  if (clientErr || !client) {
+    return { data: null, error: { message: 'Client not found', status: 404 } };
+  }
+
+  if (client.agency_id !== auth.data.agency.id) {
+    return {
+      data: null,
+      error: { message: 'You do not have access to this client', status: 403 },
+    };
+  }
+
+  return {
+    data: {
+      ...auth.data,
+      client: {
+        id: client.id,
+        agency_id: client.agency_id,
+        name: client.name,
+      },
+    },
+    error: null,
+  };
+}
+
+/**
  * Verify the current user is an admin+ of their agency AND their agency is in
  * the ADVANCED_TABS allowlist (Marketing / Voice-SMS / SEO-GEO / IT Ops).
  *
@@ -164,40 +239,4 @@ export async function requireDispatchAgency(): Promise<
   return result;
 }
 
-/**
- * Verify the current user is a member of an agency AND that the given
- * `clientId` (agency_clients.id) belongs to that agency.
- *
- * Closes the cross-tenant gap where an agency member could act on briefings,
- * settings, or webhooks scoped to a client they don't own by URL-manipulating
- * the `[id]` segment. Every dispatch-agent-related route should gate on this.
- */
-export async function requireClientAccess(
-  clientId: string,
-): Promise<
-  { data: ClientAccessContext; error: null } | { data: null; error: { message: string; status: number } }
-> {
-  const result = await requireAgencyMember();
-  if (result.error) return result;
 
-  const supabase = await createClient();
-  const { data: client, error } = await supabase
-    .from('agency_clients')
-    .select('id, agency_id')
-    .eq('id', clientId)
-    .maybeSingle();
-
-  if (error || !client) {
-    return { data: null, error: { message: 'Client not found', status: 404 } };
-  }
-
-  if (client.agency_id !== result.data.agency.id) {
-    // Intentionally opaque — don't leak that the client exists under another agency.
-    return { data: null, error: { message: 'Client not found', status: 404 } };
-  }
-
-  return {
-    data: { ...result.data, clientId },
-    error: null,
-  };
-}

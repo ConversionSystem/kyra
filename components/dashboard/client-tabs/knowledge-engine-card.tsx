@@ -82,7 +82,15 @@ export default function KnowledgeEngineCard({ clientId }: KnowledgeEngineCardPro
     }
   }, [expanded, entries.length, loading, fetchEntries]);
 
-  const handleDelete = async (entryId: string) => {
+  const handleDelete = async (entryId: string, entryValue: string) => {
+    // Confirm before destroying an extracted knowledge entry — these are
+    // non-trivial to rebuild (they come from conversation history + LLM
+    // extraction). A misclick on the small trash icon shouldn't lose them.
+    const preview = entryValue.length > 80 ? `${entryValue.slice(0, 80)}…` : entryValue;
+    if (!window.confirm(`Remove this knowledge entry?\n\n"${preview}"\n\nYour AI worker will forget this until it re-extracts from a future conversation.`)) {
+      return;
+    }
+
     setDeleting(entryId);
     try {
       const res = await fetch(`/api/agency/clients/${clientId}/knowledge-engine`, {
@@ -203,7 +211,7 @@ export default function KnowledgeEngineCard({ clientId }: KnowledgeEngineCardPro
                             </div>
                           </div>
                           <button
-                            onClick={() => handleDelete(entry.id)}
+                            onClick={() => handleDelete(entry.id, entry.value)}
                             disabled={deleting === entry.id}
                             className="p-1 rounded hover:bg-white/50 transition-colors flex-shrink-0"
                             title="Remove this knowledge entry"

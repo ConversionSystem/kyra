@@ -6,7 +6,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { requireClientAccess } from '@/lib/agency/middleware';
 import { executeTask } from '@/lib/tasks/task-executor';
 import { getNextCronRun } from '@/lib/tasks/cron-utils';
 
@@ -17,12 +18,14 @@ type RouteParams = { params: Promise<{ id: string; taskId: string }> };
 
 export async function GET(_req: NextRequest, { params }: RouteParams) {
   const { id: clientId, taskId } = await params;
-  const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const auth = await requireClientAccess(clientId);
+  if (auth.error) {
+    return NextResponse.json({ error: auth.error.message }, { status: auth.error.status });
+  }
 
-  const { data: task, error: taskError } = await supabase
+  const svc = createServiceClientWithoutCookies();
+  const { data: task, error: taskError } = await svc
     .from('worker_tasks')
     .select('*')
     .eq('id', taskId)
@@ -32,7 +35,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
   if (taskError || !task) return NextResponse.json({ error: 'Task not found' }, { status: 404 });
 
   // Get recent runs (last 20)
-  const { data: runs } = await supabase
+  const { data: runs } = await svc
     .from('worker_task_runs')
     .select('*')
     .eq('task_id', taskId)
@@ -44,10 +47,11 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
 
 export async function PATCH(req: NextRequest, { params }: RouteParams) {
   const { id: clientId, taskId } = await params;
-  const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const auth = await requireClientAccess(clientId);
+  if (auth.error) {
+    return NextResponse.json({ error: auth.error.message }, { status: auth.error.status });
+  }
 
   const body = await req.json();
   const updates: Record<string, unknown> = {};
@@ -81,7 +85,8 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
 
   updates.updated_at = new Date().toISOString();
 
-  const { data: task, error } = await supabase
+  const svc = createServiceClientWithoutCookies();
+  const { data: task, error } = await svc
     .from('worker_tasks')
     .update(updates)
     .eq('id', taskId)
@@ -97,12 +102,14 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
 
 export async function DELETE(_req: NextRequest, { params }: RouteParams) {
   const { id: clientId, taskId } = await params;
-  const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const auth = await requireClientAccess(clientId);
+  if (auth.error) {
+    return NextResponse.json({ error: auth.error.message }, { status: auth.error.status });
+  }
 
-  const { error } = await supabase
+  const svc = createServiceClientWithoutCookies();
+  const { error } = await svc
     .from('worker_tasks')
     .delete()
     .eq('id', taskId)
@@ -115,10 +122,11 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
 
 export async function POST(req: NextRequest, { params }: RouteParams) {
   const { id: clientId, taskId } = await params;
-  const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const auth = await requireClientAccess(clientId);
+  if (auth.error) {
+    return NextResponse.json({ error: auth.error.message }, { status: auth.error.status });
+  }
 
   const body = await req.json();
   if (body.action !== 'run') {
@@ -126,7 +134,8 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   }
 
   // Verify task belongs to this client
-  const { data: task } = await supabase
+  const svc = createServiceClientWithoutCookies();
+  const { data: task } = await svc
     .from('worker_tasks')
     .select('id')
     .eq('id', taskId)
