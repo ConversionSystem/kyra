@@ -1,0 +1,161 @@
+{
+  "description": "Cannabis directories to audit for NAP consistency. Ordered by authority/importance to cannabis SEO.",
+  "directories": [
+    {
+      "name": "Google Business Profile",
+      "url_pattern": "https://www.google.com/maps/search/{{DISPENSARY_NAME}}+{{CITY}}",
+      "priority": "critical",
+      "method": "scrape",
+      "fields": ["name", "address", "phone", "website", "hours"]
+    },
+    {
+      "name": "Weedmaps",
+      "url_pattern": "https://weedmaps.com/dispensaries/{slug}",
+      "priority": "critical",
+      "method": "scrape",
+      "fields": ["name", "address", "phone", "website", "hours", "license"],
+      "note": "Largest cannabis directory — feeds most AI citations for dispensary queries"
+    },
+    {
+      "name": "Leafly",
+      "url_pattern": "https://www.leafly.com/dispensary-info/{slug}",
+      "priority": "critical",
+      "method": "scrape",
+      "fields": ["name", "address", "phone", "website", "hours", "license"],
+      "note": "Second-largest cannabis directory — heavy organic search traffic"
+    },
+    {
+      "name": "Jane",
+      "url_pattern": "https://www.iheartjane.com/stores/{slug}",
+      "priority": "high",
+      "method": "scrape",
+      "fields": ["name", "address", "phone", "website"],
+      "note": "Menu provider — appears in dispensary search results via embedded menus"
+    },
+    {
+      "name": "Dutchie",
+      "url_pattern": "https://dutchie.com/dispensary/{slug}",
+      "priority": "high",
+      "method": "scrape",
+      "fields": ["name", "address", "phone", "website"],
+      "note": "Menu provider — powers a large share of dispensary e-commerce"
+    },
+    {
+      "name": "AllBud",
+      "url_pattern": "https://www.allbud.com/search/dispensaries?q={{DISPENSARY_NAME}}&l={{CITY}}",
+      "priority": "high",
+      "method": "scrape",
+      "fields": ["name", "address", "phone", "website"]
+    },
+    {
+      "name": "Yelp",
+      "url_pattern": "https://www.yelp.com/search?find_desc={{DISPENSARY_NAME}}&find_loc={{CITY}}",
+      "priority": "high",
+      "method": "scrape",
+      "fields": ["name", "address", "phone", "website"]
+    },
+    {
+      "name": "Facebook",
+      "url_pattern": "https://www.facebook.com/search/pages/?q={{DISPENSARY_NAME}}+{{CITY}}",
+      "priority": "high",
+      "method": "scrape",
+      "fields": ["name", "address", "phone", "website"],
+      "note": "Facebook restricts cannabis ads — claim page but cannot boost posts"
+    },
+    {
+      "name": "Cannabis.net",
+      "url_pattern": "https://cannabis.net/dispensary/search?q={{DISPENSARY_NAME}}&location={{CITY}}",
+      "priority": "high",
+      "method": "scrape",
+      "fields": ["name", "address", "phone", "website"]
+    },
+    {
+      "name": "Merry Jane",
+      "url_pattern": "https://merryjane.com/dispensaries?q={{DISPENSARY_NAME}}&location={{CITY}}",
+      "priority": "high",
+      "method": "scrape",
+      "fields": ["name", "address", "phone", "website"]
+    },
+    {
+      "name": "BudTrader",
+      "url_pattern": "https://budtrader.com/search/dispensary?q={{DISPENSARY_NAME}}&location={{CITY}}",
+      "priority": "medium",
+      "method": "scrape",
+      "fields": ["name", "address", "phone", "website"]
+    },
+    {
+      "name": "Cannabis Reports",
+      "url_pattern": "https://www.cannabisreports.com/search?q={{DISPENSARY_NAME}}",
+      "priority": "medium",
+      "method": "scrape",
+      "fields": ["name", "address", "phone"]
+    },
+    {
+      "name": "SeshLyfe",
+      "url_pattern": "https://seshlyfe.com/search?q={{DISPENSARY_NAME}}&location={{CITY}}",
+      "priority": "medium",
+      "method": "scrape",
+      "fields": ["name", "address", "phone", "website"]
+    },
+    {
+      "name": "Budista",
+      "url_pattern": "https://budista.com/dispensaries/search?q={{DISPENSARY_NAME}}&city={{CITY}}",
+      "priority": "medium",
+      "method": "scrape",
+      "fields": ["name", "address", "phone"]
+    },
+    {
+      "name": "Nextdoor",
+      "url_pattern": "https://nextdoor.com/pages/{{DISPENSARY_NAME}}-{{CITY}}",
+      "priority": "medium",
+      "method": "scrape",
+      "fields": ["name", "address", "phone"],
+      "note": "Neighborhood social network — cannabis content restricted; claim page but tread carefully"
+    },
+    {
+      "name": "Apple Maps (Business Connect)",
+      "url_pattern": "https://businessconnect.apple.com",
+      "priority": "medium",
+      "method": "manual",
+      "fields": ["name", "address", "phone", "website"],
+      "note": "Feeds Siri AI recommendations — must claim via Apple Business Connect. Apple allows cannabis dispensaries in legal states."
+    },
+    {
+      "name": "Bing Places",
+      "url_pattern": "https://www.bing.com/maps?q={{DISPENSARY_NAME}}+{{CITY}}",
+      "priority": "medium",
+      "method": "scrape",
+      "fields": ["name", "address", "phone", "website"],
+      "note": "Feeds Microsoft Copilot AI recommendations"
+    },
+    {
+      "name": "Foursquare",
+      "url_pattern": "https://foursquare.com/explore?q={{DISPENSARY_NAME}}&near={{CITY}}",
+      "priority": "medium",
+      "method": "scrape",
+      "fields": ["name", "address", "phone"],
+      "note": "Feeds Apple Maps and many car nav systems"
+    },
+    {
+      "name": "MapQuest",
+      "url_pattern": "https://www.mapquest.com/search/results?query={{DISPENSARY_NAME}}&boundingBox={{CITY}}",
+      "priority": "low",
+      "method": "scrape",
+      "fields": ["name", "address", "phone"]
+    },
+    {
+      "name": "CitySearch",
+      "url_pattern": "https://www.citysearch.com/search?what={{DISPENSARY_NAME}}&where={{CITY}}",
+      "priority": "low",
+      "method": "scrape",
+      "fields": ["name", "address", "phone"]
+    },
+    {
+      "name": "Angi",
+      "url_pattern": "https://www.angi.com/companylist/{{CITY}}/dispensaries.htm",
+      "priority": "low",
+      "method": "scrape",
+      "fields": ["name", "address", "phone"]
+    }
+  ]
+}

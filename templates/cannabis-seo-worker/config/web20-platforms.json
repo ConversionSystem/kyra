@@ -1,0 +1,86 @@
+{
+  "description": "Web 2.0 and semantic stack publishing platforms.",
+  "web20": [
+    {
+      "name": "WordPress.com",
+      "method": "api",
+      "skill": "wordpress-pro",
+      "auth": "oauth2",
+      "supports_html": true,
+      "supports_maps_embed": true,
+      "note": "ClawHub skill — REST API. WordPress.com allows cannabis content on legal-state dispensaries."
+    },
+    {
+      "name": "Blogger",
+      "method": "api",
+      "skill": "custom",
+      "api": "https://www.googleapis.com/blogger/v3",
+      "auth": "google_service_account",
+      "supports_html": true,
+      "supports_maps_embed": true,
+      "note": "Google Blogger API v3. Cannabis content permitted; no psychoactive claims in ad-monetized posts."
+    },
+    {
+      "name": "Telegraph",
+      "method": "api",
+      "skill": "custom",
+      "api": "https://api.telegra.ph",
+      "auth": "none",
+      "supports_html": true,
+      "supports_maps_embed": false,
+      "note": "No auth needed — instant publish. Cannabis-friendly."
+    },
+    {
+      "name": "Notion",
+      "method": "api",
+      "skill": "notion",
+      "auth": "token",
+      "supports_html": false,
+      "supports_maps_embed": false,
+      "note": "ClawHub skill — public pages"
+    }
+  ],
+  "semantic_stacks": [
+    {
+      "name": "Google Docs",
+      "method": "api",
+      "skill": "google-docs",
+      "auth": "google_service_account",
+      "trust_level": "very_high",
+      "note": "ClawHub skill — public docs"
+    },
+    {
+      "name": "Google Sites",
+      "method": "api",
+      "skill": "custom",
+      "api": "https://sites.googleapis.com/v1",
+      "auth": "google_service_account",
+      "trust_level": "very_high",
+      "note": "Custom build — Sites API"
+    },
+    {
+      "name": "GitHub Pages",
+      "method": "api",
+      "skill": "github-pages-auto-deploy",
+      "auth": "github_token",
+      "trust_level": "high",
+      "note": "ClawHub skill — static HTML"
+    },
+    {
+      "name": "Notion (Stack)",
+      "method": "api",
+      "skill": "notion",
+      "auth": "token",
+      "trust_level": "high",
+      "note": "Shared with Web 2.0 — different content angle"
+    },
+    {
+      "name": "Telegraph (Stack)",
+      "method": "api",
+      "skill": "custom",
+      "auth": "none",
+      "trust_level": "medium",
+      "note": "Long-form location guide format"
+    }
+  ]
+}

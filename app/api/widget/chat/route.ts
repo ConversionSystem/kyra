@@ -178,12 +178,19 @@ export async function POST(request: NextRequest) {
 
   const cfg = (client.container_config as Record<string, unknown>) ?? {};
 
+  // ── Build Jane config from this client's container_config ──
+  // Returns null if required Algolia credentials are missing — in that case we skip
+  // product search entirely rather than falling through to hardcoded defaults.
+  const { buildJaneConfigFromContainerConfig } = await import('@/lib/integrations/jane');
+  const janeConfig = buildJaneConfigFromContainerConfig(cfg);
+  const janeActive = !!janeConfig;
+  const knownBrands = janeConfig?.knownBrands || [];
+
   // ── Override smart routing for product queries (needs configured model, not mini) ──
-  const janeActive = !!(cfg.jane_api_key || cfg.firecrawl_enabled);
   if (janeActive && routedModel !== clientModel) {
     try {
       const { isProductQuery } = await import('@/lib/integrations/jane');
-      if (isProductQuery(message.trim())) {
+      if (isProductQuery(message.trim(), knownBrands)) {
         routedModel = clientModel;
       }
     } catch { /* ignore */ }
@@ -414,17 +421,17 @@ Be knowledgeable but not pushy. If no products match, suggest browsing the full 
 
   // ── Product Search (Jane API integration for cannabis dispensaries) ────────
   let productContext = '';
-  if (janeActive) {
+  if (janeActive && janeConfig) {
     try {
       const { isProductQuery, parseProductIntent, searchProducts, formatProductsForAI } = await import('@/lib/integrations/jane');
-      if (isProductQuery(safeMessage)) {
-        const intent = parseProductIntent(safeMessage);
-        intent.storeId = resolvedStoreId || 'san-jose';
+      if (isProductQuery(safeMessage, knownBrands)) {
+        const intent = parseProductIntent(safeMessage, knownBrands);
+        intent.storeId = resolvedStoreId || janeConfig.defaultStore;
         // For brand queries, get more results to show full brand inventory
         if (intent.brand && !intent.limit) intent.limit = 30;
         const firecrawlKey = process.env.FIRECRAWL_API_KEY;
         // 12s timeout — Firecrawl scrape takes ~8s. Algolia is ~4ms so this is mostly for fallback.
-        const searchPromise = searchProducts(intent, firecrawlKey || undefined);
+        const searchPromise = searchProducts(janeConfig, intent, firecrawlKey || undefined);
         const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 12000));
         const results = await Promise.race([searchPromise, timeoutPromise]);
         if (results && results.products.length > 0) {
@@ -432,17 +439,19 @@ Be knowledgeable but not pushy. If no products match, suggest browsing the full 
           const isBrand = !!intent.brand;
           const formatted = formatProductsForAI(results.products, isBrand);
           // Build filtered browse URL so the AI links to pre-filtered pages, not /shop/all
-          const storeBaseUrl = (cfg.website_url as string) || 'https://plpcsanjose.com';
-          let browseMoreUrl = `${storeBaseUrl}/shop/all`;
+          // Prefer the active store's baseUrl (inventory lives there) over generic website_url
+          const activeStore = janeConfig.stores[intent.storeId || janeConfig.defaultStore];
+          const storeBaseUrl = activeStore?.baseUrl || (cfg.website_url as string) || '';
+          let browseMoreUrl = storeBaseUrl ? `${storeBaseUrl}/shop/all` : '';
           let browseMoreLabel = 'Full Menu';
-          if (intent.brand) {
+          if (storeBaseUrl && intent.brand) {
             // Use full brand name from Algolia (e.g., "CBX Cannabiotix") for correct slug
             // Jane's /brands/ pages require the full name: /brands/cbx-cannabiotix works, /brands/cbx shows 0 products
             const fullBrand = results.resolvedBrand || intent.brand;
             const brandSlug = fullBrand.toLowerCase().replace(/[^a-z0-9]+/g, '-');
             browseMoreUrl = `${storeBaseUrl}/brands/${brandSlug}`;
             browseMoreLabel = `${intent.brand} Products`;
-          } else if (intent.category) {
+          } else if (storeBaseUrl && intent.category) {
             const catSlug = intent.category.replace(/\s+/g, '-');
             browseMoreUrl = `${storeBaseUrl}/shop/${catSlug}`;
             browseMoreLabel = catSlug.charAt(0).toUpperCase() + catSlug.slice(1) + ' Menu';
@@ -450,7 +459,37 @@ Be knowledgeable but not pushy. If no products match, suggest browsing the full 
           const totalCount = results.totalFound;
           const shownCount = results.products.length;
           const hasMore = totalCount > 4;
-          productContext = `\n\nPRODUCT SEARCH RESULTS (from live ${results.storeId} inventory — ${totalCount} total products found${intent.brand ? ` from ${intent.brand}` : ''}, showing top ${shownCount}):\n${formatted}\n\nBROWSE MORE LINK: [Browse All ${totalCount} ${browseMoreLabel} →](${browseMoreUrl})\n\nFORMATTING (use markdown bold and links):\n\n**Apple Drip** by Caviar Gold — $22.99\nHybrid · THC: 48.1% · Potent and fruity.\n[View Product →](https://plpcsanjose.com/product/143411/caviar-gold-hybrid-apple-drip-1-5g?weight=each)\n\nRULES:\n- Pick the BEST 3-4 products from the search results to highlight. Do NOT list every single product.\n- Use **bold** for product names\n- Use [View Product →](url) for EVERY product — NEVER skip links, NEVER paste raw URLs\n- Each product: name+brand+price on line 1, strain·THC·description on line 2, link on line 3\n- ${hasMore ? `IMPORTANT: After showing your 3-4 picks, you MUST tell the customer the total count and link to browse all. Example: "We carry **${totalCount} ${intent.brand || intent.category || ''} products** in stock right now — here are my top picks. [Browse all ${totalCount} →](${browseMoreUrl})"` : 'Show all products since there are only a few.'}\n- When suggesting "browse more", ALWAYS use the BROWSE MORE LINK above — NEVER use /shop/all\n- ${isBrand ? 'Choose a mix across categories (flower, pre-rolls, vapes, edibles) for variety.' : 'One short intro line, then products.'}`;
+
+          // Build a dynamic formatting example from the first real result so the few-shot
+          // doesn't leak another dispensary's product names/URLs into the prompt.
+          const sample = results.products[0];
+          const sampleStrain = sample.strainType
+            ? sample.strainType.charAt(0).toUpperCase() + sample.strainType.slice(1)
+            : 'Hybrid';
+          const sampleBits = [
+            sample.brand ? `by ${sample.brand}` : '',
+            sample.price || '',
+          ].filter(Boolean).join(' — ');
+          const sampleDetails = [
+            sampleStrain,
+            sample.thc ? `THC: ${sample.thc}` : '',
+            'Short reason why it fits the ask.',
+          ].filter(Boolean).join(' · ');
+          const formattingExample = `**${sample.name}**${sampleBits ? ' ' + sampleBits : ''}\n${sampleDetails}\n[View Product →](${sample.url})`;
+
+          const browseMoreLine = browseMoreUrl
+            ? `\n\nBROWSE MORE LINK: [Browse All ${totalCount} ${browseMoreLabel} →](${browseMoreUrl})`
+            : '';
+          const browseMoreRule = browseMoreUrl
+            ? (hasMore
+                ? `IMPORTANT: After showing your 3-4 picks, you MUST tell the customer the total count and link to browse all. Example: "We carry **${totalCount} ${intent.brand || intent.category || ''} products** in stock right now — here are my top picks. [Browse all ${totalCount} →](${browseMoreUrl})"`
+                : 'Show all products since there are only a few.')
+            : 'Show all products since there are only a few.';
+          const browseMoreHint = browseMoreUrl
+            ? 'When suggesting "browse more", ALWAYS use the BROWSE MORE LINK above — NEVER use /shop/all'
+            : 'If the customer wants more, invite them to visit the store or ask about a specific category.';
+
+          productContext = `\n\nPRODUCT SEARCH RESULTS (from live ${results.storeId} inventory — ${totalCount} total products found${intent.brand ? ` from ${intent.brand}` : ''}, showing top ${shownCount}):\n${formatted}${browseMoreLine}\n\nFORMATTING (use markdown bold and links):\n\n${formattingExample}\n\nRULES:\n- Pick the BEST 3-4 products from the search results to highlight. Do NOT list every single product.\n- Use **bold** for product names\n- Use [View Product →](url) for EVERY product — NEVER skip links, NEVER paste raw URLs\n- Each product: name+brand+price on line 1, strain·THC·description on line 2, link on line 3\n- ${browseMoreRule}\n- ${browseMoreHint}\n- ${isBrand ? 'Choose a mix across categories (flower, pre-rolls, vapes, edibles) for variety.' : 'One short intro line, then products.'}`;
 
         }
       }

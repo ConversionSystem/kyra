@@ -7,6 +7,7 @@ import {
   MapPin, Users, Bell, Settings, Play, RefreshCw,
   TrendingUp, Shield, Loader2, Plus,
   Trash2, Save, ToggleLeft, ToggleRight, Key, Copy, Check,
+  Bot, XCircle,
 } from 'lucide-react';
 
 // ── Types ─────────────────────────────────────────────────────────────────
@@ -74,9 +75,10 @@ interface DispatchEventEntry {
   created_at: string;
 }
 
-type SubView = 'overview' | 'routes' | 'drivers' | 'notifications' | 'rules';
+type SubView = 'copilot' | 'overview' | 'routes' | 'drivers' | 'notifications' | 'rules';
 
 const SUB_VIEWS: { id: SubView; label: string; icon: React.ElementType }[] = [
+  { id: 'copilot', label: 'Copilot', icon: Bot },
   { id: 'overview', label: 'Overview', icon: TrendingUp },
   { id: 'routes', label: 'Routes & Optimization', icon: MapPin },
   { id: 'drivers', label: 'Drivers', icon: Users },
@@ -88,7 +90,7 @@ const SUB_VIEWS: { id: SubView; label: string; icon: React.ElementType }[] = [
 
 export default function DispatchTab({ clientId }: { clientId: string }) {
   const router = useRouter();
-  const [activeView, setActiveView] = useState<SubView>('overview');
+  const [activeView, setActiveView] = useState<SubView>('copilot');
   const [config, setConfig] = useState<DispatchConfig | null>(null);
   const [stats, setStats] = useState<DispatchStats | null>(null);
   const [drivers, setDrivers] = useState<DriverStatus[]>([]);
@@ -207,6 +209,9 @@ export default function DispatchTab({ clientId }: { clientId: string }) {
       </div>
 
       {/* Content */}
+      {activeView === 'copilot' && (
+        <CopilotView clientId={clientId} />
+      )}
       {activeView === 'overview' && (
         <OverviewView
           clientId={clientId}
@@ -248,6 +253,445 @@ export default function DispatchTab({ clientId }: { clientId: string }) {
       )}
     </div>
   );
+}
+
+// ── Copilot View ──────────────────────────────────────────────────────────
+
+interface CopilotRecommendation {
+  id: string;
+  text: string;
+  action?:
+    | 'assign_task'
+    | 'update_deadline'
+    | 'trigger_optimize'
+    | 'send_customer_sms'
+    | 'flag_sla_risk'
+    | 'escalate_to_human';
+  toolInput?: Record<string, unknown>;
+  risk: 'low' | 'medium' | 'high';
+  approved?: boolean;
+  approved_at?: string;
+  rejected?: boolean;
+  rejected_at?: string;
+  reject_reason?: string;
+}
+
+interface CopilotBriefing {
+  id: string;
+  summary: string;
+  recommendations: CopilotRecommendation[];
+  active_route_count: number;
+  at_risk_count: number;
+  prevented_breaches: number;
+  time_window_start: string;
+  time_window_end: string;
+  model: string;
+  cost_cents: number;
+  created_at: string;
+  expires_at: string;
+}
+
+type CopilotConnState = 'connecting' | 'open' | 'reconnecting';
+
+function CopilotView({ clientId }: { clientId: string }) {
+  const [briefing, setBriefing] = useState<CopilotBriefing | null>(null);
+  const [connState, setConnState] = useState<CopilotConnState>('connecting');
+  const [now, setNow] = useState(() => Date.now());
+
+  // SSE subscription
+  useEffect(() => {
+    let es: EventSource | null = null;
+    try {
+      es = new EventSource(
+        `/api/agency/clients/${clientId}/dispatch/briefing/stream`
+      );
+      es.onopen = () => setConnState('open');
+      es.onerror = () => setConnState('reconnecting');
+      es.onmessage = (ev) => {
+        if (!ev.data || ev.data.startsWith(':')) return; // ignore heartbeats
+        try {
+          const parsed = JSON.parse(ev.data) as CopilotBriefing;
+          if (parsed && parsed.id) setBriefing(parsed);
+        } catch {
+          // ignore malformed payloads
+        }
+      };
+    } catch {
+      setConnState('reconnecting');
+    }
+    return () => {
+      if (es) es.close();
+    };
+  }, [clientId]);
+
+  // Tick for relative-time rendering
+  useEffect(() => {
+    const t = window.setInterval(() => setNow(Date.now()), 30_000);
+    return () => window.clearInterval(t);
+  }, []);
+
+  const applyUpdate = useCallback((updated: CopilotBriefing) => {
+    if (updated && updated.id) setBriefing(updated);
+  }, []);
+
+  // Empty state — no briefing yet (endpoint missing or first load)
+  if (!briefing) {
+    const nextInMin = nextBriefingMinutes();
+    return (
+      <div className="space-y-6">
+        <div className="p-8 rounded-xl border border-gray-200 bg-white text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-50 mx-auto mb-4">
+            <Bot className="h-6 w-6 text-indigo-600" />
+          </div>
+          <p className="text-sm font-semibold text-gray-900">Dispatcher Copilot</p>
+          <p className="text-xs text-gray-500 mt-1">
+            The Copilot runs every 15 min. Next briefing in {nextInMin} min.
+          </p>
+          <div className="mt-4 flex items-center justify-center gap-2">
+            <span
+              className={`h-2 w-2 rounded-full ${
+                connState === 'open'
+                  ? 'bg-emerald-500 animate-pulse'
+                  : connState === 'reconnecting'
+                  ? 'bg-amber-500'
+                  : 'bg-gray-300'
+              }`}
+            />
+            <span className="text-[11px] text-gray-400">
+              {connState === 'open'
+                ? 'Connected — waiting for first briefing'
+                : connState === 'reconnecting'
+                ? 'Reconnecting…'
+                : 'Connecting…'}
+            </span>
+          </div>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700 transition-colors"
+          >
+            <RefreshCw className="h-3.5 w-3.5" /> Refresh
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const updatedAgo = formatRelativeAgo(briefing.created_at, now);
+  const nextInMin = nextBriefingMinutes(briefing.created_at);
+  const pendingCount = briefing.recommendations.filter(
+    (r) => !r.approved && !r.rejected
+  ).length;
+
+  return (
+    <div className="space-y-6">
+      {/* Top card — briefing header */}
+      <div className="p-4 rounded-xl border border-gray-200 bg-white">
+        <div className="flex items-start justify-between gap-3 mb-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50">
+              <Bot className="h-5 w-5 text-indigo-600" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-900">Dispatcher Copilot</p>
+              <p className="text-xs text-gray-500">AI-powered dispatch briefing</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span
+              className={`h-2 w-2 rounded-full ${
+                connState === 'open'
+                  ? 'bg-emerald-500 animate-pulse'
+                  : connState === 'reconnecting'
+                  ? 'bg-amber-500'
+                  : 'bg-gray-300'
+              }`}
+            />
+            <span className="text-[11px] text-gray-400 tabular-nums">
+              Updated {updatedAgo} · Next in {nextInMin} min
+            </span>
+          </div>
+        </div>
+
+        {/* Stat row */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+          <CopilotStat
+            icon={MapPin}
+            color="blue"
+            value={briefing.active_route_count}
+            label="Active routes"
+          />
+          <CopilotStat
+            icon={AlertTriangle}
+            color="amber"
+            value={briefing.at_risk_count}
+            label="At risk"
+          />
+          {/* `prevented_breaches` is a future metric — will wire when we have
+              approved-recommendation history (action='update_deadline' /
+              'assign_task' within last briefing window). Leaving the grid
+              2-up until then; permanent-0 stat card was worse UX. */}
+        </div>
+
+        {/* Summary */}
+        <div className="prose prose-sm max-w-none text-sm text-gray-700 whitespace-pre-wrap">
+          {briefing.summary}
+        </div>
+      </div>
+
+      {/* Recommendations card */}
+      <div className="p-4 rounded-xl border border-gray-200 bg-white">
+        <p className="text-sm font-semibold text-gray-900 mb-3">
+          Recommendations ({pendingCount} pending)
+        </p>
+
+        {briefing.recommendations.length === 0 ? (
+          <p className="text-xs text-gray-400 py-8 text-center">
+            No recommendations — routes stable.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {briefing.recommendations.map((rec) => (
+              <RecommendationRow
+                key={rec.id}
+                clientId={clientId}
+                briefingId={briefing.id}
+                rec={rec}
+                onUpdate={applyUpdate}
+                now={now}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CopilotStat({
+  icon: Icon,
+  color,
+  value,
+  label,
+}: {
+  icon: React.ElementType;
+  color: 'blue' | 'amber' | 'emerald';
+  value: number;
+  label: string;
+}) {
+  // Tailwind needs literal class names — enumerate per color
+  const wrap =
+    color === 'blue'
+      ? 'bg-blue-50'
+      : color === 'amber'
+      ? 'bg-amber-50'
+      : 'bg-emerald-50';
+  const ic =
+    color === 'blue'
+      ? 'text-blue-600'
+      : color === 'amber'
+      ? 'text-amber-600'
+      : 'text-emerald-600';
+  return (
+    <div className="p-4 rounded-xl border border-gray-200 bg-white">
+      <div className="flex items-center gap-2.5">
+        <div className={`rounded-lg p-2 ${wrap}`}>
+          <Icon className={`h-4 w-4 ${ic}`} />
+        </div>
+        <div>
+          <p className="text-xl font-bold text-gray-900">{value}</p>
+          <p className="text-[11px] text-gray-400">{label}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RecommendationRow({
+  clientId,
+  briefingId,
+  rec,
+  onUpdate,
+  now,
+}: {
+  clientId: string;
+  briefingId: string;
+  rec: CopilotRecommendation;
+  onUpdate: (updated: CopilotBriefing) => void;
+  now: number;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [showReject, setShowReject] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  const riskChip =
+    rec.risk === 'low'
+      ? 'bg-emerald-100 text-emerald-700'
+      : rec.risk === 'medium'
+      ? 'bg-amber-100 text-amber-700'
+      : 'bg-red-100 text-red-700';
+
+  const approve = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(
+        `/api/agency/clients/${clientId}/dispatch/briefing/${briefingId}/approve`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ recommendationId: rec.id }),
+        }
+      );
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || `HTTP ${res.status}`);
+        return;
+      }
+      const data = (await res.json()) as CopilotBriefing;
+      onUpdate(data);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Network error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const reject = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(
+        `/api/agency/clients/${clientId}/dispatch/briefing/${briefingId}/reject`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            recommendationId: rec.id,
+            reason: rejectReason.trim() || undefined,
+          }),
+        }
+      );
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || `HTTP ${res.status}`);
+        return;
+      }
+      const data = (await res.json()) as CopilotBriefing;
+      onUpdate(data);
+      setShowReject(false);
+      setRejectReason('');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Network error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="border border-gray-100 rounded-lg p-3">
+      <div className="flex items-start gap-3">
+        <span
+          className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium uppercase tracking-wide shrink-0 ${riskChip}`}
+        >
+          {rec.risk}
+        </span>
+        <p className="flex-1 text-sm text-gray-700">{rec.text}</p>
+        <div className="shrink-0 flex items-center gap-2">
+          {rec.approved ? (
+            <span className="inline-flex items-center gap-1 text-xs text-emerald-600 font-medium">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              Approved {rec.approved_at ? formatRelativeAgo(rec.approved_at, now) : ''}
+            </span>
+          ) : rec.rejected ? (
+            <span className="inline-flex items-center gap-1 text-xs text-gray-500">
+              <XCircle className="h-3.5 w-3.5" />
+              Rejected
+            </span>
+          ) : (
+            <>
+              <button
+                onClick={approve}
+                disabled={busy}
+                className="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+              >
+                {busy ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="h-3 w-3" />
+                )}
+                Approve
+              </button>
+              <button
+                onClick={() => setShowReject((v) => !v)}
+                disabled={busy}
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-gray-600 hover:text-gray-900 rounded-lg text-xs font-medium transition-colors"
+              >
+                <XCircle className="h-3 w-3" />
+                Reject
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {showReject && !rec.approved && !rec.rejected && (
+        <div className="mt-3 pt-3 border-t border-gray-100 space-y-2">
+          <textarea
+            value={rejectReason}
+            onChange={(e) => setRejectReason(e.target.value)}
+            placeholder="Optional: reason for rejection"
+            rows={2}
+            className="w-full px-3 py-2 bg-white border border-gray-200 text-gray-900 rounded-md text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+          />
+          <div className="flex items-center justify-end gap-2">
+            <button
+              onClick={() => {
+                setShowReject(false);
+                setRejectReason('');
+              }}
+              disabled={busy}
+              className="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-700 rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={reject}
+              disabled={busy}
+              className="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+            >
+              {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+              Confirm
+            </button>
+          </div>
+        </div>
+      )}
+
+      {error && (
+        <p className="text-xs text-red-600 mt-2">{error}</p>
+      )}
+    </div>
+  );
+}
+
+function formatRelativeAgo(iso: string, nowMs: number): string {
+  const then = Date.parse(iso);
+  if (Number.isNaN(then)) return '';
+  const diffMin = Math.max(0, Math.round((nowMs - then) / 60_000));
+  if (diffMin < 1) return 'just now';
+  if (diffMin === 1) return '1 min ago';
+  if (diffMin < 60) return `${diffMin} min ago`;
+  const hours = Math.round(diffMin / 60);
+  return hours === 1 ? '1 hr ago' : `${hours} hr ago`;
+}
+
+function nextBriefingMinutes(lastIso?: string): number {
+  const INTERVAL = 15;
+  if (!lastIso) return INTERVAL;
+  const then = Date.parse(lastIso);
+  if (Number.isNaN(then)) return INTERVAL;
+  const elapsed = Math.floor((Date.now() - then) / 60_000);
+  return Math.max(1, INTERVAL - (elapsed % INTERVAL));
 }
 
 // ── Save Button ───────────────────────────────────────────────────────────

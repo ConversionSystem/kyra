@@ -12,6 +12,10 @@ import type { ClientSmsConfig, OnfleetWebhookPayload } from '@/lib/sms';
 import { evaluateNotificationGate } from '@/lib/onfleet/notification-gate';
 import { executeRules } from '@/lib/onfleet/rule-engine';
 import type { ClientDispatchConfig, RuleExecutionContext, OnfleetTask } from '@/lib/onfleet/types';
+import { runDispatchBrain } from '@/lib/agents/dispatch-brain';
+import { runSmsWriter } from '@/lib/agents/sms-writer';
+import type { ToolRiskLevel } from '@/lib/onfleet/tools';
+import type { AgentResult } from '@/lib/ai/agent-runner';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -76,6 +80,96 @@ export async function POST(
     payload = await req.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON payload' }, { status: 400 });
+  }
+
+  // ── Agent branch (container_config.dispatch_agent_enabled) ──────────
+  // When agents are ON, the Dispatch Brain + SMS Writer replace the
+  // rule-engine + template-send legacy path. Each agent has its own
+  // fallback inside lib/agents/* to preserve deterministic behavior.
+  const agentGate = await getAgentGate(clientId);
+  if (agentGate?.enabled) {
+    const dispatchConfigForAgents = await getClientDispatchConfig(clientId);
+    const brainCtxReady = Boolean(
+      dispatchConfigForAgents && dispatchConfigForAgents.onfleetApiKey,
+    );
+    const ruleTask = buildRuleTask(payload);
+    const taskId = payload.taskId || payload.data?.task?.id || 'unknown';
+
+    const brainPromise: Promise<AgentResult> = brainCtxReady
+      ? runDispatchBrain({
+          agencyId: agentGate.agencyId,
+          clientId,
+          businessName: agentGate.businessName,
+          timezone: config.timezone,
+          onfleetApiKey: dispatchConfigForAgents!.onfleetApiKey,
+          dispatchConfig: dispatchConfigForAgents!,
+          autoExecuteRiskLevels: agentGate.autoExecuteRiskLevels,
+          webhookPayload: payload,
+          task: ruleTask,
+        }).catch((err) => ({
+          outcome: 'error' as const,
+          text: '',
+          toolCalls: [],
+          model: 'unknown',
+          latencyMs: 0,
+          errorDetail: err instanceof Error ? err.message : String(err),
+        }))
+      : Promise.resolve({
+          outcome: 'error' as const,
+          text: '',
+          toolCalls: [],
+          model: 'unknown',
+          latencyMs: 0,
+          errorDetail: 'dispatch config missing onfleetApiKey — brain skipped',
+        });
+
+    // Writer needs the same Onfleet gate as the Brain — without a key it
+    // would instantiate `new OnfleetClient('')` and every read tool would 401.
+    const writerPromise: Promise<AgentResult> = brainCtxReady
+      ? runSmsWriter({
+          agencyId: agentGate.agencyId,
+          clientId,
+          businessName: agentGate.businessName,
+          timezone: config.timezone,
+          onfleetApiKey: dispatchConfigForAgents!.onfleetApiKey,
+          smsConfig: config,
+          webhookPayload: payload,
+          webhookReceivedAt: receivedAt,
+          customerPhone: payload.data?.task?.recipients?.[0]?.phone,
+          orderId: taskId,
+          complianceFooter: 'Reply STOP to opt out.',
+        }).catch((err) => ({
+          outcome: 'error' as const,
+          text: '',
+          toolCalls: [],
+          model: 'unknown',
+          latencyMs: 0,
+          errorDetail: err instanceof Error ? err.message : String(err),
+        }))
+      : Promise.resolve({
+          outcome: 'error' as const,
+          text: '',
+          toolCalls: [],
+          model: 'unknown',
+          latencyMs: 0,
+          errorDetail: 'dispatch config missing onfleetApiKey — writer skipped',
+        });
+
+    const [brainResult, writerResult] = await Promise.all([brainPromise, writerPromise]);
+
+    if (brainResult.outcome === 'error' || brainResult.outcome === 'fallback') {
+      console.warn(`[onfleet-webhook] brain ${brainResult.outcome}: ${brainResult.errorDetail || ''}`);
+    }
+    if (writerResult.outcome === 'error' || writerResult.outcome === 'fallback') {
+      console.warn(`[onfleet-webhook] writer ${writerResult.outcome}: ${writerResult.errorDetail || ''}`);
+    }
+
+    return NextResponse.json({
+      status: 'processed',
+      mode: 'agents',
+      brain: brainResult.outcome,
+      writer: writerResult.outcome,
+    });
   }
 
   // ── Notification gate (dispatch intelligence) ───────────────────────
@@ -277,11 +371,12 @@ export async function POST(
   });
 
   if (!result.success) {
+    // Return 200 — the failure is already audited in delivery_sms_log. A 5xx
+    // here triggers an Onfleet retry, which would re-fire the whole pipeline
+    // (possibly past the 2-min dedup window) and could duplicate the customer
+    // SMS. We own the retry decision, not Onfleet.
     console.error(`[DeliverySMS] Failed to send to ${message.to}:`, result.error);
-    return NextResponse.json(
-      { status: 'error', error: result.error },
-      { status: 502 },
-    );
+    return NextResponse.json({ status: 'provider_failed', error: result.error });
   }
 
   return NextResponse.json({
@@ -322,6 +417,76 @@ async function getClientSmsConfig(clientId: string): Promise<ClientSmsConfig | n
     sendingHoursStart: sms.sendingHoursStart ?? 8,
     sendingHoursEnd: sms.sendingHoursEnd ?? 22,
     timezone: sms.timezone ?? 'America/Los_Angeles',
+  };
+}
+
+// ── Helper: Agent gate (reads container_config, not settings) ─────────────
+
+interface AgentGate {
+  enabled: boolean;
+  agencyId: string;
+  businessName: string;
+  autoExecuteRiskLevels: ToolRiskLevel[];
+}
+
+async function getAgentGate(clientId: string): Promise<AgentGate | null> {
+  if (!supabaseUrl || !supabaseServiceKey) return null;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  const { data, error } = await supabase
+    .from('agency_clients')
+    .select('id, name, agency_id, container_config')
+    .eq('id', clientId)
+    .single();
+
+  if (error || !data) return null;
+
+  const cfg = (data.container_config || {}) as Record<string, unknown>;
+  const agentConfig = (cfg.dispatch_agent_config || {}) as Record<string, unknown>;
+  const riskLevels = Array.isArray(agentConfig.auto_execute_risk_levels)
+    ? (agentConfig.auto_execute_risk_levels as string[]).filter((r): r is ToolRiskLevel =>
+        r === 'low' || r === 'medium' || r === 'high',
+      )
+    : ['low', 'medium'];
+
+  // Accept both boolean `true` and the string `"true"` — some UIs serialize
+  // container_config fields as strings.
+  const enabled =
+    cfg.dispatch_agent_enabled === true || cfg.dispatch_agent_enabled === 'true';
+
+  return {
+    enabled,
+    agencyId: (data.agency_id as string) || '',
+    businessName: (data.name as string) || 'Dispensary',
+    autoExecuteRiskLevels: riskLevels as ToolRiskLevel[],
+  };
+}
+
+// ── Helper: Build an OnfleetTask from the webhook payload ─────────────────
+
+function buildRuleTask(payload: OnfleetWebhookPayload): OnfleetTask | undefined {
+  const webhookTask = payload.data?.task as Record<string, unknown> | undefined;
+  if (!webhookTask) return undefined;
+  const taskId = payload.taskId || payload.data?.task?.id || 'unknown';
+  return {
+    id: (webhookTask.id as string) || taskId,
+    shortId: (webhookTask.shortId as string) || '',
+    state: ((webhookTask.status ?? webhookTask.state ?? 0) as number) as 0 | 1 | 2 | 3,
+    timeCreated: (webhookTask.timeCreated as number) || 0,
+    timeLastModified: (webhookTask.timeLastModified as number) || 0,
+    eta: webhookTask.eta as number | undefined,
+    worker: typeof webhookTask.worker === 'string'
+      ? webhookTask.worker
+      : (webhookTask.worker as Record<string, string> | undefined)?.id,
+    completeBefore: webhookTask.completeBefore as number | undefined,
+    recipients: ((webhookTask.recipients || []) as Record<string, string>[]).map((r) => ({
+      id: r.id || '', name: r.name || '', phone: r.phone || '',
+    })),
+    destination: {
+      id: ((webhookTask.destination as Record<string, unknown>)?.id as string) || '',
+      location: ((webhookTask.destination as Record<string, unknown>)?.location as [number, number]) || [0, 0],
+      address: ((webhookTask.destination as Record<string, unknown>)?.address as OnfleetTask['destination']['address']) || {},
+    },
   };
 }
 

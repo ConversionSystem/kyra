@@ -28,10 +28,11 @@ export async function GET(req: NextRequest) {
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-  // Find all clients with dispatch enabled
+  // Find all clients with dispatch enabled — also pull container_config so we
+  // can tell whether the LLM agents are on (they own breach alerting when on).
   const { data: clients, error } = await supabase
     .from('agency_clients')
-    .select('id, settings')
+    .select('id, settings, container_config')
     .not('settings', 'is', null);
 
   if (error) {
@@ -49,12 +50,26 @@ export async function GET(req: NextRequest) {
       continue;
     }
 
+    // When LLM agents are enabled, the Dispatch Brain owns breach alerting
+    // (via flag_sla_risk tool → dispatch_events). Running the legacy
+    // `breach_alert` rule type in parallel double-writes the same sla_breach
+    // event. Strip it from the rule set before executing. Cutoff-priority
+    // rules still run — they do completeBefore boosts, which the Brain
+    // doesn't replicate in v1.
+    const containerConfig = (client.container_config || {}) as Record<string, unknown>;
+    const agentsEnabled =
+      containerConfig.dispatch_agent_enabled === true ||
+      containerConfig.dispatch_agent_enabled === 'true';
+    const rulesForExecution = agentsEnabled
+      ? (dispatch.rules || []).filter((r) => r.type !== 'breach_alert')
+      : (dispatch.rules || []);
+
     try {
-      // ── Rule engine FIRST: cutoff boost + breach alerting ──────────────
+      // ── Rule engine FIRST: cutoff boost (+ breach alerting when agents OFF) ──
       // Rules run before optimization so the cutoff-priority boost sets
       // aggressive completeBefore values. The optimizer's 5-min diff check
       // will then skip those already-boosted tasks instead of overwriting.
-      if (dispatch.rules?.length > 0) {
+      if (rulesForExecution.length > 0) {
         try {
           const onfleetClient = createOnfleetClient(dispatch.onfleetApiKey);
           const since = Date.now() - 86400 * 1000;
@@ -63,7 +78,7 @@ export async function GET(req: NextRequest) {
 
           const ruleResults = await executeRules({
             clientId: client.id,
-            config: dispatch,
+            config: { ...dispatch, rules: rulesForExecution },
             trigger: 'cron',
             allPendingTasks: pendingTasks,
           });

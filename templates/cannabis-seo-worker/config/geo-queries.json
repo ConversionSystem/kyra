@@ -1,0 +1,65 @@
+{
+  "description": "GEO test query templates for cannabis dispensaries. {{CITY}}, {{DISPENSARY_NAME}}, {{PRODUCT}}, {{STATE}} are replaced at runtime.",
+  "queries": [
+    "Best dispensary in {{CITY}}",
+    "Best cannabis delivery in {{CITY}}",
+    "{{DISPENSARY_NAME}} reviews",
+    "Where to buy {{PRODUCT}} in {{CITY}}",
+    "Best flower in {{CITY}}",
+    "Cannabis delivery near me {{CITY}}",
+    "Recreational dispensary {{CITY}}",
+    "Medical dispensary {{CITY}}",
+    "Best pre-rolls {{CITY}}",
+    "Best vape cartridges {{CITY}}",
+    "Best edibles {{CITY}}",
+    "What's the cheapest dispensary in {{CITY}}",
+    "Top rated dispensary {{CITY}} {{STATE}}",
+    "Dispensary with best deals {{CITY}}",
+    "Best concentrates dispensary {{CITY}}",
+    "Who has the best weed in {{CITY}}",
+    "Recommend a dispensary in {{CITY}}",
+    "Dispensary open late {{CITY}}",
+    "Cannabis store near {{ADDRESS_AREA}}",
+    "Best indica strains {{CITY}}",
+    "Best sativa strains {{CITY}}",
+    "Dispensary with curbside pickup {{CITY}}",
+    "First time dispensary visitor {{CITY}} where to go",
+    "Budtender recommendations {{CITY}}",
+    "Best dispensary for {{PRODUCT}} {{CITY}}"
+  ],
+  "competitor_queries": [
+    "{{DISPENSARY_NAME}} vs {{COMPETITOR}}",
+    "Alternatives to {{DISPENSARY_NAME}}",
+    "{{DISPENSARY_NAME}} or {{COMPETITOR}} — which is better"
+  ],
+  "competitor_tracking": {
+    "enabled": true,
+    "max_competitors": 3,
+    "description": "After running standard GEO tests, extract the top 3 most-cited competitor dispensaries. Track their GEO scores alongside the client's.",
+    "storage_key": "competitor_scores"
+  },
+  "gap_analysis": {
+    "enabled": true,
+    "description": "After GEO test, identify queries with 0% citation rate. These become priority content targets for the content writer.",
+    "storage_key": "content_gaps"
+  },
+  "providers": [
+    {
+      "name": "chatgpt",
+      "model": "gpt-4o-mini",
+      "description": "OpenAI ChatGPT — largest user base for AI search"
+    },
+    {
+      "name": "perplexity",
+      "model": "sonar",
+      "description": "Perplexity AI — growing search alternative with citations"
+    },
+    {
+      "name": "gemini",
+      "model": "gemini-2.0-flash",
+      "description": "Google Gemini — growing AI search with Google data",
+      "enabled": false,
+      "note": "Enable when Gemini API access is configured. Gemini currently restricts cannabis queries in some geos."
+    }
+  ]
+}
