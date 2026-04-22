@@ -9,7 +9,15 @@ import { Badge } from '@/components/ui/badge';
 import {
   Globe, Copy, CheckCircle2, ExternalLink, Palette, MessageSquare,
   Code, X, Plus, RotateCcw, Volume2, VolumeX, UserCheck, Settings2, Smartphone,
+  Leaf, Trash2,
 } from 'lucide-react';
+
+interface JaneStoreEntry {
+  id: string;
+  name: string;
+  algoliaStoreId: number;
+  baseUrl: string;
+}
 
 interface WidgetBuilderEmbeddedProps {
   clientId: string;
@@ -50,11 +58,35 @@ export function WidgetBuilderEmbedded({
   const [soundEnabled, setSoundEnabled] = useState(cfg.widget_sound !== false);
   const [leadCapture, setLeadCapture] = useState(cfg.widget_lead_capture !== false);
 
+  // ── Menu Integration (Jane POS) ──
+  // website_url removed from this tab (managed on Training tab). Kept state
+  // cleanup would require threading the load handler differently; omit entirely.
+  const [janeAlgoliaAppId, setJaneAlgoliaAppId] = useState((cfg.jane_algolia_app_id as string) || '');
+  const [janeAlgoliaSearchKey, setJaneAlgoliaSearchKey] = useState((cfg.jane_algolia_search_key as string) || '');
+  const [janeAlgoliaIndex, setJaneAlgoliaIndex] = useState((cfg.jane_algolia_index as string) || '');
+  const [janeDefaultStoreId, setJaneDefaultStoreId] = useState((cfg.jane_default_store_id as string) || '');
+  const [janeStores, setJaneStores] = useState<JaneStoreEntry[]>(() => {
+    const raw = cfg.jane_stores as Array<Partial<JaneStoreEntry>> | undefined;
+    if (!Array.isArray(raw)) return [];
+    return raw
+      .filter((s) => s && s.id)
+      .map((s) => ({
+        id: String(s.id),
+        name: String(s.name || s.id),
+        algoliaStoreId: Number(s.algoliaStoreId || 0),
+        baseUrl: String(s.baseUrl || ''),
+      }));
+  });
+  const [janeKnownBrands, setJaneKnownBrands] = useState<string[]>(
+    Array.isArray(cfg.jane_known_brands) ? (cfg.jane_known_brands as string[]).filter((b) => typeof b === 'string') : [],
+  );
+  const [newBrand, setNewBrand] = useState('');
+
   // ── State ──
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
-  const [activeSection, setActiveSection] = useState<'appearance' | 'replies' | 'behavior' | 'embed'>('appearance');
+  const [activeSection, setActiveSection] = useState<'appearance' | 'replies' | 'behavior' | 'menu' | 'embed'>('appearance');
 
   // ── Stats ──
   const [stats, setStats] = useState<{ conversations: number; messagesToday: number; avgResponseTime: string } | null>(null);
@@ -85,6 +117,26 @@ export function WidgetBuilderEmbedded({
         if (c.widget_proactive_delay) setProactiveDelay(c.widget_proactive_delay);
         if (c.widget_sound !== undefined) setSoundEnabled(c.widget_sound !== false);
         if (c.widget_lead_capture !== undefined) setLeadCapture(c.widget_lead_capture !== false);
+        // website_url is loaded + edited on the Training tab.
+        if (typeof c.jane_algolia_app_id === 'string') setJaneAlgoliaAppId(c.jane_algolia_app_id);
+        if (typeof c.jane_algolia_search_key === 'string') setJaneAlgoliaSearchKey(c.jane_algolia_search_key);
+        if (typeof c.jane_algolia_index === 'string') setJaneAlgoliaIndex(c.jane_algolia_index);
+        if (typeof c.jane_default_store_id === 'string') setJaneDefaultStoreId(c.jane_default_store_id);
+        if (Array.isArray(c.jane_stores)) {
+          setJaneStores(
+            (c.jane_stores as Array<Partial<JaneStoreEntry>>)
+              .filter((s) => s && s.id)
+              .map((s) => ({
+                id: String(s.id),
+                name: String(s.name || s.id),
+                algoliaStoreId: Number(s.algoliaStoreId || 0),
+                baseUrl: String(s.baseUrl || ''),
+              })),
+          );
+        }
+        if (Array.isArray(c.jane_known_brands)) {
+          setJaneKnownBrands((c.jane_known_brands as unknown[]).filter((b): b is string => typeof b === 'string'));
+        }
       })
       .catch(() => {});
   }, [clientId, initialConfig]);
@@ -118,6 +170,16 @@ export function WidgetBuilderEmbedded({
     if (!clientId) return;
     setSaving(true);
     try {
+      // Sanitize Jane stores: drop incomplete entries, ensure numeric IDs
+      const cleanedStores = janeStores
+        .map((s) => ({
+          id: s.id.trim(),
+          name: s.name.trim() || s.id.trim(),
+          algoliaStoreId: Number(s.algoliaStoreId) || 0,
+          baseUrl: s.baseUrl.trim(),
+        }))
+        .filter((s) => s.id && s.algoliaStoreId > 0 && s.baseUrl);
+
       const res = await fetch(`/api/agency/clients/${clientId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -133,6 +195,13 @@ export function WidgetBuilderEmbedded({
             widget_proactive_delay: proactiveDelay,
             widget_sound: soundEnabled,
             widget_lead_capture: leadCapture,
+            // website_url is managed on the Training tab — don't duplicate here.
+            jane_algolia_app_id: janeAlgoliaAppId.trim() || undefined,
+            jane_algolia_search_key: janeAlgoliaSearchKey.trim() || undefined,
+            jane_algolia_index: janeAlgoliaIndex.trim() || undefined,
+            jane_default_store_id: janeDefaultStoreId.trim() || undefined,
+            jane_stores: cleanedStores.length > 0 ? cleanedStores : undefined,
+            jane_known_brands: janeKnownBrands.length > 0 ? janeKnownBrands : undefined,
           },
         }),
       });
@@ -149,8 +218,33 @@ export function WidgetBuilderEmbedded({
     { key: 'appearance' as const, label: 'Appearance', icon: Palette },
     { key: 'replies' as const, label: 'Quick Replies', icon: MessageSquare },
     { key: 'behavior' as const, label: 'Behavior', icon: Settings2 },
+    { key: 'menu' as const, label: 'Menu Integration', icon: Leaf },
     { key: 'embed' as const, label: 'Embed & Install', icon: Code },
   ];
+
+  // ── Jane store helpers ──
+  const updateJaneStore = (index: number, patch: Partial<JaneStoreEntry>) => {
+    setJaneStores((prev) => prev.map((s, i) => (i === index ? { ...s, ...patch } : s)));
+  };
+  const addJaneStore = () => {
+    setJaneStores((prev) => [...prev, { id: '', name: '', algoliaStoreId: 0, baseUrl: '' }]);
+  };
+  const removeJaneStore = (index: number) => {
+    setJaneStores((prev) => prev.filter((_, i) => i !== index));
+  };
+  const addBrand = () => {
+    const trimmed = newBrand.trim();
+    if (!trimmed) return;
+    if (janeKnownBrands.some((b) => b.toLowerCase() === trimmed.toLowerCase())) {
+      setNewBrand('');
+      return;
+    }
+    setJaneKnownBrands([...janeKnownBrands, trimmed]);
+    setNewBrand('');
+  };
+  const removeBrand = (index: number) => {
+    setJaneKnownBrands(janeKnownBrands.filter((_, i) => i !== index));
+  };
 
   return (
     <div className="max-w-6xl">
@@ -365,6 +459,161 @@ export function WidgetBuilderEmbedded({
                     >
                       <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${leadCapture ? 'translate-x-5' : ''}`} />
                     </button>
+                  </div>
+                </div>
+              )}
+
+              {/* ── MENU INTEGRATION (Jane POS) ── */}
+              {activeSection === 'menu' && (
+                <div className="space-y-5">
+                  <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-100 text-xs text-emerald-800">
+                    <p className="font-medium mb-1">Jane / Algolia product search</p>
+                    <p className="leading-relaxed">
+                      For cannabis dispensaries on Jane. Paste the public Algolia search key from your menu page (visible in DevTools Network tab) — it&apos;s safe to store. The widget uses these to pull live product recommendations.
+                    </p>
+                  </div>
+
+                  {/* Website URL lives on the Training tab (`container_config.website_url`).
+                      Previously duplicated here — removed to prevent last-write-wins conflicts. */}
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-gray-700">Algolia App ID</label>
+                      <Input
+                        value={janeAlgoliaAppId}
+                        onChange={(e) => setJaneAlgoliaAppId(e.target.value)}
+                        placeholder="VFM4X0N23A"
+                        className="bg-gray-50 font-mono text-xs"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-gray-700">Algolia Index</label>
+                      <Input
+                        value={janeAlgoliaIndex}
+                        onChange={(e) => setJaneAlgoliaIndex(e.target.value)}
+                        placeholder="menu-products-production"
+                        className="bg-gray-50 font-mono text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-gray-700">Algolia Search Key (public)</label>
+                    <Input
+                      value={janeAlgoliaSearchKey}
+                      onChange={(e) => setJaneAlgoliaSearchKey(e.target.value)}
+                      placeholder="e.g. 8bd39f3c1d26dd060940b682f024757c"
+                      className="bg-gray-50 font-mono text-xs"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-gray-700">Default Store ID</label>
+                    <Input
+                      value={janeDefaultStoreId}
+                      onChange={(e) => setJaneDefaultStoreId(e.target.value)}
+                      placeholder="e.g. san-jose"
+                      className="bg-gray-50"
+                    />
+                    <p className="text-xs text-gray-500">Must match one of the Store IDs below. Used when the visitor hasn&apos;t picked a store yet.</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium text-gray-700">Stores</label>
+                      <Button size="sm" variant="outline" onClick={addJaneStore}>
+                        <Plus className="h-4 w-4 mr-1" /> Add Store
+                      </Button>
+                    </div>
+                    {janeStores.length === 0 && (
+                      <p className="text-xs text-gray-400 italic py-2">No stores configured. Add at least one to enable product search.</p>
+                    )}
+                    {janeStores.map((store, i) => (
+                      <div key={i} className="p-3 rounded-lg border border-gray-200 bg-gray-50 space-y-2">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-[11px] font-medium text-gray-600">Store ID (slug)</label>
+                            <Input
+                              value={store.id}
+                              onChange={(e) => updateJaneStore(i, { id: e.target.value })}
+                              placeholder="san-jose"
+                              className="bg-white text-sm"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-medium text-gray-600">Display Name</label>
+                            <Input
+                              value={store.name}
+                              onChange={(e) => updateJaneStore(i, { name: e.target.value })}
+                              placeholder="San Jose"
+                              className="bg-white text-sm"
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-[11px] font-medium text-gray-600">Algolia store_id (numeric)</label>
+                            <Input
+                              type="number"
+                              value={store.algoliaStoreId || ''}
+                              onChange={(e) => updateJaneStore(i, { algoliaStoreId: parseInt(e.target.value) || 0 })}
+                              placeholder="4398"
+                              className="bg-white text-sm font-mono"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-medium text-gray-600">Menu Base URL</label>
+                            <Input
+                              value={store.baseUrl}
+                              onChange={(e) => updateJaneStore(i, { baseUrl: e.target.value })}
+                              placeholder="https://example.com"
+                              className="bg-white text-sm"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex justify-end">
+                          <button
+                            onClick={() => removeJaneStore(i)}
+                            className="text-xs text-gray-500 hover:text-red-600 flex items-center gap-1"
+                          >
+                            <Trash2 className="h-3 w-3" /> Remove
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">Known Brands</label>
+                    <p className="text-xs text-gray-500">
+                      Brands this dispensary carries. Used to detect brand intent in customer messages
+                      (e.g. &quot;Any Alien Labs strains?&quot;). {janeKnownBrands.length} listed.
+                    </p>
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {janeKnownBrands.map((brand, i) => (
+                        <span
+                          key={i}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border border-gray-200 bg-white shadow-sm"
+                        >
+                          {brand}
+                          <button onClick={() => removeBrand(i)} className="text-gray-400 hover:text-red-500 transition-colors">
+                            <X className="h-3 w-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                    <div className="flex gap-2 pt-1">
+                      <Input
+                        value={newBrand}
+                        onChange={(e) => setNewBrand(e.target.value)}
+                        placeholder="e.g. Alien Labs"
+                        className="bg-gray-50 flex-1"
+                        onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addBrand())}
+                      />
+                      <Button size="sm" variant="outline" onClick={addBrand} disabled={!newBrand.trim()}>
+                        <Plus className="h-4 w-4 mr-1" /> Add
+                      </Button>
+                    </div>
                   </div>
                 </div>
               )}
