@@ -251,6 +251,11 @@ export async function GET(
     '.kyra-browse-more { text-align:center; margin:4px 16px 8px; padding:10px 16px; border-radius:14px; background:linear-gradient(135deg, ' + COLOR + '12, ' + COLOR + '20); color:' + COLOR + '; font-weight:600; font-size:13px; text-decoration:none; display:block; border:1px dashed ' + COLOR + '40; transition:all 0.15s; }',
     '.kyra-browse-more:hover { background:' + COLOR + '; color:#fff; border-style:solid; border-color:' + COLOR + '; }',
     '.kyra-fallback-note { font-size:12px; color:#78350f; background:#fef3c7; border-left:3px solid #f59e0b; padding:8px 12px; border-radius:8px; margin:4px 16px; font-family:system-ui,-apple-system,sans-serif; }',
+    /* Support-link pill chips — rendered when the user asks about ordering, delivery, hours, etc */
+    '.kyra-support-links { display:flex; flex-wrap:wrap; gap:7px; padding:4px 16px 10px; }',
+    '.kyra-support-link { display:inline-flex; align-items:center; gap:5px; font-size:12.5px; font-weight:600; color:' + COLOR + '; background:' + COLOR + '10; border:1.5px solid ' + COLOR + '30; padding:7px 14px; border-radius:20px; text-decoration:none; transition:all 0.15s; font-family:system-ui,-apple-system,sans-serif; }',
+    '.kyra-support-link:hover { background:' + COLOR + '; color:#fff; border-color:' + COLOR + '; transform:translateY(-1px); box-shadow:0 2px 6px ' + COLOR + '33; }',
+    '.kyra-support-link:before { content:"\u2192"; font-weight:700; font-size:13px; opacity:0.7; }',
     /* Proactive bubble */
     '#kyra-proactive { position:fixed; bottom:104px; ' + (POSITION === 'bottom-left' ? 'left:28px;' : 'right:28px;') + ' background:#fff; padding:14px 18px; border-radius:20px 20px 6px 20px; box-shadow:0 8px 30px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.04); font-size:14px; color:#1a1a1a; font-family:system-ui,-apple-system,sans-serif; max-width:300px; z-index:99996; cursor:pointer; animation:kyra-fade-in 0.35s ease; line-height:1.5; }',
     '#kyra-proactive .close { position:absolute; top:6px; right:10px; cursor:pointer; color:#b0b5c0; font-size:14px; transition:color 0.15s; }',
@@ -413,6 +418,30 @@ export async function GET(
 
   function escHtml(str) {
     return String(str == null ? '' : str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // Render support-link chips — pill buttons below the bot text that guarantee
+  // the user gets the right page for informational questions (ordering, delivery,
+  // hours, etc). The server resolves the URLs so the LLM can't hallucinate.
+  function renderSupportLinks(links) {
+    if (!links || !links.length) return;
+    var container = document.createElement('div');
+    container.className = 'kyra-support-links';
+    for (var i = 0; i < links.length; i++) {
+      var l = links[i];
+      if (!l || !l.url) continue;
+      var a = document.createElement('a');
+      a.className = 'kyra-support-link';
+      a.href = l.url;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.textContent = l.label || 'Learn more';
+      container.appendChild(a);
+    }
+    if (container.childNodes.length > 0) {
+      messagesEl.appendChild(container);
+      scrollToBottom();
+    }
   }
 
   // Render structured product cards from the API's cards[] array. These live below
@@ -665,6 +694,9 @@ export async function GET(
         addMessage('bot', data.response);
         // Render live-inventory product cards + browse-more + fallback notice, if any
         try { renderCards(data.cards, data.browseMore, data.fallbackNotice); } catch(e) {}
+        // Render support-link pill chips (ordering, delivery, hours, etc.) — server
+        // guarantees these for informational questions regardless of LLM output.
+        try { renderSupportLinks(data.supportLinks); } catch(e) {}
         // If lead was captured, show a subtle confirmation
         if (data.leadCaptured) {
           var noteEl = document.createElement('div');

@@ -13,6 +13,8 @@ import {
   buildJaneConfigFromContainerConfig,
   isProductQuery,
   parseProductIntent,
+  getBrandCatalog,
+  resolveSupportLinks,
   type JaneConfig,
 } from '@/lib/integrations/jane';
 
@@ -305,6 +307,116 @@ describe('searchProducts — round 2 Algolia payload', () => {
     }));
     await searchProducts(baseConfig, { query: 'anything cheap', sortBy: 'price_asc' });
     expect(body.query).toBe('');
+  });
+});
+
+describe('brand facet + getBrandCatalog', () => {
+  beforeEach(() => { vi.stubGlobal('fetch', vi.fn()); });
+  afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+
+  const baseConfig: JaneConfig = {
+    algoliaAppId: 'T', algoliaSearchKey: 'k', algoliaIndex: 'i',
+    defaultStore: 'sj',
+    stores: { sj: { algoliaStoreId: 1, baseUrl: 'https://x.com' } },
+  };
+
+  it('brand query uses brand:"X" facet filter (not text query)', async () => {
+    let body: Record<string, unknown> = {};
+    vi.stubGlobal('fetch', vi.fn(async (_url: string, init?: RequestInit) => {
+      body = init?.body ? JSON.parse(String(init.body)) : {};
+      return { ok: true, status: 200, text: async () => '',
+        json: async () => ({ hits: [{ product_id: 1, name: 'X', brand: 'Alien Labs' }], nbHits: 1 }) } as unknown as Response;
+    }));
+    await searchProducts(baseConfig, { brand: 'Alien Labs' });
+    expect(body.filters).toMatch(/brand:"Alien Labs"/);
+    expect(body.query).toBe(''); // facet does the work, no text query
+  });
+
+  it('useBrandFacet:false falls back to legacy text-query path', async () => {
+    const bodies: Record<string, unknown>[] = [];
+    vi.stubGlobal('fetch', vi.fn(async (_url: string, init?: RequestInit) => {
+      if (init?.body) bodies.push(JSON.parse(String(init.body)));
+      // Return a hit so the retry cascade doesn't fire and we observe tier 0 only
+      return { ok: true, status: 200, text: async () => '',
+        json: async () => ({ hits: [{ product_id: 1, name: 'X' }], nbHits: 1 }) } as unknown as Response;
+    }));
+    await searchProducts(baseConfig, { brand: 'CBX', useBrandFacet: false });
+    expect(bodies.length).toBeGreaterThan(0);
+    expect(String(bodies[0].filters)).not.toMatch(/brand:/);
+    expect(bodies[0].query).toBe('CBX');
+  });
+
+  it('escapes quote characters in brand name', async () => {
+    let body: Record<string, unknown> = {};
+    vi.stubGlobal('fetch', vi.fn(async (_url: string, init?: RequestInit) => {
+      body = init?.body ? JSON.parse(String(init.body)) : {};
+      return { ok: true, status: 200, text: async () => '',
+        json: async () => ({ hits: [{ product_id: 1, name: 'X' }], nbHits: 1 }) } as unknown as Response;
+    }));
+    await searchProducts(baseConfig, { brand: 'Johnny "Cannabis" Co' });
+    // Inner quotes must be backslash-escaped so Algolia treats the full string as one value
+    expect(String(body.filters)).toContain('brand:"Johnny \\"Cannabis\\" Co"');
+  });
+
+  it('getBrandCatalog groups products by lineage category', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true, status: 200, text: async () => '',
+      json: async () => ({
+        hits: [
+          { product_id: 1, name: 'Pre A', brand: 'Alien Labs', category: 'hybrid', root_types: ['pre-roll'] },
+          { product_id: 2, name: 'Pre B', brand: 'Alien Labs', category: 'hybrid', root_types: ['pre-roll'] },
+          { product_id: 3, name: 'Flower A', brand: 'Alien Labs', category: 'indica', root_types: ['flower'] },
+        ],
+        nbHits: 3,
+      }),
+    } as unknown as Response)));
+    const catalog = await getBrandCatalog(baseConfig, 'Alien Labs');
+    expect(catalog.products).toHaveLength(3);
+    expect(Object.keys(catalog.groups).sort()).toEqual(['hybrid', 'indica']);
+    expect(catalog.groups['hybrid']).toHaveLength(2);
+    expect(catalog.groups['indica']).toHaveLength(1);
+  });
+});
+
+describe('resolveSupportLinks', () => {
+  const cfg = { website_url: 'https://plpcsanjose.com' };
+
+  it('detects ordering intent', () => {
+    const links = resolveSupportLinks('how do I order?', cfg);
+    expect(links.some((l) => l.topic === 'ordering')).toBe(true);
+    expect(links[0].url).toBe('https://plpcsanjose.com/order');
+  });
+
+  it('detects delivery intent', () => {
+    const links = resolveSupportLinks('where do you deliver?', cfg);
+    expect(links.some((l) => l.topic === 'delivery')).toBe(true);
+  });
+
+  it('detects hours intent', () => {
+    const links = resolveSupportLinks('what are your hours today', cfg);
+    expect(links.some((l) => l.topic === 'hours')).toBe(true);
+  });
+
+  it('prefers explicit support_links config over auto-generated URL', () => {
+    const links = resolveSupportLinks('how to order?', {
+      support_links: { ordering: 'https://custom.example.com/checkout' },
+      website_url: 'https://plpcsanjose.com',
+    });
+    expect(links[0].url).toBe('https://custom.example.com/checkout');
+  });
+
+  it('returns empty array for non-support messages', () => {
+    expect(resolveSupportLinks('what alien labs flowers do you have?', cfg)).toEqual([]);
+  });
+
+  it('handles missing website_url gracefully', () => {
+    expect(resolveSupportLinks('how to order?', {})).toEqual([]);
+  });
+
+  it('de-duplicates URLs when multiple topics map to the same page', () => {
+    const links = resolveSupportLinks('contact info phone', cfg);
+    const urls = links.map((l) => l.url);
+    expect(new Set(urls).size).toBe(urls.length);
   });
 });
 
