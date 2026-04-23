@@ -214,6 +214,24 @@ describe('parseProductIntent — round 2 natural-language fixes', () => {
     const intent = parseProductIntent('gummies over $80', brands);
     expect(intent.minPrice).toBe(80);
   });
+
+  it('creates price range from "around $30"', () => {
+    const intent = parseProductIntent('edibles around $30', brands);
+    expect(intent.minPrice).toBe(23); // 30 * 0.75 rounded
+    expect(intent.maxPrice).toBe(38); // 30 * 1.25 rounded
+  });
+
+  it('creates price range from "about 20 bucks"', () => {
+    const intent = parseProductIntent('about 20 bucks', brands);
+    expect(intent.minPrice).toBe(15);
+    expect(intent.maxPrice).toBe(25);
+  });
+
+  it('prefers explicit "under" over "around" (no double-parse)', () => {
+    const intent = parseProductIntent('under $40', brands);
+    expect(intent.maxPrice).toBe(40);
+    expect(intent.minPrice).toBeUndefined();
+  });
 });
 
 describe('isProductQuery — round 2 pattern expansion', () => {
@@ -231,6 +249,17 @@ describe('isProductQuery — round 2 pattern expansion', () => {
   });
   it('matches bare "Products"', () => {
     expect(isProductQuery('Products', [])).toBe(true);
+  });
+  it('matches approximate price "around $30"', () => {
+    expect(isProductQuery('edibles around $30', [])).toBe(true);
+  });
+  it('does NOT match noise messages', () => {
+    expect(isProductQuery('ok', [])).toBe(false);
+    expect(isProductQuery('thanks', [])).toBe(false);
+    expect(isProductQuery('lol', [])).toBe(false);
+    expect(isProductQuery('hi', [])).toBe(false);
+    expect(isProductQuery('sounds good', [])).toBe(false);
+    expect(isProductQuery('got it', [])).toBe(false);
   });
 });
 
