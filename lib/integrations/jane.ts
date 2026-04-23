@@ -926,7 +926,11 @@ export function isProductQuery(message: string, knownBrands: string[] = []): boo
     /looking for/i, /help me find/i, /any.*good/i,
     /indica|sativa|hybrid/i, /\bthc\b|\bcbd\b/i,
     /\bmenu\b|product|inventory|stock|available/i,
-    /preroll|pre-roll|pre roll|edible|gumm|vape|cart|flower|concentrate|tincture|topical|extract|dab|wax/i,
+    /preroll|pre-roll|pre roll|predoll|pre doll|edible|gumm|vape|cart|flower|concentrate|tincture|topical|extract|dab|wax/i,
+    // Effect phrases like "pain relief please" / "sleep aid" — match when the
+    // message CONTAINS one of our canonical effect phrases (not anchored to
+    // full-string match which was the earlier gap).
+    /\b(?:pain\s*relief|sleep\s*aid|relaxation|uplifting|couch\s*lock|body\s*high|head\s*high|munchies)\b/i,
     // Vague effect-based requests
     /feel.*(?:good|cool|great|relaxed|mellow|euphoric|happy|creative|focused|sleepy|energi)/i,
     /something.*(?:for|to|that|can).*(?:sleep|relax|pain|stress|anxiety|chill|unwind|uplift|focus|creative)/i,

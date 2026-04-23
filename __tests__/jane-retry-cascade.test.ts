@@ -252,6 +252,17 @@ describe('isProductQuery — round 2 pattern expansion', () => {
   it('matches bare "Products"', () => {
     expect(isProductQuery('Products', [])).toBe(true);
   });
+  it('matches "pain relief please" (contains-effect-phrase)', () => {
+    expect(isProductQuery('pain relief please', [])).toBe(true);
+  });
+  it('matches "predolls" (common typo of pre-rolls)', () => {
+    expect(isProductQuery('predolls', [])).toBe(true);
+  });
+  it('matches "sleep aid" / "couch lock" / "munchies"', () => {
+    expect(isProductQuery('sleep aid', [])).toBe(true);
+    expect(isProductQuery('got any couch lock', [])).toBe(true);
+    expect(isProductQuery('something for munchies', [])).toBe(true);
+  });
   it('matches approximate price "around $30"', () => {
     expect(isProductQuery('edibles around $30', [])).toBe(true);
   });
