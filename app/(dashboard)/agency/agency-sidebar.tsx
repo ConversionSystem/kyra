@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { CommandPaletteTrigger } from '@/components/dashboard/command-palette';
 import { Badge } from '@/components/ui/badge';
 import {
   Users,
@@ -296,6 +297,11 @@ export function AgencySidebar({ agencyName, plan, settings, isMaster }: AgencySi
       {/* Upgrade banner removed — clutters collapsed sidebar */}
 
       {/* My AI Worker button removed — access AI via client terminal */}
+
+      {/* Search */}
+      <div className="px-2 pt-2 pb-1 opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200">
+        <CommandPaletteTrigger />
+      </div>
 
       {/* Navigation */}
       <nav className="flex-1 px-2 py-2 space-y-0 overflow-y-auto scrollbar-hide">

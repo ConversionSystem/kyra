@@ -419,16 +419,70 @@ Be knowledgeable but not pushy. If no products match, suggest browsing the full 
     }
   }
 
+  // ── Session preference extraction ───────────────────────────────────────────
+  // Reads prior turns (DB memory + in-memory history) to extract lineage/brand
+  // affinity signals. Feeds into Algolia re-ranking AND the LLM system prompt so
+  // follow-up queries ("what else?") actually use the session context.
+  const extractSessionPreferences = (
+    prior: Array<{ role: string; content: string }>,
+    brands: string[],
+  ): { lineages: string[]; brands: string[] } => {
+    const text = prior
+      .filter((m) => m.role === 'assistant' || m.role === 'user')
+      .map((m) => m.content.toLowerCase())
+      .join('\n');
+    const lineages: string[] = [];
+    for (const l of ['indica', 'sativa', 'hybrid', 'cbd']) {
+      if (text.includes(l)) lineages.push(l);
+    }
+    const seenBrands: string[] = [];
+    for (const b of brands) {
+      if (text.includes(b.toLowerCase())) seenBrands.push(b);
+    }
+    return { lineages, brands: seenBrands.slice(0, 5) };
+  };
+
   // ── Product Search (Jane API integration for cannabis dispensaries) ────────
+  // Holds the structured card list that the widget renders as real product cards
+  // (image, price, THC, strain, CTA button) — separate from the LLM's conversational text.
+  type ProductCard = {
+    id: string;
+    name: string;
+    brand?: string;
+    category?: string;
+    strainType?: string;
+    thc?: string;
+    cbd?: string;
+    price?: string;
+    weight?: string;
+    imageUrl?: string;
+    url: string;
+    cartUrl?: string;
+    rating?: number;
+    reviewCount?: number;
+  };
   let productContext = '';
+  let productCards: ProductCard[] = [];
+  let fallbackNotice: string | null = null;
+  let browseMore: { url: string; label: string; totalCount: number } | null = null;
   if (janeActive && janeConfig) {
     try {
-      const { isProductQuery, parseProductIntent, searchProducts, formatProductsForAI } = await import('@/lib/integrations/jane');
+      const { isProductQuery, parseProductIntent, searchProducts, formatProductsForAI, describeFallback } =
+        await import('@/lib/integrations/jane');
       if (isProductQuery(safeMessage, knownBrands)) {
         const intent = parseProductIntent(safeMessage, knownBrands);
         intent.storeId = resolvedStoreId || janeConfig.defaultStore;
         // For brand queries, get more results to show full brand inventory
         if (intent.brand && !intent.limit) intent.limit = 30;
+
+        // Session-preference boosts: prior mentions of indica/Alien Labs/etc nudge ranking
+        const prefs = extractSessionPreferences(
+          [...sessionHistory, ...(Array.isArray(history) ? history : [])],
+          knownBrands,
+        );
+        if (prefs.lineages.length) intent.preferLineages = prefs.lineages;
+        if (prefs.brands.length) intent.preferBrands = prefs.brands;
+
         const firecrawlKey = process.env.FIRECRAWL_API_KEY;
         // 12s timeout — Firecrawl scrape takes ~8s. Algolia is ~4ms so this is mostly for fallback.
         const searchPromise = searchProducts(janeConfig, intent, firecrawlKey || undefined);
@@ -438,6 +492,25 @@ Be knowledgeable but not pushy. If no products match, suggest browsing the full 
           // Use grouped format for brand queries
           const isBrand = !!intent.brand;
           const formatted = formatProductsForAI(results.products, isBrand);
+
+          // Build structured cards for the widget UI (top 4 — LLM chooses which to talk about)
+          productCards = results.products.slice(0, 4).map((p) => ({
+            id: p.id,
+            name: p.name,
+            brand: p.brand,
+            category: p.category,
+            strainType: p.strainType,
+            thc: p.thc,
+            cbd: p.cbd,
+            price: p.price,
+            weight: p.weight,
+            imageUrl: p.imageUrl,
+            url: p.url,
+            cartUrl: p.cartUrl,
+            rating: p.rating,
+            reviewCount: p.reviewCount,
+          }));
+
           // Build filtered browse URL so the AI links to pre-filtered pages, not /shop/all
           // Prefer the active store's baseUrl (inventory lives there) over generic website_url
           const activeStore = janeConfig.stores[intent.storeId || janeConfig.defaultStore];
@@ -459,6 +532,15 @@ Be knowledgeable but not pushy. If no products match, suggest browsing the full 
           const totalCount = results.totalFound;
           const shownCount = results.products.length;
           const hasMore = totalCount > 4;
+          if (browseMoreUrl) browseMore = { url: browseMoreUrl, label: browseMoreLabel, totalCount };
+
+          // Fallback notice — set when searchProducts had to relax filters to return anything
+          fallbackNotice = describeFallback(
+            results.fallbackTier,
+            results.relaxedFilters,
+            intent.brand,
+            intent.category,
+          );
 
           // Build a dynamic formatting example from the first real result so the few-shot
           // doesn't leak another dispensary's product names/URLs into the prompt.
@@ -489,7 +571,19 @@ Be knowledgeable but not pushy. If no products match, suggest browsing the full 
             ? 'When suggesting "browse more", ALWAYS use the BROWSE MORE LINK above — NEVER use /shop/all'
             : 'If the customer wants more, invite them to visit the store or ask about a specific category.';
 
-          productContext = `\n\nPRODUCT SEARCH RESULTS (from live ${results.storeId} inventory — ${totalCount} total products found${intent.brand ? ` from ${intent.brand}` : ''}, showing top ${shownCount}):\n${formatted}${browseMoreLine}\n\nFORMATTING (use markdown bold and links):\n\n${formattingExample}\n\nRULES:\n- Pick the BEST 3-4 products from the search results to highlight. Do NOT list every single product.\n- Use **bold** for product names\n- Use [View Product →](url) for EVERY product — NEVER skip links, NEVER paste raw URLs\n- Each product: name+brand+price on line 1, strain·THC·description on line 2, link on line 3\n- ${browseMoreRule}\n- ${browseMoreHint}\n- ${isBrand ? 'Choose a mix across categories (flower, pre-rolls, vapes, edibles) for variety.' : 'One short intro line, then products.'}`;
+          // Fallback preface — tells the LLM EXACTLY what to apologise for + how to pivot.
+          // This is the Tier 1 fix that kills the canned "no results" message.
+          const fallbackPreface = fallbackNotice
+            ? `\n\n⚠ PARTIAL MATCH ONLY — ${fallbackNotice}\nRULES FOR THIS RESPONSE:\n- Start by acknowledging the miss in one sentence ("We're out of Alien Labs pre-rolls right now").\n- Then pivot to the alternatives below ("but here are some great picks that still hit the mark…").\n- Never silently substitute — the customer asked for something specific, call it out.\n`
+            : '';
+
+          // Session-preference preface — if prior turns mentioned a lineage or brand,
+          // tell the LLM to reference the continuity ("since you liked indica earlier…")
+          const prefPreface = (prefs.lineages.length || prefs.brands.length)
+            ? `\n\nSESSION PREFERENCES (inferred from this visitor's prior turns):\n- Mentioned lineages: ${prefs.lineages.join(', ') || 'none'}\n- Mentioned brands: ${prefs.brands.join(', ') || 'none'}\nIf any pick below matches, say so naturally ("since you liked indica earlier, ${prefs.lineages.includes('indica') ? 'this' : 'that'} fits"). Never fake continuity if none exists.\n`
+            : '';
+
+          productContext = `\n\nPRODUCT SEARCH RESULTS (from live ${results.storeId} inventory — ${totalCount} total products found${intent.brand ? ` from ${intent.brand}` : ''}, showing top ${shownCount}):${fallbackPreface}${prefPreface}\n${formatted}${browseMoreLine}\n\nFORMATTING (use markdown bold and links):\n\n${formattingExample}\n\nRULES:\n- Pick the BEST 3-4 products from the search results to highlight. Do NOT list every single product.\n- Use **bold** for product names\n- Use [View Product →](url) for EVERY product — NEVER skip links, NEVER paste raw URLs\n- Each product: name+brand+price on line 1, strain·THC·description on line 2, link on line 3\n- ${browseMoreRule}\n- ${browseMoreHint}\n- ${isBrand ? 'Choose a mix across categories (flower, pre-rolls, vapes, edibles) for variety.' : 'One short intro line, then products.'}`;
 
         }
       }
@@ -632,7 +726,17 @@ Be knowledgeable but not pushy. If no products match, suggest browsing the full 
   })();
 
   return NextResponse.json(
-    { response: aiResponse, sessionId: resolvedSessionId, leadCaptured },
+    {
+      response: aiResponse,
+      sessionId: resolvedSessionId,
+      leadCaptured,
+      // New: structured product cards + browse-more link + fallback notice
+      // (all optional — empty for non-product queries). Widget renders these
+      // alongside `response` so the text + cards live together.
+      cards: productCards,
+      browseMore,
+      fallbackNotice,
+    },
     { headers: CORS },
   );
 }

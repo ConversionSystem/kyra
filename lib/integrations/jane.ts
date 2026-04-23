@@ -31,6 +31,17 @@ export interface JaneConfig {
   defaultStore: string;
   /** Brand names the dispensary actually carries — used for intent parsing. */
   knownBrands?: string[];
+  /**
+   * Optional add-to-cart deeplink param name (e.g., "add"). If the dispensary's
+   * Roots app has a handler that consumes it (recognising `?add=<productId>` on
+   * the PDP and auto-adding to cart on mount), set this and cardUrl will include it.
+   * If unset or the Roots app doesn't consume it, cartUrl === url and the button
+   * just opens the PDP (safe, works everywhere).
+   *
+   * Default: unset. Jane's standard React Roots build does NOT support this natively
+   * — it requires the dispensary's engineering team to wire it up.
+   */
+  cartDeeplinkParam?: string;
 }
 
 // ── Product + Search Types ──────────────────────────────────────────────────
@@ -46,8 +57,15 @@ export interface JaneProduct {
   strainType?: string; // indica, sativa, hybrid, cbd
   effects?: string[];
   url: string;
+  /** Jane add-to-cart deeplink — opens PDP with cart intent. Falls back to `url` if not supported. */
+  cartUrl?: string;
   weight?: string;
   imageUrl?: string;
+  /** Algolia aggregate_rating (0-5), used for tie-break ranking. */
+  rating?: number;
+  reviewCount?: number;
+  /** Short, LLM-friendly reason this product surfaced — populated post-search. */
+  reason?: string;
 }
 
 export interface ProductSearchParams {
@@ -58,6 +76,21 @@ export interface ProductSearchParams {
   sortBy?: 'thc_desc' | 'thc_asc' | 'price_asc' | 'price_desc' | 'relevance';
   effects?: string[];
   limit?: number;
+  /** Only return products flagged available_for_delivery OR available_for_pickup. Default: true. */
+  inStockOnly?: boolean;
+  /** Session-preference boosts (lineage, brand) — used for re-ranking when multiple results match. */
+  preferLineages?: string[];
+  preferBrands?: string[];
+}
+
+/**
+ * Which filter dropped during the retry cascade. Consumers (widget route + LLM)
+ * use this to explain what we gave up on ("we didn't have Alien Labs pre-rolls,
+ * but here are Jeeter pre-rolls").
+ */
+export interface RelaxedFilter {
+  field: 'brand' | 'category' | 'effects';
+  value: string;
 }
 
 export interface ProductSearchResult {
@@ -67,6 +100,13 @@ export interface ProductSearchResult {
   source: 'algolia' | 'firecrawl' | 'cache';
   /** Full brand name from Algolia (e.g., "CBX Cannabiotix" even when user searched "CBX") */
   resolvedBrand?: string;
+  /**
+   * 0 = exact match. 1+ = degraded match (a filter was dropped to find results).
+   * The route surfaces this to the LLM so it apologises for the miss + suggests alternatives.
+   */
+  fallbackTier: number;
+  /** Filters that were dropped across retry tiers (human-readable, in order of importance). */
+  relaxedFilters: RelaxedFilter[];
 }
 
 // ── Category / Effect Maps (industry-standard) ──────────────────────────────
@@ -107,10 +147,25 @@ const EFFECT_LINEAGE_MAP: Record<string, string[]> = {
 };
 
 const EFFECT_KEYWORDS: Record<string, string[]> = {
-  sleep: ['sleep', 'sleepy', 'nighttime', 'insomnia', 'knock out', 'sedating', 'bed'],
-  relax: ['relax', 'calm', 'chill', 'unwind', 'stress', 'anxiety', 'cool', 'mellow'],
-  energy: ['energy', 'energiz', 'uplift', 'creative', 'focus', 'daytime', 'morning', 'wake'],
-  pain: ['pain', 'relief', 'ache', 'inflammation', 'sore', 'headache', 'migraine', 'cramp'],
+  sleep: [
+    'sleep', 'sleepy', 'nighttime', 'insomnia', 'knock out', 'sedating', 'bed',
+    'bedtime', 'pass out', 'wind down', 'tired', 'drowsy', 'couch lock',
+  ],
+  relax: [
+    'relax', 'calm', 'chill', 'unwind', 'stress', 'anxiety', 'cool', 'mellow',
+    'decompress', 'destress', 'de-stress', 'zen', 'ease', 'take the edge off',
+    'mellow out', 'after work', 'after-work', 'sunday', 'lazy day',
+  ],
+  energy: [
+    'energy', 'energiz', 'uplift', 'creative', 'focus', 'daytime', 'morning',
+    'wake', 'wake and bake', 'get going', 'motivat', 'productiv', 'hike',
+    'workout', 'run', 'gym', 'active', 'social', 'party', 'date night',
+    'get stuff done', 'creative spark', 'brainstorm', 'inspir',
+  ],
+  pain: [
+    'pain', 'relief', 'ache', 'inflammation', 'sore', 'headache', 'migraine',
+    'cramp', 'back pain', 'joint', 'arthritis', 'muscle', 'hurt', 'chronic',
+  ],
 };
 
 // ── Algolia Search (Primary) ────────────────────────────────────────────────
@@ -142,7 +197,19 @@ interface AlgoliaHit {
 }
 
 /**
- * Search products via Algolia (fast, ~4ms) with Firecrawl as fallback.
+ * Search products via Algolia (fast, ~4ms) with a retry cascade on zero-result queries.
+ *
+ * Retry tiers (each progressively drops a filter):
+ *   Tier 0: exact — everything the user asked for
+ *   Tier 1: drop effects (broadest: still brand+category)
+ *   Tier 2: drop category (same brand, any category)
+ *   Tier 3: drop brand (same category, any brand)
+ *
+ * The returned `fallbackTier` tells the caller how much we gave up; `relaxedFilters`
+ * lists what we dropped. The LLM uses both to apologise honestly and suggest alternatives
+ * ("no Alien Labs pre-rolls in stock — here are Alien Labs flowers instead").
+ *
+ * Firecrawl is a final fallback ONLY if Algolia errors (not if it returns 0 hits).
  */
 export async function searchProducts(
   config: JaneConfig,
@@ -151,26 +218,109 @@ export async function searchProducts(
 ): Promise<ProductSearchResult> {
   const storeId = params.storeId || config.defaultStore;
 
-  // Try Algolia first (fast path)
-  try {
-    const result = await searchViaAlgolia(config, params, storeId);
-    if (result.products.length > 0 || result.totalFound > 0) {
-      return result;
-    }
-  } catch (err) {
-    console.error('[jane] Algolia search failed, trying Firecrawl fallback:', err);
+  // Retry cascade — fire in order, stop on first non-empty result
+  type Attempt = { params: ProductSearchParams; dropped: RelaxedFilter[] };
+  const attempts: Attempt[] = [{ params, dropped: [] }];
+
+  // Tier 1: drop effects (if any were applied)
+  if (params.effects?.length) {
+    const { effects: _ignore, ...rest } = params;
+    void _ignore;
+    attempts.push({
+      params: rest,
+      dropped: [{ field: 'effects', value: params.effects.join(',') }],
+    });
   }
 
-  // Fallback to Firecrawl if Algolia fails and we have a key
-  if (firecrawlApiKey) {
+  // Tier 2: drop category (if set)
+  if (params.category) {
+    const { category: _cat, ...rest } = params;
+    void _cat;
+    attempts.push({
+      params: rest,
+      dropped: [{ field: 'category', value: params.category }],
+    });
+  }
+
+  // Tier 3: drop brand. Covers two cases:
+  //   (a) brand+category query that failed tier 2 → drop both here (broader net)
+  //   (b) brand-only query with no category → drop brand alone to return any in-stock product
+  // Without (b), brand-only queries that return 0 hits hit an empty response with no alternatives.
+  if (params.brand) {
+    const { brand: _brand, category: _cat, ...rest } = params;
+    void _brand; void _cat;
+    const dropped: RelaxedFilter[] = [{ field: 'brand', value: params.brand }];
+    if (params.category) dropped.unshift({ field: 'category', value: params.category });
+    attempts.push({ params: rest, dropped });
+  }
+
+  let lastError: unknown = null;
+  for (let tier = 0; tier < attempts.length; tier++) {
+    const attempt = attempts[tier];
     try {
-      return await searchViaFirecrawl(config, params, firecrawlApiKey, storeId);
+      const result = await searchViaAlgolia(config, attempt.params, storeId);
+      if (result.products.length > 0) {
+        // Apply session-preference re-ranking (boost products matching preferLineages/preferBrands)
+        const ranked = applySessionPreferenceBoost(result.products, params);
+        return {
+          ...result,
+          products: ranked,
+          fallbackTier: tier,
+          relaxedFilters: attempt.dropped,
+        };
+      }
+    } catch (err) {
+      lastError = err;
+      console.error(`[jane] Algolia tier ${tier} failed:`, err);
+    }
+  }
+
+  // Algolia error path only — try Firecrawl with the exact original query
+  if (lastError && firecrawlApiKey) {
+    try {
+      const fc = await searchViaFirecrawl(config, params, firecrawlApiKey, storeId);
+      return { ...fc, fallbackTier: 0, relaxedFilters: [] };
     } catch (err) {
       console.error('[jane] Firecrawl fallback also failed:', err);
     }
   }
 
-  return { products: [], totalFound: 0, storeId, source: 'cache' };
+  return {
+    products: [],
+    totalFound: 0,
+    storeId,
+    source: 'cache',
+    fallbackTier: attempts.length, // "exhausted" — everything was dropped and still nothing
+    relaxedFilters: [],
+  };
+}
+
+/**
+ * Re-rank products within the returned set by session preference signals.
+ * Does NOT filter out — only reorders so prior-preferred lineages/brands rise
+ * to the top. Keeps variety.
+ */
+function applySessionPreferenceBoost(
+  products: JaneProduct[],
+  params: ProductSearchParams,
+): JaneProduct[] {
+  const preferLineages = params.preferLineages?.map((l) => l.toLowerCase()) || [];
+  const preferBrands = params.preferBrands?.map((b) => b.toLowerCase()) || [];
+  if (preferLineages.length === 0 && preferBrands.length === 0) return products;
+
+  const score = (p: JaneProduct): number => {
+    let s = 0;
+    if (p.strainType && preferLineages.includes(p.strainType.toLowerCase())) s += 10;
+    if (p.brand && preferBrands.some((b) => p.brand!.toLowerCase().includes(b))) s += 5;
+    s += (p.rating || 0); // tie-break: small nudge by rating
+    return s;
+  };
+
+  // Stable sort: higher score first, keep original order otherwise
+  return [...products]
+    .map((p, i) => ({ p, s: score(p), i }))
+    .sort((a, b) => b.s - a.s || a.i - b.i)
+    .map((x) => x.p);
 }
 
 async function searchViaAlgolia(
@@ -189,6 +339,13 @@ async function searchViaAlgolia(
   // - Product type uses root_types (Jane's canonical categories)
   // - Lineage uses category field (indica/sativa/hybrid/cbd)
   const filters: string[] = [`store_id:${store.algoliaStoreId}`];
+
+  // In-stock filter — default ON. Don't surface products the customer can't buy.
+  // Algolia supports `field:true` for booleans.
+  if (params.inStockOnly !== false) {
+    filters.push('(available_for_delivery:true OR available_for_pickup:true)');
+  }
+
   if (params.category) {
     const rootType = CATEGORY_TO_ROOT_TYPE[params.category.toLowerCase()];
     if (rootType) filters.push(`root_types:${rootType}`);
@@ -234,6 +391,12 @@ async function searchViaAlgolia(
       query,
       filters: filters.join(' AND '),
       hitsPerPage: Math.min(limit, 50),
+      // Explicit typo tolerance — forgive "predoll", "preroll", "gummys", etc.
+      typoTolerance: true,
+      minWordSizefor1Typo: 4,
+      minWordSizefor2Typos: 7,
+      ignorePlurals: true,
+      removeStopWords: true,
       attributesToRetrieve: [
         'product_id', 'name', 'brand', 'kind', 'root_types', 'root_subtype',
         'custom_product_type', 'category', 'percent_thc', 'percent_cbd',
@@ -254,7 +417,9 @@ async function searchViaAlgolia(
   const totalFound = data.nbHits || 0;
 
   // Convert Algolia hits → JaneProduct[]
-  const products: JaneProduct[] = hits.map((hit) => algoliaHitToProduct(hit, baseUrl));
+  const products: JaneProduct[] = hits.map((hit) =>
+    algoliaHitToProduct(hit, baseUrl, config.cartDeeplinkParam),
+  );
 
   // Sort if requested (Algolia returns by relevance by default)
   if (params.sortBy === 'thc_desc') {
@@ -278,17 +443,31 @@ async function searchViaAlgolia(
     storeId,
     source: 'algolia',
     resolvedBrand,
+    fallbackTier: 0,
+    relaxedFilters: [],
   };
 }
 
-function algoliaHitToProduct(hit: AlgoliaHit, baseUrl: string): JaneProduct {
+function algoliaHitToProduct(
+  hit: AlgoliaHit,
+  baseUrl: string,
+  cartDeeplinkParam?: string,
+): JaneProduct {
   // Lineage comes from the "category" field (indica/sativa/hybrid/cbd)
   const strainType = hit.category || undefined;
 
-  // Build product URL
+  // Build product URL — Jane PDP with preselected weight
   const slug = hit.url_slug || hit.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
   const weight = hit.available_weights?.[0] || 'each';
   const url = `${baseUrl}/product/${hit.product_id}/${slug}?weight=${weight}`;
+
+  // Add-to-cart deeplink — ONLY populated if the dispensary has wired up a handler
+  // that consumes the query param. Jane's standard Roots build ignores these params,
+  // so without the config flag we leave cartUrl undefined and the widget falls back
+  // to the standard "View →" CTA on the PDP. Ships when Matt's eng team is ready.
+  const cartUrl = cartDeeplinkParam
+    ? `${url}&${cartDeeplinkParam}=${hit.product_id}`
+    : undefined;
 
   // Merge feelings + activities into effects for the AI
   const effects = [
@@ -307,8 +486,11 @@ function algoliaHitToProduct(hit: AlgoliaHit, baseUrl: string): JaneProduct {
     strainType,
     effects: effects.length > 0 ? effects : undefined,
     url,
+    cartUrl,
     weight: hit.available_weights?.[0] || undefined,
     imageUrl: hit.image_urls?.[0] || undefined,
+    rating: hit.aggregate_rating ?? undefined,
+    reviewCount: hit.review_count ?? undefined,
   };
 }
 
@@ -323,7 +505,7 @@ async function searchViaFirecrawl(
   const store = config.stores[storeId] || config.stores[config.defaultStore];
   const menuBase = store?.baseUrl;
   if (!menuBase) {
-    return { products: [], totalFound: 0, storeId, source: 'cache' };
+    return { products: [], totalFound: 0, storeId, source: 'cache', fallbackTier: 0, relaxedFilters: [] };
   }
 
   // For brand queries without a specific category, scrape /shop/all to get full inventory
@@ -371,6 +553,8 @@ async function searchViaFirecrawl(
     totalFound: products.length,
     storeId,
     source: 'firecrawl',
+    fallbackTier: 0,
+    relaxedFilters: [],
   };
 }
 
@@ -474,6 +658,21 @@ export function formatProductsForAI(products: JaneProduct[], groupByCategory = f
     return 'No products found matching that request. Suggest the customer browse the full menu online or visit the store.';
   }
 
+  const productLine = (p: JaneProduct, i: number, includeEffects: boolean): string => {
+    const details = [
+      p.strainType && p.strainType.charAt(0).toUpperCase() + p.strainType.slice(1),
+      p.thc && `THC: ${p.thc}`,
+      p.brand && `by ${p.brand}`,
+      p.price && `${p.price}`,
+      p.weight && `(${p.weight})`,
+    ].filter(Boolean).join(' · ');
+    const effectsLine = includeEffects && p.effects?.length
+      ? `\n   Effects: ${p.effects.slice(0, 4).join(', ')}`
+      : '';
+    const imageLine = p.imageUrl ? `\n   Image: ${p.imageUrl}` : '';
+    return `${i + 1}. **${p.name}**\n   ${details}${effectsLine}${imageLine}\n   ${p.url}`;
+  };
+
   if (groupByCategory && products.length > 3) {
     // Group by category for brand queries — shows all product types
     const groups: Record<string, JaneProduct[]> = {};
@@ -485,32 +684,43 @@ export function formatProductsForAI(products: JaneProduct[], groupByCategory = f
     const sections: string[] = [];
     for (const [cat, items] of Object.entries(groups)) {
       const catLabel = cat.charAt(0).toUpperCase() + cat.slice(1);
-      const formatted = items.slice(0, 5).map((p, i) => {
-        const details = [
-          p.strainType && p.strainType.charAt(0).toUpperCase() + p.strainType.slice(1),
-          p.thc && `THC: ${p.thc}`,
-          p.price && `${p.price}`,
-          p.weight && `(${p.weight})`,
-        ].filter(Boolean).join(' · ');
-        return `${i + 1}. **${p.name}**\n   ${details}\n   ${p.url}`;
-      }).join('\n\n');
+      const formatted = items
+        .slice(0, 5)
+        .map((p, i) => productLine(p, i, false))
+        .join('\n\n');
       sections.push(`### ${catLabel}\n${formatted}`);
     }
     return sections.join('\n\n');
   }
 
-  return products.map((p, i) => {
-    const details = [
-      p.strainType && p.strainType.charAt(0).toUpperCase() + p.strainType.slice(1),
-      p.thc && `THC: ${p.thc}`,
-      p.brand && `by ${p.brand}`,
-      p.price && `${p.price}`,
-      p.weight && `(${p.weight})`,
-    ].filter(Boolean).join(' · ');
-    const effectsLine = p.effects?.length ? `\n   Effects: ${p.effects.slice(0, 4).join(', ')}` : '';
+  return products.map((p, i) => productLine(p, i, true)).join('\n\n');
+}
 
-    return `${i + 1}. **${p.name}**\n   ${details}${effectsLine}\n   ${p.url}`;
-  }).join('\n\n');
+/**
+ * Human-friendly description of what had to be relaxed for the LLM.
+ * Example: "We dropped the pre-roll category — no Alien Labs pre-rolls in stock right now."
+ */
+export function describeFallback(
+  tier: number,
+  relaxed: RelaxedFilter[],
+  originalBrand?: string,
+  originalCategory?: string,
+): string | null {
+  if (tier === 0 || relaxed.length === 0) return null;
+  const droppedFields = relaxed.map((r) => r.field);
+  if (droppedFields.includes('brand') && droppedFields.includes('category')) {
+    return `No "${originalBrand} ${originalCategory}" products in stock. Showing the closest alternatives — acknowledge the miss and offer the best substitute.`;
+  }
+  if (droppedFields.includes('category') && originalBrand && originalCategory) {
+    return `No ${originalBrand} ${originalCategory} in stock. Showing other ${originalBrand} products — suggest these, or a different brand of ${originalCategory}.`;
+  }
+  if (droppedFields.includes('brand') && originalBrand && originalCategory) {
+    return `No ${originalBrand} in stock. Showing ${originalCategory} from other brands — call out this substitution explicitly.`;
+  }
+  if (droppedFields.includes('effects')) {
+    return `No products matched the effect filter. Showing best match on the other terms — note that the strain type may vary.`;
+  }
+  return `We relaxed one of the filters (${relaxed.map((r) => r.field).join(', ')}) to find results. Acknowledge the exact miss.`;
 }
 
 // ── Intent Parsing ──────────────────────────────────────────────────────────
@@ -652,6 +862,11 @@ export function buildJaneConfigFromContainerConfig(
     ? (cfg.jane_known_brands as unknown[]).filter((b): b is string => typeof b === 'string')
     : undefined;
 
+  const cartDeeplinkParam = typeof cfg.jane_cart_deeplink_param === 'string'
+    && (cfg.jane_cart_deeplink_param as string).trim()
+    ? (cfg.jane_cart_deeplink_param as string).trim()
+    : undefined;
+
   return {
     algoliaAppId: appId,
     algoliaSearchKey: searchKey,
@@ -659,5 +874,6 @@ export function buildJaneConfigFromContainerConfig(
     stores,
     defaultStore,
     knownBrands,
+    cartDeeplinkParam,
   };
 }

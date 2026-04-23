@@ -222,6 +222,35 @@ export async function GET(
     '.kyra-quick-replies { display:flex; flex-wrap:wrap; gap:7px; padding:6px 16px 10px; }',
     '.kyra-quick-btn { background:#fff; color:#374151; border:1.5px solid #e5e7eb; border-radius:24px; padding:8px 16px; font-size:13px; font-weight:500; font-family:system-ui,-apple-system,sans-serif; cursor:pointer; transition:all 0.2s ease; white-space:nowrap; box-shadow:0 1px 3px rgba(0,0,0,0.04); }',
     '.kyra-quick-btn:hover { background:' + COLOR + '; color:#fff; border-color:' + COLOR + '; box-shadow:0 2px 8px ' + COLOR + '33; transform:translateY(-1px); }',
+    /* Product cards — structured grid rendering of live inventory */
+    '.kyra-cards { display:flex; flex-direction:column; gap:10px; padding:4px 16px 8px; }',
+    '.kyra-card { display:flex; gap:12px; background:#fff; border:1px solid #eef0f4; border-radius:16px; padding:12px; box-shadow:0 1px 3px rgba(0,0,0,0.04); transition:transform 0.15s, box-shadow 0.15s; font-family:system-ui,-apple-system,"SF Pro Text",sans-serif; }',
+    '.kyra-card:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(0,0,0,0.08); border-color:' + COLOR + '40; }',
+    '.kyra-card-img { width:72px; height:72px; border-radius:12px; object-fit:cover; background:linear-gradient(135deg, #f3f4f6, #e5e7eb); flex-shrink:0; }',
+    '.kyra-card-img.placeholder { display:flex; align-items:center; justify-content:center; font-size:28px; color:' + COLOR + '99; }',
+    '.kyra-card-body { flex:1; min-width:0; display:flex; flex-direction:column; gap:4px; }',
+    '.kyra-card-name { font-weight:700; font-size:14px; color:#111827; line-height:1.3; }',
+    '.kyra-card-brand { font-size:12px; color:#6b7280; font-weight:500; }',
+    '.kyra-card-meta { display:flex; flex-wrap:wrap; gap:6px; margin-top:2px; }',
+    '.kyra-card-chip { font-size:11px; font-weight:600; padding:2px 8px; border-radius:10px; background:' + COLOR + '14; color:' + COLOR + '; letter-spacing:0.01em; }',
+    // Strain-type chip colors are INTENTIONALLY semantic, not branded: cannabis UX
+    // convention is indica=green, sativa=amber, hybrid=indigo, CBD=blue across every
+    // major dispensary platform (Weedmaps, Leafly, Jane). Overriding with tenant COLOR
+    // would break recognition for consumers. The default kyra-card-chip fallback
+    // (previous line) uses COLOR for non-strain chips (THC, CBD %, weight).
+    '.kyra-card-chip.strain-indica { background:#dcfce7; color:#166534; }',
+    '.kyra-card-chip.strain-sativa { background:#fef3c7; color:#92400e; }',
+    '.kyra-card-chip.strain-hybrid { background:#e0e7ff; color:#3730a3; }',
+    '.kyra-card-chip.strain-cbd { background:#dbeafe; color:#1e40af; }',
+    '.kyra-card-actions { display:flex; gap:6px; margin-top:auto; align-items:center; }',
+    '.kyra-card-price { font-weight:700; font-size:14px; color:#111827; margin-right:auto; }',
+    '.kyra-card-cta { display:inline-flex; align-items:center; gap:4px; font-size:12px; font-weight:600; color:#fff; background:linear-gradient(135deg, ' + COLOR + ', ' + COLOR + 'cc); padding:6px 12px; border-radius:10px; text-decoration:none; transition:all 0.15s; white-space:nowrap; box-shadow:0 1px 3px ' + COLOR + '33; }',
+    '.kyra-card-cta:hover { transform:translateY(-1px); box-shadow:0 2px 6px ' + COLOR + '44; }',
+    '.kyra-card-cta.secondary { background:#fff; color:' + COLOR + '; border:1.5px solid ' + COLOR + '40; box-shadow:none; }',
+    '.kyra-card-cta.secondary:hover { background:' + COLOR + '10; }',
+    '.kyra-browse-more { text-align:center; margin:4px 16px 8px; padding:10px 16px; border-radius:14px; background:linear-gradient(135deg, ' + COLOR + '12, ' + COLOR + '20); color:' + COLOR + '; font-weight:600; font-size:13px; text-decoration:none; display:block; border:1px dashed ' + COLOR + '40; transition:all 0.15s; }',
+    '.kyra-browse-more:hover { background:' + COLOR + '; color:#fff; border-style:solid; border-color:' + COLOR + '; }',
+    '.kyra-fallback-note { font-size:12px; color:#78350f; background:#fef3c7; border-left:3px solid #f59e0b; padding:8px 12px; border-radius:8px; margin:4px 16px; font-family:system-ui,-apple-system,sans-serif; }',
     /* Proactive bubble */
     '#kyra-proactive { position:fixed; bottom:104px; ' + (POSITION === 'bottom-left' ? 'left:28px;' : 'right:28px;') + ' background:#fff; padding:14px 18px; border-radius:20px 20px 6px 20px; box-shadow:0 8px 30px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.04); font-size:14px; color:#1a1a1a; font-family:system-ui,-apple-system,sans-serif; max-width:300px; z-index:99996; cursor:pointer; animation:kyra-fade-in 0.35s ease; line-height:1.5; }',
     '#kyra-proactive .close { position:absolute; top:6px; right:10px; cursor:pointer; color:#b0b5c0; font-size:14px; transition:color 0.15s; }',
@@ -383,7 +412,72 @@ export async function GET(
   }
 
   function escHtml(str) {
-    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    return String(str == null ? '' : str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // Render structured product cards from the API's cards[] array. These live below
+  // the bot's text bubble so the LLM's conversation + the live inventory stay linked
+  // visually. Safe against XSS — every field is escaped before interpolation.
+  function renderCards(cards, browseMore, fallbackNotice) {
+    if ((!cards || !cards.length) && !fallbackNotice) return;
+    // Fallback note — amber banner explaining the miss + substitution
+    if (fallbackNotice) {
+      var note = document.createElement('div');
+      note.className = 'kyra-fallback-note';
+      note.textContent = fallbackNotice;
+      messagesEl.appendChild(note);
+    }
+    if (cards && cards.length) {
+      var container = document.createElement('div');
+      container.className = 'kyra-cards';
+      for (var i = 0; i < cards.length; i++) {
+        var c = cards[i];
+        var card = document.createElement('div');
+        card.className = 'kyra-card';
+        // Image or emoji placeholder (falls back to 🌿 if no image)
+        var imgHtml = c.imageUrl
+          ? '<img class="kyra-card-img" src="' + escHtml(c.imageUrl) + '" alt="' + escHtml(c.name) + '" loading="lazy" onerror="this.outerHTML=\\'<div class=&quot;kyra-card-img placeholder&quot;>\\u{1F33F}</div>\\'">'
+          : '<div class="kyra-card-img placeholder">\\u{1F33F}</div>';
+        var strain = c.strainType ? String(c.strainType).toLowerCase() : '';
+        var strainLabel = strain ? strain.charAt(0).toUpperCase() + strain.slice(1) : '';
+        var chips = [];
+        if (strain) chips.push('<span class="kyra-card-chip strain-' + escHtml(strain) + '">' + escHtml(strainLabel) + '</span>');
+        if (c.thc) chips.push('<span class="kyra-card-chip">THC ' + escHtml(c.thc) + '</span>');
+        if (c.cbd) chips.push('<span class="kyra-card-chip">CBD ' + escHtml(c.cbd) + '</span>');
+        if (c.weight && chips.length < 3) chips.push('<span class="kyra-card-chip">' + escHtml(c.weight) + '</span>');
+        var priceHtml = c.price ? '<span class="kyra-card-price">' + escHtml(c.price) + '</span>' : '<span class="kyra-card-price"></span>';
+        var primaryUrl = c.cartUrl || c.url;
+        var primaryLabel = c.cartUrl ? 'Add to Bag' : 'View \\u2192';
+        var actionsHtml =
+          '<div class="kyra-card-actions">' +
+            priceHtml +
+            (c.cartUrl ? '<a class="kyra-card-cta secondary" href="' + escHtml(c.url) + '" target="_blank" rel="noopener">Details</a>' : '') +
+            '<a class="kyra-card-cta" href="' + escHtml(primaryUrl) + '" target="_blank" rel="noopener">' + primaryLabel + '</a>' +
+          '</div>';
+        card.innerHTML =
+          imgHtml +
+          '<div class="kyra-card-body">' +
+            '<div class="kyra-card-name">' + escHtml(c.name) + '</div>' +
+            (c.brand ? '<div class="kyra-card-brand">by ' + escHtml(c.brand) + '</div>' : '') +
+            (chips.length ? '<div class="kyra-card-meta">' + chips.join('') + '</div>' : '') +
+            actionsHtml +
+          '</div>';
+        container.appendChild(card);
+      }
+      messagesEl.appendChild(container);
+    }
+    // Browse-more banner (Alien Labs Products, etc.)
+    if (browseMore && browseMore.url) {
+      var a = document.createElement('a');
+      a.className = 'kyra-browse-more';
+      a.href = browseMore.url;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      var totalTxt = browseMore.totalCount ? 'Browse all ' + browseMore.totalCount + ' ' : 'Browse ';
+      a.textContent = totalTxt + (browseMore.label || 'Products') + ' \\u2192';
+      messagesEl.appendChild(a);
+    }
+    scrollToBottom();
   }
 
   // Convert AI response to safe HTML — strips markdown, renders links and newlines cleanly
@@ -569,6 +663,8 @@ export async function GET(
         history.push({ role: 'assistant', content: data.response });
         if (history.length > 20) history = history.slice(-20);
         addMessage('bot', data.response);
+        // Render live-inventory product cards + browse-more + fallback notice, if any
+        try { renderCards(data.cards, data.browseMore, data.fallbackNotice); } catch(e) {}
         // If lead was captured, show a subtle confirmation
         if (data.leadCaptured) {
           var noteEl = document.createElement('div');
