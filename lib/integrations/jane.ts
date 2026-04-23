@@ -807,11 +807,19 @@ export function parseProductIntent(
     }
   }
 
-  // Brand detection — check known brands first, then freeform patterns
-  for (const brand of knownBrands) {
-    if (lower.includes(brand.toLowerCase())) {
-      params.brand = brand;
-      break;
+  // Brand detection — check known brands first, preferring the LONGEST match
+  // so "CBX Cannabiotix" beats "CBX", "Heavy Hitters" beats "Hitter", etc.
+  // Scan all candidates, keep the longest. O(n × name-length) — fine for ~150
+  // brands.
+  {
+    let bestLen = 0;
+    for (const brand of knownBrands) {
+      if (!brand) continue;
+      const needle = brand.toLowerCase();
+      if (needle.length > bestLen && lower.includes(needle)) {
+        params.brand = brand;
+        bestLen = needle.length;
+      }
     }
   }
   // Freeform: "what [brand] products/strains/flavors do you have"
@@ -904,6 +912,66 @@ export function isProductQuery(message: string, knownBrands: string[] = []): boo
     /^\s*products?\b/i,
   ];
   return productSignals.some((r) => r.test(lower));
+}
+
+// ── Dynamic Brand List (from Algolia facets) ────────────────────────────────
+//
+// The knownBrands list on container_config is optional + often stale — Purple
+// Lotus carries 144 brands but only 41 were hardcoded. To guarantee brand
+// detection works for every brand the store actually stocks, we pull the live
+// brand facet from Algolia on first widget-chat invocation and cache it for
+// an hour per (appId+index+storeId). Keeps the hot path fast while
+// automatically picking up new brands as the dispensary adds them.
+
+interface BrandCacheEntry {
+  brands: string[];
+  expiresAt: number;
+}
+const BRAND_CACHE = new Map<string, BrandCacheEntry>();
+const BRAND_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+export async function fetchBrandFacet(
+  config: JaneConfig,
+  storeId?: string,
+): Promise<string[]> {
+  const store =
+    config.stores[storeId || config.defaultStore] ||
+    config.stores[config.defaultStore];
+  if (!store) return [];
+  const cacheKey = `${config.algoliaAppId}:${config.algoliaIndex}:${store.algoliaStoreId}`;
+  const hit = BRAND_CACHE.get(cacheKey);
+  if (hit && hit.expiresAt > Date.now()) return hit.brands;
+
+  try {
+    const res = await fetch(
+      `https://${config.algoliaAppId}-dsn.algolia.net/1/indexes/${config.algoliaIndex}/query`,
+      {
+        method: 'POST',
+        headers: {
+          'X-Algolia-Application-Id': config.algoliaAppId,
+          'X-Algolia-API-Key': config.algoliaSearchKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query: '',
+          filters: `store_id:${store.algoliaStoreId} AND (available_for_delivery:true OR available_for_pickup:true)`,
+          hitsPerPage: 0,
+          facets: ['brand'],
+          maxValuesPerFacet: 500,
+        }),
+        signal: AbortSignal.timeout(4000),
+      },
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    const brandMap = (data.facets?.brand || {}) as Record<string, number>;
+    const brands = Object.keys(brandMap).filter(Boolean);
+    BRAND_CACHE.set(cacheKey, { brands, expiresAt: Date.now() + BRAND_CACHE_TTL_MS });
+    return brands;
+  } catch (err) {
+    console.error('[jane] fetchBrandFacet failed:', err);
+    return [];
+  }
 }
 
 // ── Brand Catalog ───────────────────────────────────────────────────────────
