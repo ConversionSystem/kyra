@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { requireClientAccess } from '@/lib/agency/middleware';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,10 +20,9 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: clientId } = await params;
-  const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const auth = await requireClientAccess(clientId);
+  if (auth.error) return NextResponse.json({ error: auth.error.message }, { status: auth.error.status });
 
   const body = await req.json();
   const { scheduled_tasks } = body as { scheduled_tasks: ScheduledTask[] };
@@ -31,11 +31,14 @@ export async function PATCH(
     return NextResponse.json({ error: 'scheduled_tasks array required' }, { status: 400 });
   }
 
+  const supabase = createServiceClientWithoutCookies();
+
   // Get current client settings
   const { data: client, error: fetchError } = await supabase
     .from('agency_clients')
     .select('settings')
     .eq('id', clientId)
+    .eq('agency_id', auth.data.agency.id)
     .single();
 
   if (fetchError || !client) {
@@ -47,7 +50,8 @@ export async function PATCH(
   const { error: updateError } = await supabase
     .from('agency_clients')
     .update({ settings: { ...settings, scheduled_tasks } })
-    .eq('id', clientId);
+    .eq('id', clientId)
+    .eq('agency_id', auth.data.agency.id);
 
   if (updateError) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });

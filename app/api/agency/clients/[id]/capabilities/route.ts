@@ -7,9 +7,8 @@
  * On toggle, patches the OpenClaw gateway config via provisioner.
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
-import { requireAgencyMember } from '@/lib/agency/middleware';
+import { requireClientAccess } from '@/lib/agency/middleware';
 // NOTE: Do NOT import patchGatewayConfig here — OpenClaw rejects skills.* keys as invalid.
 // Capabilities are stored in Supabase only (agency_clients.settings.capabilities).
 // The gateway uses tools via its own skill system, not config keys.
@@ -30,7 +29,7 @@ export async function GET(
 ) {
   const { id } = await params;
 
-  const auth = await requireAgencyMember();
+  const auth = await requireClientAccess(id);
   if (auth.error) return NextResponse.json({ error: auth.error.message }, { status: auth.error.status });
 
   const supabase = createServiceClientWithoutCookies();
@@ -38,6 +37,7 @@ export async function GET(
     .from('agency_clients')
     .select('settings')
     .eq('id', id)
+    .eq('agency_id', auth.data.agency.id)
     .single();
 
   const settings = (client?.settings as Record<string, unknown>) ?? {};
@@ -59,7 +59,7 @@ export async function PATCH(
 ) {
   const { id } = await params;
 
-  const auth = await requireAgencyMember();
+  const auth = await requireClientAccess(id);
   if (auth.error) return NextResponse.json({ error: auth.error.message }, { status: auth.error.status });
 
   const { toolId, enabled } = await req.json();
@@ -74,6 +74,7 @@ export async function PATCH(
     .from('agency_clients')
     .select('settings, agency_id')
     .eq('id', id)
+    .eq('agency_id', auth.data.agency.id)
     .single();
 
   if (!client) return NextResponse.json({ error: 'Client not found' }, { status: 404 });
@@ -85,7 +86,8 @@ export async function PATCH(
   const { error: dbErr } = await supabase
     .from('agency_clients')
     .update({ settings: { ...settings, capabilities } })
-    .eq('id', id);
+    .eq('id', id)
+    .eq('agency_id', auth.data.agency.id);
 
   if (dbErr) return NextResponse.json({ error: dbErr.message }, { status: 500 });
 

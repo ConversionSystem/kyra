@@ -2,18 +2,18 @@
 // Returns: messages today/week/month, estimated token cost, avg response time
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { requireClientAccess } from '@/lib/agency/middleware';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  // Auth check
-  const sb = await createClient();
-  const { data: { user } } = await sb.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
   const { id: clientId } = await params;
+
+  const auth = await requireClientAccess(clientId);
+  if (auth.error) return NextResponse.json({ error: auth.error.message }, { status: auth.error.status });
+
   const supabase = createServiceClientWithoutCookies();
 
   const now = new Date();

@@ -3,7 +3,7 @@
 // Lightweight — only fetches created_at column.
 
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAgencyMember } from '@/lib/agency/middleware';
+import { requireClientAccess } from '@/lib/agency/middleware';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
 
 export async function GET(
@@ -12,7 +12,7 @@ export async function GET(
 ) {
   const { id: clientId } = await params;
 
-  const result = await requireAgencyMember();
+  const result = await requireClientAccess(clientId);
   if (result.error) {
     return NextResponse.json({ error: result.error.message }, { status: result.error.status });
   }

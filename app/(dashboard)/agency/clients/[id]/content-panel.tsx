@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { sanitizeGeneratedHTML } from '@/lib/sites/html-sanitizer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ALL_PLATFORMS, type Platform } from './publishing-platforms-panel';
 
@@ -243,7 +244,7 @@ function ContentItem({
           {entry.body ? (
             <div
               className="p-4 prose prose-sm max-w-none text-gray-700 text-sm leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: entry.body }}
+              dangerouslySetInnerHTML={{ __html: sanitizeGeneratedHTML(entry.body) }}
             />
           ) : (
             <p className="p-4 text-sm text-gray-400 italic text-center py-6">No content body stored.</p>

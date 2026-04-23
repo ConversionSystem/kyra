@@ -68,17 +68,37 @@ export async function POST(
   const { id: clientId } = await params;
 
   try {
-    const body = await request.json();
-    const { agency_id, user_message, ai_response, channel, tokens_used } = body;
+    // Verify caller owns this client — don't trust agency_id from body
+    const supabase = await createClient();
+    const { data: { user }, error: authErr } = await supabase.auth.getUser();
+    if (authErr || !user) return new Response('Unauthorized', { status: 401 });
 
-    if (!agency_id || !user_message || !ai_response) {
+    const { data: clientRow } = await supabase
+      .from('agency_clients')
+      .select('id, agency_id')
+      .eq('id', clientId)
+      .single();
+    if (!clientRow) return new Response('Not found', { status: 404 });
+
+    const { data: membership } = await supabase
+      .from('agency_members')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('agency_id', clientRow.agency_id)
+      .single();
+    if (!membership) return new Response('Forbidden', { status: 403 });
+
+    const body = await request.json();
+    const { user_message, ai_response, channel, tokens_used } = body;
+
+    if (!user_message || !ai_response) {
       return new Response('Missing required fields', { status: 400 });
     }
 
     const service = createServiceClientWithoutCookies();
     const { error } = await service.from('client_conversations').insert({
       client_id: clientId,
-      agency_id,
+      agency_id: clientRow.agency_id,
       channel: channel || 'test_chat',
       user_message,
       ai_response,
@@ -95,7 +115,7 @@ export async function POST(
     // Fire-and-forget GHL webhook
     void dispatchWebhookIfConfigured({
       clientId,
-      agencyId: agency_id,
+      agencyId: clientRow.agency_id,
       channel: channel || 'test_chat',
       userMessage: user_message,
       aiResponse: ai_response,
