@@ -479,10 +479,13 @@ async function searchViaAlgolia(
   // even though the same request works from other clients — helps surface
   // silent data shape issues (empty hits array, wrong index, etc).
   if (totalFound === 0) {
+    // Log the FULL raw response data (truncated to avoid log bloat) so we can
+    // see params Algolia echoed back + any warning fields it returned.
+    const rawPreview = JSON.stringify(data).slice(0, 600);
     console.warn(
       `[jane] Algolia 0 hits — filters=${filters.join(' AND ')} query=${JSON.stringify(query)} ` +
       `index=${config.algoliaIndex} app=${config.algoliaAppId} ` +
-      `res.keys=${Object.keys(data).join(',')}`,
+      `raw=${rawPreview}`,
     );
   }
 
