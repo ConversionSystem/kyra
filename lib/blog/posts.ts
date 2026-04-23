@@ -11,6 +11,232 @@ export interface BlogPost {
 
 export const POSTS: BlogPost[] = [
   {
+    slug: 'openclaw-whatsapp-ai-worker-setup-2026',
+    title: 'OpenClaw WhatsApp AI Worker Setup in 2026: A Step-by-Step Guide for Agencies',
+    description: 'An OpenClaw WhatsApp AI worker is a self-hosted AI agent that reads and replies to WhatsApp messages through the OpenClaw gateway. Here is how to install it, connect a WhatsApp Business number via Cloud API or a linked web session, configure per-peer session isolation, and run it for multiple agency clients without leaking context between conversations.',
+    date: '2026-04-23',
+    readMins: 13,
+    category: 'AI Infrastructure',
+    emoji: '📱',
+    content: `
+<p><em>Last updated: April 23, 2026</em></p>
+
+<p>An <strong>OpenClaw WhatsApp AI worker</strong> is a self-hosted AI agent that reads and replies to WhatsApp messages through the OpenClaw gateway, so one daemon can run a 24/7 conversational agent on a WhatsApp Business number without a SaaS bot provider sitting in the middle. You point an OpenClaw channel at your number, you attach skills and tools, and the gateway handles every incoming message: parsing the payload, assigning a session key, loading the right memory, calling Claude, and shipping the reply back through WhatsApp. In 2026 this is the single most requested deployment pattern in the OpenClaw community. Part of the reason is that WhatsApp crossed three billion monthly users last year. The other part is that Meta's 2026 Cloud API changes (100K daily messaging limit after Business Verification, the new BSUID identifier, the end of the On-Behalf-Of BSP model) reward operators who run their own stack rather than paying a bot vendor to broker the connection.</p>
+
+<div style="background:rgba(79,70,229,0.15);border:1px solid rgba(99,102,241,0.3);border-radius:12px;padding:20px;margin:24px 0;">
+  <p style="margin:0 0 8px 0;"><strong>Key takeaways</strong></p>
+  <ul style="margin:0;">
+    <li>OpenClaw supports two WhatsApp paths: official Meta Cloud API (recommended for paying clients) and a linked WhatsApp Web session via whatsapp-web.js (fine for testing, risky for production).</li>
+    <li>Setup is four real commands: <code>openclaw onboard</code>, <code>openclaw channels add whatsapp</code>, <code>openclaw channels login whatsapp</code>, <code>openclaw start</code>.</li>
+    <li>Per-client isolation is handled by <code>session.dmScope: 'per-peer'</code>. Every phone number gets its own context, memory, and working directory.</li>
+    <li>Node.js v22 or higher is required. The OpenClaw gateway listens on port 18789 and holds all session state — UI clients query it, they do not read local files.</li>
+    <li>Meta removed the 2K and 10K daily messaging tiers in 2026. Verified businesses jump straight to 100K messages per day, paced by WhatsApp's new portfolio pacing engine.</li>
+    <li>General-purpose AI is not allowed on the Cloud API. Your agent must be task-oriented: booking, routing, quoting, triage, escalation. That is where real agency margin lives anyway.</li>
+  </ul>
+</div>
+
+<h2>Why agencies are deploying WhatsApp AI workers in 2026</h2>
+
+<p>WhatsApp is the first channel every small business in Latin America, India, Europe, and the Middle East checks in the morning. For a dental clinic, a real estate team, or an auto shop, a missed WhatsApp message is a missed booking. The problem is that staffing a human to answer WhatsApp at 11pm on a Sunday does not work, and most chatbot SaaS vendors want 200 to 500 dollars per month per number for something that cannot read a calendar, cannot book an appointment, and cannot remember what the patient asked yesterday.</p>
+
+<p>OpenClaw changes the economics. One gateway on a 40 dollar VPS can run dozens of WhatsApp numbers at once. Each number has its own channel adapter, its own skill pack, its own session scope. The agent that answers for the dental clinic does not share a byte of memory with the agent that answers for the plumber. And because the gateway is MIT-licensed open source, the agency owns the integration instead of renting it.</p>
+
+<p>The 2026 Meta changes raised the stakes further. Verified businesses now get a 100,000 messages-per-day limit out of the gate, rolled out in Q1 2026 and generalized in Q2. That kind of ceiling is meaningless if your bot platform charges per-conversation fees and throttles you anyway. It is very meaningful if you own the connection.</p>
+
+<h2>Two ways OpenClaw talks to WhatsApp</h2>
+
+<p>There are two WhatsApp integrations supported by OpenClaw, and picking the right one on day one saves weeks of pain later.</p>
+
+<h3>Option 1: Meta Cloud API (recommended for paying clients)</h3>
+
+<p>This is the official Meta path. You (or your client) register a WhatsApp Business Account (WABA), verify the business, add a phone number, and Meta issues a Phone Number ID plus a permanent access token. OpenClaw's Cloud API adapter holds those credentials and uses Meta's webhook to receive messages and the Graph API to send replies. It is stable, supported, and scales to the full 100K per day.</p>
+
+<p>The tradeoff: Meta does not allow general-purpose AI chat on the Cloud API. Your agent has to be task-oriented. That means "book an appointment," "look up an order," "route to a human," "answer a product question from our knowledge base." Not "talk to me about anything." In practice this aligns with what agencies are actually selling, so the restriction matters less than it sounds.</p>
+
+<h3>Option 2: Linked WhatsApp Web session (fine for testing, not production)</h3>
+
+<p>OpenClaw can also connect via a linked web session using whatsapp-web.js. You scan a QR code with the WhatsApp mobile app, the session links to your server the same way WhatsApp Web links to a laptop, and OpenClaw receives messages through that unofficial bridge. Node.js v22 or higher is required because the library depends on a modern runtime.</p>
+
+<p>This path is useful for quickly validating an agent against a personal test number. It is not appropriate for client work. Meta actively detects and bans accounts that use unofficial libraries, and a banned number takes the client's conversations down with it. Use this for a weekend prototype. Switch to Cloud API before the first invoice.</p>
+
+<h2>Cloud API vs linked web session, side by side</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Factor</th>
+      <th>Meta Cloud API</th>
+      <th>Linked Web Session</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Official support</td>
+      <td>Yes (Meta for Developers)</td>
+      <td>No (reverse-engineered)</td>
+    </tr>
+    <tr>
+      <td>Ban risk</td>
+      <td>None as long as policy is followed</td>
+      <td>High for automated accounts</td>
+    </tr>
+    <tr>
+      <td>Daily message limit</td>
+      <td>100,000 after Business Verification</td>
+      <td>Undocumented, aggressively rate-limited</td>
+    </tr>
+    <tr>
+      <td>General-purpose AI chat</td>
+      <td>Prohibited (task-oriented only)</td>
+      <td>Technically possible, still not advised</td>
+    </tr>
+    <tr>
+      <td>Setup time</td>
+      <td>1 to 3 days (business verification)</td>
+      <td>5 minutes (QR scan)</td>
+    </tr>
+    <tr>
+      <td>Cost</td>
+      <td>Free tier + conversation-based fees</td>
+      <td>Free (until your number is banned)</td>
+    </tr>
+    <tr>
+      <td>Recommended for</td>
+      <td>Any paying client deployment</td>
+      <td>Prototypes and internal test numbers</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Prerequisites before you run a single command</h2>
+
+<p>Do this before you touch OpenClaw. Ninety percent of the support questions in the OpenClaw issue tracker about WhatsApp are really Meta onboarding questions in disguise.</p>
+
+<ol>
+  <li><strong>A VPS or workstation.</strong> 2 vCPU, 4 GB RAM, 20 GB disk is enough for a single client. Ubuntu 22.04 LTS or newer.</li>
+  <li><strong>Node.js v22+.</strong> The OpenClaw daemon and the WhatsApp adapter both require it.</li>
+  <li><strong>A phone number not already registered on WhatsApp.</strong> It can be mobile or landline, but it has to be able to receive an SMS or voice OTP. Do not use your personal number.</li>
+  <li><strong>A Meta Business account.</strong> Start Business Verification early. It can take 1 to 3 business days and sometimes longer if Meta asks for additional documents.</li>
+  <li><strong>An Anthropic API key.</strong> Or your own Claude-compatible gateway if you self-host.</li>
+  <li><strong>A domain with HTTPS.</strong> Meta webhooks require a TLS-terminated public URL. Caddy in front of OpenClaw is the fastest way there.</li>
+</ol>
+
+<p>The Meta side looks like this in order: create a WABA in WhatsApp Manager, add and verify a phone number (OTP by SMS or call), complete Business Verification, submit a Display Name for approval, create a System User in Business Manager, generate a permanent access token. Keep the Phone Number ID, the WABA ID, the permanent access token, and a self-chosen webhook verify token somewhere you can paste them into OpenClaw.</p>
+
+<h2>The four-command install</h2>
+
+<p>OpenClaw's onboarding wizard does almost all the work. The sequence below is the minimum path from a clean VPS to a running WhatsApp agent.</p>
+
+<pre><code># 1. Install OpenClaw
+curl -fsSL https://openclaw.ai/install.sh | sh
+
+# 2. Run the onboarding wizard (creates workspace, writes config, pulls dependencies)
+openclaw onboard
+
+# 3. Add the WhatsApp channel. The CLI will prompt to install the plugin.
+openclaw channels add whatsapp
+
+# 4. Log in. For Cloud API, paste your Phone Number ID, WABA ID, access token,
+#    and webhook verify token when prompted. For the linked web session, scan the QR.
+openclaw channels login whatsapp
+
+# 5. Start the gateway
+openclaw start</code></pre>
+
+<p>After <code>openclaw start</code>, the gateway listens on <code>127.0.0.1:18789</code> and accepts messages from the adapter. Every incoming WhatsApp message becomes a gateway event, which the agent runtime picks up, reads through skills and tools, and answers. If you chose Cloud API, point your Meta webhook at <code>https://your-domain.example/openclaw/whatsapp</code>. If you chose linked web, nothing else is needed.</p>
+
+<h2>Per-client isolation with session.dmScope</h2>
+
+<p>A single OpenClaw gateway can serve many WhatsApp conversations at once. The mechanism that keeps them separate is the session manager, configured through <code>session.dmScope</code> in <code>openclaw.config.yaml</code>. Three values matter:</p>
+
+<ul>
+  <li><code>main</code> (default). Every DM shares the agent's main session. Good for a single-user personal bot. Do not use for client work.</li>
+  <li><code>per-channel-peer</code>. Session keys look like <code>agent:&lt;agentId&gt;:whatsapp:dm:&lt;peerId&gt;</code>. Isolates by channel and by sender. This is the recommended multi-user default.</li>
+  <li><code>per-peer</code>. Session keys look like <code>agent:&lt;agentId&gt;:dm:&lt;peerId&gt;</code>. Isolates by sender across channels, so the same customer on WhatsApp and Telegram shares one memory.</li>
+</ul>
+
+<p>For agency deployments running a single number per client, <code>per-channel-peer</code> is the right call. Memory, history, and working files are scoped to the sender's WhatsApp identifier, and no conversation can read another conversation's state. Groups and threads always get their own session on top of that; the behavior is not configurable, and it is the correct default for privacy.</p>
+
+<p>If you need one persona shared across WhatsApp and a web widget (for example, the same customer on both channels), use <code>session.identityLinks</code> to map provider-prefixed peer IDs to a canonical identity. The result is one agent with one memory that follows the user from WhatsApp to WebChat without leaking across to other customers.</p>
+
+<h2>Skills, tools, and what the agent can actually do</h2>
+
+<p>By default the agent only knows how to respond in text. Everything else (calendars, CRMs, databases) is wired up through skills and tools. A realistic WhatsApp worker for a dental clinic looks roughly like this:</p>
+
+<ul>
+  <li><strong>book-appointment</strong> skill. Reads availability from the practice's calendar, proposes two or three slots, confirms, writes the event.</li>
+  <li><strong>lookup-patient</strong> tool. Checks whether the caller is a current patient and pulls their last visit date.</li>
+  <li><strong>triage</strong> skill. Classifies the message (emergency, routine, billing) and either answers or escalates to a human.</li>
+  <li><strong>escalation</strong> tool. Posts to the clinic's staff Slack if the message looks urgent.</li>
+  <li><strong>knowledge-base</strong> MCP connector. Grounds answers in the clinic's actual policies, hours, insurance list, and services.</li>
+</ul>
+
+<p>None of those live in WhatsApp. They live in the agent's workspace directory on your server. That is the separation of concerns that makes OpenClaw different from a chatbot platform: the channel is just a transport, the brain is the agent, and the tools are whatever you wire in. Anthropic's Claude Skills and the Model Context Protocol give you a standard way to bolt on capabilities without editing core code.</p>
+
+<h2>What Meta's 2026 changes mean for your deployment</h2>
+
+<p>Three changes landed this year that every operator should account for.</p>
+
+<p><strong>Portfolio pacing.</strong> WhatsApp now releases large sends in batches, watches quality signals (block rate, report rate, reply rate), and either continues or stops the remaining batch. A higher messaging limit no longer guarantees instant full delivery. Translation: conversational quality matters more than ever. A well-tuned agent with a 2 percent block rate will outship a noisy one with a 100K limit.</p>
+
+<p><strong>BSUID (business-scoped user ID).</strong> WhatsApp is rolling out usernames, which means a customer's phone number may stop being the default identifier visible to businesses. Meta's replacement is BSUID, a stable ID scoped to the business. Your OpenClaw session keys should key off whatever identifier the Cloud API webhook provides. OpenClaw's per-peer scoping handles both phone numbers and BSUIDs without code changes, because the peer ID is opaque to the gateway.</p>
+
+<p><strong>End of the On-Behalf-Of (OBO) model.</strong> Under the old system, a BSP or agency could manage a WABA without the client owning it. That is no longer permitted. In 2026 every client must own their own WABA, and you (the agency) operate it on their behalf through proper access grants. This is actually better for everyone: if the agency relationship ends, the client keeps their number and history without a migration nightmare.</p>
+
+<h2>Monitoring, logs, and the agent that tells you it broke</h2>
+
+<p>Once the worker is live, two operational habits separate the agencies that scale from the ones that get stuck firefighting.</p>
+
+<p>First, put the OpenClaw health check on a cron and alert if it fails. The gateway exposes a <code>/health</code> endpoint on port 18789. A one-liner with curl and a Slack webhook is enough to catch 90 percent of outages before a client does.</p>
+
+<p>Second, let the agent itself write daily summaries. Configure a standing-order hook in <code>.claude/hooks.json</code> that runs every evening at 21:00, asks the agent to summarize the day's conversations, counts bookings, flags anything that looked unusual, and posts it to a Slack channel you check once a day. OpenClaw's Automation primitives (hooks, cron, tasks, standing orders) make this a twenty-line config file, not a custom integration.</p>
+
+<h2>Frequently asked questions</h2>
+
+<h3>Do I need the Meta Cloud API or can I just use the linked web session?</h3>
+
+<p>For any paying client, use the Cloud API. The linked web session is fine for a weekend prototype on your own number, but Meta bans accounts that use unofficial libraries at scale, and you do not want your first client to wake up to a banned number. The extra day of Business Verification is worth it.</p>
+
+<h3>How many WhatsApp numbers can one OpenClaw gateway handle?</h3>
+
+<p>There is no hard cap in the gateway itself. Practical limits come from your Anthropic rate limits and the VPS's CPU. A 4 vCPU, 8 GB box comfortably runs 10 to 20 active client numbers. Past that, most agencies either scale vertically or run a second gateway behind a shared database.</p>
+
+<h3>Can I use a chatbot platform and OpenClaw together?</h3>
+
+<p>You can, but you should not. Every layer between WhatsApp and your agent adds latency, a failure point, and a vendor invoice. The whole reason OpenClaw exists is to remove those middle layers. If you are already on a SaaS chatbot, migrate the worker by worker, not all at once.</p>
+
+<h3>What happens when a user sends a voice note or an image?</h3>
+
+<p>The adapter forwards non-text payloads as attachments, and the agent handles them through Claude's multimodal capabilities if your model supports images or audio. For voice notes, a transcription skill converts audio to text before the agent reasons over it. OpenClaw does not force you to build that pipeline from scratch; the community has skill templates for both paths.</p>
+
+<h3>Does this work for group chats?</h3>
+
+<p>Yes, but carefully. Group messages always get a separate session scoped to the group, so the agent cannot accidentally read DM context when it replies in a group. Most agencies disable groups by default and enable them per-client. The config flag is one line.</p>
+
+<h3>How do I keep the agent on task so Meta does not flag it as general-purpose AI?</h3>
+
+<p>Constrain the agent with a system prompt that lists the exact tasks it is allowed to handle, and wire a refusal skill that politely redirects off-topic questions to a human or a FAQ. Meta reviews agents that show high refusal rates on off-topic traffic more favorably than ones that try to answer everything.</p>
+
+<h2>When an OpenClaw WhatsApp worker is not for you</h2>
+
+<p>Honest disclosures save everyone time. This setup is the wrong answer if:</p>
+
+<ul>
+  <li>Your volume is under 200 messages per month. A shared inbox run by a part-time human is cheaper and better.</li>
+  <li>You need a general-purpose AI companion. Meta's Cloud API does not allow that; the linked web session does, but the ban risk makes it unusable for clients.</li>
+  <li>You are not comfortable running a Linux server. Managed platforms exist for a reason, and paying someone else to operate the stack is a valid choice.</li>
+  <li>You are not willing to go through Business Verification. There is no shortcut to the 100K tier without it.</li>
+  <li>You need SOC 2 Type II certification today. OpenClaw is SOC 2-friendly (self-hosted, auditable logs, data sovereignty) but the certificate is yours to own, not the gateway's.</li>
+</ul>
+
+<p>For every other scenario — a dental practice that wants to book appointments at 2am, a real estate team that wants instant WhatsApp lead qualification, a GHL agency that wants to retire a Manychat invoice — this is the most durable stack you can ship.</p>
+
+<p>If you would rather skip the VPS, the Node install, the Meta verification paperwork, and the hooks config, the <a href="/solo">Kyra managed platform</a> runs the same OpenClaw architecture for you with per-client session isolation already wired up. You bring the client's WhatsApp number and the skills you want, and we handle the infrastructure. Related reading: <a href="/blog/openclaw-session-keys-explained-2026">How session keys keep 24 channels separate</a> · <a href="/blog/what-is-openclaw-ai-gateway-explained">What OpenClaw actually is</a> · <a href="/blog/openclaw-agent-vs-chatbot-capabilities">Six things an OpenClaw agent can do that a chatbot cannot</a>.</p>
+
+<p>External references: <a href="https://docs.openclaw.ai/channels/whatsapp">OpenClaw WhatsApp channel documentation</a> · <a href="https://github.com/openclaw/openclaw">OpenClaw on GitHub</a> · <a href="https://developers.facebook.com/documentation/business-messaging/whatsapp/">Meta WhatsApp Business Platform docs</a> · <a href="https://docs.anthropic.com">Anthropic Claude documentation</a> · <a href="https://modelcontextprotocol.io">Model Context Protocol specification</a>.</p>
+`,
+  },
+  {
     slug: 'openclaw-session-keys-explained-2026',
     title: 'OpenClaw Session Keys Explained: How One Gateway Keeps 24 Channels Separate in 2026',
     description: 'An OpenClaw session key is the unique string that tells the gateway which conversation a message belongs to. Here is how session keys work, how dmScope isolates DMs across WhatsApp, Slack, Discord, and 20+ other channels, and how to configure them for a multi-client agency without leaking context between users.',
