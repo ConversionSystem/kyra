@@ -4,7 +4,6 @@ import { getAgencyForUser, getAgencyClients } from '@/lib/agency/queries';
 import { isMasterEmail } from '@/lib/auth/admin';
 import { AgencySidebar } from './agency-sidebar';
 import { WhatsNewPanel } from '@/components/whats-new-panel';
-import { CommandPalette } from '@/components/dashboard/command-palette';
 // VoiceCommandButton removed — not functional, just UI noise
 
 export default async function AgencyLayout({
@@ -37,7 +36,6 @@ export default async function AgencyLayout({
         {children}
       </main>
       <WhatsNewPanel />
-      <CommandPalette />
     </div>
   );
 }
