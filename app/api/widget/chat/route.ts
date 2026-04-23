@@ -338,46 +338,39 @@ export async function POST(request: NextRequest) {
     `If you can't resolve something, say: "Let me connect you with our team — they'll follow up shortly."`,
     // Auto-inject cannabis product recommendation prompt when Jane is active
     janeActive ? `PRODUCT RECOMMENDATION ENGINE:
-You are also a cannabis product recommendation specialist — think helpful, knowledgeable budtender.
+You are a cannabis budtender responding in a chat widget. The widget renders TWO kinds of UI chrome automatically BELOW your text reply — you do NOT need to generate markdown for them:
 
-PRODUCT ANSWERS — MANDATORY FORMAT:
-Every time you recommend or mention a specific product, you MUST include ALL of these:
-1. Product name (bold)
-2. Brand name
-3. THC % (if available)
-4. Strain type (indica/sativa/hybrid)
-5. Short reason why it's a good pick for the customer's ask
-6. Direct product page link using [View Product →](url) — NEVER skip the link
+1. PRODUCT CARDS — when inventory was fetched, the widget shows structured cards with image, name, brand, strain, THC, price, and a "View →" button. The cards handle the clicking. Do NOT list products with markdown links like [View Product →](url). Just narrate conversationally.
 
-BRAND QUESTIONS:
-When a customer asks about a specific brand (e.g., "What Alien Labs strains do you have?"):
-- List ALL products from that brand currently in stock
-- Group by category (flower, pre-rolls, vapes, edibles) if more than 3 products
-- Include strain names, THC%, and direct links for each
+2. SUPPORT-LINK CHIPS — when the customer asks about ordering, delivery, hours, payment, deals, etc., the widget shows pill chips below your reply (e.g. "How to Order", "Delivery Info"). Do NOT paste URLs in your text — the chips handle it.
 
-CATEGORY + POTENCY QUESTIONS:
-When asked "highest THC flower" or "strongest pre-roll":
-- Sort by THC% descending
-- Show the top 3-5 results with full details + links
+YOUR JOB: be the budtender's voice. Be warm, specific, and concise.
 
-DEALS & PROMOTIONS:
-When asked about deals, specials, or promotions:
-- Check if any deal info is provided in context below
-- Always include the deals page link if available
-- Recommend products from active deals when possible
+HOW TO RESPOND
 
-EFFECT-BASED RECOMMENDATIONS:
-- Indica → sleep/relax/pain | Sativa → energy/focus/creativity | Hybrid → balanced
-- "Something to help me sleep" → recommend top indica products with links
-- NEVER make medical claims. Say "many customers find..." not "this will help your..."
+Product questions (cards will render):
+- Start with a 1-sentence intro that matches the customer's ask ("Indica is exactly what you want for sleep — here are tonight's top picks")
+- Pick 2-3 products from the results to call out BY NAME (e.g. "Granddaddy Purple is a classic — heavy indica, great for bedtime")
+- Do NOT list every product. Do NOT paste URLs. The cards below do the listing.
+- End by inviting them to tap a card for full details or ask for more specifics
 
-GENERAL STORE QUESTIONS:
-For non-product questions (delivery, payment, ordering, rewards, returns):
-- Answer directly from your business knowledge
-- ALWAYS include the relevant page link when available (see SUPPORT LINKS below)
-- Examples: "How do I order?" → answer + ordering page link, "Where do you deliver?" → answer + delivery link
+Brand questions ("What Alien Labs strains do you have?"):
+- The widget shows the full brand catalog as cards + a "Browse All" button.
+- Narrate the count: "We carry 4 Alien Labs products right now — 3 pre-rolls and 1 flower."
+- Highlight 1-2 by name. Invite them to tap a card.
 
-Be knowledgeable but not pushy. If no products match, suggest browsing the full menu or trying a different category.` : '',
+Effect recommendations:
+- Indica → sleep / relax / pain relief | Sativa → energy / focus / creativity | Hybrid → balanced
+- NEVER make medical claims. Say "many customers find..." not "this will help..."
+
+Informational questions (ordering, delivery, hours, payment, deals):
+- Give the answer in 1-2 sentences based on your business knowledge.
+- The relevant SUPPORT-LINK CHIP is already rendered below — you don't need to paste a URL. Just say "tap the Ordering chip below for the full walkthrough" or "hit the Delivery Info chip for our zones".
+
+NO RESULTS:
+If cards didn't render (empty search), acknowledge the miss honestly in one sentence and offer an alternative ("we're out of that brand's pre-rolls right now — want me to pull up their flower, or a different brand's pre-rolls?").
+
+NEVER fabricate product names, prices, or URLs. Only name a product if it appears in the context below.` : '',
     // Support / info page links — configured per client for delivery, payment, deals, ordering, etc.
     (() => {
       const links = cfg.support_links as Record<string, string> | undefined;
@@ -465,15 +458,64 @@ Be knowledgeable but not pushy. If no products match, suggest browsing the full 
   let productCards: ProductCard[] = [];
   let fallbackNotice: string | null = null;
   let browseMore: { url: string; label: string; totalCount: number } | null = null;
+  // Support links resolved from the user's message — chips rendered in the widget
+  // UI regardless of whether a product search happened. This guarantees "how to
+  // order" always gets a link, rather than depending on the LLM generating one.
+  let supportLinksOut: Array<{ label: string; url: string; topic: string }> = [];
   if (janeActive && janeConfig) {
     try {
-      const { isProductQuery, parseProductIntent, searchProducts, formatProductsForAI, describeFallback } =
+      const { isProductQuery, parseProductIntent, searchProducts, formatProductsForAI, describeFallback, getBrandCatalog, resolveSupportLinks } =
         await import('@/lib/integrations/jane');
+
+      // Resolve support links from the message — always runs, independent of product search.
+      // cfg is the container_config; website_url comes from the same place.
+      supportLinksOut = resolveSupportLinks(safeMessage, {
+        support_links: cfg.support_links as Record<string, string> | undefined,
+        website_url: cfg.website_url as string | undefined,
+      });
+
       if (isProductQuery(safeMessage, knownBrands)) {
         const intent = parseProductIntent(safeMessage, knownBrands);
         intent.storeId = resolvedStoreId || janeConfig.defaultStore;
         // For brand queries, get more results to show full brand inventory
         if (intent.brand && !intent.limit) intent.limit = 30;
+
+        // ── Open-ended brand catalog path ───────────────────────────────────
+        // "What Alien Labs strains do you have?" / "Show me Jeeter" / "CBX products"
+        // When a brand is detected AND no category is specified, fetch the full
+        // brand catalog and render ALL products grouped by category. This is the
+        // "list the strains" behaviour — no semantic search, just catalog reads.
+        if (intent.brand && !intent.category) {
+          const catalog = await getBrandCatalog(janeConfig, intent.brand, {
+            storeId: intent.storeId,
+            limit: 50,
+          });
+          if (catalog.products.length > 0) {
+            productCards = catalog.products.slice(0, 6).map((p) => ({
+              id: p.id, name: p.name, brand: p.brand, category: p.category,
+              strainType: p.strainType, thc: p.thc, cbd: p.cbd, price: p.price,
+              weight: p.weight, imageUrl: p.imageUrl, url: p.url, cartUrl: p.cartUrl,
+              rating: p.rating, reviewCount: p.reviewCount,
+            }));
+            const activeStore = janeConfig.stores[intent.storeId || janeConfig.defaultStore];
+            const storeBaseUrl = activeStore?.baseUrl || (cfg.website_url as string) || '';
+            const fullBrand = catalog.resolvedBrand || intent.brand;
+            const brandSlug = fullBrand.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+            const brandUrl = storeBaseUrl ? `${storeBaseUrl}/brands/${brandSlug}` : '';
+            if (brandUrl) {
+              browseMore = { url: brandUrl, label: `${intent.brand} Products`, totalCount: catalog.products.length };
+            }
+
+            // Build LLM context — groups (by lineage) + counts so the model can
+            // narrate accurately: "We have 3 Alien Labs hybrids and 1 indica."
+            const groupLines = Object.entries(catalog.groups)
+              .map(([cat, items]) => `  ${cat.toUpperCase()} (${items.length}): ${items.map((p) => p.name).join(', ')}`)
+              .join('\n');
+            productContext = `\n\nBRAND CATALOG — live ${catalog.storeId} inventory for ${intent.brand} (${catalog.products.length} products, grouped by lineage):\n${groupLines}\n\nTHE WIDGET IS ALREADY RENDERING PRODUCT CARDS + A "BROWSE ALL" BUTTON below your reply. Do NOT include markdown links or bullet lists of products. Instead, narrate conversationally in 2-3 sentences: call out the count by lineage ("we have 3 hybrids and 1 indica"), highlight 1-2 standouts by name + what they're good for, and invite the customer to tap a card for full details. The cards handle the clicking.`;
+            // Short-circuit — skip the generic search path
+            throw new Error('__handled_brand_catalog');
+          }
+        }
 
         // Session-preference boosts: prior mentions of indica/Alien Labs/etc nudge ranking
         const prefs = extractSessionPreferences(
@@ -542,54 +584,31 @@ Be knowledgeable but not pushy. If no products match, suggest browsing the full 
             intent.category,
           );
 
-          // Build a dynamic formatting example from the first real result so the few-shot
-          // doesn't leak another dispensary's product names/URLs into the prompt.
-          const sample = results.products[0];
-          const sampleStrain = sample.strainType
-            ? sample.strainType.charAt(0).toUpperCase() + sample.strainType.slice(1)
-            : 'Hybrid';
-          const sampleBits = [
-            sample.brand ? `by ${sample.brand}` : '',
-            sample.price || '',
-          ].filter(Boolean).join(' — ');
-          const sampleDetails = [
-            sampleStrain,
-            sample.thc ? `THC: ${sample.thc}` : '',
-            'Short reason why it fits the ask.',
-          ].filter(Boolean).join(' · ');
-          const formattingExample = `**${sample.name}**${sampleBits ? ' ' + sampleBits : ''}\n${sampleDetails}\n[View Product →](${sample.url})`;
-
-          const browseMoreLine = browseMoreUrl
-            ? `\n\nBROWSE MORE LINK: [Browse All ${totalCount} ${browseMoreLabel} →](${browseMoreUrl})`
-            : '';
-          const browseMoreRule = browseMoreUrl
-            ? (hasMore
-                ? `IMPORTANT: After showing your 3-4 picks, you MUST tell the customer the total count and link to browse all. Example: "We carry **${totalCount} ${intent.brand || intent.category || ''} products** in stock right now — here are my top picks. [Browse all ${totalCount} →](${browseMoreUrl})"`
-                : 'Show all products since there are only a few.')
-            : 'Show all products since there are only a few.';
-          const browseMoreHint = browseMoreUrl
-            ? 'When suggesting "browse more", ALWAYS use the BROWSE MORE LINK above — NEVER use /shop/all'
-            : 'If the customer wants more, invite them to visit the store or ask about a specific category.';
-
           // Fallback preface — tells the LLM EXACTLY what to apologise for + how to pivot.
-          // This is the Tier 1 fix that kills the canned "no results" message.
           const fallbackPreface = fallbackNotice
-            ? `\n\n⚠ PARTIAL MATCH ONLY — ${fallbackNotice}\nRULES FOR THIS RESPONSE:\n- Start by acknowledging the miss in one sentence ("We're out of Alien Labs pre-rolls right now").\n- Then pivot to the alternatives below ("but here are some great picks that still hit the mark…").\n- Never silently substitute — the customer asked for something specific, call it out.\n`
+            ? `\n\n⚠ PARTIAL MATCH ONLY — ${fallbackNotice}\nStart by acknowledging the miss in one sentence, then narrate the alternatives below (the cards render automatically).\n`
             : '';
 
-          // Session-preference preface — if prior turns mentioned a lineage or brand,
-          // tell the LLM to reference the continuity ("since you liked indica earlier…")
           const prefPreface = (prefs.lineages.length || prefs.brands.length)
-            ? `\n\nSESSION PREFERENCES (inferred from this visitor's prior turns):\n- Mentioned lineages: ${prefs.lineages.join(', ') || 'none'}\n- Mentioned brands: ${prefs.brands.join(', ') || 'none'}\nIf any pick below matches, say so naturally ("since you liked indica earlier, ${prefs.lineages.includes('indica') ? 'this' : 'that'} fits"). Never fake continuity if none exists.\n`
+            ? `\n\nSESSION PREFERENCES (inferred): lineages=${prefs.lineages.join(',') || 'none'} brands=${prefs.brands.join(',') || 'none'}. If any pick fits a prior preference, reference it naturally. Never fake continuity.\n`
             : '';
 
-          productContext = `\n\nPRODUCT SEARCH RESULTS (from live ${results.storeId} inventory — ${totalCount} total products found${intent.brand ? ` from ${intent.brand}` : ''}, showing top ${shownCount}):${fallbackPreface}${prefPreface}\n${formatted}${browseMoreLine}\n\nFORMATTING (use markdown bold and links):\n\n${formattingExample}\n\nRULES:\n- Pick the BEST 3-4 products from the search results to highlight. Do NOT list every single product.\n- Use **bold** for product names\n- Use [View Product →](url) for EVERY product — NEVER skip links, NEVER paste raw URLs\n- Each product: name+brand+price on line 1, strain·THC·description on line 2, link on line 3\n- ${browseMoreRule}\n- ${browseMoreHint}\n- ${isBrand ? 'Choose a mix across categories (flower, pre-rolls, vapes, edibles) for variety.' : 'One short intro line, then products.'}`;
+          // Give the LLM just the product names + brands so it can narrate accurately.
+          // The CARDS are the structured UI — the LLM's job is to speak, not list URLs.
+          const namesOnly = results.products
+            .slice(0, Math.min(shownCount, 8))
+            .map((p, i) => `  ${i + 1}. ${p.name}${p.brand ? ' by ' + p.brand : ''}${p.strainType ? ' [' + p.strainType + ']' : ''}${p.thc ? ' THC:' + p.thc : ''}${p.price ? ' ' + p.price : ''}`)
+            .join('\n');
 
+          productContext = `\n\nLIVE ${results.storeId.toUpperCase()} INVENTORY — ${totalCount} products matched${intent.brand ? ' from ' + intent.brand : ''}${intent.category ? ' in ' + intent.category : ''}${intent.maxPrice ? ' under $' + intent.maxPrice : ''}. Top ${shownCount} are already rendered as cards BELOW your reply:${fallbackPreface}${prefPreface}\n${namesOnly}\n\nNarrate 2-3 sentences: call out 1-2 by name with WHY they fit, mention the total count (${totalCount}), and invite the customer to tap a card. Do NOT paste URLs, do NOT list every product, do NOT use markdown bullets or numbered lists — the cards handle structure.`;
         }
       }
     } catch (e) {
-      console.error(`[widget/chat] Product search failed for ${clientId}:`, e);
-      // Continue without product context — AI will answer from knowledge
+      // Sentinel thrown by the brand-catalog fast path to skip the generic search block
+      if (!(e instanceof Error && e.message === '__handled_brand_catalog')) {
+        console.error(`[widget/chat] Product search failed for ${clientId}:`, e);
+      }
+      // Continue without extra product context — cards / supportLinks already populated if relevant
     }
   }
 
@@ -736,6 +755,11 @@ Be knowledgeable but not pushy. If no products match, suggest browsing the full 
       cards: productCards,
       browseMore,
       fallbackNotice,
+      // Server-resolved support links (ordering, delivery, hours, etc.). These
+      // render as pill chips in the widget — the LLM cannot hallucinate or drop
+      // them. If the user asked "how do I order?" the widget always shows the
+      // How-to-Order chip, regardless of what the LLM decided to say.
+      supportLinks: supportLinksOut,
     },
     { headers: CORS },
   );

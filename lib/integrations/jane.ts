@@ -85,6 +85,13 @@ export interface ProductSearchParams {
   maxPrice?: number;
   /** Price floor (dollars). If set, filters Algolia via `bucket_price >= minPrice`. */
   minPrice?: number;
+  /**
+   * Use Algolia facet filter for brand (`brand:"X"`) instead of text query.
+   * Default behaviour (undefined/true): exact match. Set to `false` for the
+   * legacy fuzzy text-query path (useful if the user typed an abbreviation
+   * like "CBX" and we want Algolia to match "CBX Cannabiotix" via relevance).
+   */
+  useBrandFacet?: boolean;
 }
 
 /**
@@ -339,10 +346,22 @@ async function searchViaAlgolia(
   const baseUrl = store.baseUrl;
 
   // Build Algolia filters
-  // - Brand goes into text query (names may differ: "CBX" vs "CBX Cannabiotix")
+  // - Brand uses the `brand` facet filter for EXACT matching. Empirically, using
+  //   brand as a text query returns false positives (e.g. querying "Alien Labs"
+  //   also returned a "Lyfe Sauce" product because the words matched elsewhere).
+  //   Facet filter `brand:"Alien Labs"` returns only real Alien Labs products.
   // - Product type uses root_types (Jane's canonical categories)
   // - Lineage uses category field (indica/sativa/hybrid/cbd)
   const filters: string[] = [`store_id:${store.algoliaStoreId}`];
+
+  // Brand as facet filter — only if the caller wants EXACT brand matching.
+  // `useBrandFacet` defaults to true for brand queries (see searchProducts / getBrandCatalog).
+  // When false, brand goes into the text query instead (legacy fuzzy path).
+  if (params.brand && params.useBrandFacet !== false) {
+    // Escape quotes defensively — real brand names like "Papa & Barkley" are fine.
+    const safe = String(params.brand).replace(/"/g, '\\"');
+    filters.push(`brand:"${safe}"`);
+  }
 
   // In-stock filter — default ON. Don't surface products the customer can't buy.
   // Algolia supports `field:true` for booleans.
@@ -371,10 +390,14 @@ async function searchViaAlgolia(
     }
   }
 
-  // Build query — for brand queries, use JUST the brand name as query text
-  // to avoid residual words (like "strains", "products") reducing Algolia results
+  // Build query — three cases:
+  //   (a) brand facet ON → query = '' (facet does the filter, no text match needed)
+  //   (b) brand facet OFF + brand set → fuzzy text match on brand name
+  //   (c) no brand → strip filler + emoji + price words from user message
   let query: string;
-  if (params.brand) {
+  if (params.brand && params.useBrandFacet !== false) {
+    query = '';
+  } else if (params.brand) {
     query = params.brand;
   } else {
     query = params.query || '';
@@ -871,6 +894,108 @@ export function isProductQuery(message: string, knownBrands: string[] = []): boo
     /^\s*products?\b/i,
   ];
   return productSignals.some((r) => r.test(lower));
+}
+
+// ── Brand Catalog ───────────────────────────────────────────────────────────
+
+/**
+ * Fetch ALL products for a specific brand across every category. Used when a
+ * customer asks open-ended brand questions like "What Alien Labs strains do
+ * you have?" or "Show me everything from Jeeter". Uses facet filter (exact
+ * match) so results are precise — never contaminated by keyword overlap.
+ *
+ * Groups the results by Jane's canonical root_types so the widget can render
+ * sections like "Pre-Rolls (3)" / "Flower (1)" / "Vapes (2)".
+ */
+export async function getBrandCatalog(
+  config: JaneConfig,
+  brand: string,
+  opts: { storeId?: string; limit?: number } = {},
+): Promise<{
+  brand: string;
+  resolvedBrand?: string;
+  products: JaneProduct[];
+  groups: Record<string, JaneProduct[]>;
+  storeId: string;
+}> {
+  const result = await searchProducts(config, {
+    brand,
+    storeId: opts.storeId,
+    limit: opts.limit ?? 50,
+    useBrandFacet: true,
+  });
+
+  // Group by lineage (strainType: indica/sativa/hybrid/cbd) — "strains" in the
+  // customer's mental model. Falls back to product-kind (category) if lineage
+  // is missing, and 'other' as last resort.
+  const groups: Record<string, JaneProduct[]> = {};
+  for (const p of result.products) {
+    const cat = (p.strainType || p.category || 'other').toLowerCase();
+    if (!groups[cat]) groups[cat] = [];
+    groups[cat].push(p);
+  }
+
+  return {
+    brand,
+    resolvedBrand: result.resolvedBrand,
+    products: result.products,
+    groups,
+    storeId: result.storeId,
+  };
+}
+
+// ── Support Links ───────────────────────────────────────────────────────────
+
+export interface SupportLink {
+  label: string;
+  url: string;
+  topic: string;
+}
+
+/**
+ * Match a user message to the support-link topic they're asking about
+ * (ordering, delivery, payment, hours, rewards, deals, etc.) and return
+ * the corresponding URL from `container_config.support_links` or an
+ * auto-generated fallback from `website_url`.
+ *
+ * This is how "how do I order?" reliably gets a link in the response —
+ * we don't trust the LLM to generate URLs; the server provides them.
+ */
+export function resolveSupportLinks(
+  message: string,
+  cfg: { support_links?: Record<string, string>; website_url?: string },
+): SupportLink[] {
+  const lower = message.toLowerCase();
+  const links = cfg.support_links || {};
+  const website = cfg.website_url || '';
+  const hits: SupportLink[] = [];
+
+  // Topic → regex triggers + default label + URL path fallback
+  const topics: Array<{ topic: string; triggers: RegExp[]; label: string; path: string }> = [
+    { topic: 'ordering', triggers: [/how.*(?:order|buy|purchase|checkout)/i, /ordering/i, /how to (?:place|get)/i], label: 'How to Order', path: '/order' },
+    { topic: 'delivery', triggers: [/deliver|delivery zone|service area|where.*deliver/i, /shipping|do you ship/i], label: 'Delivery Info', path: '/delivery' },
+    { topic: 'pickup', triggers: [/pick.?up|curbside|in.?store/i], label: 'Pickup Info', path: '/pickup' },
+    { topic: 'hours', triggers: [/hours|open|close|when.*open/i], label: 'Store Hours', path: '/hours' },
+    { topic: 'location', triggers: [/where.*(?:locat|store|shop)|address|direction|how to find/i], label: 'Location', path: '/contact' },
+    { topic: 'payment', triggers: [/pay(?:ment)?|credit card|debit|cash|accept|charge/i], label: 'Payment Options', path: '/payment' },
+    { topic: 'rewards', triggers: [/reward|loyal(?:ty)?|points|member/i], label: 'Rewards Program', path: '/rewards' },
+    { topic: 'deals', triggers: [/deal|promo|discount|special|sale|offer|coupon/i], label: "Today's Deals", path: '/deals' },
+    { topic: 'menu', triggers: [/\bmenu\b|inventory|full catalog|shop all/i], label: 'Full Menu', path: '/shop/all' },
+    { topic: 'returns', triggers: [/return|refund|exchange/i], label: 'Returns Policy', path: '/returns' },
+    { topic: 'contact', triggers: [/contact|phone|call|reach/i], label: 'Contact Us', path: '/contact' },
+    { topic: 'id_age', triggers: [/\bid\b|identification|age requirement|21\+/i], label: 'ID & Age Policy', path: '/id' },
+  ];
+
+  for (const t of topics) {
+    if (!t.triggers.some((r) => r.test(lower))) continue;
+    const explicit = links[t.topic] || links[t.label.toLowerCase()];
+    const url = explicit || (website ? `${website.replace(/\/$/, '')}${t.path}` : '');
+    if (url) hits.push({ topic: t.topic, label: t.label, url });
+  }
+
+  // De-dupe by URL so we don't send two chips that go to the same page
+  const seen = new Set<string>();
+  return hits.filter((h) => (seen.has(h.url) ? false : (seen.add(h.url), true)));
 }
 
 // ── Config Builder Helper ──────────────────────────────────────────────────
