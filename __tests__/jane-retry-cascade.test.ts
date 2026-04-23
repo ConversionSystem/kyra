@@ -327,6 +327,37 @@ describe('parseProductIntent — longest-match brand detection', () => {
     const intent = parseProductIntent('show me alien labs', ['Alien Labs']);
     expect(intent.brand).toBe('Alien Labs');
   });
+
+  // Word-boundary regression: 3-letter brand names like "LAX"/"PAX"/"CAM"/"RAW"
+  // used to match as substrings of "relax"/"capacity"/"scam"/"straw".
+  it('does NOT match "LAX" inside "relax"', () => {
+    const intent = parseProductIntent('something to help me relax', ['LAX']);
+    expect(intent.brand).toBeUndefined();
+  });
+  it('does NOT match "PAX" inside "capacity"', () => {
+    const intent = parseProductIntent('at capacity tonight', ['PAX']);
+    expect(intent.brand).toBeUndefined();
+  });
+  it('does NOT match "CAM" inside "scam"', () => {
+    const intent = parseProductIntent('not a scam', ['CAM']);
+    expect(intent.brand).toBeUndefined();
+  });
+  it('DOES match "LAX" as a standalone word', () => {
+    const intent = parseProductIntent('show me LAX products', ['LAX']);
+    expect(intent.brand).toBe('LAX');
+  });
+  it('matches brand at start of message', () => {
+    const intent = parseProductIntent('LAX please', ['LAX']);
+    expect(intent.brand).toBe('LAX');
+  });
+  it('matches brand followed by punctuation', () => {
+    const intent = parseProductIntent('any LAX?', ['LAX']);
+    expect(intent.brand).toBe('LAX');
+  });
+  it('matches brands containing non-alpha chars', () => {
+    const intent = parseProductIntent('3 bros stuff', ['3 Bros']);
+    expect(intent.brand).toBe('3 Bros');
+  });
 });
 
 describe('brand facet + getBrandCatalog', () => {
