@@ -480,15 +480,27 @@ NEVER fabricate product names, prices, or URLs. Only name a product if it appear
       const { isProductQuery, parseProductIntent, searchProducts, formatProductsForAI, describeFallback, getBrandCatalog, resolveSupportLinks } =
         await import('@/lib/integrations/jane');
 
+      // IMPORTANT: intent parsing and product search MUST use the raw message
+      // (`rawMessage`), NOT `safeMessage`. defend() wraps the input in
+      // `<customer_message>…</customer_message>` tags as a prompt-injection
+      // boundary. Passing the wrapped text to Algolia means we search for the
+      // literal string "<customer_message>\nindica\n</customer_message>", which
+      // matches zero products. The brand-facet path silently worked because it
+      // extracts brand names via substring scan, but the TEXT query path
+      // (effect/category/price queries) returned 0 cards for every request.
+      // The prompt-injection wrapping still applies to the LLM system prompt
+      // injection below — we only bypass it for the structured search layer.
+      const searchInput = rawMessage;
+
       // Resolve support links from the message — always runs, independent of product search.
       // cfg is the container_config; website_url comes from the same place.
-      supportLinksOut = resolveSupportLinks(safeMessage, {
+      supportLinksOut = resolveSupportLinks(searchInput, {
         support_links: cfg.support_links as Record<string, string> | undefined,
         website_url: cfg.website_url as string | undefined,
       });
 
-      if (isProductQuery(safeMessage, knownBrands)) {
-        const intent = parseProductIntent(safeMessage, knownBrands);
+      if (isProductQuery(searchInput, knownBrands)) {
+        const intent = parseProductIntent(searchInput, knownBrands);
         intent.storeId = resolvedStoreId || janeConfig.defaultStore;
         // For brand queries, get more results to show full brand inventory
         if (intent.brand && !intent.limit) intent.limit = 30;
