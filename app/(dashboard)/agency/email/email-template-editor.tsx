@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { sanitizeGeneratedHTML } from '@/lib/sites/html-sanitizer';
 
 // ─── Types ──────────────────────────────────────────────────────────────
 
@@ -237,7 +238,7 @@ export function EmailTemplateEditor({
               <div
                 className="px-5 py-4 text-sm text-gray-700 [&_a]:text-indigo-600 [&_a]:underline [&_h1]:text-lg [&_h1]:font-bold [&_h1]:mb-2 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:mb-2 [&_p]:mb-3 [&_ul]:mb-3 [&_ul]:pl-5 [&_ul]:list-disc [&_ol]:mb-3 [&_ol]:pl-5 [&_ol]:list-decimal"
                 dangerouslySetInnerHTML={{
-                  __html: renderPreview() || '<p style="color:#9ca3af;">No content yet. Click "Write with AI" or start editing.</p>',
+                  __html: sanitizeGeneratedHTML(renderPreview() || '<p style="color:#9ca3af;">No content yet. Click "Write with AI" or start editing.</p>'),
                 }}
               />
             </div>

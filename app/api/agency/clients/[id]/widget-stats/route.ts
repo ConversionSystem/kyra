@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { requireAgencyMember } from '@/lib/agency/middleware';
+import { requireClientAccess } from '@/lib/agency/middleware';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -11,10 +11,10 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const auth = await requireAgencyMember();
-  if (auth instanceof NextResponse) return auth;
-
   const { id: clientId } = await params;
+
+  const auth = await requireClientAccess(clientId);
+  if (auth.error) return NextResponse.json({ error: auth.error.message }, { status: auth.error.status });
 
   // Total conversations
   const { count: conversations } = await supabase

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAgencyMember } from '@/lib/agency/middleware';
+import { requireClientAccess } from '@/lib/agency/middleware';
 import { approveAction, rejectAction } from '@/lib/ghl/action-engine';
 
 type RouteContext = { params: Promise<{ id: string; actionId: string }> };
@@ -10,9 +10,9 @@ type RouteContext = { params: Promise<{ id: string; actionId: string }> };
  * Body: { decision: 'approve' | 'reject' }
  */
 export async function POST(request: NextRequest, context: RouteContext) {
-  const { actionId } = await context.params;
+  const { id: clientId, actionId } = await context.params;
 
-  const result = await requireAgencyMember();
+  const result = await requireClientAccess(clientId);
   if (result.error) {
     return NextResponse.json({ error: result.error.message }, { status: result.error.status });
   }

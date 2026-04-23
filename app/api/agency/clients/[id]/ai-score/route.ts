@@ -3,8 +3,7 @@
  * AI-score leads for a client (single or batch).
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { requireClientAccess } from '@/lib/agency/middleware';
 import { scoreLeadWithAI, batchScoreLeads } from '@/lib/crm/ai-lead-scorer';
 
 export const dynamic = 'force-dynamic';
@@ -15,18 +14,10 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id: clientId } = await params;
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const svc = createServiceClientWithoutCookies();
-  const { data: client } = await svc
-    .from('agency_clients')
-    .select('id, agency_id')
-    .eq('id', clientId)
-    .single();
-
-  if (!client) return NextResponse.json({ error: 'Client not found' }, { status: 404 });
+  const auth = await requireClientAccess(clientId);
+  if (auth.error) return NextResponse.json({ error: auth.error.message }, { status: auth.error.status });
+  const { client } = auth.data;
 
   const body = await req.json() as {
     mode?: 'single' | 'batch';
