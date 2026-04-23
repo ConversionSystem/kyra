@@ -45,11 +45,10 @@ export async function GET(
   const encoder = new TextEncoder();
   const startedAt = Date.now();
 
-  // Track the latest briefing we've sent. We cache BOTH the id and its
-  // created_at so a poll tick doesn't need to re-fetch the cursor row on
-  // every iteration — which would otherwise race the TTL cleanup and
-  // replay rows if the cursor row gets pruned.
-  let lastSeenId: string | null = null;
+  // Track the latest briefing we've sent. We cache the created_at so a
+  // poll tick doesn't need to re-fetch the cursor row on every iteration
+  // — which would otherwise race the TTL cleanup and replay rows if the
+  // cursor row gets pruned.
   let lastSeenCreatedAt: string | null = null;
 
   const stream = new ReadableStream({
@@ -99,7 +98,6 @@ export async function GET(
           const { data: rows } = await query;
           for (const row of rows ?? []) {
             safeEnqueue(`data: ${JSON.stringify(row)}\n\n`);
-            lastSeenId = row.id as string;
             lastSeenCreatedAt = row.created_at as string;
           }
         } catch (err) {
@@ -120,7 +118,6 @@ export async function GET(
           .limit(1);
         if (initial && initial.length > 0) {
           safeEnqueue(`data: ${JSON.stringify(initial[0])}\n\n`);
-          lastSeenId = initial[0].id as string;
           lastSeenCreatedAt = initial[0].created_at as string;
         }
       } catch (err) {

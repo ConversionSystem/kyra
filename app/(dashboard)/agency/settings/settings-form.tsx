@@ -480,11 +480,6 @@ export function SettingsForm({ agency, currentRole, members: initialMembers }: S
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Save All Settings
           </Button>
-          {saveMsg && (
-            <span className={`text-sm font-medium ${saveMsg.type === 'ok' ? 'text-emerald-600' : 'text-red-600'}`}>
-              {saveMsg.type === 'ok' ? '✓' : '✗'} {saveMsg.text}
-            </span>
-          )}
         </div>
       )}
 
