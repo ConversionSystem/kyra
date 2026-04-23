@@ -269,7 +269,14 @@ export async function searchProducts(
   for (let tier = 0; tier < attempts.length; tier++) {
     const attempt = attempts[tier];
     try {
+      const tTier = Date.now();
       const result = await searchViaAlgolia(config, attempt.params, storeId);
+      // DIAGNOSTIC: log every tier's shape so production regressions surface
+      console.log(
+        `[jane] tier=${tier} ${Date.now() - tTier}ms store=${storeId} ` +
+        `params=${JSON.stringify({ brand: attempt.params.brand, category: attempt.params.category, effects: attempt.params.effects, query: attempt.params.query, maxPrice: attempt.params.maxPrice })} ` +
+        `→ nbHits=${result.totalFound} products=${result.products.length} source=${result.source}`,
+      );
       if (result.products.length > 0) {
         // Apply session-preference re-ranking (boost products matching preferLineages/preferBrands)
         const ranked = applySessionPreferenceBoost(result.products, params);
@@ -468,6 +475,16 @@ async function searchViaAlgolia(
   const data = await res.json();
   const hits = (data.hits || []) as AlgoliaHit[];
   const totalFound = data.nbHits || 0;
+  // DIAGNOSTIC: log raw Algolia response shape when production returns 0 hits
+  // even though the same request works from other clients — helps surface
+  // silent data shape issues (empty hits array, wrong index, etc).
+  if (totalFound === 0) {
+    console.warn(
+      `[jane] Algolia 0 hits — filters=${filters.join(' AND ')} query=${JSON.stringify(query)} ` +
+      `index=${config.algoliaIndex} app=${config.algoliaAppId} ` +
+      `res.keys=${Object.keys(data).join(',')}`,
+    );
+  }
 
   // Convert Algolia hits → JaneProduct[]
   const products: JaneProduct[] = hits.map((hit) =>
