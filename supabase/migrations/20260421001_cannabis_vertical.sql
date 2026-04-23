@@ -11,6 +11,24 @@
 --
 -- Idempotent — safe to re-run. Uses CREATE TABLE IF NOT EXISTS throughout.
 -- RLS enabled on every new tenant table from day 1.
+--
+-- ⚠ POST-SHIP CORRECTION (2026-04-23)
+-- Section 5 below (the Purple Lotus backfill) hardcoded the WRONG client UUID.
+-- f91b28a1-2911-477e-b228-9a21cdbb1dca is the Kyra internal marketing client
+-- ("Kyra" / industry: Market Intelligence) in the ConversionSystem agency,
+-- NOT Purple Lotus. The real Purple Lotus (industry: Cannabis Dispensary) is
+-- 968cae23-e978-46bd-8f4f-23ed2e82d7be.
+--
+-- When this migration ran it polluted the internal Kyra client with Jane
+-- Algolia keys, 41 cannabis brands, industry=cannabis, website_url=plpcsanjose,
+-- and dispatch_agent_* config. A follow-up migration
+-- (20260423001_fix_wrong_pl_uuid.sql) reverses the pollution and re-applies
+-- the correct backfill against 968cae23.
+--
+-- DO NOT REVERT THIS FILE — it has already run in production. The fix-up
+-- migration handles the correction cleanly. This header is kept as a
+-- permanent breadcrumb so anyone grepping for "f91b28a1" understands the
+-- history.
 -- ────────────────────────────────────────────────────────────────────────────
 
 -- ═══════════════════════════════════════════════════════════════════════════

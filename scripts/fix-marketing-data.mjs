@@ -14,9 +14,27 @@ import { pathToFileURL } from 'url';
 import { join } from 'path';
 
 // ── Config ────────────────────────────────────────────────────────────────────
+//
+// ⚠ IMPORTANT — DO NOT CONFUSE THESE UUIDS
+//
+// KYRA_INTERNAL_CLIENT_ID (below) = the ConversionSystem agency's own internal
+// client record, used for Kyra's own email templates + CRM contacts + nurture
+// sequence. NAME: "Kyra". INDUSTRY: "Market Intelligence". NOT A CANNABIS
+// DISPENSARY. NOT PURPLE LOTUS.
+//
+// Purple Lotus (the live cannabis customer) is a SEPARATE client:
+//   968cae23-e978-46bd-8f4f-23ed2e82d7be   (industry: Cannabis Dispensary)
+//
+// A prior migration (20260421001_cannabis_vertical.sql) mistook THIS internal
+// client for Purple Lotus and polluted it with Jane Algolia keys + cannabis
+// brand lists. If you're here looking for Purple Lotus, use 968cae23…; if
+// you're updating marketing templates for Kyra's own outreach, you're in the
+// right place — keep using KYRA_INTERNAL_CLIENT_ID below.
 
 const AGENCY_ID = '1511e077-77ef-4c47-81fd-06a3bc9f1dbb';
-const CLIENT_ID = 'f91b28a1-2911-477e-b228-9a21cdbb1dca';
+const KYRA_INTERNAL_CLIENT_ID = 'f91b28a1-2911-477e-b228-9a21cdbb1dca';
+// Legacy alias kept for the queries below so this commit is a pure rename + docs.
+const CLIENT_ID = KYRA_INTERNAL_CLIENT_ID;
 const SUPABASE_URL = 'https://yaijdtsunxicuphrakcc.supabase.co';
 
 // ── Load env ──────────────────────────────────────────────────────────────────
