@@ -173,9 +173,12 @@ npm run deploy:prod   # hits scripts/deploy.sh with 2-deploy/day gate
 
 **Step 4: Flip the flag for Purple Lotus only**
 ```sql
+-- CORRECTION (2026-04-23): the UUID originally shown here was f91b28a1… which
+-- is actually the Kyra internal marketing client, NOT Purple Lotus. The real
+-- Purple Lotus client is 968cae23-e978-46bd-8f4f-23ed2e82d7be. Use that one.
 UPDATE agency_clients
 SET container_config = jsonb_set(container_config, '{dispatch_agent_enabled}', 'true'::jsonb)
-WHERE id = 'f91b28a1-2911-477e-b228-9a21cdbb1dca';
+WHERE id = '968cae23-e978-46bd-8f4f-23ed2e82d7be';
 ```
 Monitor `agent_invocations` for the next 24h — `outcome` should be mostly `success` with occasional `fallback`. Alert if `error` > 5% or `budget_exceeded` appears.
 
