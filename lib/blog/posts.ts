@@ -667,7 +667,7 @@ openclaw mcp list my-first-agent</code></pre>
   <li><strong>Notion or Linear.</strong> Plan work, file tickets, update docs. Most agencies pick one.</li>
   <li><strong>Google Drive or Dropbox.</strong> Read-only access to client docs for retrieval-augmented answering.</li>
   <li><strong>Browser (via Chrome MCP).</strong> Fills the long tail when no first-party server exists. OpenClaw v2026.3.23 shipped major reliability fixes to the browser attach path.</li>
-  <li><strong>GHL / HubSpot / Salesforce.</strong> Contact records, deal pipelines, workflow triggers. Read our <a href="/blog/ghl-ai-employee-complete-guide">GHL AI employee guide</a> for the end-to-end pattern.</li>
+  <li><strong>GHL / HubSpot / Salesforce.</strong> Contact records, deal pipelines, workflow triggers. Read our <a href="/blog/ghl-ai-employee-complete-guide">GHL AI worker guide</a> for the end-to-end pattern.</li>
 </ul>
 
 <p>Wiring all eight takes an afternoon. The same eight connectors, shared across every client agent on the same gateway, is the backbone of a production agency stack in 2026.</p>
