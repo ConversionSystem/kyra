@@ -11,6 +11,8 @@ import {
   searchProducts,
   describeFallback,
   buildJaneConfigFromContainerConfig,
+  isProductQuery,
+  parseProductIntent,
   type JaneConfig,
 } from '@/lib/integrations/jane';
 
@@ -185,6 +187,95 @@ describe('describeFallback', () => {
     );
     expect(text).toMatch(/Alien Labs/);
     expect(text).toMatch(/alternative/i);
+  });
+});
+
+describe('parseProductIntent — round 2 natural-language fixes', () => {
+  const brands = ['Alien Labs', 'Jeeter'];
+
+  it('strips emoji prefix from the query field', () => {
+    const intent = parseProductIntent('\u{1F634} Products for sleep', brands);
+    expect(intent.query).toBe('Products for sleep');
+    expect(intent.effects).toContain('sleep');
+  });
+
+  it('captures maxPrice from "under $40"', () => {
+    const intent = parseProductIntent('something relaxing under $40', brands);
+    expect(intent.maxPrice).toBe(40);
+    expect(intent.effects).toContain('relax');
+  });
+
+  it('captures maxPrice from "below 25" (no dollar sign)', () => {
+    const intent = parseProductIntent('anything below 25', brands);
+    expect(intent.maxPrice).toBe(25);
+  });
+
+  it('captures minPrice from "over $80"', () => {
+    const intent = parseProductIntent('gummies over $80', brands);
+    expect(intent.minPrice).toBe(80);
+  });
+});
+
+describe('isProductQuery — round 2 pattern expansion', () => {
+  it('matches "something relaxing under $40"', () => {
+    expect(isProductQuery('something relaxing under $40', [])).toBe(true);
+  });
+  it('matches "anything cheap"', () => {
+    expect(isProductQuery('anything cheap', [])).toBe(true);
+  });
+  it('matches "I want something for sleep"', () => {
+    expect(isProductQuery('I want something for sleep', [])).toBe(true);
+  });
+  it('matches emoji-prefixed quick-reply "\u{1F634} Products for sleep"', () => {
+    expect(isProductQuery('\u{1F634} Products for sleep', [])).toBe(true);
+  });
+  it('matches bare "Products"', () => {
+    expect(isProductQuery('Products', [])).toBe(true);
+  });
+});
+
+describe('searchProducts — round 2 Algolia payload', () => {
+  beforeEach(() => { vi.stubGlobal('fetch', vi.fn()); });
+  afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+
+  const baseConfig: JaneConfig = {
+    algoliaAppId: 'T', algoliaSearchKey: 'k', algoliaIndex: 'i',
+    defaultStore: 'sj',
+    stores: { sj: { algoliaStoreId: 1, baseUrl: 'https://x.com' } },
+  };
+
+  it('sends bucket_price <= maxPrice filter', async () => {
+    let body: Record<string, unknown> = {};
+    vi.stubGlobal('fetch', vi.fn(async (_url: string, init?: RequestInit) => {
+      body = init?.body ? JSON.parse(String(init.body)) : {};
+      return { ok: true, status: 200, text: async () => '',
+        json: async () => ({ hits: [{ product_id: 1, name: 'X' }], nbHits: 1 }) } as unknown as Response;
+    }));
+    await searchProducts(baseConfig, { query: 'x', maxPrice: 40 });
+    expect(body.filters).toMatch(/bucket_price <= 40/);
+  });
+
+  it('strips emoji from query text before sending to Algolia', async () => {
+    let body: Record<string, unknown> = {};
+    vi.stubGlobal('fetch', vi.fn(async (_url: string, init?: RequestInit) => {
+      body = init?.body ? JSON.parse(String(init.body)) : {};
+      return { ok: true, status: 200, text: async () => '',
+        json: async () => ({ hits: [{ product_id: 1, name: 'X' }], nbHits: 1 }) } as unknown as Response;
+    }));
+    await searchProducts(baseConfig, { query: '\u{1F634} Products for sleep' });
+    expect(body.query).not.toMatch(/\p{Emoji_Presentation}/u);
+    expect(body.query).toMatch(/Products/);
+  });
+
+  it('blanks out noise-only queries ("anything cheap") so filters do the work', async () => {
+    let body: Record<string, unknown> = {};
+    vi.stubGlobal('fetch', vi.fn(async (_url: string, init?: RequestInit) => {
+      body = init?.body ? JSON.parse(String(init.body)) : {};
+      return { ok: true, status: 200, text: async () => '',
+        json: async () => ({ hits: [{ product_id: 1, name: 'X' }], nbHits: 1 }) } as unknown as Response;
+    }));
+    await searchProducts(baseConfig, { query: 'anything cheap', sortBy: 'price_asc' });
+    expect(body.query).toBe('');
   });
 });
 

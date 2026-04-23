@@ -81,6 +81,10 @@ export interface ProductSearchParams {
   /** Session-preference boosts (lineage, brand) — used for re-ranking when multiple results match. */
   preferLineages?: string[];
   preferBrands?: string[];
+  /** Price ceiling (dollars). If set, filters Algolia via `bucket_price <= maxPrice`. */
+  maxPrice?: number;
+  /** Price floor (dollars). If set, filters Algolia via `bucket_price >= minPrice`. */
+  minPrice?: number;
 }
 
 /**
@@ -350,6 +354,13 @@ async function searchViaAlgolia(
     const rootType = CATEGORY_TO_ROOT_TYPE[params.category.toLowerCase()];
     if (rootType) filters.push(`root_types:${rootType}`);
   }
+  // Price range filter — "under $40" → bucket_price <= 40
+  if (typeof params.maxPrice === 'number' && params.maxPrice > 0) {
+    filters.push(`bucket_price <= ${params.maxPrice}`);
+  }
+  if (typeof params.minPrice === 'number' && params.minPrice > 0) {
+    filters.push(`bucket_price >= ${params.minPrice}`);
+  }
   // Filter by lineage for effect-based queries (sleep → indica, energy → sativa)
   if (params.effects?.length) {
     const lineages = [...new Set(params.effects.flatMap((e) => EFFECT_LINEAGE_MAP[e] || []))];
@@ -371,10 +382,29 @@ async function searchViaAlgolia(
     // Strip common filler words that hurt Algolia relevance
     query = query
       .replace(
-        /\b(what|which|do you have|any|are|in stock|available|show me|find|best|recommend|looking for|i want|i need|get me)\b/gi,
+        /\b(what|which|do you have|any|are|in stock|available|show me|find|best|recommend|looking for|i want|i need|get me|under|below|less than|over|above|more than)\b/gi,
         '',
       )
+      // Strip dollar amounts ("under $40", "below $25") that aren't product names
+      .replace(/\$\s*\d+(?:\.\d+)?/g, '')
       .trim();
+  }
+
+  // Sanitize the query for Algolia: strip emojis + pictographic symbols that
+  // Jane's index has no tokens for (quick-reply buttons prefix queries with
+  // emoji like "😴 Products for sleep" which otherwise matches 0 hits).
+  // Keep letters, digits, spaces, and basic punctuation only.
+  query = query
+    .replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // If after stripping all filler/emoji/price the query is just noise words
+  // ("anything", "something", "products", "cheap"…) — blank it out so Algolia
+  // returns matches ranked by filters + sort instead of forcing a bad text match.
+  // Filters (store_id, category, price, lineage) do the real work here.
+  if (/^(?:anything|something|products?|stuff|weed|cannabis|cheap|cheapest|good|great|best|nice|popular|things?)(?:\s+(?:anything|something|products?|stuff|weed|cannabis|cheap|cheapest|good|great|best|nice|popular|things?))*$/i.test(query)) {
+    query = '';
   }
 
   const limit = params.limit || 10;
@@ -729,8 +759,20 @@ export function parseProductIntent(
   message: string,
   knownBrands: string[] = [],
 ): ProductSearchParams {
-  const lower = message.toLowerCase();
-  const params: ProductSearchParams = { query: message };
+  // Strip emoji prefix (quick-reply buttons: "😴 Products for sleep" → "Products for sleep")
+  // before downstream regexes run — keeps them simple and avoids Algolia false-0s.
+  const cleaned = message
+    .replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const lower = cleaned.toLowerCase();
+  const params: ProductSearchParams = { query: cleaned };
+
+  // Price ceiling — "under $40", "below 25", "less than $100", "cheap" → maxPrice
+  const priceMax = lower.match(/(?:under|below|less than|max|no more than|up to)\s*\$?\s*(\d{1,4})/);
+  if (priceMax) params.maxPrice = parseInt(priceMax[1], 10);
+  const priceMin = lower.match(/(?:over|above|more than|at least|minimum|min)\s*\$?\s*(\d{1,4})/);
+  if (priceMin) params.minPrice = parseInt(priceMin[1], 10);
 
   // Brand detection — check known brands first, then freeform patterns
   for (const brand of knownBrands) {
@@ -790,7 +832,12 @@ export function isBrandQuery(message: string, knownBrands: string[] = []): boole
  * Check if a message is asking for product recommendations.
  */
 export function isProductQuery(message: string, knownBrands: string[] = []): boolean {
-  const lower = message.toLowerCase().replace(/[\u{1F300}-\u{1FAD6}\u{2600}-\u{27BF}]/gu, '').trim();
+  const lower = message
+    .toLowerCase()
+    // Strip ALL pictographic/emoji chars — wider net than the previous range-only approach
+    // (which missed 1F634 😴 "sleepy face" and other 1F6xx quick-reply button glyphs).
+    .replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '')
+    .trim();
 
   // Brand name match is always a product query
   if (knownBrands.some((b) => lower.includes(b.toLowerCase()))) return true;
@@ -814,6 +861,14 @@ export function isProductQuery(message: string, knownBrands: string[] = []): boo
     /\bdeal|promo|discount|special|sale|offer|coupon\b/i,
     // Short effect keywords (from quick reply buttons)
     /^(?:pain\s*relief|relaxation|relax|sleep|energy|creativity|creative|calm|uplifting|euphoria|focus|recovery)$/i,
+    // Natural-language price-gated queries ("something relaxing under $40", "anything cheap", "best deal under 25")
+    /(?:under|below|less than|up to|max|no more than)\s*\$?\s*\d+/i,
+    /\bcheap(?:est)?\b|\bbudget\b|\baffordable\b|\bgood deal\b/i,
+    // "something for X" / "something relaxing" / "need something"
+    /\b(?:something|anything)\s+(?:for|to|that|under|around)/i,
+    /\b(?:need|want|get|pick|find)\s+(?:something|anything)\b/i,
+    // Plain "products" alone (quick-reply button suffix)
+    /^\s*products?\b/i,
   ];
   return productSignals.some((r) => r.test(lower));
 }
