@@ -412,12 +412,26 @@ async function searchViaAlgolia(
     // Strip common filler words that hurt Algolia relevance
     query = query
       .replace(
-        /\b(what|which|do you have|any|are|in stock|available|show me|find|best|recommend|looking for|i want|i need|get me|under|below|less than|over|above|more than)\b/gi,
+        /\b(what|which|do you have|any|are|in stock|available|show me|find|best|recommend|looking for|i want|i need|get me|under|below|less than|over|above|more than|please|thanks?|pls)\b/gi,
         '',
       )
       // Strip dollar amounts ("under $40", "below $25") that aren't product names
       .replace(/\$\s*\d+(?:\.\d+)?/g, '')
       .trim();
+    // When effects were captured as filters, strip the effect keywords from
+    // the text query so Algolia doesn't additionally require "pain"/"relief"/
+    // "sleep" to appear in product names. The lineage filter already encodes
+    // the intent. ("pain relief please" → query='' → filter-only search.)
+    if (params.effects?.length) {
+      for (const effect of params.effects) {
+        const keywords = EFFECT_KEYWORDS[effect] || [];
+        for (const kw of keywords) {
+          const re = new RegExp(`\\b${kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
+          query = query.replace(re, '');
+        }
+      }
+      query = query.replace(/\s+/g, ' ').trim();
+    }
   }
 
   // Sanitize the query for Algolia: strip emojis + pictographic symbols that
