@@ -807,16 +807,33 @@ export function parseProductIntent(
     }
   }
 
-  // Brand detection — check known brands first, preferring the LONGEST match
-  // so "CBX Cannabiotix" beats "CBX", "Heavy Hitters" beats "Hitter", etc.
-  // Scan all candidates, keep the longest. O(n × name-length) — fine for ~150
-  // brands.
+  // Brand detection — word-boundary match, preferring the LONGEST brand.
+  //
+  // We can't use a naive `lower.includes(needle)` substring check: cannabis
+  // brand lists include 3-letter names like "LAX", "PAX", "CAM", "RAW" that
+  // appear as substrings of ordinary English words ("relax" contains "lax",
+  // "capacity" contains "pax", "scam" contains "cam"…). A substring match
+  // on "relax" → brand=LAX → Algolia facet filter on the wrong brand →
+  // zero results. Every effect/category query on Purple Lotus was silently
+  // returning 0 because "relax" triggered this false positive.
+  //
+  // The fix: require the match to be at a word boundary — the characters
+  // just before and just after the needle must be non-alphanumeric (or
+  // the needle must sit at the start/end of the string). "Relax" no longer
+  // matches LAX; "show me LAX" still does.
   {
     let bestLen = 0;
+    const isAlnum = (c: string | undefined) => !!c && /[a-z0-9]/.test(c);
     for (const brand of knownBrands) {
       if (!brand) continue;
       const needle = brand.toLowerCase();
-      if (needle.length > bestLen && lower.includes(needle)) {
+      if (needle.length <= bestLen) continue;
+      const idx = lower.indexOf(needle);
+      if (idx === -1) continue;
+      const boundsLeft  = idx === 0 || !isAlnum(lower[idx - 1]);
+      const boundsRight = idx + needle.length === lower.length
+        || !isAlnum(lower[idx + needle.length]);
+      if (boundsLeft && boundsRight) {
         params.brand = brand;
         bestLen = needle.length;
       }
