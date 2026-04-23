@@ -181,10 +181,23 @@ export async function POST(request: NextRequest) {
   // ── Build Jane config from this client's container_config ──
   // Returns null if required Algolia credentials are missing — in that case we skip
   // product search entirely rather than falling through to hardcoded defaults.
-  const { buildJaneConfigFromContainerConfig } = await import('@/lib/integrations/jane');
+  const { buildJaneConfigFromContainerConfig, fetchBrandFacet } = await import('@/lib/integrations/jane');
   const janeConfig = buildJaneConfigFromContainerConfig(cfg);
   const janeActive = !!janeConfig;
-  const knownBrands = janeConfig?.knownBrands || [];
+  // Augment the hardcoded known_brands list with the live brand facet from
+  // Algolia (cached 1h). Purple Lotus carries 144 brands but only 41 were
+  // backfilled — without this merge, queries like "Show me Jeeter" fell
+  // through to the text-query path and missed products.
+  let knownBrands = janeConfig?.knownBrands || [];
+  if (janeActive && janeConfig) {
+    try {
+      const live = await fetchBrandFacet(janeConfig, storeId || (cfg.jane_default_store_id as string));
+      if (live.length) {
+        const merged = new Set<string>([...knownBrands, ...live]);
+        knownBrands = [...merged];
+      }
+    } catch { /* cached path still works even on miss */ }
+  }
 
   // ── Override smart routing for product queries (needs configured model, not mini) ──
   if (janeActive && routedModel !== clientModel) {
@@ -526,10 +539,32 @@ NEVER fabricate product names, prices, or URLs. Only name a product if it appear
         if (prefs.brands.length) intent.preferBrands = prefs.brands;
 
         const firecrawlKey = process.env.FIRECRAWL_API_KEY;
-        // 12s timeout — Firecrawl scrape takes ~8s. Algolia is ~4ms so this is mostly for fallback.
-        const searchPromise = searchProducts(janeConfig, intent, firecrawlKey || undefined);
-        const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 12000));
-        const results = await Promise.race([searchPromise, timeoutPromise]);
+        // searchProducts already enforces its own deadlines (Algolia 5s per retry
+        // tier, Firecrawl 15s). The previous Promise.race(12s) wrapper on top was
+        // silently cutting off legitimate searches in production — Vercel's
+        // serverless environment hits slightly slower network latency to Algolia
+        // than local dev, and the combined first-tier + fallback could land just
+        // past 12s even when the underlying Algolia request succeeded. Result:
+        // `results` resolved to `null`, cards stayed empty, and the LLM was left
+        // to improvise. Drop the outer race and let searchProducts drive itself;
+        // route-level maxDuration=45s is the real upper bound.
+        const t0 = Date.now();
+        let results: Awaited<ReturnType<typeof searchProducts>> | null = null;
+        try {
+          results = await searchProducts(janeConfig, intent, firecrawlKey || undefined);
+        } catch (err) {
+          console.error(
+            `[widget/chat] searchProducts threw for ${clientId} (${Date.now() - t0}ms):`,
+            err instanceof Error ? err.message : String(err),
+          );
+        }
+        // Structured diagnostic — surfaces in Vercel runtime logs so future
+        // "0 cards" regressions can be traced to the exact query shape.
+        console.log(
+          `[widget/chat] search ${clientId} ${Date.now() - t0}ms ` +
+          `intent=${JSON.stringify({ brand: intent.brand, category: intent.category, effects: intent.effects, maxPrice: intent.maxPrice })} ` +
+          `products=${results?.products.length ?? 'null'} tier=${results?.fallbackTier ?? 'n/a'} source=${results?.source ?? 'n/a'}`,
+        );
         if (results && results.products.length > 0) {
           // Use grouped format for brand queries
           const isBrand = !!intent.brand;

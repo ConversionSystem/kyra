@@ -310,6 +310,25 @@ describe('searchProducts — round 2 Algolia payload', () => {
   });
 });
 
+describe('parseProductIntent — longest-match brand detection', () => {
+  it('prefers "CBX Cannabiotix" over "CBX" when both are known', () => {
+    const intent = parseProductIntent('Do you have CBX Cannabiotix flowers?', ['CBX', 'CBX Cannabiotix']);
+    expect(intent.brand).toBe('CBX Cannabiotix');
+  });
+  it('falls back to short match when only short is present in message', () => {
+    const intent = parseProductIntent('CBX please', ['CBX', 'CBX Cannabiotix']);
+    expect(intent.brand).toBe('CBX');
+  });
+  it('prefers "Heavy Hitters" over "Hitter" if both were known', () => {
+    const intent = parseProductIntent('Heavy Hitters carts', ['Hitter', 'Heavy Hitters']);
+    expect(intent.brand).toBe('Heavy Hitters');
+  });
+  it('is case-insensitive', () => {
+    const intent = parseProductIntent('show me alien labs', ['Alien Labs']);
+    expect(intent.brand).toBe('Alien Labs');
+  });
+});
+
 describe('brand facet + getBrandCatalog', () => {
   beforeEach(() => { vi.stubGlobal('fetch', vi.fn()); });
   afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
