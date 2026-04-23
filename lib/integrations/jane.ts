@@ -627,8 +627,8 @@ function parseProductsFromMarkdown(markdown: string, baseUrl: string): JaneProdu
   const productLinkRe = new RegExp(`\\[([^\\]]+)\\]\\((${escaped}/product/[^)]+)\\)`);
   const brandLinkRe = new RegExp(`\\[([^\\]]+)\\]\\(${escaped}/brands/[^)]+\\)`);
 
-  // Split by numbered list items (01. 02. etc.)
-  const productBlocks = markdown.split(/\n\d{2}\.\s/);
+  // Split by numbered list items (1. 2. ... 01. 02. etc.)
+  const productBlocks = markdown.split(/\n\d+\.\s/);
 
   for (const block of productBlocks.slice(1)) {
     try {
@@ -774,6 +774,16 @@ export function parseProductIntent(
   const priceMin = lower.match(/(?:over|above|more than|at least|minimum|min)\s*\$?\s*(\d{1,4})/);
   if (priceMin) params.minPrice = parseInt(priceMin[1], 10);
 
+  // Approximate price — "around $30", "about 20 bucks", "~$25" → ±25% range
+  if (!params.maxPrice && !params.minPrice) {
+    const approx = lower.match(/(?:around|about|approximately|~)\s*\$?\s*(\d{1,4})/);
+    if (approx) {
+      const target = parseInt(approx[1], 10);
+      params.minPrice = Math.max(1, Math.round(target * 0.75));
+      params.maxPrice = Math.round(target * 1.25);
+    }
+  }
+
   // Brand detection — check known brands first, then freeform patterns
   for (const brand of knownBrands) {
     if (lower.includes(brand.toLowerCase())) {
@@ -861,8 +871,8 @@ export function isProductQuery(message: string, knownBrands: string[] = []): boo
     /\bdeal|promo|discount|special|sale|offer|coupon\b/i,
     // Short effect keywords (from quick reply buttons)
     /^(?:pain\s*relief|relaxation|relax|sleep|energy|creativity|creative|calm|uplifting|euphoria|focus|recovery)$/i,
-    // Natural-language price-gated queries ("something relaxing under $40", "anything cheap", "best deal under 25")
-    /(?:under|below|less than|up to|max|no more than)\s*\$?\s*\d+/i,
+    // Natural-language price-gated queries ("something relaxing under $40", "anything cheap", "best deal under 25", "around $30")
+    /(?:under|below|less than|up to|max|no more than|around|about|approximately|~)\s*\$?\s*\d+/i,
     /\bcheap(?:est)?\b|\bbudget\b|\baffordable\b|\bgood deal\b/i,
     // "something for X" / "something relaxing" / "need something"
     /\b(?:something|anything)\s+(?:for|to|that|under|around)/i,
