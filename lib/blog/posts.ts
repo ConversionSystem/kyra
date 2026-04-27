@@ -11,6 +11,226 @@ export interface BlogPost {
 
 export const POSTS: BlogPost[] = [
   {
+    slug: 'whatsapp-ai-agent-openclaw-setup-2026',
+    title: 'WhatsApp AI Agent with OpenClaw: The 2026 Agency Setup Guide After Meta\'s Chatbot Crackdown',
+    description: 'A WhatsApp AI agent built on OpenClaw is a self-hosted assistant that links to a WhatsApp number through the multi-device protocol. Here is how to set one up in 2026 with the new replyToMode, per-group system prompts, and a complete CLI walkthrough.',
+    date: '2026-04-26',
+    readMins: 12,
+    category: 'AI Infrastructure',
+    emoji: '💬',
+    content: `
+<p><em>Last updated: April 26, 2026</em></p>
+
+<p>A <strong>WhatsApp AI agent built on OpenClaw</strong> is a self-hosted assistant that links to a WhatsApp number through the multi-device protocol and replies to inbound messages with a Claude-powered, tool-using AI worker. The setup uses the same QR code WhatsApp Web uses, so the agent acts as a linked companion device on the user's phone rather than a Meta Cloud API number. That distinction got loud in January 2026, when Meta banned open-ended AI chatbots from the official WhatsApp Business Cloud API and forced the entire ecosystem to rethink which path to take. OpenClaw's WhatsApp channel is the most popular workaround in the agency world right now, and the 2026.4.22 release made it considerably more useful for multi-tenant deployments.</p>
+
+<div style="background:rgba(79,70,229,0.15);border:1px solid rgba(99,102,241,0.3);border-radius:12px;padding:20px;margin:24px 0;">
+  <p style="margin:0 0 8px 0;"><strong>Key takeaways</strong></p>
+  <ul style="margin:0;">
+    <li>OpenClaw connects to WhatsApp through Baileys, the open-source implementation of the WhatsApp Web multi-device protocol. No Meta Cloud API account is needed for inbound conversational AI.</li>
+    <li>Meta banned mainstream AI chatbots from the Cloud API on January 15, 2026. Multi-device companion devices are the practical path for 1:1 reply-driven agents.</li>
+    <li>OpenClaw 2026.4.22 added a <code>replyToMode</code> option, per-group and per-direct system prompts, and a fix for duplicate messages on reconnect.</li>
+    <li>A working setup is one channel block in <code>config.yml</code>, one QR scan, and a persistent volume mount for the Baileys session keys.</li>
+    <li>Cloud API still wins for high-volume template broadcast (over 50K/day). Multi-device wins for conversational, reply-first AI workers.</li>
+    <li>The <code>per-channel-peer</code> dmScope default keeps every WhatsApp peer in their own isolated context, which is what regulated industries actually need.</li>
+  </ul>
+</div>
+
+<h2>What an OpenClaw WhatsApp AI agent actually does</h2>
+
+<p>The job is narrow and it is concrete. A user sends a WhatsApp message to a phone number. The OpenClaw gateway, running on a VPS or a home server, receives that message through the Baileys WebSocket connection. The gateway resolves a session key, loads the right context for that conversation, hands the message to a Claude or Grok or local model, and writes the agent's reply back to WhatsApp. The user sees a normal chat thread, with read receipts and typing indicators that look like every other WhatsApp conversation.</p>
+
+<p>The interesting part is what happens between the message arriving and the reply going out. The agent has access to the full OpenClaw tool surface: it can read a calendar, query a CRM, run a Stripe lookup, hit any MCP connector the gateway has wired up, and call into per-client skills. A dental front desk agent answers a "do you take Delta Dental" question by checking a Supabase row. A real estate agent answers "what's the price on 412 Maple" by hitting a custom MLS skill. The reply that comes back to WhatsApp is grounded in real data, not hallucinated.</p>
+
+<p>This is the difference between a chatbot and a worker. The chatbot reads a message and produces a string. The worker reads a message, looks something up, takes an action, and then produces a string. WhatsApp is just the channel. The intelligence lives in the gateway.</p>
+
+<h2>Why 2026 changed the WhatsApp AI landscape</h2>
+
+<p>Three shifts hit the WhatsApp AI world inside a single quarter, and they pushed serious agencies toward the multi-device path.</p>
+
+<p>The first was the AI chatbot ban. On January 15, 2026, Meta updated its WhatsApp Business Cloud API policy to require that automated bots have "clear, predictable results associated with business messaging." Open-ended AI chat is out. Support flows, booking flows, and order flows are in. If an agency built its product on top of the official Cloud API and routed every inbound message to Claude or GPT for a freeform reply, that product became a policy violation overnight.</p>
+
+<p>The second was the pricing change. Meta moved to a per-template-message model on April 1, 2026, scrapping the old "free first 1,000 conversations per month" tier and pricing utility, authentication, and marketing templates separately by destination country. For an agency running an AI worker that holds dozens of multi-turn conversations per client per day, the per-message economics quickly stop working.</p>
+
+<p>The third was the rollout of WhatsApp usernames, scheduled to begin in test countries in June 2026, with a new business-scoped user identifier (BSUID) replacing phone numbers in webhooks. That is a longer-arc change that complicates how Cloud API integrations resolve identity, while multi-device companion devices keep working unchanged because they ride on the existing WhatsApp Web protocol.</p>
+
+<p>Add it up and the shape of the problem is clear. If your agency is running 1:1 conversational AI on WhatsApp in 2026, the multi-device protocol is the path with the fewest landmines. OpenClaw's WhatsApp channel was already built that way, which is why it became the default option for the kind of work agencies and GHL resellers were trying to do.</p>
+
+<h2>Cloud API vs multi-device: which path is yours</h2>
+
+<p>The honest answer is that they are different products with different jobs. Cloud API is a transactional broadcast pipe optimized for templates: shipping notifications, OTP codes, appointment reminders sent at scale. Multi-device is a conversational pipe optimized for replies inside an existing thread, the way a human would respond from their phone.</p>
+
+<p>If your use case is "I need to send 250,000 marketing templates a month," Cloud API is correct, and you should accept the policy and pricing constraints. If your use case is "I need to be the AI front desk for fifteen dental practices, each with a phone that already has WhatsApp," multi-device is correct, and OpenClaw is the cleanest way to wire it up.</p>
+
+<p>Most Kyra-style agencies live entirely in the second world, which is why this guide focuses there. For the broader picture of how the same gateway handles other channels, the <a href="/blog/openclaw-session-keys-explained-2026">session keys deep dive</a> walks through how Slack, Discord, and Telegram fit alongside WhatsApp in the same install.</p>
+
+<h2>Step-by-step: connect OpenClaw to WhatsApp in fifteen minutes</h2>
+
+<p>The walkthrough below assumes you already have OpenClaw 2026.4.22 or later installed and the gateway listening on its default port. If you do not, the <a href="/blog/what-is-openclaw-ai-gateway-explained">"What is OpenClaw" overview</a> and the <a href="https://docs.openclaw.ai/channels/whatsapp">official WhatsApp channel docs</a> cover the install side.</p>
+
+<p><strong>1. Confirm the gateway is running and reachable.</strong></p>
+
+<pre><code>openclaw gateway status
+# expected: listening on :18789, 0 active sessions</code></pre>
+
+<p><strong>2. Create the persistent volume for Baileys session keys.</strong> This is the most common reason new installs lose the QR scan and ask you to scan again. Baileys writes the multi-device handshake material into a folder, and that folder must survive container restarts.</p>
+
+<pre><code>mkdir -p ~/.openclaw/whatsapp/auth
+chmod 700 ~/.openclaw/whatsapp/auth</code></pre>
+
+<p><strong>3. Add the WhatsApp channel block to your gateway config.</strong></p>
+
+<pre><code>$EDITOR ~/.openclaw/config.yml</code></pre>
+
+<pre><code>channels:
+  - type: whatsapp
+    sessionPath: ~/.openclaw/whatsapp/auth
+    replyToMode: smart
+    dmScope: per-channel-peer
+    systemPrompt: |
+      You are the front desk for Acme Dental.
+      Answer scheduling questions and route insurance
+      questions to a human if Delta Dental is mentioned.
+    groups:
+      enabled: true
+      systemPromptOverrides:
+        - groupId: "120363045xxx@g.us"
+          prompt: |
+            You are the staff coordinator for Acme Dental.
+            Reply only when explicitly @mentioned.</code></pre>
+
+<p><strong>4. Reload the gateway.</strong></p>
+
+<pre><code>openclaw gateway reload</code></pre>
+
+<p><strong>5. Trigger the QR scan and link the device.</strong></p>
+
+<pre><code>openclaw whatsapp link --print-qr
+# scan the QR with: WhatsApp > Settings > Linked Devices > Link a device</code></pre>
+
+<p>The QR code appears in the terminal as ASCII art. On the phone, open WhatsApp, navigate to Settings, then Linked Devices, then "Link a device," and point the camera at the terminal. The link completes in a few seconds and the gateway prints a "session bound" line.</p>
+
+<p><strong>6. Send a test message from a second WhatsApp account.</strong> Open WhatsApp on a different phone, send "hello" to the linked number, and watch the gateway log.</p>
+
+<pre><code>openclaw logs --channel whatsapp --tail
+# expected: session resolved wa:+15551234567
+# expected: agent reply dispatched in 1.4s</code></pre>
+
+<p><strong>7. Verify isolation with a second peer.</strong> Send a different message from a third phone number. The two conversations must produce two different session keys (one per peer) and the agent must not leak context between them.</p>
+
+<pre><code>openclaw sessions list --channel whatsapp
+# expected: two rows, one per peer phone number</code></pre>
+
+<p>That is the full setup. Seven commands, one config block, one QR scan. Every additional WhatsApp number is one more channel block with a different <code>sessionPath</code>, which is how an agency runs fifteen client phones on a single gateway.</p>
+
+<h2>What is new in OpenClaw 2026.4.22 for WhatsApp</h2>
+
+<p>The April 22 release was a small one in line count and a large one in practical impact. Three changes are worth knowing.</p>
+
+<p>The <strong>replyToMode option</strong> controls whether the agent quotes the original message when it replies. Three values: <code>off</code> never quotes, <code>always</code> always quotes, and <code>smart</code> quotes only in groups or when the reply is to a message that arrived more than 60 seconds earlier. <code>smart</code> is the right default for almost every deployment because it keeps DMs feeling like a normal one-on-one chat while still pinning replies in noisy group threads.</p>
+
+<p>The <strong>per-group and per-direct system prompts</strong> let one WhatsApp connection serve multiple conversational personas. The agent can be a clinical front desk in the patient DM thread and a concise staff coordinator in the internal staff group, with two completely different system prompts loaded based on the session key. Before this release, you needed two separate WhatsApp connections to do that.</p>
+
+<p>The <strong>duplicate message fix</strong> closed a long-standing reconnect bug. When the Baileys WebSocket dropped and reconnected, pending message queues were re-driven by both the old and new connection, occasionally producing duplicate replies. The 2026.4.22 release adds an in-memory "active delivery claim" that prevents two reconnects from racing the same queue entry. The visible fix is that the agent stops sending the same reply twice during flaky internet.</p>
+
+<h2>Session keys and per-peer isolation on WhatsApp</h2>
+
+<p>Every inbound WhatsApp message arrives at the gateway with a small metadata bundle: the linked-device account that received it, the peer phone number that sent it, and whether the message landed in a DM or a group. The session manager turns that bundle into a deterministic string. A typical WhatsApp DM produces a key like <code>wa:+15551234567</code>; a WhatsApp group produces something like <code>wa:120363045xxx@g.us</code>.</p>
+
+<p>The default <code>dmScope</code> setting is <code>per-channel-peer</code>, which means each peer phone number gets its own session and its own conversational memory. A patient asking about an appointment last Tuesday gets the context from last Tuesday's chat, not the context from a different patient who happens to share the same dental practice. Group chats always get their own session regardless of dmScope, because every group is a first-class room with its own membership and its own privacy expectations.</p>
+
+<p>This is not optional infrastructure. Regulated industries on WhatsApp (dental, legal, medical, financial) need the agent to never confuse one peer's data with another's, and the session key boundary is what enforces that at the routing layer before the model ever sees the prompt. The deeper mechanics are spelled out in the <a href="/blog/openclaw-session-keys-explained-2026">session keys explainer</a> if you want the full algorithm.</p>
+
+<h2>Comparison: WhatsApp AI deployment patterns in 2026</h2>
+
+<p>Four patterns dominate the 2026 landscape for putting an AI agent on a WhatsApp number. They are not interchangeable, and the right pick depends on whether you care more about volume, conversation quality, compliance, or operational simplicity.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Pattern</th>
+      <th>Connection</th>
+      <th>Typical use case</th>
+      <th>2026 reality</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>OpenClaw + Baileys</strong></td>
+      <td>Multi-device companion (QR scan)</td>
+      <td>Conversational AI worker, agency multi-tenant</td>
+      <td>Default for replies; no per-message fees</td>
+    </tr>
+    <tr>
+      <td><strong>Meta Cloud API + classic flow</strong></td>
+      <td>Official Business API, template-driven</td>
+      <td>Notifications, OTP, scheduled broadcasts</td>
+      <td>Required for &gt;50K/day; AI-chat banned since Jan 15, 2026</td>
+    </tr>
+    <tr>
+      <td><strong>Cloud API via BSP middleware</strong></td>
+      <td>Twilio/MessageBird/360dialog wrappers</td>
+      <td>Mid-volume mixed flows</td>
+      <td>Same Meta policies; vendor markup added</td>
+    </tr>
+    <tr>
+      <td><strong>WhatsApp MCP server</strong></td>
+      <td>Local Baileys + MCP protocol</td>
+      <td>Personal assistant for one operator</td>
+      <td>Great for solo use, weak for multi-tenant ops</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The two paths agencies should evaluate first are OpenClaw + Baileys for inbound conversational work and Meta Cloud API for outbound transactional templates. Many production deployments end up running both side by side: OpenClaw answers replies, Cloud API ships the appointment reminder that started the thread. The two systems do not conflict because each handles a different message direction.</p>
+
+<h2>When OpenClaw on WhatsApp is not for you</h2>
+
+<p>The multi-device path is not the right answer for every shop, and pretending otherwise is how agencies blow up a client account.</p>
+
+<p><strong>You need to send more than 50,000 outbound templates per day.</strong> Multi-device companion devices are rate-limited the same way a human user is. If your job is high-volume broadcast, you want Cloud API or a BSP, and you should accept the per-template pricing as the cost of the channel.</p>
+
+<p><strong>Your client is contractually required to use the Meta Business Platform.</strong> Some healthcare networks, financial institutions, and regulated brands require an officially provisioned Cloud API number with a green checkmark. Multi-device companion devices do not appear in the Business Platform dashboard, and audits will fail.</p>
+
+<p><strong>You need WhatsApp's official Flows or list-message templates.</strong> Some interactive UI primitives (carousels, native list pickers, structured forms) are exclusive to the Cloud API. Baileys can fake a lot of the experience with text and quick replies, but if your client demands the native flow widgets, the multi-device path will not deliver them.</p>
+
+<p><strong>You are unwilling to keep the linking phone online.</strong> Multi-device sessions stay alive even with the linking phone off, but the phone must occasionally come online to refresh the link. If the linked phone is permanently unavailable (lost, stolen, formatted), the session breaks and the next inbound message fails until you scan a new QR. Cloud API has no such constraint.</p>
+
+<p>Outside those four conditions, OpenClaw on WhatsApp is the path most agencies should default to in 2026.</p>
+
+<h2>Frequently asked questions</h2>
+
+<h3>Does OpenClaw need a verified Meta Business account?</h3>
+
+<p>No. The OpenClaw WhatsApp channel uses the multi-device protocol via Baileys, which is the same protocol WhatsApp Web uses. You scan a QR code with the phone that owns the number and the gateway acts as a linked companion device. There is no Meta Business onboarding, no display name approval, and no template review process. If the phone has WhatsApp installed and can scan a QR code, the agent can connect.</p>
+
+<h3>Will Meta ban my number for using a Baileys-based AI agent?</h3>
+
+<p>Meta does not publish enforcement criteria for multi-device clients, and bans do happen for accounts that send spam or template-style broadcast through the personal protocol. Conservative usage (replying to inbound messages, normal conversational pace, no mass cold outreach) has a long track record of staying inside the lines. Use the channel for replies, not for cold blast campaigns, and keep the per-day outbound volume in human ranges.</p>
+
+<h3>What happens if the Baileys session expires?</h3>
+
+<p>The gateway logs an "auth state invalidated" line and pauses the channel. Run <code>openclaw whatsapp link --print-qr</code> again, scan with the same phone, and the channel resumes. Existing conversations keep their session keys, so the agent's memory survives the relink. The persistent volume mount on <code>sessionPath</code> is what makes this safe; without it, every restart is a relink.</p>
+
+<h3>Can one OpenClaw gateway run multiple WhatsApp numbers?</h3>
+
+<p>Yes. Add one channel block per number, each with its own <code>sessionPath</code> directory and its own systemPrompt. The session key includes the linked-device account identifier, so messages from different numbers route to different conversations and never overlap. This is the standard pattern for agencies hosting fifteen or twenty client numbers on a single gateway.</p>
+
+<h3>How does this interact with Anthropic's Claude Code Channels?</h3>
+
+<p>Anthropic's <a href="https://docs.anthropic.com/en/docs/claude-code/channels">Claude Code Channels</a> shipped in early 2026 with native Discord and Telegram support, but no first-party WhatsApp connector. The community is expected to build one through the open MCP standard, and OpenClaw already covers the WhatsApp side directly today. If your stack is Claude Code centric and you need WhatsApp now, OpenClaw is the bridge that exists.</p>
+
+<h3>Does the agent see WhatsApp end-to-end encrypted messages in plaintext?</h3>
+
+<p>Yes, by design. A linked companion device is an authorized endpoint inside WhatsApp's E2EE model, just like the user's phone or laptop. Messages are decrypted on the OpenClaw host and the model receives plaintext. This is what enables the agent to reply at all. It also means the host should be treated as sensitive infrastructure: full disk encryption, locked-down SSH, and no sharing the box with untrusted workloads.</p>
+
+<h2>The smallest piece of infrastructure your agency probably underestimates</h2>
+
+<p>WhatsApp is not exotic. It is the channel a billion small businesses already use, and the AI agent that lives inside it does not have to be exotic either. One config block, one QR scan, one persistent volume, and a Claude model on the back end is genuinely the whole thing. The work that used to take a Meta Business onboarding, a template approval queue, and a BSP contract now takes fifteen minutes. The 2026 changes to the official Cloud API made multi-device the right default for conversational AI, and OpenClaw 2026.4.22 made it cleaner to operate.</p>
+
+<p>If you would rather skip the VPS and the QR refresh dance and just hand a working WhatsApp number to a client, <a href="/solo">Kyra</a> runs the OpenClaw gateway, the Baileys session storage, and the per-client isolation on a managed host with the same defaults this guide describes. Industry-specific starting templates are ready for <a href="/ai-for/dental">dental practices</a> and <a href="/ai-for/real-estate">real estate agencies</a>, and the underlying primitives are documented in the <a href="https://docs.openclaw.ai/channels/whatsapp">OpenClaw WhatsApp reference</a> and the <a href="https://github.com/openclaw/openclaw">OpenClaw repository on GitHub</a>. WhatsApp is where most of your clients' customers already are. Putting an AI worker there in 2026 is no longer the hard part of the project.</p>
+`,
+  },
+  {
     slug: 'openclaw-session-keys-explained-2026',
     title: 'OpenClaw Session Keys Explained: How One Gateway Keeps 24 Channels Separate in 2026',
     description: 'An OpenClaw session key is the unique string that tells the gateway which conversation a message belongs to. Here is how session keys work, how dmScope isolates DMs across WhatsApp, Slack, Discord, and 20+ other channels, and how to configure them for a multi-client agency without leaking context between users.',
