@@ -1128,6 +1128,23 @@ openclaw mcp list my-first-agent</code></pre>
 
 <p>They work together. Workflows handle deterministic paths (opt-outs, appointment reminders, drip sequences). AI workers handle the open-ended conversations workflows can't model.</p>
 
+<h2>What to review in the first 30 days of an AI worker deployment</h2>
+
+<p>Most agencies go live with a new client and then check back in at the 30-day mark. That window is where the AI builds trust with the business — and where you catch the issues that cause churn before they become a problem.</p>
+
+<p>Four things to look at in the first 30 days:</p>
+
+<ul>
+  <li><strong>Response rate.</strong> The AI should be replying to 95 percent or more of inbound messages. If you see gaps, check whether the GHL Private Integration Token has the right scopes, or whether any conversation channels are excluded from the polling config.</li>
+  <li><strong>Escalation frequency.</strong> A healthy deployment escalates 5 to 15 percent of conversations. Escalation below 5 percent may mean the escalation rules are too narrow — the AI is answering things it should hand off. Escalation above 20 percent usually means the personality file is too conservative or the knowledge base is missing common answers.</li>
+  <li><strong>CRM tag accuracy.</strong> Pull a sample of 20 GHL contacts and review the tags the AI wrote. Tags like "appointment-interest" or "price-question" should reflect what actually happened in the conversation. If the tags are consistently wrong, the AI is not reading the conversation outcome correctly — update the personality file's tagging instructions.</li>
+  <li><strong>Client-reported edge cases.</strong> Ask the client to flag any conversation that surprised them — positive or negative. One or two odd replies in 200 conversations is normal. Patterns of odd replies in the same scenario point to a gap in the knowledge base.</li>
+</ul>
+
+<p>The 30-day review is also the moment to lock in the retainer renewal. Bring a summary of conversations handled, appointments booked, and escalations managed. Most clients who see 3 to 8 booked appointments they would have missed renew without a negotiation. The report does the selling.</p>
+
+<p>A practical tip: ask the client to text the AI themselves once a week, as if they were a customer. Owners who see their AI respond accurately and on-brand within 30 seconds become its biggest advocates internally. That internal advocacy matters when you want to expand the service or raise pricing at month six.</p>
+
 <h2>Frequently asked questions</h2>
 
 <h3>Do I need my client to be on a specific GHL plan?</h3>
@@ -1324,6 +1341,22 @@ openclaw mcp list my-first-agent</code></pre>
 </ul>
 
 <p>A properly configured dental AI worker passes all five. A generic chatbot repurposed for dental typically fails on escalation rules and data isolation first — both of which matter most in regulated environments. The OpenClaw-based architecture described in our <a href="/blog/what-is-openclaw-ai-gateway-explained">gateway guide</a> addresses each of these points by design.</p>
+
+<h2>How to introduce an AI worker to your dental front desk team</h2>
+
+<p>Front desk staff who hear "AI is going to handle our patient texts" often interpret it as a threat to their jobs. That interpretation almost always kills the deployment before it starts. Getting the front desk team on board — genuinely on board, not just compliant — is the single most important non-technical factor in a successful dental AI rollout.</p>
+
+<p>Three things that consistently work:</p>
+
+<p><strong>Frame it as coverage, not replacement.</strong> The AI handles the 9pm text, the Saturday morning inquiry, the "quick question" call during a hygiene appointment that the front desk cannot pick up. It does not replace the judgment call the receptionist makes when a patient walks in upset, the human warmth of a new-patient phone call, or the complex insurance negotiation that takes 20 minutes. Be specific about what the AI covers and what it hands off. The more precise the boundaries, the less threatened staff feel.</p>
+
+<p><strong>Show them the escalation path first.</strong> Before going live, walk the team through what happens when the AI flags a conversation. The notification goes to a phone or Slack. The staff member opens the conversation, reads what the AI said, and picks up from there. This is not a black box overriding their judgment — it is a first responder that gets the conversation started and then hands off. Most front desk teams become enthusiastic about this workflow once they see it removes the most draining part of their job: being on call for low-complexity inquiries at all hours.</p>
+
+<p><strong>Let them test it themselves.</strong> Give each team member the practice's number and ask them to text it as if they were a new patient. Watch the AI reply. Let them ask a question the AI might struggle with. Most staff go from skeptical to impressed in about five minutes when they see a natural conversation handled correctly. Practices that run this demo internally before going live with real patients report significantly smoother rollouts.</p>
+
+<p>One practical note on team communication: tell the staff before you go live, not after the first patient mentions the AI in a call. Practices where staff found out from a patient interaction — "I texted you last night and got an instant reply!" — had a much harder time with internal adoption than practices where leadership introduced it proactively as a coverage tool.</p>
+
+<p>The front desk team's trust in the AI directly affects its effectiveness. When staff actively monitor escalations and tune the knowledge base when the AI misses something, the system improves rapidly. When they ignore escalations or resent the deployment, gaps compound. Internal buy-in is not a nice-to-have in dental AI deployments — it is a deployment requirement.</p>
 
 <h2>Frequently asked questions</h2>
 
@@ -1529,6 +1562,24 @@ openclaw mcp list my-first-agent</code></pre>
 
 <p>The AI worker retainer is the first new agency service line in a decade with margin and retention characteristics this strong. That's why agencies that move early establish a defensible position.</p>
 
+<h2>How to price AI workers by vertical</h2>
+
+<p>Flat pricing across all clients is the most common mistake agencies make in year one. The right price depends on the client's average customer value and how many conversations the AI handles per month. A practice where one booking is worth $150 and a dental practice where one booking is worth $2,000 in lifetime value should not pay the same retainer.</p>
+
+<p>Here is how to structure pricing by vertical:</p>
+
+<p><strong>Dental and medical spa ($750 to $1,500 per month).</strong> High ticket, appointment-driven, and extremely time-sensitive — a patient who texts at 9pm and gets no reply books with the competitor by morning. The AI worker's value is immediate and measurable. Use the 30-day booking report as your pricing anchor: if the AI books 4 additional cleanings at $150 each in month one, that is $600 in recovered revenue on a $750 retainer. Most dental clients see 6 to 10 recovered bookings in the first 30 days, which makes the math obvious.</p>
+
+<p><strong>Real estate ($1,000 to $2,000 per month).</strong> One missed lead is a $10,000 to $30,000 commission. Agents routinely receive texts at midnight, on weekends, and during showings when they cannot reply. The AI handles the initial qualification, books the showing, and updates the CRM — all before the agent checks their phone in the morning. Price based on the agent's average commission and close rate, not on the volume of conversations. A solo agent closing 3 deals per year can justify $1,500 per month if the AI recovers even half a deal.</p>
+
+<p><strong>Auto dealerships ($1,000 to $1,500 per month).</strong> High volume, high lead intent, and brutal response-time expectations. Studies consistently show that leads contacted within 5 minutes convert at 100× the rate of leads contacted after 30 minutes. Dealerships that route all lead sources (website, social, Google) into GHL and point the AI at the unified inbox see their speed-to-contact drop from hours to under 60 seconds. Price on volume: a dealership receiving 300 inbound messages per month should pay more than one receiving 50.</p>
+
+<p><strong>Cannabis dispensaries ($500 to $1,000 per month).</strong> Unique because they cannot advertise on most major platforms, so organic and direct-to-consumer messaging is critical. The AI handles menu questions, loyalty program inquiries, and "is my order ready" messages. Compliance requirements around age verification and product claims mean the knowledge base needs careful configuration — price slightly above the base rate to account for this additional setup work.</p>
+
+<p><strong>Restaurants ($300 to $600 per month).</strong> Lower average transaction value than most verticals, but high volume and high frequency. A restaurant that receives 80 texts per week about reservations, hours, and takeout menus benefits from the AI clearing those without staff intervention — but the math on a $500 retainer requires the AI to meaningfully reduce front-of-house labor cost, not just generate new bookings. Pitch this as a labor-reduction tool rather than a lead-recovery tool.</p>
+
+<p>One rule that holds across all verticals: never price the retainer at less than the value of one recovered transaction. If a dental cleaning is $150, your minimum retainer is $150. If a real estate commission is $10,000, your minimum retainer is well above $1,000. Pricing below the value of a single outcome sets the wrong frame from the first invoice.</p>
+
 <h2>Frequently asked questions</h2>
 
 <h3>Do I need technical skills to deploy AI workers?</h3>
@@ -1612,13 +1663,13 @@ openclaw mcp list my-first-agent</code></pre>
 <li>Open-ended questions like "what do you recommend?"</li>
 </ul>
 
-<p>A real AI worker — like Kyra — uses a large language model to <em>understand</em> what the customer is asking, then compose a contextually appropriate response. It reads the CRM, knows the contact's history, and replies like a trained team member would.</p>
+<p>A real AI worker uses a large language model to <em>understand</em> what the customer is asking, then compose a contextually appropriate response. It reads the CRM, knows the contact's history, and replies like a trained team member would.</p>
 
-<h2>How Kyra Connects to GHL</h2>
+<h2>How the AI Worker Connects to GHL</h2>
 
-<p>Kyra connects to any GHL sub-account using a <strong>Private Integration Token</strong> — no marketplace approval, no waiting, no OAuth setup. You create the token inside the sub-account settings in about 2 minutes.</p>
+<p>The AI worker connects to any GHL sub-account using a <strong>Private Integration Token</strong> — no marketplace approval, no waiting, no OAuth setup. You create the token inside the sub-account settings in about 2 minutes.</p>
 
-<p>Once connected, Kyra:</p>
+<p>Once connected, the AI worker:</p>
 <ul>
 <li>Polls the GHL inbox for new inbound messages every 60 seconds</li>
 <li>Reads the contact's tags, pipeline stage, and recent notes for context</li>
@@ -1629,12 +1680,12 @@ openclaw mcp list my-first-agent</code></pre>
 
 <p>This works across all 7 GHL channels: SMS, WhatsApp, Instagram, Facebook, Live Chat, Email, and Google My Business.</p>
 
-<h2>What GHL Channel Does Kyra Cover?</h2>
+<h2>What GHL Channels Does the AI Worker Cover?</h2>
 
-<p>Kyra uses GHL's unified conversations API, which means the AI sees messages from all channels in one inbox. The response goes back through whichever channel the customer used. Here's the channel map:</p>
+<p>The AI worker uses GHL's unified conversations API, which means the AI sees messages from all channels in one inbox. The response goes back through whichever channel the customer used. Here's the channel map:</p>
 
 <table>
-<tr><th>GHL Channel</th><th>Kyra Support</th></tr>
+<tr><th>GHL Channel</th><th>Coverage</th></tr>
 <tr><td>SMS</td><td>✅ Full support</td></tr>
 <tr><td>WhatsApp</td><td>✅ Full support</td></tr>
 <tr><td>Instagram DM</td><td>✅ Full support</td></tr>
@@ -1653,7 +1704,7 @@ openclaw mcp list my-first-agent</code></pre>
 <li><strong>Add a client</strong> — pick the industry (dental, real estate, auto, etc.) and the AI personality is pre-built</li>
 <li><strong>Customize the personality</strong> — add the business name, AI name, pricing, FAQs, booking link</li>
 <li><strong>Generate the GHL Private Integration Token</strong> — in the sub-account: Settings → Integrations → Private Integration Tokens → Create</li>
-<li><strong>Paste the token</strong> into Kyra — the AI goes live instantly</li>
+<li><strong>Paste the token</strong> into the platform dashboard — the AI goes live instantly</li>
 </ol>
 
 <p>From that point, every inbound message to that GHL sub-account will be handled by the AI within 60 seconds.</p>
@@ -1670,17 +1721,17 @@ openclaw mcp list my-first-agent</code></pre>
 <li><strong>Restaurant:</strong> $300–$600/mo (lower AOV but steady volume)</li>
 </ul>
 
-<p>Your cost to Kyra: $99/month for up to 5 clients. That's gross margin of $2,400–$9,900/month on the Starter plan alone.</p>
+<p>Your platform cost: $99/month for up to 5 clients. That's gross margin of $2,400–$9,900/month on the Starter plan alone.</p>
 
 <h2>The Proactive Outreach Feature</h2>
 
-<p>One underrated feature: Kyra watches for <em>new contacts</em> in GHL and proactively reaches out — even without an inbound message. Within ~60 seconds of a new lead being created, the AI sends a personalized greeting via SMS.</p>
+<p>One underrated feature: the AI worker watches for <em>new contacts</em> in GHL and proactively reaches out — even without an inbound message. Within ~60 seconds of a new lead being created, the AI sends a personalized greeting via SMS.</p>
 
 <p>This is the equivalent of your best salesperson immediately calling every new lead the moment they come in. For most clients, this alone recovers 20–30% of leads that would have gone cold.</p>
 
 <h2>CRM Automation That Happens Automatically</h2>
 
-<p>Every AI conversation updates the GHL CRM automatically. After each reply, Kyra:</p>
+<p>Every AI conversation updates the GHL CRM automatically. After each reply, the AI worker:</p>
 <ul>
 <li>Adds a CRM note summarizing the conversation</li>
 <li>Tags the contact based on what they asked (e.g., "appointment-interest", "price-question")</li>
@@ -1691,11 +1742,11 @@ openclaw mcp list my-first-agent</code></pre>
 
 <h2>Common Questions from GHL Agencies</h2>
 
-<p><strong>Does Kyra replace GHL automations?</strong> No — they complement each other. GHL automations handle rule-based sequences (appointment reminders, review requests, etc.). Kyra handles conversational replies that require understanding.</p>
+<p><strong>Does the AI worker replace GHL automations?</strong> No — they complement each other. GHL automations handle rule-based sequences (appointment reminders, review requests, etc.). The AI worker handles conversational replies that require understanding.</p>
 
-<p><strong>What if a client already has GHL workflows set up?</strong> Kyra only responds to inbound messages — it doesn't interfere with your outbound automations. They work in parallel.</p>
+<p><strong>What if a client already has GHL workflows set up?</strong> The AI worker only responds to inbound messages — it doesn't interfere with your outbound automations. They work in parallel.</p>
 
-<p><strong>Can I white-label this?</strong> Yes. The AI personality is fully configurable — you name it, set its personality, and it represents the client's business. There's no "Kyra" branding in client-facing messages.</p>
+<p><strong>Can I white-label this?</strong> Yes. The AI personality is fully configurable — you name it, set its personality, and it represents the client's business. Nothing in client-facing messages reveals the underlying platform.</p>
 
 <h2>Troubleshooting the first 48 hours</h2>
 
@@ -1732,6 +1783,25 @@ openclaw mcp list my-first-agent</code></pre>
     </tr>
   </tbody>
 </table>
+
+<h2>How to measure and report AI worker ROI to GHL clients</h2>
+
+<p>The AI worker runs silently. Clients see fewer missed conversations, a cleaner CRM, and more booked appointments — but they may not connect those outcomes to the AI without a clear report. Monthly performance reporting is the single biggest retention tool after the AI itself.</p>
+
+<p>Four metrics that every client report should include:</p>
+
+<ul>
+  <li><strong>Conversations handled.</strong> The total number of inbound messages the AI responded to during the period. This is the baseline volume number. A client who receives 180 conversations per month and sees 178 AI-handled conversations immediately understands the coverage they are getting.</li>
+  <li><strong>Median response time.</strong> Most AI workers reply within 30 to 90 seconds. Put this number in the report and compare it to industry averages. A dental practice that previously returned calls the next business day will notice a 2-minute response time as a qualitative leap.</li>
+  <li><strong>Appointments booked by the AI.</strong> This is the most persuasive metric for practices that sell via scheduling. Track how many appointments the AI confirmed without any human intervention. Three bookings at $150 per cleaning is $450 your client would not have captured after hours.</li>
+  <li><strong>Escalations triggered.</strong> Every time the AI flagged a conversation for human follow-up — because of an urgent keyword, a frustrated tone, or an out-of-scope question — counts as an escalation. A low escalation count means the AI handled the conversation cleanly. A high escalation count might mean the personality file needs tightening or the knowledge base is missing key information.</li>
+</ul>
+
+<p>The GHL conversations API logs timestamps, channel, and contact ID for every interaction. Most AI worker platforms expose these metrics in a reporting dashboard, usually at a URL like <code>/report/[clientId]</code> or as a CSV export. Pull the report at the same time every month so the comparison period is consistent.</p>
+
+<p>One agency tactic that consistently reduces churn: send the performance report before the client invoice. When the client sees 200 conversations handled and 8 appointments booked before they see the $800 charge, the math is obvious. They are not renewing a software subscription — they are renewing a result.</p>
+
+<p>For clients who want deeper CRM analytics, the pipeline stage distribution is a useful secondary metric. If 60 percent of AI-handled conversations end with the contact tagged "appointment-scheduled" versus "inquiry-only," that tells the practice which conversation flows are working and which need refinement. Over six months, that distribution shifts as the knowledge base improves — and the trend line becomes a retention story in itself.</p>
 
 <h2>Frequently asked questions</h2>
 
@@ -2076,7 +2146,7 @@ every appointment time and date twice before booking.</code></pre>
 
 <p>In 2026, the most profitable agencies aren't selling websites, ads, or even GHL setups. They're selling <strong>AI workers</strong>. And the ones who figured this out first are building significant recurring revenue on autopilot — because the AI worker retainer has economics no other agency service line can match.</p>
 
-<p>This guide is the complete playbook for building a white-label AI worker business using Kyra — the platform built specifically for agencies who want to resell AI without building anything from scratch.</p>
+<p>This guide is the complete playbook for building a white-label AI worker business on an OpenClaw-based platform — built specifically for agencies who want to resell AI without building anything from scratch.</p>
 
 <h2>Why AI Workers Are the Perfect Agency Product</h2>
 
@@ -2092,9 +2162,9 @@ every appointment time and date twice before booking.</code></pre>
 
 <h2>The White-Label Model</h2>
 
-<p>With Kyra, you're the agency. Your clients never see "Kyra" — they see an AI worker named whatever you've configured (Alex, Maya, Jordan — your choice). The AI is trained on their specific business, speaks their tone, and represents their brand.</p>
+<p>With a white-label AI platform, you are the agency. Your clients never see the underlying software — they see an AI worker named whatever you have configured (Alex, Maya, Jordan — your choice). The AI is trained on their specific business, speaks their tone, and represents their brand.</p>
 
-<p>Your clients think you built this. You didn't have to — Kyra is the infrastructure, you're the relationship and the strategy.</p>
+<p>Your clients think you built this. You did not have to — the platform is the infrastructure, you are the relationship and the strategy.</p>
 
 <h2>Pricing Strategy</h2>
 
@@ -2113,7 +2183,7 @@ every appointment time and date twice before booking.</code></pre>
 <tr><td>AI Enterprise</td><td>$2,000/mo</td><td>Everything in Pro + weekly performance reports, monthly strategy calls, priority support</td></tr>
 </table>
 
-<p>Your cost to Kyra: $299/month for up to 10 clients (Pro plan). At $1,000/client on 10 clients = $10,000/month revenue, $9,701/month gross margin.</p>
+<p>Your platform cost: $299/month for up to 10 clients (Pro plan). At $1,000/client on 10 clients = $10,000/month revenue, $9,701/month gross margin.</p>
 
 <h2>Client Onboarding Playbook</h2>
 
@@ -2128,7 +2198,7 @@ every appointment time and date twice before booking.</code></pre>
 
 <h3>Day 2: Configuration + Live Test</h3>
 <ul>
-<li>Set up their AI in Kyra — takes ~15 minutes with the industry template</li>
+<li>Set up the client's AI in the platform — takes ~15 minutes with the industry template</li>
 <li>Test it yourself: send 10 different test SMS messages</li>
 <li>Send a test to the client so they can see it live</li>
 </ul>
@@ -2182,7 +2252,7 @@ every appointment time and date twice before booking.</code></pre>
 
 <h2>Get Started</h2>
 
-<p>Kyra is free to start — no credit card, no commitment. Add your first client, run the demo, see the AI live. If it doesn't work, you haven't spent a dollar.</p>
+<p>The platform is free to start — no credit card, no commitment. Add your first client, run the demo, see the AI live. If it does not work, you have not spent a dollar.</p>
 
 <h2>How white-label AI compares to other agency service lines</h2>
 
@@ -2235,6 +2305,22 @@ every appointment time and date twice before booking.</code></pre>
 <p>For regulated clients (dental, legal, medical, financial), "your data won't be mixed with anyone else's" is not a nice-to-have. It's the table-stakes question on every vendor evaluation call.</p>
 
 <p>The white-label deployment model addresses this directly: each client gets an isolated container with their own storage, their own AI personality, their own knowledge base, and their own memory. Nothing from Client A ever touches Client B. If regulated clients are part of your book, this is the line that sells the service.</p>
+
+<h2>How to handle the five most common sales objections</h2>
+
+<p>Most white-label AI worker sales stall on five objections. Here is how agencies with live client books actually answer them.</p>
+
+<p><strong>"We already have a chatbot."</strong> Most site chatbots are keyword-matching scripts. They fire a template when they detect a phrase. They cannot handle off-script questions, cannot book appointments, and cannot update the CRM after a conversation. Ask the prospect: does their current chatbot know the contact's pipeline stage before it replies? Does it update tags after every conversation? If not, it is not a chatbot replacement they are evaluating — it is a step change.</p>
+
+<p><strong>"What if the AI says something wrong?"</strong> This is the most common objection and the easiest to defuse. Walk through the escalation layer: the AI is configured to refuse clinical questions, legal questions, and anything requiring a human judgment call. It hands off to staff for anything outside its brief. Then show them a conversation log from a live deployment. Seeing the AI correctly escalate a frustrated customer is worth more than any verbal explanation.</p>
+
+<p><strong>"Is our data safe?"</strong> Answer this by explaining per-client container isolation. Their data is not mixed with any other business. They are not on shared infrastructure. If they are in a regulated vertical, add that the AI does not access or store protected health information — it handles the same intake and scheduling communications a receptionist would via text. For the HIPAA question specifically, point them to the HHS guidance on incidental disclosures during scheduling, which covers typical AI worker workflows.</p>
+
+<p><strong>"We don't have the budget right now."</strong> Walk through the unit economics. A dental practice where one missed patient is worth $2,000 to $5,000 in lifetime value pays for a full year of AI worker service with a single recovered booking. Ask how many texts went unanswered last month after 5pm. Most practice managers can recall two or three just from last week. The payback period is usually one to two weeks, not months.</p>
+
+<p><strong>"We need to talk to IT / our compliance team first."</strong> This is a buying signal, not a stall. Follow up with a one-page technical brief covering: what API access the Private Integration Token grants, where data is stored, how conversations are logged, and what the escalation rules are. Regulated clients who ask this question are close to signing — they just need to document due diligence. Agencies that have a technical brief ready close at 3x the rate of those who do not.</p>
+
+<p>The pattern across all five: objections about AI are usually objections about risk. The answer is always specifics. Vague reassurances do not close deals. Concrete escalation rules, actual conversation logs, unit economics with real numbers, and per-client isolation diagrams do.</p>
 
 <h2>Frequently asked questions</h2>
 
