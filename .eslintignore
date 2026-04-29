@@ -2,3 +2,8 @@
 next-env.d.ts
 .next/
 node_modules/
+
+# Infrastructure scripts (plain JS, not part of Next.js app)
+infra/
+infrastructure/
+scripts/
