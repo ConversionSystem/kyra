@@ -260,11 +260,13 @@ export async function processDueFollowUps(): Promise<{
     return { processed: 0, sent: 0, failed: 0, skipped: 0 };
   }
 
-  console.log(`[follow-up] Processing ${dueFollowUps.length} due follow-ups`);
-
   let sent = 0;
   let failed = 0;
   let skipped = 0;
+
+  // Cache per-agency lookups to avoid N+1 queries when multiple follow-ups share an agency
+  const ghlCache = new Map<string, Awaited<ReturnType<typeof getGhlIntegration>>>();
+  const byokCache = new Map<string, Awaited<ReturnType<typeof resolveAgencyApiKey>>>();
 
   for (const followUp of dueFollowUps as FollowUpRecord[]) {
     try {
@@ -288,8 +290,11 @@ export async function processDueFollowUps(): Promise<{
         continue;
       }
 
-      // Credit check (skip if BYOK)
-      const resolvedKey = await resolveAgencyApiKey(followUp.agency_id);
+      // Credit check (skip if BYOK) — cache result per agency
+      if (!byokCache.has(followUp.agency_id)) {
+        byokCache.set(followUp.agency_id, await resolveAgencyApiKey(followUp.agency_id));
+      }
+      const resolvedKey = byokCache.get(followUp.agency_id)!;
       const followUpIsByok = resolvedKey.isByok;
       if (!followUpIsByok) {
         const creditCheck = await requireCredits(followUp.agency_id, 'pipeline.follow_up');
@@ -300,8 +305,11 @@ export async function processDueFollowUps(): Promise<{
         }
       }
 
-      // Get GHL integration
-      const ghlIntegration = await getGhlIntegration(followUp.agency_id);
+      // Get GHL integration — cache result per agency
+      if (!ghlCache.has(followUp.agency_id)) {
+        ghlCache.set(followUp.agency_id, await getGhlIntegration(followUp.agency_id));
+      }
+      const ghlIntegration = ghlCache.get(followUp.agency_id);
       if (!ghlIntegration?.access_token || !lead.ghl_contact_id) {
         await markFollowUp(svc, followUp.id, 'failed', 'GHL not connected or no contact ID');
         failed++;
@@ -386,9 +394,6 @@ export async function processDueFollowUps(): Promise<{
       );
 
       sent++;
-      console.log(
-        `[follow-up] Sent #${followUp.follow_up_number} (${strategy.name}) to ${lead.full_name || lead.id} via ${followUp.channel}`,
-      );
 
       // Rate limit: 1 second between sends
       await new Promise(r => setTimeout(r, 1000));
@@ -399,7 +404,6 @@ export async function processDueFollowUps(): Promise<{
     }
   }
 
-  console.log(`[follow-up] Done: ${sent} sent, ${failed} failed, ${skipped} skipped`);
   return { processed: dueFollowUps.length, sent, failed, skipped };
 }
 

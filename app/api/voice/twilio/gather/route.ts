@@ -472,9 +472,9 @@ export async function POST(req: NextRequest) {
   // Increment voice minutes (~0.5 min per turn approximation)
   await supabase.rpc('increment_voice_minutes', { p_agency_id: agency_id, p_minutes: 0.5 });
 
-  // ── FIX 1: Log voice conversation to CRM activity timeline ───────────────
-  // This makes every call turn visible in the contact's CRM timeline.
-  void logConversationToCrm(agency_id, {
+  // Log voice conversation to CRM activity timeline.
+  // Awaited — fire-and-forget causes CRM data loss on Vercel serverless.
+  await logConversationToCrm(agency_id, {
     type: 'InboundMessage',
     phone: callerNumber,
     body: speechResult,
@@ -483,7 +483,7 @@ export async function POST(req: NextRequest) {
   }).catch(err => console.error('[voice/gather] CRM log error:', err));
 
   // Log AI response turn too
-  void logConversationToCrm(agency_id, {
+  await logConversationToCrm(agency_id, {
     type: 'OutboundMessage',
     phone: callerNumber,
     body: aiResponse,

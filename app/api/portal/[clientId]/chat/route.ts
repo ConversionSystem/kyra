@@ -38,7 +38,7 @@ export async function POST(
     // 1. Fetch client using service role (no auth needed)
     const { data: client, error } = await supabase
       .from('agency_clients')
-      .select('id, name, industry, agency_id, gateway_url, gateway_token, gateway_status')
+      .select('id, name, industry, agency_id')
       .eq('id', clientId)
       .single();
 
@@ -46,14 +46,8 @@ export async function POST(
       return new Response('Client not found', { status: 404 });
     }
 
-    if (client.gateway_status !== 'running') {
-      return new Response(
-        JSON.stringify({ error: 'AI is offline. Please try again later.' }),
-        { status: 503, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // 2. Resolve live gateway (gets fresh URL + token)
+    // 2. Resolve live gateway — resolveClientGateway checks status internally.
+    // Do NOT gate on raw gateway_status from the DB row above; it can be stale.
     const resolved = await resolveClientGateway(clientId);
     if (!resolved) {
       return new Response(
@@ -101,9 +95,10 @@ export async function POST(
       );
     }
 
-    // Deduct credits after successful LLM response
+    // Deduct credits after successful LLM response.
+    // Awaited — fire-and-forget causes billing data loss on Vercel serverless.
     const portalModel = 'openrouter/anthropic/claude-haiku-4.5';
-    void deductCredits(client.agency_id as string, 'chat.message', {
+    await deductCredits(client.agency_id as string, 'chat.message', {
       clientId,
       description: 'Portal chat message',
       override: getCreditsForModel(portalModel),

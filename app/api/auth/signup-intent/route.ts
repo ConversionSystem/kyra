@@ -13,8 +13,14 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClientWithoutCookies } from '@/lib/supabase/server';
+import { isRateLimited } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+  if (await isRateLimited(`signup-intent:${ip}`, 10, 60_000)) {
+    return NextResponse.json({ ok: false, error: 'Too many requests' }, { status: 429 });
+  }
+
   const { email } = await req.json();
   if (!email) return NextResponse.json({ ok: false }, { status: 400 });
 
