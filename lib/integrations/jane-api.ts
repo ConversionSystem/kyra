@@ -84,10 +84,13 @@ const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000;
  * Exchange UID + secret for a short-lived Bearer token. Uses the OAuth2
  * client-credentials grant. Cached per (clientSlug, base URL) until expiry.
  *
- * Per Allie's reply 2026-04-23 the auth uses Cognito under the hood. The
- * exact token endpoint shape isn't in the public docs, so we try the standard
- * /oauth/token path with form-encoded body first; if Allie/Jane confirm a
- * different path, swap the constant below.
+ * Per Allie's reply 2026-04-23 the auth uses Cognito under the hood — so we
+ * follow the AWS Cognito convention: POST /oauth2/token with credentials in
+ * an HTTP Basic Auth header (NOT in the body). Cognito returns
+ * 401 invalid_client when creds are sent in the body alone, which is what
+ * production diagnostics surfaced before this fix.
+ *
+ * Spec: https://docs.aws.amazon.com/cognito/latest/developerguide/token-endpoint.html
  */
 export async function getAccessToken(creds: JaneApiCredentials): Promise<string> {
   const base = getApiBase();
@@ -99,15 +102,16 @@ export async function getAccessToken(creds: JaneApiCredentials): Promise<string>
 
   const body = new URLSearchParams({
     grant_type: 'client_credentials',
-    client_id: creds.uid,
-    client_secret: creds.secret,
   });
 
-  const res = await fetch(`${base}/oauth/token`, {
+  const basic = Buffer.from(`${creds.uid}:${creds.secret}`).toString('base64');
+
+  const res = await fetch(`${base}/oauth2/token`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
       Accept: 'application/json',
+      Authorization: `Basic ${basic}`,
     },
     body: body.toString(),
     signal: AbortSignal.timeout(8000),
