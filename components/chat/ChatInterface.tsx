@@ -215,7 +215,7 @@ export function ChatInterface({
                 });
                 setStreamingContent('');
               } else if (parsed.type === 'memory_saved') {
-                console.log('Memory saved:', parsed.memory);
+                // memory saved silently
               }
             } catch (e) {
               // Ignore parsing errors for incomplete JSON

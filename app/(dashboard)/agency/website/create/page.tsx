@@ -1525,7 +1525,6 @@ function StepGenerating({
 
         } else if (site.status === 'building' && !buildTriggeredRef.current) {
           buildTriggeredRef.current = true;
-          console.log('[wizard] Status=building — triggering VPS build via /build API');
           fetch(`/api/agency/sites/${siteId}/build`, { method: 'POST' }).catch(() => {});
 
         } else if (site.status === 'error') {
