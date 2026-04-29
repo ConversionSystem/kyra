@@ -102,6 +102,9 @@ export async function getAccessToken(creds: JaneApiCredentials): Promise<string>
     return cached.accessToken;
   }
 
+  // Belt-and-suspenders: send creds in BOTH the Basic auth header and the body
+  // so we work whether Jane's gateway proxy validates Cognito-style (header)
+  // or OAuth2 confidential-client-style (body).
   const body = new URLSearchParams({
     grant_type: 'client_credentials',
     client_id: creds.uid,
