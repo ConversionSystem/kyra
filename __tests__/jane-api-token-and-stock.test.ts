@@ -33,7 +33,7 @@ describe('getAccessToken — OAuth2 client_credentials flow', () => {
     vi.restoreAllMocks();
   });
 
-  it('POSTs to /oauth2/token with Basic auth header + grant_type=client_credentials body', async () => {
+  it('POSTs to /oauth/token with Basic auth header + creds in body (compat for proxy gateways)', async () => {
     let captured: { url?: string; init?: RequestInit } = {};
     vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
       captured = { url, init };
@@ -47,18 +47,19 @@ describe('getAccessToken — OAuth2 client_credentials flow', () => {
 
     const t = await getAccessToken(CREDS);
     expect(t).toBe('TOKEN-A');
-    // Cognito convention: /oauth2/token (with the "2") + HTTP Basic auth
-    expect(captured.url).toBe('https://demo-api.nonprod-iheartjane.com/oauth2/token');
+    // Production diagnostic: /oauth2/token → 404 (path absent), /oauth/token → exists.
+    expect(captured.url).toBe('https://demo-api.nonprod-iheartjane.com/oauth/token');
     expect(captured.init?.method).toBe('POST');
     const headers = captured.init?.headers as Record<string, string>;
     expect(headers['Content-Type']).toBe('application/x-www-form-urlencoded');
+    // Basic auth header — what Cognito expects for confidential clients with a secret.
     const expectedBasic = Buffer.from('test-uid:test-secret').toString('base64');
     expect(headers.Authorization).toBe(`Basic ${expectedBasic}`);
     const body = String(captured.init?.body);
     expect(body).toContain('grant_type=client_credentials');
-    // Creds must NOT be in the body — Cognito rejects that with invalid_client.
-    expect(body).not.toContain('client_id=');
-    expect(body).not.toContain('client_secret=');
+    // Belt-and-suspenders: also send creds in body for non-Cognito proxy handlers.
+    expect(body).toContain('client_id=test-uid');
+    expect(body).toContain('client_secret=test-secret');
   });
 
   it('caches the token across calls until near-expiry', async () => {
