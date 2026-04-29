@@ -488,20 +488,23 @@ describe('brand facet + getBrandCatalog', () => {
 describe('resolveSupportLinks', () => {
   const cfg = { website_url: 'https://plpcsanjose.com' };
 
-  it('detects ordering intent', () => {
+  it('detects ordering intent — fallback path is /menu (verified 200 on plpcsanjose.com 2026-04-29)', () => {
     const links = resolveSupportLinks('how do I order?', cfg);
     expect(links.some((l) => l.topic === 'ordering')).toBe(true);
-    expect(links[0].url).toBe('https://plpcsanjose.com/order');
+    expect(links[0].url).toBe('https://plpcsanjose.com/menu');
   });
 
   it('detects delivery intent', () => {
     const links = resolveSupportLinks('where do you deliver?', cfg);
     expect(links.some((l) => l.topic === 'delivery')).toBe(true);
+    expect(links.find((l) => l.topic === 'delivery')?.url).toBe('https://plpcsanjose.com/delivery');
   });
 
-  it('detects hours intent', () => {
+  it('detects hours intent — fallback is /locations (since /hours 404s on real sites)', () => {
     const links = resolveSupportLinks('what are your hours today', cfg);
-    expect(links.some((l) => l.topic === 'hours')).toBe(true);
+    const hoursLink = links.find((l) => l.topic === 'hours');
+    expect(hoursLink).toBeDefined();
+    expect(hoursLink?.url).toBe('https://plpcsanjose.com/locations');
   });
 
   it('prefers explicit support_links config over auto-generated URL', () => {
@@ -524,6 +527,80 @@ describe('resolveSupportLinks', () => {
     const links = resolveSupportLinks('contact info phone', cfg);
     const urls = links.map((l) => l.url);
     expect(new Set(urls).size).toBe(urls.length);
+  });
+
+  // ── Bug regression: 2026-04-29 ─────────────────────────────────────────
+  // Customer reported chips were sending users to plpcsanjose.com/order
+  // (404) and /hours (404). Topics whose default paths weren't reliable
+  // are now suppressed entirely unless the client provides an explicit
+  // support_links override.
+
+  it('payment topic does NOT emit a chip without explicit support_links override', () => {
+    const links = resolveSupportLinks('what payment do you accept?', cfg);
+    // "accept" matches both payment + nothing-else; assert no payment chip rendered
+    expect(links.find((l) => l.topic === 'payment')).toBeUndefined();
+  });
+
+  it('payment topic DOES emit a chip when client provides explicit override', () => {
+    const links = resolveSupportLinks('what payment do you accept?', {
+      website_url: 'https://plpcsanjose.com',
+      support_links: { payment: 'https://plpcsanjose.com/about/payment' },
+    });
+    const link = links.find((l) => l.topic === 'payment');
+    expect(link?.url).toBe('https://plpcsanjose.com/about/payment');
+  });
+
+  it('returns/refund topic suppressed without explicit override', () => {
+    const links = resolveSupportLinks('what is your return policy?', cfg);
+    expect(links.find((l) => l.topic === 'returns')).toBeUndefined();
+  });
+
+  it('id_age topic suppressed without explicit override', () => {
+    const links = resolveSupportLinks('what ID do I need?', cfg);
+    expect(links.find((l) => l.topic === 'id_age')).toBeUndefined();
+  });
+
+  it('never emits a bare-homepage URL when topic has empty default path', () => {
+    // Regression for the bug where empty path + truthy website_url produced
+    // a chip linking to "https://plpcsanjose.com" (homepage) for payment topic.
+    const links = resolveSupportLinks('do you accept credit card?', cfg);
+    expect(links.find((l) => l.url === 'https://plpcsanjose.com')).toBeUndefined();
+  });
+
+  it('lockfile: every topic with a default path resolves to a path verified to return HTTP 200 on plpcsanjose.com', () => {
+    // Verified 2026-04-29 via curl probe. If you change a default path here,
+    // re-probe the new path against a real Jane-storefront site and update.
+    const VERIFIED_PATHS_2026_04_29: Record<string, string> = {
+      ordering: '/menu',
+      delivery: '/delivery',
+      pickup: '/pickup',
+      hours: '/locations',
+      location: '/locations',
+      rewards: '/rewards',
+      deals: '/deals',
+      menu: '/shop/all',
+      contact: '/contact',
+    };
+    // Fire a message that triggers each topic in turn.
+    const triggers: Record<string, string> = {
+      ordering: 'how do I order?',
+      delivery: 'where do you deliver?',
+      pickup: 'do you have curbside pickup?',
+      hours: 'what time are you open?',
+      location: 'where is your store?',
+      rewards: 'do you have a rewards program?',
+      deals: 'any deals today?',
+      menu: 'show me your full menu',
+      contact: 'how do I contact you?',
+    };
+    for (const [topic, expectedPath] of Object.entries(VERIFIED_PATHS_2026_04_29)) {
+      const links = resolveSupportLinks(triggers[topic], cfg);
+      const link = links.find((l) => l.topic === topic);
+      expect(link, `topic=${topic} did not produce a chip`).toBeDefined();
+      expect(link?.url, `topic=${topic} pointed at unverified URL`).toBe(
+        `https://plpcsanjose.com${expectedPath}`,
+      );
+    }
   });
 });
 

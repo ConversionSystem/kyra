@@ -480,12 +480,15 @@ NEVER fabricate product names, prices, or URLs. Only name a product if it appear
           if (url) entries.push(`- ${label}: ${url}`);
         }
       }
-      // Auto-generate common links from website_url if support_links not fully configured
+      // Auto-generate common links from website_url if support_links not fully configured.
+      // Paths verified 2026-04-29 against plpcsanjose.com (typical Jane storefront layout).
+      // Keep this set in sync with resolveSupportLinks defaults in lib/integrations/jane.ts.
       if (websiteUrl && (!links || Object.keys(links).length < 3)) {
         if (!links?.menu && !links?.['shop']) entries.push(`- Full Menu: ${websiteUrl}/shop/all`);
         if (!links?.delivery) entries.push(`- Delivery Info: ${websiteUrl}/delivery`);
         if (!links?.deals && !links?.['specials']) entries.push(`- Today's Deals: ${websiteUrl}/deals`);
-        if (!links?.ordering && !links?.['how to order']) entries.push(`- How to Order: ${websiteUrl}/order`);
+        // "How to Order" used to point at /order which 404s on Jane sites — use /menu instead.
+        if (!links?.ordering && !links?.['how to order']) entries.push(`- How to Order: ${websiteUrl}/menu`);
       }
       if (entries.length === 0) return '';
       return `SUPPORT LINKS — when answering informational questions, include the relevant link:\n${entries.join('\n')}`;

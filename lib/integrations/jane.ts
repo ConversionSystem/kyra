@@ -1117,26 +1117,43 @@ export function resolveSupportLinks(
   const website = cfg.website_url || '';
   const hits: SupportLink[] = [];
 
-  // Topic → regex triggers + default label + URL path fallback
+  // Topic → regex triggers + default label + URL path fallback.
+  //
+  // IMPORTANT: every default path here MUST exist on a typical Jane-storefront
+  // dispensary site. Empirically verified against plpcsanjose.com on 2026-04-29
+  // (see __tests__/support-links-defaults.test.ts which locks the verified set).
+  //
+  // Topics with no reliable default path (payment policy, returns policy, ID/age
+  // policy) carry an empty `path` — the chip only renders when the client has an
+  // explicit `support_links[topic]` override in container_config. This prevents
+  // the widget from ever shipping a 404 chip.
   const topics: Array<{ topic: string; triggers: RegExp[]; label: string; path: string }> = [
-    { topic: 'ordering', triggers: [/how.*(?:order|buy|purchase|checkout)/i, /ordering/i, /how to (?:place|get)/i], label: 'How to Order', path: '/order' },
+    { topic: 'ordering', triggers: [/how.*(?:order|buy|purchase|checkout)/i, /ordering/i, /how to (?:place|get)/i], label: 'How to Order', path: '/menu' },
     { topic: 'delivery', triggers: [/deliver|delivery zone|service area|where.*deliver/i, /shipping|do you ship/i], label: 'Delivery Info', path: '/delivery' },
     { topic: 'pickup', triggers: [/pick.?up|curbside|in.?store/i], label: 'Pickup Info', path: '/pickup' },
-    { topic: 'hours', triggers: [/hours|open|close|when.*open/i], label: 'Store Hours', path: '/hours' },
-    { topic: 'location', triggers: [/where.*(?:locat|store|shop)|address|direction|how to find/i], label: 'Location', path: '/contact' },
-    { topic: 'payment', triggers: [/pay(?:ment)?|credit card|debit|cash|accept|charge/i], label: 'Payment Options', path: '/payment' },
+    { topic: 'hours', triggers: [/hours|open|close|when.*open/i], label: 'Store Hours', path: '/locations' },
+    { topic: 'location', triggers: [/where.*(?:locat|store|shop)|address|direction|how to find/i], label: 'Location', path: '/locations' },
     { topic: 'rewards', triggers: [/reward|loyal(?:ty)?|points|member/i], label: 'Rewards Program', path: '/rewards' },
     { topic: 'deals', triggers: [/deal|promo|discount|special|sale|offer|coupon/i], label: "Today's Deals", path: '/deals' },
     { topic: 'menu', triggers: [/\bmenu\b|inventory|full catalog|shop all/i], label: 'Full Menu', path: '/shop/all' },
-    { topic: 'returns', triggers: [/return|refund|exchange/i], label: 'Returns Policy', path: '/returns' },
     { topic: 'contact', triggers: [/contact|phone|call|reach/i], label: 'Contact Us', path: '/contact' },
-    { topic: 'id_age', triggers: [/\bid\b|identification|age requirement|21\+/i], label: 'ID & Age Policy', path: '/id' },
+    // No reliable default — chip only renders if client overrides via support_links.
+    { topic: 'payment', triggers: [/pay(?:ment)?|credit card|debit|cash|accept|charge/i], label: 'Payment Options', path: '' },
+    { topic: 'returns', triggers: [/return|refund|exchange/i], label: 'Returns Policy', path: '' },
+    { topic: 'id_age', triggers: [/\bid\b|identification|age requirement|21\+/i], label: 'ID & Age Policy', path: '' },
   ];
 
   for (const t of topics) {
     if (!t.triggers.some((r) => r.test(lower))) continue;
     const explicit = links[t.topic] || links[t.label.toLowerCase()];
-    const url = explicit || (website ? `${website.replace(/\/$/, '')}${t.path}` : '');
+    // Topics with empty path require an explicit support_links override —
+    // we never fall back to the homepage, that produces a misleading chip.
+    let url = '';
+    if (explicit) {
+      url = explicit;
+    } else if (website && t.path) {
+      url = `${website.replace(/\/$/, '')}${t.path}`;
+    }
     if (url) hits.push({ topic: t.topic, label: t.label, url });
   }
 
