@@ -60,9 +60,9 @@ describe('getJaneCredentials', () => {
   it('rejects non-string clientId (TS guard, but defensive at runtime)', () => {
     // @ts-expect-error — testing runtime guard against bad callers
     expect(getJaneCredentials(undefined)).toBeNull();
-    // @ts-expect-error
+    // @ts-expect-error — testing runtime guard with null
     expect(getJaneCredentials(null)).toBeNull();
-    // @ts-expect-error
+    // @ts-expect-error — testing runtime guard with number
     expect(getJaneCredentials(123)).toBeNull();
   });
 
