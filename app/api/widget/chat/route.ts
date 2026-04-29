@@ -64,18 +64,46 @@ async function stampOutOfStockFlags(
   algoliaStoreId: number | undefined,
   orderType: 'pickup' | 'delivery' | undefined,
 ): Promise<void> {
-  if (cards.length === 0 || !algoliaStoreId) return;
+  if (cards.length === 0 || !algoliaStoreId) {
+    console.log(`[widget/chat] stock-check skip: cards=${cards.length} storeId=${algoliaStoreId}`);
+    return;
+  }
   try {
     const { getJaneCredentials, checkStock } = await import('@/lib/integrations/jane-api');
     const creds = getJaneCredentials(clientId);
-    if (!creds) return; // No Jane API access for this client — skip silently
+    if (!creds) {
+      // DIAGNOSTIC: surfaces whether env vars are visible to the function at runtime.
+      // Logs the slug we tried to look up + which env keys were present (boolean only,
+      // never the values). Remove once the integration is verified live.
+      const slug = clientId.split('-')[0]?.toUpperCase() || '?';
+      const uidVar = `JANE_PARTNER_UID_${slug}`;
+      const secretVar = `JANE_PARTNER_SECRET_${slug}`;
+      console.log(
+        `[widget/chat] stock-check no-creds: slug=${slug} ` +
+        `${uidVar}=${process.env[uidVar] ? 'SET' : 'unset'} ` +
+        `${secretVar}=${process.env[secretVar] ? 'SET' : 'unset'} ` +
+        `JANE_API_BASE_URL=${process.env.JANE_API_BASE_URL ? 'SET' : 'unset'}`,
+      );
+      return;
+    }
     const ids = cards.map((c) => c.id).filter(Boolean);
     if (ids.length === 0) return;
+    console.log(`[widget/chat] stock-check START: ids=${ids.length} store=${algoliaStoreId} channel=${orderType ?? 'either'}`);
+    const t0 = Date.now();
     const result = await checkStock(creds, ids, algoliaStoreId, orderType ?? 'either');
+    let flagged = 0;
     for (const card of cards) {
       const status = result.inStock[String(card.id)];
-      if (status === false) card.outOfStock = true;
+      if (status === false) {
+        card.outOfStock = true;
+        flagged++;
+      }
     }
+    console.log(
+      `[widget/chat] stock-check OK: ${Date.now() - t0}ms ` +
+      `inStockKeys=${Object.keys(result.inStock).length} ` +
+      `unknownIds=${result.unknown.length} flaggedOOS=${flagged}`,
+    );
   } catch (err) {
     console.warn('[widget/chat] stock check soft-failed:', err instanceof Error ? err.message : err);
   }
