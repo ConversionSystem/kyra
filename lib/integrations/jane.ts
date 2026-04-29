@@ -78,6 +78,13 @@ export interface ProductSearchParams {
   limit?: number;
   /** Only return products flagged available_for_delivery OR available_for_pickup. Default: true. */
   inStockOnly?: boolean;
+  /**
+   * Narrow the availability filter to a single channel. When set, replaces the
+   * default "(delivery OR pickup)" filter with just that channel's flag.
+   * Source: Jane's ORDER_TYPE cookie on plpcsanjose.com — set when the user
+   * has explicitly chosen pickup or delivery in the storefront UI.
+   */
+  availabilityChannel?: 'pickup' | 'delivery';
   /** Session-preference boosts (lineage, brand) — used for re-ranking when multiple results match. */
   preferLineages?: string[];
   preferBrands?: string[];
@@ -371,9 +378,16 @@ async function searchViaAlgolia(
   }
 
   // In-stock filter — default ON. Don't surface products the customer can't buy.
-  // Algolia supports `field:true` for booleans.
+  // When the caller specifies an availabilityChannel (Jane's ORDER_TYPE cookie),
+  // narrow to just that channel; otherwise allow either pickup OR delivery.
   if (params.inStockOnly !== false) {
-    filters.push('(available_for_delivery:true OR available_for_pickup:true)');
+    if (params.availabilityChannel === 'pickup') {
+      filters.push('available_for_pickup:true');
+    } else if (params.availabilityChannel === 'delivery') {
+      filters.push('available_for_delivery:true');
+    } else {
+      filters.push('(available_for_delivery:true OR available_for_pickup:true)');
+    }
   }
 
   if (params.category) {

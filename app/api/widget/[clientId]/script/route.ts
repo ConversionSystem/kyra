@@ -661,6 +661,47 @@ export async function GET(
   }
 
   // ── Send ─────────────────────────────────────────────────────────────────────
+  // Read Jane's frontend context (Purple Lotus + any Jane-powered storefront)
+  // - Cookie JANE_STORE: currently selected store id (numeric)
+  // - Cookie ORDER_TYPE: "pickup" | "delivery"
+  // - localStorage shopping-cart: unmanaged cart items
+  // Same-origin, no Jane API call needed. Per Jane's Allie 2026-04-23.
+  function readJaneContext() {
+    var ctx = {};
+    try {
+      var c = document.cookie || '';
+      var sm = c.match(/(?:^|;\\s*)JANE_STORE=([^;]+)/);
+      if (sm) ctx.janeStore = decodeURIComponent(sm[1]);
+      var om = c.match(/(?:^|;\\s*)ORDER_TYPE=([^;]+)/);
+      if (om) {
+        var ot = decodeURIComponent(om[1]).toLowerCase();
+        if (ot === 'pickup' || ot === 'delivery') ctx.orderType = ot;
+      }
+    } catch(e) {}
+    try {
+      var raw = localStorage.getItem('shopping-cart');
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        // Cart shape varies by Jane build — accept either an array directly
+        // or { items: [...] }. Defensive on length to avoid huge payloads.
+        var items = Array.isArray(parsed) ? parsed
+          : (parsed && Array.isArray(parsed.items)) ? parsed.items
+          : [];
+        if (items.length > 0 && items.length <= 20) {
+          ctx.cart = items.slice(0, 20).map(function(i) {
+            return {
+              id: i && (i.product_id || i.productId || i.id),
+              name: i && (i.name || i.productName),
+              price: i && (i.bucket_price || i.price),
+              count: i && (i.count || i.quantity || 1),
+            };
+          }).filter(function(x) { return x.id; });
+        }
+      }
+    } catch(e) {}
+    return ctx;
+  }
+
   async function sendMessage() {
     var text = inputEl.value.trim();
     if (!text || isLoading) return;
@@ -674,10 +715,23 @@ export async function GET(
     showTyping();
 
     try {
+      var jane = readJaneContext();
       var res = await fetch(API_BASE + '/api/widget/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clientId: CLIENT_ID, message: text, sessionId: sessionId, history: history.slice(-10), sourceUrl: window.location.href, storeId: window.__kyraStoreId || selectedStoreId || STORE_ID }),
+        body: JSON.stringify({
+          clientId: CLIENT_ID,
+          message: text,
+          sessionId: sessionId,
+          history: history.slice(-10),
+          sourceUrl: window.location.href,
+          // Cookie-derived store id wins over the user's earlier pick (which
+          // wins over the embed default). This means if the customer changed
+          // stores on plpcsanjose.com, the widget follows them automatically.
+          storeId: jane.janeStore || window.__kyraStoreId || selectedStoreId || STORE_ID,
+          orderType: jane.orderType,  // "pickup" | "delivery" — narrows in-stock filter
+          cart: jane.cart,            // current bag, lets the AI reason about complements
+        }),
         signal: AbortSignal.timeout(40000),
       });
       var data = await res.json();
