@@ -78,6 +78,15 @@ export async function POST(request: NextRequest) {
   const sourceUrl = body.sourceUrl as string | undefined;
   const storeId = body.storeId as string | undefined; // Jane store ID from embed param
 
+  // Jane frontend context (read client-side from cookies + localStorage by the
+  // widget script, sent here so the AI is store/order/cart aware). All optional
+  // — when missing, the widget behaves like before.
+  const orderTypeRaw = body.orderType;
+  const orderType: 'pickup' | 'delivery' | undefined =
+    orderTypeRaw === 'pickup' || orderTypeRaw === 'delivery' ? orderTypeRaw : undefined;
+  type CartLine = { id?: string | number; name?: string; price?: number | string; count?: number };
+  const cartLines = Array.isArray(body.cart) ? (body.cart as CartLine[]).slice(0, 20) : [];
+
   if (!clientId || !message?.trim()) {
     return NextResponse.json({ error: 'clientId and message are required' }, { status: 400, headers: CORS });
   }
@@ -349,6 +358,22 @@ export async function POST(request: NextRequest) {
     cfg.services ? `Services offered: ${cfg.services}` : '',
     cfg.website_url ? `Website: ${cfg.website_url}` : '',
     `If you can't resolve something, say: "Let me connect you with our team — they'll follow up shortly."`,
+    // Jane storefront context — order type the user has selected, and what's
+    // already in their cart on plpcsanjose.com. Lets the AI tailor:
+    //   - "for delivery" / "for pickup" phrasing in the response
+    //   - "you already have X in your bag — want a complement?" upsells
+    //   - skip recommending duplicates of cart items
+    orderType
+      ? `STOREFRONT CONTEXT: customer has selected ${orderType.toUpperCase()} for this session. Phrase recommendations accordingly ("for your pickup tonight"). Inventory has already been narrowed to ${orderType}-eligible products.`
+      : '',
+    cartLines.length > 0
+      ? `CART CONTEXT: customer already has ${cartLines.length} item${cartLines.length === 1 ? '' : 's'} in their bag on plpcsanjose.com:
+${cartLines
+  .slice(0, 8)
+  .map((l, i) => `  ${i + 1}. ${l.name || `(unnamed product ${l.id})`}${l.count && l.count > 1 ? ` × ${l.count}` : ''}${l.price ? ` (${typeof l.price === 'number' ? '$' + l.price : l.price})` : ''}`)
+  .join('\n')}
+Do NOT recommend products already in the bag. When asked for recommendations, lean toward complements (e.g., if they have flower, suggest pre-rolls or a new vape; if they have edibles, suggest a different format). Mention the cart naturally if relevant: "I see you've got Granddaddy Purple in your bag already — want something energizing for the morning to balance it out?"`
+      : '',
     // Auto-inject cannabis product recommendation prompt when Jane is active
     janeActive ? `PRODUCT RECOMMENDATION ENGINE:
 You are a cannabis budtender responding in a chat widget. The widget renders TWO kinds of UI chrome automatically BELOW your text reply — you do NOT need to generate markdown for them:
@@ -504,6 +529,14 @@ NEVER fabricate product names, prices, or URLs. Only name a product if it appear
         intent.storeId = resolvedStoreId || janeConfig.defaultStore;
         // For brand queries, get more results to show full brand inventory
         if (intent.brand && !intent.limit) intent.limit = 30;
+
+        // Order-type narrowing — when the user has picked pickup or delivery
+        // on plpcsanjose.com (cookie ORDER_TYPE), only return products
+        // available through THAT channel. Default (no cookie) is the existing
+        // "either delivery OR pickup" filter, preserving prior behaviour.
+        if (orderType) {
+          intent.availabilityChannel = orderType;
+        }
 
         // ── Open-ended brand catalog path ───────────────────────────────────
         // "What Alien Labs strains do you have?" / "Show me Jeeter" / "CBX products"

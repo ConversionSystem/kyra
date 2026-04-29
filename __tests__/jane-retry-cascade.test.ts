@@ -321,6 +321,52 @@ describe('searchProducts — round 2 Algolia payload', () => {
   });
 });
 
+describe('searchProducts — availabilityChannel narrowing (Phase 1a)', () => {
+  beforeEach(() => { vi.stubGlobal('fetch', vi.fn()); });
+  afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+
+  const baseConfig: JaneConfig = {
+    algoliaAppId: 'T', algoliaSearchKey: 'k', algoliaIndex: 'i',
+    defaultStore: 'sj',
+    stores: { sj: { algoliaStoreId: 1, baseUrl: 'https://x.com' } },
+  };
+
+  it('default (no channel set) keeps the legacy "delivery OR pickup" filter', async () => {
+    let body: Record<string, unknown> = {};
+    vi.stubGlobal('fetch', vi.fn(async (_url: string, init?: RequestInit) => {
+      body = init?.body ? JSON.parse(String(init.body)) : {};
+      return { ok: true, status: 200, text: async () => '',
+        json: async () => ({ hits: [{ product_id: 1, name: 'X' }], nbHits: 1 }) } as unknown as Response;
+    }));
+    await searchProducts(baseConfig, { query: 'x' });
+    expect(body.filters).toContain('(available_for_delivery:true OR available_for_pickup:true)');
+  });
+
+  it('availabilityChannel:"pickup" narrows the filter to just pickup', async () => {
+    let body: Record<string, unknown> = {};
+    vi.stubGlobal('fetch', vi.fn(async (_url: string, init?: RequestInit) => {
+      body = init?.body ? JSON.parse(String(init.body)) : {};
+      return { ok: true, status: 200, text: async () => '',
+        json: async () => ({ hits: [{ product_id: 1, name: 'X' }], nbHits: 1 }) } as unknown as Response;
+    }));
+    await searchProducts(baseConfig, { query: 'x', availabilityChannel: 'pickup' });
+    expect(String(body.filters)).toContain('available_for_pickup:true');
+    expect(String(body.filters)).not.toContain('available_for_delivery');
+  });
+
+  it('availabilityChannel:"delivery" narrows the filter to just delivery', async () => {
+    let body: Record<string, unknown> = {};
+    vi.stubGlobal('fetch', vi.fn(async (_url: string, init?: RequestInit) => {
+      body = init?.body ? JSON.parse(String(init.body)) : {};
+      return { ok: true, status: 200, text: async () => '',
+        json: async () => ({ hits: [{ product_id: 1, name: 'X' }], nbHits: 1 }) } as unknown as Response;
+    }));
+    await searchProducts(baseConfig, { query: 'x', availabilityChannel: 'delivery' });
+    expect(String(body.filters)).toContain('available_for_delivery:true');
+    expect(String(body.filters)).not.toContain('available_for_pickup');
+  });
+});
+
 describe('parseProductIntent — longest-match brand detection', () => {
   it('prefers "CBX Cannabiotix" over "CBX" when both are known', () => {
     const intent = parseProductIntent('Do you have CBX Cannabiotix flowers?', ['CBX', 'CBX Cannabiotix']);
