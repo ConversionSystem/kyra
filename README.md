@@ -1,244 +1,223 @@
-# Kyra — Hosted OpenClaw Platform
+# Kyra — AI Workforce Platform for Agencies
 
-> **AI Assistant SaaS** — Your personal AI that remembers everything, sets reminders, and integrates with your calendar.
+> Deploy, manage, and monetize autonomous AI workers for your clients — without writing code, without managing infrastructure.
 
-**Live Repo:** https://github.com/ConversionSystem/kyra
+**Live:** [kyra.conversionsystem.com](https://kyra.conversionsystem.com)  
+**Repo:** [github.com/ConversionSystem/kyra](https://github.com/ConversionSystem/kyra)
 
-## 🚀 What is Kyra?
+---
 
-Kyra is a hosted AI assistant platform built for consumers and small businesses who want a personal AI without the complexity. It's essentially "ChatGPT but better" — with persistent memory, reminders, and calendar integration.
+## What is Kyra?
 
-**Target:** 50 paying customers at launch  
-**Pricing:** $0-199/month (Free → Enterprise)
+Kyra is a **white-label AI workforce platform** built on [OpenClaw](https://github.com/openclaw/openclaw) for agencies. Each client gets an isolated AI worker powered by a dedicated OpenClaw container — with its own personality, memory, tools, and channel integrations.
 
-## ✨ Features
+**For agencies:** One dashboard to manage 20+ client AI workers. Set personalities, connect channels (SMS, Telegram, WhatsApp), monitor conversations, track billing.
 
-### Core
-- 🧠 **Persistent Memory** — Automatically remembers facts, preferences, people, decisions
-- 💬 **Streaming Chat** — Real-time Claude responses with markdown support
-- 🔐 **Secure Auth** — Email/password + Google OAuth (Supabase Auth)
-- 📊 **Usage Tracking** — Per-user limits enforced by plan tier
+**For their clients:** A branded AI employee that handles customer conversations, books appointments, qualifies leads, and integrates with GoHighLevel.
 
-### Phase 2A ✅
-- ⏰ **Reminders** — "Remind me tomorrow at 9am to call mom"
-- 🔔 **Web Notifications** — Popup when reminders are due
-- 📅 **Google Calendar** — View today's events, create new events
-- 🧠 **Memory UI** — View, search, delete your memories
-
-### Phase 2B (Ready)
-- 🔌 **OpenClaw Backend** — Client ready, toggle to enable tools/skills
-- 📧 **Email Notifications** — Endpoint ready, add Resend
-
-## 🛠 Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Framework | Next.js 14 (App Router) |
-| Database | PostgreSQL (Supabase) |
-| Vector DB | Pinecone |
-| AI | Claude 3.5 Sonnet (Anthropic) |
-| Embeddings | OpenAI text-embedding-3-small |
-| Auth | Supabase Auth |
-| Payments | Stripe (ready) |
-| Styling | Tailwind CSS |
-
-## 📁 Project Structure
+## Architecture
 
 ```
-kyra/
-├── app/
-│   ├── (auth)/
-│   │   ├── login/page.tsx
-│   │   └── signup/page.tsx
-│   ├── (dashboard)/
-│   │   ├── chat/page.tsx
-│   │   ├── chat/[conversationId]/page.tsx
-│   │   ├── memories/page.tsx
-│   │   └── settings/page.tsx
-│   ├── api/
-│   │   ├── auth/
-│   │   │   ├── callback/route.ts
-│   │   │   └── google/
-│   │   │       ├── route.ts
-│   │   │       └── callback/route.ts
-│   │   ├── calendar/route.ts
-│   │   ├── chat/route.ts
-│   │   ├── conversations/route.ts
-│   │   ├── memories/route.ts
-│   │   └── reminders/
-│   │       ├── route.ts
-│   │       ├── due/route.ts
-│   │       └── check/route.ts
-│   ├── page.tsx (landing)
-│   └── layout.tsx
-├── components/
-│   ├── chat/
-│   │   ├── ChatInterface.tsx
-│   │   ├── ChatInput.tsx
-│   │   ├── ConversationSidebar.tsx
-│   │   └── MessageBubble.tsx
-│   ├── reminders/
-│   │   └── ReminderNotification.tsx
-│   └── ui/
-│       ├── button.tsx
-│       ├── card.tsx
-│       ├── input.tsx
-│       └── ...
-├── lib/
-│   ├── ai/
-│   │   ├── claude.ts
-│   │   ├── embeddings.ts
-│   │   ├── memory.ts
-│   │   └── prompts.ts
-│   ├── billing/
-│   │   └── plans.ts
-│   ├── integrations/
-│   │   └── google.ts
-│   ├── openclaw/
-│   │   ├── client.ts
-│   │   └── prompts.ts
-│   ├── supabase/
-│   │   ├── client.ts
-│   │   ├── middleware.ts
-│   │   └── server.ts
-│   ├── pinecone.ts
-│   └── utils.ts
-├── supabase/
-│   └── schema.sql
-├── types/
-│   └── index.ts
-├── middleware.ts
-└── .env.example
+┌─────────────────────────────┐
+│   Kyra Dashboard (Vercel)   │  Next.js 15 + Supabase + Stripe
+│   kyra.conversionsystem.com │
+└──────────┬──────────────────┘
+           │ manages
+           ▼
+┌─────────────────────────────┐
+│   OVH VPS (Portland, OR)   │  24 vCPU · 92GB RAM · Ubuntu 24.04
+│                             │
+│  ┌─────────┐  ┌──────────┐ │
+│  │ Traefik │→ │CSS Proxy │ │  TLS termination + branding injection
+│  └────┬────┘  └────┬─────┘ │
+│       │             │       │
+│  ┌────▼─────────────▼────┐  │
+│  │ kyra-cl-{uuid}:18789  │  │  Per-client OpenClaw containers
+│  │ kyra-cl-{uuid}:18789  │  │  1536MB RAM each
+│  │ kyra-cl-{uuid}:18789  │  │  GPT-4o-mini primary
+│  │        ...             │  │
+│  └───────────────────────┘  │
+│                             │
+│  ┌───────────┐ ┌─────────┐ │
+│  │ Provisioner│ │ Ollama  │ │  Container lifecycle + local models
+│  └───────────┘ └─────────┘ │
+└─────────────────────────────┘
 ```
 
-## 🚦 Quick Start
+### Key Infrastructure
 
-### 1. Clone & Install
+| Component | Technology | Purpose |
+|-----------|-----------|---------|
+| Dashboard | Next.js 15 (App Router) | Agency management, billing, analytics |
+| Database | Supabase (PostgreSQL) | Users, agencies, clients, CRM, billing |
+| Auth | Supabase Auth | Email/password, Google OAuth |
+| Payments | Stripe | Subscriptions, usage-based billing |
+| AI Runtime | OpenClaw v2026.4.26 | Per-client isolated AI containers |
+| Reverse Proxy | Traefik v3.4 | TLS, routing, Let's Encrypt |
+| CSS Proxy | nginx | Kyra branding injection, header stripping |
+| Hosting | OVH VPS | 24 vCPU, 92GB RAM, Docker |
+| Deployment | Vercel CLI | `npx vercel --prod --yes` (manual only) |
 
+## Features
+
+### Agency Dashboard
+- **Multi-client management** — Add/configure/monitor AI workers per client
+- **Conversation feed** — Real-time view of all AI conversations (10s auto-refresh)
+- **CRM** — Contacts, companies, deals (kanban), AI-powered enrichment
+- **AI Sales Pipeline** — Lead discovery, research, outreach, AI closer
+- **Follow-up sequences** — Automated multi-touch with AI-generated messages
+- **Billing** — Stripe integration, credit system, BYOK API key support
+- **White-label** — Custom branding, client portals, invite system
+- **Templates** — 21 pre-built AI worker templates (dental, auto, legal, etc.)
+- **Analytics** — Conversation stats, credit usage, revenue tracking
+
+### AI Worker Capabilities (per client)
+- **OpenClaw Gateway** — Full autonomous AI agent runtime
+- **Channel support** — SMS (via GHL), Telegram, web chat, voice (Twilio/Retell)
+- **GHL Integration** — Private Integration Token, webhook inbound/outbound
+- **Personality system** — SOUL.md-based persona injection
+- **Conversation memory** — Persistent across sessions
+- **Tool use** — Browse web, search, calendar, email via OpenClaw skills
+
+### Public Pages
+- `/pricing` — Lite $99 / Pro $299 / Scale $499
+- `/solo` — Solo free tier signup (individual business owners)
+- `/blog` — SEO content (auto-generated weekly)
+- `/changelog`, `/help`, `/privacy`, `/terms`
+- `/for/agencies`, `/ai-for/[industry]` — Landing pages
+- Chat widget — Embeddable on client websites
+
+## Tech Stack
+
+```
+Frontend:    Next.js 15, React 19, Tailwind CSS, TypeScript
+Backend:     Next.js API Routes (Vercel serverless)
+Database:    Supabase (PostgreSQL + Auth + Realtime)
+AI:          OpenClaw (OpenAI GPT-4o-mini, Claude, OpenRouter)
+Search:      Algolia (widget product search for dispensary clients)
+Payments:    Stripe (subscriptions + credits)
+CRM:         GoHighLevel (GHL) Private Integration
+Voice:       Twilio + Retell AI
+Infra:       Docker, Traefik, OVH VPS, Vercel
+CI:          GitHub Actions (TypeScript check only — NO deploy)
+```
+
+## Project Structure
+
+```
+app/
+├── (auth)/          # Login, signup, solo, forgot-password
+├── (dashboard)/     # Agency dashboard (all /agency/* routes)
+├── (onboarding)/    # First-time agency setup wizard
+├── (portal)/        # Client staff portals
+├── (public)/        # Public tools, playground, workers
+├── admin/           # Platform admin panel
+├── api/             # API routes (~40 route groups)
+│   ├── agency/      # Agency CRUD, clients, settings
+│   ├── auth/        # Signup, login, OAuth
+│   ├── crm/         # CRM contacts, deals, activities
+│   ├── cron/        # Scheduled tasks (follow-ups, briefings)
+│   ├── ghl/         # GHL webhook handlers
+│   ├── portal/      # Client portal chat proxy
+│   ├── widget/      # Embeddable chat widget API
+│   └── ...
+├── blog/            # MDX blog with SEO
+└── ...
+
+lib/
+├── agency/          # Agency management logic
+├── ai-workers/      # AI worker provisioning
+├── billing/         # Credits, BYOK, Stripe
+├── crm/             # CRM (contacts, deals, activities, AI enrichment)
+├── ghl/             # GoHighLevel API integration
+├── openclaw/        # OpenClaw container management
+├── pipeline/        # AI sales pipeline + follow-up engine
+├── sites/           # Client website builder
+├── voice/           # Twilio/Retell voice integration
+└── ...
+
+components/
+├── chat/            # Chat interface components
+├── dashboard/       # Dashboard UI (sidebar, nav, cards)
+├── crm/             # CRM components (kanban, contacts)
+├── pipeline/        # Pipeline UI
+└── widget/          # Embeddable chat widget
+
+supabase/
+└── migrations/      # SQL migrations (run in Supabase SQL Editor)
+
+infra/
+└── nginx/           # CSS proxy config for container branding
+```
+
+## Development
+
+### Prerequisites
+- Node.js 22+
+- npm
+- Supabase project (with migrations applied)
+- Stripe account (test mode for dev)
+
+### Setup
 ```bash
 git clone https://github.com/ConversionSystem/kyra.git
 cd kyra
 npm install
+cp .env.example .env.local  # Fill in required values
+npm run dev                  # Runs on http://localhost:3001
 ```
 
-### 2. Configure Environment
+### Key Environment Variables
+```
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+OPENAI_API_KEY=
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+GHL_CLIENT_ID=
+GHL_CLIENT_SECRET=
+OVH_PROVISIONER_URL=
+OVH_PROVISIONER_SECRET=
+```
 
+### Build & Deploy
 ```bash
-cp .env.example .env.local
+npx tsc --noEmit          # Type check (must pass)
+npm run build              # Local build test
+npx vercel --prod --yes    # Deploy to production
 ```
 
-Fill in required keys:
+> ⚠️ **Deploy via CLI only.** Never add deploy jobs to GitHub Actions. Max 1-2 deploys per session. See CLAUDE.md for full rules.
 
-```env
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
-SUPABASE_SERVICE_ROLE_KEY=eyJ...
+## Plans & Pricing
 
-# AI
-ANTHROPIC_API_KEY=sk-ant-xxx
-OPENAI_API_KEY=sk-xxx
+| Plan  | Price   | Clients | Target |
+|-------|---------|---------|--------|
+| Lite  | $99/mo  | 3       | Small agencies |
+| Pro   | $299/mo | 10      | Growing agencies |
+| Scale | $499/mo | 20      | Large agencies |
 
-# Pinecone
-PINECONE_API_KEY=pcsk_xxx
-PINECONE_INDEX=kyra-memories
+7-day free trial. Solo free tier available for individual business owners.
 
-# Google Calendar (optional)
-GOOGLE_CLIENT_ID=xxx
-GOOGLE_CLIENT_SECRET=xxx
-```
+## Infrastructure (VPS)
 
-### 3. Database Setup
+- **IP:** 15.204.91.157 (OVH Portland, OR)
+- **OS:** Ubuntu 24.04
+- **Specs:** 24 vCPU, 92GB RAM, 387GB SSD
+- **Stack:** Docker + Traefik v3.4 + OpenClaw containers
+- **OpenClaw Version:** v2026.4.26
+- **Container RAM:** 1536MB minimum (OOM below 1024MB)
+- **Gateway domain:** `{client-id}.gw.kyra.conversionsystem.com`
 
-1. Go to Supabase Dashboard → SQL Editor
-2. Paste contents of `supabase/schema.sql`
-3. Run
-4. (Optional) Disable email confirmation: Auth → Settings → toggle off
+## Brand Guidelines
 
-### 4. Pinecone Setup
+- **Category:** AI Workforce Platform (NOT chatbot, NOT hosting)
+- **Copy:** Use "AI workers" not "AI employees"
+- **Never claim** unverified stats or social proof
+- **Logo:** Red gradient claw icon
+- **Plans:** Always reference Lite/Pro/Scale with current prices
 
-Create index named `kyra-memories`:
-- Dimension: 1536
-- Metric: cosine
-- Serverless (us-east-1)
+## License
 
-### 5. Run
-
-```bash
-npm run dev
-```
-
-Local: http://localhost:3001 | Production: https://kyra.conversionsystem.com
-
-## 💰 Pricing Tiers
-
-| Plan | Price | Messages/mo |
-|------|-------|-------------|
-| Free | $0 | 100 |
-| Starter | $19 | 1,000 |
-| Business | $49 | 5,000 |
-| Enterprise | $199 | 25,000 |
-
-## 🔌 API Endpoints
-
-### Chat
-- `POST /api/chat` — Send message, get streaming response
-
-### Conversations
-- `GET /api/conversations` — List user's conversations
-
-### Memories
-- `GET /api/memories` — List user's memories
-- `DELETE /api/memories?id=xxx` — Delete a memory
-
-### Reminders
-- `GET /api/reminders` — List pending reminders
-- `POST /api/reminders` — Create reminder
-- `DELETE /api/reminders?id=xxx` — Delete reminder
-- `PATCH /api/reminders` — Mark as delivered
-- `GET /api/reminders/due` — Get due reminders (for notifications)
-- `GET /api/reminders/check` — Cron endpoint for delivery
-
-### Calendar
-- `GET /api/calendar` — Get events (today/week/month)
-- `POST /api/calendar` — Create event
-- `DELETE /api/calendar` — Disconnect Google
-
-### Auth
-- `GET /api/auth/callback` — Supabase auth callback
-- `GET /api/auth/google` — Start Google OAuth
-- `GET /api/auth/google/callback` — Google OAuth callback
-
-## 📋 Deployment Checklist
-
-- [ ] Deploy to Cloudflare (`npm run deploy`)
-- [ ] Set environment variables via `wrangler secret put`
-- [ ] Configure custom domain
-- [ ] Set up Stripe products/prices
-- [ ] Configure Google OAuth redirect URIs for production
-- [ ] Set up cron job for reminder delivery (Cloudflare Cron Triggers or external)
-- [ ] Add Resend for email notifications
-
-## 🏗 Architecture
-
-**Option C: Session-Based Isolation**
-
-```
-User → Kyra Web App → Claude API
-              ↓
-         Supabase (user data, conversations, memories, reminders)
-              ↓
-         Pinecone (vector embeddings for semantic memory)
-```
-
-Each user's data is isolated via Supabase RLS policies. Vector search filters by user_id.
-
-Future: Add OpenClaw Gateway backend for tools, skills, and multi-model routing.
-
-## 📄 License
-
-Proprietary — Conversion System
-
----
-
-**Built by Conversion System** | [conversionsystem.com](https://conversionsystem.com)
+Proprietary — © Conversion System. All rights reserved.
