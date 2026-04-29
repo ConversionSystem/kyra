@@ -84,13 +84,15 @@ const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000;
  * Exchange UID + secret for a short-lived Bearer token. Uses the OAuth2
  * client-credentials grant. Cached per (clientSlug, base URL) until expiry.
  *
- * Per Allie's reply 2026-04-23 the auth uses Cognito under the hood — so we
- * follow the AWS Cognito convention: POST /oauth2/token with credentials in
- * an HTTP Basic Auth header (NOT in the body). Cognito returns
- * 401 invalid_client when creds are sent in the body alone, which is what
- * production diagnostics surfaced before this fix.
+ * Per Allie's reply 2026-04-23 the auth uses Cognito under the hood. Path
+ * is /oauth/token (production diagnostic confirmed: /oauth2/token returns
+ * 404, /oauth/token returns 401 when creds are body-only).
  *
- * Spec: https://docs.aws.amazon.com/cognito/latest/developerguide/token-endpoint.html
+ * Wire format: HTTP Basic Auth header AND form-body creds — the body params
+ * are the OAuth2 spec for confidential clients without a secret, and the
+ * Basic header is what Cognito expects when the client has a secret. Sending
+ * both keeps us compatible with whichever auth scheme Jane's gateway proxy
+ * actually validates.
  */
 export async function getAccessToken(creds: JaneApiCredentials): Promise<string> {
   const base = getApiBase();
@@ -100,13 +102,18 @@ export async function getAccessToken(creds: JaneApiCredentials): Promise<string>
     return cached.accessToken;
   }
 
+  // Belt-and-suspenders: send creds in BOTH the Basic auth header and the body
+  // so we work whether Jane's gateway proxy validates Cognito-style (header)
+  // or OAuth2 confidential-client-style (body).
   const body = new URLSearchParams({
     grant_type: 'client_credentials',
+    client_id: creds.uid,
+    client_secret: creds.secret,
   });
 
   const basic = Buffer.from(`${creds.uid}:${creds.secret}`).toString('base64');
 
-  const res = await fetch(`${base}/oauth2/token`, {
+  const res = await fetch(`${base}/oauth/token`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
