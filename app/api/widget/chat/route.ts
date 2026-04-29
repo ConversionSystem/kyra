@@ -49,6 +49,38 @@ const CORS = {
 export const dynamic = 'force-dynamic';
 export const maxDuration = 45;
 
+/**
+ * Phase 1b helper — call Jane Menu API V1 to verify Algolia cards are still
+ * in stock right now. Mutates `cards` in place, attaching `outOfStock: true`
+ * to any whose Jane response says false. Fails open on missing creds, network
+ * errors, or partial responses — Algolia view stays as-is.
+ *
+ * Called from both the brand-catalog path and the regular search path with
+ * the numeric Jane store id already resolved.
+ */
+async function stampOutOfStockFlags(
+  cards: Array<{ id: string; outOfStock?: boolean }>,
+  clientId: string,
+  algoliaStoreId: number | undefined,
+  orderType: 'pickup' | 'delivery' | undefined,
+): Promise<void> {
+  if (cards.length === 0 || !algoliaStoreId) return;
+  try {
+    const { getJaneCredentials, checkStock } = await import('@/lib/integrations/jane-api');
+    const creds = getJaneCredentials(clientId);
+    if (!creds) return; // No Jane API access for this client — skip silently
+    const ids = cards.map((c) => c.id).filter(Boolean);
+    if (ids.length === 0) return;
+    const result = await checkStock(creds, ids, algoliaStoreId, orderType ?? 'either');
+    for (const card of cards) {
+      const status = result.inStock[String(card.id)];
+      if (status === false) card.outOfStock = true;
+    }
+  } catch (err) {
+    console.warn('[widget/chat] stock check soft-failed:', err instanceof Error ? err.message : err);
+  }
+}
+
 function getSupabase() {
   return createSupabase(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -491,6 +523,8 @@ NEVER fabricate product names, prices, or URLs. Only name a product if it appear
     cartUrl?: string;
     rating?: number;
     reviewCount?: number;
+    /** Phase 1b: Jane Menu API V1 disagrees with Algolia — show "Out of stock" overlay. */
+    outOfStock?: boolean;
   };
   let productContext = '';
   let productCards: ProductCard[] = [];
@@ -555,6 +589,9 @@ NEVER fabricate product names, prices, or URLs. Only name a product if it appear
               weight: p.weight, imageUrl: p.imageUrl, url: p.url, cartUrl: p.cartUrl,
               rating: p.rating, reviewCount: p.reviewCount,
             }));
+            // Phase 1b — verify against Jane Menu API V1 (fail-open)
+            const brandStore = janeConfig.stores[intent.storeId || janeConfig.defaultStore];
+            await stampOutOfStockFlags(productCards, clientId, brandStore?.algoliaStoreId, orderType);
             const activeStore = janeConfig.stores[intent.storeId || janeConfig.defaultStore];
             const storeBaseUrl = activeStore?.baseUrl || (cfg.website_url as string) || '';
             const fullBrand = catalog.resolvedBrand || intent.brand;
@@ -632,6 +669,13 @@ NEVER fabricate product names, prices, or URLs. Only name a product if it appear
             rating: p.rating,
             reviewCount: p.reviewCount,
           }));
+
+          // Phase 1b — Jane Menu API V1 freshness check
+          // Algolia indexes can lag actual inventory by several minutes. Verify
+          // the top cards are still in stock at click time. Fail-open: any
+          // exception or unknown product leaves the card as-is.
+          const searchStore = janeConfig.stores[intent.storeId || janeConfig.defaultStore];
+          await stampOutOfStockFlags(productCards, clientId, searchStore?.algoliaStoreId, orderType);
 
           // Build filtered browse URL so the AI links to pre-filtered pages, not /shop/all
           // Prefer the active store's baseUrl (inventory lives there) over generic website_url

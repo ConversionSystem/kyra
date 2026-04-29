@@ -224,8 +224,12 @@ export async function GET(
     '.kyra-quick-btn:hover { background:' + COLOR + '; color:#fff; border-color:' + COLOR + '; box-shadow:0 2px 8px ' + COLOR + '33; transform:translateY(-1px); }',
     /* Product cards — structured grid rendering of live inventory */
     '.kyra-cards { display:flex; flex-direction:column; gap:10px; padding:4px 16px 8px; }',
-    '.kyra-card { display:flex; gap:12px; background:#fff; border:1px solid #eef0f4; border-radius:16px; padding:12px; box-shadow:0 1px 3px rgba(0,0,0,0.04); transition:transform 0.15s, box-shadow 0.15s; font-family:system-ui,-apple-system,"SF Pro Text",sans-serif; }',
+    '.kyra-card { display:flex; gap:12px; background:#fff; border:1px solid #eef0f4; border-radius:16px; padding:12px; box-shadow:0 1px 3px rgba(0,0,0,0.04); transition:transform 0.15s, box-shadow 0.15s; font-family:system-ui,-apple-system,"SF Pro Text",sans-serif; position:relative; }',
     '.kyra-card:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(0,0,0,0.08); border-color:' + COLOR + '40; }',
+    /* Out-of-stock overlay — Jane Menu API V1 freshness check (Phase 1b) */
+    '.kyra-card.out-of-stock { opacity:0.55; }',
+    '.kyra-card.out-of-stock:hover { transform:none; box-shadow:0 1px 3px rgba(0,0,0,0.04); border-color:#eef0f4; }',
+    '.kyra-card.out-of-stock::after { content:"OUT OF STOCK"; position:absolute; top:14px; right:14px; background:rgba(220,38,38,0.95); color:#fff; padding:3px 9px; font-size:10px; font-weight:800; letter-spacing:0.06em; border-radius:6px; pointer-events:none; box-shadow:0 1px 3px rgba(0,0,0,0.2); }',
     '.kyra-card-img { width:72px; height:72px; border-radius:12px; object-fit:cover; background:linear-gradient(135deg, #f3f4f6, #e5e7eb); flex-shrink:0; }',
     '.kyra-card-img.placeholder { display:flex; align-items:center; justify-content:center; font-size:28px; color:' + COLOR + '99; }',
     '.kyra-card-body { flex:1; min-width:0; display:flex; flex-direction:column; gap:4px; }',
@@ -462,7 +466,7 @@ export async function GET(
       for (var i = 0; i < cards.length; i++) {
         var c = cards[i];
         var card = document.createElement('div');
-        card.className = 'kyra-card';
+        card.className = 'kyra-card' + (c && c.outOfStock ? ' out-of-stock' : '');
         // Image or emoji placeholder (falls back to 🌿 if no image)
         var imgHtml = c.imageUrl
           ? '<img class="kyra-card-img" src="' + escHtml(c.imageUrl) + '" alt="' + escHtml(c.name) + '" loading="lazy" onerror="this.outerHTML=\\'<div class=&quot;kyra-card-img placeholder&quot;>\\u{1F33F}</div>\\'">'
