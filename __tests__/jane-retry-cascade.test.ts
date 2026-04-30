@@ -365,6 +365,52 @@ describe('searchProducts — availabilityChannel narrowing (Phase 1a)', () => {
     expect(String(body.filters)).toContain('available_for_delivery:true');
     expect(String(body.filters)).not.toContain('available_for_pickup');
   });
+
+  // ── Auto-pivot contract test (route-layer behavior 2026-04-30) ────────────
+  // The chat route's auto-pivot fires a SECOND searchProducts call with the
+  // opposite channel when the first returned 0. This test validates the
+  // primitive: two consecutive searches with different channels produce
+  // different filter strings + different result counts independently. If
+  // either invariant breaks, the route-level pivot would silently misbehave.
+  it('auto-pivot primitive: delivery=0 followed by pickup=N produces independent filter+result shapes', async () => {
+    const filtersSeen: string[] = [];
+    let call = 0;
+    vi.stubGlobal('fetch', vi.fn(async (_url: string, init?: RequestInit) => {
+      const body = init?.body ? JSON.parse(String(init.body)) : {};
+      filtersSeen.push(String(body.filters));
+      call++;
+      // First call (delivery) → 0 hits. Second call (pickup) → 4 hits.
+      const hits = call === 1 ? [] : [
+        { product_id: 1, name: 'A' },
+        { product_id: 2, name: 'B' },
+        { product_id: 3, name: 'C' },
+        { product_id: 4, name: 'D' },
+      ];
+      return { ok: true, status: 200, text: async () => '',
+        json: async () => ({ hits, nbHits: hits.length }) } as unknown as Response;
+    }));
+
+    // Simulates the route's flow: first the user's selected channel, then the
+    // pivot to the opposite channel.
+    const first = await searchProducts(baseConfig, { query: 'indica gummies', availabilityChannel: 'delivery' });
+    const second = await searchProducts(baseConfig, { query: 'indica gummies', availabilityChannel: 'pickup' });
+
+    // First search hit the delivery filter and got 0 (after retry cascade —
+    // searchProducts itself may issue multiple Algolia calls per logical call).
+    expect(first.products).toHaveLength(0);
+    expect(filtersSeen.find((f) => f.includes('available_for_delivery:true'))).toBeTruthy();
+
+    // Second search hit the pickup filter and got hits.
+    expect(second.products.length).toBeGreaterThan(0);
+    expect(filtersSeen.some((f) => f.includes('available_for_pickup:true'))).toBe(true);
+
+    // The two channels produced DIFFERENT filter strings — auto-pivot's
+    // entire premise (running the same query in the other lane) is intact.
+    const deliveryFilters = filtersSeen.filter((f) => f.includes('available_for_delivery:true') && !f.includes('available_for_pickup:true'));
+    const pickupFilters = filtersSeen.filter((f) => f.includes('available_for_pickup:true') && !f.includes('available_for_delivery:true'));
+    expect(deliveryFilters.length).toBeGreaterThan(0);
+    expect(pickupFilters.length).toBeGreaterThan(0);
+  });
 });
 
 describe('parseProductIntent — longest-match brand detection', () => {

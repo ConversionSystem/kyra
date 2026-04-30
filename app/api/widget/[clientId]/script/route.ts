@@ -278,6 +278,15 @@ export async function GET(
   var history = []; // [{role:'user'|'assistant', content:string}] — last 10 turns
   var selectedStoreId = STORE_ID; // may be overridden by user picking a store
   try { var savedStore = localStorage.getItem('kyra_store_' + CLIENT_ID); if (savedStore) selectedStoreId = savedStore; } catch(e) {}
+  // Auto-pivot override — when the server returns a pivotAction (current
+  // orderType has 0 matches but opposite has cards) and the user taps the
+  // "Switch to Pickup/Delivery" chip, we lock that channel into subsequent
+  // requests so follow-up questions browse the new channel too. Null means
+  // "use whatever the storefront cookie says". Resets on page refresh.
+  var sessionOrderTypeOverride = null;
+  // Track the most-recent USER message text so the pivot CTA can re-fire it
+  // with the new channel. Updated at the top of every sendMessage() call.
+  var lastUserMessage = '';
   var CHIME = null;
   try { CHIME = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgkKmsi2I3OGiUrKuJYjo6aJSrqodjOzlqla2qimM6Ommdsp+EXkI/b5+zoYReQEB0obOhhF5CP3ies6CFXEI/cKCznYReQT9xo7WjhV9BPm6grKCEXkJAcaO1pIVfQD1un6ufg1xBQHOkt6aHYEA+b6Csn4JcQj9xo7amh19APG2fq5+DW0I/caS3pohhQD5uoKufhFxBPnCjt6aGX0A+baCqnoNcQUFzprioh2FAP26fqZuAWkJAdqe7qopiQT1snaecgFpCP3GkuKqJYkE9bZ6nm39YQT9zp7uqi2NAFG2dp5p9VkI/'); } catch(e) {}
 
@@ -706,10 +715,41 @@ export async function GET(
     return ctx;
   }
 
+  // Render the auto-pivot CTA chip ("Switch to Pickup") below the bot message
+  // when the server returned a pivotAction. On tap: set the session override,
+  // show a small confirmation banner, and pre-fill the input so the user can
+  // re-ask their original question in the new channel.
+  function renderPivotAction(pivot) {
+    if (!pivot || !pivot.fromChannel || !pivot.toChannel) return;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'kyra-support-link kyra-pivot-cta';
+    // Visually distinguish from neutral support-link chips — primary purple.
+    btn.style.cssText = 'background:#7c3aed;color:#fff;border-color:#7c3aed;font-weight:600;';
+    var alt = pivot.alternativeCount || 0;
+    btn.textContent = (pivot.label || 'Switch') + (alt ? ' (' + alt + ')' : '');
+    btn.addEventListener('click', function() {
+      sessionOrderTypeOverride = pivot.toChannel;
+      btn.disabled = true;
+      btn.style.opacity = '0.6';
+      btn.textContent = 'Now browsing ' + pivot.toChannel;
+      // Surface the change so the user knows the next question will use the
+      // new channel. Auto-fire the last user message in the new channel so
+      // they see results instantly without re-typing.
+      if (lastUserMessage && !isLoading) {
+        inputEl.value = lastUserMessage;
+        sendMessage();
+      }
+    });
+    messagesEl.appendChild(btn);
+    scrollToBottom();
+  }
+
   async function sendMessage() {
     var text = inputEl.value.trim();
     if (!text || isLoading) return;
     hideQuickReplies();
+    lastUserMessage = text;
 
     isLoading = true;
     sendBtn.disabled = true;
@@ -720,6 +760,9 @@ export async function GET(
 
     try {
       var jane = readJaneContext();
+      // Session override (set by tapping the pivot CTA) wins over the
+      // storefront cookie. Reset on page refresh.
+      var effectiveOrderType = sessionOrderTypeOverride || jane.orderType;
       var res = await fetch(API_BASE + '/api/widget/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -733,8 +776,8 @@ export async function GET(
           // wins over the embed default). This means if the customer changed
           // stores on plpcsanjose.com, the widget follows them automatically.
           storeId: jane.janeStore || window.__kyraStoreId || selectedStoreId || STORE_ID,
-          orderType: jane.orderType,  // "pickup" | "delivery" — narrows in-stock filter
-          cart: jane.cart,            // current bag, lets the AI reason about complements
+          orderType: effectiveOrderType,  // "pickup" | "delivery" — narrows in-stock filter
+          cart: jane.cart,                // current bag, lets the AI reason about complements
         }),
         signal: AbortSignal.timeout(40000),
       });
@@ -755,6 +798,12 @@ export async function GET(
         // Render support-link pill chips (ordering, delivery, hours, etc.) — server
         // guarantees these for informational questions regardless of LLM output.
         try { renderSupportLinks(data.supportLinks); } catch(e) {}
+        // Auto-pivot CTA — only renders when the server returned a pivotAction.
+        // Suppress when override already matches (avoids "Switch to Pickup"
+        // appearing when the user is already on pickup mode).
+        if (data.pivotAction && sessionOrderTypeOverride !== data.pivotAction.toChannel) {
+          try { renderPivotAction(data.pivotAction); } catch(e) {}
+        }
         // If lead was captured, show a subtle confirmation
         if (data.leadCaptured) {
           var noteEl = document.createElement('div');
