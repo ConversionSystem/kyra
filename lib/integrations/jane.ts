@@ -1118,8 +1118,19 @@ export function parseProductIntent(
     if (rootType) params.category = rootType;
   }
 
+  // Lineage extraction (regression 2026-04-30): when the user names a strain
+  // type explicitly ("indica gummies", "sativa flower", "hybrid pre-rolls"),
+  // capture it as a preferLineages signal so buildBrowseMore can produce
+  // /shop/edible?lineage=indica instead of just /shop/edible. EFFECT_LINEAGE_MAP
+  // covers indirect routes (sleep→indica, energy→sativa) but not direct mentions.
+  // Word boundary required so "indicate" doesn't false-match indica.
+  const lineageMatch = lower.match(/\b(indica|sativa|hybrid|cbd)\b/);
+  if (lineageMatch) {
+    params.preferLineages = [...(params.preferLineages || []), lineageMatch[1].toLowerCase()];
+  }
+
   // Sort detection
-  if (/highest.*thc|strongest|most potent|highest potency/i.test(lower)) {
+  if (/highest.*thc|strongest|most potent|highest potency|high(?:est)?\s+thc/i.test(lower)) {
     params.sortBy = 'thc_desc';
   } else if (/cheap|affordable|best deal|lowest price|budget/i.test(lower)) {
     params.sortBy = 'price_asc';
